@@ -65,7 +65,7 @@
 		<value>FluentDL</value>
   	</data>
   <data name="Shell_Blank.Content" xml:space="preserve">
-    <value>Blank</value>
+    <value>Search</value>
   </data>
   <data name="ListDetails_NoSelection.Text" xml:space="preserve">
     <value>Select an item from the list.</value>

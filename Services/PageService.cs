@@ -1,9 +1,7 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
-
 using FluentDL.Contracts.Services;
 using FluentDL.ViewModels;
 using FluentDL.Views;
-
 using Microsoft.UI.Xaml.Controls;
 
 namespace FluentDL.Services;
@@ -14,7 +12,7 @@ public class PageService : IPageService
 
     public PageService()
     {
-        Configure<BlankViewModel, BlankPage>();
+        Configure<BlankViewModel, Search>();
         Configure<ListDetailsViewModel, ListDetailsPage>();
         Configure<ContentGridViewModel, ContentGridPage>();
         Configure<ContentGridDetailViewModel, ContentGridDetailPage>();
@@ -51,7 +49,8 @@ public class PageService : IPageService
             var type = typeof(V);
             if (_pages.ContainsValue(type))
             {
-                throw new ArgumentException($"This type is already configured with key {_pages.First(p => p.Value == type).Key}");
+                throw new ArgumentException(
+                    $"This type is already configured with key {_pages.First(p => p.Value == type).Key}");
             }
 
             _pages.Add(key, type);
