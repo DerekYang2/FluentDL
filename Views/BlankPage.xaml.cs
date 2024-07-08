@@ -5,11 +5,73 @@ using FluentDL.Helpers;
 using Microsoft.UI.Xaml.Controls;
 using RestSharp;
 using FluentDL.Services;
+using System.Collections.ObjectModel;
 
 namespace FluentDL.Views;
+// Sample data object used to populate the collection page.
+public class SongSearchObject
+{
+    public string Title
+    {
+        get; set;
+    }
+    public string ImageLocation
+    {
+        get; set;
+    }
+    public string Link
+    {
+        get; set;
+    }
+    public string Likes
+    {
+        get; set;
+    }
+    public string Artists
+    {
+        get; set;
+    }
+
+    public SongSearchObject()
+    {
+    }
+
+    public static List<SongSearchObject> GetDataObjects(bool includeAllItems = false)
+    {
+        string[] dummyTexts = new[] {
+                @"Lorem ipsum dolor sit amet, consectetur adipiscing elit. Integer id facilisis lectus. Cras nec convallis ante, quis pulvinar tellus. Integer dictum accumsan pulvinar. Pellentesque eget enim sodales sapien vestibulum consequat.",
+                @"Nullam eget mattis metus. Donec pharetra, tellus in mattis tincidunt, magna ipsum gravida nibh, vitae lobortis ante odio vel quam.",
+                @"Quisque accumsan pretium ligula in faucibus. Mauris sollicitudin augue vitae lorem cursus condimentum quis ac mauris. Pellentesque quis turpis non nunc pretium sagittis. Nulla facilisi. Maecenas eu lectus ante. Proin eleifend vel lectus non tincidunt. Fusce condimentum luctus nisi, in elementum ante tincidunt nec.",
+                @"Aenean in nisl at elit venenatis blandit ut vitae lectus. Praesent in sollicitudin nunc. Pellentesque justo augue, pretium at sem lacinia, scelerisque semper erat. Ut cursus tortor at metus lacinia dapibus.",
+                @"Ut consequat magna luctus justo egestas vehicula. Integer pharetra risus libero, et posuere justo mattis et.",
+                @"Proin malesuada, libero vitae aliquam venenatis, diam est faucibus felis, vitae efficitur erat nunc non mauris. Suspendisse at sodales erat.",
+                @"Aenean vulputate, turpis non tincidunt ornare, metus est sagittis erat, id lobortis orci odio eget quam. Suspendisse ex purus, lobortis quis suscipit a, volutpat vitae turpis.",
+                @"Duis facilisis, quam ut laoreet commodo, elit ex aliquet massa, non varius tellus lectus et nunc. Donec vitae risus ut ante pretium semper. Phasellus consectetur volutpat orci, eu dapibus turpis. Fusce varius sapien eu mattis pharetra.",
+            };
+
+        Random rand = new Random();
+        int numberOfLocations = includeAllItems ? 13 : 8;
+        List<SongSearchObject> objects = new List<SongSearchObject>();
+        for (int i = 0; i < numberOfLocations; i++)
+        {
+            objects.Add(new SongSearchObject()
+            {
+                Title = $"Item {i + 1}",
+                ImageLocation = $"/Assets/SampleMedia/LandscapeImage{i + 1}.jpg",
+                Link = rand.Next(100, 999).ToString(),
+                Likes = rand.Next(10, 99).ToString(),
+                Artists = dummyTexts[i % dummyTexts.Length],
+            });
+        }
+
+        return objects;
+    }
+
+}
 
 public sealed partial class BlankPage : Page
 {
+
     private RipSubprocess ripSubprocess;
     public BlankViewModel ViewModel
     {
@@ -42,19 +104,29 @@ public sealed partial class BlankPage : Page
         // Create json object from the response
         // Use System.Text.Json to parse the json object
         var jsonObject = JsonDocument.Parse(response.Content).RootElement;
-        var debugText = "";
+
+        List<SongSearchObject> objects = new List<SongSearchObject>();  // Create a list of CustomDataObjects
+
+
         foreach (var track in jsonObject.GetProperty("data").EnumerateArray())
         {
             Debug.WriteLine("Track Link: " + track.GetProperty("link").GetString());
             Debug.WriteLine("Track title: " + track.GetProperty("title").GetString());
             Debug.WriteLine("Artist name: " + track.GetProperty("artist").GetProperty("name").GetString());
-            debugText += "Track Link: " + track.GetProperty("link").GetString() + "\n";
-            debugText += "Track title: " + track.GetProperty("title").GetString() + "\n";
-            debugText += "Artist name: " + track.GetProperty("artist").GetProperty("name").GetString() + "\n";
-            debugText += "\n";
+            objects.Add(new SongSearchObject()
+            {
+                Title = track.GetProperty("title").GetString(),
+                ImageLocation = track.GetProperty("album").GetProperty("cover").GetString(), // "cover_small, cover_medium, cover_big, cover_xl" are available
+                Link = track.GetProperty("link").GetString(), // "link" is the link to the track on Deezer
+                Likes = track.GetProperty("rank").ToString(),
+                Artists = track.GetProperty("artist").GetProperty("name").GetString()
+            });
         }
 
-        testTextBlock.Text = debugText;
+        // Set the collection as the ItemsSource for the ListView
+        CustomListView.ItemsSource = objects;
+
+        //testTextBlock.Text = debugText;
 
         /*
         testTextBlock.Text = debugText;
