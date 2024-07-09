@@ -34,7 +34,7 @@ public sealed partial class Search : Page
         // Set the collection as the ItemsSource for the ListView
         CustomListView.ItemsSource = await FluentDL.Services.DeezerApi.SearchTrack(artistName, trackName);
         SearchProgress.IsIndeterminate = false;
-        Debug.WriteLine(ripSubprocess.RunCommandSync("rip config path"));
+        //Debug.WriteLine(ripSubprocess.RunCommandSync("rip config path"));
 
         //testTextBlock.Text = debugText;
 
@@ -55,5 +55,18 @@ public sealed partial class Search : Page
         cmd.WaitForExit();
         Debug.WriteLine("OUTPUT: " + cmd.StandardOutput.ReadToEnd());
         */
+    }
+
+    private void CustomListView_OnSelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        // Get the selected item
+        var selectedSong = (SongSearchObject)CustomListView.SelectedItem;
+        if (selectedSong == null)
+        {
+            return;
+        }
+
+        // Test 
+        Debug.WriteLine(selectedSong.Title + " " + selectedSong.Artists + " " + selectedSong.Link);
     }
 }

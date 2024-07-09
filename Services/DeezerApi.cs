@@ -29,7 +29,7 @@ public class SongSearchObject
         set;
     }
 
-    public string Rank
+    public string ReleaseDate
     {
         get;
         set;
@@ -41,13 +41,7 @@ public class SongSearchObject
         set;
     }
 
-    public string AlbumId
-    {
-        get;
-        set;
-    }
-
-    public string AlbumName
+    public string Duration
     {
         get;
         set;
@@ -80,6 +74,7 @@ internal class DeezerApi
 
         foreach (var track in jsonObject.GetProperty("data").EnumerateArray())
         {
+            var trackId = track.GetProperty("id").ToString();
             var albumIdStr = track.GetProperty("album").GetProperty("id").ToString();
 
             /*
@@ -90,22 +85,42 @@ internal class DeezerApi
                 contributors.Add(track.GetProperty("artist").GetProperty("name").GetString());
             }
             */
-
-            objects.Add(new SongSearchObject()
-            {
-                Title = track.GetProperty("title").GetString(),
-                ImageLocation =
-                    track.GetProperty("album").GetProperty("cover")
-                        .GetString(), // "cover_small, cover_medium, cover_big, cover_xl" are available
-                Link = track.GetProperty("link").GetString(), // "link" is the link to the track on Deezer
-                Rank = track.GetProperty("rank").ToString(),
-                Artists = track.GetProperty("artist").GetProperty("name").GetString(),
-                AlbumId = albumIdStr,
-                AlbumName = track.GetProperty("album").GetProperty("title").GetString(),
-            });
+            objects.Add(await GetTrack(trackId));
         }
 
         return objects;
+    }
+
+    public static async Task<SongSearchObject> GetTrack(string trackId)
+    {
+        var req = "track/" + trackId;
+
+        var request = new RestRequest(req);
+        // Output the response to the console
+        var response = await client.GetAsync(request);
+
+        // Create json object from the response
+        // Use System.Text.Json to parse the json object
+        var jsonObject = JsonDocument.Parse(response.Content).RootElement;
+
+        // Get the contributors of the track
+        var contribCsv = "";
+        foreach (var contribObject in jsonObject.GetProperty("contributors").EnumerateArray())
+        {
+            contribCsv += contribObject.GetProperty("name").GetString() + ", ";
+        }
+
+        contribCsv = contribCsv.Remove(contribCsv.Length - 2); // Remove the last comma and space
+
+        return new SongSearchObject()
+        {
+            Title = jsonObject.GetProperty("title").GetString(),
+            ImageLocation = jsonObject.GetProperty("album").GetProperty("cover").GetString(),
+            Link = jsonObject.GetProperty("link").GetString(),
+            ReleaseDate = jsonObject.GetProperty("release_date").ToString(),
+            Artists = contribCsv,
+            Duration = FormatTime(jsonObject.GetProperty("duration").GetInt32())
+        };
     }
 
     // https://api.deezer.com/album/{id}
@@ -136,5 +151,19 @@ internal class DeezerApi
         {
             return new List<string>(); // Do not assume anything
         }
+    }
+
+    /**
+     * Helper method to format the time in seconds to a string
+     * Format as H hr, M min, S sec
+     */
+    private static string FormatTime(int seconds)
+    {
+        int sec = seconds % 60;
+        seconds /= 60;
+        int min = seconds % 60;
+        seconds /= 60;
+        int hr = seconds;
+        return (hr > 0 ? hr + " hr, " : "") + (min > 0 ? min + " min, " : "") + sec + " sec";
     }
 }
