@@ -30,10 +30,10 @@ public sealed partial class Search : Page
     {
         var artistName = artistNameInput.Text;
         var trackName = trackNameInput.Text;
-
+        SearchProgress.IsIndeterminate = true;
         // Set the collection as the ItemsSource for the ListView
         CustomListView.ItemsSource = await FluentDL.Services.DeezerApi.SearchTrack(artistName, trackName);
-
+        SearchProgress.IsIndeterminate = false;
         Debug.WriteLine(ripSubprocess.RunCommandSync("rip config path"));
 
         //testTextBlock.Text = debugText;

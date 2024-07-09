@@ -20,11 +20,12 @@
         <Button
             x:Name="testButton"
             Content="Search"
-            Click="Button_Click" />
-
+            Click="Button_Click"
+            />
+        <ProgressBar x:Name="SearchProgress" Width="550" IsIndeterminate="False" ShowPaused="False" ShowError="False" Value="100"/>
         <ListView x:Name="CustomListView"
              Height="300"
-             MinWidth="550"
+             Width="550"
              CornerRadius="8"
              BorderThickness="2"
              BorderBrush="{ThemeResource ControlStrongStrokeColorDefaultBrush}">
