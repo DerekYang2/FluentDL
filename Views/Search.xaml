@@ -5,6 +5,8 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:services="using:FluentDL.Services"
+    xmlns:controls1="using:CommunityToolkit.WinUI.UI.Controls"
+    xmlns:views="using:FluentDL.Views"
     mc:Ignorable="d"
     NavigationCacheMode="Required"
     >
@@ -17,41 +19,63 @@
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
         <StackPanel Orientation="Vertical" HorizontalAlignment="Stretch" VerticalAlignment="Top" Grid.Row="0" Grid.Column="0">
-            <TextBlock Text="Enter the artist and track name to search for:" FontSize="14" FontWeight="Normal" FontFamily="Segoe UI Variable Display" Style="{ThemeResource BaseTextBlockStyle}" HorizontalAlignment="Left" Margin="0,0,0,10"/>
             <TextBox x:Name="artistNameInput"
-                     PlaceholderText="Artist Name"
+                     PlaceholderText="Artist name"
                      HorizontalAlignment="Stretch"
                      Margin="0,0,0,10"
+                     ToolTipService.ToolTip="Artist name"
             />
             <TextBox x:Name="trackNameInput"
-                        PlaceholderText="Track Name"
+                        PlaceholderText="Track name"
                         HorizontalAlignment="Stretch"
-                                                Margin="0,0,0,10"
+                        Margin="0,0,0,10"
+                        ToolTipService.ToolTip="Track name"
                         />
         </StackPanel>
 
-        <CommandBar Background="Transparent" IsOpen="False" DefaultLabelPosition="Right" IsSticky="True" Grid.Row="1" Grid.Column="0">
-            <CommandBar.Content>
+        <controls1:DockPanel Grid.Row="1" Grid.Column="0">
+            <Button x:Name="SearchButton" Click="SearchClick" Style="{StaticResource AccentButtonStyle}">
                 <StackPanel Orientation="Horizontal">
-                    <ProgressRing x:Name="SearchProgress" IsIndeterminate="False" Value="100" Margin="0,14, 0,0" Height="24" Width="24"/>
-                    <TextBlock Text="Track Results" Margin="8,14,0,0" FontSize="16" FontWeight="SemiBold" FontFamily="Segoe UI Variable Display" Style="{ThemeResource BaseTextBlockStyle}" HorizontalAlignment="Left"/>
+                    <SymbolIcon Symbol="Find" Margin="0,0,5,0"/>
+                    <TextBlock Text="Search"/>
                 </StackPanel>
-            </CommandBar.Content>
-            <AppBarSeparator/>
-            <AppBarButton Icon="Sort" Label="Sort"/>
-            <AppBarButton Icon="Zoom" Label="Search" Click="SearchClick"/>
-        </CommandBar>
+            </Button>
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                <ComboBox x:Name="SortComboBox" SelectionChanged="SortBox_SelectionChanged" Background="Transparent" BorderBrush="Transparent">
+                    <ComboBox.ItemTemplate>
+                        <DataTemplate x:DataType="views:SortObject">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="{x:Bind Text}" Style="{ThemeResource BodyText}"/>
+                                <TextBlock Text="{x:Bind Highlight}" Foreground="{ThemeResource SystemAccentColorLight2}" Style="{ThemeResource BodyText}"/>
+                            </StackPanel>
+                        </DataTemplate>
+                    </ComboBox.ItemTemplate>
+                    <ComboBox.Items>
+                        <views:SortObject Text="Sort by:" Highlight="  A - Z"/>
+                        <views:SortObject Text="Sort by:" Highlight="  Artist"/>
+                        <views:SortObject Text="Sort by:" Highlight="  Release date"/>
+                        <views:SortObject Text="Sort by:" Highlight="  Rank"/>
+                    </ComboBox.Items>
+                </ComboBox>
+            </StackPanel>
+
+        </controls1:DockPanel>
+
+        <ProgressBar Grid.Column="0" Grid.Row="2" x:Name="SearchProgress" IsIndeterminate="False" Value="0" Margin="0,10,0,10"/>
+
+        <TextBlock x:Name="NoSearchResults" Grid.Column="0" Grid.Row="3" Text="No results found." HorizontalAlignment="Center" VerticalAlignment="Center" Style="{ThemeResource BodyText}" Margin="0,0,0,10"/>
 
         <ListView x:Name="CustomListView"
                   CornerRadius="8"
-                  BorderThickness="2"
+                  BorderThickness="0"
                   SelectionChanged="CustomListView_OnSelectionChanged"
                   BorderBrush="{ThemeResource ControlStrongStrokeColorDefaultBrush}"
-                  Grid.Row="2"
+                  Grid.Row="3"
                   Grid.Column="0"
                   Margin="0,0,0,10"
                   >
@@ -83,14 +107,14 @@
             </ListView.ItemTemplate>
         </ListView>
 
-        <Grid Grid.Row="0" Grid.RowSpan="3" Grid.Column="1">
+        <Grid Grid.Row="0" Grid.RowSpan="4" Grid.Column="1">
             <Rectangle Fill="{ThemeResource SystemAccentColor}" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Margin="10,0,0,10"/>
-            <TextBlock x:Name="NoneSelectedText" Text="No track selected" FontSize="14" FontWeight="Normal" FontFamily="Segoe UI Variable Display" Style="{ThemeResource BaseTextBlockStyle}" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="10,0,0,10"/>
+            <TextBlock x:Name="NoneSelectedText" Text="No track selected." Style="{ThemeResource BodyText}" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="10,0,0,10"/>
             <StackPanel Orientation="Vertical" HorizontalAlignment="Stretch" VerticalAlignment="Top" Margin="20,10,10,10">
                 <TextBlock x:Name="PreviewHeader" Text="Preview Pane" FontSize="16" FontWeight="SemiBold" FontFamily="Segoe UI Variable Display" Style="{ThemeResource BaseTextBlockStyle}" HorizontalAlignment="Left" Margin="0,0,0,0"/>
-                <TextBlock x:Name="PreviewArtistText" Text="" FontSize="14" FontWeight="Normal" FontFamily="Segoe UI Variable Display" Style="{ThemeResource BaseTextBlockStyle}" HorizontalAlignment="Left" Margin="0,0,0,0"/>
-                <TextBlock x:Name="PreviewTitleText" Text="" FontSize="14" FontWeight="Normal" FontFamily="Segoe UI Variable Display" Style="{ThemeResource BaseTextBlockStyle}" HorizontalAlignment="Left" Margin="0,0,0,0"/>
-                <TextBlock x:Name="PreviewLinkText" Text="" FontSize="14" FontWeight="Normal" FontFamily="Segoe UI Variable Display" Style="{ThemeResource BaseTextBlockStyle}" HorizontalAlignment="Left" Margin="0,0,0,0"/>
+                <TextBlock x:Name="PreviewArtistText" Text="" Style="{ThemeResource BodyText}" HorizontalAlignment="Left" Margin="0,0,0,0"/>
+                <TextBlock x:Name="PreviewTitleText" Text="" Style="{ThemeResource BodyText}" HorizontalAlignment="Left" Margin="0,0,0,0"/>
+                <TextBlock x:Name="PreviewLinkText" Text="" Style="{ThemeResource BodyText}" HorizontalAlignment="Left" Margin="0,0,0,0"/>
             </StackPanel>
         </Grid>
     </Grid>

@@ -6,9 +6,44 @@ using Microsoft.UI.Xaml.Controls;
 using RestSharp;
 using FluentDL.Services;
 using System.Collections.ObjectModel;
+using Microsoft.UI.Xaml.Media;
+using Microsoft.UI;
 
 namespace FluentDL.Views;
 // TODO: loading for search
+
+/*
+ *                        <DataTemplate x:DataType="SortObject">
+       <StackPanel Orientation="Horizontal">
+           <TextBlock Text="{Binding Text}" Foreground="White"/>
+           <TextBlock Text="{Binding Highlight}" Foreground="Green"/>
+       </StackPanel>
+   </DataTemplate>
+ */
+public class SortObject
+{
+    public string Text
+    {
+        get;
+        set;
+    }
+
+    public string Highlight
+    {
+        get;
+        set;
+    }
+
+    public SortObject(string text, string highlight)
+    {
+        Text = text;
+        Highlight = highlight;
+    }
+
+    public SortObject()
+    {
+    }
+}
 
 public sealed partial class Search : Page
 {
@@ -24,16 +59,23 @@ public sealed partial class Search : Page
         ViewModel = App.GetService<BlankViewModel>();
         InitializeComponent();
         ripSubprocess = new RipSubprocess();
+        SortComboBox.SelectedIndex = 0;
     }
 
     private async void SearchClick(object sender, Microsoft.UI.Xaml.RoutedEventArgs e)
     {
         var artistName = artistNameInput.Text;
         var trackName = trackNameInput.Text;
+
         SearchProgress.IsIndeterminate = true;
         // Set the collection as the ItemsSource for the ListView
         CustomListView.ItemsSource = await FluentDL.Services.DeezerApi.SearchTrack(artistName, trackName);
+        // If collection is empty, show a message
+        NoSearchResults.Visibility = CustomListView.Items.Count == 0
+            ? Microsoft.UI.Xaml.Visibility.Visible
+            : Microsoft.UI.Xaml.Visibility.Collapsed;
         SearchProgress.IsIndeterminate = false;
+
         //Debug.WriteLine(ripSubprocess.RunCommandSync("rip config path"));
 
         //testTextBlock.Text = debugText;
@@ -76,5 +118,13 @@ public sealed partial class Search : Page
         PreviewArtistText.Text = selectedSong.Artists;
         PreviewTitleText.Text = selectedSong.Title;
         PreviewLinkText.Text = selectedSong.Link;
+    }
+
+    private void SortBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        string selection = e.AddedItems[0].ToString();
+        switch (selection)
+        {
+        }
     }
 }
