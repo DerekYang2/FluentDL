@@ -8,45 +8,74 @@
     mc:Ignorable="d"
     NavigationCacheMode="Required"
     >
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="3*"/>
+            <ColumnDefinition Width="2*"/>
+        </Grid.ColumnDefinitions>
 
-    <StackPanel Orientation="Vertical" HorizontalAlignment="Left" VerticalAlignment="Top">
-        
-        <TextBox x:Name="artistNameInput"
-                     Header="Enter an artist name:" PlaceholderText="Artist Name"
-                     Width="300" HorizontalAlignment="Left"/>
-        <TextBox x:Name="trackNameInput"
-                        Header="Enter a track name:" PlaceholderText="Track Name"
-                        Width="300" HorizontalAlignment="Left"/>
-        <Button
-            x:Name="testButton"
-            Content="Search"
-            Click="Button_Click"
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <StackPanel Orientation="Vertical" HorizontalAlignment="Stretch" VerticalAlignment="Top" Grid.Row="0" Grid.Column="0">
+            <TextBlock Text="Enter the artist and track name to search for:" FontSize="14" FontWeight="Normal" FontFamily="Segoe UI Variable Display" Style="{ThemeResource BaseTextBlockStyle}" HorizontalAlignment="Left" Margin="0,0,0,10"/>
+            <TextBox x:Name="artistNameInput"
+                     PlaceholderText="Artist Name"
+                     HorizontalAlignment="Stretch"
+                     Margin="0,0,0,10"
             />
-        <ProgressBar x:Name="SearchProgress" Width="534" IsIndeterminate="False" ShowPaused="False" ShowError="False" Value="100"/>
+            <TextBox x:Name="trackNameInput"
+                        PlaceholderText="Track Name"
+                        HorizontalAlignment="Stretch"
+                                                Margin="0,0,0,10"
+                        />
+        </StackPanel>
+
+        <CommandBar Background="Transparent" IsOpen="False" DefaultLabelPosition="Right" IsSticky="True" Grid.Row="1" Grid.Column="0">
+            <CommandBar.Content>
+                <StackPanel Orientation="Horizontal">
+                    <ProgressRing x:Name="SearchProgress" IsIndeterminate="False" Value="100" Margin="0,14, 0,0" Height="24" Width="24"/>
+                    <TextBlock Text="Track Results" Margin="8,14,0,0" FontSize="16" FontWeight="SemiBold" FontFamily="Segoe UI Variable Display" Style="{ThemeResource BaseTextBlockStyle}" HorizontalAlignment="Left"/>
+                </StackPanel>
+            </CommandBar.Content>
+            <AppBarSeparator/>
+            <AppBarButton Icon="Sort" Label="Sort"/>
+            <AppBarButton Icon="Zoom" Label="Search" Click="SearchClick"/>
+        </CommandBar>
+
         <ListView x:Name="CustomListView"
-             Height="350"
-             Width="550"
-             CornerRadius="8"
-             BorderThickness="2"
-             SelectionChanged="CustomListView_OnSelectionChanged"
-             BorderBrush="{ThemeResource ControlStrongStrokeColorDefaultBrush}">
+                  CornerRadius="8"
+                  BorderThickness="2"
+                  SelectionChanged="CustomListView_OnSelectionChanged"
+                  BorderBrush="{ThemeResource ControlStrongStrokeColorDefaultBrush}"
+                  Grid.Row="2"
+                  Grid.Column="0"
+                  Margin="0,0,0,10"
+                  >
             <ListView.ItemTemplate>
                 <DataTemplate x:DataType="services:SongSearchObject">
                     <Grid Margin="0,12,0,12" AutomationProperties.Name="{x:Bind Title}">
                         <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="Auto" MinWidth="150"/>
+                            <ColumnDefinition Width="100"/>
                             <ColumnDefinition Width="*" />
                         </Grid.ColumnDefinitions>
-                        <Image Source="{x:Bind ImageLocation}" MaxHeight="100" Stretch="Fill"/>
+                        <Border CornerRadius="4" Height="100">
+                            <Border.Background>
+                                <ImageBrush Stretch="UniformToFill" ImageSource="{x:Bind ImageLocation}"/>
+                            </Border.Background>
+                        </Border>
 
-                        <StackPanel Margin="20,0,0,0" Grid.Column="1">
-                            <TextBlock Text="{x:Bind Title}" FontSize="15" FontWeight="SemiBold" FontFamily="Segoe UI Variable Display" Style="{ThemeResource BaseTextBlockStyle}" HorizontalAlignment="Left" Margin="0,0,0,0" LineHeight="20"/>
-                            <TextBlock Text="{x:Bind Artists}" FontSize="14" FontFamily="Segoe UI Variable Display" FontWeight="Normal" Style="{ThemeResource BodyTextBlockStyle}" TextTrimming="CharacterEllipsis" Width="350" MaxLines="1" Margin="0,0,0,0"/>
+                        <StackPanel Margin="15,0,0,0" Grid.Column="1">
+                            <TextBlock Text="{x:Bind Title}" FontSize="16"  LineHeight="22" FontWeight="SemiBold" FontFamily="Segoe UI Variable Display" Style="{ThemeResource BaseTextBlockStyle}" HorizontalAlignment="Left" TextTrimming="CharacterEllipsis" MaxLines="1"/>
+                            <TextBlock Text="{x:Bind Artists}" FontSize="14" LineHeight="20" FontFamily="Segoe UI Variable Display" FontWeight="Normal" Style="{ThemeResource BodyTextBlockStyle}" TextTrimming="CharacterEllipsis" MaxLines="1"/>
                         </StackPanel>
 
-                        <StackPanel Margin="18,0,0,0" Orientation="Horizontal" VerticalAlignment="Bottom" Grid.Column="1">
-                            <TextBlock Text="{x:Bind ReleaseDate}" HorizontalAlignment="Left" Style="{ThemeResource CaptionTextBlockStyle}" Margin="5,0,0,0" FontSize="14" FontFamily="Segoe UI Variable Display"/>
-                            <TextBlock Text="  &#x2022; " Style="{ThemeResource CaptionTextBlockStyle}" HorizontalAlignment="Left"/>
+                        <StackPanel Margin="15,0,0,0" Orientation="Horizontal" VerticalAlignment="Bottom" Grid.Column="1">
+                            <TextBlock Text="{x:Bind ReleaseDate}" HorizontalAlignment="Left" Style="{ThemeResource CaptionTextBlockStyle}" Margin="0,0,0,0" FontSize="14" FontFamily="Segoe UI Variable Display"/>
+                            <TextBlock Text="&#x2022;" Style="{ThemeResource CaptionTextBlockStyle}" HorizontalAlignment="Left" Margin="5,0,0,0"/>
                             <TextBlock Text="{x:Bind Duration}" HorizontalAlignment="Left" Style="{ThemeResource CaptionTextBlockStyle}" Margin="5,0,0,0" FontSize="14" FontFamily="Segoe UI Variable Display"/>
                         </StackPanel>
                     </Grid>
@@ -54,6 +83,15 @@
             </ListView.ItemTemplate>
         </ListView>
 
-    </StackPanel>
-
+        <Grid Grid.Row="0" Grid.RowSpan="3" Grid.Column="1">
+            <Rectangle Fill="{ThemeResource SystemAccentColor}" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Margin="10,0,0,10"/>
+            <TextBlock x:Name="NoneSelectedText" Text="No track selected" FontSize="14" FontWeight="Normal" FontFamily="Segoe UI Variable Display" Style="{ThemeResource BaseTextBlockStyle}" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="10,0,0,10"/>
+            <StackPanel Orientation="Vertical" HorizontalAlignment="Stretch" VerticalAlignment="Top" Margin="20,10,10,10">
+                <TextBlock x:Name="PreviewHeader" Text="Preview Pane" FontSize="16" FontWeight="SemiBold" FontFamily="Segoe UI Variable Display" Style="{ThemeResource BaseTextBlockStyle}" HorizontalAlignment="Left" Margin="0,0,0,0"/>
+                <TextBlock x:Name="PreviewArtistText" Text="" FontSize="14" FontWeight="Normal" FontFamily="Segoe UI Variable Display" Style="{ThemeResource BaseTextBlockStyle}" HorizontalAlignment="Left" Margin="0,0,0,0"/>
+                <TextBlock x:Name="PreviewTitleText" Text="" FontSize="14" FontWeight="Normal" FontFamily="Segoe UI Variable Display" Style="{ThemeResource BaseTextBlockStyle}" HorizontalAlignment="Left" Margin="0,0,0,0"/>
+                <TextBlock x:Name="PreviewLinkText" Text="" FontSize="14" FontWeight="Normal" FontFamily="Segoe UI Variable Display" Style="{ThemeResource BaseTextBlockStyle}" HorizontalAlignment="Left" Margin="0,0,0,0"/>
+            </StackPanel>
+        </Grid>
+    </Grid>
 </Page>

@@ -26,7 +26,7 @@ public sealed partial class Search : Page
         ripSubprocess = new RipSubprocess();
     }
 
-    private async void Button_Click(object sender, Microsoft.UI.Xaml.RoutedEventArgs e)
+    private async void SearchClick(object sender, Microsoft.UI.Xaml.RoutedEventArgs e)
     {
         var artistName = artistNameInput.Text;
         var trackName = trackNameInput.Text;
@@ -63,10 +63,18 @@ public sealed partial class Search : Page
         var selectedSong = (SongSearchObject)CustomListView.SelectedItem;
         if (selectedSong == null)
         {
+            NoneSelectedText.Visibility = Microsoft.UI.Xaml.Visibility.Visible;
+            PreviewArtistText.Text = "";
+            PreviewTitleText.Text = "";
+            PreviewLinkText.Text = "";
             return;
         }
 
-        // Test 
-        Debug.WriteLine(selectedSong.Title + " " + selectedSong.Artists + " " + selectedSong.Link);
+        NoneSelectedText.Visibility = Microsoft.UI.Xaml.Visibility.Collapsed;
+
+        // PreviewTitleText.Text = selectedSong.Title + " " + selectedSong.Artists + " " + selectedSong.Link;
+        PreviewArtistText.Text = selectedSong.Artists;
+        PreviewTitleText.Text = selectedSong.Title;
+        PreviewLinkText.Text = selectedSong.Link;
     }
 }
