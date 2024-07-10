@@ -46,7 +46,7 @@
                 </StackPanel>
             </Button>
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                <ComboBox x:Name="SortComboBox" SelectionChanged="SortBox_SelectionChanged" Background="Transparent" BorderBrush="Transparent">
+                <ComboBox x:Name="SortOrderComboBox" SelectionChanged="SortOrder_SelectionChanged" Background="Transparent" BorderBrush="Transparent" PlaceholderText="Sort order:  Ascending">
                     <ComboBox.ItemTemplate>
                         <DataTemplate x:DataType="views:SortObject">
                             <StackPanel Orientation="Horizontal">
@@ -56,6 +56,21 @@
                         </DataTemplate>
                     </ComboBox.ItemTemplate>
                     <ComboBox.Items>
+                        <views:SortObject Text="Sort order:" Highlight="  Ascending"/>
+                        <views:SortObject Text="Sort order:" Highlight="  Descending"/>
+                    </ComboBox.Items>
+                </ComboBox>
+                <ComboBox x:Name="SortComboBox" SelectionChanged="SortBox_SelectionChanged" Background="Transparent" BorderBrush="Transparent" PlaceholderText="Sort by:  Relevance">
+                    <ComboBox.ItemTemplate>
+                        <DataTemplate x:DataType="views:SortObject">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="{x:Bind Text}" Style="{ThemeResource BodyText}"/>
+                                <TextBlock Text="{x:Bind Highlight}" Foreground="{ThemeResource SystemAccentColorLight2}" Style="{ThemeResource BodyText}"/>
+                            </StackPanel>
+                        </DataTemplate>
+                    </ComboBox.ItemTemplate>
+                    <ComboBox.Items>
+                        <views:SortObject Text="Sort by:" Highlight="  Relevance"/>
                         <views:SortObject Text="Sort by:" Highlight="  A - Z"/>
                         <views:SortObject Text="Sort by:" Highlight="  Artist"/>
                         <views:SortObject Text="Sort by:" Highlight="  Release date"/>
@@ -108,14 +123,22 @@
         </ListView>
 
         <Grid Grid.Row="0" Grid.RowSpan="4" Grid.Column="1">
-            <Rectangle Fill="{ThemeResource SystemAccentColor}" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Margin="10,0,0,10"/>
-            <TextBlock x:Name="NoneSelectedText" Text="No track selected." Style="{ThemeResource BodyText}" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="10,0,0,10"/>
-            <StackPanel Orientation="Vertical" HorizontalAlignment="Stretch" VerticalAlignment="Top" Margin="20,10,10,10">
+            <StackPanel 
+                CornerRadius="8"
+                Padding="12"
+                BorderThickness="1"
+                BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                Margin="10,0,0,10"
+                >
+            <StackPanel Orientation="Vertical" HorizontalAlignment="Stretch" VerticalAlignment="Top" Margin="0,0,0,0">
                 <TextBlock x:Name="PreviewHeader" Text="Preview Pane" FontSize="16" FontWeight="SemiBold" FontFamily="Segoe UI Variable Display" Style="{ThemeResource BaseTextBlockStyle}" HorizontalAlignment="Left" Margin="0,0,0,0"/>
                 <TextBlock x:Name="PreviewArtistText" Text="" Style="{ThemeResource BodyText}" HorizontalAlignment="Left" Margin="0,0,0,0"/>
                 <TextBlock x:Name="PreviewTitleText" Text="" Style="{ThemeResource BodyText}" HorizontalAlignment="Left" Margin="0,0,0,0"/>
                 <TextBlock x:Name="PreviewLinkText" Text="" Style="{ThemeResource BodyText}" HorizontalAlignment="Left" Margin="0,0,0,0"/>
             </StackPanel>
+            </StackPanel>
         </Grid>
+        <TextBlock x:Name="NoneSelectedText" Text="No track selected." Style="{ThemeResource BodyText}" HorizontalAlignment="Center" VerticalAlignment="Center" Grid.Row="0" Grid.RowSpan="4" Grid.Column="1" Margin="0,0,0,10"/>
     </Grid>
 </Page>

@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
+using ABI.Windows.Data.Json;
 using RestSharp;
 
 namespace FluentDL.Services;
@@ -23,7 +24,7 @@ public class SongSearchObject
         set;
     }
 
-    public string Link
+    public string Id
     {
         get;
         set;
@@ -47,30 +48,39 @@ public class SongSearchObject
         set;
     }
 
+    public string Rank
+    {
+        get;
+        set;
+    }
+
     public SongSearchObject()
     {
     }
 }
+
+// TODO: Handle null warnings and catch network errors
 
 internal class DeezerApi
 {
     public static readonly string baseURL = "https://api.deezer.com";
     private static readonly RestClient client = new RestClient(baseURL);
 
+    public static async Task<JsonElement> FetchJsonElement(string req)
+    {
+        var request = new RestRequest(req);
+        var response = await client.GetAsync(request);
+        return JsonDocument.Parse(response.Content).RootElement;
+    }
+
     public static async Task<List<SongSearchObject>> SearchTrack(string artistName, string trackName)
     {
         var req = "search?q=artist:%22" + artistName + "%22%20track:%22" + trackName + "%22";
-
-        var request = new RestRequest(req);
-        // Output the response to the console
-        var response = await client.GetAsync(request);
-
         // Create json object from the response
         // Use System.Text.Json to parse the json object
-        var jsonObject = JsonDocument.Parse(response.Content).RootElement;
+        var jsonObject = await FetchJsonElement(req);
 
         var objects = new List<SongSearchObject>(); // Create a list of CustomDataObjects
-
 
         foreach (var track in jsonObject.GetProperty("data").EnumerateArray())
         {
@@ -93,15 +103,7 @@ internal class DeezerApi
 
     public static async Task<SongSearchObject> GetTrack(string trackId)
     {
-        var req = "track/" + trackId;
-
-        var request = new RestRequest(req);
-        // Output the response to the console
-        var response = await client.GetAsync(request);
-
-        // Create json object from the response
-        // Use System.Text.Json to parse the json object
-        var jsonObject = JsonDocument.Parse(response.Content).RootElement;
+        var jsonObject = await FetchJsonElement("track/" + trackId);
 
         // Get the contributors of the track
         var contribCsv = "";
@@ -116,25 +118,18 @@ internal class DeezerApi
         {
             Title = jsonObject.GetProperty("title").GetString(),
             ImageLocation = jsonObject.GetProperty("album").GetProperty("cover").GetString(),
-            Link = jsonObject.GetProperty("link").GetString(),
+            Id = jsonObject.GetProperty("id").ToString(),
             ReleaseDate = jsonObject.GetProperty("release_date").ToString(),
             Artists = contribCsv,
-            Duration = FormatTime(jsonObject.GetProperty("duration").GetInt32())
+            Duration = FormatTime(jsonObject.GetProperty("duration").GetInt32()),
+            Rank = jsonObject.GetProperty("rank").ToString()
         };
     }
 
     // https://api.deezer.com/album/{id}
     public static async Task<List<string>> Contributors(string albumId)
     {
-        var req = "album/" + albumId;
-        // Send a GET request to the Deezer API
-        var request = new RestRequest(req);
-        // Output the response to the console
-        var response = await client.GetAsync(request);
-
-        // Create json object from the response
-        // Use System.Text.Json to parse the json object
-        var jsonObject = JsonDocument.Parse(response.Content).RootElement;
+        var jsonObject = await FetchJsonElement("album/" + albumId);
 
         if (jsonObject.GetProperty("nb_tracks").GetInt32() == 1) // Safe to assume contributors is same as track artists
         {
