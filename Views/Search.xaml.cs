@@ -50,6 +50,21 @@ public class SortObject
     }
 }
 
+public class TrackDetail
+{
+    public string Label
+    {
+        get;
+        set;
+    }
+
+    public string Value
+    {
+        get;
+        set;
+    }
+}
+
 public sealed partial class Search : Page
 {
     private RipSubprocess ripSubprocess;
@@ -67,6 +82,7 @@ public sealed partial class Search : Page
         ripSubprocess = new RipSubprocess();
         SortComboBox.SelectedIndex = 0;
         SortOrderComboBox.SelectedIndex = 0;
+        ClearPreviewPane();
     }
 
     private async void SearchClick(object sender, Microsoft.UI.Xaml.RoutedEventArgs e)
@@ -110,19 +126,23 @@ public sealed partial class Search : Page
         */
     }
 
+    private void ClearPreviewPane()
+    {
+        NoneSelectedText.Visibility = Microsoft.UI.Xaml.Visibility.Visible;
+        SongPreviewPlayer.Visibility = Microsoft.UI.Xaml.Visibility.Collapsed;
+        CommandBar.Visibility = Microsoft.UI.Xaml.Visibility.Collapsed;
+        PreviewTitleText.Text = "";
+        PreviewImage.Source = null;
+        PreviewInfoControl.ItemsSource = new List<TrackDetail>();
+    }
+
     private async void CustomListView_OnSelectionChanged(object sender, SelectionChangedEventArgs e)
     {
         // Get the selected item
         var selectedSong = (SongSearchObject)CustomListView.SelectedItem;
         if (selectedSong == null)
         {
-            NoneSelectedText.Visibility = Microsoft.UI.Xaml.Visibility.Visible;
-            PreviewArtistText.Text = "";
-            PreviewTitleText.Text = "";
-            PreviewLinkText.Text = "";
-            SongPreviewPlayer.Visibility = Microsoft.UI.Xaml.Visibility.Collapsed;
-            PreviewImage.Source = null;
-            CommandBar.Visibility = Microsoft.UI.Xaml.Visibility.Collapsed;
+            ClearPreviewPane();
             return;
         }
 
@@ -130,7 +150,7 @@ public sealed partial class Search : Page
         SongPreviewPlayer.Visibility = Microsoft.UI.Xaml.Visibility.Visible;
         CommandBar.Visibility = Microsoft.UI.Xaml.Visibility.Visible;
 
-        await SetupPreviewPane(selectedSong.Id);
+        await SetupPreviewPane(selectedSong);
 
         // PreviewTitleText.Text = selectedSong.Title + " " + selectedSong.Artists + " " + selectedSong.Id;
 
@@ -155,14 +175,31 @@ public sealed partial class Search : Page
         */
     }
 
-    private async Task SetupPreviewPane(string trackId)
+    private async Task SetupPreviewPane(SongSearchObject selectedSong)
     {
-        var jsonObject = await FluentDL.Services.DeezerApi.FetchJsonElement("track/" + trackId);
-        PreviewArtistText.Text = jsonObject.GetProperty("artist").GetProperty("name").ToString();
-        PreviewTitleText.Text = jsonObject.GetProperty("title").ToString();
-        PreviewLinkText.Text = jsonObject.GetProperty("link").ToString();
+        var jsonObject = await FluentDL.Services.DeezerApi.FetchJsonElement("track/" + selectedSong.Id);
+        //PreviewArtistText.Text = selectedSong.Artists;
+        PreviewTitleText.Text = selectedSong.Title;
+        //PreviewReleaseDate.Text = selectedSong.ReleaseDate; // Todo format date
+        //PreviewRank.Text = selectedSong.Rank; // Todo format rank
+        //PreviewDuration.Text = selectedSong.Duration;
+        // PreviewAlbumName.Text = jsonObject.GetProperty("album").GetProperty("title").GetString();
+        // PreviewAlbumPosition.Text = jsonObject.GetProperty("track_position").ToString();
+
+        PreviewInfoControl.ItemsSource = new List<TrackDetail>
+        {
+            new TrackDetail { Label = "Artists", Value = selectedSong.Artists },
+            new TrackDetail { Label = "Release Date", Value = selectedSong.ReleaseDate },
+            new TrackDetail { Label = "Rank", Value = selectedSong.Rank },
+            new TrackDetail { Label = "Duration", Value = selectedSong.Duration },
+            new TrackDetail
+                { Label = "Album Name", Value = jsonObject.GetProperty("album").GetProperty("title").ToString() },
+            new TrackDetail { Label = "Album Position", Value = jsonObject.GetProperty("track_position").ToString() }
+        };
+
+        // Set 30 second preview
         SongPreviewPlayer.Source = MediaSource.CreateFromUri(new Uri(jsonObject.GetProperty("preview").ToString()));
-        Debug.WriteLine(jsonObject.GetProperty("album").GetProperty("cover_medium").ToString());
+
         PreviewImage.Source =
             new BitmapImage(new Uri(jsonObject.GetProperty("album").GetProperty("cover_big").ToString()));
     }

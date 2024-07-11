@@ -12,8 +12,8 @@
     >
     <Grid>
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="2*"/>
-            <ColumnDefinition Width="1*"/>
+            <ColumnDefinition Width="7*"/>
+            <ColumnDefinition Width="3*"/>
         </Grid.ColumnDefinitions>
 
         <Grid.RowDefinitions>
@@ -122,36 +122,44 @@
             </ListView.ItemTemplate>
         </ListView>
 
-        <Grid Grid.Row="0" Grid.RowSpan="4" Grid.Column="1">
-            <RelativePanel 
-                CornerRadius="8"
-                Padding="12"
-                BorderThickness="1"
-                BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
-                Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
-                Margin="10,0,0,10"
-                VerticalAlignment="Stretch"
-                >
-                <TextBlock x:Name="PreviewHeader" Text="Preview Pane" FontSize="16" FontWeight="SemiBold" FontFamily="Segoe UI Variable Display" Style="{ThemeResource BaseTextBlockStyle}" HorizontalAlignment="Left" Margin="10"></TextBlock>
+        <RelativePanel 
+            x:Name="RelativePreviewPanel"
+            CornerRadius="8"
+            Padding="12"
+            BorderThickness="1"
+            BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+            Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+            Margin="10,0,0,10"
+            VerticalAlignment="Stretch"
+            Grid.Row="0" Grid.RowSpan="4" Grid.Column="1"
+            >
+         
+                <Image x:Name="PreviewImage" Margin="10" RelativePanel.Below="CommandBar"/>
 
-                <Image x:Name="PreviewImage" RelativePanel.Below="PreviewHeader" Height="Auto" Width="Auto" Margin="10"/>
 
-                <StackPanel Orientation="Vertical" HorizontalAlignment="Stretch" VerticalAlignment="Top" Margin="10" RelativePanel.Below="PreviewImage">
-                    <TextBlock x:Name="PreviewArtistText" Text="" Style="{ThemeResource BodyText}" HorizontalAlignment="Left" Margin="0,0,0,0" TextWrapping="WrapWholeWords"/>
-                    <TextBlock x:Name="PreviewTitleText" Text="" Style="{ThemeResource BodyText}" HorizontalAlignment="Left" Margin="0,0,0,0" TextWrapping="WrapWholeWords"/>
-                    <TextBlock x:Name="PreviewLinkText" Text="" Style="{ThemeResource BodyText}" HorizontalAlignment="Left" Margin="0,0,0,0"/>
+            <StackPanel x:Name="PreviewInfoStack" Orientation="Vertical" HorizontalAlignment="Stretch" VerticalAlignment="Top" Margin="10" RelativePanel.Below="PreviewImage">
+                <TextBlock x:Name="PreviewTitleText" Text="" Style="{ThemeResource HeaderText}" HorizontalAlignment="Left" Margin="0,0,0,0" TextWrapping="WrapWholeWords" LineHeight="22"/>
+                <ItemsControl x:Name="PreviewInfoControl">
+                        <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="views:TrackDetail">
+                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Left">
+                                <TextBlock Text="{x:Bind Label}" Style="{ThemeResource BodyText}" HorizontalAlignment="Left" LineHeight="18"/>
+                                <TextBlock Text=":" Style="{ThemeResource BodyText}" HorizontalAlignment="Left" Margin="0,0,4,0"/>
+                                <TextBlock Text="{x:Bind Value}" Style="{ThemeResource BodyText}" HorizontalAlignment="Left" Foreground="{ThemeResource SystemAccentColorLight2}"/>
+                            </StackPanel>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
                 </StackPanel>
 
-                <MediaPlayerElement x:Name="SongPreviewPlayer" AutoPlay="False" AreTransportControlsEnabled="True" RelativePanel.Above="CommandBar" Visibility="Collapsed"/>
 
-                <CommandBar x:Name="CommandBar" Background="Transparent" IsOpen="False" DefaultLabelPosition="Right" RelativePanel.AlignBottomWithPanel="True" Visibility="Collapsed">
-                    <AppBarButton Icon="Add" Label="Add to queue"/>
-                    <AppBarButton Icon="Download" Label="Download"/>
-                    <AppBarButton Icon="Share" Label="Share"/>
-                </CommandBar>
-
-            </RelativePanel>
-        </Grid>
+            <MediaPlayerElement x:Name="SongPreviewPlayer" AutoPlay="False" AreTransportControlsEnabled="True" RelativePanel.AlignBottomWithPanel="True" Visibility="Collapsed"/>
+            <CommandBar x:Name="CommandBar" Background="Transparent" IsOpen="False" DefaultLabelPosition="Right" RelativePanel.AlignTopWithPanel="True" Visibility="Collapsed" Grid.Row="0" Grid.Column="1">
+                <AppBarButton Icon="Add" Label="Add to queue"/>
+                <AppBarButton Icon="Download" Label="Download"/>
+                <AppBarButton Icon="Share" Label="Share"/>
+            </CommandBar>
+        </RelativePanel>
         <TextBlock x:Name="NoneSelectedText" Text="No track selected." Style="{ThemeResource BodyText}" HorizontalAlignment="Center" VerticalAlignment="Center" Grid.Row="0" Grid.RowSpan="4" Grid.Column="1" Margin="0,0,0,10"/>
     </Grid>
 </Page>
