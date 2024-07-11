@@ -12,6 +12,7 @@ using Microsoft.UI.Xaml.Media;
 using Microsoft.UI;
 using Microsoft.UI.Dispatching;
 using Windows.Media.Core;
+using Microsoft.UI.Xaml.Media.Imaging;
 
 namespace FluentDL.Views;
 // TODO: loading for search
@@ -66,7 +67,6 @@ public sealed partial class Search : Page
         ripSubprocess = new RipSubprocess();
         SortComboBox.SelectedIndex = 0;
         SortOrderComboBox.SelectedIndex = 0;
-        SongPreviewPlayer.Visibility = Microsoft.UI.Xaml.Visibility.Collapsed;
     }
 
     private async void SearchClick(object sender, Microsoft.UI.Xaml.RoutedEventArgs e)
@@ -121,11 +121,14 @@ public sealed partial class Search : Page
             PreviewTitleText.Text = "";
             PreviewLinkText.Text = "";
             SongPreviewPlayer.Visibility = Microsoft.UI.Xaml.Visibility.Collapsed;
+            PreviewImage.Source = null;
+            CommandBar.Visibility = Microsoft.UI.Xaml.Visibility.Collapsed;
             return;
         }
 
         NoneSelectedText.Visibility = Microsoft.UI.Xaml.Visibility.Collapsed;
         SongPreviewPlayer.Visibility = Microsoft.UI.Xaml.Visibility.Visible;
+        CommandBar.Visibility = Microsoft.UI.Xaml.Visibility.Visible;
 
         await SetupPreviewPane(selectedSong.Id);
 
@@ -159,6 +162,9 @@ public sealed partial class Search : Page
         PreviewTitleText.Text = jsonObject.GetProperty("title").ToString();
         PreviewLinkText.Text = jsonObject.GetProperty("link").ToString();
         SongPreviewPlayer.Source = MediaSource.CreateFromUri(new Uri(jsonObject.GetProperty("preview").ToString()));
+        Debug.WriteLine(jsonObject.GetProperty("album").GetProperty("cover_medium").ToString());
+        PreviewImage.Source =
+            new BitmapImage(new Uri(jsonObject.GetProperty("album").GetProperty("cover_big").ToString()));
     }
 
     private void SortBox_SelectionChanged(object sender, SelectionChangedEventArgs e)

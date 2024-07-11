@@ -12,8 +12,8 @@
     >
     <Grid>
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="3*"/>
             <ColumnDefinition Width="2*"/>
+            <ColumnDefinition Width="1*"/>
         </Grid.ColumnDefinitions>
 
         <Grid.RowDefinitions>
@@ -123,26 +123,34 @@
         </ListView>
 
         <Grid Grid.Row="0" Grid.RowSpan="4" Grid.Column="1">
-            <StackPanel 
+            <RelativePanel 
                 CornerRadius="8"
                 Padding="12"
                 BorderThickness="1"
                 BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
                 Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
                 Margin="10,0,0,10"
+                VerticalAlignment="Stretch"
                 >
-            <StackPanel Orientation="Vertical" HorizontalAlignment="Stretch" VerticalAlignment="Top" Margin="0,0,0,0">
-                <TextBlock x:Name="PreviewHeader" Text="Preview Pane" FontSize="16" FontWeight="SemiBold" FontFamily="Segoe UI Variable Display" Style="{ThemeResource BaseTextBlockStyle}" HorizontalAlignment="Left" Margin="0,0,0,0"/>
-                <TextBlock x:Name="PreviewArtistText" Text="" Style="{ThemeResource BodyText}" HorizontalAlignment="Left" Margin="0,0,0,0"/>
-                <TextBlock x:Name="PreviewTitleText" Text="" Style="{ThemeResource BodyText}" HorizontalAlignment="Left" Margin="0,0,0,0"/>
-                <TextBlock x:Name="PreviewLinkText" Text="" Style="{ThemeResource BodyText}" HorizontalAlignment="Left" Margin="0,0,0,0"/>
-                    <MediaPlayerElement x:Name="SongPreviewPlayer" AutoPlay="False" AreTransportControlsEnabled="True">
-                        <MediaPlayerElement.TransportControls>
-                            <MediaTransportControls IsPlaybackRateEnabled="True"/>
-                        </MediaPlayerElement.TransportControls>
-                    </MediaPlayerElement>
+                <TextBlock x:Name="PreviewHeader" Text="Preview Pane" FontSize="16" FontWeight="SemiBold" FontFamily="Segoe UI Variable Display" Style="{ThemeResource BaseTextBlockStyle}" HorizontalAlignment="Left" Margin="10"></TextBlock>
+
+                <Image x:Name="PreviewImage" RelativePanel.Below="PreviewHeader" Height="Auto" Width="Auto" Margin="10"/>
+
+                <StackPanel Orientation="Vertical" HorizontalAlignment="Stretch" VerticalAlignment="Top" Margin="10" RelativePanel.Below="PreviewImage">
+                    <TextBlock x:Name="PreviewArtistText" Text="" Style="{ThemeResource BodyText}" HorizontalAlignment="Left" Margin="0,0,0,0" TextWrapping="WrapWholeWords"/>
+                    <TextBlock x:Name="PreviewTitleText" Text="" Style="{ThemeResource BodyText}" HorizontalAlignment="Left" Margin="0,0,0,0" TextWrapping="WrapWholeWords"/>
+                    <TextBlock x:Name="PreviewLinkText" Text="" Style="{ThemeResource BodyText}" HorizontalAlignment="Left" Margin="0,0,0,0"/>
                 </StackPanel>
-            </StackPanel>
+
+                <MediaPlayerElement x:Name="SongPreviewPlayer" AutoPlay="False" AreTransportControlsEnabled="True" RelativePanel.Above="CommandBar" Visibility="Collapsed"/>
+
+                <CommandBar x:Name="CommandBar" Background="Transparent" IsOpen="False" DefaultLabelPosition="Right" RelativePanel.AlignBottomWithPanel="True" Visibility="Collapsed">
+                    <AppBarButton Icon="Add" Label="Add to queue"/>
+                    <AppBarButton Icon="Download" Label="Download"/>
+                    <AppBarButton Icon="Share" Label="Share"/>
+                </CommandBar>
+
+            </RelativePanel>
         </Grid>
         <TextBlock x:Name="NoneSelectedText" Text="No track selected." Style="{ThemeResource BodyText}" HorizontalAlignment="Center" VerticalAlignment="Center" Grid.Row="0" Grid.RowSpan="4" Grid.Column="1" Margin="0,0,0,10"/>
     </Grid>
