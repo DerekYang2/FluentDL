@@ -7,9 +7,11 @@ using Microsoft.UI.Xaml.Controls;
 using RestSharp;
 using FluentDL.Services;
 using System.Collections.ObjectModel;
+using Windows.Media.Playback;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI;
 using Microsoft.UI.Dispatching;
+using Windows.Media.Core;
 
 namespace FluentDL.Views;
 // TODO: loading for search
@@ -64,6 +66,7 @@ public sealed partial class Search : Page
         ripSubprocess = new RipSubprocess();
         SortComboBox.SelectedIndex = 0;
         SortOrderComboBox.SelectedIndex = 0;
+        SongPreviewPlayer.Visibility = Microsoft.UI.Xaml.Visibility.Collapsed;
     }
 
     private async void SearchClick(object sender, Microsoft.UI.Xaml.RoutedEventArgs e)
@@ -107,7 +110,7 @@ public sealed partial class Search : Page
         */
     }
 
-    private void CustomListView_OnSelectionChanged(object sender, SelectionChangedEventArgs e)
+    private async void CustomListView_OnSelectionChanged(object sender, SelectionChangedEventArgs e)
     {
         // Get the selected item
         var selectedSong = (SongSearchObject)CustomListView.SelectedItem;
@@ -117,30 +120,46 @@ public sealed partial class Search : Page
             PreviewArtistText.Text = "";
             PreviewTitleText.Text = "";
             PreviewLinkText.Text = "";
+            SongPreviewPlayer.Visibility = Microsoft.UI.Xaml.Visibility.Collapsed;
             return;
         }
 
         NoneSelectedText.Visibility = Microsoft.UI.Xaml.Visibility.Collapsed;
+        SongPreviewPlayer.Visibility = Microsoft.UI.Xaml.Visibility.Visible;
+
+        await SetupPreviewPane(selectedSong.Id);
 
         // PreviewTitleText.Text = selectedSong.Title + " " + selectedSong.Artists + " " + selectedSong.Id;
-        var uiThread = DispatcherQueue.GetForCurrentThread();
 
         // Send a request to /track/{id} for more information on this song
+        /*
+        var uiThread = DispatcherQueue.GetForCurrentThread();
         new Task(async () =>
         {
             var jsonObject = await FluentDL.Services.DeezerApi.FetchJsonElement("track/" + selectedSong.Id);
-            new Task(() =>
+
+            uiThread.TryEnqueue(() =>
             {
-                uiThread.TryEnqueue(() =>
-                {
-                    PreviewArtistText.Text = jsonObject.GetProperty("artist").GetProperty("name").ToString();
-                    PreviewTitleText.Text = jsonObject.GetProperty("title").ToString();
-                    PreviewLinkText.Text = jsonObject.GetProperty("link").ToString();
-                });
-            }).Start();
+                PreviewArtistText.Text = jsonObject.GetProperty("artist").GetProperty("name").ToString();
+                PreviewTitleText.Text = jsonObject.GetProperty("title").ToString();
+                PreviewLinkText.Text = jsonObject.GetProperty("link").ToString();
+            });
+
+            var mediaPlayer = new MediaPlayer();
+            mediaPlayer.Source = MediaSource.CreateFromUri(new Uri(jsonObject.GetProperty("preview").ToString()));
+            mediaPlayer.Play();
         }).Start();
+        */
     }
 
+    private async Task SetupPreviewPane(string trackId)
+    {
+        var jsonObject = await FluentDL.Services.DeezerApi.FetchJsonElement("track/" + trackId);
+        PreviewArtistText.Text = jsonObject.GetProperty("artist").GetProperty("name").ToString();
+        PreviewTitleText.Text = jsonObject.GetProperty("title").ToString();
+        PreviewLinkText.Text = jsonObject.GetProperty("link").ToString();
+        SongPreviewPlayer.Source = MediaSource.CreateFromUri(new Uri(jsonObject.GetProperty("preview").ToString()));
+    }
 
     private void SortBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {

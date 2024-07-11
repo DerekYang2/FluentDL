@@ -21,6 +21,7 @@ public sealed partial class SettingsPage : Page
         ViewModel = App.GetService<SettingsViewModel>();
         InitializeComponent();
 
+
         // Run an async task to get the rip config path
         DispatcherQueue uiThread = DispatcherQueue.GetForCurrentThread();
 
@@ -56,6 +57,7 @@ public sealed partial class SettingsPage : Page
                 });
             }).Start();
         }).Start();
+
 
         //new Task(() =>
         //{

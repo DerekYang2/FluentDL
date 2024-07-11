@@ -136,7 +136,12 @@
                 <TextBlock x:Name="PreviewArtistText" Text="" Style="{ThemeResource BodyText}" HorizontalAlignment="Left" Margin="0,0,0,0"/>
                 <TextBlock x:Name="PreviewTitleText" Text="" Style="{ThemeResource BodyText}" HorizontalAlignment="Left" Margin="0,0,0,0"/>
                 <TextBlock x:Name="PreviewLinkText" Text="" Style="{ThemeResource BodyText}" HorizontalAlignment="Left" Margin="0,0,0,0"/>
-            </StackPanel>
+                    <MediaPlayerElement x:Name="SongPreviewPlayer" AutoPlay="False" AreTransportControlsEnabled="True">
+                        <MediaPlayerElement.TransportControls>
+                            <MediaTransportControls IsPlaybackRateEnabled="True"/>
+                        </MediaPlayerElement.TransportControls>
+                    </MediaPlayerElement>
+                </StackPanel>
             </StackPanel>
         </Grid>
         <TextBlock x:Name="NoneSelectedText" Text="No track selected." Style="{ThemeResource BodyText}" HorizontalAlignment="Center" VerticalAlignment="Center" Grid.Row="0" Grid.RowSpan="4" Grid.Column="1" Margin="0,0,0,10"/>
