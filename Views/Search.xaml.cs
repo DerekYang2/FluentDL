@@ -92,7 +92,8 @@ public sealed partial class Search : Page
         var albumName = albumNameInput.Text;
         SearchProgress.IsIndeterminate = true;
         // Set the collection as the ItemsSource for the ListView
-        CustomListView.ItemsSource = await FluentDL.Services.DeezerApi.SearchTrack(artistName, trackName, albumName);
+        CustomListView.ItemsSource =
+            await FluentDL.Services.DeezerApi.AdvancedSearch(artistName, trackName, albumName);
         originalList = new List<SongSearchObject>((List<SongSearchObject>)CustomListView.ItemsSource);
 
         SortCustomListView();
@@ -253,5 +254,29 @@ public sealed partial class Search : Page
         }
 
         CustomListView.ItemsSource = songList;
+    }
+
+    private async void SearchBox_OnQuerySubmitted(AutoSuggestBox sender, AutoSuggestBoxQuerySubmittedEventArgs args)
+    {
+        var generalQuery = SearchBox.Text;
+
+        SearchProgress.IsIndeterminate = true;
+        // Set the collection as the ItemsSource for the ListView
+        CustomListView.ItemsSource =
+            await FluentDL.Services.DeezerApi.GeneralSearch(generalQuery);
+        originalList = new List<SongSearchObject>((List<SongSearchObject>)CustomListView.ItemsSource);
+
+        SortCustomListView();
+
+        // If collection is empty, show a message
+        NoSearchResults.Visibility = CustomListView.Items.Count == 0
+            ? Microsoft.UI.Xaml.Visibility.Visible
+            : Microsoft.UI.Xaml.Visibility.Collapsed;
+        SearchProgress.IsIndeterminate = false;
+    }
+
+    private void SearchModeComboBox_OnSelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        throw new NotImplementedException();
     }
 }

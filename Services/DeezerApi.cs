@@ -73,8 +73,30 @@ internal class DeezerApi
         return JsonDocument.Parse(response.Content).RootElement;
     }
 
+    public static async Task<List<SongSearchObject>> GeneralSearch(string query)
+    {
+        if (query.Length == 0)
+        {
+            return new List<SongSearchObject>();
+        }
+
+        var req = "search?q=" + query;
+
+        var jsonObject = await FetchJsonElement(req);
+        var objects = new List<SongSearchObject>(); // Create a list of CustomDataObjects
+
+        foreach (var track in jsonObject.GetProperty("data").EnumerateArray())
+        {
+            var trackId = track.GetProperty("id").ToString();
+            objects.Add(await GetTrack(trackId));
+        }
+
+        return objects;
+    }
+
     // Space is %20, quotes are %22
-    public static async Task<List<SongSearchObject>> SearchTrack(string artistName, string trackName, string albumName)
+    public static async Task<List<SongSearchObject>> AdvancedSearch(string artistName, string trackName,
+        string albumName)
     {
         if (artistName.Length == 0 && trackName.Length == 0 && albumName.Length == 0)
         {
@@ -85,9 +107,10 @@ internal class DeezerApi
         artistName = artistName.Trim();
         trackName = trackName.Trim();
         albumName = albumName.Trim();
-        var req = "search?q=" + (artistName.Length > 0 ? "artist:'" + artistName + "' " : "") +
-                  (trackName.Length > 0 ? "track:'" + trackName + "' " : "") +
-                  (albumName.Length > 0 ? "album:'" + albumName + "' " : "");
+        var req = "search?q=" + (artistName.Length > 0 ? "artist:%22" + artistName + "%22 " : "") +
+                  (trackName.Length > 0 ? "track:%22" + trackName + "%22 " : "") +
+                  (albumName.Length > 0 ? "album:%22" + albumName + "%22 " : "") +
+                  "?strict=on"; // Strict search
 
         Debug.WriteLine(req);
 
@@ -99,16 +122,6 @@ internal class DeezerApi
         foreach (var track in jsonObject.GetProperty("data").EnumerateArray())
         {
             var trackId = track.GetProperty("id").ToString();
-            var albumIdStr = track.GetProperty("album").GetProperty("id").ToString();
-
-            /*
-            var contributors = await Contributors(albumIdStr); // Get the contributors of the album
-
-            if (contributors.Count == 0) // If no certainty on contributor, use track artist
-            {
-                contributors.Add(track.GetProperty("artist").GetProperty("name").GetString());
-            }
-            */
             objects.Add(await GetTrack(trackId));
         }
 

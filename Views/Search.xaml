@@ -12,8 +12,8 @@
     >
     <Grid>
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="7*"/>
-            <ColumnDefinition Width="3*"/>
+            <ColumnDefinition Width="2*"/>
+            <ColumnDefinition Width="1*"/>
         </Grid.ColumnDefinitions>
 
         <Grid.RowDefinitions>
@@ -24,6 +24,14 @@
         </Grid.RowDefinitions>
 
         <StackPanel Orientation="Vertical" HorizontalAlignment="Stretch" VerticalAlignment="Top" Grid.Row="0" Grid.Column="0">
+            <AutoSuggestBox
+                x:Name="SearchBox"
+                PlaceholderText="Find a song"
+                            QueryIcon="Find"
+                            QuerySubmitted="SearchBox_OnQuerySubmitted"
+                            ToolTipService.ToolTip="Search"
+                            />
+
             <TextBox x:Name="artistNameInput"
                      PlaceholderText="Enter name (optional)"
                      HorizontalAlignment="Stretch"
