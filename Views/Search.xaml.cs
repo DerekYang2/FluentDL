@@ -12,6 +12,7 @@ using Microsoft.UI.Xaml.Media;
 using Microsoft.UI;
 using Microsoft.UI.Dispatching;
 using Windows.Media.Core;
+using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Media.Imaging;
 
 namespace FluentDL.Views;
@@ -85,7 +86,7 @@ public sealed partial class Search : Page
         ClearPreviewPane();
     }
 
-    private async void SearchClick(object sender, Microsoft.UI.Xaml.RoutedEventArgs e)
+    private async void SearchDialogClick(ContentDialog sender, ContentDialogButtonClickEventArgs args)
     {
         var artistName = artistNameInput.Text;
         var trackName = trackNameInput.Text;
@@ -103,28 +104,6 @@ public sealed partial class Search : Page
             ? Microsoft.UI.Xaml.Visibility.Visible
             : Microsoft.UI.Xaml.Visibility.Collapsed;
         SearchProgress.IsIndeterminate = false;
-
-        //Debug.WriteLine(ripSubprocess.RunCommandSync("rip config path"));
-
-        //testTextBlock.Text = debugText;
-
-        /*
-        testTextBlock.Text = debugText;
-        // Run a "rip" (python library) command in the terminal
-        Process cmd = new Process();
-        cmd.StartInfo.FileName = "cmd.exe";
-        cmd.StartInfo.RedirectStandardInput = true;
-        cmd.StartInfo.RedirectStandardOutput = true;
-        cmd.StartInfo.CreateNoWindow = true;
-        cmd.StartInfo.UseShellExecute = false;
-        cmd.Start();
-
-        cmd.StandardInput.WriteLine("rip config path");
-        cmd.StandardInput.Flush();
-        cmd.StandardInput.Close();
-        cmd.WaitForExit();
-        Debug.WriteLine("OUTPUT: " + cmd.StandardOutput.ReadToEnd());
-        */
     }
 
     private void ClearPreviewPane()
@@ -192,7 +171,7 @@ public sealed partial class Search : Page
         {
             new TrackDetail { Label = "Artists", Value = selectedSong.Artists },
             new TrackDetail { Label = "Release Date", Value = selectedSong.ReleaseDate },
-            new TrackDetail { Label = "Rank", Value = selectedSong.Rank },
+            new TrackDetail { Label = "Popularity", Value = selectedSong.Rank },
             new TrackDetail { Label = "Duration", Value = selectedSong.Duration },
             new TrackDetail
                 { Label = "Album Name", Value = jsonObject.GetProperty("album").GetProperty("title").ToString() },
@@ -278,5 +257,11 @@ public sealed partial class Search : Page
     private void SearchModeComboBox_OnSelectionChanged(object sender, SelectionChangedEventArgs e)
     {
         throw new NotImplementedException();
+    }
+
+    private async void ShowDialog_OnClick_Click(object sender, RoutedEventArgs e)
+    {
+        SearchDialog.XamlRoot = this.XamlRoot;
+        var result = await SearchDialog.ShowAsync();
     }
 }

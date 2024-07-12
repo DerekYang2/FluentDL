@@ -23,70 +23,84 @@
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
-        <StackPanel Orientation="Vertical" HorizontalAlignment="Stretch" VerticalAlignment="Top" Grid.Row="0" Grid.Column="0">
+        <ContentDialog x:Name="SearchDialog" PrimaryButtonText="Search" CloseButtonText="Cancel" Title="Advanced Search" IsSecondaryButtonEnabled="True" IsPrimaryButtonEnabled="True" PrimaryButtonClick="SearchDialogClick">
+            <StackPanel>
+
+                <InfoBar
+                    IsOpen="True"
+                    IsClosable="False"
+                    Severity="Informational"
+                    Message="Strictly search for tracks with matching criteria. Leave fields empty to ignore them."
+                    Margin="0,0,0,12"
+                    />
+
+                <TextBox x:Name="artistNameInput"
+                         PlaceholderText="Enter name"
+                         HorizontalAlignment="Stretch"
+                         Margin="0,0,0,8"
+                         ToolTipService.ToolTip="Artist name"
+                         Header="Artist"
+                >
+                    <TextBox.HeaderTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding}" Style="{ThemeResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondary}"/>
+                        </DataTemplate>
+                    </TextBox.HeaderTemplate>
+                </TextBox>
+                <TextBox x:Name="trackNameInput"
+                         PlaceholderText="Enter name"
+                         HorizontalAlignment="Stretch"
+                         Margin="0,0,0,8"
+                         ToolTipService.ToolTip="Track name"
+                         Header="Track"
+                >
+                    <TextBox.HeaderTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding}" Foreground="{ThemeResource TextFillColorSecondary}" Style="{ThemeResource CaptionTextBlockStyle}"/>
+                        </DataTemplate>
+                    </TextBox.HeaderTemplate>
+                </TextBox>
+                <TextBox x:Name="albumNameInput"
+                         PlaceholderText="Enter name"
+                         HorizontalAlignment="Stretch"
+                         Margin="0,0,0,8"
+                         ToolTipService.ToolTip="Album name"
+                         Header="Album"
+                >
+                    <TextBox.HeaderTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding}" Foreground="{ThemeResource TextFillColorSecondary}" Style="{ThemeResource CaptionTextBlockStyle}"/>
+                        </DataTemplate>
+                    </TextBox.HeaderTemplate>
+                </TextBox>
+            </StackPanel>
+        </ContentDialog>
+
             <AutoSuggestBox
                 x:Name="SearchBox"
-                PlaceholderText="Find a song"
+                PlaceholderText="Find a track"
                             QueryIcon="Find"
                             QuerySubmitted="SearchBox_OnQuerySubmitted"
                             ToolTipService.ToolTip="Search"
+                Grid.Row="0" Grid.Column="0"
+                Margin="0,0,0,12"
                             />
 
-            <TextBox x:Name="artistNameInput"
-                     PlaceholderText="Enter name (optional)"
-                     HorizontalAlignment="Stretch"
-                     Margin="0,0,0,10"
-                     ToolTipService.ToolTip="Artist name"
-                     Header="Artist"
-            >
-                <TextBox.HeaderTemplate>
-                    <DataTemplate>
-                        <TextBlock Text="{Binding}" Style="{ThemeResource BodyText}" Foreground="{StaticResource TextFillColorSecondary}" FontSize="12"/>
-                    </DataTemplate>
-                </TextBox.HeaderTemplate>
-            </TextBox>
-            <TextBox x:Name="trackNameInput"
-                        PlaceholderText="Enter name (optional)"
-                        HorizontalAlignment="Stretch"
-                        Margin="0,0,0,10"
-                        ToolTipService.ToolTip="Track name"
-                                                Header="Track"
-                        >
-                <TextBox.HeaderTemplate>
-                    <DataTemplate>
-                        <TextBlock Text="{Binding}" Foreground="{StaticResource TextFillColorSecondary}" Style="{ThemeResource BodyText}" FontSize="12"/>
-                    </DataTemplate>
-                </TextBox.HeaderTemplate>
-            </TextBox>
-            <TextBox x:Name="albumNameInput"
-                     PlaceholderText="Enter name (optional)"
-                     HorizontalAlignment="Stretch"
-                     Margin="0,0,0,10"
-                     ToolTipService.ToolTip="Album name"
-                     Header="Album"
-            >
-                <TextBox.HeaderTemplate>
-                    <DataTemplate>
-                        <TextBlock Text="{Binding}" Foreground="{StaticResource TextFillColorSecondary}" Style="{ThemeResource BodyText}" FontSize="12"/>
-                    </DataTemplate>
-                </TextBox.HeaderTemplate>
-            </TextBox>
-        </StackPanel>
-
         <controls1:DockPanel Grid.Row="1" Grid.Column="0">
-            <Button x:Name="SearchButton" Click="SearchClick" Style="{StaticResource AccentButtonStyle}">
+            <Button x:Name="ShowDialogButton" Click="ShowDialog_OnClick_Click" Style="{ThemeResource AccentButtonStyle}">
                 <StackPanel Orientation="Horizontal">
-                    <SymbolIcon Symbol="Find" Margin="0,0,5,0"/>
-                    <TextBlock Text="Search"/>
+                    <SymbolIcon Symbol="Filter" Margin="0,0,8,0"/>
+                    <TextBlock Text="Advanced Search"/>
                 </StackPanel>
             </Button>
+
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
                 <ComboBox x:Name="SortOrderComboBox" SelectionChanged="SortOrder_SelectionChanged" Background="Transparent" BorderBrush="Transparent" PlaceholderText="Sort order:  Ascending">
                     <ComboBox.ItemTemplate>
                         <DataTemplate x:DataType="views:SortObject">
                             <StackPanel Orientation="Horizontal">
-                                <TextBlock Text="{x:Bind Text}" Style="{ThemeResource BodyText}"/>
-                                <TextBlock Text="{x:Bind Highlight}" Foreground="{ThemeResource SystemAccentColorLight2}" Style="{ThemeResource BodyText}"/>
+                                <TextBlock Text="{x:Bind Text}" Style="{ThemeResource BodyTextBlockStyle}"/>
+                                <TextBlock Text="{x:Bind Highlight}" Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}" Style="{ThemeResource BodyTextBlockStyle}"/>
                             </StackPanel>
                         </DataTemplate>
                     </ComboBox.ItemTemplate>
@@ -99,8 +113,8 @@
                     <ComboBox.ItemTemplate>
                         <DataTemplate x:DataType="views:SortObject">
                             <StackPanel Orientation="Horizontal">
-                                <TextBlock Text="{x:Bind Text}" Style="{ThemeResource BodyText}"/>
-                                <TextBlock Text="{x:Bind Highlight}" Foreground="{ThemeResource SystemAccentColorLight2}" Style="{ThemeResource BodyText}"/>
+                                <TextBlock Text="{x:Bind Text}" Style="{ThemeResource BodyTextBlockStyle}"/>
+                                <TextBlock Text="{x:Bind Highlight}" Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}" Style="{ThemeResource BodyTextBlockStyle}"/>
                             </StackPanel>
                         </DataTemplate>
                     </ComboBox.ItemTemplate>
@@ -109,16 +123,16 @@
                         <views:SortObject Text="Sort by:" Highlight="  A - Z"/>
                         <views:SortObject Text="Sort by:" Highlight="  Artist"/>
                         <views:SortObject Text="Sort by:" Highlight="  Release date"/>
-                        <views:SortObject Text="Sort by:" Highlight="  Rank"/>
+                        <views:SortObject Text="Sort by:" Highlight="  Popularity"/>
                     </ComboBox.Items>
                 </ComboBox>
             </StackPanel>
 
         </controls1:DockPanel>
 
-        <ProgressBar Grid.Column="0" Grid.Row="2" x:Name="SearchProgress" IsIndeterminate="False" Value="0" Margin="0,10,0,10"/>
+        <ProgressBar Grid.Column="0" Grid.Row="2" x:Name="SearchProgress" IsIndeterminate="False" Value="0" Margin="0,12,0,12"/>
 
-        <TextBlock x:Name="NoSearchResults" Grid.Column="0" Grid.Row="3" Text="No results found." HorizontalAlignment="Center" VerticalAlignment="Center" Style="{ThemeResource BodyText}" Margin="0,0,0,10"/>
+        <TextBlock x:Name="NoSearchResults" Grid.Column="0" Grid.Row="3" Text="No results found." HorizontalAlignment="Center" VerticalAlignment="Center" Style="{ThemeResource BodyTextBlockStyle}" Margin="0,0,0,10"/>
 
         <ListView x:Name="CustomListView"
                   CornerRadius="8"
@@ -133,24 +147,24 @@
                 <DataTemplate x:DataType="services:SongSearchObject">
                     <Grid Margin="0,12,0,12" AutomationProperties.Name="{x:Bind Title}">
                         <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="81"/>
+                            <ColumnDefinition Width="76"/>
                             <ColumnDefinition Width="*" />
                         </Grid.ColumnDefinitions>
-                        <Border CornerRadius="4" Height="81">
+                        <Border CornerRadius="4" Height="76">
                             <Border.Background>
                                 <ImageBrush Stretch="UniformToFill" ImageSource="{x:Bind ImageLocation}"/>
                             </Border.Background>
                         </Border>
 
                         <StackPanel Margin="15,0,0,0" Grid.Column="1">
-                            <TextBlock Text="{x:Bind Title}" FontSize="16"  LineHeight="22" FontWeight="SemiBold" FontFamily="Segoe UI Variable Display" Style="{ThemeResource BaseTextBlockStyle}" HorizontalAlignment="Left" TextTrimming="CharacterEllipsis" MaxLines="1"/>
-                            <TextBlock Text="{x:Bind Artists}" FontSize="14" LineHeight="20" FontFamily="Segoe UI Variable Display" FontWeight="Normal" Style="{ThemeResource BodyTextBlockStyle}" TextTrimming="CharacterEllipsis" MaxLines="1"/>
+                            <TextBlock Text="{x:Bind Title}"  FontFamily="Segoe UI Variable Display" Style="{ThemeResource BodyStrongTextBlockStyle}" HorizontalAlignment="Left" TextTrimming="CharacterEllipsis" MaxLines="1"/>
+                            <TextBlock Text="{x:Bind Artists}" FontFamily="Segoe UI Variable Display" Style="{ThemeResource BodyTextBlockStyle}" TextTrimming="CharacterEllipsis" MaxLines="1"/>
                         </StackPanel>
 
                         <StackPanel Margin="15,0,0,0" Orientation="Horizontal" VerticalAlignment="Bottom" Grid.Column="1">
-                            <TextBlock Text="{x:Bind ReleaseDate}" HorizontalAlignment="Left" Style="{ThemeResource CaptionTextBlockStyle}" Margin="0,0,0,0" FontSize="14" FontFamily="Segoe UI Variable Display"/>
-                            <TextBlock Text="&#x2022;" Style="{ThemeResource CaptionTextBlockStyle}" HorizontalAlignment="Left" Margin="5,0,0,0"/>
-                            <TextBlock Text="{x:Bind Duration}" HorizontalAlignment="Left" Style="{ThemeResource CaptionTextBlockStyle}" Margin="5,0,0,0" FontSize="14" FontFamily="Segoe UI Variable Display"/>
+                            <TextBlock Text="{x:Bind ReleaseDate}" HorizontalAlignment="Left" Style="{ThemeResource BodyTextBlockStyle}" Margin="0,0,0,0" FontFamily="Segoe UI Variable Display"/>
+                            <TextBlock Text="&#x2022;" Style="{ThemeResource BodyTextBlockStyle}" HorizontalAlignment="Left" Margin="5,0,0,0"/>
+                            <TextBlock Text="{x:Bind Duration}" HorizontalAlignment="Left" Style="{ThemeResource BodyTextBlockStyle}" Margin="5,0,0,0" FontFamily="Segoe UI Variable Display"/>
                         </StackPanel>
                     </Grid>
                 </DataTemplate>
@@ -164,7 +178,7 @@
             BorderThickness="1"
             BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
             Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
-            Margin="10,0,0,10"
+            Margin="12,0,0,12"
             VerticalAlignment="Stretch"
             Grid.Row="0" Grid.RowSpan="4" Grid.Column="1"
             >
@@ -174,17 +188,21 @@
                 <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
 
-            <CommandBar x:Name="CommandBar" Background="Transparent" IsOpen="False" DefaultLabelPosition="Right" Visibility="Collapsed" Grid.Row="0">
+            <CommandBar x:Name="CommandBar" Background="Transparent" IsOpen="False" DefaultLabelPosition="Right" Visibility="Collapsed" Grid.Row="0" Margin="0, 0, 0, 6">
                 <AppBarButton Icon="Add" Label="Add to queue"/>
                 <AppBarButton Icon="Download" Label="Download"/>
                 <AppBarButton Icon="Share" Label="Share"/>
             </CommandBar>
 
-            <ScrollView x:Name="PreviewScrollView" VerticalScrollBarVisibility="Auto" Grid.Row="1" Margin="1" Visibility="Visible">
+            <ScrollView x:Name="PreviewScrollView" VerticalScrollBarVisibility="Auto" Grid.Row="1" Margin="12, 0, 12, 0" Visibility="Visible" CornerRadius="8">
                 <StackPanel Orientation="Vertical" VerticalAlignment="Top" Height="Auto">
-                    <Image x:Name="PreviewImage" Margin="16"/>
-                    <StackPanel x:Name="PreviewInfoStack" Orientation="Vertical" HorizontalAlignment="Stretch" VerticalAlignment="Top" Margin="16, 0, 16, 16">
-                        <TextBlock x:Name="PreviewTitleText" Text="" Style="{ThemeResource HeaderText}" HorizontalAlignment="Left" Margin="0,0,0,10" TextWrapping="WrapWholeWords" LineHeight="22"/>
+
+                    <Border CornerRadius="8">
+                        <Image x:Name="PreviewImage"/>
+                    </Border>
+
+                    <StackPanel x:Name="PreviewInfoStack" Orientation="Vertical" HorizontalAlignment="Stretch" VerticalAlignment="Top">
+                        <TextBlock x:Name="PreviewTitleText" Text="" Style="{ThemeResource HeaderText}" HorizontalAlignment="Left" Margin="0,12,0,8" TextWrapping="WrapWholeWords" LineHeight="22"/>
                         <controls1:DockPanel>
                             <Border>
                                 <ItemsControl x:Name="PreviewInfoControl">
@@ -200,7 +218,7 @@
                                 <ItemsControl x:Name="PreviewInfoControl2">
                                     <ItemsControl.ItemTemplate>
                                         <DataTemplate x:DataType="views:TrackDetail">
-                                            <TextBlock Text="{x:Bind Value}" Style="{ThemeResource BodyText}" HorizontalAlignment="Right" Foreground="{ThemeResource SystemAccentColorLight2}" LineHeight="22"/>
+                                            <TextBlock Text="{x:Bind Value}" Style="{ThemeResource BodyText}" HorizontalAlignment="Right" Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}" LineHeight="22"/>
                                         </DataTemplate>
                                     </ItemsControl.ItemTemplate>
                                 </ItemsControl>
