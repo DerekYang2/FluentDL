@@ -25,17 +25,44 @@
 
         <StackPanel Orientation="Vertical" HorizontalAlignment="Stretch" VerticalAlignment="Top" Grid.Row="0" Grid.Column="0">
             <TextBox x:Name="artistNameInput"
-                     PlaceholderText="Artist name"
+                     PlaceholderText="Enter name (optional)"
                      HorizontalAlignment="Stretch"
                      Margin="0,0,0,10"
                      ToolTipService.ToolTip="Artist name"
-            />
+                     Header="Artist"
+            >
+                <TextBox.HeaderTemplate>
+                    <DataTemplate>
+                        <TextBlock Text="{Binding}" Style="{ThemeResource BodyText}" Foreground="{StaticResource TextFillColorSecondary}" FontSize="12"/>
+                    </DataTemplate>
+                </TextBox.HeaderTemplate>
+            </TextBox>
             <TextBox x:Name="trackNameInput"
-                        PlaceholderText="Track name"
+                        PlaceholderText="Enter name (optional)"
                         HorizontalAlignment="Stretch"
                         Margin="0,0,0,10"
                         ToolTipService.ToolTip="Track name"
-                        />
+                                                Header="Track"
+                        >
+                <TextBox.HeaderTemplate>
+                    <DataTemplate>
+                        <TextBlock Text="{Binding}" Foreground="{StaticResource TextFillColorSecondary}" Style="{ThemeResource BodyText}" FontSize="12"/>
+                    </DataTemplate>
+                </TextBox.HeaderTemplate>
+            </TextBox>
+            <TextBox x:Name="albumNameInput"
+                     PlaceholderText="Enter name (optional)"
+                     HorizontalAlignment="Stretch"
+                     Margin="0,0,0,10"
+                     ToolTipService.ToolTip="Album name"
+                     Header="Album"
+            >
+                <TextBox.HeaderTemplate>
+                    <DataTemplate>
+                        <TextBlock Text="{Binding}" Foreground="{StaticResource TextFillColorSecondary}" Style="{ThemeResource BodyText}" FontSize="12"/>
+                    </DataTemplate>
+                </TextBox.HeaderTemplate>
+            </TextBox>
         </StackPanel>
 
         <controls1:DockPanel Grid.Row="1" Grid.Column="0">
@@ -98,10 +125,10 @@
                 <DataTemplate x:DataType="services:SongSearchObject">
                     <Grid Margin="0,12,0,12" AutomationProperties.Name="{x:Bind Title}">
                         <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="100"/>
+                            <ColumnDefinition Width="81"/>
                             <ColumnDefinition Width="*" />
                         </Grid.ColumnDefinitions>
-                        <Border CornerRadius="4" Height="100">
+                        <Border CornerRadius="4" Height="81">
                             <Border.Background>
                                 <ImageBrush Stretch="UniformToFill" ImageSource="{x:Bind ImageLocation}"/>
                             </Border.Background>
@@ -122,7 +149,7 @@
             </ListView.ItemTemplate>
         </ListView>
 
-        <RelativePanel 
+        <Grid 
             x:Name="RelativePreviewPanel"
             CornerRadius="8"
             Padding="12"
@@ -133,33 +160,51 @@
             VerticalAlignment="Stretch"
             Grid.Row="0" Grid.RowSpan="4" Grid.Column="1"
             >
-         
-                <Image x:Name="PreviewImage" Margin="10" RelativePanel.Below="CommandBar"/>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
 
-
-            <StackPanel x:Name="PreviewInfoStack" Orientation="Vertical" HorizontalAlignment="Stretch" VerticalAlignment="Top" Margin="10" RelativePanel.Below="PreviewImage">
-                <TextBlock x:Name="PreviewTitleText" Text="" Style="{ThemeResource HeaderText}" HorizontalAlignment="Left" Margin="0,0,0,0" TextWrapping="WrapWholeWords" LineHeight="22"/>
-                <ItemsControl x:Name="PreviewInfoControl">
-                        <ItemsControl.ItemTemplate>
-                        <DataTemplate x:DataType="views:TrackDetail">
-                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Left">
-                                <TextBlock Text="{x:Bind Label}" Style="{ThemeResource BodyText}" HorizontalAlignment="Left" LineHeight="18"/>
-                                <TextBlock Text=":" Style="{ThemeResource BodyText}" HorizontalAlignment="Left" Margin="0,0,4,0"/>
-                                <TextBlock Text="{x:Bind Value}" Style="{ThemeResource BodyText}" HorizontalAlignment="Left" Foreground="{ThemeResource SystemAccentColorLight2}"/>
-                            </StackPanel>
-                            </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
-                </StackPanel>
-
-
-            <MediaPlayerElement x:Name="SongPreviewPlayer" AutoPlay="False" AreTransportControlsEnabled="True" RelativePanel.AlignBottomWithPanel="True" Visibility="Collapsed"/>
-            <CommandBar x:Name="CommandBar" Background="Transparent" IsOpen="False" DefaultLabelPosition="Right" RelativePanel.AlignTopWithPanel="True" Visibility="Collapsed" Grid.Row="0" Grid.Column="1">
+            <CommandBar x:Name="CommandBar" Background="Transparent" IsOpen="False" DefaultLabelPosition="Right" Visibility="Collapsed" Grid.Row="0">
                 <AppBarButton Icon="Add" Label="Add to queue"/>
                 <AppBarButton Icon="Download" Label="Download"/>
                 <AppBarButton Icon="Share" Label="Share"/>
             </CommandBar>
-        </RelativePanel>
+
+            <ScrollView x:Name="PreviewScrollView" VerticalScrollBarVisibility="Auto" Grid.Row="1" Margin="1" Visibility="Visible">
+                <StackPanel Orientation="Vertical" VerticalAlignment="Top" Height="Auto">
+                    <Image x:Name="PreviewImage" Margin="16"/>
+                    <StackPanel x:Name="PreviewInfoStack" Orientation="Vertical" HorizontalAlignment="Stretch" VerticalAlignment="Top" Margin="16, 0, 16, 16">
+                        <TextBlock x:Name="PreviewTitleText" Text="" Style="{ThemeResource HeaderText}" HorizontalAlignment="Left" Margin="0,0,0,10" TextWrapping="WrapWholeWords" LineHeight="22"/>
+                        <controls1:DockPanel>
+                            <Border>
+                                <ItemsControl x:Name="PreviewInfoControl">
+                                    <ItemsControl.ItemTemplate>
+                                    <DataTemplate x:DataType="views:TrackDetail">
+                                        <TextBlock Text="{x:Bind Label}" Style="{ThemeResource BodyText}" HorizontalAlignment="Left" LineHeight="22"/>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </Border>
+
+                            <Border HorizontalAlignment="Right">
+                                <ItemsControl x:Name="PreviewInfoControl2">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate x:DataType="views:TrackDetail">
+                                            <TextBlock Text="{x:Bind Value}" Style="{ThemeResource BodyText}" HorizontalAlignment="Right" Foreground="{ThemeResource SystemAccentColorLight2}" LineHeight="22"/>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </Border>
+                        </controls1:DockPanel>
+                    </StackPanel>
+                </StackPanel>
+            </ScrollView>
+
+            <MediaPlayerElement Grid.Row="2" x:Name="SongPreviewPlayer" AutoPlay="False" AreTransportControlsEnabled="True" RelativePanel.AlignBottomWithPanel="True" Visibility="Collapsed"/>
+        </Grid>
+
         <TextBlock x:Name="NoneSelectedText" Text="No track selected." Style="{ThemeResource BodyText}" HorizontalAlignment="Center" VerticalAlignment="Center" Grid.Row="0" Grid.RowSpan="4" Grid.Column="1" Margin="0,0,0,10"/>
     </Grid>
 </Page>

@@ -89,10 +89,10 @@ public sealed partial class Search : Page
     {
         var artistName = artistNameInput.Text;
         var trackName = trackNameInput.Text;
-
+        var albumName = albumNameInput.Text;
         SearchProgress.IsIndeterminate = true;
         // Set the collection as the ItemsSource for the ListView
-        CustomListView.ItemsSource = await FluentDL.Services.DeezerApi.SearchTrack(artistName, trackName);
+        CustomListView.ItemsSource = await FluentDL.Services.DeezerApi.SearchTrack(artistName, trackName, albumName);
         originalList = new List<SongSearchObject>((List<SongSearchObject>)CustomListView.ItemsSource);
 
         SortCustomListView();
@@ -134,6 +134,7 @@ public sealed partial class Search : Page
         PreviewTitleText.Text = "";
         PreviewImage.Source = null;
         PreviewInfoControl.ItemsSource = new List<TrackDetail>();
+        PreviewInfoControl2.ItemsSource = new List<TrackDetail>();
     }
 
     private async void CustomListView_OnSelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -186,7 +187,7 @@ public sealed partial class Search : Page
         // PreviewAlbumName.Text = jsonObject.GetProperty("album").GetProperty("title").GetString();
         // PreviewAlbumPosition.Text = jsonObject.GetProperty("track_position").ToString();
 
-        PreviewInfoControl.ItemsSource = new List<TrackDetail>
+        PreviewInfoControl2.ItemsSource = PreviewInfoControl.ItemsSource = new List<TrackDetail>
         {
             new TrackDetail { Label = "Artists", Value = selectedSong.Artists },
             new TrackDetail { Label = "Release Date", Value = selectedSong.ReleaseDate },

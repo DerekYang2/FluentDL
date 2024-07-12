@@ -73,13 +73,27 @@ internal class DeezerApi
         return JsonDocument.Parse(response.Content).RootElement;
     }
 
-    public static async Task<List<SongSearchObject>> SearchTrack(string artistName, string trackName)
+    // Space is %20, quotes are %22
+    public static async Task<List<SongSearchObject>> SearchTrack(string artistName, string trackName, string albumName)
     {
-        var req = "search?q=artist:%22" + artistName + "%22%20track:%22" + trackName + "%22";
+        if (artistName.Length == 0 && trackName.Length == 0 && albumName.Length == 0)
+        {
+            return new List<SongSearchObject>();
+        }
+
+        // Trim
+        artistName = artistName.Trim();
+        trackName = trackName.Trim();
+        albumName = albumName.Trim();
+        var req = "search?q=" + (artistName.Length > 0 ? "artist:'" + artistName + "' " : "") +
+                  (trackName.Length > 0 ? "track:'" + trackName + "' " : "") +
+                  (albumName.Length > 0 ? "album:'" + albumName + "' " : "");
+
+        Debug.WriteLine(req);
+
         // Create json object from the response
         // Use System.Text.Json to parse the json object
         var jsonObject = await FetchJsonElement(req);
-
         var objects = new List<SongSearchObject>(); // Create a list of CustomDataObjects
 
         foreach (var track in jsonObject.GetProperty("data").EnumerateArray())
