@@ -17,4 +17,18 @@ namespace FluentDL.Helpers
             throw new NotImplementedException();
         }
     }
+
+    class DateVerboseConverter : IValueConverter
+    {
+        // Converts YYYY-MM-DD to Month DD, YYYY
+        public object Convert(object value, Type targetType, object parameter, string language)
+        {
+            return DateTime.Parse(value.ToString()).ToString("MMMM dd, yyyy", CultureInfo.InvariantCulture);
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, string language)
+        {
+            throw new NotImplementedException();
+        }
+    }
 }
