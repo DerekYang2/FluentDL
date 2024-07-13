@@ -70,6 +70,7 @@ public sealed partial class Search : Page
 {
     private RipSubprocess ripSubprocess;
     private ObservableCollection<SongSearchObject> originalList;
+    private SpotifyApi spotifyApi;
 
     public BlankViewModel ViewModel
     {
@@ -86,6 +87,10 @@ public sealed partial class Search : Page
         SortComboBox.SelectedIndex = 0;
         SortOrderComboBox.SelectedIndex = 0;
         ClearPreviewPane();
+
+        // test spotify api
+        spotifyApi = new SpotifyApi("clientId", "clientSecret");
+        spotifyApi.Initialize();
     }
 
     private void ClearPreviewPane()
@@ -154,11 +159,15 @@ public sealed partial class Search : Page
         PreviewInfoControl2.ItemsSource = PreviewInfoControl.ItemsSource = new List<TrackDetail>
         {
             new TrackDetail { Label = "Artists", Value = selectedSong.Artists },
-            new TrackDetail { Label = "Release Date", Value = selectedSong.ReleaseDate },
+            new TrackDetail
+            {
+                Label = "Release Date",
+                Value = new DateVerboseConverter().Convert(selectedSong.ReleaseDate, null, null, null).ToString()
+            },
             new TrackDetail { Label = "Popularity", Value = selectedSong.Rank },
             new TrackDetail { Label = "Duration", Value = selectedSong.Duration },
             new TrackDetail
-                { Label = "Album", Value = jsonObject.GetProperty("album").GetProperty("title").ToString() },
+                { Label = "Album", Value = selectedSong.AlbumName },
             new TrackDetail { Label = "Track", Value = jsonObject.GetProperty("track_position").ToString() }
         };
 
@@ -242,7 +251,7 @@ public sealed partial class Search : Page
                 (ObservableCollection<SongSearchObject>)CustomListView.ItemsSource);
 
         SortCustomListView();
-        SetNoSearchResults();
+        SetNoSearchResults(); // Call again as actual check 
         SearchProgress.IsIndeterminate = false;
     }
 
@@ -257,8 +266,18 @@ public sealed partial class Search : Page
         SearchProgress.IsIndeterminate = true;
         // Set the collection as the ItemsSource for the ListView
         NoSearchResults.Visibility = Microsoft.UI.Xaml.Visibility.Collapsed; // Hide the message for now
-        await FluentDL.Services.DeezerApi.GeneralSearch(
-            (ObservableCollection<SongSearchObject>)CustomListView.ItemsSource, generalQuery);
+
+        // Check if query is a spotify playlist link
+        if (generalQuery.Contains("https://open.spotify.com/playlist/"))
+        {
+            var playlistId = generalQuery.Split("/").Last();
+            await LoadSpotifyPlaylist(playlistId);
+        }
+        else
+        {
+            await FluentDL.Services.DeezerApi.GeneralSearch(
+                (ObservableCollection<SongSearchObject>)CustomListView.ItemsSource, generalQuery);
+        }
 
         originalList =
             new ObservableCollection<SongSearchObject>(
@@ -267,6 +286,36 @@ public sealed partial class Search : Page
         SortCustomListView();
         SetNoSearchResults(); // Call again as actual check 
         SearchProgress.IsIndeterminate = false;
+    }
+
+    private async Task LoadSpotifyPlaylist(string playlistId)
+    {
+        ((ObservableCollection<SongSearchObject>)CustomListView.ItemsSource).Clear(); // Clear the list
+        List<SongSearchObject> playlistObjects = await spotifyApi.GetPlaylist(playlistId);
+        foreach (var song in playlistObjects)
+        {
+            var firstArtist = song.Artists.Split(",")[0];
+            var deezerResult =
+                await FluentDL.Services.DeezerApi.AdvancedSearch(firstArtist, song.Title, song.AlbumName);
+            if (deezerResult != null)
+            {
+                ((ObservableCollection<SongSearchObject>)CustomListView.ItemsSource).Add(deezerResult); // Add to list
+            }
+            else // Try a fuzzy
+            {
+                var deezerResult2 =
+                    await FluentDL.Services.DeezerApi.GeneralSearch(song.Title, song.Artists.Split(", ").ToList());
+                if (deezerResult2 != null)
+                {
+                    ((ObservableCollection<SongSearchObject>)CustomListView.ItemsSource)
+                        .Add(deezerResult2); // Add to list
+                }
+                else
+                {
+                    Debug.WriteLine("Could not find: " + song);
+                }
+            }
+        }
     }
 
     private async void ShowDialog_OnClick_Click(object sender, RoutedEventArgs e)

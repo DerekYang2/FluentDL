@@ -8,7 +8,7 @@ using SpotifyAPI.Web;
 
 namespace FluentDL.Services
 {
-    class SpotifyApi
+    internal class SpotifyApi
     {
         private SpotifyClientConfig config;
         private SpotifyClient spotify;
@@ -29,20 +29,34 @@ namespace FluentDL.Services
             spotify = new SpotifyClient(config.WithToken(response.AccessToken));
         }
 
-        public async Task<FullPlaylist> GetPlaylist(string playlistId)
+        public async Task<List<SongSearchObject>> GetPlaylist(string playlistId)
         {
             var playlist = await spotify.Playlists.Get(playlistId);
+            var songs = new List<SongSearchObject>();
             // Debug: loop and print all tracks
             foreach (PlaylistTrack<IPlayableItem> item in playlist.Tracks.Items)
             {
                 if (item.Track is FullTrack track)
                 {
                     // All FullTrack properties are available
-                    Debug.WriteLine(track.Name + " - " + track.Artists + " - " + track.Album.Name);
+                    var artistCsv = track.Artists.Select(a => a.Name).Aggregate((a, b) => a + ", " + b);
+                    songs.Add(new SongSearchObject
+                    {
+                        Source = "spotify",
+                        Title = track.Name,
+                        Artists = artistCsv,
+                        ImageLocation = track.Album.Images[0].Url,
+                        Id = track.Id,
+                        ReleaseDate = track.Album.ReleaseDate,
+                        Duration = SongSearchObject.FormatTime((int)(track.DurationMs / 1000.0)),
+                        Rank = track.Popularity.ToString(),
+                        AlbumName = track.Album.Name
+                    });
+                    Debug.WriteLine(songs.Last());
                 }
             }
 
-            return playlist;
+            return songs;
         }
     }
 }

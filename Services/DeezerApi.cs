@@ -56,8 +56,41 @@ public class SongSearchObject
         set;
     }
 
+    public string AlbumName
+    {
+        get;
+        set;
+    }
+
+    public string Source
+    {
+        get;
+        set;
+    }
+
     public SongSearchObject()
     {
+    }
+
+    public override string ToString()
+    {
+        return Source + " | Title: " + Title + ", Artists: " + Artists + ", Duration: " + Duration + ", Rank: " + Rank +
+               ", Release Date: " + ReleaseDate + ", Image Location: " + ImageLocation + ", Id: " + Id +
+               ", Album Name: " + AlbumName;
+    }
+
+    /**
+     * Helper method to format the time in seconds to a string
+     * Format as H hr, M min, S sec
+     */
+    public static string FormatTime(int seconds)
+    {
+        int sec = seconds % 60;
+        seconds /= 60;
+        int min = seconds % 60;
+        seconds /= 60;
+        int hr = seconds;
+        return (hr > 0 ? hr + " hr, " : "") + (min > 0 ? min + " min, " : "") + sec + " sec";
     }
 }
 
@@ -88,18 +121,74 @@ internal class DeezerApi
 
         var jsonObject = await FetchJsonElement(req);
 
-        var uiThread = DispatcherQueue.GetForCurrentThread();
-
         foreach (var track in jsonObject.GetProperty("data").EnumerateArray())
         {
             var trackId = track.GetProperty("id").ToString();
             var songObj = await GetTrack(trackId);
-
-            uiThread.TryEnqueue(() =>
-            {
-                itemSource.Add(songObj);
-            });
+            itemSource.Add(songObj);
         }
+    }
+
+    public static async Task<SongSearchObject> GeneralSearch(string title, List<string> artists)
+    {
+        var req = "search?q=" + artists[0] + " " + title; // Search for the first artist and title
+
+        var jsonObject = await FetchJsonElement(req);
+
+        foreach (var track in jsonObject.GetProperty("data").EnumerateArray())
+        {
+            var trackId = track.GetProperty("id").ToString();
+            var songObj = await GetTrack(trackId); // Return the first result
+
+            if (songObj.Title.ToLower().Contains(title.ToLower()) ||
+                title.ToLower()
+                    .Contains(songObj.Title.ToLower())) // If titles at least contain each other, go to next step
+            {
+                List<string> songObjArtists = songObj.Artists.Split(", ").ToList();
+                foreach (var artist in artists)
+                {
+                    foreach (var songObjArtist in songObjArtists)
+                    {
+                        if (songObjArtist.ToLower().Equals(artist.ToLower())) // If at least one artist matches
+                        {
+                            return songObj;
+                        }
+                    }
+                }
+            }
+        }
+
+        return null; // If no results
+    }
+
+    public static async Task<SongSearchObject> AdvancedSearch(string artistName,
+        string trackName, string albumName)
+    {
+        // Trim
+        artistName = artistName.Trim();
+        trackName = trackName.Trim();
+        albumName = albumName.Trim();
+
+        if (artistName.Length == 0 && trackName.Length == 0 && albumName.Length == 0) // If no search query
+        {
+            return null;
+        }
+
+        var req = "search?q=" + (artistName.Length > 0 ? "artist:%22" + artistName + "%22 " : "") +
+                  (trackName.Length > 0 ? "track:%22" + trackName + "%22 " : "") +
+                  (albumName.Length > 0 ? "album:%22" + albumName + "%22" : "") +
+                  "?strict=on"; // Strict search
+        req = req.Replace(" ", "%20"); // Replace spaces with %20
+
+        var jsonObject = await FetchJsonElement(req); // Create json object from the response
+
+        foreach (var track in jsonObject.GetProperty("data").EnumerateArray())
+        {
+            var trackId = track.GetProperty("id").ToString();
+            return await GetTrack(trackId); // Return the first result
+        }
+
+        return null; // If no results
     }
 
     public static async Task AdvancedSearch(ObservableCollection<SongSearchObject> itemSource, string artistName,
@@ -120,21 +209,18 @@ internal class DeezerApi
 
         var req = "search?q=" + (artistName.Length > 0 ? "artist:%22" + artistName + "%22 " : "") +
                   (trackName.Length > 0 ? "track:%22" + trackName + "%22 " : "") +
-                  (albumName.Length > 0 ? "album:%22" + albumName + "%22 " : "") +
+                  (albumName.Length > 0 ? "album:%22" + albumName + "%22" : "") +
                   "?strict=on"; // Strict search
+        req = req.Replace(" ", "%20"); // Replace spaces with %20
+        Debug.WriteLine(req);
 
         var jsonObject = await FetchJsonElement(req); // Create json object from the response
-        var uiThread = DispatcherQueue.GetForCurrentThread();
 
         foreach (var track in jsonObject.GetProperty("data").EnumerateArray())
         {
             var trackId = track.GetProperty("id").ToString();
             var songObj = await GetTrack(trackId);
-
-            uiThread.TryEnqueue(() =>
-            {
-                itemSource.Add(songObj);
-            });
+            itemSource.Add(songObj);
         }
     }
 
@@ -153,49 +239,15 @@ internal class DeezerApi
 
         return new SongSearchObject()
         {
+            Source = "deezer",
             Title = jsonObject.GetProperty("title").GetString(),
             ImageLocation = jsonObject.GetProperty("album").GetProperty("cover").GetString(),
             Id = jsonObject.GetProperty("id").ToString(),
             ReleaseDate = jsonObject.GetProperty("release_date").ToString(),
             Artists = contribCsv,
-            Duration = FormatTime(jsonObject.GetProperty("duration").GetInt32()),
-            Rank = jsonObject.GetProperty("rank").ToString()
+            Duration = SongSearchObject.FormatTime(jsonObject.GetProperty("duration").GetInt32()),
+            Rank = jsonObject.GetProperty("rank").ToString(),
+            AlbumName = jsonObject.GetProperty("album").GetProperty("title").GetString()
         };
-    }
-
-    // https://api.deezer.com/album/{id}
-    public static async Task<List<string>> Contributors(string albumId)
-    {
-        var jsonObject = await FetchJsonElement("album/" + albumId);
-
-        if (jsonObject.GetProperty("nb_tracks").GetInt32() == 1) // Safe to assume contributors is same as track artists
-        {
-            var contributors = new List<string>();
-
-            foreach (var contributor in jsonObject.GetProperty("contributors").EnumerateArray())
-            {
-                contributors.Add(contributor.GetProperty("name").GetString());
-            }
-
-            return contributors;
-        }
-        else
-        {
-            return new List<string>(); // Do not assume anything
-        }
-    }
-
-    /**
-     * Helper method to format the time in seconds to a string
-     * Format as H hr, M min, S sec
-     */
-    private static string FormatTime(int seconds)
-    {
-        int sec = seconds % 60;
-        seconds /= 60;
-        int min = seconds % 60;
-        seconds /= 60;
-        int hr = seconds;
-        return (hr > 0 ? hr + " hr, " : "") + (min > 0 ? min + " min, " : "") + sec + " sec";
     }
 }
