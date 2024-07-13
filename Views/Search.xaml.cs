@@ -69,7 +69,7 @@ public class TrackDetail
 public sealed partial class Search : Page
 {
     private RipSubprocess ripSubprocess;
-    private List<SongSearchObject> originalList;
+    private ObservableCollection<SongSearchObject> originalList;
 
     public BlankViewModel ViewModel
     {
@@ -80,30 +80,12 @@ public sealed partial class Search : Page
     {
         ViewModel = App.GetService<BlankViewModel>();
         InitializeComponent();
+        CustomListView.ItemsSource = new ObservableCollection<SongSearchObject>();
+        originalList = new ObservableCollection<SongSearchObject>();
         ripSubprocess = new RipSubprocess();
         SortComboBox.SelectedIndex = 0;
         SortOrderComboBox.SelectedIndex = 0;
         ClearPreviewPane();
-    }
-
-    private async void SearchDialogClick(ContentDialog sender, ContentDialogButtonClickEventArgs args)
-    {
-        var artistName = artistNameInput.Text;
-        var trackName = trackNameInput.Text;
-        var albumName = albumNameInput.Text;
-        SearchProgress.IsIndeterminate = true;
-        // Set the collection as the ItemsSource for the ListView
-        CustomListView.ItemsSource =
-            await FluentDL.Services.DeezerApi.AdvancedSearch(artistName, trackName, albumName);
-        originalList = new List<SongSearchObject>((List<SongSearchObject>)CustomListView.ItemsSource);
-
-        SortCustomListView();
-
-        // If collection is empty, show a message
-        NoSearchResults.Visibility = CustomListView.Items.Count == 0
-            ? Microsoft.UI.Xaml.Visibility.Visible
-            : Microsoft.UI.Xaml.Visibility.Collapsed;
-        SearchProgress.IsIndeterminate = false;
     }
 
     private void ClearPreviewPane()
@@ -111,6 +93,7 @@ public sealed partial class Search : Page
         NoneSelectedText.Visibility = Microsoft.UI.Xaml.Visibility.Visible;
         SongPreviewPlayer.Visibility = Microsoft.UI.Xaml.Visibility.Collapsed;
         CommandBar.Visibility = Microsoft.UI.Xaml.Visibility.Collapsed;
+        PreviewScrollView.Visibility = Microsoft.UI.Xaml.Visibility.Collapsed;
         PreviewTitleText.Text = "";
         PreviewImage.Source = null;
         PreviewInfoControl.ItemsSource = new List<TrackDetail>();
@@ -130,6 +113,7 @@ public sealed partial class Search : Page
         NoneSelectedText.Visibility = Microsoft.UI.Xaml.Visibility.Collapsed;
         SongPreviewPlayer.Visibility = Microsoft.UI.Xaml.Visibility.Visible;
         CommandBar.Visibility = Microsoft.UI.Xaml.Visibility.Visible;
+        PreviewScrollView.Visibility = Microsoft.UI.Xaml.Visibility.Visible;
 
         await SetupPreviewPane(selectedSong);
 
@@ -160,12 +144,12 @@ public sealed partial class Search : Page
     {
         var jsonObject = await FluentDL.Services.DeezerApi.FetchJsonElement("track/" + selectedSong.Id);
         //PreviewArtistText.Text = selectedSong.Artists;
-        PreviewTitleText.Text = selectedSong.Title;
         //PreviewReleaseDate.Text = selectedSong.ReleaseDate; // Todo format date
         //PreviewRank.Text = selectedSong.Rank; // Todo format rank
         //PreviewDuration.Text = selectedSong.Duration;
         // PreviewAlbumName.Text = jsonObject.GetProperty("album").GetProperty("title").GetString();
         // PreviewAlbumPosition.Text = jsonObject.GetProperty("track_position").ToString();
+        PreviewTitleText.Text = selectedSong.Title;
 
         PreviewInfoControl2.ItemsSource = PreviewInfoControl.ItemsSource = new List<TrackDetail>
         {
@@ -174,8 +158,8 @@ public sealed partial class Search : Page
             new TrackDetail { Label = "Popularity", Value = selectedSong.Rank },
             new TrackDetail { Label = "Duration", Value = selectedSong.Duration },
             new TrackDetail
-                { Label = "Album Name", Value = jsonObject.GetProperty("album").GetProperty("title").ToString() },
-            new TrackDetail { Label = "Album Position", Value = jsonObject.GetProperty("track_position").ToString() }
+                { Label = "Album", Value = jsonObject.GetProperty("album").GetProperty("title").ToString() },
+            new TrackDetail { Label = "Track", Value = jsonObject.GetProperty("track_position").ToString() }
         };
 
         // Set 30 second preview
@@ -200,16 +184,17 @@ public sealed partial class Search : Page
         var selectedIndex = SortComboBox.SelectedIndex;
         var isAscending = SortOrderComboBox.SelectedIndex == 0;
 
-        var songList = (List<SongSearchObject>)CustomListView.ItemsSource;
-        if (songList == null)
+        if (CustomListView.ItemsSource == null)
         {
             return;
         }
 
+        var songList = ((ObservableCollection<SongSearchObject>)CustomListView.ItemsSource).ToList();
+
         switch (selectedIndex)
         {
             case 0:
-                songList = new List<SongSearchObject>(originalList); // <SongSearchObject
+                songList = originalList.ToList(); // <SongSearchObject
                 break;
             case 1:
                 songList = songList.OrderBy(song => song.Title).ToList();
@@ -232,36 +217,69 @@ public sealed partial class Search : Page
             songList.Reverse();
         }
 
-        CustomListView.ItemsSource = songList;
+        CustomListView.ItemsSource = new ObservableCollection<SongSearchObject>(songList);
+    }
+
+    private async void SearchDialogClick(ContentDialog sender, ContentDialogButtonClickEventArgs args)
+    {
+        var artistName = artistNameInput.Text.Trim();
+        var trackName = trackNameInput.Text.Trim();
+        var albumName = albumNameInput.Text.Trim();
+
+        if (artistName.Length == 0 && trackName.Length == 0 && albumName.Length == 0) // If no search query
+        {
+            return;
+        }
+
+        SearchProgress.IsIndeterminate = true;
+        NoSearchResults.Visibility = Microsoft.UI.Xaml.Visibility.Collapsed; // Hide the message for now
+
+        // Set the collection as the ItemsSource for the ListView
+        await FluentDL.Services.DeezerApi.AdvancedSearch(
+            (ObservableCollection<SongSearchObject>)CustomListView.ItemsSource, artistName, trackName, albumName);
+        originalList =
+            new ObservableCollection<SongSearchObject>(
+                (ObservableCollection<SongSearchObject>)CustomListView.ItemsSource);
+
+        SortCustomListView();
+        SetNoSearchResults();
+        SearchProgress.IsIndeterminate = false;
     }
 
     private async void SearchBox_OnQuerySubmitted(AutoSuggestBox sender, AutoSuggestBoxQuerySubmittedEventArgs args)
     {
-        var generalQuery = SearchBox.Text;
+        var generalQuery = SearchBox.Text.Trim();
+        if (generalQuery.Length == 0)
+        {
+            return;
+        }
 
         SearchProgress.IsIndeterminate = true;
         // Set the collection as the ItemsSource for the ListView
-        CustomListView.ItemsSource =
-            await FluentDL.Services.DeezerApi.GeneralSearch(generalQuery);
-        originalList = new List<SongSearchObject>((List<SongSearchObject>)CustomListView.ItemsSource);
+        NoSearchResults.Visibility = Microsoft.UI.Xaml.Visibility.Collapsed; // Hide the message for now
+        await FluentDL.Services.DeezerApi.GeneralSearch(
+            (ObservableCollection<SongSearchObject>)CustomListView.ItemsSource, generalQuery);
+
+        originalList =
+            new ObservableCollection<SongSearchObject>(
+                (ObservableCollection<SongSearchObject>)CustomListView.ItemsSource);
 
         SortCustomListView();
-
-        // If collection is empty, show a message
-        NoSearchResults.Visibility = CustomListView.Items.Count == 0
-            ? Microsoft.UI.Xaml.Visibility.Visible
-            : Microsoft.UI.Xaml.Visibility.Collapsed;
+        SetNoSearchResults(); // Call again as actual check 
         SearchProgress.IsIndeterminate = false;
-    }
-
-    private void SearchModeComboBox_OnSelectionChanged(object sender, SelectionChangedEventArgs e)
-    {
-        throw new NotImplementedException();
     }
 
     private async void ShowDialog_OnClick_Click(object sender, RoutedEventArgs e)
     {
         SearchDialog.XamlRoot = this.XamlRoot;
         var result = await SearchDialog.ShowAsync();
+    }
+
+    private void SetNoSearchResults()
+    {
+        // If collection is empty, show a message
+        NoSearchResults.Visibility = CustomListView.Items.Count == 0
+            ? Microsoft.UI.Xaml.Visibility.Visible
+            : Microsoft.UI.Xaml.Visibility.Collapsed;
     }
 }
