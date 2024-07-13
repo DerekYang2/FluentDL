@@ -10,26 +10,30 @@ namespace FluentDL.Services
 {
     internal class SpotifyApi
     {
-        private SpotifyClientConfig config;
-        private SpotifyClient spotify;
-        private string clientId, clientSecret;
+        private static SpotifyClientConfig config = SpotifyClientConfig.CreateDefault();
+        private static SpotifyClient spotify;
 
-        public SpotifyApi(string clientId, string clientSecret)
+        public SpotifyApi()
         {
-            config = SpotifyClientConfig.CreateDefault();
-            this.clientId = clientId;
-            this.clientSecret = clientSecret;
         }
 
-        public async Task Initialize()
+        public static async Task Initialize()
         {
-            var request = new ClientCredentialsRequest(clientId, clientSecret);
-            var response = await new OAuthClient(config).RequestToken(request);
+            var localSettings = Windows.Storage.ApplicationData.Current.LocalSettings;
+            var clientId = localSettings.Values["SpotifyClientId"];
+            var clientSecret = localSettings.Values["SpotifyClientSecret"];
 
-            spotify = new SpotifyClient(config.WithToken(response.AccessToken));
+            // TODO: if do not exist, message should be shown
+            if (clientId != null && clientSecret != null)
+            {
+                var request = new ClientCredentialsRequest(clientId.ToString(), clientSecret.ToString());
+                var response = await new OAuthClient(config).RequestToken(request);
+
+                spotify = new SpotifyClient(config.WithToken(response.AccessToken));
+            }
         }
 
-        public async Task<List<SongSearchObject>> GetPlaylist(string playlistId)
+        public static async Task<List<SongSearchObject>> GetPlaylist(string playlistId)
         {
             var playlist = await spotify.Playlists.Get(playlistId);
             var songs = new List<SongSearchObject>();
@@ -48,11 +52,10 @@ namespace FluentDL.Services
                         ImageLocation = track.Album.Images[0].Url,
                         Id = track.Id,
                         ReleaseDate = track.Album.ReleaseDate,
-                        Duration = SongSearchObject.FormatTime((int)(track.DurationMs / 1000.0)),
+                        Duration = ((int)Math.Round(track.DurationMs / 1000.0)).ToString(),
                         Rank = track.Popularity.ToString(),
                         AlbumName = track.Album.Name
                     });
-                    Debug.WriteLine(songs.Last());
                 }
             }
 

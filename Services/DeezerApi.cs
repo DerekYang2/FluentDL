@@ -78,20 +78,6 @@ public class SongSearchObject
                ", Release Date: " + ReleaseDate + ", Image Location: " + ImageLocation + ", Id: " + Id +
                ", Album Name: " + AlbumName;
     }
-
-    /**
-     * Helper method to format the time in seconds to a string
-     * Format as H hr, M min, S sec
-     */
-    public static string FormatTime(int seconds)
-    {
-        int sec = seconds % 60;
-        seconds /= 60;
-        int min = seconds % 60;
-        seconds /= 60;
-        int hr = seconds;
-        return (hr > 0 ? hr + " hr, " : "") + (min > 0 ? min + " min, " : "") + sec + " sec";
-    }
 }
 
 // TODO: Handle null warnings and catch network errors
@@ -129,29 +115,46 @@ internal class DeezerApi
         }
     }
 
-    public static async Task<SongSearchObject> GeneralSearch(string title, List<string> artists)
+    public static async Task<SongSearchObject> GeneralSearch(SongSearchObject song)
     {
+        var title = song.Title.ToLower();
+        var artists = song.Artists.Split(", ").ToList();
+
         var req = "search?q=" + artists[0] + " " + title; // Search for the first artist and title
 
         var jsonObject = await FetchJsonElement(req);
 
-        foreach (var track in jsonObject.GetProperty("data").EnumerateArray())
+        foreach (var track in jsonObject.GetProperty("data").EnumerateArray()) // Check if at least one artist matches
         {
             var trackId = track.GetProperty("id").ToString();
             var songObj = await GetTrack(trackId); // Return the first result
+            songObj.Title = songObj.Title.ToLower();
 
-            if (songObj.Title.ToLower().Contains(title.ToLower()) ||
-                title.ToLower()
-                    .Contains(songObj.Title.ToLower())) // If titles at least contain each other, go to next step
+            bool exactTitleMatch = songObj.Title.Equals(title);
+            bool substringMatch = songObj.Title.Contains(title) || title.Contains(songObj.Title);
+
+            if (exactTitleMatch || substringMatch) // If the title matches
             {
                 List<string> songObjArtists = songObj.Artists.Split(", ").ToList();
+
                 foreach (var artist in artists)
                 {
                     foreach (var songObjArtist in songObjArtists)
                     {
-                        if (songObjArtist.ToLower().Equals(artist.ToLower())) // If at least one artist matches
+                        if (exactTitleMatch) // Be more lenient with artist name
                         {
-                            return songObj;
+                            if (songObjArtist.ToLower().Contains(artist.ToLower()) ||
+                                artist.ToLower().Contains(songObjArtist.ToLower())) // If names contain each other
+                            {
+                                return songObj;
+                            }
+                        }
+                        else // Be more strict with artist name
+                        {
+                            if (songObjArtist.ToLower().Equals(artist.ToLower())) // If names are equal
+                            {
+                                return songObj;
+                            }
                         }
                     }
                 }
@@ -206,13 +209,11 @@ internal class DeezerApi
             return;
         }
 
-
         var req = "search?q=" + (artistName.Length > 0 ? "artist:%22" + artistName + "%22 " : "") +
                   (trackName.Length > 0 ? "track:%22" + trackName + "%22 " : "") +
                   (albumName.Length > 0 ? "album:%22" + albumName + "%22" : "") +
                   "?strict=on"; // Strict search
         req = req.Replace(" ", "%20"); // Replace spaces with %20
-        Debug.WriteLine(req);
 
         var jsonObject = await FetchJsonElement(req); // Create json object from the response
 
@@ -245,7 +246,7 @@ internal class DeezerApi
             Id = jsonObject.GetProperty("id").ToString(),
             ReleaseDate = jsonObject.GetProperty("release_date").ToString(),
             Artists = contribCsv,
-            Duration = SongSearchObject.FormatTime(jsonObject.GetProperty("duration").GetInt32()),
+            Duration = jsonObject.GetProperty("duration").ToString(),
             Rank = jsonObject.GetProperty("rank").ToString(),
             AlbumName = jsonObject.GetProperty("album").GetProperty("title").GetString()
         };

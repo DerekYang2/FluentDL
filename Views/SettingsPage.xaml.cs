@@ -57,24 +57,24 @@ public sealed partial class SettingsPage : Page
                 });
             }).Start();
         }).Start();
+    }
 
+    private void SpotifyDialog_OnPrimaryButtonClick(ContentDialog sender, ContentDialogButtonClickEventArgs args)
+    {
+        // Save the user's input
+        var clientId = ClientIdInput.Text;
+        var clientSecret = ClientSecretInput.Text;
 
-        //new Task(() =>
-        //{
-        //    var ripSubprocess = new RipSubprocess();
-        //    var ripConfigPath = ripSubprocess.RunCommandSync("rip config path");
-        //    ripSubprocess.Dispose();
+        var localSettings = Windows.Storage.ApplicationData.Current.LocalSettings;
+        localSettings.Values["SpotifyClientId"] = clientId;
+        localSettings.Values["SpotifyClientSecret"] = clientSecret;
 
-        //    // Find first index of ' and second index of ' in the string
-        //    var firstIndex = ripConfigPath.IndexOf('\'');
-        //    var secondIndex = ripConfigPath.IndexOf('\'', firstIndex + 1);
-        //    ripConfigPath = ripConfigPath.Substring(firstIndex + 1, secondIndex - firstIndex - 1);
+        SpotifyApi.Initialize().Wait();
+    }
 
-        //    configTextBlock.Text = ripConfigPath;
-
-        //    // Open the toml text file at ripConfigPath and save contents to string
-        //    var configFileStr = System.IO.File.ReadAllText(ripConfigPath);
-        //    Debug.WriteLine("CONFIG FILE:" + configFileStr);
-        //}).Start();
+    private async void OpenSpotifyDialog_OnClick(object sender, RoutedEventArgs e)
+    {
+        SpotifyDialog.XamlRoot = this.XamlRoot;
+        var result = await SpotifyDialog.ShowAsync();
     }
 }

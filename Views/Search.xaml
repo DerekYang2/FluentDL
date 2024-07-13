@@ -12,6 +12,7 @@
     NavigationCacheMode="Required">
     <Page.Resources>
         <helpers:DateToYearConverter x:Key="DateToYearConverter" />
+        <helpers:DurationConverter x:Key="DurationConverter"/>
     </Page.Resources>
 
     <Grid>
@@ -185,7 +186,7 @@
                                        FontFamily="Segoe UI Variable Display" />
                             <TextBlock Text="&#x2022;" Style="{ThemeResource BodyTextBlockStyle}"
                                        HorizontalAlignment="Left" Margin="5,0,0,0" />
-                            <TextBlock Text="{x:Bind Duration}" HorizontalAlignment="Left"
+                            <TextBlock Text="{x:Bind Duration, Converter={StaticResource DurationConverter}}" HorizontalAlignment="Left"
                                        Style="{ThemeResource BodyTextBlockStyle}" Margin="5,0,0,0"
                                        FontFamily="Segoe UI Variable Display" />
                         </StackPanel>

@@ -13,6 +13,41 @@
     <Grid>
         <StackPanel
             x:Name="ContentArea">
+            <Button x:Name="OpenSpotifyDialog" Content="Open Spotify Dialog" Click="OpenSpotifyDialog_OnClick" />
+
+            <ContentDialog x:Name="SpotifyDialog" PrimaryButtonText="Save" CloseButtonText="Cancel"
+                      Title="Spotify Credentials" IsSecondaryButtonEnabled="True" IsPrimaryButtonEnabled="True"
+                      PrimaryButtonClick="SpotifyDialog_OnPrimaryButtonClick" PrimaryButtonStyle="{ThemeResource AccentButtonStyle}">
+                <StackPanel>
+                    <TextBox x:Name="ClientIdInput"
+                        PlaceholderText="Enter Client ID"
+                        HorizontalAlignment="Stretch"
+                        Margin="0,0,0,8"
+                        ToolTipService.ToolTip="Client ID"
+                        Header="Client ID">
+                        <TextBox.HeaderTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding}" Style="{ThemeResource CaptionTextBlockStyle}"
+                                      Foreground="{ThemeResource TextFillColorSecondary}" />
+                            </DataTemplate>
+                        </TextBox.HeaderTemplate>
+                    </TextBox>
+                    <TextBox x:Name="ClientSecretInput"
+                             PlaceholderText="Enter Client Secret"
+                             HorizontalAlignment="Stretch"
+                             Margin="0,0,0,8"
+                             ToolTipService.ToolTip="Client Secret"
+                             Header="Client Secret">
+                        <TextBox.HeaderTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding}" Style="{ThemeResource CaptionTextBlockStyle}"
+                                           Foreground="{ThemeResource TextFillColorSecondary}" />
+                            </DataTemplate>
+                        </TextBox.HeaderTemplate>
+                    </TextBox>
+                </StackPanel>
+            </ContentDialog>
+
             <TextBlock x:Uid="Settings_Personalization" Style="{ThemeResource SubtitleTextBlockStyle}" />
             <StackPanel Margin="{StaticResource SmallTopBottomMargin}">
                 <TextBlock x:Uid="Settings_Theme" />
@@ -64,6 +99,7 @@
                 <HyperlinkButton x:Uid="SettingsPage_PrivacyTermsLink"
                                  Margin="{StaticResource SettingsPageHyperlinkButtonMargin}" />
             </StackPanel>
+
 
             <RichEditBox x:Name="RichEditBox" AutomationProperties.Name="simple text editor" Width="800" Height="300"/>
         </StackPanel>

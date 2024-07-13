@@ -87,10 +87,7 @@ public sealed partial class Search : Page
         SortComboBox.SelectedIndex = 0;
         SortOrderComboBox.SelectedIndex = 0;
         ClearPreviewPane();
-
-        // test spotify api
-        spotifyApi = new SpotifyApi("clientId", "clientSecret");
-        spotifyApi.Initialize();
+        SpotifyApi.Initialize();
     }
 
     private void ClearPreviewPane()
@@ -165,7 +162,11 @@ public sealed partial class Search : Page
                 Value = new DateVerboseConverter().Convert(selectedSong.ReleaseDate, null, null, null).ToString()
             },
             new TrackDetail { Label = "Popularity", Value = selectedSong.Rank },
-            new TrackDetail { Label = "Duration", Value = selectedSong.Duration },
+            new TrackDetail
+            {
+                Label = "Duration",
+                Value = new DurationConverter().Convert(selectedSong.Duration, null, null, null).ToString()
+            },
             new TrackDetail
                 { Label = "Album", Value = selectedSong.AlbumName },
             new TrackDetail { Label = "Track", Value = jsonObject.GetProperty("track_position").ToString() }
@@ -291,7 +292,7 @@ public sealed partial class Search : Page
     private async Task LoadSpotifyPlaylist(string playlistId)
     {
         ((ObservableCollection<SongSearchObject>)CustomListView.ItemsSource).Clear(); // Clear the list
-        List<SongSearchObject> playlistObjects = await spotifyApi.GetPlaylist(playlistId);
+        List<SongSearchObject> playlistObjects = await SpotifyApi.GetPlaylist(playlistId);
         foreach (var song in playlistObjects)
         {
             var firstArtist = song.Artists.Split(",")[0];
@@ -303,8 +304,7 @@ public sealed partial class Search : Page
             }
             else // Try a fuzzy
             {
-                var deezerResult2 =
-                    await FluentDL.Services.DeezerApi.GeneralSearch(song.Title, song.Artists.Split(", ").ToList());
+                var deezerResult2 = await FluentDL.Services.DeezerApi.GeneralSearch(song);
                 if (deezerResult2 != null)
                 {
                     ((ObservableCollection<SongSearchObject>)CustomListView.ItemsSource)

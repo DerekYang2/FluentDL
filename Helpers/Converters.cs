@@ -4,7 +4,7 @@ using Microsoft.UI.Xaml.Data;
 
 namespace FluentDL.Helpers
 {
-    class DateToYearConverter : IValueConverter
+    internal class DateToYearConverter : IValueConverter
     {
         // Converts YYYY-MM-DD to YYYY
         public object Convert(object value, Type targetType, object parameter, string language)
@@ -18,12 +18,32 @@ namespace FluentDL.Helpers
         }
     }
 
-    class DateVerboseConverter : IValueConverter
+    internal class DateVerboseConverter : IValueConverter
     {
         // Converts YYYY-MM-DD to Month DD, YYYY
         public object Convert(object value, Type targetType, object parameter, string language)
         {
             return DateTime.Parse(value.ToString()).ToString("MMMM dd, yyyy", CultureInfo.InvariantCulture);
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, string language)
+        {
+            throw new NotImplementedException();
+        }
+    }
+
+    internal class DurationConverter : IValueConverter
+    {
+        // Converts seconds to H hr, M min, S sec
+        public object Convert(object value, Type targetType, object parameter, string language)
+        {
+            int seconds = int.Parse(value.ToString());
+            int sec = seconds % 60;
+            seconds /= 60;
+            int min = seconds % 60;
+            seconds /= 60;
+            int hr = seconds;
+            return (hr > 0 ? hr + " hr, " : "") + (min > 0 ? min + " min, " : "") + sec + " sec";
         }
 
         public object ConvertBack(object value, Type targetType, object parameter, string language)
