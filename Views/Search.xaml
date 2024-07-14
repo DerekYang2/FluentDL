@@ -82,24 +82,40 @@
             </StackPanel>
         </ContentDialog>
 
-        <AutoSuggestBox
-            x:Name="SearchBox"
-            PlaceholderText="Find a track"
-            QueryIcon="Find"
-            QuerySubmitted="SearchBox_OnQuerySubmitted"
-            ToolTipService.ToolTip="Search"
-            Grid.Row="0" Grid.Column="0"
-            Margin="0,2,0,12" />
+        <Grid Grid.Column="0" Grid.Row="0" ColumnSpacing="8" Margin="0, 2, 0, 8">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
 
-        <controls1:DockPanel Grid.Row="1" Grid.Column="0">
-            <Button x:Name="ShowDialogButton" Click="ShowDialog_OnClick_Click"
-                    Style="{ThemeResource AccentButtonStyle}">
+            <AutoSuggestBox Grid.Column="0"
+                x:Name="SearchBox"
+                PlaceholderText="Find a track or paste a link"
+                QueryIcon="Find"
+                QuerySubmitted="SearchBox_OnQuerySubmitted"
+                ToolTipService.ToolTip="Search"
+                />
+
+            <Button Grid.Column="1"  x:Name="ShowDialogButton" Click="ShowDialog_OnClick_Click">
                 <StackPanel Orientation="Horizontal">
-                    <SymbolIcon Symbol="Filter" Margin="0,0,8,0" />
+                    <SymbolIcon Symbol="Filter" Margin="0,0,8,0"/>
                     <TextBlock Text="Advanced" />
                 </StackPanel>
             </Button>
-            
+
+            <Button Grid.Column="2"  x:Name="Help" Click="ShowDialog_OnClick_Click">
+                <StackPanel Orientation="Horizontal">
+                    <SymbolIcon Symbol="Help" Margin="0,0,8,0"/>
+                    <TextBlock Text="Help" />
+                </StackPanel>
+            </Button>
+
+        </Grid>
+
+        <controls1:DockPanel Grid.Row="1" Grid.Column="0">
+            <TextBlock x:Name="ResultsText" Text="0 results" Style="{ThemeResource BodyTextBlockStyle}" VerticalAlignment="Center" Margin="8, 0, 0, 0"/>
+
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
                 <ComboBox x:Name="SortOrderComboBox" SelectionChanged="SortOrder_SelectionChanged"
                           Background="Transparent" BorderBrush="Transparent" PlaceholderText="Sort order:  Ascending">
@@ -143,7 +159,7 @@
         </controls1:DockPanel>
 
         <ProgressBar Grid.Column="0" Grid.Row="2" x:Name="SearchProgress" IsIndeterminate="False" Value="0"
-                     Margin="0,12,0,12" />
+                     Margin="0,8,0,12" />
 
         <TextBlock x:Name="NoSearchResults" Grid.Column="0" Grid.Row="3" Text="No results found."
                    HorizontalAlignment="Center" VerticalAlignment="Center" Style="{ThemeResource BodyTextBlockStyle}"

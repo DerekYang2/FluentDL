@@ -83,11 +83,17 @@ public sealed partial class Search : Page
         InitializeComponent();
         CustomListView.ItemsSource = new ObservableCollection<SongSearchObject>();
         originalList = new ObservableCollection<SongSearchObject>();
+        ResultsText.Text = "0 results";
         ripSubprocess = new RipSubprocess();
         SortComboBox.SelectedIndex = 0;
         SortOrderComboBox.SelectedIndex = 0;
         ClearPreviewPane();
         SpotifyApi.Initialize();
+    }
+
+    public void SetResultsAmount(int amount)
+    {
+        ResultsText.Text = amount + (amount == 1 ? " result" : " results");
     }
 
     private void ClearPreviewPane()
@@ -167,16 +173,14 @@ public sealed partial class Search : Page
                 Label = "Duration",
                 Value = new DurationConverter().Convert(selectedSong.Duration, null, null, null).ToString()
             },
-            new TrackDetail
-                { Label = "Album", Value = selectedSong.AlbumName },
+            new TrackDetail { Label = "Album", Value = selectedSong.AlbumName },
             new TrackDetail { Label = "Track", Value = jsonObject.GetProperty("track_position").ToString() }
         };
 
         // Set 30 second preview
         SongPreviewPlayer.Source = MediaSource.CreateFromUri(new Uri(jsonObject.GetProperty("preview").ToString()));
 
-        PreviewImage.Source =
-            new BitmapImage(new Uri(jsonObject.GetProperty("album").GetProperty("cover_big").ToString()));
+        PreviewImage.Source = new BitmapImage(new Uri(jsonObject.GetProperty("album").GetProperty("cover_big").ToString()));
     }
 
     private void SortBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -245,12 +249,10 @@ public sealed partial class Search : Page
         NoSearchResults.Visibility = Microsoft.UI.Xaml.Visibility.Collapsed; // Hide the message for now
 
         // Set the collection as the ItemsSource for the ListView
-        await FluentDL.Services.DeezerApi.AdvancedSearch(
-            (ObservableCollection<SongSearchObject>)CustomListView.ItemsSource, artistName, trackName, albumName);
-        originalList =
-            new ObservableCollection<SongSearchObject>(
-                (ObservableCollection<SongSearchObject>)CustomListView.ItemsSource);
+        await FluentDL.Services.DeezerApi.AdvancedSearch((ObservableCollection<SongSearchObject>)CustomListView.ItemsSource, artistName, trackName, albumName, ResultsText);
+        originalList = new ObservableCollection<SongSearchObject>((ObservableCollection<SongSearchObject>)CustomListView.ItemsSource);
 
+        SetResultsAmount(originalList.Count);
         SortCustomListView();
         SetNoSearchResults(); // Call again as actual check 
         SearchProgress.IsIndeterminate = false;
@@ -269,21 +271,27 @@ public sealed partial class Search : Page
         NoSearchResults.Visibility = Microsoft.UI.Xaml.Visibility.Collapsed; // Hide the message for now
 
         // Check if query is a spotify playlist link
+        // Format of links https://open.spotify.com/playlist/{id}?
+        // OR https://open.spotify.com/playlist/{id}?...
         if (generalQuery.Contains("https://open.spotify.com/playlist/"))
         {
             var playlistId = generalQuery.Split("/").Last();
+            // Remove any query parameters
+            if (playlistId.Contains("?"))
+            {
+                playlistId = playlistId.Split("?").First();
+            }
+
             await LoadSpotifyPlaylist(playlistId);
         }
         else
         {
-            await FluentDL.Services.DeezerApi.GeneralSearch(
-                (ObservableCollection<SongSearchObject>)CustomListView.ItemsSource, generalQuery);
+            await FluentDL.Services.DeezerApi.GeneralSearch((ObservableCollection<SongSearchObject>)CustomListView.ItemsSource, generalQuery, ResultsText);
         }
 
-        originalList =
-            new ObservableCollection<SongSearchObject>(
-                (ObservableCollection<SongSearchObject>)CustomListView.ItemsSource);
+        originalList = new ObservableCollection<SongSearchObject>((ObservableCollection<SongSearchObject>)CustomListView.ItemsSource);
 
+        SetResultsAmount(originalList.Count);
         SortCustomListView();
         SetNoSearchResults(); // Call again as actual check 
         SearchProgress.IsIndeterminate = false;
@@ -292,23 +300,25 @@ public sealed partial class Search : Page
     private async Task LoadSpotifyPlaylist(string playlistId)
     {
         ((ObservableCollection<SongSearchObject>)CustomListView.ItemsSource).Clear(); // Clear the list
+        var resultsCt = 0;
+
         List<SongSearchObject> playlistObjects = await SpotifyApi.GetPlaylist(playlistId);
         foreach (var song in playlistObjects)
         {
             var firstArtist = song.Artists.Split(",")[0];
-            var deezerResult =
-                await FluentDL.Services.DeezerApi.AdvancedSearch(firstArtist, song.Title, song.AlbumName);
+            var deezerResult = await FluentDL.Services.DeezerApi.AdvancedSearch(firstArtist, song.Title, song.AlbumName);
             if (deezerResult != null)
             {
                 ((ObservableCollection<SongSearchObject>)CustomListView.ItemsSource).Add(deezerResult); // Add to list
+                SetResultsAmount(++resultsCt);
             }
             else // Try a fuzzy
             {
                 var deezerResult2 = await FluentDL.Services.DeezerApi.GeneralSearch(song);
                 if (deezerResult2 != null)
                 {
-                    ((ObservableCollection<SongSearchObject>)CustomListView.ItemsSource)
-                        .Add(deezerResult2); // Add to list
+                    ((ObservableCollection<SongSearchObject>)CustomListView.ItemsSource).Add(deezerResult2); // Add to list
+                    SetResultsAmount(++resultsCt);
                 }
                 else
                 {
@@ -317,6 +327,7 @@ public sealed partial class Search : Page
             }
         }
     }
+
 
     private async void ShowDialog_OnClick_Click(object sender, RoutedEventArgs e)
     {
@@ -327,8 +338,6 @@ public sealed partial class Search : Page
     private void SetNoSearchResults()
     {
         // If collection is empty, show a message
-        NoSearchResults.Visibility = CustomListView.Items.Count == 0
-            ? Microsoft.UI.Xaml.Visibility.Visible
-            : Microsoft.UI.Xaml.Visibility.Collapsed;
+        NoSearchResults.Visibility = CustomListView.Items.Count == 0 ? Microsoft.UI.Xaml.Visibility.Visible : Microsoft.UI.Xaml.Visibility.Collapsed;
     }
 }

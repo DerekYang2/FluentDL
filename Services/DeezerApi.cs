@@ -3,11 +3,13 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
 using ABI.Windows.Data.Json;
 using Microsoft.UI.Dispatching;
+using Microsoft.UI.Xaml.Controls;
 using RestSharp;
 
 namespace FluentDL.Services;
@@ -74,9 +76,7 @@ public class SongSearchObject
 
     public override string ToString()
     {
-        return Source + " | Title: " + Title + ", Artists: " + Artists + ", Duration: " + Duration + ", Rank: " + Rank +
-               ", Release Date: " + ReleaseDate + ", Image Location: " + ImageLocation + ", Id: " + Id +
-               ", Album Name: " + AlbumName;
+        return Source + " | Title: " + Title + ", Artists: " + Artists + ", Duration: " + Duration + ", Rank: " + Rank + ", Release Date: " + ReleaseDate + ", Image Location: " + ImageLocation + ", Id: " + Id + ", Album Name: " + AlbumName;
     }
 }
 
@@ -94,7 +94,7 @@ internal class DeezerApi
         return JsonDocument.Parse(response.Content).RootElement;
     }
 
-    public static async Task GeneralSearch(ObservableCollection<SongSearchObject> itemSource, string query)
+    public static async Task GeneralSearch(ObservableCollection<SongSearchObject> itemSource, string query, TextBlock resultsText = null)
     {
         itemSource.Clear();
         query = query.Trim(); // Trim the query
@@ -106,12 +106,19 @@ internal class DeezerApi
         var req = "search?q=" + query;
 
         var jsonObject = await FetchJsonElement(req);
+        var resultsCt = 0;
 
         foreach (var track in jsonObject.GetProperty("data").EnumerateArray())
         {
             var trackId = track.GetProperty("id").ToString();
             var songObj = await GetTrack(trackId);
             itemSource.Add(songObj);
+
+            resultsCt++;
+            if (resultsText != null)
+            {
+                resultsText.Text = resultsCt + (resultsCt == 1 ? " result" : " results");
+            }
         }
     }
 
@@ -143,8 +150,7 @@ internal class DeezerApi
                     {
                         if (exactTitleMatch) // Be more lenient with artist name
                         {
-                            if (songObjArtist.ToLower().Contains(artist.ToLower()) ||
-                                artist.ToLower().Contains(songObjArtist.ToLower())) // If names contain each other
+                            if (songObjArtist.ToLower().Contains(artist.ToLower()) || artist.ToLower().Contains(songObjArtist.ToLower())) // If names contain each other
                             {
                                 return songObj;
                             }
@@ -164,8 +170,7 @@ internal class DeezerApi
         return null; // If no results
     }
 
-    public static async Task<SongSearchObject> AdvancedSearch(string artistName,
-        string trackName, string albumName)
+    public static async Task<SongSearchObject> AdvancedSearch(string artistName, string trackName, string albumName)
     {
         // Trim
         artistName = artistName.Trim();
@@ -177,10 +182,7 @@ internal class DeezerApi
             return null;
         }
 
-        var req = "search?q=" + (artistName.Length > 0 ? "artist:%22" + artistName + "%22 " : "") +
-                  (trackName.Length > 0 ? "track:%22" + trackName + "%22 " : "") +
-                  (albumName.Length > 0 ? "album:%22" + albumName + "%22" : "") +
-                  "?strict=on"; // Strict search
+        var req = "search?q=" + (artistName.Length > 0 ? "artist:%22" + artistName + "%22 " : "") + (trackName.Length > 0 ? "track:%22" + trackName + "%22 " : "") + (albumName.Length > 0 ? "album:%22" + albumName + "%22" : "") + "?strict=on"; // Strict search
         req = req.Replace(" ", "%20"); // Replace spaces with %20
 
         var jsonObject = await FetchJsonElement(req); // Create json object from the response
@@ -194,8 +196,7 @@ internal class DeezerApi
         return null; // If no results
     }
 
-    public static async Task AdvancedSearch(ObservableCollection<SongSearchObject> itemSource, string artistName,
-        string trackName, string albumName)
+    public static async Task AdvancedSearch(ObservableCollection<SongSearchObject> itemSource, string artistName, string trackName, string albumName, TextBlock resultsText = null)
     {
         itemSource.Clear();
 
@@ -209,19 +210,23 @@ internal class DeezerApi
             return;
         }
 
-        var req = "search?q=" + (artistName.Length > 0 ? "artist:%22" + artistName + "%22 " : "") +
-                  (trackName.Length > 0 ? "track:%22" + trackName + "%22 " : "") +
-                  (albumName.Length > 0 ? "album:%22" + albumName + "%22" : "") +
-                  "?strict=on"; // Strict search
+        var req = "search?q=" + (artistName.Length > 0 ? "artist:%22" + artistName + "%22 " : "") + (trackName.Length > 0 ? "track:%22" + trackName + "%22 " : "") + (albumName.Length > 0 ? "album:%22" + albumName + "%22" : "") + "?strict=on"; // Strict search
         req = req.Replace(" ", "%20"); // Replace spaces with %20
 
         var jsonObject = await FetchJsonElement(req); // Create json object from the response
+        var resultsCt = 0;
 
         foreach (var track in jsonObject.GetProperty("data").EnumerateArray())
         {
             var trackId = track.GetProperty("id").ToString();
             var songObj = await GetTrack(trackId);
             itemSource.Add(songObj);
+
+            resultsCt++;
+            if (resultsText != null)
+            {
+                resultsText.Text = resultsCt + (resultsCt == 1 ? " result" : " results");
+            }
         }
     }
 
