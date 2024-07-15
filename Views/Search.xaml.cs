@@ -200,17 +200,9 @@ public sealed partial class Search : Page
         PreviewInfoControl2.ItemsSource = PreviewInfoControl.ItemsSource = new List<TrackDetail>
         {
             new TrackDetail { Label = "Artists", Value = selectedSong.Artists },
-            new TrackDetail
-            {
-                Label = "Release Date",
-                Value = new DateVerboseConverter().Convert(selectedSong.ReleaseDate, null, null, null).ToString()
-            },
+            new TrackDetail { Label = "Release Date", Value = new DateVerboseConverter().Convert(selectedSong.ReleaseDate, null, null, null).ToString() },
             new TrackDetail { Label = "Popularity", Value = selectedSong.Rank },
-            new TrackDetail
-            {
-                Label = "Duration",
-                Value = new DurationConverter().Convert(selectedSong.Duration, null, null, null).ToString()
-            },
+            new TrackDetail { Label = "Duration", Value = new DurationConverter().Convert(selectedSong.Duration, null, null, null).ToString() },
             new TrackDetail { Label = "Album", Value = selectedSong.AlbumName },
             new TrackDetail { Label = "Track", Value = jsonObject.GetProperty("track_position").ToString() }
         };
@@ -385,6 +377,13 @@ public sealed partial class Search : Page
 
     private async void FailedResultsButton_OnClick(object sender, RoutedEventArgs e)
     {
+        // Testing youtube api
+        foreach (var song in failedSpotifySongs)
+        {
+            var videoResult = await YoutubeApi.GetSearchResult(song);
+            Debug.WriteLine("VIDEO RESULT:'" + videoResult.Title + "' - " + videoResult.Url);
+        }
+
         FailedDialog.XamlRoot = this.XamlRoot;
         var result = await FailedDialog.ShowAsync();
     }
