@@ -14,6 +14,7 @@ using Microsoft.UI.Dispatching;
 using Windows.Media.Core;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Media.Imaging;
+using YoutubeExplode.Search;
 
 namespace FluentDL.Views;
 // TODO: loading for search
@@ -72,6 +73,8 @@ public sealed partial class Search : Page
     private ObservableCollection<SongSearchObject> originalList;
     private SpotifyApi spotifyApi;
     private ObservableCollection<SongSearchObject> failedSpotifySongs;
+    private List<VideoSearchResult> youtubeAlternateList;
+    private bool failDialogOpen = false;
 
     public BlankViewModel ViewModel
     {
@@ -91,6 +94,8 @@ public sealed partial class Search : Page
         SortComboBox.SelectedIndex = 0;
         SortOrderComboBox.SelectedIndex = 0;
         ClearPreviewPane();
+
+        youtubeAlternateList = new List<VideoSearchResult>();
 
         // Initialize spotify failed results collection
         failedSpotifySongs = new ObservableCollection<SongSearchObject>();
@@ -331,6 +336,7 @@ public sealed partial class Search : Page
     private async Task LoadSpotifyPlaylist(string playlistId)
     {
         failedSpotifySongs.Clear();
+        youtubeAlternateList.Clear();
         ((ObservableCollection<SongSearchObject>)CustomListView.ItemsSource).Clear(); // Clear the list
 
         List<SongSearchObject> playlistObjects = await SpotifyApi.GetPlaylist(playlistId);
@@ -353,6 +359,9 @@ public sealed partial class Search : Page
                 {
                     failedSpotifySongs.Add(song);
                     FailedListView.ItemsSource = failedSpotifySongs;
+
+                    // Search failed songs on youtube
+                    youtubeAlternateList.Add(await YoutubeApi.GetSearchResult(song));
                 }
             }
         }
@@ -367,6 +376,35 @@ public sealed partial class Search : Page
         NoSearchResults.Visibility = CustomListView.Items.Count == 0 ? Microsoft.UI.Xaml.Visibility.Visible : Microsoft.UI.Xaml.Visibility.Collapsed;
     }
 
+    private void FailedDialog_OnPrimaryButtonClick(ContentDialog sender, ContentDialogButtonClickEventArgs args)
+    {
+        failDialogOpen = true;
+        var selectedIndex = FailedListView.SelectedIndex;
+        if (selectedIndex != -1)
+        {
+            var youtubeResult = youtubeAlternateList[selectedIndex];
+            if (youtubeResult != null)
+            {
+                var url = youtubeResult.Url;
+                // Open the url
+                var uri = new Uri(url);
+                var success = Windows.System.Launcher.LaunchUriAsync(uri);
+            }
+        }
+    }
+
+    private void FailedDialog_OnCloseButtonClick(ContentDialog sender, ContentDialogButtonClickEventArgs args)
+    {
+        failDialogOpen = false;
+    }
+
+    private void FailDialog_Closing(ContentDialog sender, ContentDialogClosingEventArgs args)
+    {
+        if (failDialogOpen)
+        {
+            args.Cancel = true;
+        }
+    }
 
     // Functions that open dialogs
     private async void ShowDialog_OnClick_Click(object sender, RoutedEventArgs e)
@@ -377,13 +415,6 @@ public sealed partial class Search : Page
 
     private async void FailedResultsButton_OnClick(object sender, RoutedEventArgs e)
     {
-        // Testing youtube api
-        foreach (var song in failedSpotifySongs)
-        {
-            var videoResult = await YoutubeApi.GetSearchResult(song);
-            Debug.WriteLine("VIDEO RESULT:'" + videoResult.Title + "' - " + videoResult.Url);
-        }
-
         FailedDialog.XamlRoot = this.XamlRoot;
         var result = await FailedDialog.ShowAsync();
     }

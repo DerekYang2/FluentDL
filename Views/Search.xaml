@@ -16,19 +16,7 @@
     </Page.Resources>
 
     <Grid>
-        <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="2*" />
-            <ColumnDefinition Width="1*" />
-        </Grid.ColumnDefinitions>
-
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="*" />
-        </Grid.RowDefinitions>
-
-        <ContentDialog x:Name="SearchDialog" PrimaryButtonText="Search" CloseButtonText="Cancel"
+                        <ContentDialog x:Name="SearchDialog" PrimaryButtonText="Search" CloseButtonText="Cancel"
                        Title="Advanced Search" IsSecondaryButtonEnabled="True" IsPrimaryButtonEnabled="True"
                        PrimaryButtonClick="SearchDialogClick" PrimaryButtonStyle="{ThemeResource AccentButtonStyle}">
             <StackPanel>
@@ -82,7 +70,7 @@
             </StackPanel>
         </ContentDialog>
 
-        <ContentDialog x:Name="FailedDialog" CloseButtonText="Close" Title="Tracks Not Found">
+        <ContentDialog x:Name="FailedDialog" CloseButtonText="Close" Title="Tracks Not Found" PrimaryButtonText="Open Youtube URL" IsPrimaryButtonEnabled="True" PrimaryButtonClick="FailedDialog_OnPrimaryButtonClick" PrimaryButtonStyle="{ThemeResource AccentButtonStyle}" CloseButtonClick="FailedDialog_OnCloseButtonClick" Closing="FailDialog_Closing" SecondaryButtonText="Add to queue" IsSecondaryButtonEnabled="True">
             <StackPanel>
                 <InfoBar
                     IsOpen="True"
@@ -90,12 +78,16 @@
                     Severity="Error"
                     Message="The following spotify tracks could not found on Deezer."
                     Margin="0,0,0,12" />
+
+                <TextBlock Text="Automatically found potential equivalents on Youtube."/>
+                <TextBlock Text="Review each find below and add to queue if satisfied." Margin="0, 0, 0, 12"/>
                 <ListView x:Name="FailedListView"
                             CornerRadius="4"
                             BorderThickness="0"
                             Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
                             BorderBrush="{ThemeResource ControlStrongStrokeColorDefaultBrush}"
                             Margin="0,0,0,10"
+                            Height="400"
                             >
                     <ListView.ItemTemplate>
                         <DataTemplate x:DataType="services:SongSearchObject">
@@ -136,7 +128,19 @@
                 </ListView>
             </StackPanel>
         </ContentDialog>
-                       
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="2*" />
+            <ColumnDefinition Width="1*" />
+        </Grid.ColumnDefinitions>
+
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
 
         <Grid Grid.Column="0" Grid.Row="0" ColumnSpacing="8" Margin="0, 2, 0, 8">
             <Grid.ColumnDefinitions>
@@ -355,4 +359,6 @@
                    HorizontalAlignment="Center" VerticalAlignment="Center" Grid.Row="0" Grid.RowSpan="4"
                    Grid.Column="1" Margin="0,0,0,10" />
     </Grid>
+    </Grid>
+
 </Page>

@@ -44,8 +44,7 @@ namespace FluentDL.Services
                     results.Add(result);
                 }
 
-                ct++;
-                if (ct >= 15 || results.Count >= 5)
+                if (++ct >= 10 || results.Count >= 5) // If total results is 10 or more or 5 results are found
                 {
                     break;
                 }

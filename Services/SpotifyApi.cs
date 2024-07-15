@@ -44,6 +44,11 @@ namespace FluentDL.Services
                 {
                     // All FullTrack properties are available
                     var artistCsv = track.Artists.Select(a => a.Name).Aggregate((a, b) => a + ", " + b);
+                    if (artistCsv.Length == 0 || track.Album.Name.Length == 0)
+                    {
+                        continue;
+                    }
+
                     songs.Add(new SongSearchObject
                     {
                         Source = "spotify",

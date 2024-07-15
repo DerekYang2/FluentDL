@@ -119,8 +119,8 @@ internal class DeezerApi
     {
         var title = song.Title.ToLower();
         var artists = song.Artists.Split(", ").ToList();
-
         var req = "search?q=" + artists[0] + " " + title; // Search for the first artist and title
+        Debug.WriteLine(req);
 
         var jsonObject = await FetchJsonElement(req);
 
@@ -128,10 +128,14 @@ internal class DeezerApi
         {
             var trackId = track.GetProperty("id").ToString();
             var songObj = await GetTrack(trackId); // Return the first result
-            songObj.Title = songObj.Title.ToLower();
 
-            bool exactTitleMatch = songObj.Title.Equals(title);
-            bool substringMatch = songObj.Title.Contains(title) || title.Contains(songObj.Title);
+            bool exactTitleMatch = songObj.Title.ToLower().Equals(title);
+
+            // Due to inconsistency of brackets and hyphens, delete them, all spaces, and compare
+            var titlePruned = title.Replace(" ", "").Replace("(", "").Replace(")", "").Replace("-", "").ToLower();
+            var songObjTitlePruned = songObj.Title.Replace(" ", "").Replace("(", "").Replace(")", "").Replace("-", "").ToLower();
+            bool substringMatch = titlePruned.Contains(songObjTitlePruned) || songObjTitlePruned.Contains(titlePruned);
+
 
             if (exactTitleMatch || substringMatch) // If the title matches
             {
@@ -177,16 +181,34 @@ internal class DeezerApi
 
         var req = "search?q=" + (artistName.Length > 0 ? "artist:%22" + artistName + "%22 " : "") + (trackName.Length > 0 ? "track:%22" + trackName + "%22 " : "") + (albumName.Length > 0 ? "album:%22" + albumName + "%22" : "") + "?strict=on"; // Strict search
         req = req.Replace(" ", "%20"); // Replace spaces with %20
-
+        req = req.Replace("(", "%20").Replace(")", "%20"); // Replace with spaces, brackets break advanced query for some reason
+        req = req.Replace("&", "and");
         var jsonObject = await FetchJsonElement(req); // Create json object from the response
+
+        SongSearchObject closeMatchObj = null;
 
         foreach (var track in jsonObject.GetProperty("data").EnumerateArray())
         {
             var trackId = track.GetProperty("id").ToString();
-            return await GetTrack(trackId); // Return the first result
+
+            var songObj = await GetTrack(trackId); // Return the first result
+
+            if (songObj.Title.ToLower().Equals(trackName.ToLower())) // If the title matches
+            {
+                return songObj;
+            }
+
+            // Due to inconsistency of brackets and hyphens, delete them, all spaces, and compare
+            var titlePruned = trackName.Replace(" ", "").Replace("(", "").Replace(")", "").Replace("-", "").ToLower();
+            var songObjTitlePruned = songObj.Title.Replace(" ", "").Replace("(", "").Replace(")", "").Replace("-", "").ToLower();
+
+            if (titlePruned.Equals(songObjTitlePruned)) // If the title is a substring match
+            {
+                closeMatchObj = songObj;
+            }
         }
 
-        return null; // If no results
+        return closeMatchObj; // If no results
     }
 
     public static async Task AdvancedSearch(ObservableCollection<SongSearchObject> itemSource, string artistName, string trackName, string albumName)
@@ -205,6 +227,8 @@ internal class DeezerApi
 
         var req = "search?q=" + (artistName.Length > 0 ? "artist:%22" + artistName + "%22 " : "") + (trackName.Length > 0 ? "track:%22" + trackName + "%22 " : "") + (albumName.Length > 0 ? "album:%22" + albumName + "%22" : "") + "?strict=on"; // Strict search
         req = req.Replace(" ", "%20"); // Replace spaces with %20
+        req = req.Replace("(", "%20").Replace(")", "%20"); // Replace with spaces, brackets break advanced query for some reason
+        req = req.Replace("&", "and");
 
         var jsonObject = await FetchJsonElement(req); // Create json object from the response
 
