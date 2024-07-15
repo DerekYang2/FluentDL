@@ -71,6 +71,7 @@ public sealed partial class Search : Page
     private RipSubprocess ripSubprocess;
     private ObservableCollection<SongSearchObject> originalList;
     private SpotifyApi spotifyApi;
+    private ObservableCollection<SongSearchObject> failedSpotifySongs;
 
     public BlankViewModel ViewModel
     {
@@ -81,19 +82,56 @@ public sealed partial class Search : Page
     {
         ViewModel = App.GetService<BlankViewModel>();
         InitializeComponent();
+
         CustomListView.ItemsSource = new ObservableCollection<SongSearchObject>();
+        AttachCollectionChangedEvent((ObservableCollection<SongSearchObject>)CustomListView.ItemsSource);
         originalList = new ObservableCollection<SongSearchObject>();
-        ResultsText.Text = "0 results";
+        SetResultsAmount(0);
         ripSubprocess = new RipSubprocess();
         SortComboBox.SelectedIndex = 0;
         SortOrderComboBox.SelectedIndex = 0;
         ClearPreviewPane();
+
+        // Initialize spotify failed results collection
+        failedSpotifySongs = new ObservableCollection<SongSearchObject>();
+        FailedResultsButton.Visibility = Microsoft.UI.Xaml.Visibility.Collapsed;
+        failedSpotifySongs.CollectionChanged += (sender, e) =>
+        {
+            if (failedSpotifySongs.Count > 0)
+            {
+                FailedResultsButton.Visibility = Microsoft.UI.Xaml.Visibility.Visible;
+                FailedResultsText.Text = failedSpotifySongs.Count + " failed";
+            }
+            else
+            {
+                FailedResultsButton.Visibility = Microsoft.UI.Xaml.Visibility.Collapsed;
+            }
+        };
+
+        // Initialize Spotify API
         SpotifyApi.Initialize();
+    }
+
+    private void AttachCollectionChangedEvent(ObservableCollection<SongSearchObject> collection)
+    {
+        collection.CollectionChanged += (sender, e) =>
+        {
+            SetResultsAmount(CustomListView.Items.Count);
+        };
     }
 
     public void SetResultsAmount(int amount)
     {
-        ResultsText.Text = amount + (amount == 1 ? " result" : " results");
+        if (amount == 0)
+        {
+            ResultsText.Text = "No results";
+            ResultsIcon.Visibility = Microsoft.UI.Xaml.Visibility.Collapsed;
+        }
+        else
+        {
+            ResultsText.Text = "Add " + amount + " to queue";
+            ResultsIcon.Visibility = Microsoft.UI.Xaml.Visibility.Visible;
+        }
     }
 
     private void ClearPreviewPane()
@@ -232,6 +270,7 @@ public sealed partial class Search : Page
         }
 
         CustomListView.ItemsSource = new ObservableCollection<SongSearchObject>(songList);
+        AttachCollectionChangedEvent((ObservableCollection<SongSearchObject>)CustomListView.ItemsSource);
     }
 
     private async void SearchDialogClick(ContentDialog sender, ContentDialogButtonClickEventArgs args)
@@ -249,7 +288,7 @@ public sealed partial class Search : Page
         NoSearchResults.Visibility = Microsoft.UI.Xaml.Visibility.Collapsed; // Hide the message for now
 
         // Set the collection as the ItemsSource for the ListView
-        await FluentDL.Services.DeezerApi.AdvancedSearch((ObservableCollection<SongSearchObject>)CustomListView.ItemsSource, artistName, trackName, albumName, ResultsText);
+        await FluentDL.Services.DeezerApi.AdvancedSearch((ObservableCollection<SongSearchObject>)CustomListView.ItemsSource, artistName, trackName, albumName);
         originalList = new ObservableCollection<SongSearchObject>((ObservableCollection<SongSearchObject>)CustomListView.ItemsSource);
 
         SetResultsAmount(originalList.Count);
@@ -286,7 +325,7 @@ public sealed partial class Search : Page
         }
         else
         {
-            await FluentDL.Services.DeezerApi.GeneralSearch((ObservableCollection<SongSearchObject>)CustomListView.ItemsSource, generalQuery, ResultsText);
+            await FluentDL.Services.DeezerApi.GeneralSearch((ObservableCollection<SongSearchObject>)CustomListView.ItemsSource, generalQuery);
         }
 
         originalList = new ObservableCollection<SongSearchObject>((ObservableCollection<SongSearchObject>)CustomListView.ItemsSource);
@@ -299,8 +338,8 @@ public sealed partial class Search : Page
 
     private async Task LoadSpotifyPlaylist(string playlistId)
     {
+        failedSpotifySongs.Clear();
         ((ObservableCollection<SongSearchObject>)CustomListView.ItemsSource).Clear(); // Clear the list
-        var resultsCt = 0;
 
         List<SongSearchObject> playlistObjects = await SpotifyApi.GetPlaylist(playlistId);
         foreach (var song in playlistObjects)
@@ -310,7 +349,6 @@ public sealed partial class Search : Page
             if (deezerResult != null)
             {
                 ((ObservableCollection<SongSearchObject>)CustomListView.ItemsSource).Add(deezerResult); // Add to list
-                SetResultsAmount(++resultsCt);
             }
             else // Try a fuzzy
             {
@@ -318,26 +356,36 @@ public sealed partial class Search : Page
                 if (deezerResult2 != null)
                 {
                     ((ObservableCollection<SongSearchObject>)CustomListView.ItemsSource).Add(deezerResult2); // Add to list
-                    SetResultsAmount(++resultsCt);
                 }
                 else
                 {
-                    Debug.WriteLine("Could not find: " + song);
+                    failedSpotifySongs.Add(song);
+                    FailedListView.ItemsSource = failedSpotifySongs;
                 }
             }
         }
+
+        FailedListView.ItemsSource = failedSpotifySongs;
     }
 
 
+    private void SetNoSearchResults()
+    {
+        // If collection is empty, show a message
+        NoSearchResults.Visibility = CustomListView.Items.Count == 0 ? Microsoft.UI.Xaml.Visibility.Visible : Microsoft.UI.Xaml.Visibility.Collapsed;
+    }
+
+
+    // Functions that open dialogs
     private async void ShowDialog_OnClick_Click(object sender, RoutedEventArgs e)
     {
         SearchDialog.XamlRoot = this.XamlRoot;
         var result = await SearchDialog.ShowAsync();
     }
 
-    private void SetNoSearchResults()
+    private async void FailedResultsButton_OnClick(object sender, RoutedEventArgs e)
     {
-        // If collection is empty, show a message
-        NoSearchResults.Visibility = CustomListView.Items.Count == 0 ? Microsoft.UI.Xaml.Visibility.Visible : Microsoft.UI.Xaml.Visibility.Collapsed;
+        FailedDialog.XamlRoot = this.XamlRoot;
+        var result = await FailedDialog.ShowAsync();
     }
 }

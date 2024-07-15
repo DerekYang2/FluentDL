@@ -82,6 +82,62 @@
             </StackPanel>
         </ContentDialog>
 
+        <ContentDialog x:Name="FailedDialog" CloseButtonText="Close" Title="Tracks Not Found">
+            <StackPanel>
+                <InfoBar
+                    IsOpen="True"
+                    IsClosable="False"
+                    Severity="Error"
+                    Message="The following spotify tracks could not found on Deezer."
+                    Margin="0,0,0,12" />
+                <ListView x:Name="FailedListView"
+                            CornerRadius="4"
+                            BorderThickness="0"
+                            Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                            BorderBrush="{ThemeResource ControlStrongStrokeColorDefaultBrush}"
+                            Margin="0,0,0,10"
+                            >
+                    <ListView.ItemTemplate>
+                        <DataTemplate x:DataType="services:SongSearchObject">
+                            <Grid Margin="0,12,0,12" AutomationProperties.Name="{x:Bind Title}">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="76" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <Border CornerRadius="4" Height="76">
+                                    <Border.Background>
+                                        <ImageBrush Stretch="UniformToFill" ImageSource="{x:Bind ImageLocation}" />
+                                    </Border.Background>
+                                </Border>
+
+                                <StackPanel Margin="15,0,0,0" Grid.Column="1">
+                                    <TextBlock Text="{x:Bind Title}" FontFamily="Segoe UI Variable Display"
+                                                Style="{ThemeResource BodyStrongTextBlockStyle}" HorizontalAlignment="Left"
+                                                TextTrimming="CharacterEllipsis" MaxLines="1" />
+                                    <TextBlock Text="{x:Bind Artists}" FontFamily="Segoe UI Variable Display"
+                                                Style="{ThemeResource BodyTextBlockStyle}" TextTrimming="CharacterEllipsis"
+                                                MaxLines="1" />
+                                </StackPanel>
+
+                                <StackPanel Margin="15,0,0,0" Orientation="Horizontal" VerticalAlignment="Bottom"
+                                            Grid.Column="1">
+                                    <TextBlock Text="{x:Bind ReleaseDate, Converter={StaticResource DateToYearConverter}}" HorizontalAlignment="Left"
+                                                Style="{ThemeResource BodyTextBlockStyle}" Margin="0,0,0,0"
+                                                FontFamily="Segoe UI Variable Display" />
+                                    <TextBlock Text="&#x2022;" Style="{ThemeResource BodyTextBlockStyle}"
+                                                HorizontalAlignment="Left" Margin="5,0,0,0" />
+                                    <TextBlock Text="{x:Bind Duration, Converter={StaticResource DurationConverter}}" HorizontalAlignment="Left"
+                                                Style="{ThemeResource BodyTextBlockStyle}" Margin="5,0,0,0"
+                                                FontFamily="Segoe UI Variable Display" />
+                                </StackPanel>
+                            </Grid>
+                        </DataTemplate>
+                    </ListView.ItemTemplate>
+                </ListView>
+            </StackPanel>
+        </ContentDialog>
+                       
+
         <Grid Grid.Column="0" Grid.Row="0" ColumnSpacing="8" Margin="0, 2, 0, 8">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*" />
@@ -99,14 +155,14 @@
 
             <Button Grid.Column="1"  x:Name="ShowDialogButton" Click="ShowDialog_OnClick_Click">
                 <StackPanel Orientation="Horizontal">
-                    <SymbolIcon Symbol="Filter" Margin="0,0,8,0"/>
+                    <FontIcon Glyph="&#xE71C;" FontSize="16" Margin="0, 0, 8, 0"/>
                     <TextBlock Text="Advanced" />
                 </StackPanel>
             </Button>
 
             <Button Grid.Column="2"  x:Name="Help" Click="ShowDialog_OnClick_Click">
                 <StackPanel Orientation="Horizontal">
-                    <SymbolIcon Symbol="Help" Margin="0,0,8,0"/>
+                    <FontIcon Glyph="&#xE897;" FontSize="16" Margin="0, 0, 8, 0"/>
                     <TextBlock Text="Help" />
                 </StackPanel>
             </Button>
@@ -114,7 +170,18 @@
         </Grid>
 
         <controls1:DockPanel Grid.Row="1" Grid.Column="0">
-            <TextBlock x:Name="ResultsText" Text="0 results" Style="{ThemeResource BodyTextBlockStyle}" VerticalAlignment="Center" Margin="8, 0, 0, 0"/>
+            <Button VerticalAlignment="Center"  Margin="0, 0, 0, 0" Background="Transparent" BorderBrush="Transparent">
+                <StackPanel Orientation="Horizontal">
+                    <FontIcon x:Name="ResultsIcon" Glyph="&#xE710;" FontSize="16" Margin="0, 0, 8, 0" Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"/>
+                    <TextBlock x:Name="ResultsText" Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"/>
+                </StackPanel>
+            </Button>
+            <Button x:Name="FailedResultsButton" VerticalAlignment="Center"  Margin="0, 0, 0, 0" Background="Transparent" BorderBrush="Transparent" Click="FailedResultsButton_OnClick">
+                <StackPanel Orientation="Horizontal">
+                    <FontIcon x:Name="FailedResultsIcon" Glyph="&#xE7BA;" FontSize="16" Margin="0, 0, 8, 0" Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"/>
+                    <TextBlock x:Name="FailedResultsText" Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"/>
+                </StackPanel>
+            </Button>
 
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
                 <ComboBox x:Name="SortOrderComboBox" SelectionChanged="SortOrder_SelectionChanged"
@@ -172,7 +239,8 @@
                   BorderBrush="{ThemeResource ControlStrongStrokeColorDefaultBrush}"
                   Grid.Row="3"
                   Grid.Column="0"
-                  Margin="0,0,0,10">
+                  Margin="0,0,0,10"
+                  >
             <ListView.ItemTemplate>
                 <DataTemplate x:DataType="services:SongSearchObject">
                     <Grid Margin="0,12,0,12" AutomationProperties.Name="{x:Bind Title}">

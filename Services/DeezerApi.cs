@@ -94,7 +94,7 @@ internal class DeezerApi
         return JsonDocument.Parse(response.Content).RootElement;
     }
 
-    public static async Task GeneralSearch(ObservableCollection<SongSearchObject> itemSource, string query, TextBlock resultsText = null)
+    public static async Task GeneralSearch(ObservableCollection<SongSearchObject> itemSource, string query)
     {
         itemSource.Clear();
         query = query.Trim(); // Trim the query
@@ -106,19 +106,12 @@ internal class DeezerApi
         var req = "search?q=" + query;
 
         var jsonObject = await FetchJsonElement(req);
-        var resultsCt = 0;
 
         foreach (var track in jsonObject.GetProperty("data").EnumerateArray())
         {
             var trackId = track.GetProperty("id").ToString();
             var songObj = await GetTrack(trackId);
             itemSource.Add(songObj);
-
-            resultsCt++;
-            if (resultsText != null)
-            {
-                resultsText.Text = resultsCt + (resultsCt == 1 ? " result" : " results");
-            }
         }
     }
 
@@ -196,7 +189,7 @@ internal class DeezerApi
         return null; // If no results
     }
 
-    public static async Task AdvancedSearch(ObservableCollection<SongSearchObject> itemSource, string artistName, string trackName, string albumName, TextBlock resultsText = null)
+    public static async Task AdvancedSearch(ObservableCollection<SongSearchObject> itemSource, string artistName, string trackName, string albumName)
     {
         itemSource.Clear();
 
@@ -214,19 +207,12 @@ internal class DeezerApi
         req = req.Replace(" ", "%20"); // Replace spaces with %20
 
         var jsonObject = await FetchJsonElement(req); // Create json object from the response
-        var resultsCt = 0;
 
         foreach (var track in jsonObject.GetProperty("data").EnumerateArray())
         {
             var trackId = track.GetProperty("id").ToString();
             var songObj = await GetTrack(trackId);
             itemSource.Add(songObj);
-
-            resultsCt++;
-            if (resultsText != null)
-            {
-                resultsText.Text = resultsCt + (resultsCt == 1 ? " result" : " results");
-            }
         }
     }
 
