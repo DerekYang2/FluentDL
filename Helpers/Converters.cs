@@ -1,54 +1,68 @@
 ﻿using System;
 using System.Globalization;
+using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Data;
 
-namespace FluentDL.Helpers
+namespace FluentDL.Helpers;
+
+internal class DateToYearConverter : IValueConverter
 {
-    internal class DateToYearConverter : IValueConverter
+    // Converts YYYY-MM-DD to YYYY
+    public object Convert(object value, Type targetType, object parameter, string language)
     {
-        // Converts YYYY-MM-DD to YYYY
-        public object Convert(object value, Type targetType, object parameter, string language)
-        {
-            return value.ToString().Substring(0, 4);
-        }
-
-        public object ConvertBack(object value, Type targetType, object parameter, string language)
-        {
-            throw new NotImplementedException();
-        }
+        return value.ToString().Substring(0, 4);
     }
 
-    internal class DateVerboseConverter : IValueConverter
+    public object ConvertBack(object value, Type targetType, object parameter, string language)
     {
-        // Converts YYYY-MM-DD to Month DD, YYYY
-        public object Convert(object value, Type targetType, object parameter, string language)
-        {
-            return DateTime.Parse(value.ToString()).ToString("MMMM dd, yyyy", CultureInfo.InvariantCulture);
-        }
+        throw new NotImplementedException();
+    }
+}
 
-        public object ConvertBack(object value, Type targetType, object parameter, string language)
-        {
-            throw new NotImplementedException();
-        }
+internal class DateVerboseConverter : IValueConverter
+{
+    // Converts YYYY-MM-DD to Month DD, YYYY
+    public object Convert(object value, Type targetType, object parameter, string language)
+    {
+        return DateTime.Parse(value.ToString()).ToString("MMMM dd, yyyy", CultureInfo.InvariantCulture);
     }
 
-    internal class DurationConverter : IValueConverter
+    public object ConvertBack(object value, Type targetType, object parameter, string language)
     {
-        // Converts seconds to H hr, M min, S sec
-        public object Convert(object value, Type targetType, object parameter, string language)
-        {
-            int seconds = int.Parse(value.ToString());
-            int sec = seconds % 60;
-            seconds /= 60;
-            int min = seconds % 60;
-            seconds /= 60;
-            int hr = seconds;
-            return (hr > 0 ? hr + " hr, " : "") + (min > 0 ? min + " min, " : "") + sec + " sec";
-        }
+        throw new NotImplementedException();
+    }
+}
 
-        public object ConvertBack(object value, Type targetType, object parameter, string language)
-        {
-            throw new NotImplementedException();
-        }
+internal class DurationConverter : IValueConverter
+{
+    // Converts seconds to H hr, M min, S sec
+    public object Convert(object value, Type targetType, object parameter, string language)
+    {
+        int seconds = int.Parse(value.ToString());
+        int sec = seconds % 60;
+        seconds /= 60;
+        int min = seconds % 60;
+        seconds /= 60;
+        int hr = seconds;
+        return (hr > 0 ? hr + " hr, " : "") + (min > 0 ? min + " min, " : "") + sec + " sec";
+    }
+
+    public object ConvertBack(object value, Type targetType, object parameter, string language)
+    {
+        throw new NotImplementedException();
+    }
+}
+
+internal class VisibilityConverter : IValueConverter
+{
+    // Converts bool to Visibility
+    public object Convert(object value, Type targetType, object parameter, string language)
+    {
+        return (bool)value ? Microsoft.UI.Xaml.Visibility.Visible : Microsoft.UI.Xaml.Visibility.Collapsed;
+    }
+
+    public object ConvertBack(object value, Type targetType, object parameter, string language)
+    {
+        throw new NotImplementedException();
     }
 }

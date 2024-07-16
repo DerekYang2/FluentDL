@@ -342,8 +342,7 @@ public sealed partial class Search : Page
         List<SongSearchObject> playlistObjects = await SpotifyApi.GetPlaylist(playlistId);
         foreach (var song in playlistObjects)
         {
-            var firstArtist = song.Artists.Split(",")[0];
-            var deezerResult = await FluentDL.Services.DeezerApi.AdvancedSearch(firstArtist, song.Title, song.AlbumName);
+            var deezerResult = await FluentDL.Services.DeezerApi.AdvancedSearch(song);
             if (deezerResult != null)
             {
                 ((ObservableCollection<SongSearchObject>)CustomListView.ItemsSource).Add(deezerResult); // Add to list

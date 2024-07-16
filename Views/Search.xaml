@@ -13,6 +13,7 @@
     <Page.Resources>
         <helpers:DateToYearConverter x:Key="DateToYearConverter" />
         <helpers:DurationConverter x:Key="DurationConverter"/>
+        <helpers:VisibilityConverter x:Key="VisibilityConverter"/>
     </Page.Resources>
 
     <Grid>
@@ -78,7 +79,6 @@
                     Severity="Error"
                     Message="The following spotify tracks could not found on Deezer."
                     Margin="0,0,0,12" />
-
                 <TextBlock Text="Automatically found potential equivalents on Youtube."/>
                 <TextBlock Text="Review each find below and add to queue if satisfied." Margin="0, 0, 0, 12"/>
                 <ListView x:Name="FailedListView"
@@ -264,7 +264,7 @@
                                            Style="{ThemeResource BodyStrongTextBlockStyle}" HorizontalAlignment="Left"
                                            TextTrimming="CharacterEllipsis" MaxLines="1" Margin="0, 0, 8, 0"/>
                                 <Border Background="DarkGray" CornerRadius="2" Padding="4, 0" VerticalAlignment="Center">
-                                    <TextBlock Text="E" Style="{ThemeResource CaptionTextBlockStyle}" Foreground="Black"/>
+                                    <TextBlock Text="E" Style="{ThemeResource CaptionTextBlockStyle}" Foreground="Black" Visibility="{x:Bind Explicit, Converter={StaticResource VisibilityConverter}}"/>
                                 </Border>
                             </StackPanel>
                             <TextBlock Text="{x:Bind Artists}" FontFamily="Segoe UI Variable Display"

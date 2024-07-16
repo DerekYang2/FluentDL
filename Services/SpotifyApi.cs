@@ -61,7 +61,8 @@ namespace FluentDL.Services
                         ReleaseDate = track.Album.ReleaseDate,
                         Duration = ((int)Math.Round(track.DurationMs / 1000.0)).ToString(),
                         Rank = track.Popularity.ToString(),
-                        AlbumName = track.Album.Name
+                        AlbumName = track.Album.Name,
+                        Explicit = track.Explicit
                     });
                 }
             }

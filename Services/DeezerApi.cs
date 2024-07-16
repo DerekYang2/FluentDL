@@ -14,6 +14,7 @@ using CommunityToolkit.WinUI.UI.Controls.TextToolbarSymbols;
 using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml.Controls;
 using RestSharp;
+using YoutubeExplode.Search;
 
 namespace FluentDL.Services;
 
@@ -68,6 +69,12 @@ public class SongSearchObject
     }
 
     public string Source
+    {
+        get;
+        set;
+    }
+
+    public bool Explicit
     {
         get;
         set;
@@ -156,7 +163,7 @@ internal class DeezerApi
         }
 
         // Remove punctuation that may cause inconsistency
-        titlePruned = titlePruned.Replace(" ", "").Replace("(", "").Replace(")", "").Replace("-", "").Replace(".", "").Replace("[", "").Replace("]", "").Replace("—", "");
+        titlePruned = titlePruned.Replace(" ", "").Replace("(", "").Replace(")", "").Replace("-", "").Replace(".", "").Replace("[", "").Replace("]", "").Replace("—", "").Replace("'", "").Replace("\"", "");
 
         // Remove non ascii and replaced accented with normal
         titlePruned = EnforceAscii(titlePruned);
@@ -184,7 +191,7 @@ internal class DeezerApi
             titlePruned = titlePruned.Remove(index2, closingIndex - index2 + 1);
         }
 
-        return titlePruned;
+        return EnforceAscii(titlePruned);
     }
 
     public static async Task GeneralSearch(ObservableCollection<SongSearchObject> itemSource, string query)
@@ -241,7 +248,7 @@ internal class DeezerApi
             }
         }
 
-        // Pass 1: Loop through exact matches and get one with minimum album edit distance
+        // Loop through exact matches and get one with minimum album edit distance
         SongSearchObject closest = null;
         int minDist = int.MaxValue;
         foreach (var songObj in searchResults)
@@ -249,9 +256,9 @@ internal class DeezerApi
             // Due to inconsistency of brackets and hyphens, delete them, all spaces, and compare
             var titlePruned = PruneTitle(title);
             var songObjTitlePruned = PruneTitle(songObj.Title); // Remove periods due to inconsistency with Jr. and Jr
-            if (titlePruned.Equals(songObjTitlePruned))  // If pruned titles are equal
+            if (titlePruned.Equals(songObjTitlePruned)) // If pruned titles are equal
             {
-                var editDist = CalcLevenshteinDistance(PruneTitle(song.AlbumName), PruneTitle(songObj.AlbumName));  // Calculate and update min edit dist
+                var editDist = CalcLevenshteinDistance(PruneTitle(song.AlbumName), PruneTitle(songObj.AlbumName)); // Calculate and update min edit dist
                 if (editDist < minDist)
                 {
                     minDist = editDist;
@@ -264,37 +271,46 @@ internal class DeezerApi
     }
 
     // TODO: try all artists in req, hashset with deezer id to prevent dupes
-    public static async Task<SongSearchObject> AdvancedSearch(string artistName, string trackName, string albumName)
+    public static async Task<SongSearchObject> AdvancedSearch(SongSearchObject song)
     {
-        // Trim
-        artistName = artistName.Trim();
-        trackName = PruneTitleSearch(trackName);
-        albumName = albumName.Trim();
+        var artists = song.Artists.Split(", ").ToList();
+        var trackName = PruneTitleSearch(song.Title);
+        var albumName = song.AlbumName;
 
-        if (artistName.Length == 0 && trackName.Length == 0 && albumName.Length == 0) // If no search query
+        if (artists.Count == 0 && trackName.Length == 0 && albumName.Length == 0) // If no search query
         {
             return null;
         }
 
-        var req = "search?q=" + (artistName.Length > 0 ? "artist:%22" + artistName + "%22 " : "") + (trackName.Length > 0 ? "track:%22" + trackName + "%22 " : "") + (albumName.Length > 0 ? "album:%22" + albumName + "%22" : "") + "?strict=on"; // Strict search
-        req = req.Replace(" ", "%20"); // Replace spaces with %20
-        req = req.Replace("&", "and");
-        var jsonObject = await FetchJsonElement(req); // Create json object from the response
+        var songObjList = new List<SongSearchObject>(); // List of SongSearchObject results
+        HashSet<string> idSet = new HashSet<string>(); // HashSet to prevent duplicate tracks
 
-        Debug.WriteLine(req + " | " + jsonObject.GetProperty("data").EnumerateArray().Count());
+        foreach (var artistName in artists) // Try searching for each artist
+        {
+            var req = "search?q=" + (artistName.Length > 0 ? "artist:%22" + artistName + "%22 " : "") + (trackName.Length > 0 ? "track:%22" + trackName + "%22 " : "") + (albumName.Length > 0 ? "album:%22" + albumName + "%22" : "") + "?strict=off"; // Strict search
+            req = req.Replace(" ", "%20"); // Replace spaces with %20
+            req = req.Replace("&", "and");
+            var jsonObject = await FetchJsonElement(req); // Create json object from the response
 
+            foreach (var track in jsonObject.GetProperty("data").EnumerateArray())
+            {
+                var trackId = track.GetProperty("id").ToString();
+                if (!idSet.Contains(trackId)) // If the track id is not already in the set
+                {
+                    var songObj = await GetTrack(trackId);
+                    songObjList.Add(songObj);
+                    idSet.Add(trackId);
+                }
+            }
+        }
+
+        // Pass 1: exact title match, find least edit distance album name
         SongSearchObject closeMatchObj = null;
         int minEditDistance = int.MaxValue;
-        foreach (var track in jsonObject.GetProperty("data").EnumerateArray())
+        foreach (var songObj in songObjList)
         {
-            var trackId = track.GetProperty("id").ToString();
-
-            var songObj = await GetTrack(trackId); // Return the first result
-
-
             var titlePruned = PruneTitle(trackName);
             var songObjTitlePruned = PruneTitle(songObj.Title);
-
 
             if (titlePruned.Equals(songObjTitlePruned)) // If the title matches without punctuation
             {
@@ -312,7 +328,27 @@ internal class DeezerApi
             }
         }
 
-        return closeMatchObj; // If no results
+        if (closeMatchObj != null)
+        {
+            return closeMatchObj;
+        }
+
+        // pass 2: if exact album match, find least edit distance title name
+        minEditDistance = int.MaxValue; // Reset min edit distance
+        foreach (var songObj in songObjList)
+        {
+            if (PruneTitle(albumName).Equals(PruneTitle(songObj.AlbumName))) // If the album name is exact match
+            {
+                var dist = CalcLevenshteinDistance(PruneTitle(trackName), PruneTitle(songObj.Title)); // Calculate and update min edit dist
+                if (dist < minEditDistance)
+                {
+                    minEditDistance = dist;
+                    closeMatchObj = songObj;
+                }
+            }
+        }
+
+        return closeMatchObj;
     }
 
     public static async Task AdvancedSearch(ObservableCollection<SongSearchObject> itemSource, string artistName, string trackName, string albumName)
@@ -374,7 +410,8 @@ internal class DeezerApi
             Artists = contribCsv,
             Duration = jsonObject.GetProperty("duration").ToString(),
             Rank = jsonObject.GetProperty("rank").ToString(),
-            AlbumName = jsonObject.GetProperty("album").GetProperty("title").GetString()
+            AlbumName = jsonObject.GetProperty("album").GetProperty("title").GetString(),
+            Explicit = jsonObject.GetProperty("explicit_lyrics").GetBoolean()
         };
     }
 
