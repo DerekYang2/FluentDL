@@ -297,9 +297,9 @@ internal class DeezerApi
                 var trackId = track.GetProperty("id").ToString();
                 if (!idSet.Contains(trackId)) // If the track id is not already in the set
                 {
+                    idSet.Add(trackId);
                     var songObj = await GetTrack(trackId);
                     songObjList.Add(songObj);
-                    idSet.Add(trackId);
                 }
             }
         }
@@ -339,11 +339,15 @@ internal class DeezerApi
         {
             if (PruneTitle(albumName).Equals(PruneTitle(songObj.AlbumName))) // If the album name is exact match
             {
-                var dist = CalcLevenshteinDistance(PruneTitle(trackName), PruneTitle(songObj.Title)); // Calculate and update min edit dist
-                if (dist < minEditDistance)
+                string pruneTargetName = PruneTitle(trackName), pruneName = PruneTitle(songObj.Title);
+                if (pruneName.Contains(pruneTargetName) || pruneTargetName.Contains(pruneName)) // Should at least be substrings
                 {
-                    minEditDistance = dist;
-                    closeMatchObj = songObj;
+                    var dist = CalcLevenshteinDistance(pruneTargetName, pruneName); // Calculate and update min edit dist
+                    if (dist < minEditDistance)
+                    {
+                        minEditDistance = dist;
+                        closeMatchObj = songObj;
+                    }
                 }
             }
         }
@@ -391,7 +395,20 @@ internal class DeezerApi
         foreach (var contribObject in jsonObject.GetProperty("contributors").EnumerateArray())
         {
             var name = contribObject.GetProperty("name").GetString();
-            if (!contributors.Contains(name) && !name.Contains(',')) // If the name is not already in the list and does not contain a comma
+            if (name.Contains(','))
+            {
+                // Split
+                var names = name.Split(", ");
+                foreach (var n in names)
+                {
+                    if (!contributors.Contains(n))
+                    {
+                        contribCsv += n + ", ";
+                        contributors.Add(n);
+                    }
+                }
+            }
+            else if (!contributors.Contains(name)) // If the name is not already in the list and does not contain a comma
             {
                 contribCsv += name + ", ";
                 contributors.Add(name);
