@@ -259,9 +259,14 @@
                         </Border>
 
                         <StackPanel Margin="15,0,0,0" Grid.Column="1">
-                            <TextBlock Text="{x:Bind Title}" FontFamily="Segoe UI Variable Display"
-                                       Style="{ThemeResource BodyStrongTextBlockStyle}" HorizontalAlignment="Left"
-                                       TextTrimming="CharacterEllipsis" MaxLines="1" />
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="{x:Bind Title}" FontFamily="Segoe UI Variable Display"
+                                           Style="{ThemeResource BodyStrongTextBlockStyle}" HorizontalAlignment="Left"
+                                           TextTrimming="CharacterEllipsis" MaxLines="1" Margin="0, 0, 8, 0"/>
+                                <Border Background="DarkGray" CornerRadius="2" Padding="4, 0" VerticalAlignment="Center">
+                                    <TextBlock Text="E" Style="{ThemeResource CaptionTextBlockStyle}" Foreground="Black"/>
+                                </Border>
+                            </StackPanel>
                             <TextBlock Text="{x:Bind Artists}" FontFamily="Segoe UI Variable Display"
                                        Style="{ThemeResource BodyTextBlockStyle}" TextTrimming="CharacterEllipsis"
                                        MaxLines="1" />

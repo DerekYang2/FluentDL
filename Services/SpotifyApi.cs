@@ -35,10 +35,12 @@ namespace FluentDL.Services
 
         public static async Task<List<SongSearchObject>> GetPlaylist(string playlistId)
         {
-            var playlist = await spotify.Playlists.Get(playlistId);
+            var pages = await spotify.Playlists.GetItems(playlistId);
+            var allPages = await spotify.PaginateAll(pages);
+
             var songs = new List<SongSearchObject>();
             // Debug: loop and print all tracks
-            foreach (PlaylistTrack<IPlayableItem> item in playlist.Tracks.Items)
+            foreach (PlaylistTrack<IPlayableItem> item in allPages)
             {
                 if (item.Track is FullTrack track)
                 {

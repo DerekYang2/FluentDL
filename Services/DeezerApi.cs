@@ -236,17 +236,19 @@ internal class DeezerApi
                     }
                 }
 
-                if (allArtistsMatch && exactTitleMatch)
+                bool albumMatch = song.AlbumName.ToLower().Equals(songObj.AlbumName.ToLower());
+
+                if (oneArtistMatch && albumMatch && exactTitleMatch)
                 {
                     return songObj;
                 }
 
-                if (oneArtistMatch && exactTitleMatch) // If the title matches
+                if (oneArtistMatch && exactTitleMatch)
                 {
                     secondPriority = songObj; // Save for now, in case we find an exact match later
                 }
 
-                if (allArtistsMatch && substringMatch) // If the title is a substring match
+                if (oneArtistMatch && albumMatch && substringMatch) // If the title is a substring match
                 {
                     thirdPriority = songObj; // Save for now, in case we find an exact match later
                 }
@@ -339,7 +341,6 @@ internal class DeezerApi
         // Get the contributors of the track
         HashSet<string> contributors = new HashSet<string>();
         var contribCsv = "";
-        Debug.WriteLine("New Track");
 
         foreach (var contribObject in jsonObject.GetProperty("contributors").EnumerateArray())
         {
