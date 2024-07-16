@@ -2,12 +2,15 @@
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
+using System.Globalization;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Text;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using ABI.Windows.Data.Json;
+using CommunityToolkit.WinUI.UI.Controls.TextToolbarSymbols;
 using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml.Controls;
 using RestSharp;
@@ -105,7 +108,34 @@ internal class DeezerApi
         }
     }
 
-    private static string PruneTitle(string title)
+    private static string RemoveDiacritics(string text)
+    {
+        var normalizedString = text.Normalize(NormalizationForm.FormD);
+        var stringBuilder = new StringBuilder(capacity: normalizedString.Length);
+
+        for (int i = 0; i < normalizedString.Length; i++)
+        {
+            char c = normalizedString[i];
+            var unicodeCategory = CharUnicodeInfo.GetUnicodeCategory(c);
+            if (unicodeCategory != UnicodeCategory.NonSpacingMark)
+            {
+                stringBuilder.Append(c);
+            }
+        }
+
+        return stringBuilder
+            .ToString()
+            .Normalize(NormalizationForm.FormC);
+    }
+
+    private static string EnforceAscii(string text)
+    {
+        var result = RemoveDiacritics(text);
+        result = Regex.Replace(result, @"[^\u0000-\u007F]+", string.Empty);
+        return result;
+    }
+
+    public static string PruneTitle(string title)
     {
         var titlePruned = title.ToLower().Trim();
 
@@ -126,11 +156,15 @@ internal class DeezerApi
         }
 
         // Remove punctuation that may cause inconsistency
-        titlePruned = titlePruned.Replace(" ", "").Replace("(", "").Replace(")", "").Replace("-", "").Replace(".", "").Replace("[", "").Replace("]", "");
+        titlePruned = titlePruned.Replace(" ", "").Replace("(", "").Replace(")", "").Replace("-", "").Replace(".", "").Replace("[", "").Replace("]", "").Replace("—", "");
+
+        // Remove non ascii and replaced accented with normal
+        titlePruned = EnforceAscii(titlePruned);
+        //Debug.WriteLine(title + "|" + titlePruned);
         return titlePruned;
     }
 
-    private static string PruneTitleSearch(string title)
+    public static string PruneTitleSearch(string title)
     {
         var titlePruned = title.ToLower().Trim();
 
@@ -184,80 +218,52 @@ internal class DeezerApi
 
         SongSearchObject secondPriority = null, thirdPriority = null; // If no exact match, return the closest match
 
+        // Create list of SongSearchObject results
+        var searchResults = new List<SongSearchObject>();
 
         foreach (var track in jsonObject.GetProperty("data").EnumerateArray()) // Check if at least one artist matches
         {
             var trackId = track.GetProperty("id").ToString();
             var songObj = await GetTrack(trackId); // Return the first result
 
+            List<string> songObjArtists = songObj.Artists.Split(", ").ToList();
 
-            // Due to inconsistency of brackets and hyphens, delete them, all spaces, and compare
-            var titlePruned = PruneTitle(title);
-            var songObjTitlePruned = PruneTitle(songObj.Title); // Remove periods due to inconsistency with Jr. and Jr
-
-            bool exactTitleMatch = titlePruned.Equals(songObjTitlePruned);
-            bool substringMatch = titlePruned.Contains(songObjTitlePruned) || songObjTitlePruned.Contains(titlePruned);
-
-
-            if (exactTitleMatch || substringMatch) // If the title matches
+            // Check if at least one artist matches to add to list
+            foreach (var artist in artists)
             {
-                List<string> songObjArtists = songObj.Artists.Split(", ").ToList();
-                bool allArtistsMatch = true, oneArtistMatch = false;
-
-                artists.Sort();
-                songObjArtists.Sort();
-
-                // Check if all artists match
-                if (artists.Count != songObjArtists.Count)
+                foreach (var songObjArtist in songObjArtists)
                 {
-                    allArtistsMatch = false;
-                }
-                else
-                {
-                    for (int i = 0; i < artists.Count; i++)
+                    if (songObjArtist.ToLower().Contains(artist.ToLower()) || artist.ToLower().Contains(songObjArtist.ToLower())) // If artist names contain each other (sometimes inconsistency in artist name, The Black Eyed Peas vs Black Eyed Peas)
                     {
-                        if (!songObjArtists[i].ToLower().Contains(artists[i].ToLower()) && !artists[i].ToLower().Contains(songObjArtists[i].ToLower())) // If neither works
-                        {
-                            allArtistsMatch = false;
-                            break;
-                        }
+                        searchResults.Add(songObj);
                     }
-                }
-
-                // Check if at least one artist matches
-                foreach (var artist in artists)
-                {
-                    foreach (var songObjArtist in songObjArtists)
-                    {
-                        if (songObjArtist.ToLower().Contains(artist.ToLower()) || artist.ToLower().Contains(songObjArtist.ToLower())) // If artist names contain each other (sometimes inconsistency in artist name, The Black Eyed Peas vs Black Eyed Peas)
-                        {
-                            oneArtistMatch = true; // If at least one artist matches
-                        }
-                    }
-                }
-
-                bool albumMatch = song.AlbumName.ToLower().Equals(songObj.AlbumName.ToLower());
-
-                if (oneArtistMatch && albumMatch && exactTitleMatch)
-                {
-                    return songObj;
-                }
-
-                if (oneArtistMatch && exactTitleMatch)
-                {
-                    secondPriority = songObj; // Save for now, in case we find an exact match later
-                }
-
-                if (oneArtistMatch && albumMatch && substringMatch) // If the title is a substring match
-                {
-                    thirdPriority = songObj; // Save for now, in case we find an exact match later
                 }
             }
         }
 
-        return secondPriority ?? thirdPriority;
+        // Pass 1: Loop through exact matches and get one with minimum album edit distance
+        SongSearchObject closest = null;
+        int minDist = int.MaxValue;
+        foreach (var songObj in searchResults)
+        {
+            // Due to inconsistency of brackets and hyphens, delete them, all spaces, and compare
+            var titlePruned = PruneTitle(title);
+            var songObjTitlePruned = PruneTitle(songObj.Title); // Remove periods due to inconsistency with Jr. and Jr
+            if (titlePruned.Equals(songObjTitlePruned))  // If pruned titles are equal
+            {
+                var editDist = CalcLevenshteinDistance(PruneTitle(song.AlbumName), PruneTitle(songObj.AlbumName));  // Calculate and update min edit dist
+                if (editDist < minDist)
+                {
+                    minDist = editDist;
+                    closest = songObj;
+                }
+            }
+        }
+
+        return closest;
     }
 
+    // TODO: try all artists in req, hashset with deezer id to prevent dupes
     public static async Task<SongSearchObject> AdvancedSearch(string artistName, string trackName, string albumName)
     {
         // Trim
@@ -275,9 +281,10 @@ internal class DeezerApi
         req = req.Replace("&", "and");
         var jsonObject = await FetchJsonElement(req); // Create json object from the response
 
+        Debug.WriteLine(req + " | " + jsonObject.GetProperty("data").EnumerateArray().Count());
+
         SongSearchObject closeMatchObj = null;
-
-
+        int minEditDistance = int.MaxValue;
         foreach (var track in jsonObject.GetProperty("data").EnumerateArray())
         {
             var trackId = track.GetProperty("id").ToString();
@@ -288,15 +295,18 @@ internal class DeezerApi
             var titlePruned = PruneTitle(trackName);
             var songObjTitlePruned = PruneTitle(songObj.Title);
 
+
             if (titlePruned.Equals(songObjTitlePruned)) // If the title matches without punctuation
             {
-                if (albumName.ToLower().Equals(songObj.AlbumName.ToLower())) // If the album name matches
+                if (albumName.ToLower().Replace(" ", "").Equals(songObj.AlbumName.ToLower().Replace(" ", ""))) // If the album name is exact match
                 {
-                    Debug.WriteLine(trackName);
                     return songObj;
                 }
-                else
+
+                var dist = CalcLevenshteinDistance(PruneTitle(albumName), PruneTitle(songObj.AlbumName));
+                if (dist < minEditDistance)
                 {
+                    minEditDistance = dist;
                     closeMatchObj = songObj;
                 }
             }
@@ -366,5 +376,45 @@ internal class DeezerApi
             Rank = jsonObject.GetProperty("rank").ToString(),
             AlbumName = jsonObject.GetProperty("album").GetProperty("title").GetString()
         };
+    }
+
+    public static int CalcLevenshteinDistance(string a, string b)
+    {
+        if (string.IsNullOrEmpty(a) && string.IsNullOrEmpty(b))
+        {
+            return 0;
+        }
+
+        if (string.IsNullOrEmpty(a))
+        {
+            return b.Length;
+        }
+
+        if (string.IsNullOrEmpty(b))
+        {
+            return a.Length;
+        }
+
+        int lengthA = a.Length;
+        int lengthB = b.Length;
+        var distances = new int[lengthA + 1, lengthB + 1];
+
+        for (int i = 0; i <= lengthA; distances[i, 0] = i++) ;
+        for (int j = 0; j <= lengthB; distances[0, j] = j++) ;
+
+        for (int i = 1; i <= lengthA; i++)
+        {
+            for (int j = 1; j <= lengthB; j++)
+            {
+                int cost = b[j - 1] == a[i - 1] ? 0 : 1;
+
+                distances[i, j] = Math.Min(
+                    Math.Min(distances[i - 1, j] + 1, distances[i, j - 1] + 1),
+                    distances[i - 1, j - 1] + cost
+                );
+            }
+        }
+
+        return distances[lengthA, lengthB];
     }
 }

@@ -44,53 +44,70 @@ namespace FluentDL.Services
                     results.Add(result);
                 }
 
-                if (++ct >= 10 || results.Count >= 5) // If total results is 10 or more or 5 results are found
+                if (++ct >= 15 || results.Count >= 5) // If total results is 10 or more or 5 results are found
                 {
                     break;
                 }
             }
 
-            // 1: if author contains artist name
-            // 2: if title contains song title and artist name and has "audio" in title
-            // 3: if title contains song title and has "audio" in title
+            // 1: if author contains artist name and title matches 
+            // 2: if author contains artist name
+            // 3: if title contains song title and artist name and has "audio" in title
             // 4: if title contains song title and artist name
-            // 5: if title contains song title
-            // 6: take the first result
-
+            // 5: if title contains song title and has "audio" in title
+            // 6: if title contains song title
+            // 7: take the first result
 
             // Pass 1
             foreach (var result in results)
             {
-                bool containsArtist = false;
+                var videoAuthor = result.Author.ChannelTitle.ToLower();
+                var pruneTitle = DeezerApi.PruneTitle(result.Title);
+                var songTitle = DeezerApi.PruneTitle(song.Title);
 
-                foreach (var artist in artists)
+                if (pruneTitle.Contains(songTitle))
                 {
-                    if (result.Author.ChannelTitle.ToLower().Contains(artist))
+                    foreach (var artistName in artists)
                     {
-                        containsArtist = true;
-                        break;
+                        if (videoAuthor.Contains(artistName))
+                        {
+                            return result;
+                        }
                     }
                 }
-
-                if (containsArtist)
-                {
-                    return result;
-                }
             }
+
 
             // Pass 2
             foreach (var result in results)
             {
-                if (result.Title.ToLower().Contains(song.Title.ToLower()) && result.Title.ToLower().Contains(artists[0]) && result.Title.ToLower().Contains("audio"))
+                var videoAuthor = result.Author.ChannelTitle.ToLower();
+                foreach (var artistName in artists)
                 {
-                    return result;
+                    if (videoAuthor.Contains(artistName))
+                    {
+                        return result;
+                    }
                 }
             }
 
             // Pass 3
             foreach (var result in results)
             {
-                if (result.Title.ToLower().Contains(song.Title.ToLower()) && result.Title.ToLower().Contains("audio"))
+                var pruneTitle = DeezerApi.PruneTitle(result.Title);
+                var songTitle = DeezerApi.PruneTitle(song.Title);
+
+                bool containsOneArtist = false;
+                foreach (var artist in artists)
+                {
+                    if (result.Title.ToLower().Contains(artist)) // If title contains at least one artist
+                    {
+                        containsOneArtist = true;
+                        break;
+                    }
+                }
+
+                if (pruneTitle.Contains(songTitle) && containsOneArtist && result.Title.ToLower().Contains("audio"))
                 {
                     return result;
                 }
@@ -99,18 +116,20 @@ namespace FluentDL.Services
             // Pass 4
             foreach (var result in results)
             {
-                bool containsArtist = false;
+                var pruneTitle = DeezerApi.PruneTitle(result.Title);
+                var songTitle = DeezerApi.PruneTitle(song.Title);
 
+                bool containsOneArtist = false;
                 foreach (var artist in artists)
                 {
-                    if (result.Author.ChannelTitle.ToLower().Contains(artist))
+                    if (result.Title.ToLower().Contains(artist)) // If title contains at least one artist
                     {
-                        containsArtist = true;
+                        containsOneArtist = true;
                         break;
                     }
                 }
 
-                if (result.Title.ToLower().Contains(song.Title.ToLower()) && containsArtist)
+                if (pruneTitle.Contains(songTitle) && containsOneArtist)
                 {
                     return result;
                 }
@@ -119,21 +138,34 @@ namespace FluentDL.Services
             // Pass 5
             foreach (var result in results)
             {
-                if (result.Title.ToLower().Contains(song.Title.ToLower()))
+                var pruneTitle = DeezerApi.PruneTitle(result.Title);
+                var songTitle = DeezerApi.PruneTitle(song.Title);
+                if (pruneTitle.Contains(songTitle) && result.Title.ToLower().Contains("audio"))
                 {
                     return result;
                 }
             }
 
+
             // Pass 6
+            foreach (var result in results)
+            {
+                var pruneTitle = DeezerApi.PruneTitle(result.Title);
+                var songTitle = DeezerApi.PruneTitle(song.Title);
+                if (pruneTitle.Contains(songTitle))
+                {
+                    return result;
+                }
+            }
+
+            // Pass 7
             if (results.Count > 0)
             {
                 return results[0];
             }
-            else
-            {
-                return null;
-            }
+
+            // If no results found
+            return null;
         }
     }
 }
