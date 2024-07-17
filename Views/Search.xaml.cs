@@ -379,7 +379,7 @@ public sealed partial class Search : Page
     {
         failDialogOpen = true;
         var selectedIndex = FailedListView.SelectedIndex;
-        if (selectedIndex != -1)
+        if (0 <= selectedIndex && selectedIndex < youtubeAlternateList.Count)
         {
             var youtubeResult = youtubeAlternateList[selectedIndex];
             if (youtubeResult != null)
@@ -388,6 +388,20 @@ public sealed partial class Search : Page
                 // Open the url
                 var uri = new Uri(url);
                 var success = Windows.System.Launcher.LaunchUriAsync(uri);
+            }
+        }
+    }
+
+    private void FailedListView_OnSelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        var selectedIndex = FailedListView.SelectedIndex;
+        if (0 <= selectedIndex && selectedIndex < youtubeAlternateList.Count)
+        {
+            var youtubeResult = youtubeAlternateList[selectedIndex];
+            if (youtubeResult != null)
+            {
+                var url = "https://www.youtube.com/embed/" + youtubeResult.Id.Value;
+                YoutubeWebView.Source = new Uri(url); // Set web view source
             }
         }
     }

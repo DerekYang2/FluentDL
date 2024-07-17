@@ -73,32 +73,28 @@
         </ContentDialog>
 
         <ContentDialog x:Name="FailedDialog" CloseButtonText="Close" Title="Tracks Not Found"
-                       PrimaryButtonText="Open Youtube URL" IsPrimaryButtonEnabled="True"
+                       PrimaryButtonText="Open in YouTube" IsPrimaryButtonEnabled="True"
                        PrimaryButtonClick="FailedDialog_OnPrimaryButtonClick"
                        PrimaryButtonStyle="{ThemeResource AccentButtonStyle}"
                        CloseButtonClick="FailedDialog_OnCloseButtonClick" Closing="FailDialog_Closing"
-                       SecondaryButtonText="Add to queue" IsSecondaryButtonEnabled="True">
-            <StackPanel Orientation="Horizontal">
-                <controls2:WebView2 x:Name="MyWebView" Height="400"
-                                   Source="https://www.microsoft.com" HorizontalAlignment="Stretch"
-                                   VerticalAlignment="Stretch" />
-                <StackPanel>
-                    <InfoBar
-                        IsOpen="True"
-                        IsClosable="False"
-                        Severity="Error"
-                        Message="The following spotify tracks could not found on Deezer."
-                        Margin="0,0,0,12" />
-                    <TextBlock Text="Automatically found potential equivalents on Youtube." />
-                    <TextBlock Text="Review each find below and add to queue if satisfied." Margin="0, 0, 0, 12" />
-
-                    <ListView x:Name="FailedListView"
-                              CornerRadius="4"
-                              BorderThickness="0"
-                              Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
-                              BorderBrush="{ThemeResource ControlStrongStrokeColorDefaultBrush}"
-                              Margin="0,0,0,10"
-                              Height="400">
+                       SecondaryButtonText="Add to queue" IsSecondaryButtonEnabled="True" HorizontalAlignment="Center" VerticalAlignment="Center">
+            <ContentDialog.Resources>
+                <x:Double x:Key="ContentDialogMaxWidth">1000</x:Double>
+            </ContentDialog.Resources>
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <ListView Grid.Column="0" x:Name="FailedListView"
+                                CornerRadius="4"
+                                BorderThickness="0"
+                                Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                                BorderBrush="{ThemeResource ControlStrongStrokeColorDefaultBrush}"
+                                Margin="0,0,0,10"
+                                VerticalAlignment="Center"
+                                SelectionChanged="FailedListView_OnSelectionChanged"
+                                Height="400">
                         <ListView.ItemTemplate>
                             <DataTemplate x:DataType="services:SongSearchObject">
                                 <Grid Margin="0,12,0,12" AutomationProperties.Name="{x:Bind Title}">
@@ -112,18 +108,26 @@
                                         </Border.Background>
                                     </Border>
 
-                                    <StackPanel Margin="15,0,0,0" Grid.Column="1">
-                                        <TextBlock Text="{x:Bind Title}" FontFamily="Segoe UI Variable Display"
-                                                   Style="{ThemeResource BodyStrongTextBlockStyle}"
-                                                   HorizontalAlignment="Left"
-                                                   TextTrimming="CharacterEllipsis" MaxLines="1" />
+                                    <StackPanel Margin="12,0,0,0" Grid.Column="1">
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock Text="{x:Bind Title}" FontFamily="Segoe UI Variable Display"
+                                                        Style="{ThemeResource BodyStrongTextBlockStyle}"
+                                                        HorizontalAlignment="Left"
+                                                        TextTrimming="CharacterEllipsis" MaxLines="1" Margin="0, 0, 8, 0" />
+                                            <Border Background="DarkGray" CornerRadius="2" Padding="4, 0"
+                                                    VerticalAlignment="Center">
+                                                <TextBlock x:Name="ExplicitBadgeFailed" Text="E" Style="{ThemeResource CaptionTextBlockStyle}"
+                                                            Foreground="Black"
+                                                            Visibility="{x:Bind Explicit, Converter={StaticResource VisibilityConverter}}" />
+                                            </Border>
+                                        </StackPanel>
                                         <TextBlock Text="{x:Bind Artists}" FontFamily="Segoe UI Variable Display"
-                                                   Style="{ThemeResource BodyTextBlockStyle}"
-                                                   TextTrimming="CharacterEllipsis"
-                                                   MaxLines="1" />
+                                                    Style="{ThemeResource BodyTextBlockStyle}"
+                                                    TextTrimming="CharacterEllipsis"
+                                                    MaxLines="1" />
                                     </StackPanel>
 
-                                    <StackPanel Margin="15,0,0,0" Orientation="Horizontal" VerticalAlignment="Bottom"
+                                    <StackPanel Margin="12,0,0,0" Orientation="Horizontal" VerticalAlignment="Bottom"
                                                 Grid.Column="1">
                                         <TextBlock
                                             Text="{x:Bind ReleaseDate, Converter={StaticResource DateToYearConverter}}"
@@ -131,7 +135,7 @@
                                             Style="{ThemeResource BodyTextBlockStyle}" Margin="0,0,0,0"
                                             FontFamily="Segoe UI Variable Display" />
                                         <TextBlock Text="&#x2022;" Style="{ThemeResource BodyTextBlockStyle}"
-                                                   HorizontalAlignment="Left" Margin="5,0,0,0" />
+                                                    HorizontalAlignment="Left" Margin="5,0,0,0" />
                                         <TextBlock
                                             Text="{x:Bind Duration, Converter={StaticResource DurationConverter}}"
                                             HorizontalAlignment="Left"
@@ -142,8 +146,19 @@
                             </DataTemplate>
                         </ListView.ItemTemplate>
                     </ListView>
-                </StackPanel>
-            </StackPanel>
+                    <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="10,0,0,12">
+                        <InfoBar
+                            IsOpen="True"
+                            IsClosable="False"
+                            Severity="Error"
+                            Message="The following spotify tracks could not be found on Deezer. Automatically attempted to find equivalent tracks from YouTube."
+                            Margin="0,0,0,8" />
+                        <Border CornerRadius="8" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1">
+                            <controls2:WebView2 x:Name="YoutubeWebView" Height="315" Width="560"/>
+                        </Border>
+
+                    </StackPanel>
+                </Grid>
         </ContentDialog>
         <Grid>
             <Grid.ColumnDefinitions>
@@ -289,7 +304,7 @@
                                                TextTrimming="CharacterEllipsis" MaxLines="1" Margin="0, 0, 8, 0" />
                                     <Border Background="DarkGray" CornerRadius="2" Padding="4, 0"
                                             VerticalAlignment="Center">
-                                        <TextBlock Text="E" Style="{ThemeResource CaptionTextBlockStyle}"
+                                        <TextBlock x:Name="ExplicitBadge" Text="E" Style="{ThemeResource CaptionTextBlockStyle}"
                                                    Foreground="Black"
                                                    Visibility="{x:Bind Explicit, Converter={StaticResource VisibilityConverter}}" />
                                     </Border>
@@ -337,6 +352,11 @@
                             Visibility="Collapsed" Grid.Row="0" Margin="0, 0, 0, 6">
                     <AppBarButton Icon="Add" Label="Add to queue" />
                     <AppBarButton Icon="Download" Label="Download" />
+                    <AppBarButton Label="Download Cover">
+                        <AppBarButton.Icon>
+                            <FontIcon Glyph="&#xEE71;" />
+                        </AppBarButton.Icon>
+                    </AppBarButton>
                     <AppBarButton Icon="Share" Label="Share" />
                 </CommandBar>
 
@@ -356,7 +376,7 @@
                                        HorizontalAlignment="Left" Margin="0, 0,0,8" TextWrapping="WrapWholeWords"
                                        LineHeight="22" />
                             <controls1:DockPanel>
-                                <Border>
+                                <Border Margin="0,0,8,0">
                                     <ItemsControl x:Name="PreviewInfoControl">
                                         <ItemsControl.ItemTemplate>
                                             <DataTemplate x:DataType="views:TrackDetail">
@@ -374,7 +394,10 @@
                                                 <TextBlock Text="{x:Bind Value}" Style="{ThemeResource BodyText}"
                                                            HorizontalAlignment="Right"
                                                            Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"
-                                                           LineHeight="22" />
+                                                           LineHeight="22" 
+                                                           TextTrimming="CharacterEllipsis"
+                                                           ToolTipService.ToolTip="{x:Bind Value}"
+                                                           />
                                             </DataTemplate>
                                         </ItemsControl.ItemTemplate>
                                     </ItemsControl>
