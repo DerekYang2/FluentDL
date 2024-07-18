@@ -1,6 +1,5 @@
 ﻿using FluentDL.Contracts.Services;
 using FluentDL.ViewModels;
-
 using Microsoft.UI.Xaml;
 
 namespace FluentDL.Activation;
@@ -22,7 +21,7 @@ public class DefaultActivationHandler : ActivationHandler<LaunchActivatedEventAr
 
     protected async override Task HandleInternalAsync(LaunchActivatedEventArgs args)
     {
-        _navigationService.NavigateTo(typeof(BlankViewModel).FullName!, args.Arguments);
+        _navigationService.NavigateTo(typeof(SearchViewModel).FullName!, args.Arguments);
 
         await Task.CompletedTask;
     }

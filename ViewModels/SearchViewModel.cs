@@ -2,9 +2,9 @@
 
 namespace FluentDL.ViewModels;
 
-public partial class BlankViewModel : ObservableRecipient
+public partial class SearchViewModel : ObservableRecipient
 {
-    public BlankViewModel()
+    public SearchViewModel()
     {
     }
 }

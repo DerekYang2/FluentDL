@@ -32,9 +32,10 @@
             IsBackEnabled="{x:Bind ViewModel.IsBackEnabled, Mode=OneWay}"
             SelectedItem="{x:Bind ViewModel.Selected, Mode=OneWay}"
             IsSettingsVisible="True"
-            ExpandedModeThresholdWidth="1280"
+            ExpandedModeThresholdWidth="1368"
             DisplayModeChanged="NavigationViewControl_DisplayModeChanged"
             Header="{x:Bind ((ContentControl)ViewModel.Selected).Content, Mode=OneWay}"
+            OpenPaneLength="240"
             >
             <NavigationView.MenuItems>
                 <!--
@@ -44,7 +45,7 @@
                 TODO: Update item icons by updating FontIcon.Glyph properties.
                 https://docs.microsoft.com/windows/apps/design/style/segoe-fluent-icons-font#icon-list
                 -->
-                <NavigationViewItem x:Uid="Shell_Blank" helpers:NavigationHelper.NavigateTo="FluentDL.ViewModels.BlankViewModel">
+                <NavigationViewItem x:Uid="Shell_Search" helpers:NavigationHelper.NavigateTo="FluentDL.ViewModels.SearchViewModel">
                     <NavigationViewItem.Icon>
                         <FontIcon FontFamily="{StaticResource SymbolThemeFontFamily}" Glyph="&#57763;"/>
                     </NavigationViewItem.Icon>

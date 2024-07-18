@@ -97,7 +97,7 @@ public class SongSearchObject
 internal class DeezerApi
 {
     public static readonly string baseURL = "https://api.deezer.com";
-    private static readonly RestClient client = new RestClient(baseURL);
+    private static readonly RestClient client = new RestClient(new RestClientOptions(baseURL) { Timeout = new TimeSpan(0, 0, 5) });
 
     public static async Task<JsonElement> FetchJsonElement(string req)
     {
@@ -169,7 +169,6 @@ internal class DeezerApi
 
         // Remove non ascii and replaced accented with normal
         titlePruned = EnforceAscii(titlePruned);
-        //Debug.WriteLine(title + "|" + titlePruned);
         return titlePruned.Trim();
     }
 
@@ -201,7 +200,7 @@ internal class DeezerApi
         return EnforceAscii(titlePruned).Trim();
     }
 
-    public static async Task GeneralSearch(ObservableCollection<SongSearchObject> itemSource, string query)
+    public static async Task GeneralSearch(ObservableCollection<SongSearchObject> itemSource, string query, CancellationToken token)
     {
         itemSource.Clear();
         query = query.Trim(); // Trim the query
@@ -216,6 +215,11 @@ internal class DeezerApi
 
         foreach (var track in jsonObject.GetProperty("data").EnumerateArray())
         {
+            if (token.IsCancellationRequested) // Stop the search
+            {
+                return;
+            }
+
             var trackId = track.GetProperty("id").ToString();
             var songObj = await GetTrack(trackId);
             itemSource.Add(songObj);
@@ -332,7 +336,6 @@ internal class DeezerApi
         {
             var titlePruned = PruneTitle(trackName);
             var songObjTitlePruned = PruneTitle(songObj.Title);
-            Debug.WriteLine(titlePruned + "|" + songObjTitlePruned);
             if (titlePruned.Equals(songObjTitlePruned) || titlePruned.Replace("radioedit", "").Equals(songObjTitlePruned.Replace("radioedit", ""))) // If the title matches without punctuation
             {
                 if (albumName.ToLower().Replace(" ", "").Equals(songObj.AlbumName.ToLower().Replace(" ", ""))) // If the album name is exact match
@@ -381,7 +384,7 @@ internal class DeezerApi
         return null;
     }
 
-    public static async Task AdvancedSearch(ObservableCollection<SongSearchObject> itemSource, string artistName, string trackName, string albumName)
+    public static async Task AdvancedSearch(ObservableCollection<SongSearchObject> itemSource, string artistName, string trackName, string albumName, CancellationToken token)
     {
         itemSource.Clear();
 
@@ -400,6 +403,11 @@ internal class DeezerApi
 
         foreach (var track in jsonObject.GetProperty("data").EnumerateArray())
         {
+            if (token.IsCancellationRequested) // Cancel requested, terminate this method
+            {
+                return;
+            }
+
             var trackId = track.GetProperty("id").ToString();
             var songObj = await GetTrack(trackId);
             itemSource.Add(songObj);

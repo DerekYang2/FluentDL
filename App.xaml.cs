@@ -87,7 +87,7 @@ public partial class App : Application
                 services.AddTransient<ContentGridPage>();
                 services.AddTransient<ListDetailsViewModel>();
                 services.AddTransient<ListDetailsPage>();
-                services.AddTransient<BlankViewModel>();
+                services.AddTransient<SearchViewModel>();
                 services.AddTransient<Search>();
                 services.AddTransient<ShellPage>();
                 services.AddTransient<ShellViewModel>();

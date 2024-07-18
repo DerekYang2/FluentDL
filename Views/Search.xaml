@@ -195,7 +195,7 @@
                     </StackPanel>
                 </Button>
 
-                <Button Grid.Column="2" x:Name="Help" Click="ShowDialog_OnClick_Click">
+                <Button Grid.Column="2" x:Name="Help">
                     <StackPanel Orientation="Horizontal">
                         <FontIcon Glyph="&#xE897;" FontSize="16" Margin="0, 0, 8, 0" />
                         <TextBlock Text="Help" />
@@ -226,7 +226,7 @@
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
                     <ComboBox x:Name="SortOrderComboBox" SelectionChanged="SortOrder_SelectionChanged"
                               Background="Transparent" BorderBrush="Transparent"
-                              PlaceholderText="Sort order:  Ascending">
+                              PlaceholderText="Sort order:  Ascending" Margin="0, 0, 0,0">
                         <ComboBox.ItemTemplate>
                             <DataTemplate x:DataType="views:SortObject">
                                 <StackPanel Orientation="Horizontal">
@@ -263,6 +263,13 @@
                             <views:SortObject Text="Sort by:" Highlight="  Popularity" />
                         </ComboBox.Items>
                     </ComboBox>
+                    <Button x:Name="StopSearchButton" VerticalAlignment="Center" Background="Transparent" BorderBrush="Transparent" Click="StopSearchButton_OnClick">
+                        <StackPanel Orientation="Horizontal">
+                            <FontIcon x:Name="StopSearchIcon" Glyph="&#xE71A;" FontSize="16" Margin="0, 0, 8, 0"
+                                      Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}" />
+                            <TextBlock Text="Stop" Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}" />
+                        </StackPanel>
+                    </Button>
                 </StackPanel>
 
             </controls1:DockPanel>

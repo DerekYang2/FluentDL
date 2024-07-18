@@ -1,16 +1,8 @@
-﻿using System.Collections;
-using System.Diagnostics;
-using System.Text.Json;
-using FluentDL.ViewModels;
+﻿using FluentDL.ViewModels;
 using FluentDL.Helpers;
 using Microsoft.UI.Xaml.Controls;
-using RestSharp;
 using FluentDL.Services;
 using System.Collections.ObjectModel;
-using Windows.Media.Playback;
-using Microsoft.UI.Xaml.Media;
-using Microsoft.UI;
-using Microsoft.UI.Dispatching;
 using Windows.Media.Core;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Media.Imaging;
@@ -75,15 +67,16 @@ public sealed partial class Search : Page
     private ObservableCollection<SongSearchObject> failedSpotifySongs;
     private List<VideoSearchResult> youtubeAlternateList;
     private bool failDialogOpen = false;
+    private CancellationTokenSource cancellationTokenSource;
 
-    public BlankViewModel ViewModel
+    public SearchViewModel ViewModel
     {
         get;
     }
 
     public Search()
     {
-        ViewModel = App.GetService<BlankViewModel>();
+        ViewModel = App.GetService<SearchViewModel>();
         InitializeComponent();
 
         CustomListView.ItemsSource = new ObservableCollection<SongSearchObject>();
@@ -97,24 +90,27 @@ public sealed partial class Search : Page
 
         youtubeAlternateList = new List<VideoSearchResult>();
 
+        StopSearchButton.Visibility = Visibility.Collapsed;
+
         // Initialize spotify failed results collection
         failedSpotifySongs = new ObservableCollection<SongSearchObject>();
-        FailedResultsButton.Visibility = Microsoft.UI.Xaml.Visibility.Collapsed;
+        FailedResultsButton.Visibility = Visibility.Collapsed;
         failedSpotifySongs.CollectionChanged += (sender, e) =>
         {
             if (failedSpotifySongs.Count > 0)
             {
-                FailedResultsButton.Visibility = Microsoft.UI.Xaml.Visibility.Visible;
+                FailedResultsButton.Visibility = Visibility.Visible;
                 FailedResultsText.Text = failedSpotifySongs.Count + " failed";
             }
             else
             {
-                FailedResultsButton.Visibility = Microsoft.UI.Xaml.Visibility.Collapsed;
+                FailedResultsButton.Visibility = Visibility.Collapsed;
             }
         };
 
         // Initialize Spotify API
         SpotifyApi.Initialize();
+        cancellationTokenSource = new CancellationTokenSource();
     }
 
     private void AttachCollectionChangedEvent(ObservableCollection<SongSearchObject> collection)
@@ -125,26 +121,42 @@ public sealed partial class Search : Page
         };
     }
 
+    private void DisableSearches()
+    {
+        SearchBox.IsEnabled = false;
+        ShowDialogButton.IsEnabled = false;
+        SortComboBox.Visibility = Visibility.Collapsed;
+        SortOrderComboBox.Visibility = Visibility.Collapsed;
+    }
+
+    private void EnableSearches()
+    {
+        SearchBox.IsEnabled = true;
+        ShowDialogButton.IsEnabled = true;
+        SortComboBox.Visibility = Visibility.Visible;
+        SortOrderComboBox.Visibility = Visibility.Visible;
+    }
+
     public void SetResultsAmount(int amount)
     {
         if (amount == 0)
         {
             ResultsText.Text = "No results";
-            ResultsIcon.Visibility = Microsoft.UI.Xaml.Visibility.Collapsed;
+            ResultsIcon.Visibility = Visibility.Collapsed;
         }
         else
         {
             ResultsText.Text = "Add " + amount + " to queue";
-            ResultsIcon.Visibility = Microsoft.UI.Xaml.Visibility.Visible;
+            ResultsIcon.Visibility = Visibility.Visible;
         }
     }
 
     private void ClearPreviewPane()
     {
-        NoneSelectedText.Visibility = Microsoft.UI.Xaml.Visibility.Visible;
-        SongPreviewPlayer.Visibility = Microsoft.UI.Xaml.Visibility.Collapsed;
-        CommandBar.Visibility = Microsoft.UI.Xaml.Visibility.Collapsed;
-        PreviewScrollView.Visibility = Microsoft.UI.Xaml.Visibility.Collapsed;
+        NoneSelectedText.Visibility = Visibility.Visible;
+        SongPreviewPlayer.Visibility = Visibility.Collapsed;
+        CommandBar.Visibility = Visibility.Collapsed;
+        PreviewScrollView.Visibility = Visibility.Collapsed;
         PreviewTitleText.Text = "";
         PreviewImage.Source = null;
         PreviewInfoControl.ItemsSource = new List<TrackDetail>();
@@ -161,34 +173,12 @@ public sealed partial class Search : Page
             return;
         }
 
-        NoneSelectedText.Visibility = Microsoft.UI.Xaml.Visibility.Collapsed;
-        SongPreviewPlayer.Visibility = Microsoft.UI.Xaml.Visibility.Visible;
-        CommandBar.Visibility = Microsoft.UI.Xaml.Visibility.Visible;
-        PreviewScrollView.Visibility = Microsoft.UI.Xaml.Visibility.Visible;
+        NoneSelectedText.Visibility = Visibility.Collapsed;
+        SongPreviewPlayer.Visibility = Visibility.Visible;
+        CommandBar.Visibility = Visibility.Visible;
+        PreviewScrollView.Visibility = Visibility.Visible;
 
         await SetupPreviewPane(selectedSong);
-
-        // PreviewTitleText.Text = selectedSong.Title + " " + selectedSong.Artists + " " + selectedSong.Id;
-
-        // Send a request to /track/{id} for more information on this song
-        /*
-        var uiThread = DispatcherQueue.GetForCurrentThread();
-        new Task(async () =>
-        {
-            var jsonObject = await FluentDL.Services.DeezerApi.FetchJsonElement("track/" + selectedSong.Id);
-
-            uiThread.TryEnqueue(() =>
-            {
-                PreviewArtistText.Text = jsonObject.GetProperty("artist").GetProperty("name").ToString();
-                PreviewTitleText.Text = jsonObject.GetProperty("title").ToString();
-                PreviewLinkText.Text = jsonObject.GetProperty("link").ToString();
-            });
-
-            var mediaPlayer = new MediaPlayer();
-            mediaPlayer.Source = MediaSource.CreateFromUri(new Uri(jsonObject.GetProperty("preview").ToString()));
-            mediaPlayer.Play();
-        }).Start();
-        */
     }
 
     private async Task SetupPreviewPane(SongSearchObject selectedSong)
@@ -270,6 +260,7 @@ public sealed partial class Search : Page
         AttachCollectionChangedEvent((ObservableCollection<SongSearchObject>)CustomListView.ItemsSource);
     }
 
+    // Advanced search
     private async void SearchDialogClick(ContentDialog sender, ContentDialogButtonClickEventArgs args)
     {
         var artistName = artistNameInput.Text.Trim();
@@ -282,16 +273,22 @@ public sealed partial class Search : Page
         }
 
         SearchProgress.IsIndeterminate = true;
-        NoSearchResults.Visibility = Microsoft.UI.Xaml.Visibility.Collapsed; // Hide the message for now
+        NoSearchResults.Visibility = Visibility.Collapsed; // Hide the message for now
+        StopSearchButton.Visibility = Visibility.Visible; // Make stop button visible
+        SearchBox.Text = ""; // Clear regular search box query
+        DisableSearches();
+        cancellationTokenSource = new CancellationTokenSource(); // Reset the cancel token
 
         // Set the collection as the ItemsSource for the ListView
-        await FluentDL.Services.DeezerApi.AdvancedSearch((ObservableCollection<SongSearchObject>)CustomListView.ItemsSource, artistName, trackName, albumName);
+        await FluentDL.Services.DeezerApi.AdvancedSearch((ObservableCollection<SongSearchObject>)CustomListView.ItemsSource, artistName, trackName, albumName, cancellationTokenSource.Token);
         originalList = new ObservableCollection<SongSearchObject>((ObservableCollection<SongSearchObject>)CustomListView.ItemsSource);
 
         SetResultsAmount(originalList.Count);
         SortCustomListView();
         SetNoSearchResults(); // Call again as actual check 
         SearchProgress.IsIndeterminate = false;
+        StopSearchButton.Visibility = Visibility.Collapsed;
+        EnableSearches();
     }
 
     private async void SearchBox_OnQuerySubmitted(AutoSuggestBox sender, AutoSuggestBoxQuerySubmittedEventArgs args)
@@ -303,8 +300,10 @@ public sealed partial class Search : Page
         }
 
         SearchProgress.IsIndeterminate = true;
-        // Set the collection as the ItemsSource for the ListView
-        NoSearchResults.Visibility = Microsoft.UI.Xaml.Visibility.Collapsed; // Hide the message for now
+        StopSearchButton.Visibility = Visibility.Visible;
+        NoSearchResults.Visibility = Visibility.Collapsed; // Hide the message for now
+        DisableSearches();
+        cancellationTokenSource = new CancellationTokenSource(); // Reset the cancel token
 
         // Check if query is a spotify playlist link
         // Format of links https://open.spotify.com/playlist/{id}?
@@ -318,11 +317,11 @@ public sealed partial class Search : Page
                 playlistId = playlistId.Split("?").First();
             }
 
-            await LoadSpotifyPlaylist(playlistId);
+            await LoadSpotifyPlaylist(playlistId, cancellationTokenSource.Token);
         }
         else
         {
-            await FluentDL.Services.DeezerApi.GeneralSearch((ObservableCollection<SongSearchObject>)CustomListView.ItemsSource, generalQuery);
+            await FluentDL.Services.DeezerApi.GeneralSearch((ObservableCollection<SongSearchObject>)CustomListView.ItemsSource, generalQuery, cancellationTokenSource.Token);
         }
 
         originalList = new ObservableCollection<SongSearchObject>((ObservableCollection<SongSearchObject>)CustomListView.ItemsSource);
@@ -331,9 +330,11 @@ public sealed partial class Search : Page
         SortCustomListView();
         SetNoSearchResults(); // Call again as actual check 
         SearchProgress.IsIndeterminate = false;
+        EnableSearches();
+        StopSearchButton.Visibility = Visibility.Collapsed;
     }
 
-    private async Task LoadSpotifyPlaylist(string playlistId)
+    private async Task LoadSpotifyPlaylist(string playlistId, CancellationToken token = default)
     {
         failedSpotifySongs.Clear();
         youtubeAlternateList.Clear();
@@ -342,6 +343,11 @@ public sealed partial class Search : Page
         List<SongSearchObject> playlistObjects = await SpotifyApi.GetPlaylist(playlistId);
         foreach (var song in playlistObjects)
         {
+            if (token.IsCancellationRequested)
+            {
+                break;
+            }
+
             var deezerResult = await FluentDL.Services.DeezerApi.AdvancedSearch(song);
             if (deezerResult != null)
             {
@@ -372,7 +378,7 @@ public sealed partial class Search : Page
     private void SetNoSearchResults()
     {
         // If collection is empty, show a message
-        NoSearchResults.Visibility = CustomListView.Items.Count == 0 ? Microsoft.UI.Xaml.Visibility.Visible : Microsoft.UI.Xaml.Visibility.Collapsed;
+        NoSearchResults.Visibility = CustomListView.Items.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
     }
 
     private void FailedDialog_OnPrimaryButtonClick(ContentDialog sender, ContentDialogButtonClickEventArgs args)
@@ -418,6 +424,11 @@ public sealed partial class Search : Page
         {
             args.Cancel = true;
         }
+    }
+
+    private void StopSearchButton_OnClick(object sender, RoutedEventArgs e)
+    {
+        cancellationTokenSource.Cancel();
     }
 
     // Functions that open dialogs
