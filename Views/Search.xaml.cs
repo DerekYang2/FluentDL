@@ -401,6 +401,7 @@ public sealed partial class Search : Page
             if (youtubeResult != null)
             {
                 var url = "https://www.youtube.com/embed/" + youtubeResult.Id.Value;
+                url = youtubeResult.Url;
                 YoutubeWebView.Source = new Uri(url); // Set web view source
             }
         }

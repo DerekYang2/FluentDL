@@ -10,6 +10,7 @@ internal class DateToYearConverter : IValueConverter
     // Converts YYYY-MM-DD to YYYY
     public object Convert(object value, Type targetType, object parameter, string language)
     {
+        if (value == null) return "";
         return value.ToString().Substring(0, 4);
     }
 

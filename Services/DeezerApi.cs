@@ -5,6 +5,8 @@ using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
 using System.Linq.Expressions;
+using System.Net;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
@@ -108,7 +110,7 @@ internal class DeezerApi
         catch (Exception e)
         {
             Debug.WriteLine("Failed: " + req);
-            req = req.Replace("(", "").Replace(")", ""); // Remove brackets, causes issues occasionally for some reason
+            req = req.Replace("%28", "").Replace("%29", ""); // Remove brackets, causes issues occasionally for some reason
             var request = new RestRequest(req);
             var response = await client.GetAsync(request);
             return JsonDocument.Parse(response.Content).RootElement;
@@ -168,12 +170,13 @@ internal class DeezerApi
         // Remove non ascii and replaced accented with normal
         titlePruned = EnforceAscii(titlePruned);
         //Debug.WriteLine(title + "|" + titlePruned);
-        return titlePruned;
+        return titlePruned.Trim();
     }
 
     public static string PruneTitleSearch(string title)
     {
         var titlePruned = title.ToLower().Trim();
+        titlePruned = titlePruned.Replace("-", " ").Replace("—", "").Replace("[", "").Replace("]", ""); // Replace strange chars
 
         // Remove (feat. X) from the title
         var index = titlePruned.IndexOf("(feat.");
@@ -191,7 +194,11 @@ internal class DeezerApi
             titlePruned = titlePruned.Remove(index2, closingIndex - index2 + 1);
         }
 
-        return EnforceAscii(titlePruned);
+        // Remove (radio edit) and radio edit from the title
+        titlePruned = titlePruned.Replace("(radio edit)", "").Replace("radio edit", "");
+        // Remove duplicate spaces
+        titlePruned = Regex.Replace(titlePruned, @"\s+", " ");
+        return EnforceAscii(titlePruned).Trim();
     }
 
     public static async Task GeneralSearch(ObservableCollection<SongSearchObject> itemSource, string query)
@@ -203,8 +210,8 @@ internal class DeezerApi
             return;
         }
 
-        var req = "search?q=" + query;
-
+        var req = "search?q=" + WebUtility.UrlEncode(query);
+        req = req.Replace("%28", "").Replace("%29", ""); // Remove brackets, causes issues occasionally for some reason
         var jsonObject = await FetchJsonElement(req);
 
         foreach (var track in jsonObject.GetProperty("data").EnumerateArray())
@@ -219,11 +226,9 @@ internal class DeezerApi
     {
         var title = PruneTitleSearch(song.Title);
         var artists = song.Artists.Split(", ").ToList();
-        var req = "search?q=" + artists[0] + " " + title; // Search for the first artist and title
+        var req = "search?q=" + WebUtility.UrlEncode(artists[0] + " " + title); // Search for the first artist and title
 
         var jsonObject = await FetchJsonElement(req);
-
-        SongSearchObject secondPriority = null, thirdPriority = null; // If no exact match, return the closest match
 
         // Create list of SongSearchObject results
         var searchResults = new List<SongSearchObject>();
@@ -256,6 +261,7 @@ internal class DeezerApi
             // Due to inconsistency of brackets and hyphens, delete them, all spaces, and compare
             var titlePruned = PruneTitle(title);
             var songObjTitlePruned = PruneTitle(songObj.Title); // Remove periods due to inconsistency with Jr. and Jr
+
             if (titlePruned.Equals(songObjTitlePruned)) // If pruned titles are equal
             {
                 var editDist = CalcLevenshteinDistance(PruneTitle(song.AlbumName), PruneTitle(songObj.AlbumName)); // Calculate and update min edit dist
@@ -270,7 +276,6 @@ internal class DeezerApi
         return closest;
     }
 
-    // TODO: try all artists in req, hashset with deezer id to prevent dupes
     public static async Task<SongSearchObject> AdvancedSearch(SongSearchObject song)
     {
         var artists = song.Artists.Split(", ").ToList();
@@ -287,9 +292,8 @@ internal class DeezerApi
 
         foreach (var artistName in artists) // Try searching for each artist
         {
-            var req = "search?q=" + (artistName.Length > 0 ? "artist:%22" + artistName + "%22 " : "") + (trackName.Length > 0 ? "track:%22" + trackName + "%22 " : "") + (albumName.Length > 0 ? "album:%22" + albumName + "%22" : "") + "?strict=off"; // Strict search
-            req = req.Replace(" ", "%20"); // Replace spaces with %20
-            req = req.Replace("&", "and");
+            // With album
+            var req = "search?q=" + WebUtility.UrlEncode((artistName.Length > 0 ? "artist:%22" + artistName + "%22 " : "") + (trackName.Length > 0 ? "track:%22" + trackName + "%22 " : "") + (albumName.Length > 0 ? "album:%22" + albumName + "%22" : ""));
             var jsonObject = await FetchJsonElement(req); // Create json object from the response
 
             foreach (var track in jsonObject.GetProperty("data").EnumerateArray())
@@ -298,7 +302,24 @@ internal class DeezerApi
                 if (!idSet.Contains(trackId)) // If the track id is not already in the set
                 {
                     idSet.Add(trackId);
-                    var songObj = await GetTrack(trackId);
+                    //var songObj = await GetTrack(trackId);
+                    var songObj = GetTrackQuick(track);
+                    songObjList.Add(songObj);
+                }
+            }
+
+            // Without album
+            req = "search?q=" + WebUtility.UrlEncode((artistName.Length > 0 ? "artist:%22" + artistName + "%22 " : "") + (trackName.Length > 0 ? "track:%22" + trackName + "%22 " : "")) + "?strict=on"; // Strict search
+            jsonObject = await FetchJsonElement(req); // Create json object from the response
+
+            foreach (var track in jsonObject.GetProperty("data").EnumerateArray())
+            {
+                var trackId = track.GetProperty("id").ToString();
+                if (!idSet.Contains(trackId)) // If the track id is not already in the set
+                {
+                    idSet.Add(trackId);
+                    // var songObj = await GetTrack(trackId);
+                    var songObj = GetTrackQuick(track);
                     songObjList.Add(songObj);
                 }
             }
@@ -311,12 +332,12 @@ internal class DeezerApi
         {
             var titlePruned = PruneTitle(trackName);
             var songObjTitlePruned = PruneTitle(songObj.Title);
-
-            if (titlePruned.Equals(songObjTitlePruned)) // If the title matches without punctuation
+            Debug.WriteLine(titlePruned + "|" + songObjTitlePruned);
+            if (titlePruned.Equals(songObjTitlePruned) || titlePruned.Replace("radioedit", "").Equals(songObjTitlePruned.Replace("radioedit", ""))) // If the title matches without punctuation
             {
                 if (albumName.ToLower().Replace(" ", "").Equals(songObj.AlbumName.ToLower().Replace(" ", ""))) // If the album name is exact match
                 {
-                    return songObj;
+                    return await GetTrack(songObj.Id);
                 }
 
                 var dist = CalcLevenshteinDistance(PruneTitle(albumName), PruneTitle(songObj.AlbumName));
@@ -330,7 +351,7 @@ internal class DeezerApi
 
         if (closeMatchObj != null)
         {
-            return closeMatchObj;
+            return await GetTrack(closeMatchObj.Id); // Get the full track object
         }
 
         // pass 2: if exact album match, find least edit distance title name
@@ -352,7 +373,12 @@ internal class DeezerApi
             }
         }
 
-        return closeMatchObj;
+        if (closeMatchObj != null)
+        {
+            return await GetTrack(closeMatchObj.Id); // Get the full track object
+        }
+
+        return null;
     }
 
     public static async Task AdvancedSearch(ObservableCollection<SongSearchObject> itemSource, string artistName, string trackName, string albumName)
@@ -369,11 +395,7 @@ internal class DeezerApi
             return;
         }
 
-        var req = "search?q=" + (artistName.Length > 0 ? "artist:%22" + artistName + "%22 " : "") + (trackName.Length > 0 ? "track:%22" + trackName + "%22 " : "") + (albumName.Length > 0 ? "album:%22" + albumName + "%22" : "") + "?strict=on"; // Strict search
-        req = req.Replace(" ", "%20"); // Replace spaces with %20
-        req = req.Replace("(", "%20").Replace(")", "%20"); // Replace with spaces, brackets break advanced query for some reason
-        req = req.Replace("&", "and");
-
+        var req = "search?q=" + WebUtility.UrlEncode((artistName.Length > 0 ? "artist:%22" + artistName + "%22 " : "") + (trackName.Length > 0 ? "track:%22" + trackName + "%22 " : "") + (albumName.Length > 0 ? "album:%22" + albumName + "%22" : "")) + "?strict=on"; // Strict search
         var jsonObject = await FetchJsonElement(req); // Create json object from the response
 
         foreach (var track in jsonObject.GetProperty("data").EnumerateArray())
@@ -382,6 +404,22 @@ internal class DeezerApi
             var songObj = await GetTrack(trackId);
             itemSource.Add(songObj);
         }
+    }
+
+    private static SongSearchObject GetTrackQuick(JsonElement jsonObj)
+    {
+        return new SongSearchObject()
+        {
+            AlbumName = jsonObj.GetProperty("album").GetProperty("title").GetString(),
+            Artists = jsonObj.GetProperty("artist").GetProperty("name").GetString(),
+            Duration = jsonObj.GetProperty("duration").ToString(),
+            Explicit = jsonObj.GetProperty("explicit_lyrics").GetBoolean(),
+            Id = jsonObj.GetProperty("id").ToString(),
+            ImageLocation = jsonObj.GetProperty("album").GetProperty("cover").GetString(),
+            Rank = jsonObj.GetProperty("rank").ToString(),
+            Source = "deezer",
+            Title = jsonObj.GetProperty("title").GetString()
+        };
     }
 
     public static async Task<SongSearchObject> GetTrack(string trackId)
