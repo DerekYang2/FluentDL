@@ -3,7 +3,9 @@ using FluentDL.Helpers;
 using Microsoft.UI.Xaml.Controls;
 using FluentDL.Services;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using Windows.Media.Core;
+using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Media.Imaging;
 using YoutubeExplode.Search;
@@ -68,6 +70,7 @@ public sealed partial class Search : Page
     private List<VideoSearchResult> youtubeAlternateList;
     private bool failDialogOpen = false;
     private CancellationTokenSource cancellationTokenSource;
+    private DispatcherQueue dispatcher;
 
     public SearchViewModel ViewModel
     {
@@ -78,6 +81,7 @@ public sealed partial class Search : Page
     {
         ViewModel = App.GetService<SearchViewModel>();
         InitializeComponent();
+        dispatcher = DispatcherQueue.GetForCurrentThread();
 
         CustomListView.ItemsSource = new ObservableCollection<SongSearchObject>();
         AttachCollectionChangedEvent((ObservableCollection<SongSearchObject>)CustomListView.ItemsSource);
@@ -338,6 +342,8 @@ public sealed partial class Search : Page
     {
         failedSpotifySongs.Clear();
         youtubeAlternateList.Clear();
+        FailedListView.ItemsSource = failedSpotifySongs; // Clear the list
+        YoutubeWebView.Source = null; // Clear web view source
         ((ObservableCollection<SongSearchObject>)CustomListView.ItemsSource).Clear(); // Clear the list
 
         List<SongSearchObject> playlistObjects = await SpotifyApi.GetPlaylist(playlistId);
@@ -362,16 +368,13 @@ public sealed partial class Search : Page
                 }
                 else
                 {
-                    failedSpotifySongs.Add(song);
-                    FailedListView.ItemsSource = failedSpotifySongs;
-
                     // Search failed songs on youtube
                     youtubeAlternateList.Add(await YoutubeApi.GetSearchResult(song));
+                    failedSpotifySongs.Add(song);
+                    FailedListView.ItemsSource = failedSpotifySongs;
                 }
             }
         }
-
-        FailedListView.ItemsSource = failedSpotifySongs;
     }
 
 
@@ -398,6 +401,26 @@ public sealed partial class Search : Page
         }
     }
 
+    private void FailedDialog_OnSecondaryButtonClick(ContentDialog sender, ContentDialogButtonClickEventArgs args)
+    {
+        var selectedIndex = FailedListView.SelectedIndex;
+        if (0 <= selectedIndex && selectedIndex < youtubeAlternateList.Count)
+        {
+            var youtubeResult = youtubeAlternateList[selectedIndex];
+            if (youtubeResult != null)
+            {
+                var url = youtubeResult.Url;
+                // Test thread
+                Thread thread = new Thread(async () =>
+                {
+                    await YoutubeApi.DownloadAudio(url, "download path", youtubeResult.Title);
+                    Debug.WriteLine("Finished downloading");
+                });
+                thread.Start();
+            }
+        }
+    }
+
     private void FailedListView_OnSelectionChanged(object sender, SelectionChangedEventArgs e)
     {
         var selectedIndex = FailedListView.SelectedIndex;
@@ -410,6 +433,10 @@ public sealed partial class Search : Page
                 url = youtubeResult.Url;
                 YoutubeWebView.Source = new Uri(url); // Set web view source
             }
+        }
+        else
+        {
+            YoutubeWebView.Source = null; // Clear web view source
         }
     }
 

@@ -11,6 +11,8 @@ namespace FluentDL.Views;
 // TODO: Set the URL for your privacy policy by updating SettingsPage_PrivacyTermsLink.NavigateUri in Resources.resw.
 public sealed partial class SettingsPage : Page
 {
+    private DispatcherQueue dispatcher;
+
     public SettingsViewModel ViewModel
     {
         get;
@@ -20,12 +22,13 @@ public sealed partial class SettingsPage : Page
     {
         ViewModel = App.GetService<SettingsViewModel>();
         InitializeComponent();
+        this.Loaded += SettingsPage_Loaded;
+        dispatcher = DispatcherQueue.GetForCurrentThread();
+    }
 
-
-        // Run an async task to get the rip config path
-        DispatcherQueue uiThread = DispatcherQueue.GetForCurrentThread();
-
-        new Task(() =>
+    private void SettingsPage_Loaded(object sender, RoutedEventArgs e)
+    {
+        Thread thread = new Thread(() =>
         {
             var ripSubprocess = new RipSubprocess();
             var ripConfigPath = ripSubprocess.RunCommandSync("rip config path");
@@ -36,27 +39,22 @@ public sealed partial class SettingsPage : Page
             var secondIndex = ripConfigPath.IndexOf('\'', firstIndex + 1);
             ripConfigPath = ripConfigPath.Substring(firstIndex + 1, secondIndex - firstIndex - 1);
 
-            //configTextBlock.Text = ripConfigPath;
-            new Task(() =>
+            dispatcher.TryEnqueue(() =>
             {
-                uiThread.TryEnqueue(() =>
-                {
-                    configTextBlock.Text = ripConfigPath;
-                });
-            }).Start();
+                configTextBlock.Text = ripConfigPath;
+            });
 
-            new Task(() =>
+
+            // Open the toml text file at ripConfigPath and save contents to string
+            var configFileStr = System.IO.File.ReadAllText(ripConfigPath);
+            Debug.WriteLine("CONFIG FILE:" + configFileStr);
+
+            dispatcher.TryEnqueue(DispatcherQueuePriority.Low, () =>
             {
-                // Open the toml text file at ripConfigPath and save contents to string
-                var configFileStr = System.IO.File.ReadAllText(ripConfigPath);
-                Debug.WriteLine("CONFIG FILE:" + configFileStr);
-
-                uiThread.TryEnqueue(DispatcherQueuePriority.Low, () =>
-                {
-                    RichEditBox.Document.SetText(Microsoft.UI.Text.TextSetOptions.None, configFileStr);
-                });
-            }).Start();
-        }).Start();
+                RichEditBox.Document.SetText(Microsoft.UI.Text.TextSetOptions.None, configFileStr);
+            });
+        });
+        thread.Start();
     }
 
     private void SpotifyDialog_OnPrimaryButtonClick(ContentDialog sender, ContentDialogButtonClickEventArgs args)

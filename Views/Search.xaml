@@ -73,11 +73,13 @@
         </ContentDialog>
 
         <ContentDialog x:Name="FailedDialog" CloseButtonText="Close" Title="Tracks Not Found"
-                       PrimaryButtonText="Open in YouTube" IsPrimaryButtonEnabled="True"
+                       PrimaryButtonText="Open in Browser" SecondaryButtonText="Add to queue"
+                       IsPrimaryButtonEnabled="True" IsSecondaryButtonEnabled="True"
                        PrimaryButtonClick="FailedDialog_OnPrimaryButtonClick"
-                       PrimaryButtonStyle="{ThemeResource AccentButtonStyle}"
+                       SecondaryButtonClick="FailedDialog_OnSecondaryButtonClick"
                        CloseButtonClick="FailedDialog_OnCloseButtonClick" Closing="FailDialog_Closing"
-                       SecondaryButtonText="Add to queue" IsSecondaryButtonEnabled="True" HorizontalAlignment="Center" VerticalAlignment="Center">
+                       PrimaryButtonStyle="{ThemeResource AccentButtonStyle}"
+                       HorizontalAlignment="Center" VerticalAlignment="Center">
             <ContentDialog.Resources>
                 <x:Double x:Key="ContentDialogMaxWidth">1000</x:Double>
             </ContentDialog.Resources>
@@ -154,7 +156,7 @@
                             Message="The following spotify tracks could not be found on Deezer. Automatically attempted to find equivalent tracks from YouTube."
                             Margin="0,0,0,8" />
                         <Border CornerRadius="8" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1">
-                            <controls2:WebView2 x:Name="YoutubeWebView" Height="315" Width="560"/>
+                            <controls2:WebView2 x:Name="YoutubeWebView" Height="320"/>
                         </Border>
 
                     </StackPanel>
@@ -356,7 +358,8 @@
                 </Grid.RowDefinitions>
 
                 <CommandBar x:Name="CommandBar" Background="Transparent" IsOpen="False" DefaultLabelPosition="Right"
-                            Visibility="Collapsed" Grid.Row="0" Margin="0, 0, 0, 6">
+                            Visibility="Collapsed" Grid.Row="0" Margin="12, 0, 12, 6"
+                            >
                     <AppBarButton Icon="Add" Label="Add to queue" />
                     <AppBarButton Icon="Download" Label="Download" />
                     <AppBarButton Label="Download Cover">

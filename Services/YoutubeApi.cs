@@ -6,6 +6,7 @@ using System.Text;
 using System.Threading.Tasks;
 using YoutubeExplode;
 using YoutubeExplode.Search;
+using YoutubeExplode.Videos.Streams;
 
 namespace FluentDL.Services
 {
@@ -166,6 +167,41 @@ namespace FluentDL.Services
 
             // If no results found
             return null;
+        }
+
+        public static async Task DownloadAudio(string url, string downloadFolder, string filename)
+        {
+            // if download folder ends with a backslash, remove it
+            if (downloadFolder.EndsWith("\\"))
+            {
+                downloadFolder = downloadFolder.Substring(0, downloadFolder.Length - 1);
+            }
+
+            Debug.WriteLine(url + " | " + downloadFolder);
+            var streamManifest = await youtube.Videos.Streams.GetManifestAsync(url);
+            var streamInfo = streamManifest.GetAudioStreams().GetWithHighestBitrate();
+            string extension = streamInfo.Container.ToString();
+
+            /*
+             // BELOW IS CODE FOR OPUS CODEC
+            long maxBitRate = 0;
+            foreach (var streamObj in streamManifest.GetAudioStreams()) // Get the opus stream with highest bitrate
+            {
+                if (streamObj.AudioCodec.Equals("opus") && streamObj.Bitrate.BitsPerSecond > maxBitRate)
+                {
+                    extension = streamObj.AudioCodec;
+                    maxBitRate = streamObj.Bitrate.BitsPerSecond;
+                    streamInfo = streamObj;
+                }
+
+                Debug.WriteLine(streamObj.Container + " | " + streamObj.Bitrate + " | " + streamObj.AudioCodec);
+            }
+            */
+
+            var filePath = $"{downloadFolder}\\{filename}.{extension}";
+
+            var stream = await youtube.Videos.Streams.GetAsync(streamInfo);
+            await youtube.Videos.Streams.DownloadAsync(streamInfo, filePath);
         }
     }
 }
