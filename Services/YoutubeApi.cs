@@ -179,9 +179,9 @@ namespace FluentDL.Services
 
             Debug.WriteLine(url + " | " + downloadFolder);
             var streamManifest = await youtube.Videos.Streams.GetManifestAsync(url);
-            var streamInfo = streamManifest.GetAudioStreams().GetWithHighestBitrate();
+            var streamInfo = streamManifest.GetAudioOnlyStreams().GetWithHighestBitrate();
             string extension = streamInfo.Container.ToString();
-
+            extension = "aac";
             /*
              // BELOW IS CODE FOR OPUS CODEC
             long maxBitRate = 0;

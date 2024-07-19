@@ -1,4 +1,4 @@
-﻿using FluentDL.ViewModels;
+using FluentDL.ViewModels;
 using FluentDL.Helpers;
 using Microsoft.UI.Xaml.Controls;
 using FluentDL.Services;

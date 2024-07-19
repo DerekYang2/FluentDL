@@ -50,7 +50,7 @@
                         <FontIcon FontFamily="{StaticResource SymbolThemeFontFamily}" Glyph="&#57763;"/>
                     </NavigationViewItem.Icon>
                 </NavigationViewItem>
-                <NavigationViewItem x:Uid="Shell_ListDetails" helpers:NavigationHelper.NavigateTo="FluentDL.ViewModels.ListDetailsViewModel">
+                <NavigationViewItem x:Uid="Shell_Queue" helpers:NavigationHelper.NavigateTo="FluentDL.ViewModels.QueueViewModel">
                     <NavigationViewItem.Icon>
                         <FontIcon FontFamily="{StaticResource SymbolThemeFontFamily}" Glyph="&#xea37;"/>
                     </NavigationViewItem.Icon>

@@ -13,7 +13,7 @@ public class PageService : IPageService
     public PageService()
     {
         Configure<SearchViewModel, Search>();
-        Configure<ListDetailsViewModel, ListDetailsPage>();
+        Configure<QueueViewModel, QueuePage>();
         Configure<ContentGridViewModel, ContentGridPage>();
         Configure<ContentGridDetailViewModel, ContentGridDetailPage>();
         Configure<DataGridViewModel, DataGridPage>();
