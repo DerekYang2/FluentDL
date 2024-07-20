@@ -9,8 +9,11 @@
     xmlns:controls1="using:CommunityToolkit.WinUI.UI.Controls"
     xmlns:views="using:FluentDL.Views"
     xmlns:helpers="using:FluentDL.Helpers"
+    xmlns:behaviors="using:FluentDL.Behaviors"
     mc:Ignorable="d"
-    NavigationCacheMode="Required">
+    NavigationCacheMode="Required"
+    behaviors:NavigationViewHeaderBehavior.HeaderMode="Minimal"
+    >
     <Page.Resources>
         <helpers:DateToYearConverter x:Key="DateToYearConverter" />
         <helpers:DurationConverter x:Key="DurationConverter" />
@@ -18,6 +21,7 @@
     </Page.Resources>
 
     <Grid>
+        <!-- Advanced search dialog --> 
         <ContentDialog x:Name="SearchDialog" PrimaryButtonText="Search" CloseButtonText="Cancel"
                        Title="Advanced Search" IsSecondaryButtonEnabled="True" IsPrimaryButtonEnabled="True"
                        PrimaryButtonClick="SearchDialogClick" PrimaryButtonStyle="{ThemeResource AccentButtonStyle}">
@@ -72,6 +76,7 @@
             </StackPanel>
         </ContentDialog>
 
+        <!-- Failed dialog -->
         <ContentDialog x:Name="FailedDialog" CloseButtonText="Close" Title="Tracks Not Found"
                        PrimaryButtonText="Open in Browser" SecondaryButtonText="Add to queue"
                        IsPrimaryButtonEnabled="True" IsSecondaryButtonEnabled="True"
@@ -83,85 +88,89 @@
             <ContentDialog.Resources>
                 <x:Double x:Key="ContentDialogMaxWidth">1000</x:Double>
             </ContentDialog.Resources>
-                <Grid>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="Auto"/>
-                        <ColumnDefinition Width="*"/>
-                    </Grid.ColumnDefinitions>
-                    <ListView Grid.Column="0" x:Name="FailedListView"
-                                CornerRadius="4"
-                                BorderThickness="0"
-                                Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
-                                BorderBrush="{ThemeResource ControlStrongStrokeColorDefaultBrush}"
-                                Margin="0,0,0,10"
-                                VerticalAlignment="Center"
-                                SelectionChanged="FailedListView_OnSelectionChanged"
-                                Height="400">
-                        <ListView.ItemTemplate>
-                            <DataTemplate x:DataType="services:SongSearchObject">
-                                <Grid Margin="0,12,0,12" AutomationProperties.Name="{x:Bind Title}">
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="76" />
-                                        <ColumnDefinition Width="*" />
-                                    </Grid.ColumnDefinitions>
-                                    <Border CornerRadius="4" Height="76">
-                                        <Border.Background>
-                                            <ImageBrush Stretch="UniformToFill" ImageSource="{x:Bind ImageLocation}" />
-                                        </Border.Background>
-                                    </Border>
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <ListView Grid.Column="0" x:Name="FailedListView"
+                          CornerRadius="4"
+                          BorderThickness="0"
+                          Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                          BorderBrush="{ThemeResource ControlStrongStrokeColorDefaultBrush}"
+                          Margin="0,0,0,10"
+                          VerticalAlignment="Center"
+                          SelectionChanged="FailedListView_OnSelectionChanged"
+                          Height="400">
+                    <ListView.ItemTemplate>
+                        <DataTemplate x:DataType="services:SongSearchObject">
+                            <Grid Margin="0,12,0,12" AutomationProperties.Name="{x:Bind Title}">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="76" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <Border CornerRadius="4" Height="76">
+                                    <Border.Background>
+                                        <ImageBrush Stretch="UniformToFill" ImageSource="{x:Bind ImageLocation}" />
+                                    </Border.Background>
+                                </Border>
 
-                                    <StackPanel Margin="12,0,0,0" Grid.Column="1">
-                                        <StackPanel Orientation="Horizontal">
-                                            <TextBlock Text="{x:Bind Title}" FontFamily="Segoe UI Variable Display"
-                                                        Style="{ThemeResource BodyStrongTextBlockStyle}"
-                                                        HorizontalAlignment="Left"
-                                                        TextTrimming="CharacterEllipsis" MaxLines="1" Margin="0, 0, 8, 0" />
-                                            <Border Background="DarkGray" CornerRadius="2" Padding="4, 0"
-                                                    VerticalAlignment="Center">
-                                                <TextBlock x:Name="ExplicitBadgeFailed" Text="E" Style="{ThemeResource CaptionTextBlockStyle}"
-                                                            Foreground="Black"
-                                                            Visibility="{x:Bind Explicit, Converter={StaticResource VisibilityConverter}}" />
-                                            </Border>
-                                        </StackPanel>
-                                        <TextBlock Text="{x:Bind Artists}" FontFamily="Segoe UI Variable Display"
-                                                    Style="{ThemeResource BodyTextBlockStyle}"
-                                                    TextTrimming="CharacterEllipsis"
-                                                    MaxLines="1" />
+                                <StackPanel Margin="12,0,0,0" Grid.Column="1">
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="{x:Bind Title}" FontFamily="Segoe UI Variable Display"
+                                                   Style="{ThemeResource BodyStrongTextBlockStyle}"
+                                                   HorizontalAlignment="Left"
+                                                   TextTrimming="CharacterEllipsis" MaxLines="1" Margin="0, 0, 8, 0" />
+                                        <Border Background="DarkGray" CornerRadius="2" Padding="4, 0"
+                                                VerticalAlignment="Center">
+                                            <TextBlock x:Name="ExplicitBadgeFailed" Text="E"
+                                                       Style="{ThemeResource CaptionTextBlockStyle}"
+                                                       Foreground="Black"
+                                                       Visibility="{x:Bind Explicit, Converter={StaticResource VisibilityConverter}}" />
+                                        </Border>
                                     </StackPanel>
+                                    <TextBlock Text="{x:Bind Artists}" FontFamily="Segoe UI Variable Display"
+                                               Style="{ThemeResource BodyTextBlockStyle}"
+                                               TextTrimming="CharacterEllipsis"
+                                               MaxLines="1" />
+                                </StackPanel>
 
-                                    <StackPanel Margin="12,0,0,0" Orientation="Horizontal" VerticalAlignment="Bottom"
-                                                Grid.Column="1">
-                                        <TextBlock
-                                            Text="{x:Bind ReleaseDate, Converter={StaticResource DateToYearConverter}}"
-                                            HorizontalAlignment="Left"
-                                            Style="{ThemeResource BodyTextBlockStyle}" Margin="0,0,0,0"
-                                            FontFamily="Segoe UI Variable Display" />
-                                        <TextBlock Text="&#x2022;" Style="{ThemeResource BodyTextBlockStyle}"
-                                                    HorizontalAlignment="Left" Margin="5,0,0,0" />
-                                        <TextBlock
-                                            Text="{x:Bind Duration, Converter={StaticResource DurationConverter}}"
-                                            HorizontalAlignment="Left"
-                                            Style="{ThemeResource BodyTextBlockStyle}" Margin="5,0,0,0"
-                                            FontFamily="Segoe UI Variable Display" />
-                                    </StackPanel>
-                                </Grid>
-                            </DataTemplate>
-                        </ListView.ItemTemplate>
-                    </ListView>
-                    <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="10,0,0,12">
-                        <InfoBar
-                            IsOpen="True"
-                            IsClosable="False"
-                            Severity="Error"
-                            Message="The following spotify tracks could not be found on Deezer. Automatically attempted to find equivalent tracks from YouTube."
-                            Margin="0,0,0,8" />
-                        <Border CornerRadius="8" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1">
-                            <controls2:WebView2 x:Name="YoutubeWebView" Height="320"/>
-                        </Border>
+                                <StackPanel Margin="12,0,0,0" Orientation="Horizontal" VerticalAlignment="Bottom"
+                                            Grid.Column="1">
+                                    <TextBlock
+                                        Text="{x:Bind ReleaseDate, Converter={StaticResource DateToYearConverter}}"
+                                        HorizontalAlignment="Left"
+                                        Style="{ThemeResource BodyTextBlockStyle}" Margin="0,0,0,0"
+                                        FontFamily="Segoe UI Variable Display" />
+                                    <TextBlock Text="&#x2022;" Style="{ThemeResource BodyTextBlockStyle}"
+                                               HorizontalAlignment="Left" Margin="5,0,0,0" />
+                                    <TextBlock
+                                        Text="{x:Bind Duration, Converter={StaticResource DurationConverter}}"
+                                        HorizontalAlignment="Left"
+                                        Style="{ThemeResource BodyTextBlockStyle}" Margin="5,0,0,0"
+                                        FontFamily="Segoe UI Variable Display" />
+                                </StackPanel>
+                            </Grid>
+                        </DataTemplate>
+                    </ListView.ItemTemplate>
+                </ListView>
+                <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="10,0,0,12">
+                    <InfoBar
+                        IsOpen="True"
+                        IsClosable="False"
+                        Severity="Error"
+                        Message="The following spotify tracks could not be found on Deezer. Automatically attempted to find equivalent tracks from YouTube."
+                        Margin="0,0,0,8" />
+                    <Border CornerRadius="8" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                            BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1">
+                        <controls2:WebView2 x:Name="YoutubeWebView" Height="320" />
+                    </Border>
 
-                    </StackPanel>
-                </Grid>
+                </StackPanel>
+            </Grid>
         </ContentDialog>
+
+        <!-- Search page -->
         <Grid>
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="2*" />
@@ -175,7 +184,7 @@
                 <RowDefinition Height="*" />
             </Grid.RowDefinitions>
 
-
+            <!-- Search bar and buttons -->
             <Grid Grid.Column="0" Grid.Row="0" ColumnSpacing="8" Margin="0, 2, 0, 8">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*" />
@@ -265,7 +274,8 @@
                             <views:SortObject Text="Sort by:" Highlight="  Popularity" />
                         </ComboBox.Items>
                     </ComboBox>
-                    <Button x:Name="StopSearchButton" VerticalAlignment="Center" Background="Transparent" BorderBrush="Transparent" Click="StopSearchButton_OnClick">
+                    <Button x:Name="StopSearchButton" VerticalAlignment="Center" Background="Transparent"
+                            BorderBrush="Transparent" Click="StopSearchButton_OnClick">
                         <StackPanel Orientation="Horizontal">
                             <FontIcon x:Name="StopSearchIcon" Glyph="&#xE71A;" FontSize="16" Margin="0, 0, 8, 0"
                                       Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}" />
@@ -273,7 +283,6 @@
                         </StackPanel>
                     </Button>
                 </StackPanel>
-
             </controls1:DockPanel>
 
             <ProgressBar Grid.Column="0" Grid.Row="2" x:Name="SearchProgress" IsIndeterminate="False" Value="0"
@@ -313,7 +322,8 @@
                                                TextTrimming="CharacterEllipsis" MaxLines="1" Margin="0, 0, 8, 0" />
                                     <Border Background="DarkGray" CornerRadius="2" Padding="4, 0"
                                             VerticalAlignment="Center">
-                                        <TextBlock x:Name="ExplicitBadge" Text="E" Style="{ThemeResource CaptionTextBlockStyle}"
+                                        <TextBlock x:Name="ExplicitBadge" Text="E"
+                                                   Style="{ThemeResource CaptionTextBlockStyle}"
                                                    Foreground="Black"
                                                    Visibility="{x:Bind Explicit, Converter={StaticResource VisibilityConverter}}" />
                                     </Border>
@@ -341,90 +351,10 @@
                 </ListView.ItemTemplate>
             </ListView>
 
-            <Grid
-                x:Name="RelativePreviewPanel"
-                CornerRadius="8"
-                Padding="12"
-                BorderThickness="1"
-                BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
-                Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
-                Margin="12,0,0,12"
-                VerticalAlignment="Stretch"
-                Grid.Row="0" Grid.RowSpan="4" Grid.Column="1">
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto" />
-                    <RowDefinition Height="*" />
-                    <RowDefinition Height="Auto" />
-                </Grid.RowDefinitions>
-
-                <CommandBar x:Name="CommandBar" Background="Transparent" IsOpen="False" DefaultLabelPosition="Right"
-                            Visibility="Collapsed" Grid.Row="0" Margin="12, 0, 12, 6"
-                            >
-                    <AppBarButton Icon="Add" Label="Add to queue" />
-                    <AppBarButton Icon="Download" Label="Download" />
-                    <AppBarButton Label="Download Cover">
-                        <AppBarButton.Icon>
-                            <FontIcon Glyph="&#xEE71;" />
-                        </AppBarButton.Icon>
-                    </AppBarButton>
-                    <AppBarButton Icon="Share" Label="Share" />
-                </CommandBar>
-
-                <ScrollView x:Name="PreviewScrollView" VerticalScrollBarVisibility="Auto" Grid.Row="1"
-                            Margin="12, 0, 12, 0" Visibility="Visible" CornerRadius="8"
-                            Background="{ThemeResource AcrylicBackgroundFillColorDefaultBrush}"
-                            BorderBrush="{ThemeResource ControlStrokeColorOnAccentTertiaryBrush}" BorderThickness="1">
-                    <StackPanel Orientation="Vertical" VerticalAlignment="Top" Height="Auto">
-
-                        <Border CornerRadius="8" Margin="12">
-                            <Image x:Name="PreviewImage" />
-                        </Border>
-
-                        <StackPanel x:Name="PreviewInfoStack" Orientation="Vertical" HorizontalAlignment="Stretch"
-                                    VerticalAlignment="Top" Margin="16, 0, 16, 12">
-                            <TextBlock x:Name="PreviewTitleText" Text="" Style="{ThemeResource HeaderText}"
-                                       HorizontalAlignment="Left" Margin="0, 0,0,8" TextWrapping="WrapWholeWords"
-                                       LineHeight="22" />
-                            <controls1:DockPanel>
-                                <Border Margin="0,0,8,0">
-                                    <ItemsControl x:Name="PreviewInfoControl">
-                                        <ItemsControl.ItemTemplate>
-                                            <DataTemplate x:DataType="views:TrackDetail">
-                                                <TextBlock Text="{x:Bind Label}" Style="{ThemeResource BodyText}"
-                                                           HorizontalAlignment="Left" LineHeight="22" />
-                                            </DataTemplate>
-                                        </ItemsControl.ItemTemplate>
-                                    </ItemsControl>
-                                </Border>
-
-                                <Border HorizontalAlignment="Right">
-                                    <ItemsControl x:Name="PreviewInfoControl2">
-                                        <ItemsControl.ItemTemplate>
-                                            <DataTemplate x:DataType="views:TrackDetail">
-                                                <TextBlock Text="{x:Bind Value}" Style="{ThemeResource BodyText}"
-                                                           HorizontalAlignment="Right"
-                                                           Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"
-                                                           LineHeight="22" 
-                                                           TextTrimming="CharacterEllipsis"
-                                                           ToolTipService.ToolTip="{x:Bind Value}"
-                                                           />
-                                            </DataTemplate>
-                                        </ItemsControl.ItemTemplate>
-                                    </ItemsControl>
-                                </Border>
-                            </controls1:DockPanel>
-                        </StackPanel>
-                    </StackPanel>
-                </ScrollView>
-
-                <MediaPlayerElement Grid.Row="2" x:Name="SongPreviewPlayer" AutoPlay="False"
-                                    AreTransportControlsEnabled="True" RelativePanel.AlignBottomWithPanel="True"
-                                    Visibility="Collapsed" />
-            </Grid>
-
-            <TextBlock x:Name="NoneSelectedText" Text="No track selected." Style="{ThemeResource BodyText}"
-                       HorizontalAlignment="Center" VerticalAlignment="Center" Grid.Row="0" Grid.RowSpan="4"
-                       Grid.Column="1" Margin="0,0,0,10" />
+            <views:PreviewPane x:Name="PreviewPanel" Grid.Row="0" Grid.RowSpan="4" Grid.Column="1"
+                               Padding="12"
+                               Margin="12,0,0,12"
+                               VerticalAlignment="Stretch" />
         </Grid>
     </Grid>
 

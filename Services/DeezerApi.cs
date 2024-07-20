@@ -258,7 +258,7 @@ internal class DeezerApi
         }
 
         // Loop through exact matches and get one with minimum album edit distance
-        SongSearchObject closest = null;
+        SongSearchObject? closest = null;
         int minDist = int.MaxValue;
         foreach (var songObj in searchResults)
         {
@@ -280,7 +280,7 @@ internal class DeezerApi
         return closest;
     }
 
-    public static async Task<SongSearchObject> AdvancedSearch(SongSearchObject song)
+    public static async Task<SongSearchObject?> AdvancedSearch(SongSearchObject song)
     {
         var artists = song.Artists.Split(", ").ToList();
         var trackName = PruneTitleSearch(song.Title);
@@ -330,7 +330,7 @@ internal class DeezerApi
         }
 
         // Pass 1: exact title match, find least edit distance album name
-        SongSearchObject closeMatchObj = null;
+        SongSearchObject? closeMatchObj = null;
         int minEditDistance = int.MaxValue;
         foreach (var songObj in songObjList)
         {

@@ -5,15 +5,83 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:controls="using:CommunityToolkit.WinUI.UI.Controls"
-    xmlns:models="using:FluentDL.Core.Models"
+    xmlns:viewModels="using:FluentDL.Core.ViewModels"
     xmlns:views="using:FluentDL.Views"
     xmlns:behaviors="using:FluentDL.Behaviors"
-    behaviors:NavigationViewHeaderBehavior.HeaderMode="Never"
+    xmlns:services="using:FluentDL.Services"
+    xmlns:helpers="using:FluentDL.Helpers"
+    behaviors:NavigationViewHeaderBehavior.HeaderMode="Minimal"
     mc:Ignorable="d">
     <Page.Resources>
-        
+        <helpers:DateToYearConverter x:Key="DateToYearConverter" />
+        <helpers:DurationConverter x:Key="DurationConverter" />
+        <helpers:VisibilityConverter x:Key="VisibilityConverter" />
     </Page.Resources>
 
-    <Grid x:Name="ContentArea">
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="2*" />
+            <ColumnDefinition Width="*" />
+        </Grid.ColumnDefinitions>
+
+        <ListView Grid.Column="0" x:Name="CustomListView"
+                  CornerRadius="8"
+                  BorderThickness="0"
+                  SelectionChanged="CustomListView_OnSelectionChanged"
+                  BorderBrush="{ThemeResource ControlStrongStrokeColorDefaultBrush}"
+                  Margin="0,0,0,0"
+        >
+            <ListView.ItemTemplate>
+                <DataTemplate x:DataType="services:SongSearchObject">
+                    <Grid Margin="0,12,0,12" AutomationProperties.Name="{x:Bind Title}">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="76" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <Border CornerRadius="4" Height="76">
+                            <Border.Background>
+                                <ImageBrush Stretch="UniformToFill" ImageSource="{x:Bind ImageLocation}" />
+                            </Border.Background>
+                        </Border>
+
+                        <StackPanel Margin="15,0,0,0" Grid.Column="1">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="{x:Bind Title}" FontFamily="Segoe UI Variable Display"
+                                           Style="{ThemeResource BodyStrongTextBlockStyle}"
+                                           HorizontalAlignment="Left"
+                                           TextTrimming="CharacterEllipsis" MaxLines="1" Margin="0, 0, 8, 0" />
+                                <Border Background="DarkGray" CornerRadius="2" Padding="4, 0"
+                                        VerticalAlignment="Center">
+                                    <TextBlock x:Name="ExplicitBadge" Text="E" Style="{ThemeResource CaptionTextBlockStyle}"
+                                               Foreground="Black"
+                                               Visibility="{x:Bind Explicit, Converter={StaticResource VisibilityConverter}}" />
+                                </Border>
+                            </StackPanel>
+                            <TextBlock Text="{x:Bind Artists}" FontFamily="Segoe UI Variable Display"
+                                       Style="{ThemeResource BodyTextBlockStyle}" TextTrimming="CharacterEllipsis"
+                                       MaxLines="1" />
+                        </StackPanel>
+
+                        <StackPanel Margin="15,0,0,0" Orientation="Horizontal" VerticalAlignment="Bottom"
+                                    Grid.Column="1">
+                            <TextBlock Text="{x:Bind ReleaseDate, Converter={StaticResource DateToYearConverter}}"
+                                       HorizontalAlignment="Left"
+                                       Style="{ThemeResource BodyTextBlockStyle}" Margin="0,0,0,0"
+                                       FontFamily="Segoe UI Variable Display" />
+                            <TextBlock Text="&#x2022;" Style="{ThemeResource BodyTextBlockStyle}"
+                                       HorizontalAlignment="Left" Margin="5,0,0,0" />
+                            <TextBlock Text="{x:Bind Duration, Converter={StaticResource DurationConverter}}"
+                                       HorizontalAlignment="Left"
+                                       Style="{ThemeResource BodyTextBlockStyle}" Margin="5,0,0,0"
+                                       FontFamily="Segoe UI Variable Display" />
+                        </StackPanel>
+                    </Grid>
+                </DataTemplate>
+            </ListView.ItemTemplate>
+        </ListView>
+        <views:PreviewPane Grid.Column="1" x:Name="PreviewPanel"
+                           Padding="12"
+                           Margin="12,0,0,12"
+                           VerticalAlignment="Stretch" />
     </Grid>
 </Page>

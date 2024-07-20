@@ -90,7 +90,7 @@ public sealed partial class Search : Page
         ripSubprocess = new RipSubprocess();
         SortComboBox.SelectedIndex = 0;
         SortOrderComboBox.SelectedIndex = 0;
-        ClearPreviewPane();
+        PreviewPanel.Clear();
 
         youtubeAlternateList = new List<VideoSearchResult>();
 
@@ -155,61 +155,18 @@ public sealed partial class Search : Page
         }
     }
 
-    private void ClearPreviewPane()
-    {
-        NoneSelectedText.Visibility = Visibility.Visible;
-        SongPreviewPlayer.Visibility = Visibility.Collapsed;
-        CommandBar.Visibility = Visibility.Collapsed;
-        PreviewScrollView.Visibility = Visibility.Collapsed;
-        PreviewTitleText.Text = "";
-        PreviewImage.Source = null;
-        PreviewInfoControl.ItemsSource = new List<TrackDetail>();
-        PreviewInfoControl2.ItemsSource = new List<TrackDetail>();
-    }
-
     private async void CustomListView_OnSelectionChanged(object sender, SelectionChangedEventArgs e)
     {
         // Get the selected item
         var selectedSong = (SongSearchObject)CustomListView.SelectedItem;
         if (selectedSong == null)
         {
-            ClearPreviewPane();
+            PreviewPanel.Clear();
             return;
         }
 
-        NoneSelectedText.Visibility = Visibility.Collapsed;
-        SongPreviewPlayer.Visibility = Visibility.Visible;
-        CommandBar.Visibility = Visibility.Visible;
-        PreviewScrollView.Visibility = Visibility.Visible;
-
-        await SetupPreviewPane(selectedSong);
-    }
-
-    private async Task SetupPreviewPane(SongSearchObject selectedSong)
-    {
-        var jsonObject = await FluentDL.Services.DeezerApi.FetchJsonElement("track/" + selectedSong.Id);
-        //PreviewArtistText.Text = selectedSong.Artists;
-        //PreviewReleaseDate.Text = selectedSong.ReleaseDate; // Todo format date
-        //PreviewRank.Text = selectedSong.Rank; // Todo format rank
-        //PreviewDuration.Text = selectedSong.Duration;
-        // PreviewAlbumName.Text = jsonObject.GetProperty("album").GetProperty("title").GetString();
-        // PreviewAlbumPosition.Text = jsonObject.GetProperty("track_position").ToString();
-        PreviewTitleText.Text = selectedSong.Title;
-
-        PreviewInfoControl2.ItemsSource = PreviewInfoControl.ItemsSource = new List<TrackDetail>
-        {
-            new TrackDetail { Label = "Artists", Value = selectedSong.Artists },
-            new TrackDetail { Label = "Release Date", Value = new DateVerboseConverter().Convert(selectedSong.ReleaseDate, null, null, null).ToString() },
-            new TrackDetail { Label = "Popularity", Value = selectedSong.Rank },
-            new TrackDetail { Label = "Duration", Value = new DurationConverter().Convert(selectedSong.Duration, null, null, null).ToString() },
-            new TrackDetail { Label = "Album", Value = selectedSong.AlbumName },
-            new TrackDetail { Label = "Track", Value = jsonObject.GetProperty("track_position").ToString() }
-        };
-
-        // Set 30 second preview
-        SongPreviewPlayer.Source = MediaSource.CreateFromUri(new Uri(jsonObject.GetProperty("preview").ToString()));
-
-        PreviewImage.Source = new BitmapImage(new Uri(jsonObject.GetProperty("album").GetProperty("cover_big").ToString()));
+        PreviewPanel.Show();
+        await PreviewPanel.Update(selectedSong);
     }
 
     private void SortBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -403,6 +360,7 @@ public sealed partial class Search : Page
 
     private void FailedDialog_OnSecondaryButtonClick(ContentDialog sender, ContentDialogButtonClickEventArgs args)
     {
+        /*
         var selectedIndex = FailedListView.SelectedIndex;
         if (0 <= selectedIndex && selectedIndex < youtubeAlternateList.Count)
         {
@@ -419,6 +377,8 @@ public sealed partial class Search : Page
                 thread.Start();
             }
         }
+        */
+        QueueViewModel.Add((SongSearchObject)FailedListView.SelectedItem);
     }
 
     private void FailedListView_OnSelectionChanged(object sender, SelectionChangedEventArgs e)
