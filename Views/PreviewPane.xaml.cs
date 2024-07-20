@@ -17,6 +17,7 @@ using Microsoft.UI.Xaml.Navigation;
 using Microsoft.UI.Xaml.Media.Imaging;
 using Windows.Media.Core;
 using FluentDL.ViewModels;
+using System.Collections.ObjectModel;
 
 
 // To learn more about WinUI, the WinUI project structure,
@@ -31,6 +32,16 @@ namespace FluentDL.Views
         public PreviewPane()
         {
             this.InitializeComponent();
+            Clear();
+        }
+
+        public void SetAppBarButtons(List<AppBarButton> appBarButtons)
+        {
+            CommandBar.PrimaryCommands.Clear();
+            foreach (var button in appBarButtons)
+            {
+                CommandBar.PrimaryCommands.Add(button);
+            }
         }
 
         public void Clear()
@@ -81,12 +92,9 @@ namespace FluentDL.Views
             PreviewImage.Source = new BitmapImage(new Uri(jsonObject.GetProperty("album").GetProperty("cover_big").ToString()));
         }
 
-        private void AppBarQueueButton_OnClick(object sender, RoutedEventArgs e)
+        public SongSearchObject? GetSong()
         {
-            if (song != null)
-            {
-                QueueViewModel.Add(song);
-            }
+            return song;
         }
     }
 }

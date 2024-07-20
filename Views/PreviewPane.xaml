@@ -7,6 +7,7 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:controls="using:CommunityToolkit.WinUI.UI.Controls"
+    xmlns:controls1="using:Microsoft.UI.Xaml.Controls"
     mc:Ignorable="d">
 
     <Grid
@@ -23,16 +24,7 @@
         </Grid.RowDefinitions>
 
         <CommandBar x:Name="CommandBar" Background="Transparent" IsOpen="False" DefaultLabelPosition="Right"
-                    Visibility="Collapsed" Grid.Row="0" Margin="12, 0, 12, 6"
-                    >
-            <AppBarButton Icon="Add" Label="Add to queue" Click="AppBarQueueButton_OnClick"/>
-            <AppBarButton Icon="Download" Label="Download" />
-            <AppBarButton Label="Download Cover">
-                <AppBarButton.Icon>
-                    <FontIcon Glyph="&#xEE71;" />
-                </AppBarButton.Icon>
-            </AppBarButton>
-            <AppBarButton Icon="Share" Label="Share" />
+                    Visibility="Collapsed" Grid.Row="0" Margin="12, 4, 12, 2">
         </CommandBar>
 
         <ScrollView x:Name="PreviewScrollView" VerticalScrollBarVisibility="Auto" Grid.Row="1"

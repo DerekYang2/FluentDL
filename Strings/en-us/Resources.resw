@@ -126,9 +126,6 @@
   <data name="Shell_Search.Content" xml:space="preserve">
     <value>Search</value>
   </data>
-  <data name="ListDetails_NoSelection.Text" xml:space="preserve">
-    <value>Select an item from the list.</value>
-  </data>
   <data name="Shell_Queue.Content" xml:space="preserve">
     <value>Queue</value>
   </data>

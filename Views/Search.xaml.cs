@@ -90,7 +90,7 @@ public sealed partial class Search : Page
         ripSubprocess = new RipSubprocess();
         SortComboBox.SelectedIndex = 0;
         SortOrderComboBox.SelectedIndex = 0;
-        PreviewPanel.Clear();
+        InitPreviewPanelButtons();
 
         youtubeAlternateList = new List<VideoSearchResult>();
 
@@ -115,6 +115,23 @@ public sealed partial class Search : Page
         // Initialize Spotify API
         SpotifyApi.Initialize();
         cancellationTokenSource = new CancellationTokenSource();
+    }
+
+    private void InitPreviewPanelButtons()
+    {
+        // Initialize preview panel command bar
+        var addButton = new AppBarButton { Icon = new SymbolIcon(Symbol.Add), Label = "Add to queue" };
+        addButton.Click += (sender, e) =>
+        {
+            if (PreviewPanel.GetSong() != null)
+            {
+                QueueViewModel.Add(PreviewPanel.GetSong());
+            }
+        };
+
+        var shareButton = new AppBarButton { Icon = new SymbolIcon(Symbol.Share), Label = "Share" };
+        var openButton = new AppBarButton { Icon = new FontIcon { Glyph = "\uE8A7" }, Label = "Open" };
+        PreviewPanel.SetAppBarButtons(new List<AppBarButton> { addButton, shareButton, openButton });
     }
 
     private void AttachCollectionChangedEvent(ObservableCollection<SongSearchObject> collection)

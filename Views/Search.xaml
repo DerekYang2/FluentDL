@@ -12,7 +12,6 @@
     xmlns:behaviors="using:FluentDL.Behaviors"
     mc:Ignorable="d"
     NavigationCacheMode="Required"
-    behaviors:NavigationViewHeaderBehavior.HeaderMode="Minimal"
     >
     <Page.Resources>
         <helpers:DateToYearConverter x:Key="DateToYearConverter" />
