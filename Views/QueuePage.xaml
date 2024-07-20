@@ -11,11 +11,15 @@
     xmlns:helpers="using:FluentDL.Helpers"
     xmlns:controls1="using:CommunityToolkit.WinUI.UI.Controls"
     xmlns:viewModels="using:FluentDL.ViewModels"
+    xmlns:converters="using:CommunityToolkit.WinUI.UI.Converters"
     mc:Ignorable="d">
     <Page.Resources>
         <helpers:DateToYearConverter x:Key="DateToYearConverter" />
         <helpers:DurationConverter x:Key="DurationConverter" />
         <helpers:VisibilityConverter x:Key="VisibilityConverter" />
+        <viewModels:QueueViewModel x:Key="QueueViewModel"/>
+        <views:QueueMessageConverter  x:Key="QueueMessageConverter"/>
+        <views:PathToVisibilityConverter x:Key="PathToVisibilityConverter"/>
     </Page.Resources>
 
     <Grid>
@@ -31,7 +35,7 @@
         <controls1:DockPanel Grid.Row="0" Grid.Column="0">
             <Button VerticalAlignment="Center" Margin="0, 0, 0, 0" Background="Transparent"
                     BorderBrush="Transparent">
-                    <TextBlock x:Name="ProgressText" Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}" />
+                    <TextBlock x:Name="ProgressText" Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}" Text="{Binding Source={StaticResource QueueViewModel}, Path=Source.Count, Converter={StaticResource QueueMessageConverter}}"/>
             </Button>
             
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
@@ -65,11 +69,12 @@
                               Margin="0,0,0,0"
         >
             <ListView.ItemTemplate>
-                <DataTemplate x:DataType="services:SongSearchObject">
+                <DataTemplate x:DataType="viewModels:QueueObject">
                     <Grid Margin="0,12,0,12" AutomationProperties.Name="{x:Bind Title}">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="76" />
                             <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
                         <Border CornerRadius="4" Height="76">
                             <Border.Background>
@@ -107,6 +112,20 @@
                                        HorizontalAlignment="Left"
                                        Style="{ThemeResource BodyTextBlockStyle}" Margin="5,0,0,0"
                                        FontFamily="Segoe UI Variable Display" />
+                        </StackPanel>
+                        <StackPanel Grid.Column="2" VerticalAlignment="Center" HorizontalAlignment="Stretch" Visibility="{x:Bind DownloadPath, Converter={StaticResource PathToVisibilityConverter}}">
+                            <Grid Padding="6" CornerRadius="4" Margin="0,0,0,8">
+                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="8">
+                                    <FontIcon Glyph="&#xE930;" />                                    
+                                    <TextBlock HorizontalAlignment="Center" >Done</TextBlock>
+                                </StackPanel>
+                            </Grid>
+                            <Button x:Name="PathButton" >
+                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                    <FontIcon Glyph="&#xE8DA;" Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}" />
+                                    <TextBlock Text="Open" Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}" />
+                                </StackPanel>
+                            </Button>
                         </StackPanel>
                     </Grid>
                 </DataTemplate>

@@ -8,13 +8,99 @@ using FluentDL.Services;
 
 namespace FluentDL.ViewModels;
 
-public partial class QueueViewModel : ObservableRecipient
+/*
+ *    public string Title
+   {
+       get;
+       set;
+   }
+
+   public string ImageLocation
+   {
+       get;
+       set;
+   }
+
+   public string Id
+   {
+       get;
+       set;
+   }
+
+   public string ReleaseDate
+   {
+       get;
+       set;
+   }
+
+   public string Artists
+   {
+       get;
+       set;
+   }
+
+   public string Duration
+   {
+       get;
+       set;
+   }
+
+   public string Rank
+   {
+       get;
+       set;
+   }
+
+   public string AlbumName
+   {
+       get;
+       set;
+   }
+
+   public string Source
+   {
+       get;
+       set;
+   }
+
+   public bool Explicit
+   {
+       get;
+       set;
+   }
+
+ */
+public class QueueObject : SongSearchObject
 {
-    public static ObservableCollection<SongSearchObject> Source
+    public string? DownloadPath
     {
         get;
         set;
-    } = new ObservableCollection<SongSearchObject>();
+    }
+
+    public QueueObject(SongSearchObject song)
+    {
+        Title = song.Title;
+        ImageLocation = song.ImageLocation;
+        Id = song.Id;
+        ReleaseDate = song.ReleaseDate;
+        Artists = song.Artists;
+        Duration = song.Duration;
+        Rank = song.Rank;
+        AlbumName = song.AlbumName;
+        Source = song.Source;
+        Explicit = song.Explicit;
+        DownloadPath = "test";
+    }
+}
+
+public partial class QueueViewModel : ObservableRecipient
+{
+    public static ObservableCollection<QueueObject> Source
+    {
+        get;
+        set;
+    } = new ObservableCollection<QueueObject>();
 
     private static HashSet<string> trackSet = new HashSet<string>();
 
@@ -29,14 +115,15 @@ public partial class QueueViewModel : ObservableRecipient
             return;
         }
 
-        Source.Add(song);
+        Source.Add(new QueueObject(song));
         trackSet.Add(GetHash(song));
     }
 
     public static void Remove(SongSearchObject song)
     {
-        Source.Remove(song);
-        trackSet.Remove(GetHash(song));
+        var hash = GetHash(song);
+        trackSet.Remove(hash);
+        Source.Remove(Source.First(x => GetHash(x) == hash));
     }
 
     public static void Clear()
