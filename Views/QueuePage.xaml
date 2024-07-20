@@ -4,13 +4,13 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-    xmlns:controls="using:CommunityToolkit.WinUI.UI.Controls"
+    xmlns:controls="clr-namespace:Microsoft.UI.Xaml.Controls;assembly=Microsoft.WinUI"
     xmlns:viewModels="using:FluentDL.Core.ViewModels"
     xmlns:views="using:FluentDL.Views"
     xmlns:behaviors="using:FluentDL.Behaviors"
     xmlns:services="using:FluentDL.Services"
     xmlns:helpers="using:FluentDL.Helpers"
-    behaviors:NavigationViewHeaderBehavior.HeaderMode="Minimal"
+    xmlns:controls1="using:CommunityToolkit.WinUI.UI.Controls"
     mc:Ignorable="d">
     <Page.Resources>
         <helpers:DateToYearConverter x:Key="DateToYearConverter" />
@@ -19,17 +19,94 @@
     </Page.Resources>
 
     <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="2*" />
             <ColumnDefinition Width="*" />
         </Grid.ColumnDefinitions>
+        <controls1:DockPanel Grid.Row="0" Grid.Column="0">
+            <Button VerticalAlignment="Center" Margin="0, 0, 0, 0" Background="Transparent"
+                    BorderBrush="Transparent">
+                <StackPanel Orientation="Horizontal">
+                    <FontIcon x:Name="ResultsIcon" Glyph="&#xE710;" FontSize="16" Margin="0, 0, 8, 0"
+                              Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}" />
+                    <TextBlock x:Name="ResultsText" Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}" />
+                </StackPanel>
+            </Button>
+            <Button x:Name="FailedResultsButton" VerticalAlignment="Center" Margin="0, 0, 0, 0"
+                    Background="Transparent" BorderBrush="Transparent" Click="FailedResultsButton_OnClick">
+                <StackPanel Orientation="Horizontal">
+                    <FontIcon x:Name="FailedResultsIcon" Glyph="&#xE7BA;" FontSize="16" Margin="0, 0, 8, 0"
+                              Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}" />
+                    <TextBlock x:Name="FailedResultsText"
+                               Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}" />
+                </StackPanel>
+            </Button>
 
-        <ListView Grid.Column="0" x:Name="CustomListView"
-                  CornerRadius="8"
-                  BorderThickness="0"
-                  SelectionChanged="CustomListView_OnSelectionChanged"
-                  BorderBrush="{ThemeResource ControlStrongStrokeColorDefaultBrush}"
-                  Margin="0,0,0,0"
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                <ComboBox x:Name="SortOrderComboBox" SelectionChanged="SortOrder_SelectionChanged"
+                          Background="Transparent" BorderBrush="Transparent"
+                          PlaceholderText="Sort order:  Ascending" Margin="0, 0, 0,0">
+                    <ComboBox.ItemTemplate>
+                        <DataTemplate x:DataType="views:SortObject">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="{x:Bind Text}" Style="{ThemeResource BodyTextBlockStyle}" />
+                                <TextBlock Text="{x:Bind Highlight}"
+                                           Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"
+                                           Style="{ThemeResource BodyTextBlockStyle}" />
+                            </StackPanel>
+                        </DataTemplate>
+                    </ComboBox.ItemTemplate>
+                    <ComboBox.Items>
+                        <views:SortObject Text="Sort order:" Highlight="  Ascending" />
+                        <views:SortObject Text="Sort order:" Highlight="  Descending" />
+                    </ComboBox.Items>
+                </ComboBox>
+                <ComboBox x:Name="SortComboBox" SelectionChanged="SortBox_SelectionChanged"
+                          Background="Transparent"
+                          BorderBrush="Transparent" PlaceholderText="Sort by:  Relevance">
+                    <ComboBox.ItemTemplate>
+                        <DataTemplate x:DataType="views:SortObject">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="{x:Bind Text}" Style="{ThemeResource BodyTextBlockStyle}" />
+                                <TextBlock Text="{x:Bind Highlight}"
+                                           Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"
+                                           Style="{ThemeResource BodyTextBlockStyle}" />
+                            </StackPanel>
+                        </DataTemplate>
+                    </ComboBox.ItemTemplate>
+                    <ComboBox.Items>
+                        <views:SortObject Text="Sort by:" Highlight="  Relevance" />
+                        <views:SortObject Text="Sort by:" Highlight="  A - Z" />
+                        <views:SortObject Text="Sort by:" Highlight="  Artist" />
+                        <views:SortObject Text="Sort by:" Highlight="  Release date" />
+                        <views:SortObject Text="Sort by:" Highlight="  Popularity" />
+                    </ComboBox.Items>
+                </ComboBox>
+                <Button x:Name="StopSearchButton" VerticalAlignment="Center" Background="Transparent"
+                        BorderBrush="Transparent" Click="StopSearchButton_OnClick">
+                    <StackPanel Orientation="Horizontal">
+                        <FontIcon x:Name="StopSearchIcon" Glyph="&#xE71A;" FontSize="16" Margin="0, 0, 8, 0"
+                                  Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}" />
+                        <TextBlock Text="Stop" Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}" />
+                    </StackPanel>
+                </Button>
+            </StackPanel>
+    </controls1:DockPanel>
+
+    <ProgressBar Grid.Row="1" Grid.Column="0" x:Name="SearchProgress" IsIndeterminate="False" Value="0"
+                             Margin="0,8,0,12" />
+
+        <ListView Grid.Row="2"  Grid.Column="0" x:Name="CustomListView"
+                              CornerRadius="8"
+                              BorderThickness="0"
+                              SelectionChanged="CustomListView_OnSelectionChanged"
+                              BorderBrush="{ThemeResource ControlStrongStrokeColorDefaultBrush}"
+                              Margin="0,0,0,0"
         >
             <ListView.ItemTemplate>
                 <DataTemplate x:DataType="services:SongSearchObject">
