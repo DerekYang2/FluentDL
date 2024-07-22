@@ -3,11 +3,11 @@ using System.Diagnostics;
 
 namespace FluentDL.Services
 {
-    internal class RipSubprocess
+    internal class TerminalSubprocess
     {
         private Process cmd;
 
-        public RipSubprocess()
+        public TerminalSubprocess()
         {
             cmd = new Process();
             cmd.StartInfo.FileName = "cmd.exe";
@@ -32,7 +32,7 @@ namespace FluentDL.Services
             cmd.StandardInput.Flush();
         }
 
-        public string RunCommandSync(string command)
+        public static string GetRunCommandSync(string command)
         {
             Process process = new Process();
             process.StartInfo.FileName = "cmd.exe";
@@ -46,6 +46,20 @@ namespace FluentDL.Services
             process.StandardInput.Close();
             process.WaitForExit();
             return process.StandardOutput.ReadToEnd();
+        }
+
+        public static void RunCommandSync(string command)
+        {
+            Process process = new Process();
+            process.StartInfo.FileName = "cmd.exe";
+            process.StartInfo.RedirectStandardInput = true;
+            process.StartInfo.CreateNoWindow = true;
+            process.StartInfo.UseShellExecute = false;
+            process.Start();
+            process.StandardInput.WriteLine(command);
+            process.StandardInput.Flush();
+            process.StandardInput.Close();
+            process.WaitForExit();
         }
 
         // Dispose method to clean up resources

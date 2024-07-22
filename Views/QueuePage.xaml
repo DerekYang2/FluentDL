@@ -114,13 +114,13 @@
                                        FontFamily="Segoe UI Variable Display" />
                         </StackPanel>
                         <StackPanel Grid.Column="2" VerticalAlignment="Center" HorizontalAlignment="Stretch" Visibility="{x:Bind DownloadPath, Converter={StaticResource PathToVisibilityConverter}}">
-                            <Grid Padding="6" CornerRadius="4" Margin="0,0,0,8">
-                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="8">
+                            <Grid Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" Padding="00" CornerRadius="4" Margin="0,0,0,8">
+                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Stretch" Spacing="8">
                                     <FontIcon Glyph="&#xE930;" />                                    
-                                    <TextBlock HorizontalAlignment="Center" >Done</TextBlock>
+                                    <TextBlock HorizontalAlignment="Center" >Complete</TextBlock>
                                 </StackPanel>
                             </Grid>
-                            <Button x:Name="PathButton" >
+                            <Button x:Name="PathButton" HorizontalAlignment="Stretch">
                                 <StackPanel Orientation="Horizontal" Spacing="8">
                                     <FontIcon Glyph="&#xE8DA;" Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}" />
                                     <TextBlock Text="Open" Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}" />

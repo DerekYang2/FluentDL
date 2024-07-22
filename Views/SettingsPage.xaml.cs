@@ -30,7 +30,7 @@ public sealed partial class SettingsPage : Page
     {
         Thread thread = new Thread(() =>
         {
-            var ripSubprocess = new RipSubprocess();
+            var ripSubprocess = new TerminalSubprocess();
             var ripConfigPath = ripSubprocess.RunCommandSync("rip config path");
             ripSubprocess.Dispose();
 

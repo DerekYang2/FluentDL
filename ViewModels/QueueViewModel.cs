@@ -136,4 +136,16 @@ public partial class QueueViewModel : ObservableRecipient
     {
         return song.Source + song.Id;
     }
+
+    public void RunCommand(string command)
+    {
+        Thread thread = new Thread(() =>
+        {
+            foreach (var item in Source)
+            {
+                TerminalSubprocess.RunCommandSync(command);
+            }
+        });
+        thread.Start();
+    }
 }
