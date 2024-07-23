@@ -107,11 +107,33 @@ public partial class QueueViewModel : ObservableRecipient
 
     private static DispatcherQueue dispatcher;
     private static HashSet<string> trackSet = new HashSet<string>();
-    private static bool isRunning = false;
+    private static int index;
+
+    private static readonly object _lock = new object();
+    private static bool _isRunning = false;
+
+    public static bool IsRunning
+    {
+        get
+        {
+            lock (_lock)
+            {
+                return _isRunning;
+            }
+        }
+        set
+        {
+            lock (_lock)
+            {
+                _isRunning = value;
+            }
+        }
+    }
 
     public QueueViewModel()
     {
         dispatcher = DispatcherQueue.GetForCurrentThread();
+        index = 0;
     }
 
     public static void Add(SongSearchObject song)
@@ -136,6 +158,8 @@ public partial class QueueViewModel : ObservableRecipient
     {
         Source.Clear();
         trackSet.Clear();
+        IsRunning = false;
+        index = 0;
     }
 
     private static string GetHash(SongSearchObject song)
@@ -145,54 +169,90 @@ public partial class QueueViewModel : ObservableRecipient
 
     public static void RunCommand(string command, CancellationToken token)
     {
-        if (isRunning)
+        if (IsRunning)
         {
             return;
         }
 
-
-        Thread thread = new Thread(() =>
+        // In case command was already run before, cleanup first
+        index = 0; // Reset index
+        for (int i = 0; i < Source.Count; i++) // Remove all result str, set new obj to refresh ui
         {
-            isRunning = true;
-            for (int i = 0; i < Source.Count; i++)
+            var cleanObj = Source[i];
+            cleanObj.ResultString = null;
+            Source[i] = cleanObj;
+        }
+
+        IsRunning = true; // Start running
+        for (int i = 0; i < 2; i++)
+        {
+            Thread thread = new Thread(() =>
             {
-                if (token.IsCancellationRequested) // Break the loop if the token is cancelled
+                while (IsRunning)
                 {
-                    isRunning = false;
-                    return;
+                    if (token.IsCancellationRequested) // Break the loop if the token is cancelled
+                    {
+                        IsRunning = false;
+                        return;
+                    }
+
+                    int i = index;
+                    Interlocked.Increment(ref index); // Increment the index in a thread-safe manner
+
+                    if (i >= Source.Count)
+                    {
+                        return;
+                    }
+
+                    string url;
+                    switch (Source[i].Source)
+                    {
+                        case "deezer":
+                            url = "https://www.deezer.com/track/" + Source[i].Id;
+                            break;
+                        case "youtube":
+                            url = "https://www.youtube.com/watch?v=" + Source[i].Id;
+                            break;
+                        default:
+                            url = string.Empty;
+                            break;
+                    }
+
+                    var thisCommand = command.Replace("%title%", Source[i].Title).Replace("%artist%", Source[i].Artists).Replace("%url%", url);
+
+                    var newObj = Source[i];
+                    newObj.ResultString = TerminalSubprocess.GetRunCommandSync(thisCommand);
+                    Debug.WriteLine(newObj.ResultString);
+
+                    // Capture the current value of i
+                    int currentIndex = i;
+
+                    dispatcher.TryEnqueue(() =>
+                    {
+                        Source[currentIndex] = newObj; // This actually refreshes the UI of ObservableCollection
+
+                        if (GetCompletedCount() == Source.Count) // Check if all completed
+                        {
+                            IsRunning = false;
+                        }
+                    });
                 }
+            });
+            thread.Start();
+        }
+    }
 
-                string url;
-                switch (Source[i].Source)
-                {
-                    case "deezer":
-                        url = "https://www.deezer.com/track/" + Source[i].Id;
-                        break;
-                    case "youtube":
-                        url = "https://www.youtube.com/watch?v=" + Source[i].Id;
-                        break;
-                    default:
-                        url = string.Empty;
-                        break;
-                }
-
-                var thisCommand = command.Replace("%title%", Source[i].Title).Replace("%artist%", Source[i].Artists).Replace("%url%", url);
-
-                var newObj = Source[i];
-                newObj.ResultString = TerminalSubprocess.GetRunCommandSync(thisCommand);
-                Debug.WriteLine(newObj.ResultString);
-
-                // Capture the current value of i
-                int currentIndex = i;
-
-                dispatcher.TryEnqueue(() =>
-                {
-                    Source[currentIndex] = newObj; // This actually refreshes the UI of ObservableCollection
-                });
+    public static int GetCompletedCount()
+    {
+        int completed = 0;
+        foreach (var item in Source)
+        {
+            if (item.ResultString != null)
+            {
+                completed++;
             }
+        }
 
-            isRunning = false;
-        });
-        thread.Start();
+        return completed;
     }
 }

@@ -15,7 +15,12 @@ public class QueueMessageConverter : IValueConverter
 {
     public object Convert(object value, Type targetType, object parameter, string language)
     {
-        return value + " tracks in queue" + (QueuePage.IsLoading ? " (loading...)" : "");
+        if ((int)value == 0)
+        {
+            return "No tracks in queue";
+        }
+
+        return value + " tracks in queue";
     }
 
     public object ConvertBack(object value, Type targetType, object parameter, string language) => throw new NotImplementedException();
@@ -37,12 +42,6 @@ public sealed partial class QueuePage : Page
     private DispatcherQueue _dispatcherQueue;
     private CancellationTokenSource cancellationTokenSource;
 
-    public static bool IsLoading
-    {
-        get;
-        set;
-    }
-
     public QueueViewModel ViewModel
     {
         get;
@@ -54,8 +53,28 @@ public sealed partial class QueuePage : Page
         InitializeComponent();
         _dispatcherQueue = DispatcherQueue.GetForCurrentThread();
         CustomListView.ItemsSource = QueueViewModel.Source;
+
+        QueueViewModel.Source.CollectionChanged += (sender, e) =>
+        {
+            _dispatcherQueue.TryEnqueue(() =>
+            {
+                if (QueueViewModel.Source.Count == 0)
+                {
+                    ProgressText.Text = "No tracks in queue";
+                }
+                else
+                {
+                    var completedCount = QueueViewModel.GetCompletedCount();
+                    QueueProgress.Value = 100.0 * completedCount / QueueViewModel.Source.Count;
+                    if (completedCount > 0)
+                    {
+                        ProgressText.Text = (QueueViewModel.IsRunning ? "Running " : "Completed ") + $"{QueueViewModel.GetCompletedCount()} of {QueueViewModel.Source.Count}";
+                    }
+                }
+            });
+        };
+
         InitPreviewPanelButtons();
-        IsLoading = false;
         cancellationTokenSource = new CancellationTokenSource();
     }
 
@@ -110,5 +129,10 @@ public sealed partial class QueuePage : Page
 
         cancellationTokenSource = new CancellationTokenSource();
         QueueViewModel.RunCommand(CommandInput.Text, cancellationTokenSource.Token);
+    }
+
+    private void ClearButton_OnClick(object sender, RoutedEventArgs e)
+    {
+        QueueViewModel.Clear();
     }
 }
