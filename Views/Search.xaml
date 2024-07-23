@@ -215,8 +215,8 @@
             </Grid>
 
             <controls1:DockPanel Grid.Row="1" Grid.Column="0">
-                <Button VerticalAlignment="Center" Margin="0, 0, 0, 0" Background="Transparent"
-                        BorderBrush="Transparent">
+                <Button x:Name="AddToQueueButton" VerticalAlignment="Center" Margin="0, 0, 0, 0" Background="Transparent"
+                        BorderBrush="Transparent" Click="AddToQueueButton_OnClick">
                     <StackPanel Orientation="Horizontal">
                         <FontIcon x:Name="ResultsIcon" Glyph="&#xE710;" FontSize="16" Margin="0, 0, 8, 0"
                                   Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}" />

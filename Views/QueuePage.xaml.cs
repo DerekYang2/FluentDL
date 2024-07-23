@@ -61,6 +61,7 @@ public sealed partial class QueuePage : Page
                 if (QueueViewModel.Source.Count == 0)
                 {
                     ProgressText.Text = "No tracks in queue";
+                    QueueProgress.Value = 0;
                 }
                 else
                 {
@@ -128,7 +129,7 @@ public sealed partial class QueuePage : Page
         }
 
         cancellationTokenSource = new CancellationTokenSource();
-        QueueViewModel.RunCommand(CommandInput.Text, cancellationTokenSource.Token);
+        QueueViewModel.RunCommand(CommandInput.Text, DirectoryInput.Text, cancellationTokenSource.Token);
     }
 
     private void ClearButton_OnClick(object sender, RoutedEventArgs e)

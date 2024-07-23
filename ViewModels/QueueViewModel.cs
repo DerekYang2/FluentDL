@@ -1,5 +1,6 @@
 ﻿using System.Collections.ObjectModel;
 using System.Diagnostics;
+using System.IO;
 using ABI.Microsoft.UI.Dispatching;
 using CommunityToolkit.Mvvm.ComponentModel;
 using FluentDL.Contracts.ViewModels;
@@ -81,6 +82,12 @@ public class QueueObject : SongSearchObject
         set;
     }
 
+    public bool IsRunning
+    {
+        get;
+        set;
+    }
+
     public QueueObject(SongSearchObject song)
     {
         Title = song.Title;
@@ -94,6 +101,7 @@ public class QueueObject : SongSearchObject
         Source = song.Source;
         Explicit = song.Explicit;
         ResultString = null;
+        IsRunning = false;
     }
 }
 
@@ -167,7 +175,7 @@ public partial class QueueViewModel : ObservableRecipient
         return song.Source + song.Id;
     }
 
-    public static void RunCommand(string command, CancellationToken token)
+    public static void RunCommand(string command, string? directory, CancellationToken token)
     {
         if (IsRunning)
         {
@@ -183,12 +191,71 @@ public partial class QueueViewModel : ObservableRecipient
             Source[i] = cleanObj;
         }
 
+
         IsRunning = true; // Start running
-        for (int i = 0; i < 2; i++)
+
+        Thread thread = new Thread(() =>
+        {
+            for (int i = 0; i < Source.Count; i++)
+            {
+                int curIdx = i; // Capture the current index
+                if (token.IsCancellationRequested) // Break the loop if the token is cancelled
+                {
+                    break;
+                }
+
+                // Update the is running of the current object
+                dispatcher.TryEnqueue(() =>
+                {
+                    var newObj = Source[curIdx];
+                    newObj.IsRunning = true;
+                    Source[curIdx] = newObj;
+                });
+
+                // Get the url of the current object
+                string url;
+                switch (Source[i].Source)
+                {
+                    case "deezer":
+                        url = "https://www.deezer.com/track/" + Source[i].Id;
+                        break;
+                    case "youtube":
+                        url = "https://www.youtube.com/watch?v=" + Source[i].Id;
+                        break;
+                    default:
+                        url = string.Empty;
+                        break;
+                }
+
+                var thisCommand = command.Replace("%title%", Source[i].Title).Replace("%artist%", Source[i].Artists).Replace("%url%", url);
+                // Run the command
+                var resultStr = TerminalSubprocess.GetRunCommandSync(thisCommand, directory);
+                Debug.WriteLine(resultStr);
+
+                // Update the actual object
+                dispatcher.TryEnqueue(() =>
+                {
+                    var newObj = Source[curIdx];
+                    newObj.ResultString = resultStr;
+                    newObj.IsRunning = false;
+                    Source[curIdx] = newObj; // This actually refreshes the UI of ObservableCollection
+                });
+            }
+
+            IsRunning = false;
+        });
+        thread.Start();
+    }
+
+    // Use for multithreaded run
+    private static void MultiThreadedRun(string command, string? directory, CancellationToken token)
+    {
+        IsRunning = true; // Start running
+        for (int t = 0; t < 1; t++) // Edit this to change the number of threads
         {
             Thread thread = new Thread(() =>
             {
-                while (IsRunning)
+                while (IsRunning) // Multithreaded loop
                 {
                     if (token.IsCancellationRequested) // Break the loop if the token is cancelled
                     {
@@ -204,6 +271,15 @@ public partial class QueueViewModel : ObservableRecipient
                         return;
                     }
 
+                    // Update the is running of the current object
+                    dispatcher.TryEnqueue(() =>
+                    {
+                        var newObj = Source[i];
+                        newObj.IsRunning = true;
+                        Source[i] = newObj;
+                    });
+
+                    // Get the url of the current object
                     string url;
                     switch (Source[i].Source)
                     {
@@ -219,18 +295,16 @@ public partial class QueueViewModel : ObservableRecipient
                     }
 
                     var thisCommand = command.Replace("%title%", Source[i].Title).Replace("%artist%", Source[i].Artists).Replace("%url%", url);
+                    // Run the command
+                    var resultStr = TerminalSubprocess.GetRunCommandSync(thisCommand, directory);
 
-                    var newObj = Source[i];
-                    newObj.ResultString = TerminalSubprocess.GetRunCommandSync(thisCommand);
-                    Debug.WriteLine(newObj.ResultString);
-
-                    // Capture the current value of i
-                    int currentIndex = i;
-
+                    // Update the actual object
                     dispatcher.TryEnqueue(() =>
                     {
-                        Source[currentIndex] = newObj; // This actually refreshes the UI of ObservableCollection
-
+                        var newObj = Source[i];
+                        newObj.ResultString = resultStr;
+                        newObj.IsRunning = false;
+                        Source[i] = newObj; // This actually refreshes the UI of ObservableCollection
                         if (GetCompletedCount() == Source.Count) // Check if all completed
                         {
                             IsRunning = false;

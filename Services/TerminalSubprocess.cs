@@ -5,37 +5,19 @@ namespace FluentDL.Services
 {
     internal class TerminalSubprocess
     {
-        private Process cmd;
-
         public TerminalSubprocess()
         {
-            cmd = new Process();
-            cmd.StartInfo.FileName = "cmd.exe";
-            cmd.StartInfo.RedirectStandardInput = true;
-            cmd.StartInfo.RedirectStandardOutput = true;
-            cmd.StartInfo.CreateNoWindow = true;
-            cmd.StartInfo.UseShellExecute = false;
-            cmd.Start();
         }
 
-        public void RunCommand(string command)
-        {
-            /*
-            Task.Run(() =>
-            {
-                Debug.WriteLine("Running command: " + command);
-                cmd.StandardInput.WriteLine(command);
-                cmd.StandardInput.Flush();
-            });*/
-            Debug.WriteLine("Running command: " + command);
-            cmd.StandardInput.WriteLine(command);
-            cmd.StandardInput.Flush();
-        }
-
-        public static string GetRunCommandSync(string command)
+        public static string GetRunCommandSync(string command, string? directory)
         {
             Process process = new Process();
             process.StartInfo.FileName = "cmd.exe";
+            if (System.IO.Directory.Exists(directory))
+            {
+                process.StartInfo.WorkingDirectory = directory;
+            }
+
             process.StartInfo.RedirectStandardInput = true;
             process.StartInfo.RedirectStandardOutput = true;
             process.StartInfo.CreateNoWindow = true;
@@ -48,10 +30,15 @@ namespace FluentDL.Services
             return process.StandardOutput.ReadToEnd();
         }
 
-        public static void RunCommandSync(string command)
+        public static void RunCommandSync(string command, string? directory)
         {
             Process process = new Process();
             process.StartInfo.FileName = "cmd.exe";
+            if (System.IO.Directory.Exists(directory))
+            {
+                process.StartInfo.WorkingDirectory = directory;
+            }
+
             process.StartInfo.RedirectStandardInput = true;
             process.StartInfo.CreateNoWindow = true;
             process.StartInfo.UseShellExecute = false;
@@ -60,14 +47,6 @@ namespace FluentDL.Services
             process.StandardInput.Flush();
             process.StandardInput.Close();
             process.WaitForExit();
-        }
-
-        // Dispose method to clean up resources
-        public void Dispose()
-        {
-            cmd.StandardInput.WriteLine("exit"); // Gracefully exit the process
-            cmd.WaitForExit();
-            cmd.Close();
         }
     }
 }

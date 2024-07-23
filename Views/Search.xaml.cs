@@ -398,6 +398,11 @@ public sealed partial class Search : Page
         var selectedIndex = FailedListView.SelectedIndex;
 
         var youtubeObj = (SongSearchObject)FailedListView.SelectedItem;
+        if (youtubeObj == null)
+        {
+            return;
+        }
+
         youtubeObj.Source = "youtube";
         youtubeObj.Id = youtubeAlternateList[selectedIndex].Id;
         QueueViewModel.Add(youtubeObj);
@@ -438,6 +443,14 @@ public sealed partial class Search : Page
     private void StopSearchButton_OnClick(object sender, RoutedEventArgs e)
     {
         cancellationTokenSource.Cancel();
+    }
+
+    private void AddToQueueButton_OnClick(object sender, RoutedEventArgs e)
+    {
+        foreach (var song in (ObservableCollection<SongSearchObject>)CustomListView.ItemsSource)
+        {
+            QueueViewModel.Add(song);
+        }
     }
 
     // Functions that open dialogs
