@@ -39,6 +39,15 @@
             </Button>
             
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                <Button x:Name="CommandButton" VerticalAlignment="Center" Background="Transparent" BorderBrush="Transparent"
+                        Click="CommandButton_OnClick"
+                        >
+                    <StackPanel Orientation="Horizontal">
+                        <FontIcon x:Name="CommandIcon" Glyph="&#xE756;" FontSize="16" Margin="0, 0, 8, 0"
+                                  Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}" />
+                        <TextBlock Text="Stop" Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}" />
+                    </StackPanel>
+                </Button>
                 <Button x:Name="DownloadButton" VerticalAlignment="Center" Background="Transparent"
                         BorderBrush="Transparent">
                     <StackPanel Orientation="Horizontal">
@@ -113,20 +122,13 @@
                                        Style="{ThemeResource BodyTextBlockStyle}" Margin="5,0,0,0"
                                        FontFamily="Segoe UI Variable Display" />
                         </StackPanel>
-                        <StackPanel Grid.Column="2" VerticalAlignment="Center" HorizontalAlignment="Stretch" Visibility="{x:Bind DownloadPath, Converter={StaticResource PathToVisibilityConverter}}">
-                            <Grid Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" Padding="00" CornerRadius="4" Margin="0,0,0,8">
-                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Stretch" Spacing="8">
-                                    <FontIcon Glyph="&#xE930;" />                                    
-                                    <TextBlock HorizontalAlignment="Center" >Complete</TextBlock>
-                                </StackPanel>
-                            </Grid>
-                            <Button x:Name="PathButton" HorizontalAlignment="Stretch">
-                                <StackPanel Orientation="Horizontal" Spacing="8">
-                                    <FontIcon Glyph="&#xE8DA;" Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}" />
-                                    <TextBlock Text="Open" Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}" />
-                                </StackPanel>
-                            </Button>
-                        </StackPanel>
+
+                        <Grid Grid.Column="2" CornerRadius="4" Margin="0,0,0,8" VerticalAlignment="Top" Visibility="{x:Bind ResultString, Converter={StaticResource PathToVisibilityConverter}}">
+                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Stretch" Spacing="8">
+                                <TextBlock HorizontalAlignment="Center" Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}">Complete</TextBlock>
+                                <FontIcon Glyph="&#xE930;" Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"/>                                    
+                            </StackPanel>
+                        </Grid>
                     </Grid>
                 </DataTemplate>
             </ListView.ItemTemplate>

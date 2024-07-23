@@ -30,9 +30,7 @@ public sealed partial class SettingsPage : Page
     {
         Thread thread = new Thread(() =>
         {
-            var ripSubprocess = new TerminalSubprocess();
-            var ripConfigPath = ripSubprocess.RunCommandSync("rip config path");
-            ripSubprocess.Dispose();
+            var ripConfigPath = TerminalSubprocess.GetRunCommandSync("rip config path");
 
             // Find first index of ' and second index of ' in the string
             var firstIndex = ripConfigPath.IndexOf('\'');

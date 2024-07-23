@@ -1,10 +1,12 @@
 ﻿using System.Collections.ObjectModel;
 using System.Diagnostics;
+using ABI.Microsoft.UI.Dispatching;
 using CommunityToolkit.Mvvm.ComponentModel;
 using FluentDL.Contracts.ViewModels;
 using FluentDL.Core.Contracts.Services;
 using FluentDL.Core.Models;
 using FluentDL.Services;
+using DispatcherQueue = Microsoft.UI.Dispatching.DispatcherQueue;
 
 namespace FluentDL.ViewModels;
 
@@ -72,7 +74,7 @@ namespace FluentDL.ViewModels;
  */
 public class QueueObject : SongSearchObject
 {
-    public string? DownloadPath
+    public string? ResultString
     {
         get;
         set;
@@ -90,7 +92,7 @@ public class QueueObject : SongSearchObject
         AlbumName = song.AlbumName;
         Source = song.Source;
         Explicit = song.Explicit;
-        DownloadPath = "test";
+        ResultString = null;
     }
 }
 
@@ -102,10 +104,13 @@ public partial class QueueViewModel : ObservableRecipient
         set;
     } = new ObservableCollection<QueueObject>();
 
+    private static DispatcherQueue dispatcher;
     private static HashSet<string> trackSet = new HashSet<string>();
+    private static bool isRunning = false;
 
     public QueueViewModel()
     {
+        dispatcher = DispatcherQueue.GetForCurrentThread();
     }
 
     public static void Add(SongSearchObject song)
@@ -137,14 +142,41 @@ public partial class QueueViewModel : ObservableRecipient
         return song.Source + song.Id;
     }
 
-    public void RunCommand(string command)
+    public static void RunCommand(string command, CancellationToken token)
     {
+        if (isRunning)
+        {
+            return;
+        }
+
+
         Thread thread = new Thread(() =>
         {
-            foreach (var item in Source)
+            isRunning = true;
+            for (int i = 0; i < Source.Count; i++)
             {
-                TerminalSubprocess.RunCommandSync(command);
+                if (token.IsCancellationRequested) // Break the loop if the token is cancelled
+                {
+                    isRunning = false;
+                    return;
+                }
+
+                var thisCommand = command.Replace("{title}", Source[i].Title);
+                Debug.WriteLine(TerminalSubprocess.GetRunCommandSync(thisCommand));
+
+                var newObj = Source[i];
+                newObj.ResultString = "done";
+
+                // Capture the current value of i
+                int currentIndex = i;
+
+                dispatcher.TryEnqueue(() =>
+                {
+                    Source[currentIndex] = newObj; // This actually refreshes the UI of ObservableCollection
+                });
             }
+
+            isRunning = false;
         });
         thread.Start();
     }

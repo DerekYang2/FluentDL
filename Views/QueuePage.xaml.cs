@@ -35,6 +35,7 @@ public sealed partial class QueuePage : Page
 {
     // Create dispatcher queue
     private DispatcherQueue _dispatcherQueue;
+    private CancellationTokenSource cancellationTokenSource;
 
     public static bool IsLoading
     {
@@ -55,6 +56,7 @@ public sealed partial class QueuePage : Page
         CustomListView.ItemsSource = QueueViewModel.Source;
         InitPreviewPanelButtons();
         IsLoading = false;
+        cancellationTokenSource = new CancellationTokenSource();
     }
 
     private void InitPreviewPanelButtons()
@@ -91,5 +93,11 @@ public sealed partial class QueuePage : Page
 
         PreviewPanel.Show();
         await PreviewPanel.Update(selectedSong);
+    }
+
+    private void CommandButton_OnClick(object sender, RoutedEventArgs e)
+    {
+        cancellationTokenSource = new CancellationTokenSource();
+        QueueViewModel.RunCommand("echo {title}", cancellationTokenSource.Token);
     }
 }

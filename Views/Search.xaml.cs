@@ -63,7 +63,7 @@ public class TrackDetail
 
 public sealed partial class Search : Page
 {
-    private RipSubprocess ripSubprocess;
+    private TerminalSubprocess _terminalSubprocess;
     private ObservableCollection<SongSearchObject> originalList;
     private SpotifyApi spotifyApi;
     private ObservableCollection<SongSearchObject> failedSpotifySongs;
@@ -87,7 +87,7 @@ public sealed partial class Search : Page
         AttachCollectionChangedEvent((ObservableCollection<SongSearchObject>)CustomListView.ItemsSource);
         originalList = new ObservableCollection<SongSearchObject>();
         SetResultsAmount(0);
-        ripSubprocess = new RipSubprocess();
+        _terminalSubprocess = new TerminalSubprocess();
         SortComboBox.SelectedIndex = 0;
         SortOrderComboBox.SelectedIndex = 0;
         InitPreviewPanelButtons();
