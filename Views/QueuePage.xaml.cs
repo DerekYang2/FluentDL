@@ -95,9 +95,20 @@ public sealed partial class QueuePage : Page
         await PreviewPanel.Update(selectedSong);
     }
 
-    private void CommandButton_OnClick(object sender, RoutedEventArgs e)
+    private async void CommandButton_OnClick(object sender, RoutedEventArgs e)
     {
+        CustomCommandDialog.XamlRoot = this.XamlRoot;
+        await CustomCommandDialog.ShowAsync();
+    }
+
+    private void CustomCommandDialog_OnPrimaryButtonClick(ContentDialog sender, ContentDialogButtonClickEventArgs args)
+    {
+        if (string.IsNullOrWhiteSpace(CommandInput.Text))
+        {
+            return;
+        }
+
         cancellationTokenSource = new CancellationTokenSource();
-        QueueViewModel.RunCommand("echo {title}", cancellationTokenSource.Token);
+        QueueViewModel.RunCommand(CommandInput.Text, cancellationTokenSource.Token);
     }
 }

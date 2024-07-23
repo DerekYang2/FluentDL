@@ -395,7 +395,12 @@ public sealed partial class Search : Page
             }
         }
         */
-        QueueViewModel.Add((SongSearchObject)FailedListView.SelectedItem);
+        var selectedIndex = FailedListView.SelectedIndex;
+
+        var youtubeObj = (SongSearchObject)FailedListView.SelectedItem;
+        youtubeObj.Source = "youtube";
+        youtubeObj.Id = youtubeAlternateList[selectedIndex].Id;
+        QueueViewModel.Add(youtubeObj);
     }
 
     private void FailedListView_OnSelectionChanged(object sender, SelectionChangedEventArgs e)

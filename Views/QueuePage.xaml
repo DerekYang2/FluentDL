@@ -138,5 +138,57 @@
                            Padding="12"
                            Margin="12,0,0,12"
                            VerticalAlignment="Stretch" />
+
+
+    <ContentDialog x:Name="CustomCommandDialog" PrimaryButtonText="Run" CloseButtonText="Cancel"
+                       Title="Advanced Search" IsSecondaryButtonEnabled="True" IsPrimaryButtonEnabled="True"
+                       PrimaryButtonClick="CustomCommandDialog_OnPrimaryButtonClick" PrimaryButtonStyle="{ThemeResource AccentButtonStyle}">
+            <StackPanel Spacing="12">
+
+                <InfoBar
+                    IsOpen="True"
+                    IsClosable="False"
+                    Severity="Informational"
+                    Message="Run custom commands (with Command Prompt) on each queue item. Hover over or click on wildcards below for more details."
+                    Margin="0,0,0,0" />
+                <StackPanel Orientation="Horizontal" Spacing="4">
+                    <Button Content="%artist%" ToolTipService.ToolTip="The artist of the track">
+                        <Button.Flyout>
+                            <Flyout>
+                                <TextBlock Text="The artist of the track"/>
+                            </Flyout>
+                        </Button.Flyout>
+                    </Button>
+                    <Button Content="%title%" ToolTipService.ToolTip="The title of the track">
+                        <Button.Flyout>
+                            <Flyout>
+                                <TextBlock Text="The title of the track"/>
+                            </Flyout>
+                        </Button.Flyout>
+                    </Button>
+                    <Button Content="%url%" ToolTipService.ToolTip="The source url of the track">
+                        <Button.Flyout>
+                            <Flyout>
+                                <TextBlock Text="The source url of the track (on Deezer, YouTube, etc.)"/>
+                            </Flyout>
+                        </Button.Flyout>
+                    </Button>
+                </StackPanel>
+
+                <TextBox x:Name="CommandInput"
+                         PlaceholderText="Run custom command"
+                         HorizontalAlignment="Stretch"
+                         Margin="0,0,0,8"
+                         ToolTipService.ToolTip="Command prompt"
+                         Header="Command">
+                    <TextBox.HeaderTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding}" Style="{ThemeResource CaptionTextBlockStyle}"
+                                       Foreground="{ThemeResource TextFillColorSecondary}" />
+                        </DataTemplate>
+                    </TextBox.HeaderTemplate>
+                </TextBox>
+            </StackPanel>
+        </ContentDialog>
     </Grid>
 </Page>

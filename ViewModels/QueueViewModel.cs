@@ -6,6 +6,7 @@ using FluentDL.Contracts.ViewModels;
 using FluentDL.Core.Contracts.Services;
 using FluentDL.Core.Models;
 using FluentDL.Services;
+using static System.Net.WebRequestMethods;
 using DispatcherQueue = Microsoft.UI.Dispatching.DispatcherQueue;
 
 namespace FluentDL.ViewModels;
@@ -161,11 +162,25 @@ public partial class QueueViewModel : ObservableRecipient
                     return;
                 }
 
-                var thisCommand = command.Replace("{title}", Source[i].Title);
-                Debug.WriteLine(TerminalSubprocess.GetRunCommandSync(thisCommand));
+                string url;
+                switch (Source[i].Source)
+                {
+                    case "deezer":
+                        url = "https://www.deezer.com/track/" + Source[i].Id;
+                        break;
+                    case "youtube":
+                        url = "https://www.youtube.com/watch?v=" + Source[i].Id;
+                        break;
+                    default:
+                        url = string.Empty;
+                        break;
+                }
+
+                var thisCommand = command.Replace("%title%", Source[i].Title).Replace("%artist%", Source[i].Artists).Replace("%url%", url);
 
                 var newObj = Source[i];
-                newObj.ResultString = "done";
+                newObj.ResultString = TerminalSubprocess.GetRunCommandSync(thisCommand);
+                Debug.WriteLine(newObj.ResultString);
 
                 // Capture the current value of i
                 int currentIndex = i;
