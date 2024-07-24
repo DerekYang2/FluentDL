@@ -38,6 +38,8 @@ public partial class App : Application
         return service;
     }
 
+    public static SortedSet<string> PreviousCommandList = new();
+
     public static WindowEx MainWindow
     {
         get;
@@ -115,5 +117,29 @@ public partial class App : Application
         // App.GetService<IAppNotificationService>().Show(string.Format("AppNotificationSamplePayload".GetLocalized(), AppContext.BaseDirectory));
 
         await App.GetService<IActivationService>().ActivateAsync(args);
+
+
+        // Fetch previous command list
+        var localSettings = App.GetService<ILocalSettingsService>();
+        var prevCommandCSV = await localSettings.ReadSettingAsync<string>("PreviousCommandList");
+        if (prevCommandCSV != null)
+        {
+            foreach (var command in prevCommandCSV.Split(','))
+            {
+                PreviousCommandList.Add(command);
+            }
+        }
+    }
+
+    public static async Task AddNewCommand(string command)
+    {
+        if (PreviousCommandList.Contains(command))
+        {
+            return;
+        }
+
+        PreviousCommandList.Add(command);
+        var localSettings = App.GetService<ILocalSettingsService>();
+        await localSettings.SaveSettingAsync("PreviousCommandList", string.Join(',', PreviousCommandList));
     }
 }

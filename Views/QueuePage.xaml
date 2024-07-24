@@ -6,13 +6,13 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:controls="clr-namespace:Microsoft.UI.Xaml.Controls;assembly=Microsoft.WinUI"
     xmlns:views="using:FluentDL.Views"
-    xmlns:behaviors="using:FluentDL.Behaviors"
-    xmlns:services="using:FluentDL.Services"
     xmlns:helpers="using:FluentDL.Helpers"
     xmlns:controls1="using:CommunityToolkit.WinUI.UI.Controls"
     xmlns:viewModels="using:FluentDL.ViewModels"
     xmlns:converters="using:CommunityToolkit.WinUI.UI.Converters"
-    mc:Ignorable="d">
+    mc:Ignorable="d"
+    NavigationCacheMode="Required"
+    >
     <Page.Resources>
         <helpers:DateToYearConverter x:Key="DateToYearConverter" />
         <helpers:DurationConverter x:Key="DurationConverter" />
@@ -72,6 +72,7 @@
                               SelectionChanged="CustomListView_OnSelectionChanged"
                               BorderBrush="{ThemeResource ControlStrongStrokeColorDefaultBrush}"
                               Margin="0,0,0,0"
+                              CacheMode="BitmapCache"
         >
             <ListView.ItemTemplate>
                 <DataTemplate x:DataType="viewModels:QueueObject">
@@ -192,19 +193,18 @@
                     </TextBox.HeaderTemplate>
                 </TextBox>
 
-                <TextBox x:Name="CommandInput"
-                         PlaceholderText="Run custom command"
-                         HorizontalAlignment="Stretch"
-                         Margin="0,0,0,8"
-                         ToolTipService.ToolTip="The command to be run in Command Prompt"
-                         Header="Command">
-                    <TextBox.HeaderTemplate>
-                        <DataTemplate>
-                            <TextBlock Text="{Binding}" Style="{ThemeResource CaptionTextBlockStyle}"
+                <AutoSuggestBox x:Name="CommandInput" 
+                                PlaceholderText="Run custom command"
+                                HorizontalAlignment="Stretch"
+                                Margin="0,0,0,8"
+                                ToolTipService.ToolTip="The command to be run in Command Prompt"
+                                TextChanged="CommandInput_OnTextChanged"
+                                SuggestionChosen="CommandInput_OnSuggestionChosen">
+                    <AutoSuggestBox.Header>
+                            <TextBlock Text="Command" Style="{ThemeResource CaptionTextBlockStyle}"
                                        Foreground="{ThemeResource TextFillColorSecondary}" />
-                        </DataTemplate>
-                    </TextBox.HeaderTemplate>
-                </TextBox>
+                    </AutoSuggestBox.Header>
+                </AutoSuggestBox>
             </StackPanel>
         </ContentDialog>
     </Grid>

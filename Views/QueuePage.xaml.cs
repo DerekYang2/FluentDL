@@ -1,5 +1,6 @@
 ﻿using System.Collections.ObjectModel;
 using System.Diagnostics;
+using Windows.ApplicationModel.AppService;
 using ABI.Windows.UI.ApplicationSettings;
 using CommunityToolkit.WinUI.UI.Controls;
 using FluentDL.Services;
@@ -8,6 +9,7 @@ using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Data;
+using FluentDL.Contracts.Services;
 
 namespace FluentDL.Views;
 
@@ -76,6 +78,14 @@ public sealed partial class QueuePage : Page
                     {
                         ProgressText.Text = (QueueViewModel.IsRunning ? "Running " : "Completed ") + $"{QueueViewModel.GetCompletedCount()} of {QueueViewModel.Source.Count}";
                     }
+
+                    if (completedCount == QueueViewModel.Source.Count) // If all tracks are completed
+                    {
+                        StartStopButton.Visibility = Visibility.Collapsed; // Hide the start/stop button
+                        // Enable other buttons
+                        CommandButton.IsEnabled = true;
+                        ClearButton.IsEnabled = true;
+                    }
                 }
 
                 // Check if pause was called
@@ -126,22 +136,34 @@ public sealed partial class QueuePage : Page
     private async void CommandButton_OnClick(object sender, RoutedEventArgs e)
     {
         CustomCommandDialog.XamlRoot = this.XamlRoot;
+
+
+        // Set latest command used if null
+        if (CommandInput.Text == null || CommandInput.Text.Trim().Length == 0)
+        {
+            CommandInput.Text = await App.GetService<ILocalSettingsService>().ReadSettingAsync<string>("PreviousCommand");
+        }
+
         await CustomCommandDialog.ShowAsync();
     }
 
-    private void CustomCommandDialog_OnPrimaryButtonClick(ContentDialog sender, ContentDialogButtonClickEventArgs args)
+    private async void CustomCommandDialog_OnPrimaryButtonClick(ContentDialog sender, ContentDialogButtonClickEventArgs args)
     {
-        if (string.IsNullOrWhiteSpace(CommandInput.Text) || QueueViewModel.IsRunning || QueueViewModel.Source.Count == 0) // If the command is empty or the queue is currently running, return
+        var commandInputText = CommandInput.Text.Trim();
+        if (string.IsNullOrWhiteSpace(commandInputText) || QueueViewModel.IsRunning || QueueViewModel.Source.Count == 0) // If the command is empty or the queue is currently running, return
         {
             return;
         }
 
         StartStopButton.Visibility = Visibility.Visible; // Display start stop
-        QueueViewModel.SetCommand(CommandInput.Text);
-        QueueViewModel.Reset();
+        QueueViewModel.SetCommand(commandInputText);
+        QueueViewModel.Reset(); // Reset the queue object result strings and index
         cancellationTokenSource = new CancellationTokenSource();
         QueueViewModel.RunCommand(DirectoryInput.Text, cancellationTokenSource.Token);
         SetPauseUI();
+
+        await App.GetService<ILocalSettingsService>().SaveSettingAsync("PreviousCommand", commandInputText); // Save the latest command used
+        await App.AddNewCommand(commandInputText); // Add the command to the previous command list
     }
 
     private void ClearButton_OnClick(object sender, RoutedEventArgs e)
@@ -152,6 +174,11 @@ public sealed partial class QueuePage : Page
 
     private void StartStopButton_OnClick(object sender, RoutedEventArgs e)
     {
+        if (StartStopText.Text.Equals("Pausing ... ")) // If already attempted a pause
+        {
+            return;
+        }
+
         if (QueueViewModel.IsRunning) // If the queue is running, cancel 
         {
             cancellationTokenSource.Cancel();
@@ -179,5 +206,39 @@ public sealed partial class QueuePage : Page
         StartStopText.Text = "Pause";
         CommandButton.IsEnabled = false;
         ClearButton.IsEnabled = false;
+    }
+
+    private void CommandInput_OnTextChanged(AutoSuggestBox sender, AutoSuggestBoxTextChangedEventArgs args)
+    {
+        if (args.Reason == AutoSuggestionBoxTextChangeReason.UserInput)
+        {
+            var suitableItems = new List<string>();
+            var inputLower = sender.Text.ToLower().Trim();
+
+            foreach (var command in App.PreviousCommandList)
+            {
+                if (suitableItems.Count >= 10) // Limit the number of suggestions to 10
+                {
+                    break;
+                }
+
+                if (command.ToLower().Trim().StartsWith(inputLower))
+                {
+                    suitableItems.Add(command);
+                }
+            }
+
+            if (suitableItems.Count == 0)
+            {
+                suitableItems.Add("No results found");
+            }
+
+            sender.ItemsSource = suitableItems;
+        }
+    }
+
+    private void CommandInput_OnSuggestionChosen(AutoSuggestBox sender, AutoSuggestBoxSuggestionChosenEventArgs args)
+    {
+        sender.Text = args.SelectedItem.ToString(); // Set the text to the chosen suggestion
     }
 }
