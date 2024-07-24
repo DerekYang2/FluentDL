@@ -1,5 +1,6 @@
 ﻿using System.Collections.ObjectModel;
 using System.Diagnostics;
+using ABI.Windows.UI.ApplicationSettings;
 using CommunityToolkit.WinUI.UI.Controls;
 using FluentDL.Services;
 using FluentDL.ViewModels;
@@ -53,6 +54,9 @@ public sealed partial class QueuePage : Page
         InitializeComponent();
         _dispatcherQueue = DispatcherQueue.GetForCurrentThread();
         CustomListView.ItemsSource = QueueViewModel.Source;
+        cancellationTokenSource = new CancellationTokenSource();
+        InitPreviewPanelButtons();
+        StartStopButton.Visibility = Visibility.Collapsed; // Hide the start/stop button initially
 
         QueueViewModel.Source.CollectionChanged += (sender, e) =>
         {
@@ -62,6 +66,7 @@ public sealed partial class QueuePage : Page
                 {
                     ProgressText.Text = "No tracks in queue";
                     QueueProgress.Value = 0;
+                    StartStopButton.Visibility = Visibility.Collapsed;
                 }
                 else
                 {
@@ -72,11 +77,14 @@ public sealed partial class QueuePage : Page
                         ProgressText.Text = (QueueViewModel.IsRunning ? "Running " : "Completed ") + $"{QueueViewModel.GetCompletedCount()} of {QueueViewModel.Source.Count}";
                     }
                 }
+
+                // Check if pause was called
+                if (cancellationTokenSource.Token.IsCancellationRequested)
+                {
+                    SetContinueUI();
+                }
             });
         };
-
-        InitPreviewPanelButtons();
-        cancellationTokenSource = new CancellationTokenSource();
     }
 
     private void InitPreviewPanelButtons()
@@ -123,17 +131,53 @@ public sealed partial class QueuePage : Page
 
     private void CustomCommandDialog_OnPrimaryButtonClick(ContentDialog sender, ContentDialogButtonClickEventArgs args)
     {
-        if (string.IsNullOrWhiteSpace(CommandInput.Text))
+        if (string.IsNullOrWhiteSpace(CommandInput.Text) || QueueViewModel.IsRunning || QueueViewModel.Source.Count == 0) // If the command is empty or the queue is currently running, return
         {
             return;
         }
 
+        StartStopButton.Visibility = Visibility.Visible; // Display start stop
+        QueueViewModel.SetCommand(CommandInput.Text);
+        QueueViewModel.Reset();
         cancellationTokenSource = new CancellationTokenSource();
-        QueueViewModel.RunCommand(CommandInput.Text, DirectoryInput.Text, cancellationTokenSource.Token);
+        QueueViewModel.RunCommand(DirectoryInput.Text, cancellationTokenSource.Token);
+        SetPauseUI();
     }
 
     private void ClearButton_OnClick(object sender, RoutedEventArgs e)
     {
         QueueViewModel.Clear();
+        StartStopButton.Visibility = Visibility.Collapsed; // Display start stop
+    }
+
+    private void StartStopButton_OnClick(object sender, RoutedEventArgs e)
+    {
+        if (QueueViewModel.IsRunning) // If the queue is running, cancel 
+        {
+            cancellationTokenSource.Cancel();
+            StartStopText.Text = "Pausing ... ";
+        }
+        else // If the queue is not running, start
+        {
+            cancellationTokenSource = new CancellationTokenSource();
+            QueueViewModel.RunCommand(DirectoryInput.Text, cancellationTokenSource.Token);
+            SetPauseUI();
+        }
+    }
+
+    private void SetContinueUI()
+    {
+        StartStopIcon.Glyph = "\uE768"; // Change the icon to a start icon
+        StartStopText.Text = "Continue";
+        CommandButton.IsEnabled = true;
+        ClearButton.IsEnabled = true;
+    }
+
+    private void SetPauseUI()
+    {
+        StartStopIcon.Glyph = "\uE769"; // Change the icon to a pause icon
+        StartStopText.Text = "Pause";
+        CommandButton.IsEnabled = false;
+        ClearButton.IsEnabled = false;
     }
 }

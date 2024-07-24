@@ -38,21 +38,26 @@
                     <TextBlock x:Name="ProgressText" Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}" Text="{Binding Source={StaticResource QueueViewModel}, Path=Source.Count, Converter={StaticResource QueueMessageConverter}}"/>
             </Button>
             
-            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                <Button x:Name="CommandButton" VerticalAlignment="Center" Background="Transparent" BorderBrush="Transparent"
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8">
+                <Button x:Name="CommandButton" VerticalAlignment="Center" 
                         Click="CommandButton_OnClick">
                     <StackPanel Orientation="Horizontal">
-                        <FontIcon x:Name="CommandIcon" Glyph="&#xE756;" FontSize="16" Margin="0, 0, 8, 0"
-                                  Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}" />
-                        <TextBlock Text="Run Command" Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}" />
+                        <FontIcon x:Name="CommandIcon" Glyph="&#xE756;" FontSize="16" Margin="0, 0, 8, 0"/>
+                        <TextBlock Text="Run Command"  />
                     </StackPanel>
                 </Button>
-                <Button x:Name="ClearButton" VerticalAlignment="Center" Background="Transparent" BorderBrush="Transparent"
+                <Button x:Name="ClearButton" VerticalAlignment="Center" 
                         Click="ClearButton_OnClick">
                     <StackPanel Orientation="Horizontal">
-                        <FontIcon x:Name="ClearIcon" Glyph="&#xE894;" FontSize="16" Margin="0, 0, 8, 0"
-                                  Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}" />
-                        <TextBlock Text="Clear" Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}" />
+                        <FontIcon x:Name="ClearIcon" Glyph="&#xE894;" FontSize="16" Margin="0, 0, 8, 0"/>
+                        <TextBlock Text="Clear"  />
+                    </StackPanel>
+                </Button>
+                <Button x:Name="StartStopButton" VerticalAlignment="Center" 
+                        Click="StartStopButton_OnClick">
+                    <StackPanel Orientation="Horizontal">
+                        <FontIcon x:Name="StartStopIcon" Glyph="&#xE768;" FontSize="16" Margin="0, 0, 8, 0"/>
+                        <TextBlock x:Name="StartStopText" Text="Continue"  />
                     </StackPanel>
                 </Button>
             </StackPanel>

@@ -113,6 +113,12 @@ public partial class QueueViewModel : ObservableRecipient
         set;
     } = new ObservableCollection<QueueObject>();
 
+    private static string command
+    {
+        get;
+        set;
+    } = string.Empty;
+
     private static DispatcherQueue dispatcher;
     private static HashSet<string> trackSet = new HashSet<string>();
     private static int index;
@@ -170,46 +176,54 @@ public partial class QueueViewModel : ObservableRecipient
         index = 0;
     }
 
-    private static string GetHash(SongSearchObject song)
+    public static void Reset()
     {
-        return song.Source + song.Id;
-    }
-
-    public static void RunCommand(string command, string? directory, CancellationToken token)
-    {
-        if (IsRunning)
-        {
-            return;
-        }
-
-        // In case command was already run before, cleanup first
-        index = 0; // Reset index
+        index = 0; // Reset the index
         for (int i = 0; i < Source.Count; i++) // Remove all result str, set new obj to refresh ui
         {
             var cleanObj = Source[i];
             cleanObj.ResultString = null;
             Source[i] = cleanObj;
         }
+    }
 
+    private static string GetHash(SongSearchObject song)
+    {
+        return song.Source + song.Id;
+    }
 
-        IsRunning = true; // Start running
+    public static void SetCommand(string newCommand)
+    {
+        command = newCommand;
+    }
+
+    public static void RunCommand(string? directory, CancellationToken token)
+    {
+        if (IsRunning || index >= Source.Count)
+        {
+            return;
+        }
+
+        IsRunning = true; // Start running 
 
         Thread thread = new Thread(() =>
         {
-            for (int i = 0; i < Source.Count; i++)
+            while (index < Source.Count)
             {
-                int curIdx = i; // Capture the current index
                 if (token.IsCancellationRequested) // Break the loop if the token is cancelled
                 {
-                    break;
+                    break; // Break out of the loop
                 }
+
+                var i = index; // Capture the current index
+                index++; // Increment the index
 
                 // Update the is running of the current object
                 dispatcher.TryEnqueue(() =>
                 {
-                    var newObj = Source[curIdx];
+                    var newObj = Source[i];
                     newObj.IsRunning = true;
-                    Source[curIdx] = newObj;
+                    Source[i] = newObj;
                 });
 
                 // Get the url of the current object
@@ -235,13 +249,14 @@ public partial class QueueViewModel : ObservableRecipient
                 // Update the actual object
                 dispatcher.TryEnqueue(() =>
                 {
-                    var newObj = Source[curIdx];
+                    var newObj = Source[i];
                     newObj.ResultString = resultStr;
                     newObj.IsRunning = false;
-                    Source[curIdx] = newObj; // This actually refreshes the UI of ObservableCollection
+                    Source[i] = newObj; // This actually refreshes the UI of ObservableCollection
                 });
             }
 
+            // Finished running
             IsRunning = false;
         });
         thread.Start();
