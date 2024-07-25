@@ -17,6 +17,10 @@ namespace FluentDL.Services
             {
                 process.StartInfo.WorkingDirectory = directory;
             }
+            else // Use the directory of the user profile
+            {
+                process.StartInfo.WorkingDirectory = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+            }
 
             process.StartInfo.RedirectStandardInput = true;
             process.StartInfo.RedirectStandardOutput = true;
@@ -37,6 +41,10 @@ namespace FluentDL.Services
             if (System.IO.Directory.Exists(directory))
             {
                 process.StartInfo.WorkingDirectory = directory;
+            }
+            else // Use the directory of the user profile
+            {
+                process.StartInfo.WorkingDirectory = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
             }
 
             process.StartInfo.RedirectStandardInput = true;

@@ -72,7 +72,6 @@
                               SelectionChanged="CustomListView_OnSelectionChanged"
                               BorderBrush="{ThemeResource ControlStrongStrokeColorDefaultBrush}"
                               Margin="0,0,0,0"
-                              CacheMode="BitmapCache"
         >
             <ListView.ItemTemplate>
                 <DataTemplate x:DataType="viewModels:QueueObject">
@@ -179,19 +178,18 @@
                     </Button>
                 </StackPanel>
 
-                <TextBox x:Name="DirectoryInput"
-                         PlaceholderText="Directory of command prompt"
-                         HorizontalAlignment="Stretch"
-                         Margin="0,0,0,8"
-                         ToolTipService.ToolTip="The directory to run commands in"
-                         Header="Directory">
-                    <TextBox.HeaderTemplate>
-                        <DataTemplate>
-                            <TextBlock Text="{Binding}" Style="{ThemeResource CaptionTextBlockStyle}"
-                                       Foreground="{ThemeResource TextFillColorSecondary}" />
-                        </DataTemplate>
-                    </TextBox.HeaderTemplate>
-                </TextBox>
+                <AutoSuggestBox x:Name="DirectoryInput" 
+                                PlaceholderText="Directory of command prompt"
+                                HorizontalAlignment="Stretch"
+                                Margin="0,0,0,8"
+                                ToolTipService.ToolTip="The directory to run commands in"
+                                TextChanged="DirectoryInput_OnTextChanged"
+                                SuggestionChosen="DirectoryInput_OnSuggestionChosen">
+                    <AutoSuggestBox.Header>
+                        <TextBlock Text="Directory" Style="{ThemeResource CaptionTextBlockStyle}"
+                                   Foreground="{ThemeResource TextFillColorSecondary}" />
+                    </AutoSuggestBox.Header>
+                </AutoSuggestBox>
 
                 <AutoSuggestBox x:Name="CommandInput" 
                                 PlaceholderText="Run custom command"

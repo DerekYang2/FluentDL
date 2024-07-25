@@ -52,7 +52,7 @@
                 </NavigationViewItem>
                 <NavigationViewItem x:Uid="Shell_Queue" helpers:NavigationHelper.NavigateTo="FluentDL.ViewModels.QueueViewModel">
                     <NavigationViewItem.Icon>
-                        <FontIcon FontFamily="{StaticResource SymbolThemeFontFamily}" Glyph="&#xea37;"/>
+                        <FontIcon FontFamily="{StaticResource SymbolThemeFontFamily}" Glyph="&#xF0B5;"/>
                     </NavigationViewItem.Icon>
                 </NavigationViewItem>
                 <NavigationViewItem x:Uid="Shell_ContentGrid" helpers:NavigationHelper.NavigateTo="FluentDL.ViewModels.ContentGridViewModel">

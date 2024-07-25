@@ -1,4 +1,5 @@
-﻿using FluentDL.Activation;
+﻿using System.Diagnostics;
+using FluentDL.Activation;
 using FluentDL.Contracts.Services;
 using FluentDL.Core.Contracts.Services;
 using FluentDL.Core.Services;
@@ -37,8 +38,6 @@ public partial class App : Application
 
         return service;
     }
-
-    public static SortedSet<string> PreviousCommandList = new();
 
     public static WindowEx MainWindow
     {
@@ -107,7 +106,7 @@ public partial class App : Application
     private void App_UnhandledException(object sender, Microsoft.UI.Xaml.UnhandledExceptionEventArgs e)
     {
         // TODO: Log and handle exceptions as appropriate.
-        // https://docs.microsoft.com/windows/windows-app-sdk/api/winrt/microsoft.ui.xaml.application.unhandledexception.
+        Debug.WriteLine(e.Exception + ":" + e.Message);
     }
 
     protected async override void OnLaunched(LaunchActivatedEventArgs args)
@@ -120,26 +119,6 @@ public partial class App : Application
 
 
         // Fetch previous command list
-        var localSettings = App.GetService<ILocalSettingsService>();
-        var prevCommandCSV = await localSettings.ReadSettingAsync<string>("PreviousCommandList");
-        if (prevCommandCSV != null)
-        {
-            foreach (var command in prevCommandCSV.Split(','))
-            {
-                PreviousCommandList.Add(command);
-            }
-        }
-    }
-
-    public static async Task AddNewCommand(string command)
-    {
-        if (PreviousCommandList.Contains(command))
-        {
-            return;
-        }
-
-        PreviousCommandList.Add(command);
-        var localSettings = App.GetService<ILocalSettingsService>();
-        await localSettings.SaveSettingAsync("PreviousCommandList", string.Join(',', PreviousCommandList));
+        await LocalCommands.Init();
     }
 }

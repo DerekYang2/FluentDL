@@ -1,5 +1,6 @@
 ﻿using System.Collections.ObjectModel;
 using System.Diagnostics;
+using System.Text.RegularExpressions;
 using Windows.ApplicationModel.AppService;
 using ABI.Windows.UI.ApplicationSettings;
 using CommunityToolkit.WinUI.UI.Controls;
@@ -137,11 +138,16 @@ public sealed partial class QueuePage : Page
     {
         CustomCommandDialog.XamlRoot = this.XamlRoot;
 
-
         // Set latest command used if null
         if (CommandInput.Text == null || CommandInput.Text.Trim().Length == 0)
         {
-            CommandInput.Text = await App.GetService<ILocalSettingsService>().ReadSettingAsync<string>("PreviousCommand");
+            CommandInput.Text = await LocalCommands.GetLatestCommand();
+        }
+
+        // Set latest path used if null
+        if (DirectoryInput.Text == null || DirectoryInput.Text.Trim().Length == 0)
+        {
+            DirectoryInput.Text = await LocalCommands.GetLatestPath();
         }
 
         await CustomCommandDialog.ShowAsync();
@@ -150,6 +156,7 @@ public sealed partial class QueuePage : Page
     private async void CustomCommandDialog_OnPrimaryButtonClick(ContentDialog sender, ContentDialogButtonClickEventArgs args)
     {
         var commandInputText = CommandInput.Text.Trim();
+        var directoryInputText = DirectoryInput.Text.Trim();
         if (string.IsNullOrWhiteSpace(commandInputText) || QueueViewModel.IsRunning || QueueViewModel.Source.Count == 0) // If the command is empty or the queue is currently running, return
         {
             return;
@@ -159,11 +166,16 @@ public sealed partial class QueuePage : Page
         QueueViewModel.SetCommand(commandInputText);
         QueueViewModel.Reset(); // Reset the queue object result strings and index
         cancellationTokenSource = new CancellationTokenSource();
-        QueueViewModel.RunCommand(DirectoryInput.Text, cancellationTokenSource.Token);
+        QueueViewModel.RunCommand(directoryInputText, cancellationTokenSource.Token);
         SetPauseUI();
 
-        await App.GetService<ILocalSettingsService>().SaveSettingAsync("PreviousCommand", commandInputText); // Save the latest command used
-        await App.AddNewCommand(commandInputText); // Add the command to the previous command list
+        LocalCommands.AddCommand(commandInputText); // Add the command to the previous command list
+        LocalCommands.AddPath(directoryInputText); // Add the path to the previous path list
+
+        await LocalCommands.SaveLatestCommand(commandInputText);
+        await LocalCommands.SaveLatestPath(directoryInputText);
+        await LocalCommands.SaveCommands();
+        await LocalCommands.SavePaths();
     }
 
     private void ClearButton_OnClick(object sender, RoutedEventArgs e)
@@ -215,7 +227,7 @@ public sealed partial class QueuePage : Page
             var suitableItems = new List<string>();
             var inputLower = sender.Text.ToLower().Trim();
 
-            foreach (var command in App.PreviousCommandList)
+            foreach (var command in LocalCommands.GetCommandList())
             {
                 if (suitableItems.Count >= 10) // Limit the number of suggestions to 10
                 {
@@ -230,7 +242,7 @@ public sealed partial class QueuePage : Page
 
             if (suitableItems.Count == 0)
             {
-                suitableItems.Add("No results found");
+                suitableItems.Add("No command found");
             }
 
             sender.ItemsSource = suitableItems;
@@ -238,6 +250,42 @@ public sealed partial class QueuePage : Page
     }
 
     private void CommandInput_OnSuggestionChosen(AutoSuggestBox sender, AutoSuggestBoxSuggestionChosenEventArgs args)
+    {
+        sender.Text = args.SelectedItem.ToString(); // Set the text to the chosen suggestion
+    }
+
+    private void DirectoryInput_OnTextChanged(AutoSuggestBox sender, AutoSuggestBoxTextChangedEventArgs args)
+    {
+        if (args.Reason == AutoSuggestionBoxTextChangeReason.UserInput)
+        {
+            var suitableItems = new List<string>();
+            var inputLower = sender.Text.ToLower();
+            // Remove everything except letters and numbers
+            inputLower = Regex.Replace(inputLower, "[^a-zA-Z0-9]", "");
+
+            foreach (var command in LocalCommands.GetPathList())
+            {
+                if (suitableItems.Count >= 10) // Limit the number of suggestions to 10
+                {
+                    break;
+                }
+
+                if (Regex.Replace(command.ToLower(), "[^a-zA-Z0-9]", "").Contains(inputLower)) // Compare only alphanumeric characters
+                {
+                    suitableItems.Add(command);
+                }
+            }
+
+            if (suitableItems.Count == 0)
+            {
+                suitableItems.Add("No directory found");
+            }
+
+            sender.ItemsSource = suitableItems;
+        }
+    }
+
+    private void DirectoryInput_OnSuggestionChosen(AutoSuggestBox sender, AutoSuggestBoxSuggestionChosenEventArgs args)
     {
         sender.Text = args.SelectedItem.ToString(); // Set the text to the chosen suggestion
     }
