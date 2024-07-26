@@ -11,6 +11,7 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Data;
 using FluentDL.Contracts.Services;
+using FluentDL.Helpers;
 
 namespace FluentDL.Views;
 
@@ -43,7 +44,8 @@ public class PathToVisibilityConverter : IValueConverter
 public sealed partial class QueuePage : Page
 {
     // Create dispatcher queue
-    private DispatcherQueue _dispatcherQueue;
+    private DispatcherQueue dispatcherQueue;
+    private DispatcherTimer dispatcherTimer;
     private CancellationTokenSource cancellationTokenSource;
 
     public QueueViewModel ViewModel
@@ -55,7 +57,11 @@ public sealed partial class QueuePage : Page
     {
         ViewModel = App.GetService<QueueViewModel>();
         InitializeComponent();
-        _dispatcherQueue = DispatcherQueue.GetForCurrentThread();
+
+        dispatcherQueue = DispatcherQueue.GetForCurrentThread();
+        dispatcherTimer = new DispatcherTimer();
+        dispatcherTimer.Tick += dispatcherTimer_Tick;
+
         CustomListView.ItemsSource = QueueViewModel.Source;
         cancellationTokenSource = new CancellationTokenSource();
         InitPreviewPanelButtons();
@@ -63,39 +69,47 @@ public sealed partial class QueuePage : Page
 
         QueueViewModel.Source.CollectionChanged += (sender, e) =>
         {
-            _dispatcherQueue.TryEnqueue(() =>
-            {
-                if (QueueViewModel.Source.Count == 0)
-                {
-                    ProgressText.Text = "No tracks in queue";
-                    QueueProgress.Value = 0;
-                    StartStopButton.Visibility = Visibility.Collapsed;
-                }
-                else
-                {
-                    var completedCount = QueueViewModel.GetCompletedCount();
-                    QueueProgress.Value = 100.0 * completedCount / QueueViewModel.Source.Count;
-                    if (completedCount > 0)
-                    {
-                        ProgressText.Text = (QueueViewModel.IsRunning ? "Running " : "Completed ") + $"{QueueViewModel.GetCompletedCount()} of {QueueViewModel.Source.Count}";
-                    }
-
-                    if (completedCount == QueueViewModel.Source.Count) // If all tracks are completed
-                    {
-                        StartStopButton.Visibility = Visibility.Collapsed; // Hide the start/stop button
-                        // Enable other buttons
-                        CommandButton.IsEnabled = true;
-                        ClearButton.IsEnabled = true;
-                    }
-                }
-
-                // Check if pause was called
-                if (cancellationTokenSource.Token.IsCancellationRequested)
-                {
-                    SetContinueUI();
-                }
-            });
+            OnQueueSourceChange();
         };
+    }
+
+    private void OnQueueSourceChange()
+    {
+        dispatcherQueue.TryEnqueue(() =>
+        {
+            // Check if pause was called
+            if (cancellationTokenSource.Token.IsCancellationRequested)
+            {
+                SetContinueUI(); // If paused, UI should show continue
+                ShowInfoBar(InfoBarSeverity.Informational, "Queue paused");
+            }
+
+            if (QueueViewModel.Source.Count == 0)
+            {
+                ProgressText.Text = "No tracks in queue";
+                QueueProgress.Value = 0;
+                StartStopButton.Visibility = Visibility.Collapsed;
+            }
+            else
+            {
+                var completedCount = QueueViewModel.GetCompletedCount();
+                QueueProgress.Value = 100.0 * completedCount / QueueViewModel.Source.Count;
+                if (completedCount > 0)
+                {
+                    ProgressText.Text = (QueueViewModel.IsRunning ? "Running " : "Completed ") + $"{QueueViewModel.GetCompletedCount()} of {QueueViewModel.Source.Count}";
+                }
+
+                if (completedCount == QueueViewModel.Source.Count) // If all tracks are completed
+                {
+                    StartStopButton.Visibility = Visibility.Collapsed; // Hide the start/stop button
+                    // Enable other buttons
+                    CommandButton.IsEnabled = true;
+                    ClearButton.IsEnabled = true;
+                    // Send notification
+                    App.GetService<IAppNotificationService>().Show(string.Format("QueueCompletePayload".GetLocalized(), AppContext.BaseDirectory));
+                }
+            }
+        });
     }
 
     private void InitPreviewPanelButtons()
@@ -288,5 +302,40 @@ public sealed partial class QueuePage : Page
     private void DirectoryInput_OnSuggestionChosen(AutoSuggestBox sender, AutoSuggestBoxSuggestionChosenEventArgs args)
     {
         sender.Text = args.SelectedItem.ToString(); // Set the text to the chosen suggestion
+    }
+
+    // Required for animation to work
+    private void PageInfoBar_OnCloseButtonClick(InfoBar sender, object args)
+    {
+        PageInfoBar.Opacity = 0;
+    }
+
+    private void ShowInfoBar(InfoBarSeverity severity, string message, int seconds = 2)
+    {
+        dispatcherQueue.TryEnqueue(() =>
+        {
+            PageInfoBar.IsOpen = true;
+            PageInfoBar.Opacity = 1;
+            PageInfoBar.Severity = severity;
+            PageInfoBar.Content = message;
+        });
+        dispatcherTimer.Interval = TimeSpan.FromSeconds(seconds);
+        dispatcherTimer.Start();
+    }
+
+    // Event handler to close the info bar and stop the timer (only ticks once)
+    private void dispatcherTimer_Tick(object sender, object e)
+    {
+        PageInfoBar.Opacity = 0;
+        (sender as DispatcherTimer).Stop();
+        // Set IsOpen to false after 0.25 seconds
+        Task.Factory.StartNew(() =>
+        {
+            System.Threading.Thread.Sleep(250);
+            dispatcherQueue.TryEnqueue(() =>
+            {
+                PageInfoBar.IsOpen = false;
+            });
+        });
     }
 }

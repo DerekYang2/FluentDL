@@ -150,9 +150,9 @@ public partial class QueueViewModel : ObservableRecipient
         index = 0;
     }
 
-    public static void Add(SongSearchObject song)
+    public static void Add(SongSearchObject? song)
     {
-        if (trackSet.Contains(GetHash(song)))
+        if (song == null || trackSet.Contains(GetHash(song)))
         {
             return;
         }

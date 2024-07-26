@@ -205,10 +205,12 @@
                 </AutoSuggestBox>
             </StackPanel>
         </ContentDialog>
-        <InfoBar Grid.Row="0" Grid.RowSpan="3" Grid.Column="0" Grid.ColumnSpan = "2" x:Name="PageInfoBar" Canvas.ZIndex="1" VerticalAlignment="Bottom" HorizontalAlignment="Center" IsOpen="False" Margin="12" Background="{ThemeResource AcrylicBackgroundFillColorDefaultBrush}">
-            <InfoBar.OpacityTransition>
-                <ScalarTransition />
-            </InfoBar.OpacityTransition>
-        </InfoBar>
+
+    <InfoBar Grid.Row="0" Grid.RowSpan="3" Grid.Column="0" Grid.ColumnSpan = "2" x:Name="PageInfoBar" Canvas.ZIndex="1" VerticalAlignment="Bottom" HorizontalAlignment="Center" IsOpen="False" Opacity="0" Margin="12" Background="{ThemeResource AcrylicBackgroundFillColorDefaultBrush}" CloseButtonClick="PageInfoBar_OnCloseButtonClick">
+        <InfoBar.OpacityTransition>
+            <ScalarTransition Duration="0:0:0.25"/>
+        </InfoBar.OpacityTransition>
+    </InfoBar>
+
     </Grid>
 </Page>

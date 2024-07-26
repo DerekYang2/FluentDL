@@ -84,6 +84,7 @@ public sealed partial class Search : Page
         InitializeComponent();
         dispatcher = DispatcherQueue.GetForCurrentThread();
         dispatcherTimer = new DispatcherTimer();
+        dispatcherTimer.Tick += dispatcherTimer_Tick;
 
         CustomListView.ItemsSource = new ObservableCollection<SongSearchObject>();
         AttachCollectionChangedEvent((ObservableCollection<SongSearchObject>)CustomListView.ItemsSource);
@@ -127,7 +128,16 @@ public sealed partial class Search : Page
         {
             if (PreviewPanel.GetSong() != null)
             {
+                var beforeCount = QueueViewModel.Source.Count;
                 QueueViewModel.Add(PreviewPanel.GetSong());
+                if (QueueViewModel.Source.Count == beforeCount) // No change
+                {
+                    ShowInfoBar(InfoBarSeverity.Informational, $"{PreviewPanel.GetSong().Title} already in queue");
+                }
+                else
+                {
+                    ShowInfoBar(InfoBarSeverity.Informational, $"{PreviewPanel.GetSong().Title} added to queue");
+                }
             }
         };
 
@@ -409,6 +419,7 @@ public sealed partial class Search : Page
         youtubeObj.Source = "youtube";
         youtubeObj.Id = youtubeAlternateList[selectedIndex].Id;
         QueueViewModel.Add(youtubeObj);
+        ShowInfoBar(InfoBarSeverity.Informational, $"{youtubeObj.Title} added to queue");
     }
 
     private void FailedListView_OnSelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -450,13 +461,30 @@ public sealed partial class Search : Page
 
     private void AddToQueueButton_OnClick(object sender, RoutedEventArgs e)
     {
+        var listViewCount = (CustomListView.ItemsSource as ObservableCollection<SongSearchObject>).Count;
+
+        if (listViewCount == 0)
+        {
+            ShowInfoBar(InfoBarSeverity.Warning, "No tracks to add");
+            return;
+        }
+
+        var beforeCount = QueueViewModel.Source.Count;
         foreach (var song in (ObservableCollection<SongSearchObject>)CustomListView.ItemsSource)
         {
             QueueViewModel.Add(song);
         }
 
-        PageInfoBar.IsOpen = true;
-        PageInfoBar.Opacity = 1;
+        var addedCount = QueueViewModel.Source.Count - beforeCount;
+
+        if (addedCount < listViewCount)
+        {
+            ShowInfoBar(InfoBarSeverity.Informational, $"Added {addedCount} tracks to queue (duplicates ignored)");
+        }
+        else
+        {
+            ShowInfoBar(InfoBarSeverity.Informational, $"Added {addedCount} tracks to queue");
+        }
     }
 
     // Functions that open dialogs
@@ -478,11 +506,32 @@ public sealed partial class Search : Page
         PageInfoBar.Opacity = 0;
     }
 
+    private void ShowInfoBar(InfoBarSeverity severity, string message, int seconds = 2)
+    {
+        dispatcher.TryEnqueue(() =>
+        {
+            PageInfoBar.IsOpen = true;
+            PageInfoBar.Opacity = 1;
+            PageInfoBar.Severity = severity;
+            PageInfoBar.Content = message;
+        });
+        dispatcherTimer.Interval = TimeSpan.FromSeconds(seconds);
+        dispatcherTimer.Start();
+    }
+
     // Event handler to close the info bar and stop the timer (only ticks once)
-    private void dispatcherTimer_Tick(object sender, EventArgs e)
+    private void dispatcherTimer_Tick(object sender, object e)
     {
         PageInfoBar.Opacity = 0;
-        PageInfoBar.IsOpen = false;
         (sender as DispatcherTimer).Stop();
+        // Set IsOpen to false after 0.25 seconds
+        Task.Factory.StartNew(() =>
+        {
+            System.Threading.Thread.Sleep(250);
+            dispatcher.TryEnqueue(() =>
+            {
+                PageInfoBar.IsOpen = false;
+            });
+        });
     }
 }
