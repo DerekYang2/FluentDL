@@ -180,6 +180,7 @@ namespace FluentDL.Services
             Debug.WriteLine(url + " | " + downloadFolder);
             var streamManifest = await youtube.Videos.Streams.GetManifestAsync(url);
             var streamInfo = streamManifest.GetAudioOnlyStreams().GetWithHighestBitrate();
+
             string extension = streamInfo.Container.ToString();
             extension = "aac";
             /*
@@ -202,6 +203,43 @@ namespace FluentDL.Services
 
             var stream = await youtube.Videos.Streams.GetAsync(streamInfo);
             await youtube.Videos.Streams.DownloadAsync(streamInfo, filePath);
+        }
+
+        public static async Task<string> AudioStreamUrl(string url)
+        {
+            var streamManifest = await youtube.Videos.Streams.GetManifestAsync(url);
+            var streamInfo = streamManifest.GetAudioOnlyStreams().GetWithHighestBitrate();
+
+            long maxBitRate = 0;
+            foreach (var streamObj in streamManifest.GetAudioStreams()) // Get the opus stream with highest bitrate
+            {
+                if (streamObj.AudioCodec.Equals("opus") && streamObj.Bitrate.BitsPerSecond > maxBitRate)
+                {
+                    maxBitRate = streamObj.Bitrate.BitsPerSecond;
+                    streamInfo = streamObj;
+                }
+            }
+
+            return streamInfo.Url;
+        }
+
+        // Get stream with minimum bitrate
+        public static async Task<string> AudioStreamWorstUrl(string url)
+        {
+            var streamManifest = await youtube.Videos.Streams.GetManifestAsync(url);
+            var streamInfo = streamManifest.GetAudioOnlyStreams().GetWithHighestBitrate();
+
+            long minBitRate = long.MaxValue;
+            foreach (var streamObj in streamManifest.GetAudioStreams()) // Get the opus stream with highest bitrate
+            {
+                if (streamObj.AudioCodec.Equals("opus") && streamObj.Bitrate.BitsPerSecond < minBitRate)
+                {
+                    minBitRate = streamObj.Bitrate.BitsPerSecond;
+                    streamInfo = streamObj;
+                }
+            }
+
+            return streamInfo.Url;
         }
     }
 }

@@ -33,6 +33,7 @@ namespace FluentDL.Services
             }
         }
 
+        // TODO: handle invalid playlist ids
         public static async Task<List<SongSearchObject>> GetPlaylist(string playlistId)
         {
             var pages = await spotify.Playlists.GetItems(playlistId);
@@ -62,7 +63,8 @@ namespace FluentDL.Services
                         Duration = ((int)Math.Round(track.DurationMs / 1000.0)).ToString(),
                         Rank = track.Popularity.ToString(),
                         AlbumName = track.Album.Name,
-                        Explicit = track.Explicit
+                        Explicit = track.Explicit,
+                        TrackPosition = track.TrackNumber.ToString()
                     });
                 }
             }

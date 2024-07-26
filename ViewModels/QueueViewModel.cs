@@ -244,7 +244,6 @@ public partial class QueueViewModel : ObservableRecipient
                 var thisCommand = command.Replace("%title%", Source[i].Title).Replace("%artist%", Source[i].Artists).Replace("%url%", url);
                 // Run the command
                 var resultStr = TerminalSubprocess.GetRunCommandSync(thisCommand, directory);
-                Debug.WriteLine(resultStr);
 
                 // Update the actual object
                 dispatcher.TryEnqueue(() =>

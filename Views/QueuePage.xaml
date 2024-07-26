@@ -123,13 +123,19 @@
                                        FontFamily="Segoe UI Variable Display" />
                         </StackPanel>
 
-                        <Grid Grid.Column="2" CornerRadius="4" Margin="0,0,0,8" VerticalAlignment="Top" Visibility="{x:Bind ResultString, Converter={StaticResource PathToVisibilityConverter}}">
-                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Stretch" Spacing="8">
+                        <Grid Grid.Column="2" CornerRadius="4" Margin="0,0,0,0" VerticalAlignment="Stretch" Visibility="{x:Bind ResultString, Converter={StaticResource PathToVisibilityConverter}}">
+                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Stretch" Spacing="8" VerticalAlignment="Top">
                                 <TextBlock HorizontalAlignment="Center" Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}">Complete</TextBlock>
                                 <FontIcon Glyph="&#xE930;" Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"/>                                    
                             </StackPanel>
-                        </Grid>
 
+                            <Button x:Name="OutputButton" VerticalAlignment="Bottom" HorizontalAlignment="Stretch" Click="OutputButton_OnClick">
+                                <StackPanel Orientation="Horizontal">
+                                    <FontIcon x:Name="OutputIcon" Glyph="&#xE8A7;" FontSize="16" Margin="0, 0, 8, 0"/>
+                                    <TextBlock Text="Output"  />
+                                </StackPanel>
+                            </Button>
+                        </Grid>
 
                         <ProgressRing Grid.Column="2" Visibility="{x:Bind IsRunning, Converter={StaticResource VisibilityConverter}}"/>
                     </Grid>
@@ -142,7 +148,7 @@
                            Margin="12,0,0,12"
                            VerticalAlignment="Stretch" />
 
-
+    <!-- Content Dialog for command running-->
     <ContentDialog x:Name="CustomCommandDialog" PrimaryButtonText="Run" CloseButtonText="Cancel"
                        Title="Advanced Search" IsSecondaryButtonEnabled="True" IsPrimaryButtonEnabled="True"
                        PrimaryButtonClick="CustomCommandDialog_OnPrimaryButtonClick" PrimaryButtonStyle="{ThemeResource AccentButtonStyle}">
@@ -203,6 +209,16 @@
                                        Foreground="{ThemeResource TextFillColorSecondary}" />
                     </AutoSuggestBox.Header>
                 </AutoSuggestBox>
+            </StackPanel>
+        </ContentDialog>
+
+    <!-- Content Dialog for cli output-->
+    <ContentDialog x:Name="OutputDialog" PrimaryButtonText="Copy" CloseButtonText="Closethrow"
+                       Title="Output" IsSecondaryButtonEnabled="True" IsPrimaryButtonEnabled="True"
+                       PrimaryButtonClick="OutputDialog_OnPrimaryButtonClick" PrimaryButtonStyle="{ThemeResource AccentButtonStyle}">
+            <StackPanel Spacing="12">
+                <TextBlock x:Name="OutputMessage" Margin="0,0,0,0"/>
+                <RichEditBox x:Name="OutputTextBox" HorizontalAlignment="Stretch" Height="Auto"/>
             </StackPanel>
         </ContentDialog>
 

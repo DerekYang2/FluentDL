@@ -73,6 +73,25 @@ public sealed partial class QueuePage : Page
         };
     }
 
+    private async void OutputButton_OnClick(object sender, RoutedEventArgs e)
+    {
+        // Get the button that was clicked
+        var button = sender as Button;
+
+        if (button != null)
+        {
+            // Get the data context of the button (the item in the ListView)
+
+            if (button.DataContext is QueueObject queueObject)
+            {
+                OutputDialog.XamlRoot = this.XamlRoot;
+                OutputMessage.Text = $"Terminal output for track \"{queueObject.Title}\":";
+                OutputTextBox.Document.SetText(Microsoft.UI.Text.TextSetOptions.None, queueObject.ResultString);
+                await OutputDialog.ShowAsync();
+            }
+        }
+    }
+
     private void OnQueueSourceChange()
     {
         dispatcherQueue.TryEnqueue(() =>
@@ -337,5 +356,17 @@ public sealed partial class QueuePage : Page
                 PageInfoBar.IsOpen = false;
             });
         });
+    }
+
+    private void OutputDialog_OnPrimaryButtonClick(ContentDialog sender, ContentDialogButtonClickEventArgs args)
+    {
+        string text;
+        OutputTextBox.Document.GetText(Microsoft.UI.Text.TextGetOptions.None, out text); // Get the text from the RichEditBox
+        // Copy the text to the clipboard
+        var dataPackage = new Windows.ApplicationModel.DataTransfer.DataPackage();
+        dataPackage.SetText(text);
+        Windows.ApplicationModel.DataTransfer.Clipboard.SetContent(dataPackage);
+
+        ShowInfoBar(InfoBarSeverity.Success, "Copied to clipboard");
     }
 }

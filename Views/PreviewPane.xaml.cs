@@ -18,6 +18,8 @@ using Microsoft.UI.Xaml.Media.Imaging;
 using Windows.Media.Core;
 using FluentDL.ViewModels;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
+using Microsoft.UI.Dispatching;
 
 
 // To learn more about WinUI, the WinUI project structure,
@@ -28,10 +30,12 @@ namespace FluentDL.Views
     public sealed partial class PreviewPane : UserControl
     {
         SongSearchObject? song = null;
+        DispatcherQueue dispatcher;
 
         public PreviewPane()
         {
             this.InitializeComponent();
+            dispatcher = DispatcherQueue.GetForCurrentThread();
             Clear();
         }
 
@@ -67,7 +71,7 @@ namespace FluentDL.Views
         public async Task Update(SongSearchObject selectedSong)
         {
             song = selectedSong;
-            var jsonObject = await FluentDL.Services.DeezerApi.FetchJsonElement("track/" + selectedSong.Id);
+
             //PreviewArtistText.Text = selectedSong.Artists;
             //PreviewReleaseDate.Text = selectedSong.ReleaseDate; // Todo format date
             //PreviewRank.Text = selectedSong.Rank; // Todo format rank
@@ -76,20 +80,41 @@ namespace FluentDL.Views
             // PreviewAlbumPosition.Text = jsonObject.GetProperty("track_position").ToString();
             PreviewTitleText.Text = selectedSong.Title;
 
-            PreviewInfoControl2.ItemsSource = PreviewInfoControl.ItemsSource = new List<TrackDetail>
+            var trackDetailsList = new List<TrackDetail>
             {
                 new TrackDetail { Label = "Artists", Value = selectedSong.Artists },
                 new TrackDetail { Label = "Release Date", Value = new DateVerboseConverter().Convert(selectedSong.ReleaseDate, null, null, null).ToString() },
                 new TrackDetail { Label = "Popularity", Value = selectedSong.Rank },
                 new TrackDetail { Label = "Duration", Value = new DurationConverter().Convert(selectedSong.Duration, null, null, null).ToString() },
                 new TrackDetail { Label = "Album", Value = selectedSong.AlbumName },
-                new TrackDetail { Label = "Track", Value = jsonObject.GetProperty("track_position").ToString() }
             };
 
-            // Set 30 second preview
-            SongPreviewPlayer.Source = MediaSource.CreateFromUri(new Uri(jsonObject.GetProperty("preview").ToString()));
 
-            PreviewImage.Source = new BitmapImage(new Uri(jsonObject.GetProperty("album").GetProperty("cover_big").ToString()));
+            // Set 30 second preview
+            if (selectedSong.Source.Equals("deezer"))
+            {
+                var jsonObject = await FluentDL.Services.DeezerApi.FetchJsonElement("track/" + selectedSong.Id);
+                SongPreviewPlayer.Source = MediaSource.CreateFromUri(new Uri(jsonObject.GetProperty("preview").ToString()));
+                PreviewImage.Source = new BitmapImage(new Uri(jsonObject.GetProperty("album").GetProperty("cover_big").ToString()));
+                trackDetailsList.Add(new TrackDetail { Label = "Track", Value = jsonObject.GetProperty("track_position").ToString() });
+            }
+
+            if (selectedSong.Source.Equals("youtube"))
+            {
+                PreviewImage.Source = new BitmapImage(new Uri("https://img.youtube.com/vi/" + selectedSong.Id + "/0.jpg"));
+                // Load youtube song on another thread
+                var t = new Thread(async () =>
+                {
+                    var mediaSource = MediaSource.CreateFromUri(new Uri(await YoutubeApi.AudioStreamWorstUrl("https://www.youtube.com/watch?v=" + selectedSong.Id)));
+                    dispatcher.TryEnqueue(() =>
+                    {
+                        SongPreviewPlayer.Source = mediaSource;
+                    });
+                });
+                t.Start();
+            }
+
+            PreviewInfoControl2.ItemsSource = PreviewInfoControl.ItemsSource = trackDetailsList;
         }
 
         public SongSearchObject? GetSong()

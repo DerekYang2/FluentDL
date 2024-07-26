@@ -8,7 +8,7 @@ namespace FluentDL.Helpers;
 internal class DateToYearConverter : IValueConverter
 {
     // Converts YYYY-MM-DD to YYYY
-    public object Convert(object value, Type targetType, object parameter, string language)
+    public object Convert(object? value, Type targetType, object parameter, string language)
     {
         if (value == null) return "";
         return value.ToString().Substring(0, 4);
@@ -23,8 +23,9 @@ internal class DateToYearConverter : IValueConverter
 internal class DateVerboseConverter : IValueConverter
 {
     // Converts YYYY-MM-DD to Month DD, YYYY
-    public object Convert(object value, Type targetType, object parameter, string language)
+    public object Convert(object? value, Type targetType, object parameter, string language)
     {
+        if (value == null) return "";
         return DateTime.Parse(value.ToString()).ToString("MMMM dd, yyyy", CultureInfo.InvariantCulture);
     }
 
@@ -37,8 +38,9 @@ internal class DateVerboseConverter : IValueConverter
 internal class DurationConverter : IValueConverter
 {
     // Converts seconds to H hr, M min, S sec
-    public object Convert(object value, Type targetType, object parameter, string language)
+    public object Convert(object? value, Type targetType, object parameter, string language)
     {
+        if (value == null) return "";
         int seconds = int.Parse(value.ToString());
         int sec = seconds % 60;
         seconds /= 60;

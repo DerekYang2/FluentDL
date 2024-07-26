@@ -82,6 +82,12 @@ public class SongSearchObject
         set;
     }
 
+    public string TrackPosition
+    {
+        get;
+        set;
+    }
+
     public SongSearchObject()
     {
     }
@@ -426,7 +432,7 @@ internal class DeezerApi
             ImageLocation = jsonObj.GetProperty("album").GetProperty("cover").GetString(),
             Rank = jsonObj.GetProperty("rank").ToString(),
             Source = "deezer",
-            Title = jsonObj.GetProperty("title").GetString()
+            Title = jsonObj.GetProperty("title").GetString(),
         };
     }
 
@@ -474,7 +480,8 @@ internal class DeezerApi
             Duration = jsonObject.GetProperty("duration").ToString(),
             Rank = jsonObject.GetProperty("rank").ToString(),
             AlbumName = jsonObject.GetProperty("album").GetProperty("title").GetString(),
-            Explicit = jsonObject.GetProperty("explicit_lyrics").GetBoolean()
+            Explicit = jsonObject.GetProperty("explicit_lyrics").GetBoolean(),
+            TrackPosition = jsonObject.GetProperty("track_position").ToString()
         };
     }
 
