@@ -1,4 +1,5 @@
 ﻿using System.Diagnostics;
+using ABI.Microsoft.UI.Xaml.Controls;
 using FluentDL.Activation;
 using FluentDL.Contracts.Services;
 using FluentDL.Core.Contracts.Services;
@@ -97,9 +98,7 @@ public partial class App : Application
                 services.Configure<LocalSettingsOptions>(
                     context.Configuration.GetSection(nameof(LocalSettingsOptions)));
             }).Build();
-
         App.GetService<IAppNotificationService>().Initialize();
-
         UnhandledException += App_UnhandledException;
     }
 

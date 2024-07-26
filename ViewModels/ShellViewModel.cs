@@ -1,19 +1,15 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
-
 using FluentDL.Contracts.Services;
 using FluentDL.Views;
-
 using Microsoft.UI.Xaml.Navigation;
 
 namespace FluentDL.ViewModels;
 
 public partial class ShellViewModel : ObservableRecipient
 {
-    [ObservableProperty]
-    private bool isBackEnabled;
+    [ObservableProperty] private bool isBackEnabled;
 
-    [ObservableProperty]
-    private object? selected;
+    [ObservableProperty] private object? selected;
 
     public INavigationService NavigationService
     {

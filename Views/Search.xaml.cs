@@ -71,6 +71,7 @@ public sealed partial class Search : Page
     private bool failDialogOpen = false;
     private CancellationTokenSource cancellationTokenSource;
     private DispatcherQueue dispatcher;
+    private DispatcherTimer dispatcherTimer;
 
     public SearchViewModel ViewModel
     {
@@ -82,6 +83,7 @@ public sealed partial class Search : Page
         ViewModel = App.GetService<SearchViewModel>();
         InitializeComponent();
         dispatcher = DispatcherQueue.GetForCurrentThread();
+        dispatcherTimer = new DispatcherTimer();
 
         CustomListView.ItemsSource = new ObservableCollection<SongSearchObject>();
         AttachCollectionChangedEvent((ObservableCollection<SongSearchObject>)CustomListView.ItemsSource);
@@ -375,6 +377,7 @@ public sealed partial class Search : Page
         }
     }
 
+    // TODO: youtube queue preview is broken
     private void FailedDialog_OnSecondaryButtonClick(ContentDialog sender, ContentDialogButtonClickEventArgs args)
     {
         /*
@@ -451,6 +454,9 @@ public sealed partial class Search : Page
         {
             QueueViewModel.Add(song);
         }
+
+        PageInfoBar.IsOpen = true;
+        PageInfoBar.Opacity = 1;
     }
 
     // Functions that open dialogs
@@ -464,5 +470,19 @@ public sealed partial class Search : Page
     {
         FailedDialog.XamlRoot = this.XamlRoot;
         var result = await FailedDialog.ShowAsync();
+    }
+
+    // Required for animation to work
+    private void PageInfoBar_OnCloseButtonClick(InfoBar sender, object args)
+    {
+        PageInfoBar.Opacity = 0;
+    }
+
+    // Event handler to close the info bar and stop the timer (only ticks once)
+    private void dispatcherTimer_Tick(object sender, EventArgs e)
+    {
+        PageInfoBar.Opacity = 0;
+        PageInfoBar.IsOpen = false;
+        (sender as DispatcherTimer).Stop();
     }
 }

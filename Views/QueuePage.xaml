@@ -205,5 +205,10 @@
                 </AutoSuggestBox>
             </StackPanel>
         </ContentDialog>
+        <InfoBar Grid.Row="0" Grid.RowSpan="3" Grid.Column="0" Grid.ColumnSpan = "2" x:Name="PageInfoBar" Canvas.ZIndex="1" VerticalAlignment="Bottom" HorizontalAlignment="Center" IsOpen="False" Margin="12" Background="{ThemeResource AcrylicBackgroundFillColorDefaultBrush}">
+            <InfoBar.OpacityTransition>
+                <ScalarTransition />
+            </InfoBar.OpacityTransition>
+        </InfoBar>
     </Grid>
 </Page>

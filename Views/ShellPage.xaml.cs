@@ -1,13 +1,13 @@
 ﻿using FluentDL.Contracts.Services;
 using FluentDL.Helpers;
 using FluentDL.ViewModels;
-
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
-
 using Windows.System;
+using Microsoft.UI.Dispatching;
+using DispatcherQueue = Microsoft.UI.Dispatching.DispatcherQueue;
 
 namespace FluentDL.Views;
 
@@ -18,6 +18,7 @@ public sealed partial class ShellPage : Page
     {
         get;
     }
+
 
     public ShellPage(ShellViewModel viewModel)
     {
@@ -51,13 +52,7 @@ public sealed partial class ShellPage : Page
 
     private void NavigationViewControl_DisplayModeChanged(NavigationView sender, NavigationViewDisplayModeChangedEventArgs args)
     {
-        AppTitleBar.Margin = new Thickness()
-        {
-            Left = sender.CompactPaneLength * (sender.DisplayMode == NavigationViewDisplayMode.Minimal ? 2 : 1),
-            Top = AppTitleBar.Margin.Top,
-            Right = AppTitleBar.Margin.Right,
-            Bottom = AppTitleBar.Margin.Bottom
-        };
+        AppTitleBar.Margin = new Thickness() { Left = sender.CompactPaneLength * (sender.DisplayMode == NavigationViewDisplayMode.Minimal ? 2 : 1), Top = AppTitleBar.Margin.Top, Right = AppTitleBar.Margin.Right, Bottom = AppTitleBar.Margin.Bottom };
     }
 
     private static KeyboardAccelerator BuildKeyboardAccelerator(VirtualKey key, VirtualKeyModifiers? modifiers = null)
