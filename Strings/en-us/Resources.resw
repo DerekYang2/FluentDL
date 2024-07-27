@@ -129,8 +129,8 @@
   <data name="Shell_Queue.Content" xml:space="preserve">
     <value>Queue</value>
   </data>
-  <data name="Shell_ContentGrid.Content" xml:space="preserve">
-    <value>ContentGrid</value>
+  <data name="Shell_LocalExplorer.Content" xml:space="preserve">
+    <value>Local Explorer</value>
   </data>
   <data name="Shell_DataGrid.Content" xml:space="preserve">
     <value>DataGrid</value>

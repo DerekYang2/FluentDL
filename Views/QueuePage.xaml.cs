@@ -219,7 +219,8 @@ public sealed partial class QueuePage : Page
 
     private void StartStopButton_OnClick(object sender, RoutedEventArgs e)
     {
-        if (StartStopText.Text.Equals("Pausing ... ")) // If already attempted a pause
+        const string pauseText = "Pausing ...";
+        if (StartStopText.Text.Equals(pauseText)) // If already attempted a pause
         {
             return;
         }
@@ -227,7 +228,7 @@ public sealed partial class QueuePage : Page
         if (QueueViewModel.IsRunning) // If the queue is running, cancel 
         {
             cancellationTokenSource.Cancel();
-            StartStopText.Text = "Pausing ... ";
+            StartStopText.Text = pauseText;
         }
         else // If the queue is not running, start
         {

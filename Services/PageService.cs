@@ -14,7 +14,7 @@ public class PageService : IPageService
     {
         Configure<SearchViewModel, Search>();
         Configure<QueueViewModel, QueuePage>();
-        Configure<ContentGridViewModel, ContentGridPage>();
+        Configure<LocalExplorerViewModel, LocalExplorerPage>();
         Configure<ContentGridDetailViewModel, ContentGridDetailPage>();
         Configure<DataGridViewModel, DataGridPage>();
         Configure<SettingsViewModel, SettingsPage>();

@@ -1,0 +1,152 @@
+﻿<Page
+    x:Class="FluentDL.Views.LocalExplorerPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:animations="using:CommunityToolkit.WinUI.UI.Animations"
+    xmlns:controls="using:CommunityToolkit.WinUI.UI.Controls"
+    xmlns:models="using:FluentDL.Core.Models"
+    xmlns:views="using:FluentDL.Views"
+    xmlns:services="using:FluentDL.Services"
+    xmlns:helpers="using:FluentDL.Helpers"
+    mc:Ignorable="d"
+    NavigationCacheMode="Required"
+    >
+
+    <Page.Resources>
+        <helpers:DateToYearConverter x:Key="DateToYearConverter" />
+        <helpers:DurationConverter x:Key="DurationConverter" />
+        <helpers:VisibilityConverter x:Key="VisibilityConverter" />
+    </Page.Resources>
+
+    <Grid x:Name="ContentArea">
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="2*" />
+                <ColumnDefinition Width="1*" />
+            </Grid.ColumnDefinitions>
+
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
+
+            <controls:DockPanel Grid.Column="0" Grid.Row="0">
+                <Button x:Name="UploadButton" VerticalAlignment="Center" Margin="0, 0, 0, 0" Background="Transparent"
+                        BorderBrush="Transparent" Click="UploadButton_OnClick">
+                    <StackPanel Orientation="Horizontal">
+                        <FontIcon x:Name="UploadIcon" Glyph="&#xE8F4;" FontSize="16" Margin="0, 0, 8, 0"
+                                  Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}" />
+                        <TextBlock x:Name="UploadText" Text="Upload folder" Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}" />
+                    </StackPanel>
+                </Button>
+
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                    <ComboBox x:Name="SortOrderComboBox" SelectionChanged="SortOrderComboBox_OnSelectionChanged"
+                              Background="Transparent" BorderBrush="Transparent"
+                              PlaceholderText="Sort order:  Ascending" Margin="0, 0, 0,0">
+                        <ComboBox.ItemTemplate>
+                            <DataTemplate x:DataType="views:SortObject">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="{x:Bind Text}" Style="{ThemeResource BodyTextBlockStyle}" />
+                                    <TextBlock Text="{x:Bind Highlight}"
+                                               Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"
+                                               Style="{ThemeResource BodyTextBlockStyle}" />
+                                </StackPanel>
+                            </DataTemplate>
+                        </ComboBox.ItemTemplate>
+                        <ComboBox.Items>
+                            <views:SortObject Text="Sort order:" Highlight="  Ascending" />
+                            <views:SortObject Text="Sort order:" Highlight="  Descending" />
+                        </ComboBox.Items>
+                    </ComboBox>
+                    <ComboBox x:Name="SortComboBox" SelectionChanged="SortComboBox_OnSelectionChanged"
+                              Background="Transparent"
+                              BorderBrush="Transparent" PlaceholderText="Sort by:  Relevance">
+                        <ComboBox.ItemTemplate>
+                            <DataTemplate x:DataType="views:SortObject">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="{x:Bind Text}" Style="{ThemeResource BodyTextBlockStyle}" />
+                                    <TextBlock Text="{x:Bind Highlight}"
+                                               Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"
+                                               Style="{ThemeResource BodyTextBlockStyle}" />
+                                </StackPanel>
+                            </DataTemplate>
+                        </ComboBox.ItemTemplate>
+                        <ComboBox.Items>
+                            <views:SortObject Text="Sort by:" Highlight="  Relevance" />
+                            <views:SortObject Text="Sort by:" Highlight="  A - Z" />
+                            <views:SortObject Text="Sort by:" Highlight="  Artist" />
+                            <views:SortObject Text="Sort by:" Highlight="  Release date" />
+                            <views:SortObject Text="Sort by:" Highlight="  Popularity" />
+                        </ComboBox.Items>
+                    </ComboBox>
+                </StackPanel>
+            </controls:DockPanel>
+
+            <ListView x:Name="FileListView"
+                      CornerRadius="8"
+                      BorderThickness="0"
+                      SelectionChanged="FileListView_OnSelectionChanged"
+                      BorderBrush="{ThemeResource ControlStrongStrokeColorDefaultBrush}"
+                      Grid.Row="3"
+                      Grid.Column="0"
+                      Margin="0,0,0,10">
+                <ListView.ItemTemplate>
+                    <DataTemplate x:DataType="services:SongSearchObject">
+                        <Grid Margin="0,12,0,12" AutomationProperties.Name="{x:Bind Title}">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="76" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <Border CornerRadius="4" Height="76">
+                                <Border.Background>
+                                    <ImageBrush Stretch="UniformToFill" ImageSource="{x:Bind ImageLocation}" />
+                                </Border.Background>
+                            </Border>
+
+                            <StackPanel Margin="15,0,0,0" Grid.Column="1">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="{x:Bind Title}" FontFamily="Segoe UI Variable Display"
+                                               Style="{ThemeResource BodyStrongTextBlockStyle}"
+                                               HorizontalAlignment="Left"
+                                               TextTrimming="CharacterEllipsis" MaxLines="1" Margin="0, 0, 8, 0" />
+                                    <Border Background="DarkGray" CornerRadius="2" Padding="4, 0"
+                                            VerticalAlignment="Center">
+                                        <TextBlock x:Name="ExplicitBadge" Text="E"
+                                                   Style="{ThemeResource CaptionTextBlockStyle}"
+                                                   Foreground="Black"
+                                                   Visibility="{x:Bind Explicit, Converter={StaticResource VisibilityConverter}}" />
+                                    </Border>
+                                </StackPanel>
+                                <TextBlock Text="{x:Bind Artists}" FontFamily="Segoe UI Variable Display"
+                                           Style="{ThemeResource BodyTextBlockStyle}" TextTrimming="CharacterEllipsis"
+                                           MaxLines="1" />
+                            </StackPanel>
+
+                            <StackPanel Margin="15,0,0,0" Orientation="Horizontal" VerticalAlignment="Bottom"
+                                        Grid.Column="1">
+                                <TextBlock Text="{x:Bind ReleaseDate, Converter={StaticResource DateToYearConverter}}"
+                                           HorizontalAlignment="Left"
+                                           Style="{ThemeResource BodyTextBlockStyle}" Margin="0,0,0,0"
+                                           FontFamily="Segoe UI Variable Display" />
+                                <TextBlock Text="&#x2022;" Style="{ThemeResource BodyTextBlockStyle}"
+                                           HorizontalAlignment="Left" Margin="5,0,0,0" />
+                                <TextBlock Text="{x:Bind Duration, Converter={StaticResource DurationConverter}}"
+                                           HorizontalAlignment="Left"
+                                           Style="{ThemeResource BodyTextBlockStyle}" Margin="5,0,0,0"
+                                           FontFamily="Segoe UI Variable Display" />
+                            </StackPanel>
+                        </Grid>
+                    </DataTemplate>
+                </ListView.ItemTemplate>
+            </ListView>
+
+            <views:PreviewPane x:Name="PreviewPanel" Grid.Row="0" Grid.RowSpan="2" Grid.Column="1"
+                               Padding="12"
+                               Margin="12,0,0,12"
+                               VerticalAlignment="Stretch" />
+        </Grid>
+    </Grid>
+</Page>

@@ -213,7 +213,7 @@
         </ContentDialog>
 
     <!-- Content Dialog for cli output-->
-    <ContentDialog x:Name="OutputDialog" PrimaryButtonText="Copy" CloseButtonText="Closethrow"
+    <ContentDialog x:Name="OutputDialog" PrimaryButtonText="Copy" CloseButtonText="Close"
                        Title="Output" IsSecondaryButtonEnabled="True" IsPrimaryButtonEnabled="True"
                        PrimaryButtonClick="OutputDialog_OnPrimaryButtonClick" PrimaryButtonStyle="{ThemeResource AccentButtonStyle}">
             <StackPanel Spacing="12">
