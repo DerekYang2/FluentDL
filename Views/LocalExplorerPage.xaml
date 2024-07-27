@@ -36,9 +36,18 @@
                 <Button x:Name="UploadButton" VerticalAlignment="Center" Margin="0, 0, 0, 0" Background="Transparent"
                         BorderBrush="Transparent" Click="UploadButton_OnClick">
                     <StackPanel Orientation="Horizontal">
-                        <FontIcon x:Name="UploadIcon" Glyph="&#xE8F4;" FontSize="16" Margin="0, 0, 8, 0"
+                        <FontIcon Glyph="&#xE8F4;" FontSize="16" Margin="0, 0, 8, 0"
                                   Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}" />
-                        <TextBlock x:Name="UploadText" Text="Upload folder" Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}" />
+                        <TextBlock Text="Upload folder" Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}" />
+                    </StackPanel>
+                </Button>
+
+                <Button x:Name="UploadFileButton" VerticalAlignment="Center" Margin="0, 0, 0, 0" Background="Transparent"
+                        BorderBrush="Transparent" Click="UploadFileButton_OnClick">
+                    <StackPanel Orientation="Horizontal">
+                        <FontIcon  Glyph="&#xE898;" FontSize="16" Margin="0, 0, 8, 0"
+                                  Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}" />
+                        <TextBlock Text="Upload files" Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}" />
                     </StackPanel>
                 </Button>
 
@@ -148,5 +157,11 @@
                                Margin="12,0,0,12"
                                VerticalAlignment="Stretch" />
         </Grid>
+        <!-- InfoBar -->
+        <InfoBar x:Name="PageInfoBar" Canvas.ZIndex="1" VerticalAlignment="Bottom" HorizontalAlignment="Center" IsOpen="False" Opacity="0" Margin="12" Background="{ThemeResource AcrylicBackgroundFillColorDefaultBrush}" CloseButtonClick="PageInfoBar_OnCloseButtonClick">
+            <InfoBar.OpacityTransition>
+                <ScalarTransition Duration="0:0:0.25"/>
+            </InfoBar.OpacityTransition>
+        </InfoBar>
     </Grid>
 </Page>
