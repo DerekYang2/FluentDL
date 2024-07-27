@@ -34,6 +34,7 @@
     <PackageReference Include="SpotifyAPI.Web" Version="7.1.1" />
     <PackageReference Include="WinUIEx" Version="2.3.2" />
     <PackageReference Include="YoutubeExplode" Version="6.3.16" />
+    <PackageReference Include="z440.atl.core" Version="5.25.0" />
   </ItemGroup>
 
   <ItemGroup>

@@ -105,7 +105,8 @@ public sealed partial class LocalExplorerPage : Page
         {
             StorageApplicationPermissions.FutureAccessList.AddOrReplace("PickedFolderToken", folder);
             // Get all music files in the folder
-            IReadOnlyList<StorageFile> files = new List<StorageFile>();
+            Thread t = new Thread(async () => ProcessFiles(await folder.GetFilesAsync()));
+            t.Start();
         }
         else
         {
@@ -126,6 +127,15 @@ public sealed partial class LocalExplorerPage : Page
         // Open the picker for the user to pick a file
         IReadOnlyList<StorageFile> files = await openPicker.PickMultipleFilesAsync();
 
+        if (files.Count > 0)
+        {
+            ShowInfoBar(InfoBarSeverity.Informational, $"Loading {files.Count} files");
+        }
+        else
+        {
+            ShowInfoBar(InfoBarSeverity.Warning, "No files selected");
+        }
+
         // Create thread to process the files
         Thread t = new Thread(() => ProcessFiles(files));
         t.Start();
@@ -135,7 +145,6 @@ public sealed partial class LocalExplorerPage : Page
     {
         if (files.Count > 0)
         {
-            ShowInfoBar(InfoBarSeverity.Informational, $"Loading {files.Count} files");
             foreach (var file in files)
             {
                 var song = LocalExplorerViewModel.ParseFile(file.Path);
@@ -149,14 +158,20 @@ public sealed partial class LocalExplorerPage : Page
                 }
             }
         }
-        else
-        {
-            ShowInfoBar(InfoBarSeverity.Warning, "No files selected");
-        }
     }
 
-    private void FileListView_OnSelectionChanged(object sender, SelectionChangedEventArgs e)
+    private async void FileListView_OnSelectionChanged(object sender, SelectionChangedEventArgs e)
     {
+        // Get the selected item
+        var selectedSong = (SongSearchObject)FileListView.SelectedItem;
+        if (selectedSong == null)
+        {
+            PreviewPanel.Clear();
+            return;
+        }
+
+        PreviewPanel.Show();
+        await PreviewPanel.Update(selectedSong);
     }
 
     private void SortListView()

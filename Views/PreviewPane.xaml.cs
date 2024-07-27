@@ -19,6 +19,7 @@ using Windows.Media.Core;
 using FluentDL.ViewModels;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
+using ATL;
 using Microsoft.UI.Dispatching;
 
 
@@ -112,6 +113,24 @@ namespace FluentDL.Views
                     });
                 });
                 t.Start();
+            }
+
+            if (selectedSong.Source.Equals("local"))
+            {
+                var track = new Track(selectedSong.Id);
+                System.Collections.Generic.IList<PictureInfo> embeddedPictures = track.EmbeddedPictures;
+                if (embeddedPictures.Count > 0)
+                {
+                    var firstImg = embeddedPictures[0];
+                    // Create bitmap image from byte array
+                    var bitmapImage = new BitmapImage();
+                    using (var stream = new MemoryStream(firstImg.PictureData))
+                    {
+                        await bitmapImage.SetSourceAsync(stream.AsRandomAccessStream());
+                    }
+
+                    PreviewImage.Source = bitmapImage;
+                }
             }
 
             PreviewInfoControl2.ItemsSource = PreviewInfoControl.ItemsSource = trackDetailsList;
