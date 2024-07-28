@@ -117,20 +117,7 @@ namespace FluentDL.Views
 
             if (selectedSong.Source.Equals("local"))
             {
-                var track = new Track(selectedSong.Id);
-                System.Collections.Generic.IList<PictureInfo> embeddedPictures = track.EmbeddedPictures;
-                if (embeddedPictures.Count > 0)
-                {
-                    var firstImg = embeddedPictures[0];
-                    // Create bitmap image from byte array
-                    var bitmapImage = new BitmapImage();
-                    using (var stream = new MemoryStream(firstImg.PictureData))
-                    {
-                        await bitmapImage.SetSourceAsync(stream.AsRandomAccessStream());
-                    }
-
-                    PreviewImage.Source = bitmapImage;
-                }
+                PreviewImage.Source = selectedSong.LocalBitmapImage;
             }
 
             PreviewInfoControl2.ItemsSource = PreviewInfoControl.ItemsSource = trackDetailsList;

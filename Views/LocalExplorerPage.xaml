@@ -111,7 +111,7 @@
                             </Grid.ColumnDefinitions>
                             <Border CornerRadius="4" Height="76">
                                 <Border.Background>
-                                    <ImageBrush Stretch="UniformToFill" ImageSource="{x:Bind ImageLocation}" />
+                                    <ImageBrush Stretch="UniformToFill" ImageSource="{x:Bind LocalBitmapImage}" />
                                 </Border.Background>
                             </Border>
 

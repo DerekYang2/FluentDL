@@ -15,6 +15,7 @@ using ABI.Windows.Data.Json;
 using CommunityToolkit.WinUI.UI.Controls.TextToolbarSymbols;
 using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Media.Imaging;
 using RestSharp;
 using YoutubeExplode.Search;
 
@@ -83,6 +84,12 @@ public class SongSearchObject
     }
 
     public string TrackPosition
+    {
+        get;
+        set;
+    }
+
+    public BitmapImage LocalBitmapImage
     {
         get;
         set;

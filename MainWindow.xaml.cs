@@ -1,7 +1,5 @@
 ﻿using FluentDL.Helpers;
-
 using Windows.UI.ViewManagement;
-
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Controls.Primitives;
@@ -19,7 +17,6 @@ using Windows.Foundation;
 using Windows.Foundation.Collections;
 using RestSharp;
 using System.Text.Json;
-
 using Microsoft.UI.Composition.SystemBackdrops;
 using System.Runtime.InteropServices; // For DllImport
 using WinRT; // required to support Window.As<ICompositionSupportsSystemBackdrop>()
@@ -33,7 +30,7 @@ namespace FluentDL;
 
 public sealed partial class MainWindow : WindowEx
 {
-    private Microsoft.UI.Dispatching.DispatcherQueue dispatcherQueue;
+    public Microsoft.UI.Dispatching.DispatcherQueue dispatcherQueue;
 
     private UISettings settings;
 
