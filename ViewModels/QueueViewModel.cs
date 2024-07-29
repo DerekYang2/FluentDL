@@ -1,79 +1,20 @@
 ﻿using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
+using System.Net;
+using Windows.Storage.Streams;
 using ABI.Microsoft.UI.Dispatching;
 using CommunityToolkit.Mvvm.ComponentModel;
 using FluentDL.Contracts.ViewModels;
 using FluentDL.Core.Contracts.Services;
 using FluentDL.Core.Models;
 using FluentDL.Services;
+using Microsoft.UI.Xaml.Media.Imaging;
 using static System.Net.WebRequestMethods;
 using DispatcherQueue = Microsoft.UI.Dispatching.DispatcherQueue;
 
 namespace FluentDL.ViewModels;
 
-/*
- *    public string Title
-   {
-       get;
-       set;
-   }
-
-   public string ImageLocation
-   {
-       get;
-       set;
-   }
-
-   public string Id
-   {
-       get;
-       set;
-   }
-
-   public string ReleaseDate
-   {
-       get;
-       set;
-   }
-
-   public string Artists
-   {
-       get;
-       set;
-   }
-
-   public string Duration
-   {
-       get;
-       set;
-   }
-
-   public string Rank
-   {
-       get;
-       set;
-   }
-
-   public string AlbumName
-   {
-       get;
-       set;
-   }
-
-   public string Source
-   {
-       get;
-       set;
-   }
-
-   public bool Explicit
-   {
-       get;
-       set;
-   }
-
- */
 public class QueueObject : SongSearchObject
 {
     public string? ResultString
@@ -88,7 +29,6 @@ public class QueueObject : SongSearchObject
         set;
     }
 
-    // TODO: Add all new fields here
     public QueueObject(SongSearchObject song)
     {
         Title = song.Title;
@@ -101,10 +41,10 @@ public class QueueObject : SongSearchObject
         AlbumName = song.AlbumName;
         Source = song.Source;
         Explicit = song.Explicit;
-        LocalBitmapImage = song.LocalBitmapImage;
         TrackPosition = song.TrackPosition;
         ResultString = null;
         IsRunning = false;
+        LocalBitmapImage = song.LocalBitmapImage;
     }
 }
 
@@ -153,6 +93,23 @@ public partial class QueueViewModel : ObservableRecipient
         index = 0;
     }
 
+    public static async Task<IRandomAccessStream?> GetRandomAccessStreamFromUrl(string uri)
+    {
+        try
+        {
+            var client = new HttpClient();
+            var response = await client.GetAsync(uri);
+            response.EnsureSuccessStatusCode();
+            var inputStream = await response.Content.ReadAsStreamAsync();
+            return inputStream.AsRandomAccessStream();
+        }
+        catch (Exception e)
+        {
+            Debug.WriteLine("ERROR CREATING STREAM: " + e.Message);
+            return null;
+        }
+    }
+
     public static void Add(SongSearchObject? song)
     {
         if (song == null || trackSet.Contains(GetHash(song)))
@@ -160,8 +117,32 @@ public partial class QueueViewModel : ObservableRecipient
             return;
         }
 
-        Source.Add(new QueueObject(song));
+        var queueObj = new QueueObject(song);
+        Source.Add(queueObj);
         trackSet.Add(GetHash(song));
+
+        Thread t = new Thread(async () =>
+        {
+            if (queueObj.LocalBitmapImage == null) // Create a local bitmap image for queue objects to prevent disappearing listview images
+            {
+                var memoryStream = await GetRandomAccessStreamFromUrl(queueObj.ImageLocation); // Get the memory stream from the url
+
+                if (memoryStream == null) return;
+
+                dispatcher.TryEnqueue(() =>
+                {
+                    var bitmapImage = new BitmapImage { DecodePixelHeight = 76 }; // Create a new bitmap image
+
+                    // Set the source of the bitmap image
+                    bitmapImage.SetSourceAsync(memoryStream).Completed += (info, status) =>
+                    {
+                        queueObj.LocalBitmapImage = bitmapImage; // Set the local bitmap image
+                        Source[Source.IndexOf(queueObj)] = queueObj; // Refresh the UI
+                    };
+                });
+            }
+        });
+        t.Start();
     }
 
     public static void Remove(SongSearchObject song)

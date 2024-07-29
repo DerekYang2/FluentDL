@@ -26,8 +26,7 @@ public partial class LocalExplorerViewModel : ObservableRecipient
         var track = new Track(path);
         var artistCsv = track.AdditionalFields.TryGetValue("Contributing artists", out var artists) ? artists : track.Artist;
         artistCsv = artistCsv.Replace(";", ", ");
-        var relativePath = "Assets//Unloaded.jpg";
-        var absolutePath = Path.GetFullPath(relativePath);
+
         return new SongSearchObject()
         {
             Source = "local",
@@ -40,7 +39,7 @@ public partial class LocalExplorerViewModel : ObservableRecipient
             TrackPosition = "1",
             Explicit = track.Title.ToLower().Contains("explicit") || track.Title.ToLower().Contains("[e]"),
             Rank = "0",
-            ImageLocation = absolutePath,
+            ImageLocation = null,
             LocalBitmapImage = null
         };
     }
@@ -56,6 +55,25 @@ public partial class LocalExplorerViewModel : ObservableRecipient
             using (var stream = new MemoryStream(firstImg.PictureData))
             {
                 bitmapImage.SetSource(stream.AsRandomAccessStream());
+            }
+
+            return bitmapImage;
+        }
+
+        return null;
+    }
+
+    public static async Task<BitmapImage?> GetBitmapImageAsync(Track track)
+    {
+        System.Collections.Generic.IList<PictureInfo> embeddedPictures = track.EmbeddedPictures;
+        if (embeddedPictures.Count > 0)
+        {
+            var firstImg = embeddedPictures[0];
+            // Create bitmap image from byte array
+            var bitmapImage = new BitmapImage();
+            using (var stream = new MemoryStream(firstImg.PictureData))
+            {
+                await bitmapImage.SetSourceAsync(stream.AsRandomAccessStream());
             }
 
             return bitmapImage;

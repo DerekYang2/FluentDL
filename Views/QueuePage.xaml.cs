@@ -133,7 +133,7 @@ public sealed partial class QueuePage : Page
 
     private void InitPreviewPanelButtons()
     {
-        var downloadButton = new AppBarButton() { Icon = new SymbolIcon(Symbol.Download), Label = "Download" };
+        var copySourceButton = new AppBarButton() { Icon = new SymbolIcon(Symbol.Link), Label = "Copy Source" };
 
         var downloadCoverButton = new AppBarButton() { Icon = new FontIcon { Glyph = "\uEE71" }, Label = "Download Cover" };
 
@@ -150,7 +150,7 @@ public sealed partial class QueuePage : Page
             PreviewPanel.Clear();
         };
 
-        PreviewPanel.SetAppBarButtons(new List<AppBarButton> { downloadButton, downloadCoverButton, removeButton });
+        PreviewPanel.SetAppBarButtons(new List<AppBarButton> { copySourceButton, downloadCoverButton, removeButton });
     }
 
     private async void CustomListView_OnSelectionChanged(object sender, SelectionChangedEventArgs e)

@@ -245,21 +245,15 @@ public sealed partial class LocalExplorerPage : Page
                     {
                         var bitmapImage = new BitmapImage();
                         // No need to set height, aspect ratio is automatically handled
-                        // TODO: Preview pane should use the large image, not this small one
-                        bitmapImage.DecodePixelWidth = 80;
+                        bitmapImage.DecodePixelHeight = 76;
 
                         song.LocalBitmapImage = bitmapImage;
 
                         bitmapImage.SetSourceAsync(memoryStream.AsRandomAccessStream()).Completed += (info, status) =>
                         {
                             // Refresh the listview to show the album art
-                            dispatcher.TryEnqueue(() =>
-                            {
-                                // Find old index of song object
-                                var index = originalList.IndexOf(song);
-                                originalList[index] = song;
-                                ((ObservableCollection<SongSearchObject>)FileListView.ItemsSource)[index] = song;
-                            });
+                            // Find old index of song object
+                            ((ObservableCollection<SongSearchObject>)FileListView.ItemsSource)[originalList.IndexOf(song)] = song;
                         };
                     });
                 }
