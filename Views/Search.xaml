@@ -198,14 +198,14 @@
                                 QuerySubmitted="SearchBox_OnQuerySubmitted"
                                 ToolTipService.ToolTip="Search" />
 
-                <Button Grid.Column="1" x:Name="ShowDialogButton" Click="ShowDialog_OnClick_Click">
+                <Button Grid.Column="1" x:Name="ShowDialogButton" Click="ShowDialog_OnClick_Click" ToolTipService.ToolTip="Open advanced search">
                     <StackPanel Orientation="Horizontal">
                         <FontIcon Glyph="&#xE71C;" FontSize="16" Margin="0, 0, 8, 0" />
                         <TextBlock Text="Advanced" />
                     </StackPanel>
                 </Button>
 
-                <Button Grid.Column="2" x:Name="Help">
+                <Button Grid.Column="2" x:Name="Help" ToolTipService.ToolTip="Open help" Click="Help_OnClick">
                     <StackPanel Orientation="Horizontal">
                         <FontIcon Glyph="&#xE897;" FontSize="16" Margin="0, 0, 8, 0" />
                         <TextBlock Text="Help" />
@@ -217,7 +217,8 @@
             <!-- Second row of buttons -->
             <controls1:DockPanel Grid.Row="1" Grid.Column="0">
                 <Button x:Name="AddToQueueButton" VerticalAlignment="Center" Margin="0, 0, 0, 0" Background="Transparent"
-                        BorderBrush="Transparent" Click="AddToQueueButton_OnClick">
+                        BorderBrush="Transparent" Click="AddToQueueButton_OnClick"
+                        ToolTipService.ToolTip="Add all results to queue">
                     <StackPanel Orientation="Horizontal">
                         <FontIcon x:Name="ResultsIcon" Glyph="&#xE710;" FontSize="16" Margin="0, 0, 8, 0"
                                   Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}" />
@@ -225,7 +226,7 @@
                     </StackPanel>
                 </Button>
                 <Button x:Name="FailedResultsButton" VerticalAlignment="Center" Margin="0, 0, 0, 0"
-                        Background="Transparent" BorderBrush="Transparent" Click="FailedResultsButton_OnClick">
+                        Background="Transparent" BorderBrush="Transparent" Click="FailedResultsButton_OnClick" ToolTipService.ToolTip="Manage failed results">
                     <StackPanel Orientation="Horizontal">
                         <FontIcon x:Name="FailedResultsIcon" Glyph="&#xE7BA;" FontSize="16" Margin="0, 0, 8, 0"
                                   Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}" />
@@ -237,7 +238,7 @@
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
                     <ComboBox x:Name="SortOrderComboBox" SelectionChanged="SortOrder_SelectionChanged"
                               Background="Transparent" BorderBrush="Transparent"
-                              PlaceholderText="Sort order:  Ascending" Margin="0, 0, 0,0">
+                              PlaceholderText="Sort order:  Ascending" Margin="0, 0, 0,0" ToolTipService.ToolTip="Sort from least to greatest value or vice versa">
                         <ComboBox.ItemTemplate>
                             <DataTemplate x:DataType="views:SortObject">
                                 <StackPanel Orientation="Horizontal">
@@ -253,9 +254,9 @@
                             <views:SortObject Text="Sort order:" Highlight="  Descending" />
                         </ComboBox.Items>
                     </ComboBox>
-                    <ComboBox x:Name="SortComboBox" SelectionChanged="SortBox_SelectionChanged"
-                              Background="Transparent"
-                              BorderBrush="Transparent" PlaceholderText="Sort by:  Relevance">
+                    <ComboBox x:Name="SortComboBox" SelectionChanged="SortBox_SelectionChanged" 
+                              Background="Transparent" BorderBrush="Transparent" 
+                              PlaceholderText="Sort by:  Relevance" ToolTipService.ToolTip="Sort results by field">
                         <ComboBox.ItemTemplate>
                             <DataTemplate x:DataType="views:SortObject">
                                 <StackPanel Orientation="Horizontal">
@@ -275,7 +276,7 @@
                         </ComboBox.Items>
                     </ComboBox>
                     <Button x:Name="StopSearchButton" VerticalAlignment="Center" Background="Transparent"
-                            BorderBrush="Transparent" Click="StopSearchButton_OnClick">
+                            BorderBrush="Transparent" Click="StopSearchButton_OnClick" ToolTipService.ToolTip="Stop loading results">
                         <StackPanel Orientation="Horizontal">
                             <FontIcon x:Name="StopSearchIcon" Glyph="&#xE71A;" FontSize="16" Margin="0, 0, 8, 0"
                                       Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}" />

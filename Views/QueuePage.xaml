@@ -41,22 +41,22 @@
             </Button>
             
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8">
-                <Button x:Name="CommandButton" VerticalAlignment="Center" 
-                        Click="CommandButton_OnClick">
+                <Button x:Name="CommandButton" VerticalAlignment="Center" Click="CommandButton_OnClick" 
+                        ToolTipService.ToolTip="Run a command in Command Prompt">
                     <StackPanel Orientation="Horizontal">
                         <FontIcon x:Name="CommandIcon" Glyph="&#xE756;" FontSize="16" Margin="0, 0, 8, 0"/>
                         <TextBlock Text="Run Command"  />
                     </StackPanel>
                 </Button>
-                <Button x:Name="ClearButton" VerticalAlignment="Center" 
-                        Click="ClearButton_OnClick">
+                <Button x:Name="ClearButton" VerticalAlignment="Center" Click="ClearButton_OnClick"
+                        ToolTipService.ToolTip="Clear the queue">
                     <StackPanel Orientation="Horizontal">
                         <FontIcon x:Name="ClearIcon" Glyph="&#xE894;" FontSize="16" Margin="0, 0, 8, 0"/>
                         <TextBlock Text="Clear"  />
                     </StackPanel>
                 </Button>
-                <Button x:Name="StartStopButton" VerticalAlignment="Center" 
-                        Click="StartStopButton_OnClick">
+                <Button x:Name="StartStopButton" VerticalAlignment="Center" Click="StartStopButton_OnClick"
+                        ToolTipService.ToolTip="Pause or continue running the command">
                     <StackPanel Orientation="Horizontal">
                         <FontIcon x:Name="StartStopIcon" Glyph="&#xE768;" FontSize="16" Margin="0, 0, 8, 0"/>
                         <TextBlock x:Name="StartStopText" Text="Continue"  />
@@ -158,27 +158,30 @@
                     IsOpen="True"
                     IsClosable="False"
                     Severity="Informational"
-                    Message="Run custom commands (with Command Prompt) on each queue item. Hover over or click on wildcards below for more details."
+                    Message="Run custom commands (with Command Prompt) on each queue item. Click on the wildcards below for more details."
                     Margin="0,0,0,0" />
                 <StackPanel Orientation="Horizontal" Spacing="4">
-                    <Button Content="%artist%" ToolTipService.ToolTip="The artist of the track">
+                    <Button Content="{}{artist}" ToolTipService.ToolTip="The artist of the track" Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}">
                         <Button.Flyout>
                             <Flyout>
-                                <TextBlock Text="The artist of the track"/>
+                                <TextBlock Width="400" TextWrapping="WrapWholeWords" 
+                                           Text="The artists of the track, comma separated"/>
                             </Flyout>
                         </Button.Flyout>
                     </Button>
-                    <Button Content="%title%" ToolTipService.ToolTip="The title of the track">
+                    <Button Content="{}{title}" ToolTipService.ToolTip="The title of the track" Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}">
                         <Button.Flyout>
                             <Flyout>
-                                <TextBlock Text="The title of the track"/>
+                                <TextBlock Width="400" TextWrapping="WrapWholeWords" 
+                                           Text="The title of the track"/>
                             </Flyout>
                         </Button.Flyout>
                     </Button>
-                    <Button Content="%url%" ToolTipService.ToolTip="The source url of the track">
+                    <Button Content="{}{url}" ToolTipService.ToolTip="The source url of the track" Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}">
                         <Button.Flyout>
                             <Flyout>
-                                <TextBlock Text="The source url of the track (on Deezer, YouTube, etc.)"/>
+                                <TextBlock Width="400" TextWrapping="WrapWholeWords" 
+                                           Text="The source url if online source (eg. https://api.deezer.com/track/123456) or the absolute path if local file (e.g C:/folder/file.extension)"/>
                             </Flyout>
                         </Button.Flyout>
                     </Button>

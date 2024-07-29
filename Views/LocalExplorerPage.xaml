@@ -44,7 +44,7 @@
                     </StackPanel>
                 </Button>
 
-                <Button x:Name="UploadFileButton" VerticalAlignment="Center" Click="UploadFileButton_OnClick">
+                <Button x:Name="UploadFileButton" VerticalAlignment="Center" Click="UploadFileButton_OnClick" ToolTipService.ToolTip="Browse for audio files">
                     <StackPanel Orientation="Horizontal">
                         <FontIcon  Glyph="&#xE898;" FontSize="16" Margin="0, 0, 8, 0"/>
                         <TextBlock Text="Add files"/>

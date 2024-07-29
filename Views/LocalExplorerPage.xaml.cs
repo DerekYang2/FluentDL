@@ -476,7 +476,7 @@ public sealed partial class LocalExplorerPage : Page
     {
         if (originalList.Count == 0)
         {
-            ShowInfoBar(InfoBarSeverity.Warning, "Local explorer empty");
+            ShowInfoBar(InfoBarSeverity.Warning, "No tracks to add");
             return;
         }
 
@@ -489,13 +489,13 @@ public sealed partial class LocalExplorerPage : Page
 
         var addedCount = QueueViewModel.Source.Count - beforeCount;
 
-        if (addedCount == originalList.Count)
+        if (addedCount < originalList.Count)
         {
-            ShowInfoBar(InfoBarSeverity.Success, "All tracks added to queue");
+            ShowInfoBar(InfoBarSeverity.Informational, $"Added {addedCount} tracks to queue (duplicates ignored)");
         }
         else
         {
-            ShowInfoBar(InfoBarSeverity.Informational, $"{addedCount} tracks added to queue (duplicates ignored)");
+            ShowInfoBar(InfoBarSeverity.Success, $"Added {addedCount} tracks to queue");
         }
     }
 }

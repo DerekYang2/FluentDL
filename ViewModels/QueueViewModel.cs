@@ -210,22 +210,20 @@ public partial class QueueViewModel : ObservableRecipient
                     Source[i] = newObj;
                 });
 
-                // Get the url of the current object
-                string url;
-                switch (Source[i].Source)
-                {
-                    case "deezer":
-                        url = "https://www.deezer.com/track/" + Source[i].Id;
-                        break;
-                    case "youtube":
-                        url = "https://www.youtube.com/watch?v=" + Source[i].Id;
-                        break;
-                    default:
-                        url = string.Empty;
-                        break;
-                }
+                var isLocal = Source[i].Source.Equals("local");
 
-                var thisCommand = command.Replace("%title%", Source[i].Title).Replace("%artist%", Source[i].Artists).Replace("%url%", url);
+                // Get the url of the current object
+                var url = Source[i].Source switch
+                {
+                    "deezer" => "https://www.deezer.com/track/" + Source[i].Id,
+                    "youtube" => "https://www.youtube.com/watch?v=" + Source[i].Id,
+                    "local" => Source[i].Id,
+                    _ => string.Empty
+                };
+
+
+                var thisCommand = command.Replace("{url}", url).Replace("{ext}", isLocal ? Path.GetExtension(Source[i].Id) : "").Replace("{title}", Source[i].Title).Replace("{image_url}", Source[i].ImageLocation ?? "").Replace("{id}", isLocal ? "" : Source[i].Id).Replace("{release_date}", Source[i].ReleaseDate).Replace("{artists}", Source[i].Artists).Replace("{duration}", Source[i].Duration).Replace("{album}", Source[i].AlbumName);
+
                 // Run the command
                 var resultStr = TerminalSubprocess.GetRunCommandSync(thisCommand, directory);
 

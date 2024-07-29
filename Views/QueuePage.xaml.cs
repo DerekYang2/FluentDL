@@ -134,6 +134,26 @@ public sealed partial class QueuePage : Page
     private void InitPreviewPanelButtons()
     {
         var copySourceButton = new AppBarButton() { Icon = new SymbolIcon(Symbol.Link), Label = "Copy Source" };
+        copySourceButton.Click += (sender, e) =>
+        {
+            var selectedSong = PreviewPanel.GetSong();
+            var uri = selectedSong.Source switch
+            {
+                "spotify" => $"https://open.spotify.com/track/{selectedSong.Id}",
+                "deezer" => $"https://www.deezer.com/track/{selectedSong.Id}",
+                "youtube" => $"https://www.youtube.com/watch?v={selectedSong.Id}",
+                "local" => selectedSong.Id,
+                _ => null
+            };
+            if (uri == null)
+            {
+                ShowInfoBar(InfoBarSeverity.Error, "Failed to copy source to clipboard");
+                return;
+            }
+
+            Clipboard.CopyToClipboard(uri);
+            ShowInfoBar(InfoBarSeverity.Success, "Copied to clipboard");
+        };
 
         var downloadCoverButton = new AppBarButton() { Icon = new FontIcon { Glyph = "\uEE71" }, Label = "Download Cover" };
 
@@ -363,11 +383,7 @@ public sealed partial class QueuePage : Page
     {
         string text;
         OutputTextBox.Document.GetText(Microsoft.UI.Text.TextGetOptions.None, out text); // Get the text from the RichEditBox
-        // Copy the text to the clipboard
-        var dataPackage = new Windows.ApplicationModel.DataTransfer.DataPackage();
-        dataPackage.SetText(text);
-        Windows.ApplicationModel.DataTransfer.Clipboard.SetContent(dataPackage);
-
+        Clipboard.CopyToClipboard(text);
         ShowInfoBar(InfoBarSeverity.Success, "Copied to clipboard");
     }
 }

@@ -132,11 +132,11 @@ public sealed partial class Search : Page
                 QueueViewModel.Add(PreviewPanel.GetSong());
                 if (QueueViewModel.Source.Count == beforeCount) // No change
                 {
-                    ShowInfoBar(InfoBarSeverity.Informational, $"{PreviewPanel.GetSong().Title} already in queue");
+                    ShowInfoBar(InfoBarSeverity.Warning, $"{PreviewPanel.GetSong().Title} already in queue");
                 }
                 else
                 {
-                    ShowInfoBar(InfoBarSeverity.Informational, $"{PreviewPanel.GetSong().Title} added to queue");
+                    ShowInfoBar(InfoBarSeverity.Success, $"{PreviewPanel.GetSong().Title} added to queue");
                 }
             }
         };
@@ -419,7 +419,7 @@ public sealed partial class Search : Page
         youtubeObj.Source = "youtube";
         youtubeObj.Id = youtubeAlternateList[selectedIndex].Id;
         QueueViewModel.Add(youtubeObj);
-        ShowInfoBar(InfoBarSeverity.Informational, $"{youtubeObj.Title} added to queue");
+        ShowInfoBar(InfoBarSeverity.Success, $"{youtubeObj.Title} added to queue");
     }
 
     private void FailedListView_OnSelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -483,7 +483,7 @@ public sealed partial class Search : Page
         }
         else
         {
-            ShowInfoBar(InfoBarSeverity.Informational, $"Added {addedCount} tracks to queue");
+            ShowInfoBar(InfoBarSeverity.Success, $"Added {addedCount} tracks to queue");
         }
     }
 
@@ -532,6 +532,14 @@ public sealed partial class Search : Page
             {
                 PageInfoBar.IsOpen = false;
             });
+        });
+    }
+
+    private void Help_OnClick(object sender, RoutedEventArgs e)
+    {
+        App.MainWindow.DispatcherQueue.TryEnqueue(() =>
+        {
+            App.MainWindow.ShowMessageDialogAsync("Help message\ntest");
         });
     }
 }
