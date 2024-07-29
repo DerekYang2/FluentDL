@@ -21,6 +21,8 @@ using System.Collections.ObjectModel;
 using System.Diagnostics;
 using ATL;
 using Microsoft.UI.Dispatching;
+using Microsoft.UI.Xaml.Shapes;
+using Newtonsoft.Json.Linq;
 
 
 // To learn more about WinUI, the WinUI project structure,
@@ -83,10 +85,10 @@ namespace FluentDL.Views
 
             var trackDetailsList = new List<TrackDetail>
             {
-                new TrackDetail { Label = "Artists", Value = selectedSong.Artists },
+                new TrackDetail { Label = "Contributing Artists", Value = selectedSong.Artists },
                 new TrackDetail { Label = "Release Date", Value = new DateVerboseConverter().Convert(selectedSong.ReleaseDate, null, null, null).ToString() },
                 new TrackDetail { Label = "Popularity", Value = selectedSong.Rank },
-                new TrackDetail { Label = "Duration", Value = new DurationConverter().Convert(selectedSong.Duration, null, null, null).ToString() },
+                new TrackDetail { Label = "Length", Value = new DurationConverter().Convert(selectedSong.Duration, null, null, null).ToString() },
                 new TrackDetail { Label = "Album", Value = selectedSong.AlbumName },
             };
 
@@ -117,6 +119,23 @@ namespace FluentDL.Views
 
             if (selectedSong.Source.Equals("local"))
             {
+                var track = new Track(selectedSong.Id); // Create track object from file path (id)
+                trackDetailsList = new List<TrackDetail>
+                {
+                    new() { Label = "Contributing Artists", Value = selectedSong.Artists },
+                    new() { Label = "Album", Value = selectedSong.AlbumName },
+                    new() { Label = "Album Artist", Value = track.AlbumArtist ?? track.Artist ?? "N/A" },
+                    new() { Label = "Genre", Value = (track.Genre ?? "N/A").Replace(";", ", ") },
+                    new() { Label = "Length", Value = new DurationConverter().Convert(selectedSong.Duration, null, null, null).ToString() },
+                    new() { Label = "Release Date", Value = new DateVerboseConverter().Convert(selectedSong.ReleaseDate, null, null, null).ToString() },
+                    new() { Label = "Track Position", Value = selectedSong.TrackPosition },
+                    new() { Label = "Type", Value = track.AudioFormat.ShortName },
+                    new() { Label = "Size", Value = GetFileLength(selectedSong.Id) },
+                    new() { Label = "Bit rate", Value = track.Bitrate + " kbps" },
+                    new() { Label = "Channels", Value = track.ChannelsArrangement.Description },
+                    new() { Label = "Sample rate", Value = track.SampleRate + " Hz" },
+                    new() { Label = "Bit depth", Value = track.BitDepth + " bit" },
+                };
                 PreviewImage.Source = selectedSong.LocalBitmapImage;
             }
 
@@ -126,6 +145,33 @@ namespace FluentDL.Views
         public SongSearchObject? GetSong()
         {
             return song;
+        }
+
+        private string GetFileLength(string filePath)
+        {
+            long input = new FileInfo(filePath).Length;
+            string output;
+
+            switch (input.ToString().Length)
+            {
+                case > 12:
+                    output = string.Format("{0:F1} TB", input / 1000000000000.0);
+                    break;
+                case > 9:
+                    output = string.Format("{0:F1} GB", input / 1000000000.0);
+                    break;
+                case > 6:
+                    output = string.Format("{0:F1} MB", input / 1000000.0);
+                    break;
+                case > 3:
+                    output = string.Format("{0:F1} KB", input / 1000.0);
+                    break;
+                default:
+                    output = string.Format("{0} B", input);
+                    break;
+            }
+
+            return output;
         }
     }
 }

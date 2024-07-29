@@ -30,7 +30,7 @@ namespace FluentDL;
 
 public sealed partial class MainWindow : WindowEx
 {
-    public Microsoft.UI.Dispatching.DispatcherQueue dispatcherQueue;
+    private Microsoft.UI.Dispatching.DispatcherQueue dispatcherQueue;
 
     private UISettings settings;
 

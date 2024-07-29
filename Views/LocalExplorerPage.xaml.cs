@@ -8,6 +8,7 @@ using Windows.Storage.AccessCache;
 using Windows.Storage.Pickers;
 using FluentDL.Services;
 using Microsoft.UI.Dispatching;
+using Microsoft.UI.Xaml.Media.Imaging;
 using WinRT.Interop;
 
 namespace FluentDL.Views;
@@ -17,6 +18,7 @@ public sealed partial class LocalExplorerPage : Page
     private ObservableCollection<SongSearchObject> originalList;
     private DispatcherQueue dispatcher;
     private DispatcherTimer dispatcherTimer;
+    private HashSet<string> fileSet;
 
     public LocalExplorerViewModel ViewModel
     {
@@ -37,6 +39,7 @@ public sealed partial class LocalExplorerPage : Page
 
         FileListView.ItemsSource = new ObservableCollection<SongSearchObject>();
         originalList = new ObservableCollection<SongSearchObject>();
+        fileSet = new HashSet<string>();
         InitPreviewPanelButtons();
     }
 
@@ -69,6 +72,7 @@ public sealed partial class LocalExplorerPage : Page
             {
                 ((ObservableCollection<SongSearchObject>)FileListView.ItemsSource).Remove(selectedSong);
                 originalList.Remove(selectedSong);
+                fileSet.Remove(selectedSong.Id);
                 ShowInfoBar(InfoBarSeverity.Informational, $"{selectedSong.Title} removed from local explorer");
                 PreviewPanel.Clear();
             }
@@ -147,13 +151,43 @@ public sealed partial class LocalExplorerPage : Page
         {
             foreach (var file in files)
             {
-                var song = LocalExplorerViewModel.ParseFile(file.Path);
-                if (song != null) // Add song to both the original list and the listview
+                if (fileSet.Contains(file.Path)) // file.Path is the Id of a song
                 {
+                    continue;
+                }
+
+                var song = LocalExplorerViewModel.ParseFile(file.Path);
+
+                if (song == null) continue; // Skip if song is null
+
+                dispatcher.TryEnqueue(() =>
+                {
+                    // Add song to both the original list and the listview
                     originalList.Add(song);
+                    ((ObservableCollection<SongSearchObject>)FileListView.ItemsSource).Add(song);
+                    fileSet.Add(song.Id);
+                });
+
+                var memoryStream = LocalExplorerViewModel.GetAlbumArtMemoryStream(song);
+
+                if (memoryStream != null) // Set album art if available
+                {
                     dispatcher.TryEnqueue(() =>
                     {
-                        ((ObservableCollection<SongSearchObject>)FileListView.ItemsSource).Add(song);
+                        var bitmapImage = new BitmapImage();
+                        song.LocalBitmapImage = bitmapImage;
+
+                        bitmapImage.SetSourceAsync(memoryStream.AsRandomAccessStream()).Completed += (info, status) =>
+                        {
+                            // Refresh the listview to show the album art
+                            dispatcher.TryEnqueue(() =>
+                            {
+                                // Find old index of song object
+                                var index = originalList.IndexOf(song);
+                                originalList[index] = song;
+                                ((ObservableCollection<SongSearchObject>)FileListView.ItemsSource)[index] = song;
+                            });
+                        };
                     });
                 }
             }

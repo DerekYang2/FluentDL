@@ -27,11 +27,6 @@ public partial class LocalExplorerViewModel : ObservableRecipient
         var artistCsv = track.AdditionalFields.TryGetValue("Contributing artists", out var artists) ? artists : track.Artist;
         artistCsv = artistCsv.Replace(";", ", ");
 
-        Debug.WriteLine("ARTIST CSV: " + artistCsv);
-        Debug.WriteLine("Duration: " + track.Duration.ToString());
-        Debug.WriteLine("Release: " + (track.Date).ToString().Substring(0, 10));
-
-
         return new SongSearchObject()
         {
             Source = "local",
@@ -44,7 +39,6 @@ public partial class LocalExplorerViewModel : ObservableRecipient
             TrackPosition = "1",
             Explicit = track.Title.ToLower().Contains("explicit") || track.Title.ToLower().Contains("[e]"),
             Rank = "0",
-            LocalBitmapImage = GetBitmapImage(track)
         };
     }
 
@@ -54,7 +48,6 @@ public partial class LocalExplorerViewModel : ObservableRecipient
         if (embeddedPictures.Count > 0)
         {
             var firstImg = embeddedPictures[0];
-            App.MainWindow.Dispatcher 
             // Create bitmap image from byte array
             var bitmapImage = new BitmapImage();
             using (var stream = new MemoryStream(firstImg.PictureData))
@@ -63,6 +56,20 @@ public partial class LocalExplorerViewModel : ObservableRecipient
             }
 
             return bitmapImage;
+        }
+
+        return null;
+    }
+
+    public static MemoryStream? GetAlbumArtMemoryStream(SongSearchObject song)
+    {
+        var track = new Track(song.Id);
+
+        System.Collections.Generic.IList<PictureInfo> embeddedPictures = track.EmbeddedPictures;
+        if (embeddedPictures.Count > 0)
+        {
+            var firstImg = embeddedPictures[0];
+            return new MemoryStream(firstImg.PictureData);
         }
 
         return null;
