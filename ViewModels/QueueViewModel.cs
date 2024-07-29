@@ -62,7 +62,7 @@ public partial class QueueViewModel : ObservableRecipient
         set;
     } = string.Empty;
 
-    private static DispatcherQueue dispatcher;
+    private static DispatcherQueue dispatcher = DispatcherQueue.GetForCurrentThread();
     private static HashSet<string> trackSet = new HashSet<string>();
     private static int index;
 
@@ -121,6 +121,11 @@ public partial class QueueViewModel : ObservableRecipient
         Source.Add(queueObj);
         trackSet.Add(GetHash(song));
 
+        if (dispatcher == null)
+        {
+            dispatcher = DispatcherQueue.GetForCurrentThread();
+        }
+
         Thread t = new Thread(async () =>
         {
             if (queueObj.LocalBitmapImage == null) // Create a local bitmap image for queue objects to prevent disappearing listview images
@@ -128,6 +133,7 @@ public partial class QueueViewModel : ObservableRecipient
                 var memoryStream = await GetRandomAccessStreamFromUrl(queueObj.ImageLocation); // Get the memory stream from the url
 
                 if (memoryStream == null) return;
+
 
                 dispatcher.TryEnqueue(() =>
                 {
@@ -222,8 +228,7 @@ public partial class QueueViewModel : ObservableRecipient
                 };
 
 
-                var thisCommand = command.Replace("{url}", url).Replace("{ext}", isLocal ? Path.GetExtension(Source[i].Id) : "").Replace("{title}", Source[i].Title).Replace("{image_url}", Source[i].ImageLocation ?? "").Replace("{id}", isLocal ? "" : Source[i].Id).Replace("{release_date}", Source[i].ReleaseDate).Replace("{artists}", Source[i].Artists).Replace("{duration}", Source[i].Duration).Replace("{album}", Source[i].AlbumName);
-
+                var thisCommand = command.Replace("{url}", url).Replace("{ext}", (isLocal ? Path.GetExtension(Source[i].Id) : ".").Substring(1)).Replace("{file_name}", isLocal ? Path.GetFileName(Source[i].Id) : "").Replace("{title}", Source[i].Title).Replace("{image_url}", Source[i].ImageLocation ?? "").Replace("{id}", isLocal ? "" : Source[i].Id).Replace("{release_date}", Source[i].ReleaseDate).Replace("{artists}", Source[i].Artists).Replace("{duration}", Source[i].Duration).Replace("{album}", Source[i].AlbumName);
                 // Run the command
                 var resultStr = TerminalSubprocess.GetRunCommandSync(thisCommand, directory);
 

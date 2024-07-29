@@ -160,33 +160,92 @@
                     Severity="Informational"
                     Message="Run custom commands (with Command Prompt) on each queue item. Click on the wildcards below for more details."
                     Margin="0,0,0,0" />
-                <StackPanel Orientation="Horizontal" Spacing="4">
-                    <Button Content="{}{artist}" ToolTipService.ToolTip="The artist of the track" Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}">
+
+                <ScrollViewer HorizontalAlignment="Stretch" HorizontalScrollBarVisibility="Visible" HorizontalScrollMode="Enabled" VerticalScrollMode="Disabled" 
+                              ToolTipService.ToolTip="Available wildcards">
+                <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,0,0,16">
+                    <Button Content="{}{url}" ToolTipService.ToolTip="The source URL of the track" Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}">
                         <Button.Flyout>
                             <Flyout>
-                                <TextBlock Width="400" TextWrapping="WrapWholeWords" 
-                                           Text="The artists of the track, comma separated"/>
+                                <TextBlock MaxWidth="400" TextWrapping="WrapWholeWords" 
+                                           Text="The source URL if online source (e.g., https://api.deezer.com/track/123456) or the absolute path if local file (e.g., C:/folder/file.extension)"/>
+                            </Flyout>
+                        </Button.Flyout>
+                    </Button>
+                    <Button Content="{}{ext}" ToolTipService.ToolTip="The file extension of the track" Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}">
+                        <Button.Flyout>
+                            <Flyout>
+                                <TextBlock MaxWidth="400" TextWrapping="WrapWholeWords" 
+                                           Text="The file extension of the track WITHOUT the period (e.g., mp3, wav)"/>
+                            </Flyout>
+                        </Button.Flyout>
+                    </Button>
+                    <Button Content="{}{file_name}" ToolTipService.ToolTip="The file name of the track" Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}">
+                        <Button.Flyout>
+                            <Flyout>
+                                <TextBlock MaxWidth="400" TextWrapping="WrapWholeWords" 
+                                           Text="The file name of the track without its extension"/>
                             </Flyout>
                         </Button.Flyout>
                     </Button>
                     <Button Content="{}{title}" ToolTipService.ToolTip="The title of the track" Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}">
                         <Button.Flyout>
                             <Flyout>
-                                <TextBlock Width="400" TextWrapping="WrapWholeWords" 
+                                <TextBlock MaxWidth="400" TextWrapping="WrapWholeWords" 
                                            Text="The title of the track"/>
                             </Flyout>
                         </Button.Flyout>
                     </Button>
-                    <Button Content="{}{url}" ToolTipService.ToolTip="The source url of the track" Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}">
+                    <Button Content="{}{image_url}" ToolTipService.ToolTip="The image URL of the track" Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}">
                         <Button.Flyout>
                             <Flyout>
-                                <TextBlock Width="400" TextWrapping="WrapWholeWords" 
-                                           Text="The source url if online source (eg. https://api.deezer.com/track/123456) or the absolute path if local file (e.g C:/folder/file.extension)"/>
+                                <TextBlock MaxWidth="400" TextWrapping="WrapWholeWords" 
+                                           Text="The image URL of the track (only applicable to online sources)"/>
+                            </Flyout>
+                        </Button.Flyout>
+                    </Button>
+                    <Button Content="{}{id}" ToolTipService.ToolTip="The ID of the track" Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}">
+                        <Button.Flyout>
+                            <Flyout>
+                                <TextBlock MaxWidth="400" TextWrapping="WrapWholeWords" 
+                                           Text="The ID of the track, often a number (only applicable to online sources)"/>
+                            </Flyout>
+                        </Button.Flyout>
+                    </Button>
+                    <Button Content="{}{release_date}" ToolTipService.ToolTip="The release date of the track" Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}">
+                        <Button.Flyout>
+                            <Flyout>
+                                <TextBlock MaxWidth="400" TextWrapping="WrapWholeWords" 
+                                           Text="The release date of the track, format YY-MM-DD"/>
+                            </Flyout>
+                        </Button.Flyout>
+                    </Button>
+                    <Button Content="{}{artists}" ToolTipService.ToolTip="The artists of the track" Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}">
+                        <Button.Flyout>
+                            <Flyout>
+                                <TextBlock MaxWidth="400" TextWrapping="WrapWholeWords" 
+                                           Text="The artists of the track, comma separated (eg. artist1, artist2, artist3)"/>
+                            </Flyout>
+                        </Button.Flyout>
+                    </Button>
+                    <Button Content="{}{duration}" ToolTipService.ToolTip="The duration of the track" Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}">
+                        <Button.Flyout>
+                            <Flyout>
+                                <TextBlock MaxWidth="400" TextWrapping="WrapWholeWords" 
+                                           Text="The duration of the track in seconds (eg. 237)"/>
+                            </Flyout>
+                        </Button.Flyout>
+                    </Button>
+                    <Button Content="{}{album}" ToolTipService.ToolTip="The album name of the track" Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}">
+                        <Button.Flyout>
+                            <Flyout>
+                                <TextBlock MaxWidth="400" TextWrapping="WrapWholeWords" 
+                                           Text="The album name of the track"/>
                             </Flyout>
                         </Button.Flyout>
                     </Button>
                 </StackPanel>
-
+                </ScrollViewer>
                 <AutoSuggestBox x:Name="DirectoryInput" 
                                 PlaceholderText="Directory of command prompt"
                                 HorizontalAlignment="Stretch"
@@ -206,7 +265,8 @@
                                 Margin="0,0,0,8"
                                 ToolTipService.ToolTip="The command to be run in Command Prompt"
                                 TextChanged="CommandInput_OnTextChanged"
-                                SuggestionChosen="CommandInput_OnSuggestionChosen">
+                                SuggestionChosen="CommandInput_OnSuggestionChosen"
+                                >
                     <AutoSuggestBox.Header>
                             <TextBlock Text="Command" Style="{ThemeResource CaptionTextBlockStyle}"
                                        Foreground="{ThemeResource TextFillColorSecondary}" />
