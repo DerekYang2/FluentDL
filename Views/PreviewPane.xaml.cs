@@ -137,6 +137,7 @@ namespace FluentDL.Views
                     new() { Label = "Bit depth", Value = track.BitDepth + " bit" },
                 };
                 PreviewImage.Source = selectedSong.LocalBitmapImage;
+                SongPreviewPlayer.Source = MediaSource.CreateFromUri(new Uri(selectedSong.Id));
             }
 
             PreviewInfoControl2.ItemsSource = PreviewInfoControl.ItemsSource = trackDetailsList;

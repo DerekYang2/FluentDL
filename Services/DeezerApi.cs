@@ -29,7 +29,7 @@ public class SongSearchObject
         set;
     }
 
-    public string ImageLocation
+    public string? ImageLocation
     {
         get;
         set;
@@ -89,7 +89,7 @@ public class SongSearchObject
         set;
     }
 
-    public BitmapImage LocalBitmapImage
+    public BitmapImage? LocalBitmapImage
     {
         get;
         set;

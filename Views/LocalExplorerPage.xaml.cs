@@ -19,6 +19,7 @@ public sealed partial class LocalExplorerPage : Page
     private DispatcherQueue dispatcher;
     private DispatcherTimer dispatcherTimer;
     private HashSet<string> fileSet;
+    private static string[] supportedExtensions = { ".aac", ".mp4", ".m4a", ".m4b", ".caf", ".aax", ".aa", ".aif", ".aiff", ".aifc", ".dts", ".dsd", ".dsf", ".ac3", ".xm", ".flac", ".gym", ".it", ".mid", ".midi", ".ape", ".mp1", ".mp2", ".mp3", ".mpc", ".mod", ".ogg", ".oga", ".opus", ".ofr", ".ofs", ".psf", ".psf1", ".psf2", ".minipsf", ".minipsf1", ".minipsf2", ".ssf", ".minissf", ".dsf", ".minidsf", ".gsf", ".minigsf", ".qsf", ".miniqsf", ".s3m", ".spc", ".tak", ".tta", ".vqf", ".wav", ".bwav", ".bwf", ".vgm", ".vgz", ".wv", ".wma", ".asf" };
 
     public LocalExplorerViewModel ViewModel
     {
@@ -53,6 +54,7 @@ public sealed partial class LocalExplorerPage : Page
             {
                 var beforeCount = QueueViewModel.Source.Count;
                 QueueViewModel.Add(PreviewPanel.GetSong());
+
                 if (QueueViewModel.Source.Count == beforeCount) // No change
                 {
                     ShowInfoBar(InfoBarSeverity.Informational, $"{PreviewPanel.GetSong().Title} already in queue");
@@ -108,19 +110,86 @@ public sealed partial class LocalExplorerPage : Page
         if (folder != null)
         {
             StorageApplicationPermissions.FutureAccessList.AddOrReplace("PickedFolderToken", folder);
+            ShowInfoBar(InfoBarSeverity.Informational, $"Scanning {folder.Name} for audio files ...");
             // Get all music files in the folder
             Thread t = new Thread(async () => ProcessFiles(await folder.GetFilesAsync()));
             t.Start();
         }
         else
         {
+            ShowInfoBar(InfoBarSeverity.Warning, "No folder selected");
         }
     }
 
     private async void UploadFileButton_OnClick(object sender, RoutedEventArgs e)
     {
         // Create a file picker
-        FileOpenPicker openPicker = new() { ViewMode = PickerViewMode.List, FileTypeFilter = { ".mp3", ".aac", ".flac", ".wav" }, SuggestedStartLocation = PickerLocationId.MusicLibrary };
+        FileOpenPicker openPicker = new()
+        {
+            ViewMode = PickerViewMode.List,
+            FileTypeFilter =
+            {
+                ".aac",
+                ".mp4",
+                ".m4a",
+                ".m4b",
+                ".caf",
+                ".aax",
+                ".aa",
+                ".aif",
+                ".aiff",
+                ".aifc",
+                ".dts",
+                ".dsd",
+                ".dsf",
+                ".ac3",
+                ".xm",
+                ".flac",
+                ".gym",
+                ".it",
+                ".mid",
+                ".midi",
+                ".ape",
+                ".mp1",
+                ".mp2",
+                ".mp3",
+                ".mpc",
+                ".mod",
+                ".ogg",
+                ".oga",
+                ".opus",
+                ".ofr",
+                ".ofs",
+                ".psf",
+                ".psf1",
+                ".psf2",
+                ".minipsf",
+                ".minipsf1",
+                ".minipsf2",
+                ".ssf",
+                ".minissf",
+                ".dsf",
+                ".minidsf",
+                ".gsf",
+                ".minigsf",
+                ".qsf",
+                ".miniqsf",
+                ".s3m",
+                ".spc",
+                ".tak",
+                ".tta",
+                ".vqf",
+                ".wav",
+                ".bwav",
+                ".bwf",
+                ".vgm",
+                ".vgz",
+                ".wv",
+                ".wma",
+                ".asf"
+            },
+            SuggestedStartLocation = PickerLocationId.MusicLibrary
+        };
 
         // Retrieve the window handle (HWND) of the current WinUI 3 window.
         var hWnd = WinRT.Interop.WindowNative.GetWindowHandle(App.MainWindow);
@@ -175,6 +244,10 @@ public sealed partial class LocalExplorerPage : Page
                     dispatcher.TryEnqueue(() =>
                     {
                         var bitmapImage = new BitmapImage();
+                        // No need to set height, aspect ratio is automatically handled
+                        // TODO: Preview pane should use the large image, not this small one
+                        bitmapImage.DecodePixelWidth = 80;
+
                         song.LocalBitmapImage = bitmapImage;
 
                         bitmapImage.SetSourceAsync(memoryStream.AsRandomAccessStream()).Completed += (info, status) =>

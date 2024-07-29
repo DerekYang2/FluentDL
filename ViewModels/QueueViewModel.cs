@@ -88,6 +88,7 @@ public class QueueObject : SongSearchObject
         set;
     }
 
+    // TODO: Add all new fields here
     public QueueObject(SongSearchObject song)
     {
         Title = song.Title;
@@ -100,6 +101,8 @@ public class QueueObject : SongSearchObject
         AlbumName = song.AlbumName;
         Source = song.Source;
         Explicit = song.Explicit;
+        LocalBitmapImage = song.LocalBitmapImage;
+        TrackPosition = song.TrackPosition;
         ResultString = null;
         IsRunning = false;
     }

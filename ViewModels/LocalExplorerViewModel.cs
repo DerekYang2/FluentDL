@@ -26,7 +26,8 @@ public partial class LocalExplorerViewModel : ObservableRecipient
         var track = new Track(path);
         var artistCsv = track.AdditionalFields.TryGetValue("Contributing artists", out var artists) ? artists : track.Artist;
         artistCsv = artistCsv.Replace(";", ", ");
-
+        var relativePath = "Assets//Unloaded.jpg";
+        var absolutePath = Path.GetFullPath(relativePath);
         return new SongSearchObject()
         {
             Source = "local",
@@ -39,6 +40,8 @@ public partial class LocalExplorerViewModel : ObservableRecipient
             TrackPosition = "1",
             Explicit = track.Title.ToLower().Contains("explicit") || track.Title.ToLower().Contains("[e]"),
             Rank = "0",
+            ImageLocation = absolutePath,
+            LocalBitmapImage = null
         };
     }
 

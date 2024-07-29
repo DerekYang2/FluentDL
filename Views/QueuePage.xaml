@@ -20,6 +20,8 @@
         <viewModels:QueueViewModel x:Key="QueueViewModel"/>
         <views:QueueMessageConverter  x:Key="QueueMessageConverter"/>
         <views:PathToVisibilityConverter x:Key="PathToVisibilityConverter"/>
+        <helpers:NullVisibilityConverter x:Key="NullVisibilityConverter"/>
+        <helpers:InverseNullVisibilityConverter x:Key="InverseNullVisibilityConverter"/>
     </Page.Resources>
 
     <Grid>
@@ -81,12 +83,19 @@
                             <ColumnDefinition Width="*" />
                             <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
-                        <Border CornerRadius="4" Height="76">
+                        <Border CornerRadius="4" Height="76" Visibility="{x:Bind LocalBitmapImage, Converter={StaticResource InverseNullVisibilityConverter}}">
                             <Border.Background>
                                 <ImageBrush Stretch="UniformToFill">
                                     <ImageBrush.ImageSource>
                                         <BitmapImage UriSource="{x:Bind ImageLocation}"/>
                                     </ImageBrush.ImageSource>
+                                </ImageBrush>
+                            </Border.Background>
+                        </Border>
+
+                        <Border Grid.Column="0" CornerRadius="4" Height="76" Visibility="{x:Bind LocalBitmapImage, Converter={StaticResource NullVisibilityConverter}}">
+                            <Border.Background>
+                                <ImageBrush Stretch="UniformToFill" ImageSource="{x:Bind LocalBitmapImage}">
                                 </ImageBrush>
                             </Border.Background>
                         </Border>

@@ -69,3 +69,31 @@ internal class VisibilityConverter : IValueConverter
         throw new NotImplementedException();
     }
 }
+
+internal class NullVisibilityConverter : IValueConverter
+{
+    // Converts imagelocation path to Visibility
+    public object Convert(object? value, Type targetType, object parameter, string language)
+    {
+        return (value != null) ? Microsoft.UI.Xaml.Visibility.Visible : Microsoft.UI.Xaml.Visibility.Collapsed;
+    }
+
+    public object ConvertBack(object value, Type targetType, object parameter, string language)
+    {
+        throw new NotImplementedException();
+    }
+}
+
+internal class InverseNullVisibilityConverter : IValueConverter
+{
+    // Converts imagelocation path to Visibility (inverted)
+    public object Convert(object? value, Type targetType, object parameter, string language)
+    {
+        return (value == null) ? Microsoft.UI.Xaml.Visibility.Visible : Microsoft.UI.Xaml.Visibility.Collapsed;
+    }
+
+    public object ConvertBack(object value, Type targetType, object parameter, string language)
+    {
+        throw new NotImplementedException();
+    }
+}
