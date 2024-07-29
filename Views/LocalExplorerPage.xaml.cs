@@ -1,5 +1,6 @@
 ﻿using System.Collections.ObjectModel;
 using System.Diagnostics;
+using System.Linq.Expressions;
 using FluentDL.ViewModels;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
@@ -19,7 +20,68 @@ public sealed partial class LocalExplorerPage : Page
     private DispatcherQueue dispatcher;
     private DispatcherTimer dispatcherTimer;
     private HashSet<string> fileSet;
-    private static string[] supportedExtensions = { ".aac", ".mp4", ".m4a", ".m4b", ".caf", ".aax", ".aa", ".aif", ".aiff", ".aifc", ".dts", ".dsd", ".dsf", ".ac3", ".xm", ".flac", ".gym", ".it", ".mid", ".midi", ".ape", ".mp1", ".mp2", ".mp3", ".mpc", ".mod", ".ogg", ".oga", ".opus", ".ofr", ".ofs", ".psf", ".psf1", ".psf2", ".minipsf", ".minipsf1", ".minipsf2", ".ssf", ".minissf", ".dsf", ".minidsf", ".gsf", ".minigsf", ".qsf", ".miniqsf", ".s3m", ".spc", ".tak", ".tta", ".vqf", ".wav", ".bwav", ".bwf", ".vgm", ".vgz", ".wv", ".wma", ".asf" };
+
+    private static HashSet<string> supportedExtensions = new()
+    {
+        ".aac",
+        ".mp4",
+        ".m4a",
+        ".m4b",
+        ".caf",
+        ".aax",
+        ".aa",
+        ".aif",
+        ".aiff",
+        ".aifc",
+        ".dts",
+        ".dsd",
+        ".dsf",
+        ".ac3",
+        ".xm",
+        ".flac",
+        ".gym",
+        ".it",
+        ".mid",
+        ".midi",
+        ".ape",
+        ".mp1",
+        ".mp2",
+        ".mp3",
+        ".mpc",
+        ".mod",
+        ".ogg",
+        ".oga",
+        ".opus",
+        ".ofr",
+        ".ofs",
+        ".psf",
+        ".psf1",
+        ".psf2",
+        ".minipsf",
+        ".minipsf1",
+        ".minipsf2",
+        ".ssf",
+        ".minissf",
+        ".dsf",
+        ".minidsf",
+        ".gsf",
+        ".minigsf",
+        ".qsf",
+        ".miniqsf",
+        ".s3m",
+        ".spc",
+        ".tak",
+        ".tta",
+        ".vqf",
+        ".wav",
+        ".bwav",
+        ".bwf",
+        ".vgm",
+        ".vgz",
+        ".wv",
+        ".wma",
+        ".asf"
+    };
 
     public LocalExplorerViewModel ViewModel
     {
@@ -42,6 +104,15 @@ public sealed partial class LocalExplorerPage : Page
         originalList = new ObservableCollection<SongSearchObject>();
         fileSet = new HashSet<string>();
         InitPreviewPanelButtons();
+
+        // Attach changed event for originalList (when any songs are added or removed from the local explorer)
+        originalList.CollectionChanged += (sender, e) =>
+        {
+            SetResultsAmount(originalList.Count);
+        };
+
+        // Set first
+        SetResultsAmount(0);
     }
 
     private void InitPreviewPanelButtons()
@@ -61,7 +132,7 @@ public sealed partial class LocalExplorerPage : Page
                 }
                 else
                 {
-                    ShowInfoBar(InfoBarSeverity.Informational, $"{PreviewPanel.GetSong().Title} added to queue");
+                    ShowInfoBar(InfoBarSeverity.Success, $"{PreviewPanel.GetSong().Title} added to queue");
                 }
             }
         };
@@ -75,7 +146,7 @@ public sealed partial class LocalExplorerPage : Page
                 ((ObservableCollection<SongSearchObject>)FileListView.ItemsSource).Remove(selectedSong);
                 originalList.Remove(selectedSong);
                 fileSet.Remove(selectedSong.Id);
-                ShowInfoBar(InfoBarSeverity.Informational, $"{selectedSong.Title} removed from local explorer");
+                ShowInfoBar(InfoBarSeverity.Success, $"{selectedSong.Title} removed from local explorer");
                 PreviewPanel.Clear();
             }
         };
@@ -84,12 +155,28 @@ public sealed partial class LocalExplorerPage : Page
         PreviewPanel.SetAppBarButtons(new List<AppBarButton> { addButton, removeButton, openButton });
     }
 
+    public void SetResultsAmount(int amount)
+    {
+        if (amount == 0)
+        {
+            ResultsText.Text = "No results";
+            ResultsIcon.Visibility = Visibility.Collapsed; // Hide plus icon
+        }
+        else
+        {
+            ResultsText.Text = "Add " + amount + " to queue";
+            ResultsIcon.Visibility = Visibility.Visible; // Show plus icon
+        }
+    }
+
     private void SortOrderComboBox_OnSelectionChanged(object sender, SelectionChangedEventArgs e)
     {
+        SortListView();
     }
 
     private void SortComboBox_OnSelectionChanged(object sender, SelectionChangedEventArgs e)
     {
+        SortListView();
     }
 
     private async void UploadButton_OnClick(object sender, RoutedEventArgs e)
@@ -119,6 +206,8 @@ public sealed partial class LocalExplorerPage : Page
         {
             ShowInfoBar(InfoBarSeverity.Warning, "No folder selected");
         }
+
+        SortListView();
     }
 
     private async void UploadFileButton_OnClick(object sender, RoutedEventArgs e)
@@ -202,7 +291,7 @@ public sealed partial class LocalExplorerPage : Page
 
         if (files.Count > 0)
         {
-            ShowInfoBar(InfoBarSeverity.Informational, $"Loading {files.Count} files");
+            ShowInfoBar(InfoBarSeverity.Informational, $"Loading {files.Count} files ...");
         }
         else
         {
@@ -212,15 +301,27 @@ public sealed partial class LocalExplorerPage : Page
         // Create thread to process the files
         Thread t = new Thread(() => ProcessFiles(files));
         t.Start();
+
+        SortListView();
     }
 
     private void ProcessFiles(IReadOnlyList<StorageFile> files)
     {
         if (files.Count > 0)
         {
+            // Start loading
+            dispatcher.TryEnqueue(() =>
+            {
+                LoadProgress.IsIndeterminate = true;
+                // Disable certain buttons
+                ClearButton.IsEnabled = false;
+                SortComboBox.IsEnabled = false;
+                SortOrderComboBox.IsEnabled = false;
+            });
+
             foreach (var file in files)
             {
-                if (fileSet.Contains(file.Path)) // file.Path is the Id of a song
+                if (fileSet.Contains(file.Path) || !supportedExtensions.Contains(file.FileType.ToLower())) // file.Path is the Id of a song
                 {
                     continue;
                 }
@@ -252,12 +353,22 @@ public sealed partial class LocalExplorerPage : Page
                         bitmapImage.SetSourceAsync(memoryStream.AsRandomAccessStream()).Completed += (info, status) =>
                         {
                             // Refresh the listview to show the album art
-                            // Find old index of song object
-                            ((ObservableCollection<SongSearchObject>)FileListView.ItemsSource)[originalList.IndexOf(song)] = song;
+                            var index = ((ObservableCollection<SongSearchObject>)FileListView.ItemsSource).IndexOf(song);
+                            ((ObservableCollection<SongSearchObject>)FileListView.ItemsSource)[index] = song;
                         };
                     });
                 }
             }
+
+            // End loading
+            dispatcher.TryEnqueue(() =>
+            {
+                LoadProgress.IsIndeterminate = false;
+                // Re-enable buttons
+                ClearButton.IsEnabled = true;
+                SortComboBox.IsEnabled = true;
+                SortOrderComboBox.IsEnabled = true;
+            });
         }
     }
 
@@ -290,7 +401,7 @@ public sealed partial class LocalExplorerPage : Page
         switch (selectedIndex)
         {
             case 0:
-                songList = originalList.ToList(); // SongSearchObject
+                songList = originalList.ToList(); // Default order
                 break;
             case 1:
                 songList = songList.OrderBy(song => song.Title).ToList();
@@ -302,7 +413,10 @@ public sealed partial class LocalExplorerPage : Page
                 songList = songList.OrderBy(song => song.ReleaseDate).ToList();
                 break;
             case 4:
-                songList = songList.OrderBy(song => song.Rank).ToList();
+                songList = songList.OrderBy(song => Path.GetFileName(song.Id)).ToList();
+                break;
+            case 5:
+                songList = songList.OrderBy(song => File.GetCreationTime(song.Id)).ToList();
                 break;
             default:
                 break;
@@ -348,5 +462,40 @@ public sealed partial class LocalExplorerPage : Page
     private void PageInfoBar_OnCloseButtonClick(InfoBar sender, object args)
     {
         PageInfoBar.Opacity = 0;
+    }
+
+    private void ClearButton_OnClick(object sender, RoutedEventArgs e)
+    {
+        originalList.Clear();
+        ((ObservableCollection<SongSearchObject>)FileListView.ItemsSource).Clear();
+        fileSet.Clear();
+        ShowInfoBar(InfoBarSeverity.Success, "Local explorer cleared");
+    }
+
+    private void AddToQueueButton_OnClick(object sender, RoutedEventArgs e)
+    {
+        if (originalList.Count == 0)
+        {
+            ShowInfoBar(InfoBarSeverity.Warning, "Local explorer empty");
+            return;
+        }
+
+        var beforeCount = QueueViewModel.Source.Count;
+
+        foreach (var song in originalList)
+        {
+            QueueViewModel.Add(song);
+        }
+
+        var addedCount = QueueViewModel.Source.Count - beforeCount;
+
+        if (addedCount == originalList.Count)
+        {
+            ShowInfoBar(InfoBarSeverity.Success, "All tracks added to queue");
+        }
+        else
+        {
+            ShowInfoBar(InfoBarSeverity.Informational, $"{addedCount} tracks added to queue (duplicates ignored)");
+        }
     }
 }

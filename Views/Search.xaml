@@ -214,6 +214,7 @@
 
             </Grid>
 
+            <!-- Second row of buttons -->
             <controls1:DockPanel Grid.Row="1" Grid.Column="0">
                 <Button x:Name="AddToQueueButton" VerticalAlignment="Center" Margin="0, 0, 0, 0" Background="Transparent"
                         BorderBrush="Transparent" Click="AddToQueueButton_OnClick">
@@ -284,9 +285,11 @@
                 </StackPanel>
             </controls1:DockPanel>
 
+            <!-- Row 3: Progress bar -->
             <ProgressBar Grid.Column="0" Grid.Row="2" x:Name="SearchProgress" IsIndeterminate="False" Value="0"
                          Margin="0,8,0,12" />
 
+            <!-- Row 4: No results text and listview -->
             <TextBlock x:Name="NoSearchResults" Grid.Column="0" Grid.Row="3" Text="No results found."
                        HorizontalAlignment="Center" VerticalAlignment="Center"
                        Style="{ThemeResource BodyTextBlockStyle}"

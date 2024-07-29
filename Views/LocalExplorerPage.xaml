@@ -35,22 +35,42 @@
             </Grid.RowDefinitions>
 
             <!-- ROW 1 of 4: Command buttons -->
-            <controls:DockPanel Grid.Column="0" Grid.Row="0">
+            <controls:DockPanel Grid.Column="0" Grid.Row="0" Margin="0, 2, 0, 8">
                 <StackPanel Orientation="Horizontal" Spacing="8">
-                <Button x:Name="UploadButton" VerticalAlignment="Center" Click="UploadButton_OnClick" Style="{ThemeResource AccentButtonStyle}">
+                <Button x:Name="UploadButton" VerticalAlignment="Center" Click="UploadButton_OnClick" ToolTipService.ToolTip="Scan a folder for audio files (recursive)">
                     <StackPanel Orientation="Horizontal">
                         <FontIcon Glyph="&#xE8F4;" FontSize="16" Margin="0, 0, 8, 0"/>
                         <TextBlock Text="Add folder"/>
                     </StackPanel>
                 </Button>
 
-                <Button x:Name="UploadFileButton" VerticalAlignment="Center" Click="UploadFileButton_OnClick" Style="{ThemeResource AccentButtonStyle}">
+                <Button x:Name="UploadFileButton" VerticalAlignment="Center" Click="UploadFileButton_OnClick">
                     <StackPanel Orientation="Horizontal">
                         <FontIcon  Glyph="&#xE898;" FontSize="16" Margin="0, 0, 8, 0"/>
                         <TextBlock Text="Add files"/>
                     </StackPanel>
                 </Button>
                 </StackPanel>
+
+                <Button x:Name="ClearButton" HorizontalAlignment="Right" VerticalAlignment="Center" Click="ClearButton_OnClick">
+                    <StackPanel Orientation="Horizontal">
+                        <FontIcon Glyph="&#xE894;" FontSize="16" Margin="0, 0, 8, 0"/>
+                        <TextBlock Text="Clear"/>
+                    </StackPanel>
+                </Button>
+            </controls:DockPanel>
+
+            <!-- ROW 2 of 4: Second row and sort boxes -->
+            <controls:DockPanel Grid.Column="0" Grid.Row="1">
+                <Button x:Name="AddToQueueButton" VerticalAlignment="Center" Margin="0, 0, 0, 0" Background="Transparent"
+                        BorderBrush="Transparent" Click="AddToQueueButton_OnClick">
+                    <StackPanel Orientation="Horizontal">
+                        <FontIcon x:Name="ResultsIcon" Glyph="&#xE710;" FontSize="16" Margin="0, 0, 8, 0"
+                                  Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}" />
+                        <TextBlock x:Name="ResultsText" Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}" />
+                    </StackPanel>
+                </Button>
+
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
                     <ComboBox x:Name="SortOrderComboBox" SelectionChanged="SortOrderComboBox_OnSelectionChanged"
                               Background="Transparent" BorderBrush="Transparent"
@@ -72,7 +92,7 @@
                     </ComboBox>
                     <ComboBox x:Name="SortComboBox" SelectionChanged="SortComboBox_OnSelectionChanged"
                               Background="Transparent"
-                              BorderBrush="Transparent" PlaceholderText="Sort by:  Relevance">
+                              BorderBrush="Transparent" PlaceholderText="Sort by:  Upload order">
                         <ComboBox.ItemTemplate>
                             <DataTemplate x:DataType="views:SortObject">
                                 <StackPanel Orientation="Horizontal">
@@ -84,21 +104,22 @@
                             </DataTemplate>
                         </ComboBox.ItemTemplate>
                         <ComboBox.Items>
-                            <views:SortObject Text="Sort by:" Highlight="  Relevance" />
+                            <views:SortObject Text="Sort by:" Highlight="  Upload order" />
                             <views:SortObject Text="Sort by:" Highlight="  A - Z" />
                             <views:SortObject Text="Sort by:" Highlight="  Artist" />
                             <views:SortObject Text="Sort by:" Highlight="  Release date" />
-                            <views:SortObject Text="Sort by:" Highlight="  Popularity" />
+                            <views:SortObject Text="Sort by:" Highlight="  File name" />
+                            <views:SortObject Text="Sort by:" Highlight="  File creation date" />
                         </ComboBox.Items>
                     </ComboBox>
                 </StackPanel>
             </controls:DockPanel>
 
-            <!-- ROW 2 of 4: Second row and sort boxes -->
-            <controls:DockPanel Grid.Column="0" Grid.Row="1">
-            
-            </controls:DockPanel>
+            <!-- ROW 3 or 4: Progress bar -->
+            <ProgressBar Grid.Column="0" Grid.Row="2" x:Name="LoadProgress" IsIndeterminate="False" Value="0"
+                         Margin="0,8,0,12" />
 
+            <!-- ROW 4 or 4: List view -->
             <ListView x:Name="FileListView"
                       CornerRadius="8"
                       BorderThickness="0"
@@ -106,7 +127,7 @@
                       BorderBrush="{ThemeResource ControlStrongStrokeColorDefaultBrush}"
                       Grid.Row="3"
                       Grid.Column="0"
-                      Margin="0,12,0,10">
+                      Margin="0,0,0,10">
                 <ListView.ItemTemplate>
                     <DataTemplate x:DataType="services:SongSearchObject">
                         <Grid Margin="0,12,0,12" AutomationProperties.Name="{x:Bind Title}">
