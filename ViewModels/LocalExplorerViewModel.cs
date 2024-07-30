@@ -2,6 +2,7 @@
 using System.Diagnostics;
 using System.Windows.Input;
 using ABI.Microsoft.UI.Xaml;
+using AngleSharp.Common;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using FluentDL.Contracts.Services;
@@ -17,13 +18,13 @@ namespace FluentDL.ViewModels;
 
 public class MetadataPair
 {
-    public string Key
+    public string? Key
     {
         get;
         set;
     }
 
-    public string Value
+    public string? Value
     {
         get;
         set;
@@ -38,42 +39,125 @@ public partial class LocalExplorerViewModel : ObservableRecipient
         set;
     } = new ObservableCollection<MetadataPair>();
 
+    private Track currentTrack;
+
     public LocalExplorerViewModel()
     {
     }
 
-    public void SetMetadataList()
+    public void SetMetadataList(SongSearchObject song)
     {
-        // test
-        MetadataList = new ObservableCollection<MetadataPair>
+        // Get all metadata from the song object
+        currentTrack = new Track(song.Id);
+
+        // Only include settable metadata fields
+        MetadataList = new ObservableCollection<MetadataPair>()
         {
-            new MetadataPair { Key = "Title", Value = "Test Title" },
-            new MetadataPair { Key = "Artist", Value = "Test Artist" },
-            new MetadataPair { Key = "Album", Value = "Test Album" },
-            new MetadataPair { Key = "Duration", Value = "Test Duration" },
-            new MetadataPair { Key = "Release Date", Value = "Test Release Date" },
-            new MetadataPair { Key = "Track Position", Value = "Test Track Position" },
-            new MetadataPair { Key = "Explicit", Value = "Test Explicit" },
-            new MetadataPair { Key = "Rank", Value = "Test Rank" }
+            new() { Key = "Title", Value = currentTrack.Title },
+            new() { Key = "Contributing artists", Value = currentTrack.Artist },
+            new() { Key = "Genre", Value = currentTrack.Genre },
+            new() { Key = "Album", Value = currentTrack.Album },
+            new() { Key = "Album artist", Value = currentTrack.AlbumArtist },
+            new() { Key = "ISRC", Value = currentTrack.ISRC },
+            new() { Key = "BPM", Value = currentTrack.BPM.ToString() },
+            new() { Key = "Date", Value = currentTrack.Date.ToString() },
+            new() { Key = "Year", Value = currentTrack.Year.ToString() },
+            new() { Key = "Track number", Value = currentTrack.TrackNumber.ToString() },
+            new() { Key = "Track total", Value = currentTrack.TrackTotal.ToString() },
         };
+
+        foreach (var pair in currentTrack.AdditionalFields)
+        {
+            MetadataList.Add(new MetadataPair() { Key = pair.Key, Value = pair.Value });
+        }
+    }
+
+    public async Task<bool> SaveMetadata()
+    {
+        foreach (var pair in MetadataList) // Update the track with the new metadata
+        {
+            if (pair.Key == "Title")
+            {
+                currentTrack.Title = pair.Value;
+            }
+            else if (pair.Key == "Contributing artists")
+            {
+                currentTrack.Artist = pair.Value;
+            }
+            else if (pair.Key == "Genre")
+            {
+                currentTrack.Genre = pair.Value;
+            }
+            else if (pair.Key == "Album")
+            {
+                currentTrack.Album = pair.Value;
+            }
+            else if (pair.Key == "Album artist")
+            {
+                currentTrack.AlbumArtist = pair.Value;
+            }
+            else if (pair.Key == "ISRC")
+            {
+                currentTrack.ISRC = pair.Value;
+            }
+            else if (pair.Key == "BPM" && !string.IsNullOrWhiteSpace(pair.Value))
+            {
+                if (int.TryParse(pair.Value, out var bpm))
+                {
+                    currentTrack.BPM = bpm;
+                }
+            }
+            else if (pair.Key == "Date" && !string.IsNullOrWhiteSpace(pair.Value))
+            {
+                if (DateTime.TryParse(pair.Value, out var date))
+                {
+                    currentTrack.Date = date;
+                }
+            }
+            else if (pair.Key == "Year" && !string.IsNullOrWhiteSpace(pair.Value))
+            {
+                if (int.TryParse(pair.Value, out var year))
+                {
+                    currentTrack.Year = year;
+                }
+            }
+            else if (pair.Key == "Track number" && !string.IsNullOrWhiteSpace(pair.Value))
+            {
+                if (int.TryParse(pair.Value, out var trackNumber))
+                {
+                    currentTrack.TrackNumber = trackNumber;
+                }
+            }
+            else if (pair.Key == "Track total" && !string.IsNullOrWhiteSpace(pair.Value))
+            {
+                if (int.TryParse(pair.Value, out var trackTotal))
+                {
+                    currentTrack.TrackTotal = trackTotal;
+                }
+            }
+            else
+            {
+                currentTrack.AdditionalFields[pair.Key] = pair.Value;
+            }
+        }
+
+        return await currentTrack.SaveAsync();
     }
 
     public static SongSearchObject? ParseFile(string path)
     {
         var track = new Track(path);
-        var artistCsv = track.AdditionalFields.TryGetValue("Contributing artists", out var artists) ? artists : track.Artist;
-        artistCsv = artistCsv.Replace(";", ", ");
 
         return new SongSearchObject()
         {
             Source = "local",
             Id = path,
             Title = track.Title,
-            Artists = artistCsv,
+            Artists = track.Artist.Replace(";", ", ").Replace("; ", ", "),
             AlbumName = track.Album,
             Duration = track.Duration.ToString(),
             ReleaseDate = track.Date.ToString().Substring(0, 10),
-            TrackPosition = "1",
+            TrackPosition = (track.TrackNumber ?? 1).ToString(),
             Explicit = track.Title.ToLower().Contains("explicit") || track.Title.ToLower().Contains("[e]"),
             Rank = "0",
             ImageLocation = null,

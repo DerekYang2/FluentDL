@@ -91,7 +91,6 @@ public sealed partial class LocalExplorerPage : Page
     public LocalExplorerPage()
     {
         ViewModel = App.GetService<LocalExplorerViewModel>();
-        ViewModel.SetMetadataList();
         InitializeComponent();
 
         dispatcher = DispatcherQueue.GetForCurrentThread();
@@ -160,6 +159,11 @@ public sealed partial class LocalExplorerPage : Page
             {
                 MetadataDialog.XamlRoot = this.XamlRoot;
                 MetadataDialog.ShowAsync();
+                dispatcher.TryEnqueue(() =>
+                {
+                    ViewModel.SetMetadataList(selectedSong);
+                    MetadataTable.ItemsSource = ViewModel.MetadataList;
+                });
             }
         };
 
@@ -509,5 +513,20 @@ public sealed partial class LocalExplorerPage : Page
         {
             ShowInfoBar(InfoBarSeverity.Success, $"Added {addedCount} tracks to queue");
         }
+    }
+
+    private void MetadataDialog_OnPrimaryButtonClick(ContentDialog sender, ContentDialogButtonClickEventArgs args)
+    {
+        ViewModel.SaveMetadata().ContinueWith((task) =>
+        {
+            if (task.Result)
+            {
+                ShowInfoBar(InfoBarSeverity.Success, "Metadata saved");
+            }
+            else
+            {
+                ShowInfoBar(InfoBarSeverity.Error, "Failed to save metadata");
+            }
+        });
     }
 }

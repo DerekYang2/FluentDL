@@ -25,11 +25,16 @@
         <!-- Metadata dialog -->
         <ContentDialog x:Name="MetadataDialog" 
                        Title="Edit Metadata" PrimaryButtonText="Save" CloseButtonText="Cancel" 
-                       PrimaryButtonStyle="{ThemeResource AccentButtonStyle}">
+                       PrimaryButtonStyle="{ThemeResource AccentButtonStyle}" 
+                       PrimaryButtonClick="MetadataDialog_OnPrimaryButtonClick">
+            <ContentDialog.Resources>
+                <x:Double x:Key="ContentDialogMaxWidth">1000</x:Double>
+            </ContentDialog.Resources>
             <controls:DataGrid
+                x:Name="MetadataTable"
                 AutoGenerateColumns="False"
                 GridLinesVisibility="Horizontal"
-                ItemsSource="{x:Bind ViewModel.MetadataList, Mode=OneWay}">
+                ItemsSource="{x:Bind ViewModel.MetadataList}" CanUserSortColumns="True">
                 <controls:DataGrid.Resources>
                     <SolidColorBrush x:Key="DataGridColumnHeaderBackgroundColor" Color="Transparent" />
                     <Color x:Key="DataGridRowSelectedBackgroundColor">Transparent</Color>
@@ -40,7 +45,7 @@
                 </controls:DataGrid.Resources>
                 <controls:DataGrid.Columns>
                     <controls:DataGridTextColumn Binding="{Binding Key}" Header="Key" IsReadOnly="True"/>
-                    <controls:DataGridTextColumn Binding="{Binding Key}" Header="Key" IsReadOnly="False" Foreground="{StaticResource AccentTextFillColorPrimaryBrush}"/>
+                    <controls:DataGridTextColumn Binding="{Binding Value}" Header="Value" IsReadOnly="False" Foreground="{StaticResource AccentTextFillColorPrimaryBrush}"/>
                 </controls:DataGrid.Columns>
             </controls:DataGrid>
         </ContentDialog>
