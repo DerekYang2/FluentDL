@@ -15,10 +15,47 @@ using Microsoft.UI.Xaml.Media.Imaging;
 
 namespace FluentDL.ViewModels;
 
+public class MetadataPair
+{
+    public string Key
+    {
+        get;
+        set;
+    }
+
+    public string Value
+    {
+        get;
+        set;
+    }
+}
+
 public partial class LocalExplorerViewModel : ObservableRecipient
 {
+    public ObservableCollection<MetadataPair> MetadataList
+    {
+        get;
+        set;
+    } = new ObservableCollection<MetadataPair>();
+
     public LocalExplorerViewModel()
     {
+    }
+
+    public void SetMetadataList()
+    {
+        // test
+        MetadataList = new ObservableCollection<MetadataPair>
+        {
+            new MetadataPair { Key = "Title", Value = "Test Title" },
+            new MetadataPair { Key = "Artist", Value = "Test Artist" },
+            new MetadataPair { Key = "Album", Value = "Test Album" },
+            new MetadataPair { Key = "Duration", Value = "Test Duration" },
+            new MetadataPair { Key = "Release Date", Value = "Test Release Date" },
+            new MetadataPair { Key = "Track Position", Value = "Test Track Position" },
+            new MetadataPair { Key = "Explicit", Value = "Test Explicit" },
+            new MetadataPair { Key = "Rank", Value = "Test Rank" }
+        };
     }
 
     public static SongSearchObject? ParseFile(string path)

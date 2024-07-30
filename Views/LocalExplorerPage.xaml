@@ -10,6 +10,7 @@
     xmlns:views="using:FluentDL.Views"
     xmlns:services="using:FluentDL.Services"
     xmlns:helpers="using:FluentDL.Helpers"
+    xmlns:primitives="using:CommunityToolkit.WinUI.UI.Controls.Primitives"
     mc:Ignorable="d"
     NavigationCacheMode="Required"
     >
@@ -21,6 +22,30 @@
     </Page.Resources>
 
     <Grid x:Name="ContentArea">
+        <!-- Metadata dialog -->
+        <ContentDialog x:Name="MetadataDialog" 
+                       Title="Edit Metadata" PrimaryButtonText="Save" CloseButtonText="Cancel" 
+                       PrimaryButtonStyle="{ThemeResource AccentButtonStyle}">
+            <controls:DataGrid
+                AutoGenerateColumns="False"
+                GridLinesVisibility="Horizontal"
+                ItemsSource="{x:Bind ViewModel.MetadataList, Mode=OneWay}">
+                <controls:DataGrid.Resources>
+                    <SolidColorBrush x:Key="DataGridColumnHeaderBackgroundColor" Color="Transparent" />
+                    <Color x:Key="DataGridRowSelectedBackgroundColor">Transparent</Color>
+                    <Color x:Key="DataGridRowSelectedHoveredUnfocusedBackgroundColor">Transparent</Color>
+                    <Color x:Key="DataGridRowSelectedUnfocusedBackgroundColor">Transparent</Color>
+                    <Color x:Key="DataGridRowSelectedHoveredBackgroundColor">Transparent</Color>
+                    <Color x:Key="DataGridRowHoveredBackgroundColor">Transparent</Color>
+                </controls:DataGrid.Resources>
+                <controls:DataGrid.Columns>
+                    <controls:DataGridTextColumn Binding="{Binding Key}" Header="Key" IsReadOnly="True"/>
+                    <controls:DataGridTextColumn Binding="{Binding Key}" Header="Key" IsReadOnly="False" Foreground="{StaticResource AccentTextFillColorPrimaryBrush}"/>
+                </controls:DataGrid.Columns>
+            </controls:DataGrid>
+        </ContentDialog>
+
+        <!-- Main grid -->
         <Grid>
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="2*" />

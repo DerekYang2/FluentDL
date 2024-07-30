@@ -6,6 +6,7 @@ using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 using Windows.System;
+using Windows.UI.Shell;
 using Microsoft.UI.Dispatching;
 using DispatcherQueue = Microsoft.UI.Dispatching.DispatcherQueue;
 

@@ -91,6 +91,7 @@ public sealed partial class LocalExplorerPage : Page
     public LocalExplorerPage()
     {
         ViewModel = App.GetService<LocalExplorerViewModel>();
+        ViewModel.SetMetadataList();
         InitializeComponent();
 
         dispatcher = DispatcherQueue.GetForCurrentThread();
@@ -151,8 +152,19 @@ public sealed partial class LocalExplorerPage : Page
             }
         };
 
+        var editButton = new AppBarButton { Icon = new SymbolIcon(Symbol.Edit), Label = "Edit" };
+        editButton.Click += (sender, e) =>
+        {
+            var selectedSong = PreviewPanel.GetSong();
+            if (selectedSong != null)
+            {
+                MetadataDialog.XamlRoot = this.XamlRoot;
+                MetadataDialog.ShowAsync();
+            }
+        };
+
         var openButton = new AppBarButton { Icon = new FontIcon { Glyph = "\uE8A7" }, Label = "Open" };
-        PreviewPanel.SetAppBarButtons(new List<AppBarButton> { addButton, removeButton, openButton });
+        PreviewPanel.SetAppBarButtons(new List<AppBarButton> { addButton, removeButton, editButton, openButton });
     }
 
     public void SetResultsAmount(int amount)

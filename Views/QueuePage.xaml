@@ -166,7 +166,7 @@
                 <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,0,0,16">
                     <Button Content="{}{url}" ToolTipService.ToolTip="The source URL of the track" Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}">
                         <Button.Flyout>
-                            <Flyout>
+                            <Flyout>    
                                 <TextBlock MaxWidth="400" TextWrapping="WrapWholeWords" 
                                            Text="The source URL if online source (e.g., https://api.deezer.com/track/123456) or the absolute path if local file (e.g., C:/folder/file.extension)"/>
                             </Flyout>
