@@ -123,19 +123,22 @@ public partial class App : Application
     {
         var jsonStr = await App.GetService<ILocalSettingsService>().ReadSettingAsync<string>("PendingMetadata");
         Debug.WriteLine(jsonStr);
-        if (jsonStr != null)
+        if (!string.IsNullOrWhiteSpace(jsonStr))
         {
-            pendingMetadataJsonObject = JsonNode.Parse(jsonStr).AsObject();
-            foreach (var item in pendingMetadataJsonObject["List"].AsArray())
+            var rootObject = JsonNode.Parse(jsonStr).AsObject();
+            foreach (var item in rootObject["List"].AsArray())
             {
                 Debug.WriteLine("SUCCESS: " + MetadataJson.SaveTrack(item.AsObject()));
             }
+
+            foreach (var logItem in log.messages)
+            {
+                Debug.WriteLine(logItem.Message);
+            }
         }
 
-        foreach (var logItem in log.messages)
-        {
-            Debug.WriteLine(logItem.Message);
-        }
+        // Clear pending metadata updates
+        await App.GetService<ILocalSettingsService>().SaveSettingAsync("PendingMetadata", "");
     }
 
     private void App_UnhandledException(object sender, Microsoft.UI.Xaml.UnhandledExceptionEventArgs e)
@@ -157,7 +160,10 @@ public partial class App : Application
         await LocalCommands.Init();
 
         // Write pending metadata updates
-        UpdateMetadata();
+        Thread t = new Thread(async () =>
+            await UpdateMetadata()
+        );
+        t.Start();
     }
 
     public static void AddMetadataUpdate(MetadataJson metadata)
@@ -204,6 +210,12 @@ public class MetadataJson
         set;
     }
 
+    public string? ImagePath
+    {
+        get;
+        set;
+    } = null;
+
     public List<MetadataPair> MetadataList
     {
         get;
@@ -213,6 +225,8 @@ public class MetadataJson
     public JsonObject GetJsonObject()
     {
         var rootNode = new JsonObject { ["Path"] = Path, ["MetadataList"] = new JsonArray() };
+
+        rootNode["ImagePath"] = ImagePath ?? "";
 
         foreach (var pair in MetadataList)
         {
@@ -224,7 +238,31 @@ public class MetadataJson
 
     public static bool SaveTrack(JsonObject jsonObj)
     {
-        var track = new Track(jsonObj["Path"].GetValue<string>());
+        var path = jsonObj["Path"].GetValue<string>();
+        var imagePath = jsonObj["ImagePath"].GetValue<string>();
+
+        // Check if path still exists 
+        if (!File.Exists(path))
+        {
+            return false;
+        }
+
+        var track = new Track(path);
+
+        if (File.Exists(imagePath)) // Save image if it exists
+        {
+            PictureInfo newPicture = PictureInfo.fromBinaryData(System.IO.File.ReadAllBytes(imagePath), PictureInfo.PIC_TYPE.Front);
+            // Append to front if pictures already exist
+            if (track.EmbeddedPictures.Count > 0)
+            {
+                //track.EmbeddedPictures.RemoveAt(0);
+                track.EmbeddedPictures.Insert(0, newPicture);
+            }
+            else
+            {
+                track.EmbeddedPictures.Add(newPicture);
+            }
+        }
 
         foreach (var pair in jsonObj["MetadataList"].AsArray())
         {
@@ -263,14 +301,8 @@ public class MetadataJson
             {
                 if (DateTime.TryParse(pair["Value"].GetValue<string>(), out var date))
                 {
+                    track.AdditionalFields["YEAR"] = date.Year.ToString();
                     track.Date = date;
-                }
-            }
-            else if (pair["Key"].GetValue<string>() == "Year" && !string.IsNullOrWhiteSpace(pair["Value"].GetValue<string>()))
-            {
-                if (int.TryParse(pair["Value"].GetValue<string>(), out var year))
-                {
-                    track.Year = year;
                 }
             }
             else if (pair["Key"].GetValue<string>() == "Track number" && !string.IsNullOrWhiteSpace(pair["Value"].GetValue<string>()))

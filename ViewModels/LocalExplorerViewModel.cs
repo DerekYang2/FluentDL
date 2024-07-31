@@ -40,11 +40,12 @@ public partial class LocalExplorerViewModel : ObservableRecipient
         set;
     } = new ObservableCollection<MetadataPair>();
 
+    private Track currentTrack = new Track();
+    private string imgPath = "";
+
     public LocalExplorerViewModel()
     {
     }
-
-    private Track currentTrack = new Track();
 
 
     public void SetMetadataList(SongSearchObject song)
@@ -55,17 +56,16 @@ public partial class LocalExplorerViewModel : ObservableRecipient
         // Only include settable metadata fields
         MetadataList = new ObservableCollection<MetadataPair>()
         {
-            new() { Key = "Title", Value = currentTrack.Title },
-            new() { Key = "Contributing artists", Value = currentTrack.Artist },
-            new() { Key = "Genre", Value = currentTrack.Genre },
-            new() { Key = "Album", Value = currentTrack.Album },
-            new() { Key = "Album artist", Value = currentTrack.AlbumArtist },
-            new() { Key = "ISRC", Value = currentTrack.ISRC },
-            new() { Key = "BPM", Value = currentTrack.BPM.ToString() },
-            new() { Key = "Date", Value = currentTrack.Date.ToString() },
-            new() { Key = "Year", Value = currentTrack.Year.ToString() },
-            new() { Key = "Track number", Value = currentTrack.TrackNumber.ToString() },
-            new() { Key = "Track total", Value = currentTrack.TrackTotal.ToString() },
+            new() { Key = "Title", Value = currentTrack.Title ?? "" },
+            new() { Key = "Contributing artists", Value = currentTrack.Artist ?? "" },
+            new() { Key = "Genre", Value = currentTrack.Genre ?? "" },
+            new() { Key = "Album", Value = currentTrack.Album ?? "" },
+            new() { Key = "Album artist", Value = currentTrack.AlbumArtist ?? "" },
+            new() { Key = "ISRC", Value = currentTrack.ISRC ?? "" },
+            new() { Key = "BPM", Value = (currentTrack.BPM ?? 0).ToString() },
+            new() { Key = "Date", Value = (currentTrack.Date ?? new DateTime()).ToString() },
+            new() { Key = "Track number", Value = (currentTrack.TrackNumber ?? 0).ToString() },
+            new() { Key = "Track total", Value = (currentTrack.TrackTotal ?? 0).ToString() },
         };
 
         foreach (var pair in currentTrack.AdditionalFields)
@@ -74,9 +74,14 @@ public partial class LocalExplorerViewModel : ObservableRecipient
         }
     }
 
+    public void SetImagePath(string path)
+    {
+        imgPath = path;
+    }
+
     public void SaveMetadata()
     {
-        var metadataJson = new MetadataJson() { Path = currentTrack.Path, MetadataList = MetadataList.ToList() };
+        var metadataJson = new MetadataJson() { Path = currentTrack.Path, MetadataList = MetadataList.ToList(), ImagePath = imgPath };
         App.AddMetadataUpdate(metadataJson);
     }
 
@@ -89,7 +94,7 @@ public partial class LocalExplorerViewModel : ObservableRecipient
             Source = "local",
             Id = path,
             Title = track.Title,
-            Artists = track.Artist.Replace(";", ", ").Replace("; ", ", "),
+            Artists = track.Artist.Replace("; ", ", ").Replace(";", ", "),
             AlbumName = track.Album,
             Duration = track.Duration.ToString(),
             ReleaseDate = track.Date.ToString().Substring(0, 10),

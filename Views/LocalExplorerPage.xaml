@@ -12,6 +12,7 @@
     xmlns:helpers="using:FluentDL.Helpers"
     xmlns:primitives="using:CommunityToolkit.WinUI.UI.Controls.Primitives"
     mc:Ignorable="d"
+    NavigationCacheMode="Required"
     >
 
     <Page.Resources>
@@ -27,26 +28,48 @@
                        PrimaryButtonStyle="{ThemeResource AccentButtonStyle}" 
                        PrimaryButtonClick="MetadataDialog_OnPrimaryButtonClick">
             <ContentDialog.Resources>
-                <x:Double x:Key="ContentDialogMaxWidth">1000</x:Double>
+                <x:Double x:Key="ContentDialogMaxWidth">700</x:Double>
             </ContentDialog.Resources>
-            <controls:DataGrid
-                x:Name="MetadataTable"
-                AutoGenerateColumns="False"
-                GridLinesVisibility="Horizontal"
-                ItemsSource="{x:Bind ViewModel.MetadataList}" CanUserSortColumns="True">
-                <controls:DataGrid.Resources>
-                    <SolidColorBrush x:Key="DataGridColumnHeaderBackgroundColor" Color="Transparent" />
-                    <Color x:Key="DataGridRowSelectedBackgroundColor">Transparent</Color>
-                    <Color x:Key="DataGridRowSelectedHoveredUnfocusedBackgroundColor">Transparent</Color>
-                    <Color x:Key="DataGridRowSelectedUnfocusedBackgroundColor">Transparent</Color>
-                    <Color x:Key="DataGridRowSelectedHoveredBackgroundColor">Transparent</Color>
-                    <Color x:Key="DataGridRowHoveredBackgroundColor">Transparent</Color>
-                </controls:DataGrid.Resources>
-                <controls:DataGrid.Columns>
-                    <controls:DataGridTextColumn Binding="{Binding Key}" Header="Key" IsReadOnly="True"/>
-                    <controls:DataGridTextColumn Binding="{Binding Value}" Header="Value" IsReadOnly="False" Foreground="{StaticResource AccentTextFillColorPrimaryBrush}"/>
-                </controls:DataGrid.Columns>
-            </controls:DataGrid>
+            <StackPanel Spacing="8">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"></RowDefinition>
+                    </Grid.RowDefinitions>
+                    <Button x:Name="UploadImageButton" Grid.Column="0" Grid.Row="0" CornerRadius="4, 0,0,4" Style="{ThemeResource AccentButtonStyle}"
+                            Click="UploadImageButton_OnClick">
+                        <StackPanel Orientation="Horizontal">
+                            <FontIcon Glyph="&#xEE71;" FontSize="16" Margin="0, 0, 8, 0"/>
+                            <TextBlock Text="Add cover art"/>
+                        </StackPanel>
+                    </Button>
+                    <TextBox x:Name="CoverArtTextBox" Grid.Column="1" Grid.Row="0" PlaceholderText="No image file selected" HorizontalAlignment="Stretch" CornerRadius="0, 4, 4, 0" IsReadOnly="False" TextWrapping="NoWrap"/>
+                    
+                    <controls:DataGrid Grid.Column="0" Grid.ColumnSpan="2" Grid.Row="1"
+                                       Margin="0,12,0,0"
+                                       x:Name="MetadataTable"
+                                       AutoGenerateColumns="False"
+                                       GridLinesVisibility="Horizontal"
+                                       ItemsSource="{x:Bind ViewModel.MetadataList}" CanUserSortColumns="True" BorderThickness="0,1, 0,0" BorderBrush="{ThemeResource SystemControlBackgroundListLowBrush}">
+                        <controls:DataGrid.Resources>
+                            <SolidColorBrush x:Key="DataGridColumnHeaderBackgroundColor" Color="Transparent" />
+                            <Color x:Key="DataGridRowSelectedBackgroundColor">Transparent</Color>
+                            <Color x:Key="DataGridRowSelectedHoveredUnfocusedBackgroundColor">Transparent</Color>
+                            <Color x:Key="DataGridRowSelectedUnfocusedBackgroundColor">Transparent</Color>
+                            <Color x:Key="DataGridRowSelectedHoveredBackgroundColor">Transparent</Color>
+                            <Color x:Key="DataGridRowHoveredBackgroundColor">Transparent</Color>
+                        </controls:DataGrid.Resources>
+                        <controls:DataGrid.Columns>
+                            <controls:DataGridTextColumn Binding="{Binding Key}" Header="Key" IsReadOnly="True" Width="Auto"/>
+                            <controls:DataGridTextColumn Binding="{Binding Value}" Header="Value" IsReadOnly="False" Foreground="{StaticResource AccentTextFillColorPrimaryBrush}"  Width="*" />
+                        </controls:DataGrid.Columns>
+                    </controls:DataGrid>
+                </Grid>
+            </StackPanel>
         </ContentDialog>
 
         <!-- Main grid -->

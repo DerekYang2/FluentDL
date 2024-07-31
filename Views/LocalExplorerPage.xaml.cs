@@ -322,6 +322,24 @@ public sealed partial class LocalExplorerPage : Page
         SortListView();
     }
 
+    private async void UploadImageButton_OnClick(object sender, RoutedEventArgs e)
+    {
+        // Create a file picker
+        FileOpenPicker openPicker = new() { ViewMode = PickerViewMode.Thumbnail, FileTypeFilter = { ".jpg", ".jpeg", ".png", }, SuggestedStartLocation = PickerLocationId.Downloads };
+        // Retrieve the window handle (HWND) of the current WinUI 3 window.
+        var hWnd = WinRT.Interop.WindowNative.GetWindowHandle(App.MainWindow);
+        // Initialize the file picker with the window handle (HWND).
+        WinRT.Interop.InitializeWithWindow.Initialize(openPicker, hWnd);
+        // Open the picker for the user to pick a file
+        var storageFile = await openPicker.PickSingleFileAsync();
+
+        if (storageFile != null)
+        {
+            ViewModel.SetImagePath(storageFile.Path);
+            CoverArtTextBox.Text = storageFile.Path;
+        }
+    }
+
     private void ProcessFiles(IReadOnlyList<StorageFile> files)
     {
         if (files.Count > 0)
