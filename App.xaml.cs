@@ -1,5 +1,10 @@
 ﻿using System.Diagnostics;
+using System.Text.Json;
+using System.Text.Json.Nodes;
 using ABI.Microsoft.UI.Xaml.Controls;
+using AngleSharp.Dom;
+using ATL;
+using ATL.Logging;
 using FluentDL.Activation;
 using FluentDL.Contracts.Services;
 using FluentDL.Core.Contracts.Services;
@@ -40,6 +45,8 @@ public partial class App : Application
         return service;
     }
 
+    LoggingTest log = new LoggingTest();
+
     public static WindowEx MainWindow
     {
         get;
@@ -50,6 +57,8 @@ public partial class App : Application
         get;
         set;
     }
+
+    private static JsonObject pendingMetadataJsonObject;
 
     public App()
     {
@@ -100,6 +109,33 @@ public partial class App : Application
             }).Build();
         App.GetService<IAppNotificationService>().Initialize();
         UnhandledException += App_UnhandledException;
+
+        pendingMetadataJsonObject = new JsonObject { ["List"] = new JsonArray() };
+
+        MainWindow.Closed += async (sender, args) => // Save pending metadata updates on app close, will be applied on restart
+        {
+            var jsonStr = pendingMetadataJsonObject.ToString();
+            await App.GetService<ILocalSettingsService>().SaveSettingAsync("PendingMetadata", jsonStr);
+        };
+    }
+
+    private async Task UpdateMetadata()
+    {
+        var jsonStr = await App.GetService<ILocalSettingsService>().ReadSettingAsync<string>("PendingMetadata");
+        Debug.WriteLine(jsonStr);
+        if (jsonStr != null)
+        {
+            pendingMetadataJsonObject = JsonNode.Parse(jsonStr).AsObject();
+            foreach (var item in pendingMetadataJsonObject["List"].AsArray())
+            {
+                Debug.WriteLine("SUCCESS: " + MetadataJson.SaveTrack(item.AsObject()));
+            }
+        }
+
+        foreach (var logItem in log.messages)
+        {
+            Debug.WriteLine(logItem.Message);
+        }
     }
 
     private void App_UnhandledException(object sender, Microsoft.UI.Xaml.UnhandledExceptionEventArgs e)
@@ -119,5 +155,144 @@ public partial class App : Application
 
         // Fetch previous command list
         await LocalCommands.Init();
+
+        // Write pending metadata updates
+        UpdateMetadata();
+    }
+
+    public static void AddMetadataUpdate(MetadataJson metadata)
+    {
+        var path = metadata.Path;
+
+        // Remove if path already exists
+        var arr = pendingMetadataJsonObject["List"].AsArray();
+        for (int i = 0; i < arr.Count; i++)
+        {
+            if (arr[i]["Path"].GetValue<string>() == path)
+            {
+                pendingMetadataJsonObject["List"].AsArray().RemoveAt(i);
+                break;
+            }
+        }
+
+        pendingMetadataJsonObject["List"].AsArray().Add(metadata.GetJsonObject());
+    }
+}
+
+public class LoggingTest : ILogDevice
+{
+    public Log theLog = new Log();
+    public List<Log.LogItem> messages = new List<Log.LogItem>();
+
+    public LoggingTest()
+    {
+        LogDelegator.SetLog(ref theLog);
+        theLog.Register(this);
+    }
+
+    public void DoLog(Log.LogItem anItem)
+    {
+        messages.Add(anItem);
+    }
+}
+
+public class MetadataJson
+{
+    public string Path
+    {
+        get;
+        set;
+    }
+
+    public List<MetadataPair> MetadataList
+    {
+        get;
+        set;
+    }
+
+    public JsonObject GetJsonObject()
+    {
+        var rootNode = new JsonObject { ["Path"] = Path, ["MetadataList"] = new JsonArray() };
+
+        foreach (var pair in MetadataList)
+        {
+            rootNode["MetadataList"].AsArray().Add(new JsonObject() { ["Key"] = pair.Key, ["Value"] = pair.Value });
+        }
+
+        return rootNode;
+    }
+
+    public static bool SaveTrack(JsonObject jsonObj)
+    {
+        var track = new Track(jsonObj["Path"].GetValue<string>());
+
+        foreach (var pair in jsonObj["MetadataList"].AsArray())
+        {
+            if (pair["Key"].GetValue<string>() == "Title")
+            {
+                track.Title = pair["Value"].GetValue<string>();
+            }
+            else if (pair["Key"].GetValue<string>() == "Contributing artists")
+            {
+                track.Artist = pair["Value"].GetValue<string>();
+            }
+            else if (pair["Key"].GetValue<string>() == "Genre")
+            {
+                track.Genre = pair["Value"].GetValue<string>();
+            }
+            else if (pair["Key"].GetValue<string>() == "Album")
+            {
+                track.Album = pair["Value"].GetValue<string>();
+            }
+            else if (pair["Key"].GetValue<string>() == "Album artist")
+            {
+                track.AlbumArtist = pair["Value"].GetValue<string>();
+            }
+            else if (pair["Key"].GetValue<string>() == "ISRC")
+            {
+                track.ISRC = pair["Value"].GetValue<string>();
+            }
+            else if (pair["Key"].GetValue<string>() == "BPM" && !string.IsNullOrWhiteSpace(pair["Value"].GetValue<string>()))
+            {
+                if (int.TryParse(pair["Value"].GetValue<string>(), out var bpm))
+                {
+                    track.BPM = bpm;
+                }
+            }
+            else if (pair["Key"].GetValue<string>() == "Date" && !string.IsNullOrWhiteSpace(pair["Value"].GetValue<string>()))
+            {
+                if (DateTime.TryParse(pair["Value"].GetValue<string>(), out var date))
+                {
+                    track.Date = date;
+                }
+            }
+            else if (pair["Key"].GetValue<string>() == "Year" && !string.IsNullOrWhiteSpace(pair["Value"].GetValue<string>()))
+            {
+                if (int.TryParse(pair["Value"].GetValue<string>(), out var year))
+                {
+                    track.Year = year;
+                }
+            }
+            else if (pair["Key"].GetValue<string>() == "Track number" && !string.IsNullOrWhiteSpace(pair["Value"].GetValue<string>()))
+            {
+                if (int.TryParse(pair["Value"].GetValue<string>(), out var trackNumber))
+                {
+                    track.TrackNumber = trackNumber;
+                }
+            }
+            else if (pair["Key"].GetValue<string>() == "Track total" && !string.IsNullOrWhiteSpace(pair["Value"].GetValue<string>()))
+            {
+                if (int.TryParse(pair["Value"].GetValue<string>(), out var trackTotal))
+                {
+                    track.TrackTotal = trackTotal;
+                }
+            }
+            else
+            {
+                track.AdditionalFields[pair["Key"].GetValue<string>()] = pair["Value"].GetValue<string>();
+            }
+        }
+
+        return track.Save();
     }
 }

@@ -12,11 +12,10 @@
     xmlns:helpers="using:FluentDL.Helpers"
     xmlns:primitives="using:CommunityToolkit.WinUI.UI.Controls.Primitives"
     mc:Ignorable="d"
-    NavigationCacheMode="Required"
     >
 
     <Page.Resources>
-        <helpers:DateToYearConverter x:Key="DateToYearConverter" />
+        <helpers:DateToYearConverter x:Key="DateToYearConverter"/>
         <helpers:DurationConverter x:Key="DurationConverter" />
         <helpers:VisibilityConverter x:Key="VisibilityConverter" />
     </Page.Resources>

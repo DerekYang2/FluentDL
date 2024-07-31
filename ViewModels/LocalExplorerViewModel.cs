@@ -12,6 +12,7 @@ using FluentDL.Core.Models;
 using FluentDL.Services;
 using ATL.AudioData;
 using ATL;
+using ATL.Logging;
 using Microsoft.UI.Xaml.Media.Imaging;
 
 namespace FluentDL.ViewModels;
@@ -39,11 +40,12 @@ public partial class LocalExplorerViewModel : ObservableRecipient
         set;
     } = new ObservableCollection<MetadataPair>();
 
-    private Track currentTrack;
-
     public LocalExplorerViewModel()
     {
     }
+
+    private Track currentTrack = new Track();
+
 
     public void SetMetadataList(SongSearchObject song)
     {
@@ -72,76 +74,10 @@ public partial class LocalExplorerViewModel : ObservableRecipient
         }
     }
 
-    public async Task<bool> SaveMetadata()
+    public void SaveMetadata()
     {
-        foreach (var pair in MetadataList) // Update the track with the new metadata
-        {
-            if (pair.Key == "Title")
-            {
-                currentTrack.Title = pair.Value;
-            }
-            else if (pair.Key == "Contributing artists")
-            {
-                currentTrack.Artist = pair.Value;
-            }
-            else if (pair.Key == "Genre")
-            {
-                currentTrack.Genre = pair.Value;
-            }
-            else if (pair.Key == "Album")
-            {
-                currentTrack.Album = pair.Value;
-            }
-            else if (pair.Key == "Album artist")
-            {
-                currentTrack.AlbumArtist = pair.Value;
-            }
-            else if (pair.Key == "ISRC")
-            {
-                currentTrack.ISRC = pair.Value;
-            }
-            else if (pair.Key == "BPM" && !string.IsNullOrWhiteSpace(pair.Value))
-            {
-                if (int.TryParse(pair.Value, out var bpm))
-                {
-                    currentTrack.BPM = bpm;
-                }
-            }
-            else if (pair.Key == "Date" && !string.IsNullOrWhiteSpace(pair.Value))
-            {
-                if (DateTime.TryParse(pair.Value, out var date))
-                {
-                    currentTrack.Date = date;
-                }
-            }
-            else if (pair.Key == "Year" && !string.IsNullOrWhiteSpace(pair.Value))
-            {
-                if (int.TryParse(pair.Value, out var year))
-                {
-                    currentTrack.Year = year;
-                }
-            }
-            else if (pair.Key == "Track number" && !string.IsNullOrWhiteSpace(pair.Value))
-            {
-                if (int.TryParse(pair.Value, out var trackNumber))
-                {
-                    currentTrack.TrackNumber = trackNumber;
-                }
-            }
-            else if (pair.Key == "Track total" && !string.IsNullOrWhiteSpace(pair.Value))
-            {
-                if (int.TryParse(pair.Value, out var trackTotal))
-                {
-                    currentTrack.TrackTotal = trackTotal;
-                }
-            }
-            else
-            {
-                currentTrack.AdditionalFields[pair.Key] = pair.Value;
-            }
-        }
-
-        return await currentTrack.SaveAsync();
+        var metadataJson = new MetadataJson() { Path = currentTrack.Path, MetadataList = MetadataList.ToList() };
+        App.AddMetadataUpdate(metadataJson);
     }
 
     public static SongSearchObject? ParseFile(string path)
@@ -191,12 +127,9 @@ public partial class LocalExplorerViewModel : ObservableRecipient
         {
             var firstImg = embeddedPictures[0];
             // Create bitmap image from byte array
+            using var stream = new MemoryStream(firstImg.PictureData);
             var bitmapImage = new BitmapImage();
-            using (var stream = new MemoryStream(firstImg.PictureData))
-            {
-                await bitmapImage.SetSourceAsync(stream.AsRandomAccessStream());
-            }
-
+            await bitmapImage.SetSourceAsync(stream.AsRandomAccessStream());
             return bitmapImage;
         }
 

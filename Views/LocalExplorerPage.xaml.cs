@@ -11,6 +11,7 @@ using FluentDL.Services;
 using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml.Media.Imaging;
 using WinRT.Interop;
+using ATL.Logging;
 
 namespace FluentDL.Views;
 
@@ -307,7 +308,7 @@ public sealed partial class LocalExplorerPage : Page
 
         if (files.Count > 0)
         {
-            ShowInfoBar(InfoBarSeverity.Informational, $"Loading {files.Count} files ...");
+            ShowInfoBar(InfoBarSeverity.Informational, $"Loading {files.Count} files ..."); // TODO: single vs plural
         }
         else
         {
@@ -360,17 +361,19 @@ public sealed partial class LocalExplorerPage : Page
                 {
                     dispatcher.TryEnqueue(() =>
                     {
-                        var bitmapImage = new BitmapImage();
-                        // No need to set height, aspect ratio is automatically handled
-                        bitmapImage.DecodePixelHeight = 76;
+                        var bitmapImage = new BitmapImage
+                        {
+                            // No need to set height, aspect ratio is automatically handled
+                            DecodePixelHeight = 76,
+                        };
 
                         song.LocalBitmapImage = bitmapImage;
-
                         bitmapImage.SetSourceAsync(memoryStream.AsRandomAccessStream()).Completed += (info, status) =>
                         {
                             // Refresh the listview to show the album art
                             var index = ((ObservableCollection<SongSearchObject>)FileListView.ItemsSource).IndexOf(song);
                             ((ObservableCollection<SongSearchObject>)FileListView.ItemsSource)[index] = song;
+                            memoryStream.Dispose();
                         };
                     });
                 }
@@ -482,10 +485,19 @@ public sealed partial class LocalExplorerPage : Page
 
     private void ClearButton_OnClick(object sender, RoutedEventArgs e)
     {
-        originalList.Clear();
-        ((ObservableCollection<SongSearchObject>)FileListView.ItemsSource).Clear();
-        fileSet.Clear();
+        Clear();
         ShowInfoBar(InfoBarSeverity.Success, "Local explorer cleared");
+    }
+
+    public void Clear()
+    {
+        dispatcher.TryEnqueue(() =>
+        {
+            PreviewPanel.Clear();
+            originalList.Clear();
+            ((ObservableCollection<SongSearchObject>)FileListView.ItemsSource).Clear();
+            fileSet.Clear();
+        });
     }
 
     private void AddToQueueButton_OnClick(object sender, RoutedEventArgs e)
@@ -517,16 +529,6 @@ public sealed partial class LocalExplorerPage : Page
 
     private void MetadataDialog_OnPrimaryButtonClick(ContentDialog sender, ContentDialogButtonClickEventArgs args)
     {
-        ViewModel.SaveMetadata().ContinueWith((task) =>
-        {
-            if (task.Result)
-            {
-                ShowInfoBar(InfoBarSeverity.Success, "Metadata saved");
-            }
-            else
-            {
-                ShowInfoBar(InfoBarSeverity.Error, "Failed to save metadata");
-            }
-        });
+        ViewModel.SaveMetadata();
     }
 }

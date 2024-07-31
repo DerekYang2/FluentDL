@@ -143,6 +143,11 @@ namespace FluentDL.Views
             PreviewInfoControl2.ItemsSource = PreviewInfoControl.ItemsSource = trackDetailsList;
         }
 
+        public void ClearMediaPlayerSource()
+        {
+            SongPreviewPlayer.Source = null;
+        }
+
         public SongSearchObject? GetSong()
         {
             return song;
