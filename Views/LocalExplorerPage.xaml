@@ -26,7 +26,7 @@
         <ContentDialog x:Name="MetadataDialog" 
                        Title="Edit Metadata" PrimaryButtonText="Save" CloseButtonText="Cancel" 
                        PrimaryButtonStyle="{ThemeResource AccentButtonStyle}" 
-                       PrimaryButtonClick="MetadataDialog_OnPrimaryButtonClick">
+                       PrimaryButtonClick="MetadataDialog_OnPrimaryButtonClick" CloseButtonClick="MetadataDialog_OnCloseButtonClick">
             <ContentDialog.Resources>
                 <x:Double x:Key="ContentDialogMaxWidth">700</x:Double>
             </ContentDialog.Resources>
@@ -54,7 +54,7 @@
                                        x:Name="MetadataTable"
                                        AutoGenerateColumns="False"
                                        GridLinesVisibility="Horizontal"
-                                       ItemsSource="{x:Bind ViewModel.MetadataList}" CanUserSortColumns="True" BorderThickness="0,1, 0,0" BorderBrush="{ThemeResource SystemControlBackgroundListLowBrush}">
+                                       CanUserSortColumns="True" BorderThickness="0,1, 0,0" BorderBrush="{ThemeResource SystemControlBackgroundListLowBrush}">
                         <controls:DataGrid.Resources>
                             <SolidColorBrush x:Key="DataGridColumnHeaderBackgroundColor" Color="Transparent" />
                             <Color x:Key="DataGridRowSelectedBackgroundColor">Transparent</Color>

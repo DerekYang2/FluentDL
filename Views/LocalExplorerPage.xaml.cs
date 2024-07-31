@@ -159,11 +159,12 @@ public sealed partial class LocalExplorerPage : Page
             if (selectedSong != null)
             {
                 MetadataDialog.XamlRoot = this.XamlRoot;
-                MetadataDialog.ShowAsync();
                 dispatcher.TryEnqueue(() =>
                 {
-                    ViewModel.SetMetadataList(selectedSong);
-                    MetadataTable.ItemsSource = ViewModel.MetadataList;
+                    ViewModel.SetUpdateObject(selectedSong);
+                    MetadataTable.ItemsSource = ViewModel.CurrentMetadataList; // Fill table with the metadata list 
+                    CoverArtTextBox.Text = ViewModel.GetCurrentImagePath();
+                    MetadataDialog.ShowAsync();
                 });
             }
         };
@@ -548,5 +549,10 @@ public sealed partial class LocalExplorerPage : Page
     private void MetadataDialog_OnPrimaryButtonClick(ContentDialog sender, ContentDialogButtonClickEventArgs args)
     {
         ViewModel.SaveMetadata();
+    }
+
+    private void MetadataDialog_OnCloseButtonClick(ContentDialog sender, ContentDialogButtonClickEventArgs args)
+    {
+        ViewModel.DiscardMetadata();
     }
 }

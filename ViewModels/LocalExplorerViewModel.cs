@@ -14,75 +14,80 @@ using ATL.AudioData;
 using ATL;
 using ATL.Logging;
 using Microsoft.UI.Xaml.Media.Imaging;
+using FluentDL.Models;
 
 namespace FluentDL.ViewModels;
 
-public class MetadataPair
-{
-    public string? Key
-    {
-        get;
-        set;
-    }
-
-    public string? Value
-    {
-        get;
-        set;
-    }
-}
-
 public partial class LocalExplorerViewModel : ObservableRecipient
 {
-    public ObservableCollection<MetadataPair> MetadataList
+    private string currentEditPath = ""; // Path of the file currently being edited
+    private Dictionary<string, MetadataUpdateInfo> tmpUpdates = new Dictionary<string, MetadataUpdateInfo>();
+
+    public ObservableCollection<MetadataPair> CurrentMetadataList
     {
         get;
         set;
-    } = new ObservableCollection<MetadataPair>();
-
-    private Track currentTrack = new Track();
-    private string imgPath = "";
+    }
 
     public LocalExplorerViewModel()
     {
     }
 
 
-    public void SetMetadataList(SongSearchObject song)
+    public void SetUpdateObject(SongSearchObject song)
     {
-        // Get all metadata from the song object
-        currentTrack = new Track(song.Id);
+        currentEditPath = song.Id;
 
-        // Only include settable metadata fields
-        MetadataList = new ObservableCollection<MetadataPair>()
+        if (!tmpUpdates.ContainsKey(currentEditPath)) // If the file is not already in the map, add it
         {
-            new() { Key = "Title", Value = currentTrack.Title ?? "" },
-            new() { Key = "Contributing artists", Value = currentTrack.Artist ?? "" },
-            new() { Key = "Genre", Value = currentTrack.Genre ?? "" },
-            new() { Key = "Album", Value = currentTrack.Album ?? "" },
-            new() { Key = "Album artist", Value = currentTrack.AlbumArtist ?? "" },
-            new() { Key = "ISRC", Value = currentTrack.ISRC ?? "" },
-            new() { Key = "BPM", Value = (currentTrack.BPM ?? 0).ToString() },
-            new() { Key = "Date", Value = (currentTrack.Date ?? new DateTime()).ToString() },
-            new() { Key = "Track number", Value = (currentTrack.TrackNumber ?? 0).ToString() },
-            new() { Key = "Track total", Value = (currentTrack.TrackTotal ?? 0).ToString() },
-        };
+            // Get all metadata from the song object
+            var currentTrack = new Track(song.Id);
 
-        foreach (var pair in currentTrack.AdditionalFields)
-        {
-            MetadataList.Add(new MetadataPair() { Key = pair.Key, Value = pair.Value });
+            // Only include settable metadata fields
+            var newList = new ObservableCollection<MetadataPair>()
+            {
+                new() { Key = "Title", Value = currentTrack.Title ?? "" },
+                new() { Key = "Contributing artists", Value = currentTrack.Artist ?? "" },
+                new() { Key = "Genre", Value = currentTrack.Genre ?? "" },
+                new() { Key = "Album", Value = currentTrack.Album ?? "" },
+                new() { Key = "Album artist", Value = currentTrack.AlbumArtist ?? "" },
+                new() { Key = "ISRC", Value = currentTrack.ISRC ?? "" },
+                new() { Key = "BPM", Value = (currentTrack.BPM ?? 0).ToString() },
+                new() { Key = "Date", Value = (currentTrack.Date ?? new DateTime()).ToString() },
+                new() { Key = "Track number", Value = (currentTrack.TrackNumber ?? 0).ToString() },
+                new() { Key = "Track total", Value = (currentTrack.TrackTotal ?? 0).ToString() },
+            };
+
+            foreach (var pair in currentTrack.AdditionalFields)
+            {
+                if (pair.Key.Equals("YEAR")) continue; // This is a special field set by this program, do not edit it
+                newList.Add(new MetadataPair() { Key = pair.Key, Value = pair.Value });
+            }
+
+            tmpUpdates.Add(currentEditPath, new MetadataUpdateInfo(newList, currentEditPath, ""));
         }
+
+        CurrentMetadataList = tmpUpdates[currentEditPath].GetMetadataList(); // Set the metadata list for the current file
+    }
+
+    public string? GetCurrentImagePath()
+    {
+        return tmpUpdates[currentEditPath].GetImagePath();
     }
 
     public void SetImagePath(string path)
     {
-        imgPath = path;
+        tmpUpdates[currentEditPath].SetImagePath(path); // Set the image path for the current file
     }
 
     public void SaveMetadata()
     {
-        var metadataJson = new MetadataJson() { Path = currentTrack.Path, MetadataList = MetadataList.ToList(), ImagePath = imgPath };
-        App.AddMetadataUpdate(metadataJson);
+        App.metadataUpdates.Add(currentEditPath, tmpUpdates[currentEditPath]); // Add the metadata update to the list of pending updates
+    }
+
+    public void DiscardMetadata()
+    {
+        tmpUpdates.Remove(currentEditPath);
     }
 
     public static SongSearchObject? ParseFile(string path)
