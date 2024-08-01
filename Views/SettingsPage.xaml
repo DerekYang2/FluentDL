@@ -79,12 +79,11 @@
 
                 <local:SettingsExpander x:Name="DeezerExpander"
                                         VerticalAlignment="Top"
-                                        Description="Set settings for Deezer."
+                                        Description="Set authentication tokens for Deezer."
                                         Header="Deezer"
-                                        HorizontalContentAlignment="Stretch"
-                                        >
+                                        HorizontalContentAlignment="Stretch">
                     <local:SettingsExpander.HeaderIcon>
-                        <FontIcon Glyph="&#xE713;" />
+                        <FontIcon Glyph="&#xF78D;" />
                     </local:SettingsExpander.HeaderIcon>
                     <local:SettingsExpander.Items>
                         <local:SettingsCard Header="Deezer ARL" Description="Enter your Deezer ARL."
@@ -107,6 +106,55 @@
                     </local:SettingsExpander.Items>
                 </local:SettingsExpander>
 
+                <local:SettingsExpander x:Name="QobuzExpander"
+                                        VerticalAlignment="Top"
+                                        Description="Set authentication tokens for Qobuz."
+                                        Header="Qobuz"
+                                        HorizontalContentAlignment="Stretch">
+                    <local:SettingsExpander.HeaderIcon>
+                        <FontIcon Glyph="&#xF78D;" />
+                    </local:SettingsExpander.HeaderIcon>
+                    <local:SettingsExpander.Items>
+                        <local:SettingsCard Header="User ID" Description="Enter your user ID."
+                                            HorizontalContentAlignment="Stretch">
+                            <TextBox x:Name="QobuzIDInput"
+                                     Width="400"
+                                     Margin="0,0,0,4"
+                                     ToolTipService.ToolTip="User ID"
+                                     Header="User ID"
+                                     LostFocus="QobuzIDInput_OnLostFocus">
+                                <TextBox.HeaderTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Text="{Binding}" Style="{ThemeResource CaptionTextBlockStyle}"
+                                                   Foreground="{ThemeResource TextFillColorSecondary}"
+                                                   Margin="0,2,0,-2" />
+                                    </DataTemplate>
+                                </TextBox.HeaderTemplate>
+                            </TextBox>
+                        </local:SettingsCard>
+                        <local:SettingsCard x:Name="QobuzAuthToken" Header="Authentication Token"
+                                            Description="Enter your authentication token."
+                                            HorizontalContentAlignment="Stretch">
+                            <PasswordBox x:Name="QobuzTokenInput"
+                                         Width="400"
+                                         Margin="0,0,0,8"
+                                         ToolTipService.ToolTip="Authentication Token"
+                                         Header="Authentication Token"
+                                         LostFocus="QobuzTokenInput_OnLostFocus"
+                                         IsPasswordRevealButtonEnabled="True"
+                                         PasswordRevealMode="Visible">
+                                <PasswordBox.HeaderTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Text="{Binding}" Style="{ThemeResource CaptionTextBlockStyle}"
+                                                   Foreground="{ThemeResource TextFillColorSecondary}"
+                                                   Margin="0,2,0,-2" />
+                                    </DataTemplate>
+                                </PasswordBox.HeaderTemplate>
+                            </PasswordBox>
+                        </local:SettingsCard>
+                    </local:SettingsExpander.Items>
+                </local:SettingsExpander>
+
                 <local:SettingsExpander x:Name="SpotifyExpander"
                                         VerticalAlignment="Top"
                                         Header="Spotify"
@@ -116,7 +164,7 @@
                     </local:SettingsExpander.Description>
 
                     <local:SettingsExpander.HeaderIcon>
-                        <FontIcon Glyph="&#xE713;" />
+                        <FontIcon Glyph="&#xF78D;" />
                     </local:SettingsExpander.HeaderIcon>
                     <local:SettingsExpander.Items>
                         <local:SettingsCard Header="Client ID" Description="Enter your client ID string."
@@ -176,7 +224,6 @@
                                     x:Uid="Settings_Theme_Light"
                                     Command="{x:Bind ViewModel.SwitchThemeCommand}"
                                     IsChecked="{x:Bind ViewModel.ElementTheme, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=Light, Mode=OneWay}"
-                                    FontSize="15"
                                     GroupName="AppTheme">
                                     <RadioButton.CommandParameter>
                                         <xaml:ElementTheme>Light</xaml:ElementTheme>
@@ -186,7 +233,6 @@
                                     x:Uid="Settings_Theme_Dark"
                                     Command="{x:Bind ViewModel.SwitchThemeCommand}"
                                     IsChecked="{x:Bind ViewModel.ElementTheme, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=Dark, Mode=OneWay}"
-                                    FontSize="15"
                                     GroupName="AppTheme">
                                     <RadioButton.CommandParameter>
                                         <xaml:ElementTheme>Dark</xaml:ElementTheme>
@@ -196,7 +242,6 @@
                                     x:Uid="Settings_Theme_Default"
                                     Command="{x:Bind ViewModel.SwitchThemeCommand}"
                                     IsChecked="{x:Bind ViewModel.ElementTheme, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=Default, Mode=OneWay}"
-                                    FontSize="15"
                                     GroupName="AppTheme">
                                     <RadioButton.CommandParameter>
                                         <xaml:ElementTheme>Default</xaml:ElementTheme>

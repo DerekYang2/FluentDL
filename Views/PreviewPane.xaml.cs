@@ -107,6 +107,14 @@ namespace FluentDL.Views
                 }
             }
 
+            if (selectedSong.Source.Equals("qobuz"))
+            {
+                var track = QobuzApi.GetQobuzTrack(selectedSong.Id);
+                PreviewImage.Source = new BitmapImage(new Uri(track.Album.Image.Large));
+                trackDetailsList.Add(new TrackDetail() { Label = "Track", Value = selectedSong.TrackPosition });
+                trackDetailsList.Add(new TrackDetail { Label = "Performers", Value = track.Performers });
+            }
+
             if (selectedSong.Source.Equals("youtube"))
             {
                 PreviewImage.Source = new BitmapImage(new Uri("https://img.youtube.com/vi/" + selectedSong.Id + "/0.jpg"));

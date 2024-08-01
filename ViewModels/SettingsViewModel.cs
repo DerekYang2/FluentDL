@@ -14,6 +14,8 @@ public partial class SettingsViewModel : ObservableRecipient
     public static readonly string SpotifyClientId = "spotify_client_Id";
     public static readonly string SpotifyClientSecret = "spotify_client_secret";
     public static readonly string DeezerARL = "deezer_arl";
+    public static readonly string QobuzId = "qobuz_id";
+    public static readonly string QobuzToken = "qobuz_token";
 
     private readonly IThemeSelectorService _themeSelectorService;
 

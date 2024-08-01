@@ -36,6 +36,8 @@ public sealed partial class SettingsPage : Page
         ClientIdInput.Text = (await localSettings.ReadSettingAsync<string>(SettingsViewModel.SpotifyClientId)) ?? "";
         ClientSecretInput.Password = (await localSettings.ReadSettingAsync<string>(SettingsViewModel.SpotifyClientSecret)) ?? "";
         DeezerARLInput.Text = await localSettings.ReadSettingAsync<string>(SettingsViewModel.DeezerARL);
+        QobuzIDInput.Text = await localSettings.ReadSettingAsync<string>(SettingsViewModel.QobuzId);
+        QobuzTokenInput.Password = await localSettings.ReadSettingAsync<string>(SettingsViewModel.QobuzToken);
 
         /*
         Thread thread = new Thread(() =>
@@ -85,5 +87,21 @@ public sealed partial class SettingsPage : Page
     {
         await localSettings.SaveSettingAsync(SettingsViewModel.DeezerARL, DeezerARLInput.Text.Trim());
         await DeezerApi.InitDeezerClient(DeezerARLInput.Text.Trim());
+    }
+
+    private async void QobuzIDInput_OnLostFocus(object sender, RoutedEventArgs e)
+    {
+        await localSettings.SaveSettingAsync(SettingsViewModel.QobuzId, QobuzIDInput.Text.Trim());
+        QobuzApi.Initialize(await localSettings.ReadSettingAsync<string>(SettingsViewModel.QobuzId), await localSettings.ReadSettingAsync<string>(SettingsViewModel.QobuzToken));
+    }
+
+    private async void QobuzTokenInput_OnLostFocus(object sender, RoutedEventArgs e)
+    {
+        await localSettings.SaveSettingAsync(SettingsViewModel.QobuzToken, QobuzTokenInput.Password.Trim());
+        Thread t = new Thread(() =>
+        {
+            QobuzApi.Initialize(QobuzIDInput.Text.Trim(), QobuzTokenInput.Password.Trim());
+        });
+        t.Start();
     }
 }

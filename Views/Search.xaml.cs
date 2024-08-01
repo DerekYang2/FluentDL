@@ -309,6 +309,10 @@ public sealed partial class Search : Page
         {
             await FluentDL.Services.DeezerApi.AddTracksFromLink((ObservableCollection<SongSearchObject>)CustomListView.ItemsSource, generalQuery, cancellationTokenSource.Token);
         }
+        else if (generalQuery.StartsWith("https://www.qobuz.com/"))
+        {
+            FluentDL.Services.QobuzApi.AddTracksFromLink((ObservableCollection<SongSearchObject>)CustomListView.ItemsSource, generalQuery, cancellationTokenSource.Token);
+        }
         else
         {
             await FluentDL.Services.DeezerApi.GeneralSearch((ObservableCollection<SongSearchObject>)CustomListView.ItemsSource, generalQuery, cancellationTokenSource.Token);
