@@ -28,6 +28,7 @@ public sealed partial class SettingsPage : Page
 
     private void SettingsPage_Loaded(object sender, RoutedEventArgs e)
     {
+        /*
         Thread thread = new Thread(() =>
         {
             var ripConfigPath = TerminalSubprocess.GetRunCommandSync("rip config path", "c:\\");
@@ -53,13 +54,20 @@ public sealed partial class SettingsPage : Page
             });
         });
         thread.Start();
+        */
+
+        var localSettings = Windows.Storage.ApplicationData.Current.LocalSettings;
+
+        // Set Ids/Secrets
+        ClientIdInput.Text = localSettings.Values["SpotifyClientId"].ToString();
+        ClientSecretInput.Password = localSettings.Values["SpotifyClientSecret"].ToString();
     }
 
     private void SpotifyDialog_OnPrimaryButtonClick(ContentDialog sender, ContentDialogButtonClickEventArgs args)
     {
         // Save the user's input
         var clientId = ClientIdInput.Text;
-        var clientSecret = ClientSecretInput.Text;
+        var clientSecret = ClientSecretInput.Password;
 
         var localSettings = Windows.Storage.ApplicationData.Current.LocalSettings;
         localSettings.Values["SpotifyClientId"] = clientId;
@@ -68,9 +76,13 @@ public sealed partial class SettingsPage : Page
         SpotifyApi.Initialize().Wait();
     }
 
-    private async void OpenSpotifyDialog_OnClick(object sender, RoutedEventArgs e)
+    private void ClientIdInput_OnLostFocus(object sender, RoutedEventArgs e)
     {
-        SpotifyDialog.XamlRoot = this.XamlRoot;
-        var result = await SpotifyDialog.ShowAsync();
+        Debug.WriteLine("LOST FOCUS");
+    }
+
+    private void ClientSecretInput_OnLostFocus(object sender, RoutedEventArgs e)
+    {
+        Debug.WriteLine("LOST FOCUS Secret");
     }
 }

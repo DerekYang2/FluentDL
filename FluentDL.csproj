@@ -24,6 +24,7 @@
 
   <ItemGroup>
     <PackageReference Include="CommunityToolkit.Mvvm" Version="8.1.0" />
+    <PackageReference Include="CommunityToolkit.WinUI.Controls.SettingsControls" Version="8.0.240109" />
     <PackageReference Include="CommunityToolkit.WinUI.UI.Animations" Version="7.1.2" />
     <PackageReference Include="CommunityToolkit.WinUI.UI.Controls" Version="7.1.2" />
     <PackageReference Include="CommunityToolkit.WinUI.UI.Controls.DataGrid" Version="7.1.2" />
@@ -31,10 +32,11 @@
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="6.0.1" />
     <PackageReference Include="Microsoft.WindowsAppSDK" Version="1.5.240627000" />
     <PackageReference Include="Microsoft.Xaml.Behaviors.WinUI.Managed" Version="2.0.9" />
-    <PackageReference Include="RestSharp" Version="111.3.0" />
+    <PackageReference Include="QobuzApiSharp" Version="0.0.8" />
+    <PackageReference Include="RestSharp" Version="111.4.1" />
     <PackageReference Include="SpotifyAPI.Web" Version="7.1.1" />
     <PackageReference Include="WinUIEx" Version="2.3.2" />
-    <PackageReference Include="YoutubeExplode" Version="6.3.16" />
+    <PackageReference Include="YoutubeExplode" Version="6.4.0" />
     <PackageReference Include="z440.atl.core" Version="5.25.0" />
   </ItemGroup>
 
