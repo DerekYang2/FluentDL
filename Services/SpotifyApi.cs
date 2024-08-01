@@ -33,6 +33,13 @@ namespace FluentDL.Services
             }
         }
 
+        public static async Task<string?> GetPlaylistName(string playlistId)
+        {
+            var playlist = await spotify.Playlists.Get(playlistId);
+            var playlistName = playlist.Name;
+            return playlistName;
+        }
+
         // TODO: handle invalid playlist ids
         public static async Task<List<SongSearchObject>> GetPlaylist(string playlistId)
         {

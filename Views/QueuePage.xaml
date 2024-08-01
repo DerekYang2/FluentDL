@@ -97,11 +97,14 @@
                                            Style="{ThemeResource BodyStrongTextBlockStyle}"
                                            HorizontalAlignment="Left"
                                            TextTrimming="CharacterEllipsis" MaxLines="1" Margin="0, 0, 8, 0" />
-                                <Border Background="DarkGray" CornerRadius="2" Padding="4, 0"
-                                        VerticalAlignment="Center">
+                                <Border Background="DarkGray" CornerRadius="2" Padding="4, 0" Margin="0, 0, 8, 0"
+                                        VerticalAlignment="Center"  Visibility="{x:Bind Explicit, Converter={StaticResource VisibilityConverter}}">
                                     <TextBlock x:Name="ExplicitBadge" Text="E" Style="{ThemeResource CaptionTextBlockStyle}"
-                                               Foreground="Black"
-                                               Visibility="{x:Bind Explicit, Converter={StaticResource VisibilityConverter}}" />
+                                               Foreground="Black"/>
+                                </Border>
+                                <Border Background="{ThemeResource LayerFillColorAltBrush}" CornerRadius="2" Padding="4, 1"
+                                        VerticalAlignment="Center">
+                                    <TextBlock x:Name="SourceBadge" Text="{x:Bind Source}" Style="{ThemeResource CaptionTextBlockStyle}"/>
                                 </Border>
                             </StackPanel>
                             <TextBlock Text="{x:Bind Artists}" FontFamily="Segoe UI Variable Display"
@@ -150,7 +153,7 @@
 
     <!-- Content Dialog for command running-->
     <ContentDialog x:Name="CustomCommandDialog" PrimaryButtonText="Run" CloseButtonText="Cancel"
-                       Title="Advanced Search" IsSecondaryButtonEnabled="True" IsPrimaryButtonEnabled="True"
+                       Title="Run Command" IsSecondaryButtonEnabled="True" IsPrimaryButtonEnabled="True"
                        PrimaryButtonClick="CustomCommandDialog_OnPrimaryButtonClick" PrimaryButtonStyle="{ThemeResource AccentButtonStyle}">
             <StackPanel Spacing="12">
 

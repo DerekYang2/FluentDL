@@ -1,14 +1,10 @@
 using FluentDL.ViewModels;
-using FluentDL.Helpers;
 using Microsoft.UI.Xaml.Controls;
 using FluentDL.Services;
 using System.Collections.ObjectModel;
-using System.Diagnostics;
-using Windows.Media.Core;
 using Microsoft.UI.Dispatching;
-using Microsoft.UI.Xaml;
-using Microsoft.UI.Xaml.Media.Imaging;
 using YoutubeExplode.Search;
+using Microsoft.UI.Xaml;
 
 namespace FluentDL.Views;
 // TODO: loading for search
@@ -298,7 +294,8 @@ public sealed partial class Search : Page
         // Check if query is a spotify playlist link
         // Format of links https://open.spotify.com/playlist/{id}?
         // OR https://open.spotify.com/playlist/{id}?...
-        if (generalQuery.Contains("https://open.spotify.com/playlist/"))
+
+        if (generalQuery.StartsWith("https://open.spotify.com/playlist/"))
         {
             var playlistId = generalQuery.Split("/").Last();
             // Remove any query parameters
@@ -307,7 +304,18 @@ public sealed partial class Search : Page
                 playlistId = playlistId.Split("?").First();
             }
 
+            var playlistName = await SpotifyApi.GetPlaylistName(playlistId);
+            ShowInfoBar(InfoBarSeverity.Informational, $"Looking up \"{playlistName}\" on Deezer ...");
             await LoadSpotifyPlaylist(playlistId, cancellationTokenSource.Token);
+        }
+        else if (generalQuery.StartsWith("https://deezer.page.link") || System.Text.RegularExpressions.Regex.IsMatch(generalQuery, @"https://www\.deezer\.com(/[^/]+)?/(track|album)/.*"))
+        {
+            var resultList = await FluentDL.Services.DeezerApi.GetTracksFromLink(generalQuery);
+
+            foreach (var result in resultList)
+            {
+                ((ObservableCollection<SongSearchObject>)CustomListView.ItemsSource).Add(result);
+            }
         }
         else
         {
@@ -315,7 +323,6 @@ public sealed partial class Search : Page
         }
 
         originalList = new ObservableCollection<SongSearchObject>((ObservableCollection<SongSearchObject>)CustomListView.ItemsSource);
-
         SetResultsAmount(originalList.Count);
         SortCustomListView();
         SetNoSearchResults(); // Call again as actual check 

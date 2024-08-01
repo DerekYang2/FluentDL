@@ -13,6 +13,7 @@ using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using ABI.Windows.Data.Json;
 using CommunityToolkit.WinUI.UI.Controls.TextToolbarSymbols;
+using DeezNET;
 using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media.Imaging;
@@ -111,6 +112,57 @@ internal class DeezerApi
 {
     public static readonly string baseURL = "https://api.deezer.com";
     private static readonly RestClient client = new RestClient(new RestClientOptions(baseURL) { Timeout = new TimeSpan(0, 0, 5) });
+    private static DeezerClient deezerClient = new DeezerClient();
+
+    public static async Task InitDeezerClient(string ARL)
+    {
+        await deezerClient.SetARL(ARL);
+    }
+
+    public static async Task<List<SongSearchObject>> GetTracksFromLink(string url)
+    {
+        if (url.StartsWith("https://deezer.page.link/"))
+        {
+            url = (await GetRedirectedUrlAsync(new Uri(url))).AbsoluteUri;
+        }
+
+        Debug.WriteLine(url);
+        if (Regex.IsMatch(url, @"https://www\.deezer\.com(/[^/]+)?/track/.*"))
+        {
+            var firstQuestion = url.IndexOf('?');
+            if (firstQuestion != -1)
+            {
+                url = url.Substring(0, firstQuestion);
+            }
+
+            if (url.Last() == '/') // Remove any trailing slash
+            {
+                url = url.Remove(url.Length - 1);
+            }
+
+            var trackId = url.Split('/').Last(); // Get the last part of the url
+            return new List<SongSearchObject>() { await GetTrack(trackId) };
+        }
+
+        if (Regex.IsMatch(url, @"https://www\.deezer\.com(/[^/]+)?/album/.*"))
+        {
+            var firstQuestion = url.IndexOf('?');
+            if (firstQuestion != -1)
+            {
+                url = url.Substring(0, firstQuestion);
+            }
+
+            if (url.Last() == '/') // Remove any trailing slash
+            {
+                url = url.Remove(url.Length - 1);
+            }
+
+            var albumId = url.Split('/').Last(); // Get the last part of the url
+            return new List<SongSearchObject>(); // TODO: return all tracks from album
+        }
+
+        return new List<SongSearchObject>();
+    }
 
     public static async Task<JsonElement> FetchJsonElement(string req)
     {
@@ -530,5 +582,13 @@ internal class DeezerApi
         }
 
         return distances[lengthA, lengthB];
+    }
+
+    public static async Task<Uri> GetRedirectedUrlAsync(Uri uri, CancellationToken cancellationToken = default)
+    {
+        using var client = new HttpClient(new HttpClientHandler { AllowAutoRedirect = false, }, true);
+        using var response = await client.GetAsync(uri, cancellationToken);
+
+        return new Uri(response.Headers.GetValues("Location").First());
     }
 }

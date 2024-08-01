@@ -548,6 +548,7 @@ public sealed partial class LocalExplorerPage : Page
 
     private void MetadataDialog_OnPrimaryButtonClick(ContentDialog sender, ContentDialogButtonClickEventArgs args)
     {
+        ViewModel.SetImagePath(CoverArtTextBox.Text);
         ViewModel.SaveMetadata();
     }
 
