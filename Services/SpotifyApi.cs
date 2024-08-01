@@ -17,16 +17,12 @@ namespace FluentDL.Services
         {
         }
 
-        public static async Task Initialize()
+        public static async Task Initialize(string? clientId, string? clientSecret)
         {
-            var localSettings = Windows.Storage.ApplicationData.Current.LocalSettings;
-            var clientId = localSettings.Values["SpotifyClientId"];
-            var clientSecret = localSettings.Values["SpotifyClientSecret"];
-
             // TODO: if do not exist, message should be shown
-            if (clientId != null && clientSecret != null)
+            if (!string.IsNullOrWhiteSpace(clientId) && !string.IsNullOrWhiteSpace(clientSecret))
             {
-                var request = new ClientCredentialsRequest(clientId.ToString(), clientSecret.ToString());
+                var request = new ClientCredentialsRequest(clientId, clientSecret);
                 var response = await new OAuthClient(config).RequestToken(request);
 
                 spotify = new SpotifyClient(config.WithToken(response.AccessToken));

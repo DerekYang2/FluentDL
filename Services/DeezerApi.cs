@@ -115,9 +115,12 @@ internal class DeezerApi
     private static readonly RestClient client = new RestClient(new RestClientOptions(baseURL) { Timeout = new TimeSpan(0, 0, 5) });
     private static DeezerClient deezerClient = new DeezerClient();
 
-    public static async Task InitDeezerClient(string ARL)
+    public static async Task InitDeezerClient(string? ARL)
     {
-        await deezerClient.SetARL(ARL);
+        if (!string.IsNullOrWhiteSpace(ARL))
+        {
+            await deezerClient.SetARL(ARL);
+        }
     }
 
     public static async Task AddTracksFromLink(ObservableCollection<SongSearchObject> list, string url, CancellationToken token)
@@ -243,6 +246,14 @@ internal class DeezerApi
         {
             var closingIndex = titlePruned.IndexOf(")", index2);
             titlePruned = titlePruned.Remove(index2, closingIndex - index2 + 1);
+        }
+
+        // Remove (with X) from the title
+        var index3 = titlePruned.IndexOf("(with");
+        if (index3 != -1)
+        {
+            var closingIndex = titlePruned.IndexOf(")", index3);
+            titlePruned = titlePruned.Remove(index3, closingIndex - index3 + 1);
         }
 
         // Remove punctuation that may cause inconsistency

@@ -1,4 +1,5 @@
 ﻿using System.Diagnostics;
+using FluentDL.Contracts.Services;
 using FluentDL.Services;
 using FluentDL.ViewModels;
 using Microsoft.UI.Dispatching;
@@ -12,6 +13,8 @@ namespace FluentDL.Views;
 public sealed partial class SettingsPage : Page
 {
     private DispatcherQueue dispatcher;
+    private ILocalSettingsService localSettings;
+
 
     public SettingsViewModel ViewModel
     {
@@ -22,12 +25,18 @@ public sealed partial class SettingsPage : Page
     {
         ViewModel = App.GetService<SettingsViewModel>();
         InitializeComponent();
+        localSettings = App.GetService<ILocalSettingsService>();
         this.Loaded += SettingsPage_Loaded;
         dispatcher = DispatcherQueue.GetForCurrentThread();
     }
 
-    private void SettingsPage_Loaded(object sender, RoutedEventArgs e)
+    private async void SettingsPage_Loaded(object sender, RoutedEventArgs e)
     {
+        // Set Ids/Secrets
+        ClientIdInput.Text = (await localSettings.ReadSettingAsync<string>(SettingsViewModel.SpotifyClientId)) ?? "";
+        ClientSecretInput.Password = (await localSettings.ReadSettingAsync<string>(SettingsViewModel.SpotifyClientSecret)) ?? "";
+        DeezerARLInput.Text = await localSettings.ReadSettingAsync<string>(SettingsViewModel.DeezerARL);
+
         /*
         Thread thread = new Thread(() =>
         {
@@ -55,34 +64,26 @@ public sealed partial class SettingsPage : Page
         });
         thread.Start();
         */
-
-        var localSettings = Windows.Storage.ApplicationData.Current.LocalSettings;
-
-        // Set Ids/Secrets
-        ClientIdInput.Text = localSettings.Values["SpotifyClientId"].ToString();
-        ClientSecretInput.Password = localSettings.Values["SpotifyClientSecret"].ToString();
     }
 
-    private void SpotifyDialog_OnPrimaryButtonClick(ContentDialog sender, ContentDialogButtonClickEventArgs args)
+    private async void ClientIdInput_OnLostFocus(object sender, RoutedEventArgs e)
     {
-        // Save the user's input
-        var clientId = ClientIdInput.Text;
-        var clientSecret = ClientSecretInput.Password;
-
-        var localSettings = Windows.Storage.ApplicationData.Current.LocalSettings;
-        localSettings.Values["SpotifyClientId"] = clientId;
-        localSettings.Values["SpotifyClientSecret"] = clientSecret;
-
-        SpotifyApi.Initialize().Wait();
+        // Save client id
+        await localSettings.SaveSettingAsync(SettingsViewModel.SpotifyClientId, ClientIdInput.Text.Trim());
+        // Recreate spotify api object
+        await SpotifyApi.Initialize(await localSettings.ReadSettingAsync<string>(SettingsViewModel.SpotifyClientId), await localSettings.ReadSettingAsync<string>(SettingsViewModel.SpotifyClientSecret));
     }
 
-    private void ClientIdInput_OnLostFocus(object sender, RoutedEventArgs e)
+    private async void ClientSecretInput_OnLostFocus(object sender, RoutedEventArgs e)
     {
-        Debug.WriteLine("LOST FOCUS");
+        // TODO: encryption?
+        await localSettings.SaveSettingAsync(SettingsViewModel.SpotifyClientSecret, ClientSecretInput.Password.Trim());
+        await SpotifyApi.Initialize(await localSettings.ReadSettingAsync<string>(SettingsViewModel.SpotifyClientId), await localSettings.ReadSettingAsync<string>(SettingsViewModel.SpotifyClientSecret));
     }
 
-    private void ClientSecretInput_OnLostFocus(object sender, RoutedEventArgs e)
+    private async void DeezerARLInput_OnLostFocus(object sender, RoutedEventArgs e)
     {
-        Debug.WriteLine("LOST FOCUS Secret");
+        await localSettings.SaveSettingAsync(SettingsViewModel.DeezerARL, DeezerARLInput.Text.Trim());
+        await DeezerApi.InitDeezerClient(DeezerARLInput.Text.Trim());
     }
 }

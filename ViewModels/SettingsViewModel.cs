@@ -11,6 +11,10 @@ namespace FluentDL.ViewModels;
 
 public partial class SettingsViewModel : ObservableRecipient
 {
+    public static readonly string SpotifyClientId = "spotify_client_Id";
+    public static readonly string SpotifyClientSecret = "spotify_client_secret";
+    public static readonly string DeezerARL = "deezer_arl";
+
     private readonly IThemeSelectorService _themeSelectorService;
 
     [ObservableProperty] private ElementTheme _elementTheme;

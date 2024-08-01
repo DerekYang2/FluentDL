@@ -110,9 +110,6 @@ public sealed partial class Search : Page
                 FailedResultsButton.Visibility = Visibility.Collapsed;
             }
         };
-
-        // Initialize Spotify API
-        SpotifyApi.Initialize();
         cancellationTokenSource = new CancellationTokenSource();
     }
 

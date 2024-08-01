@@ -17,15 +17,15 @@
         </Style>
     </Page.Resources>
 
-    <ScrollViewer>
+    <ScrollViewer Margin="0,0,0,12">
         <Grid>
-            <StackPanel HorizontalAlignment="Stretch" Spacing="4">
+            <StackPanel HorizontalAlignment="Stretch" Spacing="8">
                 <StackPanel.ChildrenTransitions>
                     <EntranceThemeTransition FromVerticalOffset="50" />
                     <RepositionThemeTransition IsStaggeringEnabled="False" />
                 </StackPanel.ChildrenTransitions>
 
-                <TextBlock Text="API Settings" Style="{StaticResource TextBlockSectionStyle}"/>
+                <TextBlock Text="API Settings" Style="{StaticResource TextBlockSectionStyle}" />
                 <local:SettingsExpander x:Name="SettingsCard"
                                         VerticalAlignment="Top"
                                         Description="Test description"
@@ -77,19 +77,51 @@
                     </local:SettingsExpander.Items>
                 </local:SettingsExpander>
 
-                <local:SettingsExpander x:Name="SpotifyExpander"
+                <local:SettingsExpander x:Name="DeezerExpander"
                                         VerticalAlignment="Top"
-                                        Description="Set settings for spotify API."
-                                        Header="Spotify"
+                                        Description="Set settings for Deezer."
+                                        Header="Deezer"
                                         HorizontalContentAlignment="Stretch"
                                         >
                     <local:SettingsExpander.HeaderIcon>
-                        <FontIcon Glyph="&#xE700;" />
+                        <FontIcon Glyph="&#xE713;" />
                     </local:SettingsExpander.HeaderIcon>
                     <local:SettingsExpander.Items>
-                        <local:SettingsCard Header="Client ID" Description="Enter your client ID string."  HorizontalContentAlignment="Stretch">
+                        <local:SettingsCard Header="Deezer ARL" Description="Enter your Deezer ARL."
+                                            HorizontalContentAlignment="Stretch">
+                            <TextBox x:Name="DeezerARLInput"
+                                     Width="400"
+                                     Margin="0,0,0,4"
+                                     ToolTipService.ToolTip="Deezer ARL"
+                                     Header="Deezer ARL"
+                                     LostFocus="DeezerARLInput_OnLostFocus">
+                                <TextBox.HeaderTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Text="{Binding}" Style="{ThemeResource CaptionTextBlockStyle}"
+                                                   Foreground="{ThemeResource TextFillColorSecondary}"
+                                                   Margin="0,2,0,-2" />
+                                    </DataTemplate>
+                                </TextBox.HeaderTemplate>
+                            </TextBox>
+                        </local:SettingsCard>
+                    </local:SettingsExpander.Items>
+                </local:SettingsExpander>
+
+                <local:SettingsExpander x:Name="SpotifyExpander"
+                                        VerticalAlignment="Top"
+                                        Header="Spotify"
+                                        HorizontalContentAlignment="Stretch">
+                    <local:SettingsExpander.Description>
+                        <TextBlock>Get a client ID and secret at <Hyperlink NavigateUri="https://developer.spotify.com/dashboard">https://developer.spotify.com/dashboard</Hyperlink>.</TextBlock>
+                    </local:SettingsExpander.Description>
+
+                    <local:SettingsExpander.HeaderIcon>
+                        <FontIcon Glyph="&#xE713;" />
+                    </local:SettingsExpander.HeaderIcon>
+                    <local:SettingsExpander.Items>
+                        <local:SettingsCard Header="Client ID" Description="Enter your client ID string."
+                                            HorizontalContentAlignment="Stretch">
                             <TextBox x:Name="ClientIdInput"
-                                     PlaceholderText="Enter client ID"
                                      Width="400"
                                      Margin="0,0,0,4"
                                      ToolTipService.ToolTip="Client ID"
@@ -98,80 +130,95 @@
                                 <TextBox.HeaderTemplate>
                                     <DataTemplate>
                                         <TextBlock Text="{Binding}" Style="{ThemeResource CaptionTextBlockStyle}"
-                                                   Foreground="{ThemeResource TextFillColorSecondary}" Margin="0,2,0,-2"/>
+                                                   Foreground="{ThemeResource TextFillColorSecondary}"
+                                                   Margin="0,2,0,-2" />
                                     </DataTemplate>
                                 </TextBox.HeaderTemplate>
                             </TextBox>
                         </local:SettingsCard>
-                        <local:SettingsCard x:Name="ClientSecretCard" Header="Client Secret" Description="Enter your client secret string." HorizontalContentAlignment="Stretch">
+                        <local:SettingsCard x:Name="ClientSecretCard" Header="Client Secret"
+                                            Description="Enter your client secret string."
+                                            HorizontalContentAlignment="Stretch">
                             <PasswordBox x:Name="ClientSecretInput"
-                                         PlaceholderText="Enter client secret"
                                          Width="400"
                                          Margin="0,0,0,8"
                                          ToolTipService.ToolTip="Client Secret"
                                          Header="Client Secret"
-                                         LostFocus="ClientSecretInput_OnLostFocus">
+                                         LostFocus="ClientSecretInput_OnLostFocus"
+                                         IsPasswordRevealButtonEnabled="True"
+                                         PasswordRevealMode="Hidden">
                                 <PasswordBox.HeaderTemplate>
                                     <DataTemplate>
                                         <TextBlock Text="{Binding}" Style="{ThemeResource CaptionTextBlockStyle}"
-                                                   Foreground="{ThemeResource TextFillColorSecondary}" Margin="0,2,0,-2"/>
+                                                   Foreground="{ThemeResource TextFillColorSecondary}"
+                                                   Margin="0,2,0,-2" />
                                     </DataTemplate>
                                 </PasswordBox.HeaderTemplate>
-                            </PasswordBox>                                  
+                            </PasswordBox>
+                        </local:SettingsCard>
+                    </local:SettingsExpander.Items>
+                </local:SettingsExpander>
+
+                <TextBlock Text="Personalization" Style="{StaticResource TextBlockSectionStyle}" />
+
+                <local:SettingsExpander x:Name="ThemeExpander"
+                                        VerticalAlignment="Top"
+                                        Description="Select app theme."
+                                        Header="Theme">
+                    <local:SettingsExpander.HeaderIcon>
+                        <FontIcon Glyph="&#xE790;" />
+                    </local:SettingsExpander.HeaderIcon>
+
+                    <local:SettingsExpander.Items>
+                            <local:SettingsCard HorizontalContentAlignment="Left" ContentAlignment="Vertical">
+                            <StackPanel>
+                                <RadioButton
+                                    x:Uid="Settings_Theme_Light"
+                                    Command="{x:Bind ViewModel.SwitchThemeCommand}"
+                                    IsChecked="{x:Bind ViewModel.ElementTheme, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=Light, Mode=OneWay}"
+                                    FontSize="15"
+                                    GroupName="AppTheme">
+                                    <RadioButton.CommandParameter>
+                                        <xaml:ElementTheme>Light</xaml:ElementTheme>
+                                    </RadioButton.CommandParameter>
+                                </RadioButton>
+                                <RadioButton
+                                    x:Uid="Settings_Theme_Dark"
+                                    Command="{x:Bind ViewModel.SwitchThemeCommand}"
+                                    IsChecked="{x:Bind ViewModel.ElementTheme, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=Dark, Mode=OneWay}"
+                                    FontSize="15"
+                                    GroupName="AppTheme">
+                                    <RadioButton.CommandParameter>
+                                        <xaml:ElementTheme>Dark</xaml:ElementTheme>
+                                    </RadioButton.CommandParameter>
+                                </RadioButton>
+                                <RadioButton
+                                    x:Uid="Settings_Theme_Default"
+                                    Command="{x:Bind ViewModel.SwitchThemeCommand}"
+                                    IsChecked="{x:Bind ViewModel.ElementTheme, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=Default, Mode=OneWay}"
+                                    FontSize="15"
+                                    GroupName="AppTheme">
+                                    <RadioButton.CommandParameter>
+                                        <xaml:ElementTheme>Default</xaml:ElementTheme>
+                                    </RadioButton.CommandParameter>
+                                </RadioButton>
+                            </StackPanel>
                         </local:SettingsCard>
                     </local:SettingsExpander.Items>
                 </local:SettingsExpander>
 
 
-                <TextBlock x:Uid="Settings_Personalization" Style="{ThemeResource SubtitleTextBlockStyle}" />
-                <StackPanel Margin="{StaticResource SmallTopBottomMargin}">
-                    <TextBlock x:Uid="Settings_Theme" />
-
-                    <StackPanel Margin="{StaticResource XSmallTopMargin}">
-                        <RadioButton
-                            x:Uid="Settings_Theme_Light"
-                            Command="{x:Bind ViewModel.SwitchThemeCommand}"
-                            IsChecked="{x:Bind ViewModel.ElementTheme, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=Light, Mode=OneWay}"
-                            FontSize="15"
-                            GroupName="AppTheme">
-                            <RadioButton.CommandParameter>
-                                <xaml:ElementTheme>Light</xaml:ElementTheme>
-                            </RadioButton.CommandParameter>
-                        </RadioButton>
-                        <RadioButton
-                            x:Uid="Settings_Theme_Dark"
-                            Command="{x:Bind ViewModel.SwitchThemeCommand}"
-                            IsChecked="{x:Bind ViewModel.ElementTheme, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=Dark, Mode=OneWay}"
-                            FontSize="15"
-                            GroupName="AppTheme">
-                            <RadioButton.CommandParameter>
-                                <xaml:ElementTheme>Dark</xaml:ElementTheme>
-                            </RadioButton.CommandParameter>
-                        </RadioButton>
-                        <RadioButton
-                            x:Uid="Settings_Theme_Default"
-                            Command="{x:Bind ViewModel.SwitchThemeCommand}"
-                            IsChecked="{x:Bind ViewModel.ElementTheme, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=Default, Mode=OneWay}"
-                            FontSize="15"
-                            GroupName="AppTheme">
-                            <RadioButton.CommandParameter>
-                                <xaml:ElementTheme>Default</xaml:ElementTheme>
-                            </RadioButton.CommandParameter>
-                        </RadioButton>
-                    </StackPanel>
-                </StackPanel>
-
-                <TextBlock Text="About" Style="{StaticResource TextBlockSectionStyle}"/>
+                <TextBlock Text="About" Style="{StaticResource TextBlockSectionStyle}" />
 
                 <local:SettingsExpander Description="Description"
-                                           Header="FluentDL"
-                                           HeaderIcon="{ui:BitmapIcon Source=ms-appx:///Assets/Square150x150Logo.scale-200.png}">
+                                        Header="FluentDL"
+                                        HeaderIcon="{ui:BitmapIcon Source=ms-appx:///Assets/Square150x150Logo.scale-200.png}">
                     <TextBlock IsTextSelectionEnabled="True"
                                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                                Text="{x:Bind ViewModel.VersionDescription, Mode=OneWay}" />
                     <local:SettingsExpander.Items>
                         <local:SettingsCard HorizontalContentAlignment="Left" VerticalAlignment="Top"
-                                               ContentAlignment="Left">
+                                            ContentAlignment="Left">
                             <StackPanel Margin="0,0,0,12"
                                         Orientation="Vertical">
                                 <TextBlock
