@@ -14,6 +14,7 @@ using System.Threading.Tasks;
 using ABI.Windows.Data.Json;
 using CommunityToolkit.WinUI.UI.Controls.TextToolbarSymbols;
 using DeezNET;
+using FluentDL.Views;
 using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media.Imaging;
@@ -119,7 +120,7 @@ internal class DeezerApi
         await deezerClient.SetARL(ARL);
     }
 
-    public static async Task<List<SongSearchObject>> GetTracksFromLink(string url)
+    public static async Task AddTracksFromLink(ObservableCollection<SongSearchObject> list, string url, CancellationToken token)
     {
         if (url.StartsWith("https://deezer.page.link/"))
         {
@@ -141,27 +142,33 @@ internal class DeezerApi
             }
 
             var trackId = url.Split('/').Last(); // Get the last part of the url
-            return new List<SongSearchObject>() { await GetTrack(trackId) };
+            var songObj = await GetTrack(trackId);
+            if (songObj != null)
+            {
+                list.Add(songObj);
+            }
         }
 
-        if (Regex.IsMatch(url, @"https://www\.deezer\.com(/[^/]+)?/album/.*"))
+        if (Regex.IsMatch(url, @"https://www\.deezer\.com(/[^/]+)?/(album|playlist)/.*"))
         {
-            var firstQuestion = url.IndexOf('?');
-            if (firstQuestion != -1)
+            if (DeezerURL.TryParse(url, out var urlData))
             {
-                url = url.Substring(0, firstQuestion);
-            }
+                var tracksInAlbum = await urlData.GetAssociatedTracks(deezerClient, 1000, token);
+                foreach (var trackId in tracksInAlbum)
+                {
+                    if (token.IsCancellationRequested) // Stop the search
+                    {
+                        return;
+                    }
 
-            if (url.Last() == '/') // Remove any trailing slash
-            {
-                url = url.Remove(url.Length - 1);
+                    var songObj = await GetTrack(trackId.ToString());
+                    if (songObj != null)
+                    {
+                        list.Add(songObj);
+                    }
+                }
             }
-
-            var albumId = url.Split('/').Last(); // Get the last part of the url
-            return new List<SongSearchObject>(); // TODO: return all tracks from album
         }
-
-        return new List<SongSearchObject>();
     }
 
     public static async Task<JsonElement> FetchJsonElement(string req)
@@ -174,11 +181,20 @@ internal class DeezerApi
         }
         catch (Exception e)
         {
-            Debug.WriteLine("Failed: " + req);
-            req = req.Replace("%28", "").Replace("%29", ""); // Remove brackets, causes issues occasionally for some reason
-            var request = new RestRequest(req);
-            var response = await client.GetAsync(request);
-            return JsonDocument.Parse(response.Content).RootElement;
+            try
+            {
+                Debug.WriteLine("Failed: " + req);
+                req = req.Replace("%28", "").Replace("%29", ""); // Remove brackets, causes issues occasionally for some reason
+                var request = new RestRequest(req);
+                var response = await client.GetAsync(request);
+                return JsonDocument.Parse(response.Content).RootElement;
+            }
+            catch (Exception e2)
+            {
+                Debug.WriteLine("Failed again: " + req);
+                Debug.WriteLine(e2);
+                return new JsonElement();
+            }
         }
     }
 
@@ -495,9 +511,13 @@ internal class DeezerApi
         };
     }
 
-    public static async Task<SongSearchObject> GetTrack(string trackId)
+    public static async Task<SongSearchObject?> GetTrack(string trackId)
     {
         var jsonObject = await FetchJsonElement("track/" + trackId);
+        if (string.IsNullOrWhiteSpace(jsonObject.ToString()))
+        {
+            return null;
+        }
 
         // Get the contributors of the track
         HashSet<string> contributors = new HashSet<string>();

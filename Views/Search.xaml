@@ -361,7 +361,7 @@
         </Grid>
 
         <!-- InfoBar -->
-        <InfoBar x:Name="PageInfoBar" Canvas.ZIndex="1" VerticalAlignment="Bottom" HorizontalAlignment="Center" IsOpen="False" Opacity="0" Margin="12" Background="{ThemeResource AcrylicBackgroundFillColorDefaultBrush}" CloseButtonClick="PageInfoBar_OnCloseButtonClick">
+        <InfoBar x:Name="PageInfoBar" Canvas.ZIndex="1" VerticalAlignment="Bottom" HorizontalAlignment="Center" IsOpen="False" Opacity="0" Margin="12" Background="{ThemeResource AcrylicBackgroundFillColorDefaultBrush}" CloseButtonClick="PageInfoBar_OnCloseButtonClick" x:FieldModifier="public">
             <InfoBar.OpacityTransition>
                 <ScalarTransition Duration="0:0:0.25"/>
             </InfoBar.OpacityTransition>

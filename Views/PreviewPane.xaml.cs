@@ -97,9 +97,14 @@ namespace FluentDL.Views
             if (selectedSong.Source.Equals("deezer"))
             {
                 var jsonObject = await FluentDL.Services.DeezerApi.FetchJsonElement("track/" + selectedSong.Id);
-                SongPreviewPlayer.Source = MediaSource.CreateFromUri(new Uri(jsonObject.GetProperty("preview").ToString()));
                 PreviewImage.Source = new BitmapImage(new Uri(jsonObject.GetProperty("album").GetProperty("cover_big").ToString()));
                 trackDetailsList.Add(new TrackDetail { Label = "Track", Value = jsonObject.GetProperty("track_position").ToString() });
+
+                var previewUri = jsonObject.GetProperty("preview").ToString();
+                if (!string.IsNullOrWhiteSpace(previewUri)) // Some tracks don't have a preview
+                {
+                    SongPreviewPlayer.Source = MediaSource.CreateFromUri(new Uri(previewUri));
+                }
             }
 
             if (selectedSong.Source.Equals("youtube"))

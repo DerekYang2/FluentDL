@@ -308,14 +308,9 @@ public sealed partial class Search : Page
             ShowInfoBar(InfoBarSeverity.Informational, $"Looking up \"{playlistName}\" on Deezer ...");
             await LoadSpotifyPlaylist(playlistId, cancellationTokenSource.Token);
         }
-        else if (generalQuery.StartsWith("https://deezer.page.link") || System.Text.RegularExpressions.Regex.IsMatch(generalQuery, @"https://www\.deezer\.com(/[^/]+)?/(track|album)/.*"))
+        else if (generalQuery.StartsWith("https://deezer.page.link") || System.Text.RegularExpressions.Regex.IsMatch(generalQuery, @"https://www\.deezer\.com(/[^/]+)?/(track|album|playlist)/.*"))
         {
-            var resultList = await FluentDL.Services.DeezerApi.GetTracksFromLink(generalQuery);
-
-            foreach (var result in resultList)
-            {
-                ((ObservableCollection<SongSearchObject>)CustomListView.ItemsSource).Add(result);
-            }
+            await FluentDL.Services.DeezerApi.AddTracksFromLink((ObservableCollection<SongSearchObject>)CustomListView.ItemsSource, generalQuery, cancellationTokenSource.Token);
         }
         else
         {
@@ -513,7 +508,7 @@ public sealed partial class Search : Page
         PageInfoBar.Opacity = 0;
     }
 
-    private void ShowInfoBar(InfoBarSeverity severity, string message, int seconds = 2)
+    public void ShowInfoBar(InfoBarSeverity severity, string message, int seconds = 2)
     {
         dispatcher.TryEnqueue(() =>
         {
