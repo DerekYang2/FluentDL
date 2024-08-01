@@ -111,6 +111,7 @@ namespace FluentDL.Views
             {
                 var track = QobuzApi.GetQobuzTrack(selectedSong.Id);
                 PreviewImage.Source = new BitmapImage(new Uri(track.Album.Image.Large));
+                trackDetailsList.RemoveAt(trackDetailsList.FindIndex(x => x.Label == "Popularity")); // Remove popularity
                 trackDetailsList.Add(new TrackDetail() { Label = "Track", Value = selectedSong.TrackPosition });
                 trackDetailsList.Add(new TrackDetail { Label = "Performers", Value = track.Performers });
             }

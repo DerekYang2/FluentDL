@@ -12,8 +12,10 @@ using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using ABI.Windows.Data.Json;
+using ATL;
 using CommunityToolkit.WinUI.UI.Controls.TextToolbarSymbols;
 using DeezNET;
+using DeezNET.Data;
 using FluentDL.Views;
 using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml.Controls;
@@ -621,5 +623,101 @@ internal class DeezerApi
         using var response = await client.GetAsync(uri, cancellationToken);
 
         return new Uri(response.Headers.GetValues("Location").First());
+    }
+
+    public static async Task DownloadTrack(SongSearchObject? song, string directory)
+    {
+        if (song == null || song.Source != "deezer" || !Path.IsPathRooted(directory))
+        {
+            return;
+        }
+
+        var id = long.Parse(song.Id);
+        var trackBytes = await deezerClient.Downloader.GetRawTrackBytes(id, Bitrate.FLAC);
+        //trackBytes = await deezerClient.Downloader.ApplyMetadataToTrackBytes(id, trackBytes);
+        var firstArtist = song.Artists.Split(", ")[0];
+        var filePath = Path.Combine(directory, $"{song.TrackPosition}. {firstArtist} - {song.Title}.flac");
+        await File.WriteAllBytesAsync(filePath, trackBytes);
+        Debug.WriteLine("COMPLETE: " + filePath);
+        await UpdateMetadata(filePath, song.Id);
+        Debug.WriteLine("COMPLETE Metadata: " + filePath);
+    }
+
+    public static async Task UpdateMetadata(string filePath, string trackId)
+    {
+        var jsonObject = await FetchJsonElement("track/" + trackId);
+        var albumJson = await FetchJsonElement("album/" + jsonObject.GetProperty("album").GetProperty("id"));
+        if (string.IsNullOrWhiteSpace(jsonObject.ToString()))
+        {
+            return;
+        }
+
+        // Get the contributors of the track
+        HashSet<string> contributors = new HashSet<string>();
+        var contribStr = "";
+
+        foreach (var contribObject in jsonObject.GetProperty("contributors").EnumerateArray())
+        {
+            var name = contribObject.GetProperty("name").GetString();
+            if (name.Contains(','))
+            {
+                // Split
+                var names = name.Split(", ");
+                foreach (var n in names)
+                {
+                    if (!contributors.Contains(n))
+                    {
+                        contribStr += n + ";";
+                        contributors.Add(n);
+                    }
+                }
+            }
+            else if (!contributors.Contains(name)) // If the name is not already in the list and does not contain a comma
+            {
+                contribStr += name + ";";
+                contributors.Add(name);
+            }
+        }
+
+        contribStr = contribStr.Remove(contribStr.Length - 1); // Remove the last semicolon
+        contribStr = contribStr.Replace(";", ", ");
+        // Get Genres
+        var genreStr = "";
+        foreach (var genreData in albumJson.GetProperty("genres").GetProperty("data").EnumerateArray())
+        {
+            genreStr += genreData.GetProperty("name").GetString() + ";";
+        }
+
+        genreStr = genreStr.Remove(genreStr.Length - 1); // Remove the last semicolon
+
+        // Get image bytes for cover art
+        var imageBytes = await new HttpClient().GetByteArrayAsync(albumJson.GetProperty("cover_big").GetString());
+        PictureInfo newPicture = PictureInfo.fromBinaryData(imageBytes, PictureInfo.PIC_TYPE.Front);
+
+        var track = new Track(filePath);
+        track.Title = jsonObject.GetProperty("title").GetString();
+        track.Album = albumJson.GetProperty("title").GetString();
+        track.AlbumArtist = jsonObject.GetProperty("artist").GetProperty("name").GetString();
+        track.Artist = contribStr;
+        track.AudioSourceUrl = jsonObject.GetProperty("link").GetString();
+        track.BPM = jsonObject.GetProperty("bpm").TryGetInt32(out var bpm) ? bpm : 0;
+        track.AdditionalFields["YEAR"] = jsonObject.GetProperty("release_date").GetString().Substring(0, 4);
+        track.Date = DateTime.Parse(jsonObject.GetProperty("release_date").GetString());
+        track.TrackNumber = jsonObject.GetProperty("track_position").GetInt32();
+        track.TrackTotal = albumJson.GetProperty("nb_tracks").GetInt32();
+        track.Genre = genreStr;
+        track.ISRC = jsonObject.GetProperty("isrc").GetString();
+        track.Popularity = jsonObject.GetProperty("rank").GetInt32();
+        // Append to front if pictures already exist
+        if (track.EmbeddedPictures.Count > 0)
+        {
+            track.EmbeddedPictures.Insert(0, newPicture);
+        }
+        else
+        {
+            track.EmbeddedPictures.Add(newPicture);
+        }
+
+        await track.SaveAsync();
     }
 }

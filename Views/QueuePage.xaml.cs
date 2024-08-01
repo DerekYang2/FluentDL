@@ -156,9 +156,12 @@ public sealed partial class QueuePage : Page
         };
 
         var downloadCoverButton = new AppBarButton() { Icon = new FontIcon { Glyph = "\uEE71" }, Label = "Download Cover" };
+        downloadCoverButton.Click += async (sender, e) =>
+        {
+        };
 
         var removeButton = new AppBarButton() { Icon = new SymbolIcon(Symbol.Delete), Label = "Remove" };
-        removeButton.Click += async (sender, e) =>
+        removeButton.Click += (sender, e) =>
         {
             var selectedSong = PreviewPanel.GetSong();
             if (selectedSong == null)
