@@ -16,7 +16,7 @@ public class SongSearchObject
         set;
     }
 
-    public string Isrc
+    public string? Isrc
     {
         get;
         set;

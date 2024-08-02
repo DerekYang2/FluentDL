@@ -98,12 +98,12 @@ internal class QobuzApi
             Duration = track.Duration.ToString(),
             Explicit = track.ParentalWarning ?? false,
             Source = "qobuz",
-            Id = track.Id.ToString(),
-            TrackPosition = (track.TrackNumber ?? 1).ToString(),
+            Id = track.Id.GetValueOrDefault().ToString(),
+            TrackPosition = track.TrackNumber.GetValueOrDefault().ToString(),
             ImageLocation = album.Image.Small,
             LocalBitmapImage = null,
             Rank = "0",
-            ReleaseDate = track.ReleaseDateOriginal.ToString(),
+            ReleaseDate = FormatDateTimeOffset(track.ReleaseDateStream),
             Title = track.Title,
             Isrc = track.Isrc
         };
@@ -117,6 +117,11 @@ internal class QobuzApi
     public static SongSearchObject GetTrack(string id)
     {
         return ConvertSongSearchObject(apiService.GetTrack(id));
+    }
+
+    public static Task<Track?> ConvertQobuzTrack(SongSearchObject obj)
+    {
+        // No built-in method for this, so we have to get all tracks and search for the ISRC
     }
 
     public static Uri GetPreviewUri(string trackId)
@@ -182,6 +187,18 @@ internal class QobuzApi
                     firstBufferRead = true;
                 }
             }
+        }
+    }
+
+    public static string FormatDateTimeOffset(DateTimeOffset? dateTimeOffset)
+    {
+        if (dateTimeOffset != null)
+        {
+            return dateTimeOffset.GetValueOrDefault().ToString("yyyy-MM-dd");
+        }
+        else
+        {
+            return "";
         }
     }
 }

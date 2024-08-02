@@ -297,8 +297,8 @@ public sealed partial class Search : Page
         {
             await SpotifyApi.AddTracksFromLink((ObservableCollection<SongSearchObject>)CustomListView.ItemsSource, generalQuery, cancellationTokenSource.Token);
             /*
-            Spotify to deezer conversion
-            ShowInfoBar(InfoBarSeverity.Informational, $"Looking up \"{playlistName}\" on Deezer ...");
+            var playlistId = generalQuery.Split("/").Last();
+            //Spotify to deezer conversion
             await LoadSpotifyPlaylist(playlistId, cancellationTokenSource.Token);
             */
         }

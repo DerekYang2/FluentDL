@@ -11,6 +11,7 @@ using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using Windows.Foundation;
 using ABI.Windows.Data.Json;
 using ATL;
 using CommunityToolkit.WinUI.UI.Controls.TextToolbarSymbols;
@@ -295,6 +296,18 @@ internal class DeezerApi
 
     public static async Task<SongSearchObject?> AdvancedSearch(SongSearchObject song)
     {
+        // Try to find by ISRC first
+        if (song.Isrc != null)
+        {
+            Debug.WriteLine("Searching by isrc: " + song.Isrc);
+            var songObj = await GetTrackFromISRC(song.Isrc);
+            if (songObj != null)
+            {
+                Debug.WriteLine("Found track by isrc: " + song.Title);
+                return songObj;
+            }
+        }
+
         var artists = song.Artists.Split(", ").ToList();
         var trackName = PruneTitleSearch(song.Title);
         var albumName = song.AlbumName;
@@ -443,16 +456,15 @@ internal class DeezerApi
         };
     }
 
-    public static async Task<SongSearchObject?> GetTrack(string trackId)
+    private static SongSearchObject? GetTrackFromJsonElement(JsonElement jsonObject)
     {
-        var jsonObject = await FetchJsonElement("track/" + trackId);
         if (string.IsNullOrWhiteSpace(jsonObject.ToString()))
         {
             return null;
         }
 
         // Get the contributors of the track
-        HashSet<string> contributors = new HashSet<string>();
+        var contributors = new HashSet<string>();
         var contribCsv = "";
 
         foreach (var contribObject in jsonObject.GetProperty("contributors").EnumerateArray())
@@ -495,6 +507,24 @@ internal class DeezerApi
             TrackPosition = jsonObject.GetProperty("track_position").ToString(),
             Isrc = jsonObject.GetProperty("isrc").GetString(),
         };
+    }
+
+    public static async Task<SongSearchObject?> GetTrack(string trackId)
+    {
+        var jsonObject = await FetchJsonElement("track/" + trackId);
+        return GetTrackFromJsonElement(jsonObject);
+    }
+
+    public static async Task<SongSearchObject?> GetTrackFromISRC(string ISRC)
+    {
+        var jsonObject = await FetchJsonElement("track/isrc:" + ISRC);
+        if (jsonObject.TryGetProperty("error", out var errorObj)) // Has an error field
+        {
+            Debug.WriteLine($"Error getting track {ISRC}: {errorObj}");
+            return null;
+        }
+
+        return GetTrackFromJsonElement(jsonObject);
     }
 
     public static int CalcLevenshteinDistance(string a, string b)

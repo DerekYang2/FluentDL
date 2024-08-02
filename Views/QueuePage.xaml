@@ -124,7 +124,7 @@
 
                         <Grid Grid.Column="2" CornerRadius="4" Margin="0,0,0,0" VerticalAlignment="Stretch" Visibility="{x:Bind ResultString, Converter={StaticResource PathToVisibilityConverter}}" HorizontalAlignment="Stretch">
                             <StackPanel>
-                            <Border Background="{ThemeResource LayerFillColorAltBrush}" CornerRadius="2" Padding="6, 1" HorizontalAlignment="Right">
+                            <Border Background="{ThemeResource LayerOnMicaBaseAltFillColorSecondaryBrush}" CornerRadius="2" Padding="6, 1" HorizontalAlignment="Right">
                                 <TextBlock x:Name="SourceBadge" Text="{x:Bind Source}" Style="{ThemeResource CaptionTextBlockStyle}" VerticalAlignment="Center"/>
                             </Border>
                             </StackPanel>
