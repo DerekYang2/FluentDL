@@ -1,5 +1,7 @@
 ﻿using System.Collections.ObjectModel;
 using System.Diagnostics;
+using System.Text.RegularExpressions;
+using ABI.Windows.Media.Core;
 using FluentDL.Models;
 using QobuzApiSharp.Models.Content;
 using QobuzApiSharp.Service;
@@ -9,30 +11,60 @@ namespace FluentDL.Services;
 internal class QobuzApi
 {
     private static QobuzApiService apiService = new QobuzApiService();
+    private static bool loggedIn = false;
 
     public static void Initialize(string? userId, string? AuthToken)
     {
         if (!string.IsNullOrWhiteSpace(userId) && !string.IsNullOrWhiteSpace(AuthToken))
         {
             apiService.LoginWithToken(userId, AuthToken);
+            loggedIn = true;
         }
     }
 
-    public static void AddTracksFromLink(ObservableCollection<SongSearchObject> itemSource, string url, CancellationToken token)
+    public static async Task AddTracksFromLink(ObservableCollection<SongSearchObject> itemSource, string url, CancellationToken token)
     {
-        if (!url.Contains("/album/")) return;
-        // Get string after the last slash
-        var albumId = url.Split('/').Last();
-        Debug.WriteLine("Album ID: " + albumId);
-        var album = apiService.GetAlbum(albumId);
+        var isTrack = url.StartsWith("https://play.qobuz.com/track/") || url.StartsWith("https://open.qobuz.com/track/") || Regex.IsMatch(url, @"https://www\.qobuz\.com(/[^/]+)?/track/.*");
+        var isAlbum = url.StartsWith("https://play.qobuz.com/album/") || url.StartsWith("https://open.qobuz.com/album/") || Regex.IsMatch(url, @"https://www\.qobuz\.com(/[^/]+)?/album/.*");
+        var isPlaylist = url.StartsWith("https://play.qobuz.com/playlist/") || url.StartsWith("https://open.qobuz.com/playlist/") || Regex.IsMatch(url, @"https://www\.qobuz\.com(/[^/]+)?/playlist/.*"); // Remove any query parameters
 
-        itemSource.Clear(); // Clear the item source
-        if (album.Tracks != null)
+        url = url.Split('?')[0]; // Remove any query parameters
+        var id = url.Split('/').Last(); // Get string after the last slash
+
+        if (isTrack)
         {
-            foreach (var track in album.Tracks.Items)
+            var track = apiService.GetTrack(id);
+            itemSource.Add(ConvertSongSearchObject(track));
+        }
+
+        if (isAlbum)
+        {
+            var album = await Task.Run(() => apiService.GetAlbum(id), token);
+
+            if (album.Tracks != null)
             {
-                if (token.IsCancellationRequested) return;
-                itemSource.Add(CreateSongSearchObject(track, album));
+                itemSource.Clear(); // Clear the item source
+                foreach (var track in album.Tracks.Items)
+                {
+                    if (token.IsCancellationRequested) return;
+                    itemSource.Add(CreateSongSearchObject(track, album));
+                }
+            }
+        }
+
+        if (isPlaylist)
+        {
+            var playlist = await Task.Run(() => apiService.GetPlaylist(id, withAuth: loggedIn), token);
+
+            if (playlist.Tracks != null)
+            {
+                itemSource.Clear(); // Clear the item source
+                foreach (var track in playlist.Tracks.Items) // Need to recreate the tracks so they have album objects
+                {
+                    if (token.IsCancellationRequested) return;
+                    Debug.WriteLine(track.Id);
+                    itemSource.Add(ConvertSongSearchObject(apiService.GetTrack(track.Id.ToString())));
+                }
             }
         }
     }
@@ -53,6 +85,7 @@ internal class QobuzApi
             Rank = "0",
             ReleaseDate = track.ReleaseDateOriginal.ToString(),
             Title = track.Title,
+            Isrc = track.Isrc
         };
     }
 
@@ -72,6 +105,7 @@ internal class QobuzApi
             Rank = "0",
             ReleaseDate = track.ReleaseDateOriginal.ToString(),
             Title = track.Title,
+            Isrc = track.Isrc
         };
     }
 
@@ -83,6 +117,11 @@ internal class QobuzApi
     public static SongSearchObject GetTrack(string id)
     {
         return ConvertSongSearchObject(apiService.GetTrack(id));
+    }
+
+    public static Uri GetPreviewUri(string trackId)
+    {
+        return new Uri(apiService.GetTrackFileUrl(trackId, "5").Url);
     }
 
     public static void TestSearch(string query)

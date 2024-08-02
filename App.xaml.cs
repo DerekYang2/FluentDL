@@ -175,6 +175,7 @@ public partial class App : Application
         Thread t2 = new Thread(async () =>
         {
             QobuzApi.Initialize(await localSettings.ReadSettingAsync<string>(SettingsViewModel.QobuzId), await localSettings.ReadSettingAsync<string>(SettingsViewModel.QobuzToken));
+            Debug.WriteLine("Logged in");
         });
         t2.Start();
     }

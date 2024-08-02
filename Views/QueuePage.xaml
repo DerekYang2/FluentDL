@@ -102,10 +102,6 @@
                                     <TextBlock x:Name="ExplicitBadge" Text="E" Style="{ThemeResource CaptionTextBlockStyle}"
                                                Foreground="Black"/>
                                 </Border>
-                                <Border Background="{ThemeResource LayerFillColorAltBrush}" CornerRadius="2" Padding="4, 1"
-                                        VerticalAlignment="Center">
-                                    <TextBlock x:Name="SourceBadge" Text="{x:Bind Source}" Style="{ThemeResource CaptionTextBlockStyle}"/>
-                                </Border>
                             </StackPanel>
                             <TextBlock Text="{x:Bind Artists}" FontFamily="Segoe UI Variable Display"
                                        Style="{ThemeResource BodyTextBlockStyle}" TextTrimming="CharacterEllipsis"
@@ -126,12 +122,12 @@
                                        FontFamily="Segoe UI Variable Display" />
                         </StackPanel>
 
-                        <Grid Grid.Column="2" CornerRadius="4" Margin="0,0,0,0" VerticalAlignment="Stretch" Visibility="{x:Bind ResultString, Converter={StaticResource PathToVisibilityConverter}}">
-                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Stretch" Spacing="8" VerticalAlignment="Top">
-                                <TextBlock HorizontalAlignment="Center" Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}">Complete</TextBlock>
-                                <FontIcon Glyph="&#xE930;" Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"/>                                    
+                        <Grid Grid.Column="2" CornerRadius="4" Margin="0,0,0,0" VerticalAlignment="Stretch" Visibility="{x:Bind ResultString, Converter={StaticResource PathToVisibilityConverter}}" HorizontalAlignment="Stretch">
+                            <StackPanel>
+                            <Border Background="{ThemeResource LayerFillColorAltBrush}" CornerRadius="2" Padding="6, 1" HorizontalAlignment="Right">
+                                <TextBlock x:Name="SourceBadge" Text="{x:Bind Source}" Style="{ThemeResource CaptionTextBlockStyle}" VerticalAlignment="Center"/>
+                            </Border>
                             </StackPanel>
-
                             <Button x:Name="OutputButton" VerticalAlignment="Bottom" HorizontalAlignment="Stretch" Click="OutputButton_OnClick">
                                 <StackPanel Orientation="Horizontal">
                                     <FontIcon x:Name="OutputIcon" Glyph="&#xE8A7;" FontSize="16" Margin="0, 0, 8, 0"/>

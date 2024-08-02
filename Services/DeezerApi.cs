@@ -556,7 +556,8 @@ internal class DeezerApi
         var trackBytes = await deezerClient.Downloader.GetRawTrackBytes(id, Bitrate.FLAC);
         //trackBytes = await deezerClient.Downloader.ApplyMetadataToTrackBytes(id, trackBytes);
         var firstArtist = song.Artists.Split(", ")[0];
-        var filePath = Path.Combine(directory, $"{song.TrackPosition}. {firstArtist} - {song.Title}.flac");
+        // TODO: ensure name is file safe
+        var filePath = Path.Combine(directory, $"{song.TrackPosition}. {firstArtist} - {song.Title} [{song.Isrc}].flac");
         await File.WriteAllBytesAsync(filePath, trackBytes);
         Debug.WriteLine("COMPLETE: " + filePath);
         await UpdateMetadata(filePath, song.Id);
