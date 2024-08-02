@@ -2,6 +2,8 @@ using FluentDL.ViewModels;
 using Microsoft.UI.Xaml.Controls;
 using FluentDL.Services;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
+using FluentDL.Contracts.Services;
 using FluentDL.Models;
 using Microsoft.UI.Dispatching;
 using YoutubeExplode.Search;
@@ -312,7 +314,16 @@ public sealed partial class Search : Page
         }
         else
         {
-            await DeezerApi.GeneralSearch((ObservableCollection<SongSearchObject>)CustomListView.ItemsSource, generalQuery, cancellationTokenSource.Token);
+            var generalSource = await App.GetService<ILocalSettingsService>().ReadSettingAsync<string>(SettingsViewModel.SearchSource) ?? "Deezer";
+            switch (generalSource)
+            {
+                case "Qobuz":
+                    await QobuzApi.GeneralSearch((ObservableCollection<SongSearchObject>)CustomListView.ItemsSource, generalQuery, cancellationTokenSource.Token);
+                    break;
+                default:
+                    await DeezerApi.GeneralSearch((ObservableCollection<SongSearchObject>)CustomListView.ItemsSource, generalQuery, cancellationTokenSource.Token);
+                    break;
+            }
         }
 
         originalList = new ObservableCollection<SongSearchObject>((ObservableCollection<SongSearchObject>)CustomListView.ItemsSource); // Save original list order
@@ -340,7 +351,7 @@ public sealed partial class Search : Page
                 break;
             }
 
-            var deezerResult = await FluentDL.Services.DeezerApi.AdvancedSearch(song);
+            var deezerResult = await FluentDL.Services.DeezerApi.GetDeezerTrack(song);
             if (deezerResult != null)
             {
                 ((ObservableCollection<SongSearchObject>)CustomListView.ItemsSource).Add(deezerResult); // Add to list

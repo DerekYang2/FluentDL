@@ -16,6 +16,7 @@ public partial class SettingsViewModel : ObservableRecipient
     public static readonly string DeezerARL = "deezer_arl";
     public static readonly string QobuzId = "qobuz_id";
     public static readonly string QobuzToken = "qobuz_token";
+    public static readonly string SearchSource = "search_source";
 
     private readonly IThemeSelectorService _themeSelectorService;
 

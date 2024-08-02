@@ -244,6 +244,14 @@
                             </Flyout>
                         </Button.Flyout>
                     </Button>
+                    <Button Content="{}{isrc}" ToolTipService.ToolTip="The ISRC (International Standard Recording Code) identifier for the track" Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}">
+                        <Button.Flyout>
+                            <Flyout>
+                                <TextBlock MaxWidth="400" TextWrapping="WrapWholeWords" 
+                                           Text="The ISRC (International Standard Recording Code) identifier for the track (eg. CCXXXYYNNNNN)"/>
+                            </Flyout>
+                        </Button.Flyout>
+                    </Button>
                 </StackPanel>
                 </ScrollViewer>
                 <AutoSuggestBox x:Name="DirectoryInput" 

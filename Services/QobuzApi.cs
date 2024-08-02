@@ -22,6 +22,29 @@ internal class QobuzApi
         }
     }
 
+    public static async Task GeneralSearch(ObservableCollection<SongSearchObject> itemSource, string query, CancellationToken token, int limit = 25)
+    {
+        query = query.Trim(); // Trim the query
+        if (string.IsNullOrWhiteSpace(query))
+        {
+            return;
+        }
+
+        var results = await Task.Run(() => apiService.SearchTracks(query, limit), token);
+
+        if (results == null || results.Tracks == null)
+        {
+            return;
+        }
+
+        itemSource.Clear(); // Clear the item source
+        foreach (var track in results.Tracks.Items)
+        {
+            if (token.IsCancellationRequested) return;
+            itemSource.Add(GetTrack(track.Id.ToString()));
+        }
+    }
+
     public static async Task AddTracksFromLink(ObservableCollection<SongSearchObject> itemSource, string url, CancellationToken token)
     {
         var isTrack = url.StartsWith("https://play.qobuz.com/track/") || url.StartsWith("https://open.qobuz.com/track/") || Regex.IsMatch(url, @"https://www\.qobuz\.com(/[^/]+)?/track/.*");
@@ -119,9 +142,33 @@ internal class QobuzApi
         return ConvertSongSearchObject(apiService.GetTrack(id));
     }
 
-    public static Task<Track?> ConvertQobuzTrack(SongSearchObject obj)
+    public static Track? GetQobuzTrack(SongSearchObject songObj)
     {
         // No built-in method for this, so we have to get all tracks and search for the ISRC
+        string? isrc = songObj.Isrc;
+
+        string query = songObj.Artists.Split(", ")[0] + " " + songObj.Title;
+        var result = apiService.SearchTracks(query);
+        if (result.Tracks == null)
+        {
+            return null;
+        }
+
+        if (isrc != null)
+        {
+            foreach (var track in result.Tracks.Items)
+            {
+                if (track.Isrc == isrc)
+                {
+                    return track;
+                }
+            }
+        }
+
+        var searchResults = new List<SongSearchObject>();
+
+        // TODO: a match similar to deezer general search
+        return null;
     }
 
     public static Uri GetPreviewUri(string trackId)

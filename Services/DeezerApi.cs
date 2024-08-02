@@ -216,12 +216,13 @@ internal class DeezerApi
 
     public static async Task GeneralSearch(ObservableCollection<SongSearchObject> itemSource, string query, CancellationToken token)
     {
-        itemSource.Clear();
         query = query.Trim(); // Trim the query
-        if (query.Length == 0)
+        if (string.IsNullOrWhiteSpace(query))
         {
             return;
         }
+
+        itemSource.Clear();
 
         var req = "search?q=" + WebUtility.UrlEncode(query);
         req = req.Replace("%28", "").Replace("%29", ""); // Remove brackets, causes issues occasionally for some reason
@@ -294,7 +295,7 @@ internal class DeezerApi
         return closest;
     }
 
-    public static async Task<SongSearchObject?> AdvancedSearch(SongSearchObject song)
+    public static async Task<SongSearchObject?> GetDeezerTrack(SongSearchObject song)
     {
         // Try to find by ISRC first
         if (song.Isrc != null)

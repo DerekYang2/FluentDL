@@ -46,6 +46,7 @@ public class QueueObject : SongSearchObject
         ResultString = null;
         IsRunning = false;
         LocalBitmapImage = song.LocalBitmapImage;
+        Isrc = song.Isrc;
     }
 }
 
@@ -229,7 +230,7 @@ public partial class QueueViewModel : ObservableRecipient
                 };
 
 
-                var thisCommand = command.Replace("{url}", url).Replace("{ext}", (isLocal ? Path.GetExtension(Source[i].Id) : ".").Substring(1)).Replace("{file_name}", isLocal ? Path.GetFileName(Source[i].Id) : "").Replace("{title}", Source[i].Title).Replace("{image_url}", Source[i].ImageLocation ?? "").Replace("{id}", isLocal ? "" : Source[i].Id).Replace("{release_date}", Source[i].ReleaseDate).Replace("{artists}", Source[i].Artists).Replace("{duration}", Source[i].Duration).Replace("{album}", Source[i].AlbumName);
+                var thisCommand = command.Replace("{url}", url).Replace("{ext}", (isLocal ? Path.GetExtension(Source[i].Id) : ".").Substring(1)).Replace("{file_name}", isLocal ? Path.GetFileName(Source[i].Id) : "").Replace("{title}", Source[i].Title).Replace("{image_url}", Source[i].ImageLocation ?? "").Replace("{id}", isLocal ? "" : Source[i].Id).Replace("{release_date}", Source[i].ReleaseDate).Replace("{artists}", Source[i].Artists).Replace("{duration}", Source[i].Duration).Replace("{album}", Source[i].AlbumName).Replace("{isrc}", Source[i].Isrc);
                 // Run the command
                 var resultStr = TerminalSubprocess.GetRunCommandSync(thisCommand, directory);
 

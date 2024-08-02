@@ -24,59 +24,22 @@
                     <EntranceThemeTransition FromVerticalOffset="50" />
                     <RepositionThemeTransition IsStaggeringEnabled="False" />
                 </StackPanel.ChildrenTransitions>
+                <!-- GENERAL SETTINGS ______________________________________________________________________________________________ -->
+                <TextBlock Text="General" Style="{StaticResource TextBlockSectionStyle}" />
+                <local:SettingsCard x:Name="GeneralSearchSource"
+                                       Description="Set the source for general searches (any query that is not a defined URL)."
+                                       Header="Search Source"
+                                       HeaderIcon="{ui:FontIcon Glyph=&#xF6FA;}">
+                    <ComboBox x:Name="SearchSourceComboBox" SelectionChanged="SearchSourceComboBox_OnSelectionChanged">
+                        <ComboBoxItem x:Name="Deezer" Content="Deezer"/>
+                        <ComboBoxItem x:Name="Qobuz" Content="Qobuz"/>
+                        <ComboBoxItem x:Name="Spotify" Content="Spotify"/>
+                    </ComboBox>
+                </local:SettingsCard>
 
-                <TextBlock Text="API Settings" Style="{StaticResource TextBlockSectionStyle}" />
-                <local:SettingsExpander x:Name="SettingsCard"
-                                        VerticalAlignment="Top"
-                                        Description="Test description"
-                                        Header="SettingsExpander">
-                    <local:SettingsExpander.HeaderIcon>
-                        <FontIcon Glyph="&#xE700;" />
-                    </local:SettingsExpander.HeaderIcon>
 
-                    <local:SettingsExpander.Items>
-                        <local:SettingsCard Header="Test 1">
-                            <Button Content="Button" />
-                        </local:SettingsCard>
-
-                        <local:SettingsCard ContentAlignment="Left">
-                            <CheckBox Content="Test checkbox" />
-                        </local:SettingsCard>
-
-                        <local:SettingsCard HorizontalContentAlignment="Left"
-                                            ContentAlignment="Vertical"
-                                            Description="Vertical test"
-                                            Header="Vertically aligned">
-                            <GridView SelectedIndex="1">
-                                <GridViewItem>
-                                    <Border Width="64"
-                                            Height="64"
-                                            Background="#0078D4"
-                                            CornerRadius="4" />
-                                </GridViewItem>
-                                <GridViewItem>
-                                    <Border Width="64"
-                                            Height="64"
-                                            Background="#005EB7"
-                                            CornerRadius="4" />
-                                </GridViewItem>
-                                <GridViewItem>
-                                    <Border Width="64"
-                                            Height="64"
-                                            Background="#003D92"
-                                            CornerRadius="4" />
-                                </GridViewItem>
-                                <GridViewItem>
-                                    <Border Width="64"
-                                            Height="64"
-                                            Background="#001968"
-                                            CornerRadius="4" />
-                                </GridViewItem>
-                            </GridView>
-                        </local:SettingsCard>
-                    </local:SettingsExpander.Items>
-                </local:SettingsExpander>
-
+                <!-- API SETTINGS __________________________________________________________________________________________________ -->
+                <TextBlock Text="API" Style="{StaticResource TextBlockSectionStyle}" />
                 <local:SettingsExpander x:Name="DeezerExpander"
                                         VerticalAlignment="Top"
                                         Description="Set authentication tokens for Deezer."
@@ -207,6 +170,7 @@
                     </local:SettingsExpander.Items>
                 </local:SettingsExpander>
 
+                <!-- PERSONALIZATION SETTINGS _______________________________________________________________________________________________ -->
                 <TextBlock Text="Personalization" Style="{StaticResource TextBlockSectionStyle}" />
 
                 <local:SettingsExpander x:Name="ThemeExpander"
@@ -252,7 +216,7 @@
                     </local:SettingsExpander.Items>
                 </local:SettingsExpander>
 
-
+                <!-- ABOUT __________________________________________________________________________________________________ -->
                 <TextBlock Text="About" Style="{StaticResource TextBlockSectionStyle}" />
 
                 <local:SettingsExpander Description="Description"
