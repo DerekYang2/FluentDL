@@ -11,6 +11,7 @@
     xmlns:helpers="using:FluentDL.Helpers"
     xmlns:behaviors="using:FluentDL.Behaviors"
     xmlns:models="using:FluentDL.Models"
+    xmlns:controls3="using:CommunityToolkit.WinUI.Controls"
     mc:Ignorable="d"
     NavigationCacheMode="Required"
     >
@@ -26,7 +27,6 @@
                        Title="Advanced Search" IsSecondaryButtonEnabled="True" IsPrimaryButtonEnabled="True"
                        PrimaryButtonClick="SearchDialogClick" PrimaryButtonStyle="{ThemeResource AccentButtonStyle}">
             <StackPanel>
-
                 <InfoBar
                     IsOpen="True"
                     IsClosable="False"
@@ -173,8 +173,8 @@
         <!-- Search page -->
         <Grid>
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="2*" />
-                <ColumnDefinition Width="1*" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
 
             <Grid.RowDefinitions>
@@ -185,7 +185,7 @@
             </Grid.RowDefinitions>
 
             <!-- Search bar and buttons -->
-            <Grid Grid.Column="0" Grid.Row="0" ColumnSpacing="8" Margin="0, 2, 0, 8">
+            <Grid x:Name="FirstRowGrid" Grid.Column="0" Grid.Row="0" ColumnSpacing="8" Margin="0, 2, 0, 8">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="Auto" />
@@ -311,7 +311,9 @@
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="76" />
                                 <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
+
                             <Border CornerRadius="4" Height="76">
                                 <Border.Background>
                                     <ImageBrush Stretch="UniformToFill" ImageSource="{x:Bind ImageLocation}" />
@@ -350,15 +352,22 @@
                                            Style="{ThemeResource BodyTextBlockStyle}" Margin="5,0,0,0"
                                            FontFamily="Segoe UI Variable Display" />
                             </StackPanel>
+
+                            <Border Grid.Column="2" Background="{ThemeResource LayerFillColorAltBrush}" CornerRadius="2" Padding="4, 1"
+                                    VerticalAlignment="Top">
+                                <TextBlock x:Name="SourceBadge" Text="{x:Bind Source}" Style="{ThemeResource CaptionTextBlockStyle}"/>
+                            </Border>
+
                         </Grid>
                     </DataTemplate>
                 </ListView.ItemTemplate>
             </ListView>
-
             <views:PreviewPane x:Name="PreviewPanel" Grid.Row="0" Grid.RowSpan="4" Grid.Column="1"
                                Padding="12"
                                Margin="12,0,0,12"
-                               VerticalAlignment="Stretch" />
+                               VerticalAlignment="Stretch" 
+                               />
+
         </Grid>
 
         <!-- InfoBar -->

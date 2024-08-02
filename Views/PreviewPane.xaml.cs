@@ -39,6 +39,7 @@ namespace FluentDL.Views
         public PreviewPane()
         {
             this.InitializeComponent();
+            RelativePreviewPanel.Width = App.MainWindow.Width * 0.4;
             dispatcher = DispatcherQueue.GetForCurrentThread();
             Clear();
         }

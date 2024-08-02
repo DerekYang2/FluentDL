@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
+
 <UserControl
     x:Class="FluentDL.Views.PreviewPane"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
@@ -8,26 +9,38 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:controls="using:CommunityToolkit.WinUI.UI.Controls"
     xmlns:controls1="using:Microsoft.UI.Xaml.Controls"
+    xmlns:controls2="using:CommunityToolkit.WinUI.Controls"
     mc:Ignorable="d">
-
     <Grid
         x:Name="RelativePreviewPanel"
         CornerRadius="8"
         BorderThickness="1"
         BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
         Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
-        >
+        MinWidth="340"
+        MaxWidth="740">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="Auto"></ColumnDefinition>
+            <ColumnDefinition Width="*"></ColumnDefinition>
+        </Grid.ColumnDefinitions>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
-        <CommandBar x:Name="CommandBar" Background="Transparent" IsOpen="False" DefaultLabelPosition="Right"
-                    Visibility="Collapsed" Grid.Row="0" Margin="12, 4, 12, 2">
+        <controls2:ContentSizer Grid.Row="0" Grid.RowSpan="3" Grid.Column="0"
+                                TargetControl="{x:Bind RelativePreviewPanel}" IsDragInverted="True" IsThumbVisible="True" Margin="0, 0, -12, 0">
+            <controls2:ContentSizer.Style>
+            </controls2:ContentSizer.Style>
+        </controls2:ContentSizer>
+
+        <CommandBar Grid.Column="1" x:Name="CommandBar" Background="Transparent" IsOpen="False"
+                    DefaultLabelPosition="Right"
+                    Visibility="Collapsed" Grid.Row="0" Margin="0, 4, 12, 2">
         </CommandBar>
 
-        <ScrollView x:Name="PreviewScrollView" VerticalScrollBarVisibility="Auto" Grid.Row="1"
+        <ScrollView Grid.Column="1" x:Name="PreviewScrollView" VerticalScrollBarVisibility="Auto" Grid.Row="1"
                     Margin="12, 0, 12, 0" Visibility="Visible" CornerRadius="8"
                     Background="{ThemeResource AcrylicBackgroundFillColorDefaultBrush}"
                     BorderBrush="{ThemeResource ControlStrokeColorOnAccentTertiaryBrush}" BorderThickness="1">
@@ -61,10 +74,9 @@
                                         <TextBlock Text="{x:Bind Value}" Style="{ThemeResource BodyText}"
                                                    HorizontalAlignment="Right"
                                                    Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"
-                                                   LineHeight="22" 
+                                                   LineHeight="22"
                                                    TextTrimming="CharacterEllipsis"
-                                                   ToolTipService.ToolTip="{x:Bind Value}"
-                                                   />
+                                                   ToolTipService.ToolTip="{x:Bind Value}" />
                                     </DataTemplate>
                                 </ItemsControl.ItemTemplate>
                             </ItemsControl>
@@ -74,12 +86,13 @@
             </StackPanel>
         </ScrollView>
 
-        <MediaPlayerElement Grid.Row="2" x:Name="SongPreviewPlayer" AutoPlay="False"
+        <MediaPlayerElement Grid.Column="1" Grid.Row="2" x:Name="SongPreviewPlayer" AutoPlay="False"
                             AreTransportControlsEnabled="True" RelativePanel.AlignBottomWithPanel="True"
-                            Visibility="Collapsed" />
+                            Visibility="Collapsed" 
+                            />
 
-        <TextBlock x:Name="NoneSelectedText" Text="No track selected." Style="{ThemeResource BodyText}"
-                   HorizontalAlignment="Center" VerticalAlignment="Center" 
+        <TextBlock Grid.Column="1" x:Name="NoneSelectedText" Text="No track selected." Style="{ThemeResource BodyText}"
+                   HorizontalAlignment="Center" VerticalAlignment="Center"
                    Grid.Row="0" Grid.RowSpan="3"
                    Margin="0,0,0,10" />
 

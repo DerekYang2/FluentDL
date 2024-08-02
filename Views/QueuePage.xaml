@@ -31,8 +31,8 @@
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="2*" />
             <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="Auto" />
         </Grid.ColumnDefinitions>
         <controls1:DockPanel Grid.Row="0" Grid.Column="0">
             <Button VerticalAlignment="Center" Margin="0, 0, 0, 0" Background="Transparent"
@@ -149,7 +149,8 @@
         <views:PreviewPane Grid.Row="0" Grid.RowSpan="3" Grid.Column="1" x:Name="PreviewPanel"
                            Padding="12"
                            Margin="12,0,0,12"
-                           VerticalAlignment="Stretch" />
+                           VerticalAlignment="Stretch" 
+                           />
 
     <!-- Content Dialog for command running-->
     <ContentDialog x:Name="CustomCommandDialog" PrimaryButtonText="Run" CloseButtonText="Cancel"
