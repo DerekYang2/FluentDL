@@ -1,5 +1,6 @@
 ﻿using System.Collections.ObjectModel;
 using System.Diagnostics;
+using FluentDL.Models;
 using QobuzApiSharp.Models.Content;
 using QobuzApiSharp.Service;
 
@@ -24,6 +25,8 @@ internal class QobuzApi
         var albumId = url.Split('/').Last();
         Debug.WriteLine("Album ID: " + albumId);
         var album = apiService.GetAlbum(albumId);
+
+        itemSource.Clear(); // Clear the item source
         if (album.Tracks != null)
         {
             foreach (var track in album.Tracks.Items)

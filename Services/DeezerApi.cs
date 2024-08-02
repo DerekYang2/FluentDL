@@ -16,98 +16,14 @@ using ATL;
 using CommunityToolkit.WinUI.UI.Controls.TextToolbarSymbols;
 using DeezNET;
 using DeezNET.Data;
+using FluentDL.Models;
 using FluentDL.Views;
 using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml.Controls;
-using Microsoft.UI.Xaml.Media.Imaging;
 using RestSharp;
 using YoutubeExplode.Search;
 
 namespace FluentDL.Services;
-
-public class SongSearchObject
-{
-    public string Title
-    {
-        get;
-        set;
-    }
-
-    public string? ImageLocation
-    {
-        get;
-        set;
-    }
-
-    public string Id
-    {
-        get;
-        set;
-    }
-
-    public string ReleaseDate
-    {
-        get;
-        set;
-    }
-
-    public string Artists
-    {
-        get;
-        set;
-    }
-
-    public string Duration
-    {
-        get;
-        set;
-    }
-
-    public string Rank
-    {
-        get;
-        set;
-    }
-
-    public string AlbumName
-    {
-        get;
-        set;
-    }
-
-    public string Source
-    {
-        get;
-        set;
-    }
-
-    public bool Explicit
-    {
-        get;
-        set;
-    }
-
-    public string TrackPosition
-    {
-        get;
-        set;
-    }
-
-    public BitmapImage? LocalBitmapImage
-    {
-        get;
-        set;
-    }
-
-    public SongSearchObject()
-    {
-    }
-
-    public override string ToString()
-    {
-        return Source + " | Title: " + Title + ", Artists: " + Artists + ", Duration: " + Duration + ", Rank: " + Rank + ", Release Date: " + ReleaseDate + ", Image Location: " + ImageLocation + ", Id: " + Id + ", Album Name: " + AlbumName;
-    }
-}
 
 // TODO: Handle null warnings and catch network errors
 
@@ -159,6 +75,9 @@ internal class DeezerApi
             if (DeezerURL.TryParse(url, out var urlData))
             {
                 var tracksInAlbum = await urlData.GetAssociatedTracks(deezerClient, 1000, token);
+
+                list.Clear(); // Clear the item source for lists like playlist/albums
+
                 foreach (var trackId in tracksInAlbum)
                 {
                     if (token.IsCancellationRequested) // Stop the search
@@ -573,7 +492,8 @@ internal class DeezerApi
             Rank = jsonObject.GetProperty("rank").ToString(),
             AlbumName = jsonObject.GetProperty("album").GetProperty("title").GetString(),
             Explicit = jsonObject.GetProperty("explicit_lyrics").GetBoolean(),
-            TrackPosition = jsonObject.GetProperty("track_position").ToString()
+            TrackPosition = jsonObject.GetProperty("track_position").ToString(),
+            Isrc = jsonObject.GetProperty("isrc").GetString(),
         };
     }
 

@@ -12,6 +12,7 @@ using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml.Media.Imaging;
 using WinRT.Interop;
 using ATL.Logging;
+using FluentDL.Models;
 
 namespace FluentDL.Views;
 

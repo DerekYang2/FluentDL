@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using FluentDL.Models;
 using YoutubeExplode;
 using YoutubeExplode.Search;
 using YoutubeExplode.Videos.Streams;

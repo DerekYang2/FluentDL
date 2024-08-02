@@ -2,6 +2,7 @@ using FluentDL.ViewModels;
 using Microsoft.UI.Xaml.Controls;
 using FluentDL.Services;
 using System.Collections.ObjectModel;
+using FluentDL.Models;
 using Microsoft.UI.Dispatching;
 using YoutubeExplode.Search;
 using Microsoft.UI.Xaml;
@@ -292,33 +293,29 @@ public sealed partial class Search : Page
         // Format of links https://open.spotify.com/playlist/{id}?
         // OR https://open.spotify.com/playlist/{id}?...
 
-        if (generalQuery.StartsWith("https://open.spotify.com/playlist/"))
+        if (generalQuery.StartsWith("https://open.spotify.com/"))
         {
-            var playlistId = generalQuery.Split("/").Last();
-            // Remove any query parameters
-            if (playlistId.Contains("?"))
-            {
-                playlistId = playlistId.Split("?").First();
-            }
-
-            var playlistName = await SpotifyApi.GetPlaylistName(playlistId);
+            await SpotifyApi.AddTracksFromLink((ObservableCollection<SongSearchObject>)CustomListView.ItemsSource, generalQuery, cancellationTokenSource.Token);
+            /*
+            Spotify to deezer conversion
             ShowInfoBar(InfoBarSeverity.Informational, $"Looking up \"{playlistName}\" on Deezer ...");
             await LoadSpotifyPlaylist(playlistId, cancellationTokenSource.Token);
+            */
         }
         else if (generalQuery.StartsWith("https://deezer.page.link") || System.Text.RegularExpressions.Regex.IsMatch(generalQuery, @"https://www\.deezer\.com(/[^/]+)?/(track|album|playlist)/.*"))
         {
-            await FluentDL.Services.DeezerApi.AddTracksFromLink((ObservableCollection<SongSearchObject>)CustomListView.ItemsSource, generalQuery, cancellationTokenSource.Token);
+            await DeezerApi.AddTracksFromLink((ObservableCollection<SongSearchObject>)CustomListView.ItemsSource, generalQuery, cancellationTokenSource.Token);
         }
         else if (generalQuery.StartsWith("https://www.qobuz.com/"))
         {
-            FluentDL.Services.QobuzApi.AddTracksFromLink((ObservableCollection<SongSearchObject>)CustomListView.ItemsSource, generalQuery, cancellationTokenSource.Token);
+            QobuzApi.AddTracksFromLink((ObservableCollection<SongSearchObject>)CustomListView.ItemsSource, generalQuery, cancellationTokenSource.Token);
         }
         else
         {
-            await FluentDL.Services.DeezerApi.GeneralSearch((ObservableCollection<SongSearchObject>)CustomListView.ItemsSource, generalQuery, cancellationTokenSource.Token);
+            await DeezerApi.GeneralSearch((ObservableCollection<SongSearchObject>)CustomListView.ItemsSource, generalQuery, cancellationTokenSource.Token);
         }
 
-        originalList = new ObservableCollection<SongSearchObject>((ObservableCollection<SongSearchObject>)CustomListView.ItemsSource);
+        originalList = new ObservableCollection<SongSearchObject>((ObservableCollection<SongSearchObject>)CustomListView.ItemsSource); // Save original list order
         SetResultsAmount(originalList.Count);
         SortCustomListView();
         SetNoSearchResults(); // Call again as actual check 
@@ -335,7 +332,7 @@ public sealed partial class Search : Page
         YoutubeWebView.Source = null; // Clear web view source
         ((ObservableCollection<SongSearchObject>)CustomListView.ItemsSource).Clear(); // Clear the list
 
-        List<SongSearchObject> playlistObjects = await SpotifyApi.GetPlaylist(playlistId);
+        List<SongSearchObject> playlistObjects = await SpotifyApi.GetPlaylist(playlistId, token);
         foreach (var song in playlistObjects)
         {
             if (token.IsCancellationRequested)

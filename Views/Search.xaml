@@ -10,6 +10,7 @@
     xmlns:views="using:FluentDL.Views"
     xmlns:helpers="using:FluentDL.Helpers"
     xmlns:behaviors="using:FluentDL.Behaviors"
+    xmlns:models="using:FluentDL.Models"
     mc:Ignorable="d"
     NavigationCacheMode="Required"
     >
@@ -102,7 +103,7 @@
                           SelectionChanged="FailedListView_OnSelectionChanged"
                           Height="400">
                     <ListView.ItemTemplate>
-                        <DataTemplate x:DataType="services:SongSearchObject">
+                        <DataTemplate x:DataType="models:SongSearchObject">
                             <Grid Margin="0,12,0,12" AutomationProperties.Name="{x:Bind Title}">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="76" />
@@ -305,7 +306,7 @@
                       Grid.Column="0"
                       Margin="0,0,0,10">
                 <ListView.ItemTemplate>
-                    <DataTemplate x:DataType="services:SongSearchObject">
+                    <DataTemplate x:DataType="models:SongSearchObject">
                         <Grid Margin="0,12,0,12" AutomationProperties.Name="{x:Bind Title}">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="76" />

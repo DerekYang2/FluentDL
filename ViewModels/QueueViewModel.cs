@@ -8,6 +8,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using FluentDL.Contracts.ViewModels;
 using FluentDL.Core.Contracts.Services;
 using FluentDL.Core.Models;
+using FluentDL.Models;
 using FluentDL.Services;
 using Microsoft.UI.Xaml.Media.Imaging;
 using static System.Net.WebRequestMethods;

@@ -20,6 +20,7 @@ using FluentDL.ViewModels;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using ATL;
+using FluentDL.Models;
 using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml.Shapes;
 using Newtonsoft.Json.Linq;
@@ -116,13 +117,25 @@ namespace FluentDL.Views
                 trackDetailsList.Add(new TrackDetail { Label = "Performers", Value = track.Performers });
             }
 
+            if (selectedSong.Source.Equals("spotify"))
+            {
+                var track = await SpotifyApi.GetTrack(selectedSong.Id);
+                PreviewImage.Source = new BitmapImage(new Uri(track.Album.Images[0].Url)); // Get the largest
+                trackDetailsList.Add(new TrackDetail { Label = "Track", Value = selectedSong.TrackPosition });
+                var previewURL = track.PreviewUrl;
+                if (!string.IsNullOrWhiteSpace(previewURL))
+                {
+                    SongPreviewPlayer.Source = MediaSource.CreateFromUri(new Uri(previewURL));
+                }
+            }
+
             if (selectedSong.Source.Equals("youtube"))
             {
                 PreviewImage.Source = new BitmapImage(new Uri("https://img.youtube.com/vi/" + selectedSong.Id + "/0.jpg"));
                 // Load youtube song on another thread
                 var t = new Thread(async () =>
                 {
-                    var mediaSource = MediaSource.CreateFromUri(new Uri(await YoutubeApi.AudioStreamWorstUrl("https://www.youtube.com/watch?v=" + selectedSong.Id)));
+                    var mediaSource = MediaSource.CreateFromUri(new Uri(await YoutubeApi.AudioStreamWorstUrl("https://www.youtube.com/watch?v=" + selectedSong.Id))); // Get lowest bitrate opus for preview
                     dispatcher.TryEnqueue(() =>
                     {
                         SongPreviewPlayer.Source = mediaSource;

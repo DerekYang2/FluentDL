@@ -1,9 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using FluentDL.Models;
+using QobuzApiSharp.Models.Content;
 using SpotifyAPI.Web;
 
 namespace FluentDL.Services
@@ -36,11 +39,38 @@ namespace FluentDL.Services
             return playlistName;
         }
 
-        // TODO: handle invalid playlist ids
-        public static async Task<List<SongSearchObject>> GetPlaylist(string playlistId)
+        public static async Task<FullTrack?> GetTrackFromISRC(string isrc)
         {
-            var pages = await spotify.Playlists.GetItems(playlistId);
-            var allPages = await spotify.PaginateAll(pages);
+            // https://api.spotify.com/v1/search?type=track&q=isrc:{isrc}
+            var response = await spotify.Search.Item(new SearchRequest(SearchRequest.Types.Track, $"isrc:{isrc}"));
+            if (response.Tracks.Items == null)
+            {
+                return null;
+            }
+
+            // Loop through and check if isrc matches
+            foreach (var track in response.Tracks.Items)
+            {
+                if (track.ExternalIds["isrc"] == isrc)
+                {
+                    return track;
+                }
+            }
+
+            return null;
+        }
+
+        public static async Task<FullTrack?> GetTrack(string id)
+        {
+            var track = await spotify.Tracks.Get(id);
+            return track;
+        }
+
+        // TODO: handle invalid playlist ids
+        public static async Task<List<SongSearchObject>> GetPlaylist(string playlistId, CancellationToken token)
+        {
+            var pages = await spotify.Playlists.GetItems(playlistId, cancel: token);
+            var allPages = await spotify.PaginateAll(pages, cancellationToken: token);
 
             var songs = new List<SongSearchObject>();
             // Debug: loop and print all tracks
@@ -48,6 +78,11 @@ namespace FluentDL.Services
             {
                 if (item.Track is FullTrack track)
                 {
+                    if (token.IsCancellationRequested)
+                    {
+                        break; // Stop if cancelled
+                    }
+
                     // All FullTrack properties are available
                     var artistCsv = track.Artists.Select(a => a.Name).Aggregate((a, b) => a + ", " + b);
                     if (artistCsv.Length == 0 || track.Album.Name.Length == 0)
@@ -55,24 +90,110 @@ namespace FluentDL.Services
                         continue;
                     }
 
-                    songs.Add(new SongSearchObject
+                    var songObj = ConvertSongSearchObject(track);
+                    if (songObj != null)
                     {
-                        Source = "spotify",
-                        Title = track.Name,
-                        Artists = artistCsv,
-                        ImageLocation = track.Album.Images[0].Url,
-                        Id = track.Id,
-                        ReleaseDate = track.Album.ReleaseDate,
-                        Duration = ((int)Math.Round(track.DurationMs / 1000.0)).ToString(),
-                        Rank = track.Popularity.ToString(),
-                        AlbumName = track.Album.Name,
-                        Explicit = track.Explicit,
-                        TrackPosition = track.TrackNumber.ToString()
-                    });
+                        songs.Add(songObj);
+                    }
                 }
             }
 
             return songs;
+        }
+
+        public static async Task AddTracksFromLink(ObservableCollection<SongSearchObject> itemSource, string url, CancellationToken token)
+        {
+            var id = url.Split("/").Last();
+            // Remove any query parameters
+            if (id.Contains("?"))
+            {
+                id = id.Split("?").First();
+            }
+
+            if (url.StartsWith("https://open.spotify.com/playlist/"))
+            {
+                var pages = await spotify.Playlists.GetItems(id, cancel: token);
+                var allPages = await spotify.PaginateAll(pages, cancellationToken: token);
+                itemSource.Clear(); // Clear the item source
+
+                // Debug: loop and print all tracks
+                foreach (PlaylistTrack<IPlayableItem> item in allPages)
+                {
+                    if (item.Track is FullTrack track)
+                    {
+                        if (token.IsCancellationRequested)
+                        {
+                            break; // Stop if cancelled
+                        }
+
+                        var songObj = ConvertSongSearchObject(track);
+                        if (songObj != null)
+                        {
+                            itemSource.Add(songObj);
+                        }
+                    }
+                }
+            }
+
+            if (url.StartsWith("https://open.spotify.com/album/"))
+            {
+                var pages = await spotify.Albums.GetTracks(id, cancel: token);
+                var allPages = await spotify.PaginateAll(pages, cancellationToken: token);
+                itemSource.Clear(); // Clear the item source
+
+                foreach (var simpleTrack in allPages)
+                {
+                    if (token.IsCancellationRequested)
+                    {
+                        break; // Stop if cancelled
+                    }
+
+                    // Get full track
+                    var track = await spotify.Tracks.Get(simpleTrack.Id);
+                    var songObj = ConvertSongSearchObject(track);
+                    if (songObj != null)
+                    {
+                        itemSource.Add(songObj);
+                    }
+                }
+            }
+
+            if (url.StartsWith("https://open.spotify.com/track/")) // Single track, no need to clear item source
+            {
+                Debug.WriteLine("HERE!");
+                var fullTrack = await spotify.Tracks.Get(id, token);
+                var songObj = ConvertSongSearchObject(fullTrack);
+                if (songObj != null)
+                {
+                    itemSource.Add(songObj);
+                }
+            }
+        }
+
+        // NOTE: album images are 640, 300, then 64 
+        public static SongSearchObject? ConvertSongSearchObject(FullTrack track)
+        {
+            var artistCsv = track.Artists.Select(a => a.Name).Aggregate((a, b) => a + ", " + b);
+            if (artistCsv.Length == 0 || track.Album.Name.Length == 0)
+            {
+                return null;
+            }
+
+            return new SongSearchObject
+            {
+                Source = "spotify",
+                Title = track.Name,
+                Artists = artistCsv,
+                ImageLocation = track.Album.Images.Last().Url, // Smallest image, 64 x 64
+                Id = track.Id,
+                ReleaseDate = track.Album.ReleaseDate,
+                Duration = ((int)Math.Round(track.DurationMs / 1000.0)).ToString(),
+                Rank = track.Popularity.ToString(),
+                AlbumName = track.Album.Name,
+                Explicit = track.Explicit,
+                TrackPosition = track.TrackNumber.ToString(),
+                Isrc = track.ExternalIds["isrc"],
+            };
         }
     }
 }

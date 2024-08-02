@@ -12,6 +12,7 @@ using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Data;
 using FluentDL.Contracts.Services;
 using FluentDL.Helpers;
+using FluentDL.Models;
 
 namespace FluentDL.Views;
 
