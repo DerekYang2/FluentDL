@@ -557,4 +557,23 @@ public sealed partial class LocalExplorerPage : Page
     {
         ViewModel.DiscardMetadata();
     }
+
+    private void ComboBox_OnDropDownOpened(object? sender, object e)
+    {
+        var comboBox = sender as ComboBox;
+        if (comboBox == null || comboBox.SelectedItem == null)
+        {
+            return;
+        }
+
+        if (comboBox.SelectedItem is ComboBoxItem item)
+        {
+            comboBox.PlaceholderText = item.Content.ToString();
+        }
+
+        if (comboBox.SelectedItem is SortObject sortObject)
+        {
+            comboBox.PlaceholderText = sortObject.Text + sortObject.Highlight;
+        }
+    }
 }

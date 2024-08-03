@@ -320,9 +320,9 @@ public sealed partial class Search : Page
         {
             var generalSource = await App.GetService<ILocalSettingsService>().ReadSettingAsync<string>(SettingsViewModel.SearchSource) ?? "Deezer";
 
-            if (SearchSourceComboBox.SelectedIndex != 0) // If not default
+            if (SourceRadioButtons.SelectedIndex != 0) // If not default
             {
-                generalSource = ((ComboBoxItem)SearchSourceComboBox.SelectedItem).Content.ToString(); // Override
+                generalSource = (SourceRadioButtons.SelectedItem as RadioButton).Content.ToString(); // Override
             }
 
             switch (generalSource)
@@ -567,7 +567,27 @@ public sealed partial class Search : Page
         });
     }
 
-    private void SearchSourceComboBox_OnDropDownOpened(object? sender, object e)
+    private void ComboBox_OnDropDownOpened(object? sender, object e)
     {
+        var comboBox = sender as ComboBox;
+        if (comboBox == null || comboBox.SelectedItem == null)
+        {
+            return;
+        }
+
+        if (comboBox.SelectedItem is ComboBoxItem item)
+        {
+            comboBox.PlaceholderText = item.Content.ToString();
+        }
+
+        if (comboBox.SelectedItem is SortObject sortObject)
+        {
+            comboBox.PlaceholderText = sortObject.Text + sortObject.Highlight;
+        }
+    }
+
+    private void OverrideSplitButton_OnClick(SplitButton sender, SplitButtonClickEventArgs args)
+    {
+        throw new NotImplementedException();
     }
 }

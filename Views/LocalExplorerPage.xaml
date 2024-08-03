@@ -127,7 +127,8 @@
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
                     <ComboBox x:Name="SortOrderComboBox" SelectionChanged="SortOrderComboBox_OnSelectionChanged"
                               Background="Transparent" BorderBrush="Transparent"
-                              PlaceholderText="Sort order:  Ascending" Margin="0, 0, 0,0">
+                              PlaceholderText="Sort order:  Ascending" Margin="0, 0, 0,0"
+                              DropDownOpened="ComboBox_OnDropDownOpened">
                         <ComboBox.ItemTemplate>
                             <DataTemplate x:DataType="views:SortObject">
                                 <StackPanel Orientation="Horizontal">
@@ -145,7 +146,8 @@
                     </ComboBox>
                     <ComboBox x:Name="SortComboBox" SelectionChanged="SortComboBox_OnSelectionChanged"
                               Background="Transparent"
-                              BorderBrush="Transparent" PlaceholderText="Sort by:  Upload order">
+                              BorderBrush="Transparent" PlaceholderText="Sort by:  Upload order"
+                              DropDownOpened="ComboBox_OnDropDownOpened">
                         <ComboBox.ItemTemplate>
                             <DataTemplate x:DataType="views:SortObject">
                                 <StackPanel Orientation="Horizontal">
