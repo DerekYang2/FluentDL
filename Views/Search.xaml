@@ -209,12 +209,20 @@
 
                     <SplitButton.Flyout>
                         <Flyout Placement="Bottom">
-                            <RadioButtons x:Name="SourceRadioButtons" Header="Override Source:" Padding="0" FontSize="14" SelectedIndex="0">
-                                <RadioButton Content="Use Setting"/>
-                                <RadioButton Content="Deezer"/>
-                                <RadioButton Content="Qobuz"/>
-                                <RadioButton Content="Spotify"/>
-                            </RadioButtons>
+                            <StackPanel>
+                                <NumberBox Value="0"
+                                       SmallChange="5"
+                                       LargeChange="10"
+                                       SpinButtonPlacementMode="Inline" 
+                                       Header="Results limit"
+                                       />
+                                <RadioButtons x:Name="SourceRadioButtons" Header="Override source" Padding="0" SelectedIndex="0">
+                                    <RadioButton Content="Use Setting"/>
+                                    <RadioButton Content="Deezer"/>
+                                    <RadioButton Content="Qobuz"/>
+                                    <RadioButton Content="Spotify"/>
+                                </RadioButtons>
+                            </StackPanel>
                         </Flyout>
                     </SplitButton.Flyout>
                 </SplitButton>

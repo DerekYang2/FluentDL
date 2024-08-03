@@ -43,7 +43,7 @@ internal class QobuzApi
         foreach (var track in results.Tracks.Items)
         {
             if (token.IsCancellationRequested) return;
-            itemSource.Add(GetTrack(track.Id.ToString()));
+            itemSource.Add(await Task.Run(() => GetTrack(track.Id.ToString()), token));
         }
     }
 
@@ -74,7 +74,7 @@ internal class QobuzApi
                 foreach (var track in album.Tracks.Items)
                 {
                     if (token.IsCancellationRequested) return;
-                    itemSource.Add(CreateSongSearchObject(track, album));
+                    itemSource.Add(await Task.Run(() => CreateSongSearchObject(track, album), token));
                 }
             }
         }
@@ -90,7 +90,7 @@ internal class QobuzApi
                 foreach (var track in playlist.Tracks.Items) // Need to recreate the tracks so they have album objects
                 {
                     if (token.IsCancellationRequested) return;
-                    itemSource.Add(ConvertSongSearchObject(apiService.GetTrack(track.Id.ToString())));
+                    itemSource.Add(await Task.Run(() => ConvertSongSearchObject(apiService.GetTrack(track.Id.ToString())), token));
                 }
             }
         }

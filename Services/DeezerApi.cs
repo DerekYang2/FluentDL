@@ -234,16 +234,19 @@ internal class DeezerApi
         req = req.Replace("%28", "").Replace("%29", ""); // Remove brackets, causes issues occasionally for some reason
         var jsonObject = await FetchJsonElement(req);
 
-        foreach (var track in jsonObject.GetProperty("data").EnumerateArray())
+        foreach (var trackJson in jsonObject.GetProperty("data").EnumerateArray())
         {
             if (token.IsCancellationRequested) // Stop the search
             {
                 return;
             }
 
-            var trackId = track.GetProperty("id").ToString();
+            var trackId = trackJson.GetProperty("id").ToString();
             var songObj = await GetTrack(trackId);
-            itemSource.Add(songObj);
+            if (songObj != null)
+            {
+                itemSource.Add(songObj);
+            }
         }
     }
 

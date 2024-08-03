@@ -54,7 +54,7 @@ namespace FluentDL.Services
             foreach (FullTrack track in response.Tracks.Items)
             {
                 if (token.IsCancellationRequested) return;
-                var song = ConvertSongSearchObject(track);
+                var song = await Task.Run(() => ConvertSongSearchObject(track), token);
                 if (song != null)
                 {
                     itemSource.Add(song);
@@ -159,7 +159,7 @@ namespace FluentDL.Services
                             break; // Stop if cancelled
                         }
 
-                        var songObj = ConvertSongSearchObject(track);
+                        var songObj = await Task.Run(() => ConvertSongSearchObject(track), token);
                         if (songObj != null)
                         {
                             itemSource.Add(songObj);
@@ -187,7 +187,7 @@ namespace FluentDL.Services
 
                     // Get full track
                     var track = await spotify.Tracks.Get(simpleTrack.Id);
-                    var songObj = ConvertSongSearchObject(track);
+                    var songObj = await Task.Run(() => ConvertSongSearchObject(track), token);
                     if (songObj != null)
                     {
                         itemSource.Add(songObj);
