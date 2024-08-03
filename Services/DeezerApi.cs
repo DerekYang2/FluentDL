@@ -17,6 +17,7 @@ using ATL;
 using CommunityToolkit.WinUI.UI.Controls.TextToolbarSymbols;
 using DeezNET;
 using DeezNET.Data;
+using FluentDL.Helpers;
 using FluentDL.Models;
 using FluentDL.Views;
 using Microsoft.UI.Dispatching;
@@ -46,7 +47,7 @@ internal class DeezerApi
     {
         if (url.StartsWith("https://deezer.page.link/"))
         {
-            url = (await GetRedirectedUrlAsync(new Uri(url))).AbsoluteUri;
+            url = (await ApiHelper.GetRedirectedUrlAsync(new Uri(url))).AbsoluteUri;
         }
 
         Debug.WriteLine(url);
@@ -220,7 +221,7 @@ internal class DeezerApi
         return EnforceAscii(titlePruned).Trim();
     }
 
-    public static async Task GeneralSearch(ObservableCollection<SongSearchObject> itemSource, string query, CancellationToken token)
+    public static async Task GeneralSearch(ObservableCollection<SongSearchObject> itemSource, string query, CancellationToken token, int limit = 25)
     {
         query = query.Trim(); // Trim the query
         if (string.IsNullOrWhiteSpace(query))
@@ -231,6 +232,7 @@ internal class DeezerApi
         itemSource.Clear();
 
         var req = "search?q=" + WebUtility.UrlEncode(query);
+        req += $"%20&limit={limit}"; // Added limit to the query 
         req = req.Replace("%28", "").Replace("%29", ""); // Remove brackets, causes issues occasionally for some reason
         var jsonObject = await FetchJsonElement(req);
 
@@ -292,7 +294,7 @@ internal class DeezerApi
 
             if (titlePruned.Equals(songObjTitlePruned)) // If pruned titles are equal
             {
-                var editDist = CalcLevenshteinDistance(PruneTitle(song.AlbumName), PruneTitle(songObj.AlbumName)); // Calculate and update min edit dist
+                var editDist = ApiHelper.CalcLevenshteinDistance(PruneTitle(song.AlbumName), PruneTitle(songObj.AlbumName)); // Calculate and update min edit dist
                 if (editDist < minDist)
                 {
                     minDist = editDist;
@@ -377,7 +379,7 @@ internal class DeezerApi
                     return await GetTrack(songObj.Id);
                 }
 
-                var dist = CalcLevenshteinDistance(PruneTitle(albumName), PruneTitle(songObj.AlbumName));
+                var dist = ApiHelper.CalcLevenshteinDistance(PruneTitle(albumName), PruneTitle(songObj.AlbumName));
                 if (dist < minEditDistance)
                 {
                     minEditDistance = dist;
@@ -400,7 +402,7 @@ internal class DeezerApi
                 string pruneTargetName = PruneTitle(trackName), pruneName = PruneTitle(songObj.Title);
                 if (pruneName.Contains(pruneTargetName) || pruneTargetName.Contains(pruneName)) // Should at least be substrings
                 {
-                    var dist = CalcLevenshteinDistance(pruneTargetName, pruneName); // Calculate and update min edit dist
+                    var dist = ApiHelper.CalcLevenshteinDistance(pruneTargetName, pruneName); // Calculate and update min edit dist
                     if (dist < minEditDistance)
                     {
                         minEditDistance = dist;
@@ -418,7 +420,7 @@ internal class DeezerApi
         return null;
     }
 
-    public static async Task AdvancedSearch(ObservableCollection<SongSearchObject> itemSource, string artistName, string trackName, string albumName, CancellationToken token)
+    public static async Task AdvancedSearch(ObservableCollection<SongSearchObject> itemSource, string artistName, string trackName, string albumName, CancellationToken token, int limit = 25)
     {
         itemSource.Clear();
 
@@ -433,6 +435,7 @@ internal class DeezerApi
         }
 
         var req = "search?q=" + WebUtility.UrlEncode((artistName.Length > 0 ? "artist:%22" + artistName + "%22 " : "") + (trackName.Length > 0 ? "track:%22" + trackName + "%22 " : "") + (albumName.Length > 0 ? "album:%22" + albumName + "%22" : "")) + "?strict=on"; // Strict search
+        req += $"%20&limit={limit}"; // Add limit to the query
         var jsonObject = await FetchJsonElement(req); // Create json object from the response
 
         foreach (var track in jsonObject.GetProperty("data").EnumerateArray())
@@ -533,54 +536,6 @@ internal class DeezerApi
         }
 
         return GetTrackFromJsonElement(jsonObject);
-    }
-
-    public static int CalcLevenshteinDistance(string a, string b)
-    {
-        if (string.IsNullOrEmpty(a) && string.IsNullOrEmpty(b))
-        {
-            return 0;
-        }
-
-        if (string.IsNullOrEmpty(a))
-        {
-            return b.Length;
-        }
-
-        if (string.IsNullOrEmpty(b))
-        {
-            return a.Length;
-        }
-
-        int lengthA = a.Length;
-        int lengthB = b.Length;
-        var distances = new int[lengthA + 1, lengthB + 1];
-
-        for (int i = 0; i <= lengthA; distances[i, 0] = i++) ;
-        for (int j = 0; j <= lengthB; distances[0, j] = j++) ;
-
-        for (int i = 1; i <= lengthA; i++)
-        {
-            for (int j = 1; j <= lengthB; j++)
-            {
-                int cost = b[j - 1] == a[i - 1] ? 0 : 1;
-
-                distances[i, j] = Math.Min(
-                    Math.Min(distances[i - 1, j] + 1, distances[i, j - 1] + 1),
-                    distances[i - 1, j - 1] + cost
-                );
-            }
-        }
-
-        return distances[lengthA, lengthB];
-    }
-
-    public static async Task<Uri> GetRedirectedUrlAsync(Uri uri, CancellationToken cancellationToken = default)
-    {
-        using var client = new HttpClient(new HttpClientHandler { AllowAutoRedirect = false, }, true);
-        using var response = await client.GetAsync(uri, cancellationToken);
-
-        return new Uri(response.Headers.GetValues("Location").First());
     }
 
     public static async Task DownloadTrack(SongSearchObject? song, string directory)

@@ -4,6 +4,7 @@ using FluentDL.Services;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using FluentDL.Contracts.Services;
+using FluentDL.Helpers;
 using FluentDL.Models;
 using Microsoft.UI.Dispatching;
 using YoutubeExplode.Search;
@@ -141,6 +142,17 @@ public sealed partial class Search : Page
 
         var shareButton = new AppBarButton { Icon = new SymbolIcon(Symbol.Share), Label = "Share" };
         var openButton = new AppBarButton { Icon = new FontIcon { Glyph = "\uE8A7" }, Label = "Open" };
+
+        openButton.Click += (sender, e) =>
+        {
+            var song = PreviewPanel.GetSong();
+            if (song != null)
+            {
+                var uri = new Uri(ApiHelper.GetUrl(song));
+                Windows.System.Launcher.LaunchUriAsync(uri); // Open link in browser
+            }
+        };
+
         PreviewPanel.SetAppBarButtons(new List<AppBarButton> { addButton, shareButton, openButton });
     }
 
@@ -268,7 +280,23 @@ public sealed partial class Search : Page
         cancellationTokenSource = new CancellationTokenSource(); // Reset the cancel token
 
         // Set the collection as the ItemsSource for the ListView
-        await FluentDL.Services.DeezerApi.AdvancedSearch((ObservableCollection<SongSearchObject>)CustomListView.ItemsSource, artistName, trackName, albumName, cancellationTokenSource.Token);
+        var generalSource = await App.GetService<ILocalSettingsService>().ReadSettingAsync<string>(SettingsViewModel.SearchSource) ?? "Deezer";
+
+        if (SourceRadioButtons.SelectedIndex != 0) // If not default
+        {
+            generalSource = (SourceRadioButtons.SelectedItem as RadioButton).Content.ToString(); // Override
+        }
+
+        switch (generalSource)
+        {
+            case "Spotify":
+                await FluentDL.Services.SpotifyApi.AdvancedSearch((ObservableCollection<SongSearchObject>)CustomListView.ItemsSource, artistName, trackName, albumName, cancellationTokenSource.Token, ViewModel.ResultsLimit);
+                break;
+            default:
+                await FluentDL.Services.DeezerApi.AdvancedSearch((ObservableCollection<SongSearchObject>)CustomListView.ItemsSource, artistName, trackName, albumName, cancellationTokenSource.Token, ViewModel.ResultsLimit);
+                break;
+        }
+
         originalList = new ObservableCollection<SongSearchObject>((ObservableCollection<SongSearchObject>)CustomListView.ItemsSource);
 
         SetResultsAmount(originalList.Count);
@@ -328,13 +356,13 @@ public sealed partial class Search : Page
             switch (generalSource)
             {
                 case "Qobuz":
-                    await QobuzApi.GeneralSearch((ObservableCollection<SongSearchObject>)CustomListView.ItemsSource, generalQuery, cancellationTokenSource.Token);
+                    await QobuzApi.GeneralSearch((ObservableCollection<SongSearchObject>)CustomListView.ItemsSource, generalQuery, cancellationTokenSource.Token, ViewModel.ResultsLimit);
                     break;
                 case "Spotify":
-                    await SpotifyApi.GeneralSearch((ObservableCollection<SongSearchObject>)CustomListView.ItemsSource, generalQuery, cancellationTokenSource.Token);
+                    await SpotifyApi.GeneralSearch((ObservableCollection<SongSearchObject>)CustomListView.ItemsSource, generalQuery, cancellationTokenSource.Token, ViewModel.ResultsLimit);
                     break;
                 default:
-                    await DeezerApi.GeneralSearch((ObservableCollection<SongSearchObject>)CustomListView.ItemsSource, generalQuery, cancellationTokenSource.Token);
+                    await DeezerApi.GeneralSearch((ObservableCollection<SongSearchObject>)CustomListView.ItemsSource, generalQuery, cancellationTokenSource.Token, ViewModel.ResultsLimit);
                     break;
             }
         }
@@ -586,8 +614,9 @@ public sealed partial class Search : Page
         }
     }
 
-    private void OverrideSplitButton_OnClick(SplitButton sender, SplitButtonClickEventArgs args)
+    // Save search results limit
+    private async void FlyoutBase_OnClosed(object? sender, object e)
     {
-        throw new NotImplementedException();
+        await ViewModel.SaveResultsLimit();
     }
 }

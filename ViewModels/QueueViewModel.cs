@@ -8,6 +8,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using FluentDL.Contracts.ViewModels;
 using FluentDL.Core.Contracts.Services;
 using FluentDL.Core.Models;
+using FluentDL.Helpers;
 using FluentDL.Models;
 using FluentDL.Services;
 using Microsoft.UI.Xaml.Media.Imaging;
@@ -219,18 +220,7 @@ public partial class QueueViewModel : ObservableRecipient
                 });
 
                 var isLocal = Source[i].Source.Equals("local");
-
-                // Get the url of the current object
-                var url = Source[i].Source switch
-                {
-                    "deezer" => "https://www.deezer.com/track/" + Source[i].Id,
-                    "youtube" => "https://www.youtube.com/watch?v=" + Source[i].Id,
-                    "local" => Source[i].Id,
-                    _ => string.Empty
-                };
-
-
-                var thisCommand = command.Replace("{url}", url).Replace("{ext}", (isLocal ? Path.GetExtension(Source[i].Id) : ".").Substring(1)).Replace("{file_name}", isLocal ? Path.GetFileName(Source[i].Id) : "").Replace("{title}", Source[i].Title).Replace("{image_url}", Source[i].ImageLocation ?? "").Replace("{id}", isLocal ? "" : Source[i].Id).Replace("{release_date}", Source[i].ReleaseDate).Replace("{artists}", Source[i].Artists).Replace("{duration}", Source[i].Duration).Replace("{album}", Source[i].AlbumName).Replace("{isrc}", Source[i].Isrc);
+                var thisCommand = command.Replace("{url}", ApiHelper.GetUrl(Source[i])).Replace("{ext}", (isLocal ? Path.GetExtension(Source[i].Id) : ".").Substring(1)).Replace("{file_name}", isLocal ? Path.GetFileName(Source[i].Id) : "").Replace("{title}", Source[i].Title).Replace("{image_url}", Source[i].ImageLocation ?? "").Replace("{id}", isLocal ? "" : Source[i].Id).Replace("{release_date}", Source[i].ReleaseDate).Replace("{artists}", Source[i].Artists).Replace("{duration}", Source[i].Duration).Replace("{album}", Source[i].AlbumName).Replace("{isrc}", Source[i].Isrc);
                 // Run the command
                 var resultStr = TerminalSubprocess.GetRunCommandSync(thisCommand, directory);
 

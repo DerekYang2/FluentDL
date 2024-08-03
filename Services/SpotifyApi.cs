@@ -35,6 +35,54 @@ namespace FluentDL.Services
             }
         }
 
+        public static async Task AdvancedSearch(ObservableCollection<SongSearchObject> itemSource, string artistName, string trackName, string albumName, CancellationToken token, int limit = 25)
+        {
+            // Trim
+            artistName = artistName.Trim();
+            trackName = trackName.Trim();
+            albumName = albumName.Trim();
+            if (artistName.Length == 0 && trackName.Length == 0 && albumName.Length == 0) // If no search query
+            {
+                return;
+            }
+
+            var reqStr = "";
+            if (!string.IsNullOrWhiteSpace(artistName))
+            {
+                reqStr += $"artist:{artistName} ";
+            }
+
+            if (!string.IsNullOrWhiteSpace(trackName))
+            {
+                reqStr += $"track:{trackName} ";
+            }
+
+            if (!string.IsNullOrWhiteSpace(albumName))
+            {
+                reqStr += $"album:{albumName} ";
+            }
+
+            reqStr = reqStr.Trim(); // Trim the query
+
+            var response = await spotify.Search.Item(new SearchRequest(SearchRequest.Types.Track, reqStr) { Limit = limit }, token);
+
+            if (response.Tracks.Items == null)
+            {
+                return;
+            }
+
+            itemSource.Clear(); // Clear the item source
+            foreach (FullTrack track in response.Tracks.Items)
+            {
+                if (token.IsCancellationRequested) return;
+                var song = await Task.Run(() => ConvertSongSearchObject(track), token);
+                if (song != null)
+                {
+                    itemSource.Add(song);
+                }
+            }
+        }
+
         public static async Task GeneralSearch(ObservableCollection<SongSearchObject> itemSource, string query, CancellationToken token, int limit = 25)
         {
             query = query.Trim(); // Trim the query
@@ -43,6 +91,7 @@ namespace FluentDL.Services
                 return;
             }
 
+            limit = Math.Min(limit, 50); // Limit to 50 (maximum for this api)
             var response = await spotify.Search.Item(new SearchRequest(SearchRequest.Types.Track, query) { Limit = limit }, token);
 
             if (response.Tracks.Items == null)

@@ -193,7 +193,6 @@
                 </Grid.ColumnDefinitions>
 
                 <SplitButton Grid.Column="0" x:Name="OverrideSplitButton" 
-                             Click="OverrideSplitButton_OnClick" 
                              Padding="0" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" 
                              ToolTipService.ToolTip="Override search source">
                     <AutoSuggestBox 
@@ -208,19 +207,36 @@
                                     />      
 
                     <SplitButton.Flyout>
-                        <Flyout Placement="Bottom">
-                            <StackPanel>
-                                <NumberBox Value="0"
-                                       SmallChange="5"
-                                       LargeChange="10"
+                        <Flyout Placement="Bottom" Closed="FlyoutBase_OnClosed">
+                            <StackPanel Spacing="12">
+                                <NumberBox Value="{x:Bind Path=ViewModel.ResultsLimit, Mode=TwoWay}"
+                                       SmallChange="5" LargeChange="10" Minimum="1" Maximum="100"
                                        SpinButtonPlacementMode="Inline" 
                                        Header="Results limit"
-                                       />
+                                       Width="160"
+                                       ToolTipService.ToolTip="Limit the number of search results">
+                                    <NumberBox.HeaderTemplate>
+                                        <DataTemplate>
+                                            <Grid>
+                                            <TextBlock Text="{Binding}" Style="{ThemeResource CaptionTextBlockStyle}" 
+                                                       Foreground="{ThemeResource TextFillColorSecondary}" />
+                                            <FontIcon Glyph="&#xE946;" HorizontalAlignment="Right" FontSize="16" 
+                                                      ToolTipService.ToolTip="Maximum results for Spotify is 50"/>
+                                            </Grid>
+                                        </DataTemplate>
+                                    </NumberBox.HeaderTemplate>
+                                </NumberBox>
                                 <RadioButtons x:Name="SourceRadioButtons" Header="Override source" Padding="0" SelectedIndex="0">
-                                    <RadioButton Content="Use Setting"/>
-                                    <RadioButton Content="Deezer"/>
-                                    <RadioButton Content="Qobuz"/>
-                                    <RadioButton Content="Spotify"/>
+                                    <RadioButtons.HeaderTemplate>
+                                        <DataTemplate>
+                                            <TextBlock Text="{Binding}" Style="{ThemeResource CaptionTextBlockStyle}" 
+                                                       Foreground="{ThemeResource TextFillColorSecondary}" />
+                                        </DataTemplate>
+                                    </RadioButtons.HeaderTemplate>
+                                    <RadioButton Content="Use Setting" ToolTipService.ToolTip="Get search results from selected source in settings"/>
+                                    <RadioButton Content="Deezer" ToolTipService.ToolTip="Get search results from Deezer"/>
+                                    <RadioButton Content="Qobuz" ToolTipService.ToolTip="Get search results from Qobuz"/>
+                                    <RadioButton Content="Spotify" ToolTipService.ToolTip="Get search results from Spotify"/>
                                 </RadioButtons>
                             </StackPanel>
                         </Flyout>
