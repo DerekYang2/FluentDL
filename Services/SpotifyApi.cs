@@ -32,6 +32,33 @@ namespace FluentDL.Services
             }
         }
 
+        public static async Task GeneralSearch(ObservableCollection<SongSearchObject> itemSource, string query, CancellationToken token, int limit = 25)
+        {
+            query = query.Trim(); // Trim the query
+            if (string.IsNullOrWhiteSpace(query))
+            {
+                return;
+            }
+
+            var response = await spotify.Search.Item(new SearchRequest(SearchRequest.Types.Track, query) { Limit = limit }, token);
+
+            if (response.Tracks.Items == null)
+            {
+                return;
+            }
+
+            itemSource.Clear(); // Clear the item source
+            foreach (FullTrack track in response.Tracks.Items)
+            {
+                if (token.IsCancellationRequested) return;
+                var song = ConvertSongSearchObject(track);
+                if (song != null)
+                {
+                    itemSource.Add(song);
+                }
+            }
+        }
+
         public static async Task<string?> GetPlaylistName(string playlistId)
         {
             var playlist = await spotify.Playlists.Get(playlistId);
@@ -43,6 +70,7 @@ namespace FluentDL.Services
         {
             // https://api.spotify.com/v1/search?type=track&q=isrc:{isrc}
             var response = await spotify.Search.Item(new SearchRequest(SearchRequest.Types.Track, $"isrc:{isrc}"));
+            Debug.WriteLine(response.Tracks.Items.Count);
             if (response.Tracks.Items == null)
             {
                 return null;
@@ -168,6 +196,21 @@ namespace FluentDL.Services
                     itemSource.Add(songObj);
                 }
             }
+        }
+
+        public static async Task<SongSearchObject?> GetSpotifyTrack(SongSearchObject song)
+        {
+            // Try to find by ISRC first
+            if (song.Isrc != null)
+            {
+                var track = await GetTrackFromISRC(song.Isrc);
+                if (track != null)
+                {
+                    return ConvertSongSearchObject(track);
+                }
+            }
+
+            return null;
         }
 
         // NOTE: album images are 640, 300, then 64 

@@ -39,7 +39,7 @@ namespace FluentDL.Views
         public PreviewPane()
         {
             this.InitializeComponent();
-            RelativePreviewPanel.Width = App.MainWindow.Width * 0.4;
+            RelativePreviewPanel.Width = Math.Min(App.MainWindow.Width * 0.4, App.MainWindow.Height * 0.5);
             dispatcher = DispatcherQueue.GetForCurrentThread();
             Clear();
         }
@@ -180,6 +180,11 @@ namespace FluentDL.Views
         public SongSearchObject? GetSong()
         {
             return song;
+        }
+
+        public BitmapImage? GetImage()
+        {
+            return (BitmapImage)PreviewImage.Source;
         }
 
         private string GetFileLength(string filePath)

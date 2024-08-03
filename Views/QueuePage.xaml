@@ -122,13 +122,13 @@
                                        FontFamily="Segoe UI Variable Display" />
                         </StackPanel>
 
-                        <Grid Grid.Column="2" CornerRadius="4" Margin="0,0,0,0" VerticalAlignment="Stretch" Visibility="{x:Bind ResultString, Converter={StaticResource PathToVisibilityConverter}}" HorizontalAlignment="Stretch">
+                        <Grid Grid.Column="2" CornerRadius="4" Margin="0,0,0,0" VerticalAlignment="Stretch" HorizontalAlignment="Stretch">
                             <StackPanel>
                             <Border Background="{ThemeResource LayerOnMicaBaseAltFillColorSecondaryBrush}" CornerRadius="2" Padding="6, 1" HorizontalAlignment="Right">
                                 <TextBlock x:Name="SourceBadge" Text="{x:Bind Source}" Style="{ThemeResource CaptionTextBlockStyle}" VerticalAlignment="Center"/>
                             </Border>
                             </StackPanel>
-                            <Button x:Name="OutputButton" VerticalAlignment="Bottom" HorizontalAlignment="Stretch" Click="OutputButton_OnClick">
+                            <Button x:Name="OutputButton" VerticalAlignment="Bottom" HorizontalAlignment="Stretch" Click="OutputButton_OnClick"  Visibility="{x:Bind ResultString, Converter={StaticResource PathToVisibilityConverter}}">
                                 <StackPanel Orientation="Horizontal">
                                     <FontIcon x:Name="OutputIcon" Glyph="&#xE8A7;" FontSize="16" Margin="0, 0, 8, 0"/>
                                     <TextBlock Text="Output"  />

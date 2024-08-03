@@ -172,10 +172,10 @@ public partial class App : Application
         var localSettings = App.GetService<ILocalSettingsService>();
         await SpotifyApi.Initialize(await localSettings.ReadSettingAsync<string>(SettingsViewModel.SpotifyClientId), await localSettings.ReadSettingAsync<string>(SettingsViewModel.SpotifyClientSecret));
         await DeezerApi.InitDeezerClient(await localSettings.ReadSettingAsync<string>(SettingsViewModel.DeezerARL));
-        Thread t2 = new Thread(async () =>
+        Thread t2 = new Thread(async () => // Start separate thread, this takes a while compared to other API wrappers
         {
             QobuzApi.Initialize(await localSettings.ReadSettingAsync<string>(SettingsViewModel.QobuzId), await localSettings.ReadSettingAsync<string>(SettingsViewModel.QobuzToken));
-            Debug.WriteLine("Logged in");
+            Debug.WriteLine("Logged in Qobuz");
         });
         t2.Start();
     }

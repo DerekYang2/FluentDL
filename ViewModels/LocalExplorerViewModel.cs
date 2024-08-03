@@ -133,14 +133,21 @@ public partial class LocalExplorerViewModel : ObservableRecipient
     public static async Task<BitmapImage?> GetBitmapImageAsync(Track track)
     {
         System.Collections.Generic.IList<PictureInfo> embeddedPictures = track.EmbeddedPictures;
-        if (embeddedPictures.Count > 0)
+        try
         {
-            var firstImg = embeddedPictures[0];
-            // Create bitmap image from byte array
-            using var stream = new MemoryStream(firstImg.PictureData);
-            var bitmapImage = new BitmapImage();
-            await bitmapImage.SetSourceAsync(stream.AsRandomAccessStream());
-            return bitmapImage;
+            if (embeddedPictures.Count > 0)
+            {
+                var firstImg = embeddedPictures[0];
+                // Create bitmap image from byte array
+                using var stream = new MemoryStream(firstImg.PictureData);
+                var bitmapImage = new BitmapImage();
+                await bitmapImage.SetSourceAsync(stream.AsRandomAccessStream());
+                return bitmapImage;
+            }
+        }
+        catch (Exception e)
+        {
+            Debug.WriteLine(e.Message);
         }
 
         return null;

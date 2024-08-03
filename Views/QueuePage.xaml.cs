@@ -2,6 +2,8 @@
 using System.Diagnostics;
 using System.Text.RegularExpressions;
 using Windows.ApplicationModel.AppService;
+using Windows.Storage.Pickers;
+using ABI.Windows.Storage.Pickers;
 using ABI.Windows.UI.ApplicationSettings;
 using CommunityToolkit.WinUI.UI.Controls;
 using FluentDL.Services;
@@ -13,6 +15,8 @@ using Microsoft.UI.Xaml.Data;
 using FluentDL.Contracts.Services;
 using FluentDL.Helpers;
 using FluentDL.Models;
+using Microsoft.UI.Xaml.Media.Imaging;
+using FileSavePicker = Windows.Storage.Pickers.FileSavePicker;
 
 namespace FluentDL.Views;
 
@@ -159,7 +163,36 @@ public sealed partial class QueuePage : Page
         var downloadCoverButton = new AppBarButton() { Icon = new FontIcon { Glyph = "\uEE71" }, Label = "Download Cover" };
         downloadCoverButton.Click += async (sender, e) =>
         {
-            await DeezerApi.DownloadTrack(await DeezerApi.GetTrack(PreviewPanel.GetSong().Id), "E:\\Other Downloads\\test");
+            var bitmapImg = PreviewPanel.GetImage();
+            var songObj = PreviewPanel.GetSong();
+
+            // Check if the image is null
+            if (bitmapImg == null || songObj == null)
+            {
+                ShowInfoBar(InfoBarSeverity.Error, "Failed to download cover");
+                return;
+            }
+
+            // Create a file save picker
+            FileSavePicker savePicker = new() { SuggestedStartLocation = PickerLocationId.Downloads, SuggestedFileName = $"{songObj.Title} [{songObj.Isrc}] Cover Art.jpg", };
+            savePicker.FileTypeChoices.Add("Image", new List<string>() { ".jpg", ".png" });
+
+            // Retrieve the window handle (HWND) of the current WinUI 3 window.
+            var hWnd = WinRT.Interop.WindowNative.GetWindowHandle(App.MainWindow);
+
+            // Initialize the file picker with the window handle (HWND).
+            WinRT.Interop.InitializeWithWindow.Initialize(savePicker, hWnd);
+
+            var file = await savePicker.PickSaveFileAsync();
+
+            // Save bitmap image as jpg/png
+            if (file != null)
+            {
+                var coverBytes = await new HttpClient().GetByteArrayAsync(bitmapImg.UriSource);
+                await File.WriteAllBytesAsync(file.Path, coverBytes);
+            }
+
+            //await DeezerApi.DownloadTrack(await DeezerApi.GetTrack(PreviewPanel.GetSong().Id), "E:\\Other Downloads\\test");
         };
 
         var removeButton = new AppBarButton() { Icon = new SymbolIcon(Symbol.Delete), Label = "Remove" };

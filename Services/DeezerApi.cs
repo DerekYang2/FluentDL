@@ -300,11 +300,9 @@ internal class DeezerApi
         // Try to find by ISRC first
         if (song.Isrc != null)
         {
-            Debug.WriteLine("Searching by isrc: " + song.Isrc);
             var songObj = await GetTrackFromISRC(song.Isrc);
             if (songObj != null)
             {
-                Debug.WriteLine("Found track by isrc: " + song.Title);
                 return songObj;
             }
         }

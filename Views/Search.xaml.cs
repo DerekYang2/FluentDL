@@ -120,7 +120,7 @@ public sealed partial class Search : Page
     {
         // Initialize preview panel command bar
         var addButton = new AppBarButton { Icon = new SymbolIcon(Symbol.Add), Label = "Add to queue" };
-        addButton.Click += (sender, e) =>
+        addButton.Click += async (sender, e) =>
         {
             if (PreviewPanel.GetSong() != null)
             {
@@ -319,6 +319,9 @@ public sealed partial class Search : Page
             {
                 case "Qobuz":
                     await QobuzApi.GeneralSearch((ObservableCollection<SongSearchObject>)CustomListView.ItemsSource, generalQuery, cancellationTokenSource.Token);
+                    break;
+                case "Spotify":
+                    await SpotifyApi.GeneralSearch((ObservableCollection<SongSearchObject>)CustomListView.ItemsSource, generalQuery, cancellationTokenSource.Token);
                     break;
                 default:
                     await DeezerApi.GeneralSearch((ObservableCollection<SongSearchObject>)CustomListView.ItemsSource, generalQuery, cancellationTokenSource.Token);
