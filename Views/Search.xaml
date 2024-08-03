@@ -188,6 +188,7 @@
             <Grid x:Name="FirstRowGrid" Grid.Column="0" Grid.Row="0" ColumnSpacing="8" Margin="0, 2, 0, 8">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="Auto" />
                     <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
@@ -199,14 +200,21 @@
                                 QuerySubmitted="SearchBox_OnQuerySubmitted"
                                 ToolTipService.ToolTip="Search" />
 
-                <Button Grid.Column="1" x:Name="ShowDialogButton" Click="ShowDialog_OnClick_Click" ToolTipService.ToolTip="Open advanced search">
+                <ComboBox Grid.Column="1" x:Name="SearchSourceComboBox" SelectedIndex="0" PlaceholderText="Use Setting">
+                    <ComboBoxItem x:Name="Default" Content="Use Setting"/>
+                    <ComboBoxItem x:Name="Deezer" Content="Deezer"/>
+                    <ComboBoxItem x:Name="Qobuz" Content="Qobuz"/>
+                    <ComboBoxItem x:Name="Spotify" Content="Spotify"/>
+                </ComboBox>
+
+                <Button Grid.Column="2" x:Name="ShowDialogButton" Click="ShowDialog_OnClick_Click" ToolTipService.ToolTip="Open advanced search">
                     <StackPanel Orientation="Horizontal">
                         <FontIcon Glyph="&#xE71C;" FontSize="16" Margin="0, 0, 8, 0" />
                         <TextBlock Text="Advanced" />
                     </StackPanel>
                 </Button>
 
-                <Button Grid.Column="2" x:Name="Help" ToolTipService.ToolTip="Open help" Click="Help_OnClick">
+                <Button Grid.Column="3" x:Name="Help" ToolTipService.ToolTip="Open help" Click="Help_OnClick">
                     <StackPanel Orientation="Horizontal">
                         <FontIcon Glyph="&#xE897;" FontSize="16" Margin="0, 0, 8, 0" />
                         <TextBlock Text="Help" />

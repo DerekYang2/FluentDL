@@ -42,7 +42,7 @@ internal class DeezerApi
         }
     }
 
-    public static async Task AddTracksFromLink(ObservableCollection<SongSearchObject> list, string url, CancellationToken token)
+    public static async Task AddTracksFromLink(ObservableCollection<SongSearchObject> list, string url, CancellationToken token, Search.UrlStatusUpdateCallback? statusUpdate)
     {
         if (url.StartsWith("https://deezer.page.link/"))
         {
@@ -68,6 +68,8 @@ internal class DeezerApi
             if (songObj != null)
             {
                 list.Add(songObj);
+                // Send message to infobar
+                statusUpdate?.Invoke(InfoBarSeverity.Success, $"Loaded track \"{songObj.Title}\"");
             }
         }
 
@@ -76,6 +78,10 @@ internal class DeezerApi
             if (DeezerURL.TryParse(url, out var urlData))
             {
                 var tracksInAlbum = await urlData.GetAssociatedTracks(deezerClient, 1000, token);
+
+                // Send message to infobar
+                var listName = await urlData.GetTitle(deezerClient);
+                statusUpdate?.Invoke(InfoBarSeverity.Informational, $"Loading {(url.Contains("/album/") ? "album" : "playlist")} \"{listName}\" ...");
 
                 list.Clear(); // Clear the item source for lists like playlist/albums
 

@@ -123,6 +123,6 @@ public sealed partial class SettingsPage : Page
             return;
         }
 
-        await localSettings.SaveSettingAsync(SettingsViewModel.SearchSource, (SearchSourceComboBox.SelectedItem as ComboBoxItem).Content);
+        await localSettings.SaveSettingAsync(SettingsViewModel.SearchSource, (SearchSourceComboBox.SelectedItem as ComboBoxItem).Content.ToString());
     }
 }

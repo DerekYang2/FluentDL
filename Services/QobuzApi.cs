@@ -3,6 +3,8 @@ using System.Diagnostics;
 using System.Text.RegularExpressions;
 using ABI.Windows.Media.Core;
 using FluentDL.Models;
+using FluentDL.Views;
+using Microsoft.UI.Xaml.Controls;
 using QobuzApiSharp.Models.Content;
 using QobuzApiSharp.Service;
 
@@ -45,7 +47,7 @@ internal class QobuzApi
         }
     }
 
-    public static async Task AddTracksFromLink(ObservableCollection<SongSearchObject> itemSource, string url, CancellationToken token)
+    public static async Task AddTracksFromLink(ObservableCollection<SongSearchObject> itemSource, string url, CancellationToken token, Search.UrlStatusUpdateCallback? statusUpdate)
     {
         var isTrack = url.StartsWith("https://play.qobuz.com/track/") || url.StartsWith("https://open.qobuz.com/track/") || Regex.IsMatch(url, @"https://www\.qobuz\.com(/[^/]+)?/track/.*");
         var isAlbum = url.StartsWith("https://play.qobuz.com/album/") || url.StartsWith("https://open.qobuz.com/album/") || Regex.IsMatch(url, @"https://www\.qobuz\.com(/[^/]+)?/album/.*");
@@ -58,6 +60,7 @@ internal class QobuzApi
         {
             var track = apiService.GetTrack(id);
             itemSource.Add(ConvertSongSearchObject(track));
+            statusUpdate?.Invoke(InfoBarSeverity.Success, $"Loaded track \"{track.Title}\""); // Show a success message
         }
 
         if (isAlbum)
@@ -66,6 +69,7 @@ internal class QobuzApi
 
             if (album.Tracks != null)
             {
+                statusUpdate?.Invoke(InfoBarSeverity.Informational, $"Loading album \"{album.Title}\" ..."); // Show an informational message
                 itemSource.Clear(); // Clear the item source
                 foreach (var track in album.Tracks.Items)
                 {
@@ -81,11 +85,11 @@ internal class QobuzApi
 
             if (playlist.Tracks != null)
             {
+                statusUpdate?.Invoke(InfoBarSeverity.Informational, $"Loading playlist \"{playlist.Name}\" ..."); // Show an informational message
                 itemSource.Clear(); // Clear the item source
                 foreach (var track in playlist.Tracks.Items) // Need to recreate the tracks so they have album objects
                 {
                     if (token.IsCancellationRequested) return;
-                    Debug.WriteLine(track.Id);
                     itemSource.Add(ConvertSongSearchObject(apiService.GetTrack(track.Id.ToString())));
                 }
             }

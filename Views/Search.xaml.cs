@@ -62,6 +62,8 @@ public class TrackDetail
 
 public sealed partial class Search : Page
 {
+    public delegate void UrlStatusUpdateCallback(InfoBarSeverity severity, string message); // Callback for url status update (for infobars)
+
     private TerminalSubprocess _terminalSubprocess;
     private ObservableCollection<SongSearchObject> originalList;
     private SpotifyApi spotifyApi;
@@ -295,9 +297,11 @@ public sealed partial class Search : Page
         // Format of links https://open.spotify.com/playlist/{id}?
         // OR https://open.spotify.com/playlist/{id}?...
 
+        UrlStatusUpdateCallback statusUpdate = (severity, message) => ShowInfoBar(severity, message, 3);
+
         if (generalQuery.StartsWith("https://open.spotify.com/"))
         {
-            await SpotifyApi.AddTracksFromLink((ObservableCollection<SongSearchObject>)CustomListView.ItemsSource, generalQuery, cancellationTokenSource.Token);
+            await SpotifyApi.AddTracksFromLink((ObservableCollection<SongSearchObject>)CustomListView.ItemsSource, generalQuery, cancellationTokenSource.Token, statusUpdate);
             /*
             var playlistId = generalQuery.Split("/").Last();
             //Spotify to deezer conversion
@@ -306,15 +310,21 @@ public sealed partial class Search : Page
         }
         else if (generalQuery.StartsWith("https://deezer.page.link") || System.Text.RegularExpressions.Regex.IsMatch(generalQuery, @"https://www\.deezer\.com(/[^/]+)?/(track|album|playlist)/.*"))
         {
-            await DeezerApi.AddTracksFromLink((ObservableCollection<SongSearchObject>)CustomListView.ItemsSource, generalQuery, cancellationTokenSource.Token);
+            await DeezerApi.AddTracksFromLink((ObservableCollection<SongSearchObject>)CustomListView.ItemsSource, generalQuery, cancellationTokenSource.Token, statusUpdate);
         }
         else if (generalQuery.StartsWith("https://www.qobuz.com/") || generalQuery.StartsWith("https://play.qobuz.com/") || generalQuery.StartsWith("https://open.qobuz.com/"))
         {
-            await QobuzApi.AddTracksFromLink((ObservableCollection<SongSearchObject>)CustomListView.ItemsSource, generalQuery, cancellationTokenSource.Token);
+            await QobuzApi.AddTracksFromLink((ObservableCollection<SongSearchObject>)CustomListView.ItemsSource, generalQuery, cancellationTokenSource.Token, statusUpdate);
         }
         else
         {
             var generalSource = await App.GetService<ILocalSettingsService>().ReadSettingAsync<string>(SettingsViewModel.SearchSource) ?? "Deezer";
+
+            if (SearchSourceComboBox.SelectedIndex != 0) // If not default
+            {
+                generalSource = ((ComboBoxItem)SearchSourceComboBox.SelectedItem).Content.ToString(); // Override
+            }
+
             switch (generalSource)
             {
                 case "Qobuz":
@@ -555,5 +565,9 @@ public sealed partial class Search : Page
         {
             App.MainWindow.ShowMessageDialogAsync("Help message\ntest");
         });
+    }
+
+    private void SearchSourceComboBox_OnDropDownOpened(object? sender, object e)
+    {
     }
 }

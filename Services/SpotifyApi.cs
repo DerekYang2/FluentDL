@@ -6,6 +6,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using FluentDL.Models;
+using FluentDL.Views;
+using Microsoft.UI.Dispatching;
+using Microsoft.UI.Xaml.Controls;
 using QobuzApiSharp.Models.Content;
 using SpotifyAPI.Web;
 
@@ -129,7 +132,7 @@ namespace FluentDL.Services
             return songs;
         }
 
-        public static async Task AddTracksFromLink(ObservableCollection<SongSearchObject> itemSource, string url, CancellationToken token)
+        public static async Task AddTracksFromLink(ObservableCollection<SongSearchObject> itemSource, string url, CancellationToken token, Search.UrlStatusUpdateCallback? statusUpdate)
         {
             var id = url.Split("/").Last();
             // Remove any query parameters
@@ -140,6 +143,8 @@ namespace FluentDL.Services
 
             if (url.StartsWith("https://open.spotify.com/playlist/"))
             {
+                statusUpdate?.Invoke(InfoBarSeverity.Informational, $"Loading playlist \"{await GetPlaylistName(id)}\" ...");
+
                 var pages = await spotify.Playlists.GetItems(id, cancel: token);
                 var allPages = await spotify.PaginateAll(pages, cancellationToken: token);
                 itemSource.Clear(); // Clear the item source
@@ -165,8 +170,12 @@ namespace FluentDL.Services
 
             if (url.StartsWith("https://open.spotify.com/album/"))
             {
-                var pages = await spotify.Albums.GetTracks(id, cancel: token);
+                var album = await spotify.Albums.Get(id, token);
+                statusUpdate?.Invoke(InfoBarSeverity.Informational, $"Loading album \"{album.Name}\" ...");
+
+                var pages = album.Tracks;
                 var allPages = await spotify.PaginateAll(pages, cancellationToken: token);
+
                 itemSource.Clear(); // Clear the item source
 
                 foreach (var simpleTrack in allPages)
@@ -188,12 +197,12 @@ namespace FluentDL.Services
 
             if (url.StartsWith("https://open.spotify.com/track/")) // Single track, no need to clear item source
             {
-                Debug.WriteLine("HERE!");
                 var fullTrack = await spotify.Tracks.Get(id, token);
                 var songObj = ConvertSongSearchObject(fullTrack);
                 if (songObj != null)
                 {
                     itemSource.Add(songObj);
+                    statusUpdate?.Invoke(InfoBarSeverity.Success, $"Loaded track \"{fullTrack.Name}\"");
                 }
             }
         }
