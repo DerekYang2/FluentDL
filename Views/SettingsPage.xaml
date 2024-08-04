@@ -150,34 +150,29 @@
                         <local:SettingsCard x:Name="ClientSecretCard" Header="Client Secret"
                                             Description="Enter your client secret string."
                                             HorizontalContentAlignment="Stretch">
+                                <!--
                             <StackPanel Orientation="Horizontal">
-                            <PasswordBox x:Name="ClientSecretInput"
-                                         Width="400"
-                                         Margin="0,0,0,8"
-                                         ToolTipService.ToolTip="Client Secret"
-                                         Header="Client Secret"
-                                         LostFocus="ClientSecretInput_OnLostFocus"
-                                         PasswordRevealMode="Hidden">
-                                <PasswordBox.HeaderTemplate>
-                                    <DataTemplate>
-                                        <TextBlock Text="{Binding}" Style="{ThemeResource CaptionTextBlockStyle}"
-                                                   Foreground="{ThemeResource TextFillColorSecondary}"
-                                                   Margin="0,2,0,-2" />
-                                    </DataTemplate>
-                                </PasswordBox.HeaderTemplate>
+                                <PasswordBox x:Name="ClientSecretInput"
+                                             Width="400"
+                                             Margin="0,0,0,0"
+                                             ToolTipService.ToolTip="Client Secret"
+                                             LostFocus="ClientSecretInput_OnLostFocus"
+                                             PasswordRevealMode="Hidden"
+                                             CornerRadius="4, 0, 0, 4">
                             </PasswordBox>
-
-                                <ToggleButton x:Name="ClientSecretRevealButton"
-                                        Margin="0,0,0,0"
-                                        Click="ClientSecretRevealButton_OnClick" 
-                                        IsChecked="False">
-                                    <ToggleButton.Content>
-                                        <FontIcon x:Name="ClientSecretRevealIcon" FontFamily="Segoe Fluent Icons" Glyph="&#xF78D;" />
-                                    </ToggleButton.Content>
-                                </ToggleButton>
-
+                            <ToggleButton x:Name="ClientSecretRevealButton"
+                                    Margin="0,0,0,0"
+                                    Click="ClientSecretRevealButton_OnClick" 
+                                    IsChecked="False"
+                                    CornerRadius="0, 4, 4, 0" BorderBrush="{ThemeResource DividerStrokeColorDefaultBrush}"
+                                    Padding="6, 8">
+                                <ToggleButton.Content>
+                                    <FontIcon x:Name="ClientSecretRevealIcon" FontFamily="Segoe Fluent Icons" Glyph="&#xF78D;" FontSize="14"/>
+                                </ToggleButton.Content>
+                            </ToggleButton>
                             </StackPanel>
-
+                                -->
+                            <helpers:CustomPasswordBox x:Name="SpotifySecretBox" VerticalAlignment="Center" HorizontalAlignment="Stretch" Tooltip="Spotify client secret"/>
                         </local:SettingsCard>
                     </local:SettingsExpander.Items>
                 </local:SettingsExpander>

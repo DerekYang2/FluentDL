@@ -35,7 +35,7 @@ public sealed partial class SettingsPage : Page
     {
         // Set Ids/Secrets
         ClientIdInput.Text = (await localSettings.ReadSettingAsync<string>(SettingsViewModel.SpotifyClientId)) ?? "";
-        ClientSecretInput.Password = (await localSettings.ReadSettingAsync<string>(SettingsViewModel.SpotifyClientSecret)) ?? "";
+        SpotifySecretBox.Password = (await localSettings.ReadSettingAsync<string>(SettingsViewModel.SpotifyClientSecret)) ?? "";
         DeezerARLInput.Text = await localSettings.ReadSettingAsync<string>(SettingsViewModel.DeezerARL);
         QobuzIDInput.Text = await localSettings.ReadSettingAsync<string>(SettingsViewModel.QobuzId);
         QobuzTokenInput.Password = await localSettings.ReadSettingAsync<string>(SettingsViewModel.QobuzToken);
@@ -91,7 +91,7 @@ public sealed partial class SettingsPage : Page
     private async void ClientSecretInput_OnLostFocus(object sender, RoutedEventArgs e)
     {
         // TODO: encryption?
-        await localSettings.SaveSettingAsync(SettingsViewModel.SpotifyClientSecret, ClientSecretInput.Password.Trim());
+        await localSettings.SaveSettingAsync(SettingsViewModel.SpotifyClientSecret, SpotifySecretBox.Password.Trim());
         await SpotifyApi.Initialize(await localSettings.ReadSettingAsync<string>(SettingsViewModel.SpotifyClientId), await localSettings.ReadSettingAsync<string>(SettingsViewModel.SpotifyClientSecret));
     }
 
@@ -127,17 +127,17 @@ public sealed partial class SettingsPage : Page
         await localSettings.SaveSettingAsync(SettingsViewModel.SearchSource, (SearchSourceComboBox.SelectedItem as ComboBoxItem).Content.ToString());
     }
 
-    private void ClientSecretRevealButton_OnClick(object sender, RoutedEventArgs e)
-    {
-        if (ClientSecretRevealButton.IsChecked == true)
-        {
-            ClientSecretInput.PasswordRevealMode = PasswordRevealMode.Visible;
-            ClientSecretRevealIcon.Glyph = "\uED1A";
-        }
-        else
-        {
-            ClientSecretInput.PasswordRevealMode = PasswordRevealMode.Hidden;
-            ClientSecretRevealIcon.Glyph = "\uF78D";
-        }
-    }
+    //private void ClientSecretRevealButton_OnClick(object sender, RoutedEventArgs e)
+    //{
+    //    if (ClientSecretRevealButton.IsChecked == true)
+    //    {
+    //        ClientSecretInput.PasswordRevealMode = PasswordRevealMode.Visible;
+    //        ClientSecretRevealIcon.Glyph = "\uED1A";
+    //    }
+    //    else
+    //    {
+    //        ClientSecretInput.PasswordRevealMode = PasswordRevealMode.Hidden;
+    //        ClientSecretRevealIcon.Glyph = "\uF78D";
+    //    }
+    //}
 }

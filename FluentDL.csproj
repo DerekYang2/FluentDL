@@ -15,6 +15,7 @@
     <EnableMsixTooling>true</EnableMsixTooling>
   </PropertyGroup>
   <ItemGroup>
+    <None Remove="Helpers\CustomPasswordBox.xaml" />
     <None Remove="Views\PreviewPane.xaml" />
   </ItemGroup>
 
@@ -48,6 +49,9 @@
     <None Update="appsettings.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
+    <Page Update="Helpers\CustomPasswordBox.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
     <Page Update="Views\PreviewPane.xaml">
       <Generator>MSBuild:Compile</Generator>
     </Page>
