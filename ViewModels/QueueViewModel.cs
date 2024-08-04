@@ -65,7 +65,7 @@ public partial class QueueViewModel : ObservableRecipient
         set;
     } = string.Empty;
 
-    private static DispatcherQueue dispatcher = DispatcherQueue.GetForCurrentThread();
+    public static DispatcherQueue dispatcher = DispatcherQueue.GetForCurrentThread();
     private static HashSet<string> trackSet = new HashSet<string>();
     private static int index;
 
@@ -111,6 +111,27 @@ public partial class QueueViewModel : ObservableRecipient
             Debug.WriteLine("ERROR CREATING STREAM: " + e.Message);
             return null;
         }
+    }
+
+    public static async Task<QueueObject?> CreateQueueObject(SongSearchObject song)
+    {
+        var queueObj = new QueueObject(song);
+        if (queueObj.LocalBitmapImage == null) // Create a local bitmap image for queue objects to prevent disappearing listview images
+        {
+            using var memoryStream = await GetRandomAccessStreamFromUrl(queueObj.ImageLocation); // Get the memory stream from the url
+
+            if (memoryStream == null) return null;
+
+
+            var bitmapImage = new BitmapImage { DecodePixelHeight = 76 }; // Create a new bitmap image
+
+            // Set the source of the bitmap image
+            await bitmapImage.SetSourceAsync(memoryStream);
+
+            queueObj.LocalBitmapImage = bitmapImage; // Set the local bitmap image
+        }
+
+        return queueObj;
     }
 
     public static void Add(SongSearchObject? song)

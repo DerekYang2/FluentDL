@@ -51,6 +51,7 @@ public class PathToVisibilityConverter : IValueConverter
 public sealed partial class QueuePage : Page
 {
     // Create dispatcher queue
+    private bool isConverting = false;
     private DispatcherQueue dispatcherQueue;
     private DispatcherTimer dispatcherTimer;
     private CancellationTokenSource cancellationTokenSource;
@@ -102,6 +103,11 @@ public sealed partial class QueuePage : Page
 
     private void OnQueueSourceChange()
     {
+        if (isConverting) // Ignore the below
+        {
+            return;
+        }
+
         dispatcherQueue.TryEnqueue(() =>
         {
             // Check if pause was called
@@ -129,11 +135,8 @@ public sealed partial class QueuePage : Page
                 if (completedCount == QueueViewModel.Source.Count) // If all tracks are completed
                 {
                     StartStopButton.Visibility = Visibility.Collapsed; // Hide the start/stop button
-                    // Enable other buttons
-                    CommandButton.IsEnabled = true;
-                    ClearButton.IsEnabled = true;
-                    // Send notification
-                    App.GetService<IAppNotificationService>().Show(string.Format("QueueCompletePayload".GetLocalized(), AppContext.BaseDirectory));
+                    EnableButtons();
+                    App.GetService<IAppNotificationService>().Show(string.Format("QueueCompletePayload".GetLocalized(), AppContext.BaseDirectory)); // Send notification
                 }
             }
         });
@@ -303,15 +306,27 @@ public sealed partial class QueuePage : Page
     {
         StartStopIcon.Glyph = "\uE768"; // Change the icon to a start icon
         StartStopText.Text = "Continue";
-        CommandButton.IsEnabled = true;
-        ClearButton.IsEnabled = true;
+        EnableButtons();
     }
 
     private void SetPauseUI()
     {
         StartStopIcon.Glyph = "\uE769"; // Change the icon to a pause icon
         StartStopText.Text = "Pause";
+        DisableButtons();
+    }
+
+    private void EnableButtons()
+    {
+        CommandButton.IsEnabled = true;
+        ConvertDialogOpenButton.IsEnabled = true;
+        ClearButton.IsEnabled = true;
+    }
+
+    private void DisableButtons()
+    {
         CommandButton.IsEnabled = false;
+        ConvertDialogOpenButton.IsEnabled = false;
         ClearButton.IsEnabled = false;
     }
 
@@ -465,20 +480,42 @@ public sealed partial class QueuePage : Page
         return OutputComboBox.SelectedItem as string;
     }
 
-    private async void ConvertButton_OnClick(object sender, RoutedEventArgs e)
+    private async void ConvertDialogOpenButton_OnClick(object sender, RoutedEventArgs e)
     {
+        ConversionDialog.XamlRoot = this.XamlRoot;
+        ConversionDialog.ShowAsync();
+    }
+
+    private async void ConversionDialog_OnPrimaryButtonClick(ContentDialog sender, ContentDialogButtonClickEventArgs args)
+    {
+        // Clear preview pane when source is being edited
+        PreviewPanel.Clear();
+
+        // Clear queue command running progress
+        QueueViewModel.Reset(); // Reset the queue object result strings and index
+
+        // Prepare UI
+        DisableButtons();
+        isConverting = true;
+
+        // Infobar notification
+        ShowInfoBar(InfoBarSeverity.Informational, $"Converting selected input sources to {GetOutputSource()}", 3);
+
+        var ogVal = QueueProgress.Value; // Save the original value of the progress bar
+
+        QueueProgress.Value = 0; // Set to 0
+
         for (int i = 0; i < QueueViewModel.Source.Count; i++)
         {
             var song = QueueViewModel.Source[i];
             var capitalizedListSource = song.Source[0].ToString().ToUpper() + song.Source.Substring(1);
             if (!SelectedSources.Contains(capitalizedListSource)) // If the source is not selected as input
             {
+                QueueProgress.Value = 100.0 * (i + 1) / QueueViewModel.Source.Count; // Update the progress bar
                 continue;
             }
 
-            var outputSource = GetOutputSource();
-
-            var newSongObj = outputSource switch
+            var newSongObj = GetOutputSource() switch
             {
                 "Deezer" => await DeezerApi.GetDeezerTrack(song),
                 "Qobuz" => await Task.Run(() => QobuzApi.GetQobuzTrack(song)),
@@ -486,12 +523,20 @@ public sealed partial class QueuePage : Page
                 _ => null
             };
 
-            if (newSongObj == null)
+            if (newSongObj != null)
             {
-                continue;
+                var queueObj = await QueueViewModel.CreateQueueObject(newSongObj);
+                if (queueObj != null)
+                {
+                    QueueViewModel.Source[i] = queueObj;
+                }
             }
 
-            QueueViewModel.Source[i] = new QueueObject(newSongObj);
+            QueueProgress.Value = 100.0 * (i + 1) / QueueViewModel.Source.Count; // Update the progress bar
         }
+
+        isConverting = false;
+        QueueProgress.Value = ogVal; // Reset the progress bar
+        EnableButtons();
     }
 }

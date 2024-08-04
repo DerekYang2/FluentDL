@@ -41,28 +41,14 @@
             </Button>
             
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8">
-                <Button x:Name="ConvertFlyoutOpenButton" VerticalAlignment="Center" 
-                        ToolTipService.ToolTip="Convert tracks to other sources">
+
+                <Button x:Name="ConvertDialogOpenButton" VerticalAlignment="Center" ToolTipService.ToolTip="Convert tracks to other sources" Click="ConvertDialogOpenButton_OnClick">
                     <StackPanel Orientation="Horizontal">
                         <FontIcon Glyph="&#xEA3C;" FontSize="16" Margin="0, 0, 8, 0"/>
                         <TextBlock Text="Convert" />
                     </StackPanel>
-                    <Button.Flyout>
-                        <Flyout Placement="Bottom">
-                            <StackPanel>
-                                <TextBlock Text="Input" Style="{ThemeResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondary}" Margin="0,0,0,0" />    
-                                <CheckBox x:Name="DeezerCheckBox" Content="Deezer" Checked="CheckBox_OnChecked" Unchecked="CheckBox_OnUnchecked" />
-                                <CheckBox x:Name="QobuzCheckBox" Content="Qobuz" Checked="CheckBox_OnChecked" Unchecked="CheckBox_OnUnchecked" />
-                                <CheckBox x:Name="SpotifyCheckBox" Content="Spotify" Checked="CheckBox_OnChecked" Unchecked="CheckBox_OnUnchecked" />
-
-                                <TextBlock Text="Output" Style="{ThemeResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondary}" Margin="0,8,0,0" />    
-                                <ComboBox x:Name="OutputComboBox" PlaceholderText="Select output"
-                                          Margin="0, 0, 0,0" ToolTipService.ToolTip="The source to convert to"/>
-                                <Button x:Name="ConvertButton" Click="ConvertButton_OnClick" Content="Convert"/>
-                            </StackPanel>
-                        </Flyout>
-                    </Button.Flyout>
                 </Button>
+
                 <Button x:Name="CommandButton" VerticalAlignment="Center" Click="CommandButton_OnClick" 
                         ToolTipService.ToolTip="Run a command in Command Prompt">
                     <StackPanel Orientation="Horizontal">
@@ -96,10 +82,11 @@
                               SelectionChanged="CustomListView_OnSelectionChanged"
                               BorderBrush="{ThemeResource ControlStrongStrokeColorDefaultBrush}"
                               Margin="0,0,0,0"
+                              Padding="0,0,12,0"
         >
             <ListView.ItemTemplate>
                 <DataTemplate x:DataType="viewModels:QueueObject">
-                    <Grid Margin="0,12,0,12" AutomationProperties.Name="{x:Bind Title}">
+                    <Grid Margin="0,12, 0,12" AutomationProperties.Name="{x:Bind Title}">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="76" />
                             <ColumnDefinition Width="*" />
@@ -320,6 +307,21 @@
             <ScalarTransition Duration="0:0:0.25"/>
         </InfoBar.OpacityTransition>
     </InfoBar>
+
+    <!-- Content Dialog for conversion-->
+    <ContentDialog x:Name="ConversionDialog" PrimaryButtonText="Convert" CloseButtonText="Close" Title="Convert Sources" IsPrimaryButtonEnabled="True"
+                   PrimaryButtonClick="ConversionDialog_OnPrimaryButtonClick" PrimaryButtonStyle="{ThemeResource AccentButtonStyle}">
+        <StackPanel>
+            <TextBlock Text="Input" Style="{ThemeResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondary}" Margin="0,0,0,0" />    
+            <CheckBox x:Name="DeezerCheckBox" Content="Deezer" Checked="CheckBox_OnChecked" Unchecked="CheckBox_OnUnchecked" />
+            <CheckBox x:Name="QobuzCheckBox" Content="Qobuz" Checked="CheckBox_OnChecked" Unchecked="CheckBox_OnUnchecked" />
+            <CheckBox x:Name="SpotifyCheckBox" Content="Spotify" Checked="CheckBox_OnChecked" Unchecked="CheckBox_OnUnchecked" />
+
+            <TextBlock Text="Output" Style="{ThemeResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondary}" Margin="0,8,0,0" />    
+            <ComboBox x:Name="OutputComboBox" PlaceholderText="Select output"
+                        Margin="0, 0, 0,0" ToolTipService.ToolTip="The source to convert to"/>
+        </StackPanel>
+    </ContentDialog>
 
     </Grid>
 </Page>
