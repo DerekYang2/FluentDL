@@ -1,4 +1,5 @@
 ﻿using System.Diagnostics;
+using CommunityToolkit.WinUI;
 using FluentDL.Contracts.Services;
 using FluentDL.Services;
 using FluentDL.ViewModels;
@@ -124,5 +125,19 @@ public sealed partial class SettingsPage : Page
         }
 
         await localSettings.SaveSettingAsync(SettingsViewModel.SearchSource, (SearchSourceComboBox.SelectedItem as ComboBoxItem).Content.ToString());
+    }
+
+    private void ClientSecretRevealButton_OnClick(object sender, RoutedEventArgs e)
+    {
+        if (ClientSecretRevealButton.IsChecked == true)
+        {
+            ClientSecretInput.PasswordRevealMode = PasswordRevealMode.Visible;
+            ClientSecretRevealIcon.Glyph = "\uED1A";
+        }
+        else
+        {
+            ClientSecretInput.PasswordRevealMode = PasswordRevealMode.Hidden;
+            ClientSecretRevealIcon.Glyph = "\uF78D";
+        }
     }
 }
