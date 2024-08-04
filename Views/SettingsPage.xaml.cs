@@ -35,10 +35,15 @@ public sealed partial class SettingsPage : Page
     {
         // Set Ids/Secrets
         ClientIdInput.Text = (await localSettings.ReadSettingAsync<string>(SettingsViewModel.SpotifyClientId)) ?? "";
-        SpotifySecretBox.Password = (await localSettings.ReadSettingAsync<string>(SettingsViewModel.SpotifyClientSecret)) ?? "";
-        DeezerARLInput.Text = await localSettings.ReadSettingAsync<string>(SettingsViewModel.DeezerARL);
+        SpotifySecretInput.Password = (await localSettings.ReadSettingAsync<string>(SettingsViewModel.SpotifyClientSecret)) ?? "";
+        DeezerARLInput.Password = await localSettings.ReadSettingAsync<string>(SettingsViewModel.DeezerARL);
         QobuzIDInput.Text = await localSettings.ReadSettingAsync<string>(SettingsViewModel.QobuzId);
         QobuzTokenInput.Password = await localSettings.ReadSettingAsync<string>(SettingsViewModel.QobuzToken);
+
+        // Set lost input focus events
+        DeezerARLInput.LostFocus += DeezerARLInput_OnLostFocus;
+        SpotifySecretInput.LostFocus += SpotifySecretInput_OnLostFocus;
+        QobuzTokenInput.LostFocus += QobuzTokenInput_OnLostFocus;
 
         // Set source combo box
         var searchSource = await localSettings.ReadSettingAsync<string>(SettingsViewModel.SearchSource);
@@ -88,17 +93,17 @@ public sealed partial class SettingsPage : Page
         await SpotifyApi.Initialize(await localSettings.ReadSettingAsync<string>(SettingsViewModel.SpotifyClientId), await localSettings.ReadSettingAsync<string>(SettingsViewModel.SpotifyClientSecret));
     }
 
-    private async void ClientSecretInput_OnLostFocus(object sender, RoutedEventArgs e)
+    private async void SpotifySecretInput_OnLostFocus(object sender, RoutedEventArgs e)
     {
         // TODO: encryption?
-        await localSettings.SaveSettingAsync(SettingsViewModel.SpotifyClientSecret, SpotifySecretBox.Password.Trim());
+        await localSettings.SaveSettingAsync(SettingsViewModel.SpotifyClientSecret, SpotifySecretInput.Password.Trim());
         await SpotifyApi.Initialize(await localSettings.ReadSettingAsync<string>(SettingsViewModel.SpotifyClientId), await localSettings.ReadSettingAsync<string>(SettingsViewModel.SpotifyClientSecret));
     }
 
     private async void DeezerARLInput_OnLostFocus(object sender, RoutedEventArgs e)
     {
-        await localSettings.SaveSettingAsync(SettingsViewModel.DeezerARL, DeezerARLInput.Text.Trim());
-        await DeezerApi.InitDeezerClient(DeezerARLInput.Text.Trim());
+        await localSettings.SaveSettingAsync(SettingsViewModel.DeezerARL, DeezerARLInput.Password.Trim());
+        await DeezerApi.InitDeezerClient(DeezerARLInput.Password.Trim());
     }
 
     private async void QobuzIDInput_OnLostFocus(object sender, RoutedEventArgs e)
@@ -110,9 +115,11 @@ public sealed partial class SettingsPage : Page
     private async void QobuzTokenInput_OnLostFocus(object sender, RoutedEventArgs e)
     {
         await localSettings.SaveSettingAsync(SettingsViewModel.QobuzToken, QobuzTokenInput.Password.Trim());
+        var id = QobuzIDInput.Text.Trim();
+        var token = QobuzTokenInput.Password.Trim();
         Thread t = new Thread(() =>
         {
-            QobuzApi.Initialize(QobuzIDInput.Text.Trim(), QobuzTokenInput.Password.Trim());
+            QobuzApi.Initialize(id, token);
         });
         t.Start();
     }
@@ -126,18 +133,4 @@ public sealed partial class SettingsPage : Page
 
         await localSettings.SaveSettingAsync(SettingsViewModel.SearchSource, (SearchSourceComboBox.SelectedItem as ComboBoxItem).Content.ToString());
     }
-
-    //private void ClientSecretRevealButton_OnClick(object sender, RoutedEventArgs e)
-    //{
-    //    if (ClientSecretRevealButton.IsChecked == true)
-    //    {
-    //        ClientSecretInput.PasswordRevealMode = PasswordRevealMode.Visible;
-    //        ClientSecretRevealIcon.Glyph = "\uED1A";
-    //    }
-    //    else
-    //    {
-    //        ClientSecretInput.PasswordRevealMode = PasswordRevealMode.Hidden;
-    //        ClientSecretRevealIcon.Glyph = "\uF78D";
-    //    }
-    //}
 }
