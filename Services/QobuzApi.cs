@@ -146,7 +146,7 @@ internal class QobuzApi
         return ConvertSongSearchObject(apiService.GetTrack(id));
     }
 
-    public static Track? GetQobuzTrack(SongSearchObject songObj)
+    public static SongSearchObject? GetQobuzTrack(SongSearchObject songObj)
     {
         // No built-in method for this, so we have to get all tracks and search for the ISRC
         string? isrc = songObj.Isrc;
@@ -164,7 +164,7 @@ internal class QobuzApi
             {
                 if (track.Isrc == isrc)
                 {
-                    return track;
+                    return ConvertSongSearchObject(track);
                 }
             }
         }

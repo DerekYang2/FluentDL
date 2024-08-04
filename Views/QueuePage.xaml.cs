@@ -6,6 +6,7 @@ using Windows.Storage.Pickers;
 using ABI.Windows.Storage.Pickers;
 using ABI.Windows.UI.ApplicationSettings;
 using CommunityToolkit.WinUI.UI.Controls;
+using CommunityToolkit.WinUI.UI.Controls.TextToolbarSymbols;
 using FluentDL.Services;
 using FluentDL.ViewModels;
 using Microsoft.UI.Dispatching;
@@ -17,6 +18,7 @@ using FluentDL.Helpers;
 using FluentDL.Models;
 using Microsoft.UI.Xaml.Media.Imaging;
 using FileSavePicker = Windows.Storage.Pickers.FileSavePicker;
+using Symbol = Microsoft.UI.Xaml.Controls.Symbol;
 
 namespace FluentDL.Views;
 
@@ -52,6 +54,7 @@ public sealed partial class QueuePage : Page
     private DispatcherQueue dispatcherQueue;
     private DispatcherTimer dispatcherTimer;
     private CancellationTokenSource cancellationTokenSource;
+    private HashSet<string> SelectedSources = new HashSet<string>();
 
     public QueueViewModel ViewModel
     {
@@ -423,5 +426,72 @@ public sealed partial class QueuePage : Page
         OutputTextBox.Document.GetText(Microsoft.UI.Text.TextGetOptions.None, out text); // Get the text from the RichEditBox
         Clipboard.CopyToClipboard(text);
         ShowInfoBar(InfoBarSeverity.Success, "Copied to clipboard");
+    }
+
+    private void CheckBox_OnChecked(object sender, RoutedEventArgs e)
+    {
+        var checkBox = sender as CheckBox;
+        var checkBoxContent = checkBox.Content.ToString();
+        SelectedSources.Add(checkBoxContent);
+
+        // Set the source of the combo box
+        var unselectedSources = new List<string> { "Deezer", "Qobuz", "Spotify" };
+        foreach (var source in SelectedSources)
+        {
+            unselectedSources.Remove(source);
+        }
+
+        OutputComboBox.ItemsSource = unselectedSources;
+    }
+
+    private void CheckBox_OnUnchecked(object sender, RoutedEventArgs e)
+    {
+        var checkBox = sender as CheckBox;
+        var checkBoxContent = checkBox.Content.ToString();
+        SelectedSources.Remove(checkBoxContent);
+
+        // Set the source of the combo box
+        var unselectedSources = new List<string> { "Deezer", "Qobuz", "Spotify" };
+        foreach (var source in SelectedSources)
+        {
+            unselectedSources.Remove(source);
+        }
+
+        OutputComboBox.ItemsSource = unselectedSources;
+    }
+
+    private string GetOutputSource()
+    {
+        return OutputComboBox.SelectedItem as string;
+    }
+
+    private async void ConvertButton_OnClick(object sender, RoutedEventArgs e)
+    {
+        for (int i = 0; i < QueueViewModel.Source.Count; i++)
+        {
+            var song = QueueViewModel.Source[i];
+            var capitalizedListSource = song.Source[0].ToString().ToUpper() + song.Source.Substring(1);
+            if (!SelectedSources.Contains(capitalizedListSource)) // If the source is not selected as input
+            {
+                continue;
+            }
+
+            var outputSource = GetOutputSource();
+
+            var newSongObj = outputSource switch
+            {
+                "Deezer" => await DeezerApi.GetDeezerTrack(song),
+                "Qobuz" => await Task.Run(() => QobuzApi.GetQobuzTrack(song)),
+                "Spotify" => await SpotifyApi.GetSpotifyTrack(song),
+                _ => null
+            };
+
+            if (newSongObj == null)
+            {
+                continue;
+            }
+
+            QueueViewModel.Source[i] = new QueueObject(newSongObj);
+        }
     }
 }
