@@ -11,24 +11,23 @@
     xmlns:viewModels="using:FluentDL.ViewModels"
     xmlns:converters="using:CommunityToolkit.WinUI.UI.Converters"
     mc:Ignorable="d"
-    NavigationCacheMode="Required"
-    >
+    NavigationCacheMode="Required">
     <Page.Resources>
         <helpers:DateToYearConverter x:Key="DateToYearConverter" />
         <helpers:DurationConverter x:Key="DurationConverter" />
         <helpers:VisibilityConverter x:Key="VisibilityConverter" />
-        <viewModels:QueueViewModel x:Key="QueueViewModel"/>
-        <views:QueueMessageConverter  x:Key="QueueMessageConverter"/>
-        <views:PathToVisibilityConverter x:Key="PathToVisibilityConverter"/>
-        <helpers:NullVisibilityConverter x:Key="NullVisibilityConverter"/>
-        <helpers:InverseNullVisibilityConverter x:Key="InverseNullVisibilityConverter"/>
+        <viewModels:QueueViewModel x:Key="QueueViewModel" />
+        <views:QueueMessageConverter x:Key="QueueMessageConverter" />
+        <views:PathToVisibilityConverter x:Key="PathToVisibilityConverter" />
+        <helpers:NullVisibilityConverter x:Key="NullVisibilityConverter" />
+        <helpers:InverseNullVisibilityConverter x:Key="InverseNullVisibilityConverter" />
     </Page.Resources>
 
     <Grid>
         <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
         </Grid.RowDefinitions>
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="*" />
@@ -37,53 +36,55 @@
         <controls1:DockPanel Grid.Row="0" Grid.Column="0">
             <Button VerticalAlignment="Center" Margin="0, 0, 0, 0" Background="Transparent"
                     BorderBrush="Transparent">
-                    <TextBlock x:Name="ProgressText" Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}" Text="{Binding Source={StaticResource QueueViewModel}, Path=Source.Count, Converter={StaticResource QueueMessageConverter}}"/>
+                <TextBlock x:Name="ProgressText" Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"
+                           Text="{Binding Source={StaticResource QueueViewModel}, Path=Source.Count, Converter={StaticResource QueueMessageConverter}}" />
             </Button>
-            
+
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8">
 
-                <Button x:Name="ConvertDialogOpenButton" VerticalAlignment="Center" ToolTipService.ToolTip="Convert tracks to other sources" Click="ConvertDialogOpenButton_OnClick">
+                <Button x:Name="ConvertDialogOpenButton" VerticalAlignment="Center"
+                        ToolTipService.ToolTip="Convert tracks to other sources"
+                        Click="ConvertDialogOpenButton_OnClick">
                     <StackPanel Orientation="Horizontal">
-                        <FontIcon Glyph="&#xEA3C;" FontSize="16" Margin="0, 0, 8, 0"/>
+                        <FontIcon Glyph="&#xEA3C;" FontSize="16" Margin="0, 0, 8, 0" />
                         <TextBlock Text="Convert" />
                     </StackPanel>
                 </Button>
 
-                <Button x:Name="CommandButton" VerticalAlignment="Center" Click="CommandButton_OnClick" 
+                <Button x:Name="CommandButton" VerticalAlignment="Center" Click="CommandButton_OnClick"
                         ToolTipService.ToolTip="Run a command in Command Prompt">
                     <StackPanel Orientation="Horizontal">
-                        <FontIcon Glyph="&#xE756;" FontSize="16" Margin="0, 0, 8, 0"/>
-                        <TextBlock Text="Run Command"  />
+                        <FontIcon Glyph="&#xE756;" FontSize="16" Margin="0, 0, 8, 0" />
+                        <TextBlock Text="Run Command" />
                     </StackPanel>
                 </Button>
                 <Button x:Name="ClearButton" VerticalAlignment="Center" Click="ClearButton_OnClick"
                         ToolTipService.ToolTip="Clear the queue">
                     <StackPanel Orientation="Horizontal">
-                        <FontIcon x:Name="ClearIcon" Glyph="&#xE894;" FontSize="16" Margin="0, 0, 8, 0"/>
-                        <TextBlock Text="Clear"  />
+                        <FontIcon x:Name="ClearIcon" Glyph="&#xE894;" FontSize="16" Margin="0, 0, 8, 0" />
+                        <TextBlock Text="Clear" />
                     </StackPanel>
                 </Button>
                 <Button x:Name="StartStopButton" VerticalAlignment="Center" Click="StartStopButton_OnClick"
                         ToolTipService.ToolTip="Pause or continue running the command">
                     <StackPanel Orientation="Horizontal">
-                        <FontIcon x:Name="StartStopIcon" Glyph="&#xE768;" FontSize="16" Margin="0, 0, 8, 0"/>
-                        <TextBlock x:Name="StartStopText" Text="Continue"  />
+                        <FontIcon x:Name="StartStopIcon" Glyph="&#xE768;" FontSize="16" Margin="0, 0, 8, 0" />
+                        <TextBlock x:Name="StartStopText" Text="Continue" />
                     </StackPanel>
                 </Button>
             </StackPanel>
-    </controls1:DockPanel>
+        </controls1:DockPanel>
 
-    <ProgressBar Grid.Row="1" Grid.Column="0" x:Name="QueueProgress" IsIndeterminate="False" Value="0"
-                             Margin="0,8,0,12" />
+        <ProgressBar Grid.Row="1" Grid.Column="0" x:Name="QueueProgress" IsIndeterminate="False" Value="0"
+                     Margin="0,8,0,12" />
 
-        <ListView Grid.Row="2"  Grid.Column="0" x:Name="CustomListView"
-                              CornerRadius="8"
-                              BorderThickness="0"
-                              SelectionChanged="CustomListView_OnSelectionChanged"
-                              BorderBrush="{ThemeResource ControlStrongStrokeColorDefaultBrush}"
-                              Margin="0,0,0,0"
-                              Padding="0,0,12,0"
-        >
+        <ListView Grid.Row="2" Grid.Column="0" x:Name="CustomListView"
+                  CornerRadius="8"
+                  BorderThickness="0"
+                  SelectionChanged="CustomListView_OnSelectionChanged"
+                  BorderBrush="{ThemeResource ControlStrongStrokeColorDefaultBrush}"
+                  Margin="0,0,0,0"
+                  Padding="0,0,12,0">
             <ListView.ItemTemplate>
                 <DataTemplate x:DataType="viewModels:QueueObject">
                     <Grid Margin="0,12, 0,12" AutomationProperties.Name="{x:Bind Title}">
@@ -92,8 +93,9 @@
                             <ColumnDefinition Width="*" />
                             <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
-      
-                        <Border Grid.Column="0" CornerRadius="4" Height="76" Visibility="{x:Bind LocalBitmapImage, Converter={StaticResource NullVisibilityConverter}}">
+
+                        <Border Grid.Column="0" CornerRadius="4" Height="76"
+                                Visibility="{x:Bind LocalBitmapImage, Converter={StaticResource NullVisibilityConverter}}">
                             <Border.Background>
                                 <ImageBrush Stretch="UniformToFill" ImageSource="{x:Bind LocalBitmapImage}">
                                 </ImageBrush>
@@ -107,9 +109,11 @@
                                            HorizontalAlignment="Left"
                                            TextTrimming="CharacterEllipsis" MaxLines="1" Margin="0, 0, 8, 0" />
                                 <Border Background="DarkGray" CornerRadius="2" Padding="4, 0" Margin="0, 0, 8, 0"
-                                        VerticalAlignment="Center"  Visibility="{x:Bind Explicit, Converter={StaticResource VisibilityConverter}}">
-                                    <TextBlock x:Name="ExplicitBadge" Text="E" Style="{ThemeResource CaptionTextBlockStyle}"
-                                               Foreground="Black"/>
+                                        VerticalAlignment="Center"
+                                        Visibility="{x:Bind Explicit, Converter={StaticResource VisibilityConverter}}">
+                                    <TextBlock x:Name="ExplicitBadge" Text="E"
+                                               Style="{ThemeResource CaptionTextBlockStyle}"
+                                               Foreground="Black" />
                                 </Border>
                             </StackPanel>
                             <TextBlock Text="{x:Bind Artists}" FontFamily="Segoe UI Variable Display"
@@ -131,21 +135,27 @@
                                        FontFamily="Segoe UI Variable Display" />
                         </StackPanel>
 
-                        <Grid Grid.Column="2" CornerRadius="4" Margin="0,0,0,0" VerticalAlignment="Stretch" HorizontalAlignment="Stretch">
+                        <Grid Grid.Column="2" CornerRadius="4" Margin="0,0,0,0" VerticalAlignment="Stretch"
+                              HorizontalAlignment="Stretch">
                             <StackPanel>
-                            <Border Background="{ThemeResource LayerOnMicaBaseAltFillColorSecondaryBrush}" CornerRadius="2" Padding="6, 1" HorizontalAlignment="Right">
-                                <TextBlock x:Name="SourceBadge" Text="{x:Bind Source}" Style="{ThemeResource CaptionTextBlockStyle}" VerticalAlignment="Center"/>
-                            </Border>
+                                <Border Background="{ThemeResource LayerOnMicaBaseAltFillColorSecondaryBrush}"
+                                        CornerRadius="2" Padding="6, 1" HorizontalAlignment="Right">
+                                    <TextBlock x:Name="SourceBadge" Text="{x:Bind Source}"
+                                               Style="{ThemeResource CaptionTextBlockStyle}" VerticalAlignment="Center" />
+                                </Border>
                             </StackPanel>
-                            <Button x:Name="OutputButton" VerticalAlignment="Bottom" HorizontalAlignment="Stretch" Click="OutputButton_OnClick"  Visibility="{x:Bind ResultString, Converter={StaticResource PathToVisibilityConverter}}">
+                            <Button x:Name="OutputButton" VerticalAlignment="Bottom" HorizontalAlignment="Stretch"
+                                    Click="OutputButton_OnClick"
+                                    Visibility="{x:Bind ResultString, Converter={StaticResource PathToVisibilityConverter}}">
                                 <StackPanel Orientation="Horizontal">
-                                    <FontIcon x:Name="OutputIcon" Glyph="&#xE8A7;" FontSize="16" Margin="0, 0, 8, 0"/>
-                                    <TextBlock Text="Output"  />
+                                    <FontIcon x:Name="OutputIcon" Glyph="&#xE8A7;" FontSize="16" Margin="0, 0, 8, 0" />
+                                    <TextBlock Text="Output" />
                                 </StackPanel>
                             </Button>
                         </Grid>
 
-                        <ProgressRing Grid.Column="2" Visibility="{x:Bind IsRunning, Converter={StaticResource VisibilityConverter}}"/>
+                        <ProgressRing Grid.Column="2"
+                                      Visibility="{x:Bind IsRunning, Converter={StaticResource VisibilityConverter}}" />
                     </Grid>
                 </DataTemplate>
             </ListView.ItemTemplate>
@@ -154,13 +164,13 @@
         <views:PreviewPane Grid.Row="0" Grid.RowSpan="3" Grid.Column="1" x:Name="PreviewPanel"
                            Padding="12"
                            Margin="12,0,0,12"
-                           VerticalAlignment="Stretch" 
-                           />
+                           VerticalAlignment="Stretch" />
 
-    <!-- Content Dialog for command running-->
-    <ContentDialog x:Name="CustomCommandDialog" PrimaryButtonText="Run" CloseButtonText="Cancel"
+        <!-- Content Dialog for command running-->
+        <ContentDialog x:Name="CustomCommandDialog" PrimaryButtonText="Run" CloseButtonText="Cancel"
                        Title="Run Command" IsSecondaryButtonEnabled="True" IsPrimaryButtonEnabled="True"
-                       PrimaryButtonClick="CustomCommandDialog_OnPrimaryButtonClick" PrimaryButtonStyle="{ThemeResource AccentButtonStyle}">
+                       PrimaryButtonClick="CustomCommandDialog_OnPrimaryButtonClick"
+                       PrimaryButtonStyle="{ThemeResource AccentButtonStyle}">
             <StackPanel Spacing="12">
 
                 <InfoBar
@@ -170,100 +180,114 @@
                     Message="Run custom commands (with Command Prompt) on each queue item. Click on the wildcards below for more details."
                     Margin="0,0,0,0" />
 
-                <ScrollViewer HorizontalAlignment="Stretch" HorizontalScrollBarVisibility="Visible" HorizontalScrollMode="Enabled" VerticalScrollMode="Disabled" 
+                <ScrollViewer x:Name="ScrollViewerWildcards" HorizontalAlignment="Stretch" HorizontalScrollBarVisibility="Visible"
+                              HorizontalScrollMode="Enabled" VerticalScrollMode="Disabled"
                               ToolTipService.ToolTip="Available wildcards">
-                <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,0,0,16">
-                    <Button Content="{}{url}" ToolTipService.ToolTip="The source URL of the track" Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}">
-                        <Button.Flyout>
-                            <Flyout>    
-                                <TextBlock MaxWidth="400" TextWrapping="WrapWholeWords" 
-                                           Text="The source URL if online source (e.g., https://api.deezer.com/track/123456) or the absolute path if local file (e.g., C:/folder/file.extension)"/>
-                            </Flyout>
-                        </Button.Flyout>
-                    </Button>
-                    <Button Content="{}{ext}" ToolTipService.ToolTip="The file extension of the track" Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}">
-                        <Button.Flyout>
-                            <Flyout>
-                                <TextBlock MaxWidth="400" TextWrapping="WrapWholeWords" 
-                                           Text="The file extension of the track WITHOUT the period (e.g., mp3, wav)"/>
-                            </Flyout>
-                        </Button.Flyout>
-                    </Button>
-                    <Button Content="{}{file_name}" ToolTipService.ToolTip="The file name of the track" Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}">
-                        <Button.Flyout>
-                            <Flyout>
-                                <TextBlock MaxWidth="400" TextWrapping="WrapWholeWords" 
-                                           Text="The file name of the track without its extension"/>
-                            </Flyout>
-                        </Button.Flyout>
-                    </Button>
-                    <Button Content="{}{title}" ToolTipService.ToolTip="The title of the track" Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}">
-                        <Button.Flyout>
-                            <Flyout>
-                                <TextBlock MaxWidth="400" TextWrapping="WrapWholeWords" 
-                                           Text="The title of the track"/>
-                            </Flyout>
-                        </Button.Flyout>
-                    </Button>
-                    <Button Content="{}{image_url}" ToolTipService.ToolTip="The image URL of the track" Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}">
-                        <Button.Flyout>
-                            <Flyout>
-                                <TextBlock MaxWidth="400" TextWrapping="WrapWholeWords" 
-                                           Text="The image URL of the track (only applicable to online sources)"/>
-                            </Flyout>
-                        </Button.Flyout>
-                    </Button>
-                    <Button Content="{}{id}" ToolTipService.ToolTip="The ID of the track" Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}">
-                        <Button.Flyout>
-                            <Flyout>
-                                <TextBlock MaxWidth="400" TextWrapping="WrapWholeWords" 
-                                           Text="The ID of the track, often a number (only applicable to online sources)"/>
-                            </Flyout>
-                        </Button.Flyout>
-                    </Button>
-                    <Button Content="{}{release_date}" ToolTipService.ToolTip="The release date of the track" Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}">
-                        <Button.Flyout>
-                            <Flyout>
-                                <TextBlock MaxWidth="400" TextWrapping="WrapWholeWords" 
-                                           Text="The release date of the track, format YY-MM-DD"/>
-                            </Flyout>
-                        </Button.Flyout>
-                    </Button>
-                    <Button Content="{}{artists}" ToolTipService.ToolTip="The artists of the track" Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}">
-                        <Button.Flyout>
-                            <Flyout>
-                                <TextBlock MaxWidth="400" TextWrapping="WrapWholeWords" 
-                                           Text="The artists of the track, comma separated (eg. artist1, artist2, artist3)"/>
-                            </Flyout>
-                        </Button.Flyout>
-                    </Button>
-                    <Button Content="{}{duration}" ToolTipService.ToolTip="The duration of the track" Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}">
-                        <Button.Flyout>
-                            <Flyout>
-                                <TextBlock MaxWidth="400" TextWrapping="WrapWholeWords" 
-                                           Text="The duration of the track in seconds (eg. 237)"/>
-                            </Flyout>
-                        </Button.Flyout>
-                    </Button>
-                    <Button Content="{}{album}" ToolTipService.ToolTip="The album name of the track" Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}">
-                        <Button.Flyout>
-                            <Flyout>
-                                <TextBlock MaxWidth="400" TextWrapping="WrapWholeWords" 
-                                           Text="The album name of the track"/>
-                            </Flyout>
-                        </Button.Flyout>
-                    </Button>
-                    <Button Content="{}{isrc}" ToolTipService.ToolTip="The ISRC (International Standard Recording Code) identifier for the track" Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}">
-                        <Button.Flyout>
-                            <Flyout>
-                                <TextBlock MaxWidth="400" TextWrapping="WrapWholeWords" 
-                                           Text="The ISRC (International Standard Recording Code) identifier for the track (eg. CCXXXYYNNNNN)"/>
-                            </Flyout>
-                        </Button.Flyout>
-                    </Button>
-                </StackPanel>
+                    <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,0,0,16">
+                        <Button Content="{}{url}" ToolTipService.ToolTip="The source URL of the track"
+                                Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}">
+                            <Button.Flyout>
+                                <Flyout>
+                                    <TextBlock MaxWidth="400" TextWrapping="WrapWholeWords"
+                                               Text="The source URL if online source (e.g., https://api.deezer.com/track/123456) or the absolute path if local file (e.g., C:/folder/file.extension)" />
+                                </Flyout>
+                            </Button.Flyout>
+                        </Button>
+                        <Button Content="{}{ext}" ToolTipService.ToolTip="The file extension of the track"
+                                Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}">
+                            <Button.Flyout>
+                                <Flyout>
+                                    <TextBlock MaxWidth="400" TextWrapping="WrapWholeWords"
+                                               Text="The file extension of the track WITHOUT the period (e.g., mp3, wav)" />
+                                </Flyout>
+                            </Button.Flyout>
+                        </Button>
+                        <Button Content="{}{file_name}" ToolTipService.ToolTip="The file name of the track"
+                                Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}">
+                            <Button.Flyout>
+                                <Flyout>
+                                    <TextBlock MaxWidth="400" TextWrapping="WrapWholeWords"
+                                               Text="The file name of the track without its extension" />
+                                </Flyout>
+                            </Button.Flyout>
+                        </Button>
+                        <Button Content="{}{title}" ToolTipService.ToolTip="The title of the track"
+                                Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}">
+                            <Button.Flyout>
+                                <Flyout>
+                                    <TextBlock MaxWidth="400" TextWrapping="WrapWholeWords"
+                                               Text="The title of the track" />
+                                </Flyout>
+                            </Button.Flyout>
+                        </Button>
+                        <Button Content="{}{image_url}" ToolTipService.ToolTip="The image URL of the track"
+                                Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}">
+                            <Button.Flyout>
+                                <Flyout>
+                                    <TextBlock MaxWidth="400" TextWrapping="WrapWholeWords"
+                                               Text="The image URL of the track (only applicable to online sources)" />
+                                </Flyout>
+                            </Button.Flyout>
+                        </Button>
+                        <Button Content="{}{id}" ToolTipService.ToolTip="The ID of the track"
+                                Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}">
+                            <Button.Flyout>
+                                <Flyout>
+                                    <TextBlock MaxWidth="400" TextWrapping="WrapWholeWords"
+                                               Text="The ID of the track, often a number (only applicable to online sources)" />
+                                </Flyout>
+                            </Button.Flyout>
+                        </Button>
+                        <Button Content="{}{release_date}" ToolTipService.ToolTip="The release date of the track"
+                                Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}">
+                            <Button.Flyout>
+                                <Flyout>
+                                    <TextBlock MaxWidth="400" TextWrapping="WrapWholeWords"
+                                               Text="The release date of the track, format YY-MM-DD" />
+                                </Flyout>
+                            </Button.Flyout>
+                        </Button>
+                        <Button Content="{}{artists}" ToolTipService.ToolTip="The artists of the track"
+                                Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}">
+                            <Button.Flyout>
+                                <Flyout>
+                                    <TextBlock MaxWidth="400" TextWrapping="WrapWholeWords"
+                                               Text="The artists of the track, comma separated (eg. artist1, artist2, artist3)" />
+                                </Flyout>
+                            </Button.Flyout>
+                        </Button>
+                        <Button Content="{}{duration}" ToolTipService.ToolTip="The duration of the track"
+                                Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}">
+                            <Button.Flyout>
+                                <Flyout>
+                                    <TextBlock MaxWidth="400" TextWrapping="WrapWholeWords"
+                                               Text="The duration of the track in seconds (eg. 237)" />
+                                </Flyout>
+                            </Button.Flyout>
+                        </Button>
+                        <Button Content="{}{album}" ToolTipService.ToolTip="The album name of the track"
+                                Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}">
+                            <Button.Flyout>
+                                <Flyout>
+                                    <TextBlock MaxWidth="400" TextWrapping="WrapWholeWords"
+                                               Text="The album name of the track" />
+                                </Flyout>
+                            </Button.Flyout>
+                        </Button>
+                        <Button Content="{}{isrc}"
+                                ToolTipService.ToolTip="The ISRC (International Standard Recording Code) identifier for the track"
+                                Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}">
+                            <Button.Flyout>
+                                <Flyout>
+                                    <TextBlock MaxWidth="400" TextWrapping="WrapWholeWords"
+                                               Text="The ISRC (International Standard Recording Code) identifier for the track (eg. CCXXXYYNNNNN)" />
+                                </Flyout>
+                            </Button.Flyout>
+                        </Button>
+                    </StackPanel>
                 </ScrollViewer>
-                <AutoSuggestBox x:Name="DirectoryInput" 
+
+                <AutoSuggestBox x:Name="DirectoryInput"
                                 PlaceholderText="Directory of command prompt"
                                 HorizontalAlignment="Stretch"
                                 Margin="0,0,0,8"
@@ -276,52 +300,79 @@
                     </AutoSuggestBox.Header>
                 </AutoSuggestBox>
 
-                <AutoSuggestBox x:Name="CommandInput" 
+                <AutoSuggestBox x:Name="CommandInput"
                                 PlaceholderText="Run custom command"
                                 HorizontalAlignment="Stretch"
                                 Margin="0,0,0,8"
                                 ToolTipService.ToolTip="The command to be run in Command Prompt"
                                 TextChanged="CommandInput_OnTextChanged"
-                                SuggestionChosen="CommandInput_OnSuggestionChosen"
-                                >
+                                SuggestionChosen="CommandInput_OnSuggestionChosen">
                     <AutoSuggestBox.Header>
-                            <TextBlock Text="Command" Style="{ThemeResource CaptionTextBlockStyle}"
-                                       Foreground="{ThemeResource TextFillColorSecondary}" />
+                        <TextBlock Text="Command" Style="{ThemeResource CaptionTextBlockStyle}"
+                                   Foreground="{ThemeResource TextFillColorSecondary}" />
                     </AutoSuggestBox.Header>
                 </AutoSuggestBox>
             </StackPanel>
         </ContentDialog>
 
-    <!-- Content Dialog for cli output-->
-    <ContentDialog x:Name="OutputDialog" PrimaryButtonText="Copy" CloseButtonText="Close"
+        <!-- Content Dialog for cli output-->
+        <ContentDialog x:Name="OutputDialog" PrimaryButtonText="Copy" CloseButtonText="Close"
                        Title="Output" IsSecondaryButtonEnabled="True" IsPrimaryButtonEnabled="True"
-                       PrimaryButtonClick="OutputDialog_OnPrimaryButtonClick" PrimaryButtonStyle="{ThemeResource AccentButtonStyle}">
+                       PrimaryButtonClick="OutputDialog_OnPrimaryButtonClick"
+                       PrimaryButtonStyle="{ThemeResource AccentButtonStyle}">
             <StackPanel Spacing="12">
-                <TextBlock x:Name="OutputMessage" Margin="0,0,0,0"/>
-                <RichEditBox x:Name="OutputTextBox" HorizontalAlignment="Stretch" Height="Auto"/>
+                <TextBlock x:Name="OutputMessage" Margin="0,0,0,0" />
+                <RichEditBox x:Name="OutputTextBox" HorizontalAlignment="Stretch" Height="Auto" />
             </StackPanel>
         </ContentDialog>
 
-    <InfoBar Grid.Row="0" Grid.RowSpan="3" Grid.Column="0" Grid.ColumnSpan = "2" x:Name="PageInfoBar" Canvas.ZIndex="1" VerticalAlignment="Bottom" HorizontalAlignment="Center" IsOpen="False" Opacity="0" Margin="12" Background="{ThemeResource AcrylicBackgroundFillColorDefaultBrush}" CloseButtonClick="PageInfoBar_OnCloseButtonClick">
-        <InfoBar.OpacityTransition>
-            <ScalarTransition Duration="0:0:0.25"/>
-        </InfoBar.OpacityTransition>
-    </InfoBar>
+        <InfoBar Grid.Row="0" Grid.RowSpan="3" Grid.Column="0" Grid.ColumnSpan="2" x:Name="PageInfoBar"
+                 Canvas.ZIndex="1" VerticalAlignment="Bottom" HorizontalAlignment="Center" IsOpen="False" Opacity="0"
+                 Margin="12" Background="{ThemeResource AcrylicBackgroundFillColorDefaultBrush}"
+                 CloseButtonClick="PageInfoBar_OnCloseButtonClick">
+            <InfoBar.OpacityTransition>
+                <ScalarTransition Duration="0:0:0.25" />
+            </InfoBar.OpacityTransition>
+        </InfoBar>
 
-    <!-- Content Dialog for conversion-->
-    <ContentDialog x:Name="ConversionDialog" PrimaryButtonText="Convert" CloseButtonText="Close" Title="Convert Sources" IsPrimaryButtonEnabled="True"
-                   PrimaryButtonClick="ConversionDialog_OnPrimaryButtonClick" PrimaryButtonStyle="{ThemeResource AccentButtonStyle}">
-        <StackPanel>
-            <TextBlock Text="Input" Style="{ThemeResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondary}" Margin="0,0,0,0" />    
-            <CheckBox x:Name="DeezerCheckBox" Content="Deezer" Checked="CheckBox_OnChecked" Unchecked="CheckBox_OnUnchecked" />
-            <CheckBox x:Name="QobuzCheckBox" Content="Qobuz" Checked="CheckBox_OnChecked" Unchecked="CheckBox_OnUnchecked" />
-            <CheckBox x:Name="SpotifyCheckBox" Content="Spotify" Checked="CheckBox_OnChecked" Unchecked="CheckBox_OnUnchecked" />
+        <!-- Content Dialog for conversion-->
+        <ContentDialog x:Name="ConversionDialog" PrimaryButtonText="Convert" CloseButtonText="Close"
+                       Title="Convert Sources" IsPrimaryButtonEnabled="True"
+                       PrimaryButtonClick="ConversionDialog_OnPrimaryButtonClick"
+                       PrimaryButtonStyle="{ThemeResource AccentButtonStyle}">
+            <StackPanel>
+            <InfoBar
+                IsOpen="True"
+                IsClosable="False"
+                Severity="Informational"
+                Message="Select at least one input and output."
+                Margin="0,0,0,12" />
 
-            <TextBlock Text="Output" Style="{ThemeResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondary}" Margin="0,8,0,0" />    
-            <ComboBox x:Name="OutputComboBox" PlaceholderText="Select output"
-                        Margin="0, 0, 0,0" ToolTipService.ToolTip="The source to convert to"/>
-        </StackPanel>
-    </ContentDialog>
+            <Grid VerticalAlignment="Stretch">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <StackPanel Grid.Column="0">
+                    <TextBlock Text="Input" Style="{ThemeResource CaptionTextBlockStyle}"
+                               Foreground="{ThemeResource TextFillColorSecondary}" Margin="0,0,0,2" />
+                    <CheckBox x:Name="DeezerCheckBox" Content="Deezer" Checked="CheckBox_OnChecked"
+                              Unchecked="CheckBox_OnUnchecked"/>
+                    <CheckBox x:Name="QobuzCheckBox" Content="Qobuz" Checked="CheckBox_OnChecked"
+                              Unchecked="CheckBox_OnUnchecked"/>
+                    <CheckBox x:Name="SpotifyCheckBox" Content="Spotify" Checked="CheckBox_OnChecked"
+                              Unchecked="CheckBox_OnUnchecked"/>
+                </StackPanel>
+
+                <StackPanel Grid.Column="1">
+                    <TextBlock Text="Output" Style="{ThemeResource CaptionTextBlockStyle}"
+                               Foreground="{ThemeResource TextFillColorSecondary}" Margin="0,0,0,4" />
+                    <ComboBox x:Name="OutputComboBox" PlaceholderText="Select output"
+                              Margin="0, 0, 0,0" ToolTipService.ToolTip="The source to convert to" HorizontalAlignment="Stretch"/>
+                </StackPanel>
+            </Grid>
+            </StackPanel>
+        </ContentDialog>
 
     </Grid>
 </Page>

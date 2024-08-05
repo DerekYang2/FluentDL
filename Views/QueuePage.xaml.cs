@@ -75,6 +75,7 @@ public sealed partial class QueuePage : Page
         cancellationTokenSource = new CancellationTokenSource();
         InitPreviewPanelButtons();
         StartStopButton.Visibility = Visibility.Collapsed; // Hide the start/stop button initially
+        OutputComboBox.ItemsSource = new List<string> { "Deezer", "Qobuz", "Spotify" }; // Default list
 
         QueueViewModel.Source.CollectionChanged += (sender, e) =>
         {
@@ -448,15 +449,6 @@ public sealed partial class QueuePage : Page
         var checkBox = sender as CheckBox;
         var checkBoxContent = checkBox.Content.ToString();
         SelectedSources.Add(checkBoxContent);
-
-        // Set the source of the combo box
-        var unselectedSources = new List<string> { "Deezer", "Qobuz", "Spotify" };
-        foreach (var source in SelectedSources)
-        {
-            unselectedSources.Remove(source);
-        }
-
-        OutputComboBox.ItemsSource = unselectedSources;
     }
 
     private void CheckBox_OnUnchecked(object sender, RoutedEventArgs e)
@@ -464,30 +456,46 @@ public sealed partial class QueuePage : Page
         var checkBox = sender as CheckBox;
         var checkBoxContent = checkBox.Content.ToString();
         SelectedSources.Remove(checkBoxContent);
-
-        // Set the source of the combo box
-        var unselectedSources = new List<string> { "Deezer", "Qobuz", "Spotify" };
-        foreach (var source in SelectedSources)
-        {
-            unselectedSources.Remove(source);
-        }
-
-        OutputComboBox.ItemsSource = unselectedSources;
     }
 
-    private string GetOutputSource()
+    private string? GetOutputSource()
     {
         return OutputComboBox.SelectedItem as string;
     }
 
     private async void ConvertDialogOpenButton_OnClick(object sender, RoutedEventArgs e)
     {
+        // Pre-select existing sources
+        var sources = new HashSet<string>();
+        foreach (var song in (ObservableCollection<QueueObject>)CustomListView.ItemsSource)
+        {
+            sources.Add(song.Source);
+        }
+
+        DeezerCheckBox.IsChecked = sources.Contains("deezer");
+        QobuzCheckBox.IsChecked = sources.Contains("qobuz");
+        SpotifyCheckBox.IsChecked = sources.Contains("spotify");
+
+        // Show conversion dialog
         ConversionDialog.XamlRoot = this.XamlRoot;
         ConversionDialog.ShowAsync();
     }
 
     private async void ConversionDialog_OnPrimaryButtonClick(ContentDialog sender, ContentDialogButtonClickEventArgs args)
     {
+        // Check for valid input
+        if (GetOutputSource() == null)
+        {
+            ShowInfoBar(InfoBarSeverity.Warning, "Please select an output source.", 3);
+            return;
+        }
+
+        if (DeezerCheckBox.IsChecked == false && QobuzCheckBox.IsChecked == false && SpotifyCheckBox.IsChecked == false)
+        {
+            ShowInfoBar(InfoBarSeverity.Warning, "Please select at least one input source.", 3);
+            return;
+        }
+
         // Clear preview pane when source is being edited
         PreviewPanel.Clear();
 
@@ -509,13 +517,15 @@ public sealed partial class QueuePage : Page
         {
             var song = QueueViewModel.Source[i];
             var capitalizedListSource = song.Source[0].ToString().ToUpper() + song.Source.Substring(1);
-            if (!SelectedSources.Contains(capitalizedListSource)) // If the source is not selected as input
+            var outputSource = GetOutputSource();
+
+            if (!SelectedSources.Contains(capitalizedListSource) || outputSource == capitalizedListSource) // If the source is not selected as input or no conversion needed
             {
                 QueueProgress.Value = 100.0 * (i + 1) / QueueViewModel.Source.Count; // Update the progress bar
                 continue;
             }
 
-            var newSongObj = GetOutputSource() switch
+            var newSongObj = outputSource switch
             {
                 "Deezer" => await DeezerApi.GetDeezerTrack(song),
                 "Qobuz" => await Task.Run(() => QobuzApi.GetQobuzTrack(song)),
