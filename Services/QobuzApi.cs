@@ -1,7 +1,9 @@
 ﻿using System.Collections.ObjectModel;
 using System.Diagnostics;
+using System.Linq;
 using System.Text.RegularExpressions;
 using ABI.Windows.Media.Core;
+using FluentDL.Helpers;
 using FluentDL.Models;
 using FluentDL.Views;
 using Microsoft.UI.Xaml.Controls;
@@ -53,6 +55,7 @@ internal class QobuzApi
         artistName = artistName.Trim();
         trackName = trackName.Trim();
         albumName = albumName.Trim();
+        bool isTrackSpecified = !string.IsNullOrWhiteSpace(trackName);
 
         var trackIdList = new HashSet<long>();
 
@@ -62,9 +65,9 @@ internal class QobuzApi
             // Check if artist matches
             if (artistResults.Artists != null)
             {
-                foreach (var artist in artistResults.Artists.Items)
+                foreach (var artist in artistResults.Artists.Items) // Iterate through the top 5 artist results
                 {
-                    if (artist.Name.ToLower().Contains(artistName.ToLower()) || artistName.ToLower().Contains(artist.Name)) // Check if artist name match or close match
+                    if (ApiHelper.PrunePunctuation(artistName) == ApiHelper.PrunePunctuation(artist.Name)) // Check if artist name match (TODO: would substr be better?)
                     {
                         // If album is specified, check if artist has this album
                         var albumList = artist.Albums.Items;
@@ -72,17 +75,57 @@ internal class QobuzApi
                         {
                             foreach (var album in albumList)
                             {
-                                if (album.Title.ToLower().Contains(albumName.ToLower()) || albumName.ToLower().Contains(album.Title)) // Check if album name match or close match
+                                if (ApiHelper.IsSubstring(albumName, album.Title)) // Check if album name match or close match
                                 {
-                                    foreach (var track in album.Tracks.Items)
+                                    foreach (var track in album.Tracks.Items) // Add all tracks from the album
                                     {
-                                        trackIdList.Add(track.Id.GetValueOrDefault());
+                                        // Check if track is specified
+                                        if (isTrackSpecified)
+                                        {
+                                            if (ApiHelper.IsSubstring(trackName, track.Title)) // Check if track name match or close match
+                                            {
+                                                trackIdList.Add(track.Id.GetValueOrDefault());
+                                            }
+                                        }
+                                        else // Nothing specified
+                                        {
+                                            trackIdList.Add(track.Id.GetValueOrDefault());
+                                        }
                                     }
                                 }
                             }
                         }
-                        else
+                        else // No specified album
                         {
+                            if (isTrackSpecified) // If artist and track are specified
+                            {
+                                // Do a general search query in the form "artistName trackName", better than iterating through all albums
+                                var results = await Task.Run(() => apiService.SearchTracks(artistName + " " + trackName, limit), token);
+
+                                if (results.Tracks != null)
+                                {
+                                    foreach (var track in results.Tracks.Items)
+                                    {
+                                        // Check if artist name and track somewhat match
+                                        if (ApiHelper.IsSubstring(artist.Name, track.Performer.Name) && ApiHelper.IsSubstring(trackName, track.Title))
+                                        {
+                                            trackIdList.Add(track.Id.GetValueOrDefault());
+                                        }
+                                    }
+                                }
+                            }
+                            else // Only artist specified, do a general search 
+                            {
+                                var results = await Task.Run(() => apiService.SearchTracks(artistName, limit), token);
+
+                                if (results.Tracks != null)
+                                {
+                                    foreach (var track in results.Tracks.Items)
+                                    {
+                                        // Check if artist name match
+                                    }
+                                }
+                            }
                         }
                     }
                 }

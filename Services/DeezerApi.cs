@@ -130,33 +130,6 @@ internal class DeezerApi
         }
     }
 
-    private static string RemoveDiacritics(string text)
-    {
-        var normalizedString = text.Normalize(NormalizationForm.FormD);
-        var stringBuilder = new StringBuilder(capacity: normalizedString.Length);
-
-        for (int i = 0; i < normalizedString.Length; i++)
-        {
-            char c = normalizedString[i];
-            var unicodeCategory = CharUnicodeInfo.GetUnicodeCategory(c);
-            if (unicodeCategory != UnicodeCategory.NonSpacingMark)
-            {
-                stringBuilder.Append(c);
-            }
-        }
-
-        return stringBuilder
-            .ToString()
-            .Normalize(NormalizationForm.FormC);
-    }
-
-    private static string EnforceAscii(string text)
-    {
-        var result = RemoveDiacritics(text);
-        result = Regex.Replace(result, @"[^\u0000-\u007F]+", string.Empty);
-        return result;
-    }
-
     public static string PruneTitle(string title)
     {
         var titlePruned = title.ToLower().Trim();
@@ -189,7 +162,7 @@ internal class DeezerApi
         titlePruned = titlePruned.Replace(" ", "").Replace("(", "").Replace(")", "").Replace("-", "").Replace(".", "").Replace("[", "").Replace("]", "").Replace("—", "").Replace("'", "").Replace("\"", "");
 
         // Remove non ascii and replaced accented with normal
-        titlePruned = EnforceAscii(titlePruned);
+        titlePruned = ApiHelper.EnforceAscii(titlePruned);
         return titlePruned.Trim();
     }
 
@@ -218,7 +191,7 @@ internal class DeezerApi
         titlePruned = titlePruned.Replace("(radio edit)", "").Replace("radio edit", "");
         // Remove duplicate spaces
         titlePruned = Regex.Replace(titlePruned, @"\s+", " ");
-        return EnforceAscii(titlePruned).Trim();
+        return ApiHelper.EnforceAscii(titlePruned).Trim();
     }
 
     public static async Task GeneralSearch(ObservableCollection<SongSearchObject> itemSource, string query, CancellationToken token, int limit = 25)

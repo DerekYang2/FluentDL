@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using FluentDL.Models;
 
@@ -9,6 +11,17 @@ namespace FluentDL.Helpers;
 
 internal class ApiHelper
 {
+    public static bool IsSubstring(string str, string str2)
+    {
+        return PrunePunctuation(str.ToLower()).Contains(PrunePunctuation(str2.ToLower())) || PrunePunctuation(str2.ToLower()).Contains(PrunePunctuation(str.ToLower()));
+    }
+
+    public static string PrunePunctuation(string str)
+    {
+        // Remove all punctuation and whitespace from string, only include alphanumeric characters
+        return Regex.Replace(str, @"[^a-zA-Z0-9]", string.Empty);
+    }
+
     public static string GetUrl(SongSearchObject song)
     {
         var id = song.Id;
@@ -71,5 +84,32 @@ internal class ApiHelper
         using var response = await client.GetAsync(uri, cancellationToken);
 
         return new Uri(response.Headers.GetValues("Location").First());
+    }
+
+    public static string RemoveDiacritics(string text)
+    {
+        var normalizedString = text.Normalize(NormalizationForm.FormD);
+        var stringBuilder = new StringBuilder(capacity: normalizedString.Length);
+
+        for (int i = 0; i < normalizedString.Length; i++)
+        {
+            char c = normalizedString[i];
+            var unicodeCategory = CharUnicodeInfo.GetUnicodeCategory(c);
+            if (unicodeCategory != UnicodeCategory.NonSpacingMark)
+            {
+                stringBuilder.Append(c);
+            }
+        }
+
+        return stringBuilder
+            .ToString()
+            .Normalize(NormalizationForm.FormC);
+    }
+
+    public static string EnforceAscii(string text)
+    {
+        var result = ApiHelper.RemoveDiacritics(text);
+        result = Regex.Replace(result, @"[^\u0000-\u007F]+", string.Empty);
+        return result;
     }
 }
