@@ -55,34 +55,136 @@ internal class QobuzApi
         artistName = artistName.Trim();
         trackName = trackName.Trim();
         albumName = albumName.Trim();
+        bool isArtistSpecified = !string.IsNullOrWhiteSpace(artistName);
         bool isTrackSpecified = !string.IsNullOrWhiteSpace(trackName);
 
         var trackIdList = new HashSet<long>();
 
+        if (!string.IsNullOrWhiteSpace(albumName))
+        {
+            var albumResults = await Task.Run(() => apiService.SearchAlbums(albumName, 5), token);
+
+            // Add if album name match
+            foreach (var album in albumResults.Albums.Items)
+            {
+                if (ApiHelper.IsSubstring(albumName.ToLower(), album.Title.ToLower()))
+                {
+                    var fullAlbumObj = apiService.GetAlbum(album.Id);
+
+                    foreach (var track in fullAlbumObj.Tracks.Items)
+                    {
+                        bool valid = true;
+                        if (isArtistSpecified) // Album and artist specified
+                        {
+                            if (isTrackSpecified) // Album, artist, and track specified
+                            {
+                                valid = ApiHelper.IsSubstring(artistName.ToLower(), track.Performer.Name.ToLower()) && ApiHelper.IsSubstring(trackName.ToLower(), track.Title.ToLower());
+                            }
+                            else // Album and artist specified
+                            {
+                                valid = ApiHelper.IsSubstring(artistName.ToLower(), track.Performer.Name.ToLower()); // Different case for validity
+                            }
+                        }
+                        else if (isTrackSpecified) // Track name and artist specified
+                        {
+                            valid = ApiHelper.IsSubstring(trackName.ToLower(), track.Title.ToLower());
+                        }
+
+                        if (valid)
+                        {
+                            trackIdList.Add((long)track.Id);
+                            if (trackIdList.Count >= limit) break;
+                        }
+                    }
+                }
+
+                if (trackIdList.Count >= limit) break;
+            }
+        }
+        else
+        {
+            if (isTrackSpecified) // If artist and track are specified
+            {
+                var offset = 0;
+
+                do // Iterate through all tracks of the artist
+                {
+                    var result = await Task.Run(() => apiService.SearchTracks(artistName + " " + trackName, 10, offset), token);
+
+                    if (result.Tracks != null)
+                    {
+                        foreach (var track in result.Tracks.Items)
+                        {
+                            offset++;
+                            // Check if artist name and track somewhat match
+                            if (ApiHelper.IsSubstring(artistName.ToLower(), track.Performer.Name.ToLower()) && ApiHelper.IsSubstring(trackName.ToLower(), track.Title.ToLower()))
+                            {
+                                trackIdList.Add(track.Id.GetValueOrDefault());
+                                if (trackIdList.Count >= limit) break;
+                            }
+                        }
+                    }
+                    else
+                    {
+                        break;
+                    }
+                } while (trackIdList.Count < limit && offset <= Math.Max((int)(1.5 * limit), 50));
+            }
+            else // Only artist specified, do a general search
+            {
+                var offset = 0;
+
+                do
+                {
+                    var result = await Task.Run(() => apiService.SearchTracks(artistName, 10, offset), token);
+                    if (result.Tracks != null)
+                    {
+                        foreach (var track in result.Tracks.Items)
+                        {
+                            offset++;
+                            // Check if artist name match
+                            if (ApiHelper.IsSubstring(artistName.ToLower(), track.Performer.Name.ToLower()))
+                            {
+                                trackIdList.Add(track.Id.GetValueOrDefault());
+                                if (trackIdList.Count >= limit) break;
+                            }
+                        }
+                    }
+                    else
+                    {
+                        break;
+                    }
+                } while (trackIdList.Count < limit);
+            }
+        }
+
+        /*
         if (!string.IsNullOrWhiteSpace(artistName))
         {
             var artistResults = await Task.Run(() => apiService.SearchArtists(artistName, 5), token);
-            // Check if artist matches
+
             if (artistResults.Artists != null)
             {
                 foreach (var artist in artistResults.Artists.Items) // Iterate through the top 5 artist results
                 {
-                    if (ApiHelper.PrunePunctuation(artistName) == ApiHelper.PrunePunctuation(artist.Name)) // Check if artist name match (TODO: would substr be better?)
+                    Debug.WriteLine("ARTIST: " + artist.Name);
+                    if (ApiHelper.PrunePunctuation(artistName.ToLower()) == ApiHelper.PrunePunctuation(artist.Name.ToLower())) // Check if artist name match (TODO: would substr be better?)
                     {
                         // If album is specified, check if artist has this album
-                        var albumList = artist.Albums.Items;
+                        var artistFullObject = await Task.Run(() => apiService.GetArtist(artist.Id.ToString()), token);
+                        var albumList = artistFullObject.Albums.Items;
                         if (!string.IsNullOrWhiteSpace(albumName))
                         {
                             foreach (var album in albumList)
                             {
-                                if (ApiHelper.IsSubstring(albumName, album.Title)) // Check if album name match or close match
+                                if (ApiHelper.IsSubstring(albumName.ToLower(), album.Title.ToLower())) // Check if album name match or close match
                                 {
                                     foreach (var track in album.Tracks.Items) // Add all tracks from the album
                                     {
                                         // Check if track is specified
                                         if (isTrackSpecified)
                                         {
-                                            if (ApiHelper.IsSubstring(trackName, track.Title)) // Check if track name match or close match
+                                            if (ApiHelper.IsSubstring(trackName.ToLower(), track.Title.ToLower())) // Check if track name match or close match
                                             {
                                                 trackIdList.Add(track.Id.GetValueOrDefault());
                                             }
@@ -99,37 +201,72 @@ internal class QobuzApi
                         {
                             if (isTrackSpecified) // If artist and track are specified
                             {
-                                // Do a general search query in the form "artistName trackName", better than iterating through all albums
-                                var results = await Task.Run(() => apiService.SearchTracks(artistName + " " + trackName, limit), token);
+                                var offset = 0;
 
-                                if (results.Tracks != null)
+                                do // Iterate through all tracks of the artist
                                 {
-                                    foreach (var track in results.Tracks.Items)
+                                    var result = await Task.Run(() => apiService.SearchTracks(artistName + " " + trackName, 10, offset), token);
+
+                                    if (result.Tracks != null)
                                     {
-                                        // Check if artist name and track somewhat match
-                                        if (ApiHelper.IsSubstring(artist.Name, track.Performer.Name) && ApiHelper.IsSubstring(trackName, track.Title))
+                                        foreach (var track in result.Tracks.Items)
                                         {
-                                            trackIdList.Add(track.Id.GetValueOrDefault());
+                                            offset++;
+                                            // Check if artist name and track somewhat match
+                                            if (ApiHelper.IsSubstring(artist.Name.ToLower(), track.Performer.Name.ToLower()) && ApiHelper.IsSubstring(trackName.ToLower(), track.Title.ToLower()))
+                                            {
+                                                trackIdList.Add(track.Id.GetValueOrDefault());
+                                                if (trackIdList.Count >= limit) break;
+                                            }
                                         }
                                     }
-                                }
-                            }
-                            else // Only artist specified, do a general search 
-                            {
-                                var results = await Task.Run(() => apiService.SearchTracks(artistName, limit), token);
-
-                                if (results.Tracks != null)
-                                {
-                                    foreach (var track in results.Tracks.Items)
+                                    else
                                     {
-                                        // Check if artist name match
+                                        break;
                                     }
-                                }
+                                } while (trackIdList.Count < limit);
+                            }
+                            else // Only artist specified, do a general search
+                            {
+                                var offset = 0;
+
+                                do
+                                {
+                                    var result = await Task.Run(() => apiService.SearchTracks(artistName, 10, offset), token);
+                                    if (result.Tracks != null)
+                                    {
+                                        foreach (var track in result.Tracks.Items)
+                                        {
+                                            offset++;
+                                            // Check if artist name match
+                                            if (ApiHelper.IsSubstring(artist.Name.ToLower(), track.Performer.Name.ToLower()))
+                                            {
+                                                trackIdList.Add(track.Id.GetValueOrDefault());
+                                                if (trackIdList.Count >= limit) break;
+                                            }
+                                        }
+                                    }
+                                    else
+                                    {
+                                        break;
+                                    }
+                                } while (trackIdList.Count < limit);
                             }
                         }
                     }
                 }
             }
+        }
+        else // No artist specified
+        {
+        }
+        */
+
+        itemSource.Clear(); // Clear the item source
+        foreach (var trackId in trackIdList)
+        {
+            if (token.IsCancellationRequested) return;
+            itemSource.Add(await Task.Run(() => GetTrack(trackId.ToString()), token));
         }
     }
 
