@@ -47,6 +47,49 @@ internal class QobuzApi
         }
     }
 
+    public static async Task AdvancedSearch(ObservableCollection<SongSearchObject> itemSource, string artistName, string trackName, string albumName, CancellationToken token, int limit = 25)
+    {
+        // Qobuz doesn't have an advanced search, must be done manually
+        artistName = artistName.Trim();
+        trackName = trackName.Trim();
+        albumName = albumName.Trim();
+
+        var trackIdList = new HashSet<long>();
+
+        if (!string.IsNullOrWhiteSpace(artistName))
+        {
+            var artistResults = await Task.Run(() => apiService.SearchArtists(artistName, 5), token);
+            // Check if artist matches
+            if (artistResults.Artists != null)
+            {
+                foreach (var artist in artistResults.Artists.Items)
+                {
+                    if (artist.Name.ToLower().Contains(artistName.ToLower()) || artistName.ToLower().Contains(artist.Name)) // Check if artist name match or close match
+                    {
+                        // If album is specified, check if artist has this album
+                        var albumList = artist.Albums.Items;
+                        if (!string.IsNullOrWhiteSpace(albumName))
+                        {
+                            foreach (var album in albumList)
+                            {
+                                if (album.Title.ToLower().Contains(albumName.ToLower()) || albumName.ToLower().Contains(album.Title)) // Check if album name match or close match
+                                {
+                                    foreach (var track in album.Tracks.Items)
+                                    {
+                                        trackIdList.Add(track.Id.GetValueOrDefault());
+                                    }
+                                }
+                            }
+                        }
+                        else
+                        {
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     public static async Task AddTracksFromLink(ObservableCollection<SongSearchObject> itemSource, string url, CancellationToken token, Search.UrlStatusUpdateCallback? statusUpdate)
     {
         var isTrack = url.StartsWith("https://play.qobuz.com/track/") || url.StartsWith("https://open.qobuz.com/track/") || Regex.IsMatch(url, @"https://www\.qobuz\.com(/[^/]+)?/track/.*");

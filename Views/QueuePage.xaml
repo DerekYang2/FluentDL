@@ -21,6 +21,8 @@
         <views:PathToVisibilityConverter x:Key="PathToVisibilityConverter" />
         <helpers:NullVisibilityConverter x:Key="NullVisibilityConverter" />
         <helpers:InverseNullVisibilityConverter x:Key="InverseNullVisibilityConverter" />
+        <helpers:SourceToColorConverter x:Key="SourceToColorConverter" />
+
     </Page.Resources>
 
     <Grid>
@@ -138,10 +140,12 @@
                         <Grid Grid.Column="2" CornerRadius="4" Margin="0,0,0,0" VerticalAlignment="Stretch"
                               HorizontalAlignment="Stretch">
                             <StackPanel>
-                                <Border Background="{ThemeResource LayerOnMicaBaseAltFillColorSecondaryBrush}"
-                                        CornerRadius="2" Padding="6, 1" HorizontalAlignment="Right">
-                                    <TextBlock x:Name="SourceBadge" Text="{x:Bind Source}"
-                                               Style="{ThemeResource CaptionTextBlockStyle}" VerticalAlignment="Center" />
+                                <Border Background="{ThemeResource LayerOnMicaBaseAltFillColorSecondaryBrush}" CornerRadius="2" Padding="6, 2" HorizontalAlignment="Right" VerticalAlignment="Top">
+                                    <StackPanel Orientation="Horizontal">
+                                        <Ellipse StrokeThickness="0" VerticalAlignment="Center" Width="10" Height="10" Margin="0,0, 6, 0"
+                                                 Fill="{x:Bind Source, Converter={StaticResource SourceToColorConverter}}"/>
+                                        <TextBlock x:Name="SourceBadge" Text="{x:Bind Source}" Style="{ThemeResource CaptionTextBlockStyle}" VerticalAlignment="Center" Margin="0, -2, 0, 0"/>
+                                    </StackPanel>
                                 </Border>
                             </StackPanel>
                             <Button x:Name="OutputButton" VerticalAlignment="Bottom" HorizontalAlignment="Stretch"
@@ -362,7 +366,9 @@
                               Unchecked="CheckBox_OnUnchecked"/>
                     <CheckBox x:Name="SpotifyCheckBox" Content="Spotify" Checked="CheckBox_OnChecked"
                               Unchecked="CheckBox_OnUnchecked"/>
-                </StackPanel>
+                    <CheckBox x:Name="LocalCheckBox" Content="Local" Checked="CheckBox_OnChecked"
+                              Unchecked="CheckBox_OnUnchecked"/>
+                    </StackPanel>
 
                 <StackPanel Grid.Column="1">
                     <TextBlock Text="Output" Style="{ThemeResource CaptionTextBlockStyle}"

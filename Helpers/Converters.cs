@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Globalization;
+using AngleSharp.Dom;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Data;
+using Microsoft.UI.Xaml.Media;
 
 namespace FluentDL.Helpers;
 
@@ -90,6 +92,29 @@ internal class InverseNullVisibilityConverter : IValueConverter
     public object Convert(object? value, Type targetType, object parameter, string language)
     {
         return (value == null) ? Microsoft.UI.Xaml.Visibility.Visible : Microsoft.UI.Xaml.Visibility.Collapsed;
+    }
+
+    public object ConvertBack(object value, Type targetType, object parameter, string language)
+    {
+        throw new NotImplementedException();
+    }
+}
+
+internal class SourceToColorConverter : IValueConverter
+{
+    // Converts source to color
+    public object Convert(object? value, Type targetType, object parameter, string language)
+    {
+        if (value == null) throw new ArgumentNullException(nameof(value));
+
+        return ((string)value) switch
+        {
+            "spotify" => new SolidColorBrush(Windows.UI.Color.FromArgb(255, 15, 213, 101)),
+            "deezer" => new SolidColorBrush(Windows.UI.Color.FromArgb(255, 160, 55, 250)),
+            "qobuz" => new SolidColorBrush(Windows.UI.Color.FromArgb(255, 0, 0, 0)),
+            "youtube" => new SolidColorBrush(Windows.UI.Color.FromArgb(255, 255, 0, 0)),
+            _ => new SolidColorBrush(Windows.UI.Color.FromArgb(255, 255, 255, 255)), // Local source or anything else
+        };
     }
 
     public object ConvertBack(object value, Type targetType, object parameter, string language)

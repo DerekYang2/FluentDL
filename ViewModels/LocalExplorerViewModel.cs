@@ -93,6 +93,7 @@ public partial class LocalExplorerViewModel : ObservableRecipient
     public static SongSearchObject? ParseFile(string path)
     {
         var track = new Track(path);
+        Debug.WriteLine("LOCAL ISRC: " + track.ISRC);
 
         return new SongSearchObject()
         {
@@ -107,7 +108,8 @@ public partial class LocalExplorerViewModel : ObservableRecipient
             Explicit = track.Title.ToLower().Contains("explicit") || track.Title.ToLower().Contains("[e]"),
             Rank = "0",
             ImageLocation = null,
-            LocalBitmapImage = null
+            LocalBitmapImage = null,
+            Isrc = track.ISRC,
         };
     }
 

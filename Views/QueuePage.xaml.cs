@@ -475,6 +475,7 @@ public sealed partial class QueuePage : Page
         DeezerCheckBox.IsChecked = sources.Contains("deezer");
         QobuzCheckBox.IsChecked = sources.Contains("qobuz");
         SpotifyCheckBox.IsChecked = sources.Contains("spotify");
+        LocalCheckBox.IsChecked = sources.Contains("local");
 
         // Show conversion dialog
         ConversionDialog.XamlRoot = this.XamlRoot;
@@ -490,7 +491,7 @@ public sealed partial class QueuePage : Page
             return;
         }
 
-        if (DeezerCheckBox.IsChecked == false && QobuzCheckBox.IsChecked == false && SpotifyCheckBox.IsChecked == false)
+        if (DeezerCheckBox.IsChecked == false && QobuzCheckBox.IsChecked == false && SpotifyCheckBox.IsChecked == false && LocalCheckBox.IsChecked == false)
         {
             ShowInfoBar(InfoBarSeverity.Warning, "Please select at least one input source.", 3);
             return;
