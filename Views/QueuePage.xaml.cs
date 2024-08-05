@@ -477,6 +477,12 @@ public sealed partial class QueuePage : Page
         SpotifyCheckBox.IsChecked = sources.Contains("spotify");
         LocalCheckBox.IsChecked = sources.Contains("local");
 
+        // If unchecked, disable the output combobox
+        DeezerCheckBox.IsEnabled = DeezerCheckBox.IsChecked.Value;
+        QobuzCheckBox.IsEnabled = QobuzCheckBox.IsChecked.Value;
+        SpotifyCheckBox.IsEnabled = SpotifyCheckBox.IsChecked.Value;
+        LocalCheckBox.IsEnabled = LocalCheckBox.IsChecked.Value;
+
         // Show conversion dialog
         ConversionDialog.XamlRoot = this.XamlRoot;
         ConversionDialog.ShowAsync();
@@ -511,18 +517,30 @@ public sealed partial class QueuePage : Page
         ShowInfoBar(InfoBarSeverity.Informational, $"Converting selected input sources to {GetOutputSource()}", 3);
 
         var ogVal = QueueProgress.Value; // Save the original value of the progress bar
-
         QueueProgress.Value = 0; // Set to 0
+
+
+        var outputSource = GetOutputSource();
+
+        // Loop through and find the total number of queries to process
+        int totalCount = 0;
+        foreach (var song in QueueViewModel.Source)
+        {
+            var capitalizedListSource = song.Source[0].ToString().ToUpper() + song.Source.Substring(1);
+            if (SelectedSources.Contains(capitalizedListSource) && outputSource != capitalizedListSource) // If source is selected as input and isn't the same as output
+            {
+                totalCount++;
+            }
+        }
 
         for (int i = 0; i < QueueViewModel.Source.Count; i++)
         {
             var song = QueueViewModel.Source[i];
             var capitalizedListSource = song.Source[0].ToString().ToUpper() + song.Source.Substring(1);
-            var outputSource = GetOutputSource();
 
             if (!SelectedSources.Contains(capitalizedListSource) || outputSource == capitalizedListSource) // If the source is not selected as input or no conversion needed
             {
-                QueueProgress.Value = 100.0 * (i + 1) / QueueViewModel.Source.Count; // Update the progress bar
+                QueueProgress.Value = 100.0 * (i + 1) / totalCount; // Update the progress bar
                 continue;
             }
 
@@ -536,14 +554,10 @@ public sealed partial class QueuePage : Page
 
             if (newSongObj != null)
             {
-                var queueObj = await QueueViewModel.CreateQueueObject(newSongObj);
-                if (queueObj != null)
-                {
-                    QueueViewModel.Source[i] = queueObj;
-                }
+                QueueViewModel.Replace(i, await QueueViewModel.CreateQueueObject(newSongObj));
             }
 
-            QueueProgress.Value = 100.0 * (i + 1) / QueueViewModel.Source.Count; // Update the progress bar
+            QueueProgress.Value = 100.0 * (i + 1) / totalCount; // Update the progress bar
         }
 
         isConverting = false;

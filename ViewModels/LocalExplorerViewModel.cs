@@ -1,5 +1,6 @@
 ﻿using System.Collections.ObjectModel;
 using System.Diagnostics;
+using System.Text.RegularExpressions;
 using System.Windows.Input;
 using ABI.Microsoft.UI.Xaml;
 using AngleSharp.Common;
@@ -13,6 +14,7 @@ using FluentDL.Services;
 using ATL.AudioData;
 using ATL;
 using ATL.Logging;
+using CommunityToolkit.WinUI.UI.Controls;
 using Microsoft.UI.Xaml.Media.Imaging;
 using FluentDL.Models;
 
@@ -90,10 +92,30 @@ public partial class LocalExplorerViewModel : ObservableRecipient
         tmpUpdates.Remove(currentEditPath);
     }
 
+    public static string? GetISRC(Track track)
+    {
+        if (track.ISRC != null)
+        {
+            return track.ISRC;
+        }
+
+        // Attempt to get from filename
+        var fileName = Path.GetFileName(track.Path);
+        if (fileName != null)
+        {
+            var isrc = Regex.Match(fileName, @"[A-Z]{2}[A-Z0-9]{3}\d{2}\d{5}").Value;
+            if (isrc.Length == 12)
+            {
+                return isrc;
+            }
+        }
+
+        return null;
+    }
+
     public static SongSearchObject? ParseFile(string path)
     {
         var track = new Track(path);
-        Debug.WriteLine("LOCAL ISRC: " + track.ISRC);
 
         return new SongSearchObject()
         {
@@ -109,7 +131,7 @@ public partial class LocalExplorerViewModel : ObservableRecipient
             Rank = "0",
             ImageLocation = null,
             LocalBitmapImage = null,
-            Isrc = track.ISRC,
+            Isrc = GetISRC(track),
         };
     }
 

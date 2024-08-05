@@ -182,6 +182,15 @@ public partial class QueueViewModel : ObservableRecipient
         Source.Remove(Source.First(x => GetHash(x) == hash));
     }
 
+    public static void Replace(int index, QueueObject? queueObj)
+    {
+        if (queueObj == null) return;
+
+        trackSet.Remove(GetHash(Source[index])); // Remove old from trackset
+        Source[index] = queueObj; // SEt to new object
+        trackSet.Add(GetHash(Source[index])); // Add new hash to trackset
+    }
+
     public static void Clear()
     {
         Source.Clear();

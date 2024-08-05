@@ -45,8 +45,13 @@ internal class QobuzApi
         foreach (var track in results.Tracks.Items)
         {
             if (token.IsCancellationRequested) return;
-            itemSource.Add(await Task.Run(() => GetTrack(track.Id.ToString()), token));
+            itemSource.Add(await GetTrackAsync(track.Id, token));
         }
+    }
+
+    private static bool CloseMatch(string str1, string str2)
+    {
+        return ApiHelper.IsSubstring(str1.ToLower(), str2.ToLower());
     }
 
     public static async Task AdvancedSearch(ObservableCollection<SongSearchObject> itemSource, string artistName, string trackName, string albumName, CancellationToken token, int limit = 25)
@@ -55,44 +60,63 @@ internal class QobuzApi
         artistName = artistName.Trim();
         trackName = trackName.Trim();
         albumName = albumName.Trim();
+
+        if (string.IsNullOrWhiteSpace(artistName) && string.IsNullOrWhiteSpace(trackName) && string.IsNullOrWhiteSpace(albumName))
+        {
+            return;
+        }
+
+        itemSource.Clear(); // Clear the item source
+
         bool isArtistSpecified = !string.IsNullOrWhiteSpace(artistName);
         bool isTrackSpecified = !string.IsNullOrWhiteSpace(trackName);
 
-        var trackIdList = new HashSet<long>();
+        var trackIdList = new HashSet<int>();
 
         if (!string.IsNullOrWhiteSpace(albumName))
         {
             var albumResults = await Task.Run(() => apiService.SearchAlbums(albumName, 5), token);
 
+            if (token.IsCancellationRequested) return; // Check if task is cancelled
+
             // Add if album name match
             foreach (var album in albumResults.Albums.Items)
             {
-                if (ApiHelper.IsSubstring(albumName.ToLower(), album.Title.ToLower()))
+                if (token.IsCancellationRequested) return; // Check if task is cancelled
+
+                if (CloseMatch(albumName, album.Title))
                 {
-                    var fullAlbumObj = apiService.GetAlbum(album.Id);
+                    var fullAlbumObj = await Task.Run(() => apiService.GetAlbum(album.Id), token);
+
+                    if (fullAlbumObj == null || fullAlbumObj.Tracks == null) continue;
 
                     foreach (var track in fullAlbumObj.Tracks.Items)
                     {
+                        if (track.Id == null) continue;
+
                         bool valid = true;
                         if (isArtistSpecified) // Album and artist specified
                         {
                             if (isTrackSpecified) // Album, artist, and track specified
                             {
-                                valid = ApiHelper.IsSubstring(artistName.ToLower(), track.Performer.Name.ToLower()) && ApiHelper.IsSubstring(trackName.ToLower(), track.Title.ToLower());
+                                valid = CloseMatch(artistName, track.Performer.Name) && CloseMatch(trackName, track.Title);
                             }
                             else // Album and artist specified
                             {
-                                valid = ApiHelper.IsSubstring(artistName.ToLower(), track.Performer.Name.ToLower()); // Different case for validity
+                                valid = CloseMatch(artistName, track.Performer.Name); // Different case for validity
                             }
                         }
                         else if (isTrackSpecified) // Track name and artist specified
                         {
-                            valid = ApiHelper.IsSubstring(trackName.ToLower(), track.Title.ToLower());
+                            valid = CloseMatch(trackName, track.Title);
                         }
 
-                        if (valid)
+                        var id = track.Id.GetValueOrDefault();
+
+                        if (valid && !trackIdList.Contains(id)) // Check if track is already added
                         {
-                            trackIdList.Add((long)track.Id);
+                            itemSource.Add(await GetTrackAsync(id));
+                            trackIdList.Add(id);
                             if (trackIdList.Count >= limit) break;
                         }
                     }
@@ -111,162 +135,75 @@ internal class QobuzApi
                 {
                     var result = await Task.Run(() => apiService.SearchTracks(artistName + " " + trackName, 10, offset), token);
 
+                    if (token.IsCancellationRequested) return; // Check if task is cancelled
+
                     if (result.Tracks != null)
                     {
                         foreach (var track in result.Tracks.Items)
                         {
+                            if (token.IsCancellationRequested) return; // Check if task is cancelled
+                            if (track.Id == null) continue;
                             offset++;
+
                             // Check if artist name and track somewhat match
-                            if (ApiHelper.IsSubstring(artistName.ToLower(), track.Performer.Name.ToLower()) && ApiHelper.IsSubstring(trackName.ToLower(), track.Title.ToLower()))
+                            if (CloseMatch(artistName, track.Performer.Name) && CloseMatch(trackName, track.Title))
                             {
-                                trackIdList.Add(track.Id.GetValueOrDefault());
-                                if (trackIdList.Count >= limit) break;
+                                var id = track.Id.GetValueOrDefault();
+                                if (!trackIdList.Contains(id)) // Add this track to the item source
+                                {
+                                    itemSource.Add(await GetTrackAsync(id));
+                                    trackIdList.Add(id);
+                                    if (trackIdList.Count >= limit) break;
+                                }
                             }
                         }
                     }
-                    else
+                    else // No more tracks
                     {
                         break;
                     }
-                } while (trackIdList.Count < limit && offset <= Math.Max((int)(1.5 * limit), 50));
+                } while (trackIdList.Count < limit && offset < limit); // Limit the number of iterations
             }
             else // Only artist specified, do a general search
             {
                 var offset = 0;
+                // Give a bit more leeway for general searches
+                var maxTracks = Math.Max(2 * limit, 30); // A minimum of 30 tracks or twice the limit
 
                 do
                 {
                     var result = await Task.Run(() => apiService.SearchTracks(artistName, 10, offset), token);
+                    if (token.IsCancellationRequested) return; // Check if task is cancelled
+
                     if (result.Tracks != null)
                     {
                         foreach (var track in result.Tracks.Items)
                         {
+                            if (token.IsCancellationRequested) return; // Check if task is cancelled
+                            if (track.Id == null) continue;
                             offset++;
                             // Check if artist name match
-                            if (ApiHelper.IsSubstring(artistName.ToLower(), track.Performer.Name.ToLower()))
+                            if (CloseMatch(artistName, track.Performer.Name))
                             {
+                                var id = track.Id.GetValueOrDefault();
+
+                                if (!trackIdList.Contains(id)) // Add this track to the item source
+                                {
+                                    itemSource.Add(await GetTrackAsync(id));
+                                    trackIdList.Add(id);
+                                    if (trackIdList.Count >= limit) break;
+                                }
+
                                 trackIdList.Add(track.Id.GetValueOrDefault());
-                                if (trackIdList.Count >= limit) break;
                             }
                         }
                     }
-                    else
+                    else // No more tracks
                     {
                         break;
                     }
-                } while (trackIdList.Count < limit);
+                } while (trackIdList.Count < limit && offset < maxTracks);
             }
-        }
-
-        /*
-        if (!string.IsNullOrWhiteSpace(artistName))
-        {
-            var artistResults = await Task.Run(() => apiService.SearchArtists(artistName, 5), token);
-
-            if (artistResults.Artists != null)
-            {
-                foreach (var artist in artistResults.Artists.Items) // Iterate through the top 5 artist results
-                {
-                    Debug.WriteLine("ARTIST: " + artist.Name);
-                    if (ApiHelper.PrunePunctuation(artistName.ToLower()) == ApiHelper.PrunePunctuation(artist.Name.ToLower())) // Check if artist name match (TODO: would substr be better?)
-                    {
-                        // If album is specified, check if artist has this album
-                        var artistFullObject = await Task.Run(() => apiService.GetArtist(artist.Id.ToString()), token);
-                        var albumList = artistFullObject.Albums.Items;
-                        if (!string.IsNullOrWhiteSpace(albumName))
-                        {
-                            foreach (var album in albumList)
-                            {
-                                if (ApiHelper.IsSubstring(albumName.ToLower(), album.Title.ToLower())) // Check if album name match or close match
-                                {
-                                    foreach (var track in album.Tracks.Items) // Add all tracks from the album
-                                    {
-                                        // Check if track is specified
-                                        if (isTrackSpecified)
-                                        {
-                                            if (ApiHelper.IsSubstring(trackName.ToLower(), track.Title.ToLower())) // Check if track name match or close match
-                                            {
-                                                trackIdList.Add(track.Id.GetValueOrDefault());
-                                            }
-                                        }
-                                        else // Nothing specified
-                                        {
-                                            trackIdList.Add(track.Id.GetValueOrDefault());
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                        else // No specified album
-                        {
-                            if (isTrackSpecified) // If artist and track are specified
-                            {
-                                var offset = 0;
-
-                                do // Iterate through all tracks of the artist
-                                {
-                                    var result = await Task.Run(() => apiService.SearchTracks(artistName + " " + trackName, 10, offset), token);
-
-                                    if (result.Tracks != null)
-                                    {
-                                        foreach (var track in result.Tracks.Items)
-                                        {
-                                            offset++;
-                                            // Check if artist name and track somewhat match
-                                            if (ApiHelper.IsSubstring(artist.Name.ToLower(), track.Performer.Name.ToLower()) && ApiHelper.IsSubstring(trackName.ToLower(), track.Title.ToLower()))
-                                            {
-                                                trackIdList.Add(track.Id.GetValueOrDefault());
-                                                if (trackIdList.Count >= limit) break;
-                                            }
-                                        }
-                                    }
-                                    else
-                                    {
-                                        break;
-                                    }
-                                } while (trackIdList.Count < limit);
-                            }
-                            else // Only artist specified, do a general search
-                            {
-                                var offset = 0;
-
-                                do
-                                {
-                                    var result = await Task.Run(() => apiService.SearchTracks(artistName, 10, offset), token);
-                                    if (result.Tracks != null)
-                                    {
-                                        foreach (var track in result.Tracks.Items)
-                                        {
-                                            offset++;
-                                            // Check if artist name match
-                                            if (ApiHelper.IsSubstring(artist.Name.ToLower(), track.Performer.Name.ToLower()))
-                                            {
-                                                trackIdList.Add(track.Id.GetValueOrDefault());
-                                                if (trackIdList.Count >= limit) break;
-                                            }
-                                        }
-                                    }
-                                    else
-                                    {
-                                        break;
-                                    }
-                                } while (trackIdList.Count < limit);
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        else // No artist specified
-        {
-        }
-        */
-
-        itemSource.Clear(); // Clear the item source
-        foreach (var trackId in trackIdList)
-        {
-            if (token.IsCancellationRequested) return;
-            itemSource.Add(await Task.Run(() => GetTrack(trackId.ToString()), token));
         }
     }
 
@@ -364,9 +301,38 @@ internal class QobuzApi
         return apiService.GetTrack(id);
     }
 
-    public static SongSearchObject GetTrack(string id)
+    public static Task<SongSearchObject?> GetTrackAsync(int? id, CancellationToken token = default)
     {
-        return ConvertSongSearchObject(apiService.GetTrack(id));
+        if (id == null) return Task.FromResult<SongSearchObject?>(null);
+        return GetTrackAsync(id.ToString(), token);
+    }
+
+    public static async Task<SongSearchObject?> GetTrackAsync(string id, CancellationToken token = default)
+    {
+        var track = await Task.Run(() => apiService.GetTrack(id), token);
+        if (track == null)
+        {
+            return null;
+        }
+
+        return ConvertSongSearchObject(track);
+    }
+
+    public static SongSearchObject? GetTrack(int? id)
+    {
+        if (id == null) return null;
+        return GetTrack(id.ToString());
+    }
+
+    public static SongSearchObject? GetTrack(string id)
+    {
+        var track = apiService.GetTrack(id);
+        if (track == null)
+        {
+            return null;
+        }
+
+        return ConvertSongSearchObject(track);
     }
 
     public static SongSearchObject? GetQobuzTrack(SongSearchObject songObj)
