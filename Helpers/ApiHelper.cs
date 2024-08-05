@@ -112,4 +112,16 @@ internal class ApiHelper
         result = Regex.Replace(result, @"[^\u0000-\u007F]+", string.Empty);
         return result;
     }
+
+    public static string FormatDateTimeOffset(DateTimeOffset? dateTimeOffset)
+    {
+        if (dateTimeOffset != null)
+        {
+            return dateTimeOffset.GetValueOrDefault().ToString("yyyy-MM-dd");
+        }
+        else
+        {
+            return "";
+        }
+    }
 }

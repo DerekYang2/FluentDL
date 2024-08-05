@@ -238,6 +238,7 @@
                                     <RadioButton Content="Deezer" ToolTipService.ToolTip="Get search results from Deezer"/>
                                     <RadioButton Content="Qobuz" ToolTipService.ToolTip="Get search results from Qobuz"/>
                                     <RadioButton Content="Spotify" ToolTipService.ToolTip="Get search results from Spotify"/>
+                                    <RadioButton Content="YouTube" ToolTipService.ToolTip="Get search results from YouTube"/>
                                 </RadioButtons>
                             </StackPanel>
                         </Flyout>

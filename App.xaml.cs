@@ -177,6 +177,7 @@ public partial class App : Application
             QobuzApi.Initialize(await localSettings.ReadSettingAsync<string>(SettingsViewModel.QobuzId), await localSettings.ReadSettingAsync<string>(SettingsViewModel.QobuzToken));
             Debug.WriteLine("Logged in Qobuz");
         });
+        t2.Priority = ThreadPriority.AboveNormal;
         t2.Start();
     }
 }

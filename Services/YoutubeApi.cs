@@ -1,12 +1,16 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using FluentDL.Helpers;
 using FluentDL.Models;
+using FluentDL.Views;
 using YoutubeExplode;
 using YoutubeExplode.Search;
+using YoutubeExplode.Videos;
 using YoutubeExplode.Videos.Streams;
 
 namespace FluentDL.Services
@@ -17,6 +21,26 @@ namespace FluentDL.Services
 
         public YoutubeApi()
         {
+        }
+
+        public static async Task GeneralSearch(ObservableCollection<SongSearchObject> itemSource, string query, CancellationToken token, int limit = 25)
+        {
+            query = query.Trim(); // Trim the query
+            if (string.IsNullOrWhiteSpace(query))
+            {
+                return;
+            }
+
+            itemSource.Clear();
+            await foreach (var result in youtube.Search.GetVideosAsync(query, token))
+            {
+                if (token.IsCancellationRequested)
+                {
+                    break;
+                }
+
+                itemSource.Add(await GetTrack(result.Id));
+            }
         }
 
         public static async Task<VideoSearchResult> GetSearchResult(SongSearchObject song)
@@ -168,6 +192,33 @@ namespace FluentDL.Services
 
             // If no results found
             return null;
+        }
+
+        public static async Task<SongSearchObject?> GetYoutubeTrack(SongSearchObject songObj)
+        {
+            return await GetTrack((await GetSearchResult(songObj)).Id);
+        }
+
+        public static async Task<SongSearchObject> GetTrack(string id)
+        {
+            var video = await youtube.Videos.GetAsync(id);
+
+            return new SongSearchObject()
+            {
+                AlbumName = video.Title,
+                Artists = video.Author.ChannelTitle,
+                Duration = ((int)video.Duration.Value.TotalSeconds).ToString(),
+                Explicit = false,
+                Source = "youtube",
+                Id = id,
+                TrackPosition = "1",
+                ImageLocation = video.Thumbnails.Last().Url,
+                LocalBitmapImage = null,
+                Rank = video.Engagement.ViewCount.ToString(),
+                ReleaseDate = ApiHelper.FormatDateTimeOffset(video.UploadDate),
+                Title = video.Title,
+                Isrc = null
+            };
         }
 
         public static async Task DownloadAudio(string url, string downloadFolder, string filename)

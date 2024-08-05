@@ -290,7 +290,7 @@ internal class QobuzApi
             ImageLocation = album.Image.Small,
             LocalBitmapImage = null,
             Rank = "0",
-            ReleaseDate = FormatDateTimeOffset(track.ReleaseDateStream),
+            ReleaseDate = ApiHelper.FormatDateTimeOffset(track.ReleaseDateStream),
             Title = track.Title,
             Isrc = track.Isrc
         };
@@ -335,27 +335,35 @@ internal class QobuzApi
         return ConvertSongSearchObject(track);
     }
 
-    public static SongSearchObject? GetQobuzTrack(SongSearchObject songObj)
+    public static async Task<SongSearchObject?> GetQobuzTrack(SongSearchObject songObj)
     {
         // No built-in method for this, so we have to get all tracks and search for the ISRC
         string? isrc = songObj.Isrc;
 
-        string query = songObj.Artists.Split(", ")[0] + " " + songObj.Title;
-        var result = apiService.SearchTracks(query);
-        if (result.Tracks == null)
-        {
-            return null;
-        }
-
         if (isrc != null)
         {
-            foreach (var track in result.Tracks.Items)
+            string query = songObj.Artists.Split(", ")[0] + " " + songObj.Title;
+
+            var offset = 0;
+
+            do
             {
-                if (track.Isrc == isrc)
+                var result = await Task.Run(() => apiService.SearchTracks(query, 5, offset)); // Search through chunks of 5 tracks
+                if (result.Tracks == null)
                 {
-                    return ConvertSongSearchObject(track);
+                    break;
                 }
-            }
+
+                foreach (var track in result.Tracks.Items)
+                {
+                    if (track.Isrc == isrc)
+                    {
+                        return ConvertSongSearchObject(track);
+                    }
+
+                    offset++;
+                }
+            } while (offset < 50); // Limit the number of iterations
         }
 
         var searchResults = new List<SongSearchObject>();
@@ -427,18 +435,6 @@ internal class QobuzApi
                     firstBufferRead = true;
                 }
             }
-        }
-    }
-
-    public static string FormatDateTimeOffset(DateTimeOffset? dateTimeOffset)
-    {
-        if (dateTimeOffset != null)
-        {
-            return dateTimeOffset.GetValueOrDefault().ToString("yyyy-MM-dd");
-        }
-        else
-        {
-            return "";
         }
     }
 }

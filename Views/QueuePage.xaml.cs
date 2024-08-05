@@ -448,14 +448,14 @@ public sealed partial class QueuePage : Page
     {
         var checkBox = sender as CheckBox;
         var checkBoxContent = checkBox.Content.ToString();
-        SelectedSources.Add(checkBoxContent);
+        SelectedSources.Add(checkBoxContent.ToLower());
     }
 
     private void CheckBox_OnUnchecked(object sender, RoutedEventArgs e)
     {
         var checkBox = sender as CheckBox;
         var checkBoxContent = checkBox.Content.ToString();
-        SelectedSources.Remove(checkBoxContent);
+        SelectedSources.Remove(checkBoxContent.ToLower());
     }
 
     private string? GetOutputSource()
@@ -520,14 +520,13 @@ public sealed partial class QueuePage : Page
         QueueProgress.Value = 0; // Set to 0
 
 
-        var outputSource = GetOutputSource();
+        var outputSource = GetOutputSource().ToLower();
 
         // Loop through and find the total number of queries to process
         int totalCount = 0;
         foreach (var song in QueueViewModel.Source)
         {
-            var capitalizedListSource = song.Source[0].ToString().ToUpper() + song.Source.Substring(1);
-            if (SelectedSources.Contains(capitalizedListSource) && outputSource != capitalizedListSource) // If source is selected as input and isn't the same as output
+            if (SelectedSources.Contains(song.Source) && outputSource != song.Source) // If source is selected as input and isn't the same as output
             {
                 totalCount++;
             }
@@ -536,9 +535,8 @@ public sealed partial class QueuePage : Page
         for (int i = 0; i < QueueViewModel.Source.Count; i++)
         {
             var song = QueueViewModel.Source[i];
-            var capitalizedListSource = song.Source[0].ToString().ToUpper() + song.Source.Substring(1);
 
-            if (!SelectedSources.Contains(capitalizedListSource) || outputSource == capitalizedListSource) // If the source is not selected as input or no conversion needed
+            if (!SelectedSources.Contains(song.Source) || outputSource == song.Source) // If the source is not selected as input or no conversion needed
             {
                 QueueProgress.Value = 100.0 * (i + 1) / totalCount; // Update the progress bar
                 continue;
@@ -546,9 +544,9 @@ public sealed partial class QueuePage : Page
 
             var newSongObj = outputSource switch
             {
-                "Deezer" => await DeezerApi.GetDeezerTrack(song),
-                "Qobuz" => await Task.Run(() => QobuzApi.GetQobuzTrack(song)),
-                "Spotify" => await SpotifyApi.GetSpotifyTrack(song),
+                "deezer" => await DeezerApi.GetDeezerTrack(song),
+                "qobuz" => await QobuzApi.GetQobuzTrack(song),
+                "spotify" => await SpotifyApi.GetSpotifyTrack(song),
                 _ => null
             };
 

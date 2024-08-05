@@ -356,13 +356,16 @@ public sealed partial class Search : Page
                 generalSource = (SourceRadioButtons.SelectedItem as RadioButton).Content.ToString(); // Override
             }
 
-            switch (generalSource)
+            switch (generalSource.ToLower())
             {
-                case "Qobuz":
+                case "qobuz":
                     await QobuzApi.GeneralSearch((ObservableCollection<SongSearchObject>)CustomListView.ItemsSource, generalQuery, cancellationTokenSource.Token, ViewModel.ResultsLimit);
                     break;
-                case "Spotify":
+                case "spotify":
                     await SpotifyApi.GeneralSearch((ObservableCollection<SongSearchObject>)CustomListView.ItemsSource, generalQuery, cancellationTokenSource.Token, ViewModel.ResultsLimit);
+                    break;
+                case "youtube":
+                    await YoutubeApi.GeneralSearch((ObservableCollection<SongSearchObject>)CustomListView.ItemsSource, generalQuery, cancellationTokenSource.Token, ViewModel.ResultsLimit);
                     break;
                 default:
                     await DeezerApi.GeneralSearch((ObservableCollection<SongSearchObject>)CustomListView.ItemsSource, generalQuery, cancellationTokenSource.Token, ViewModel.ResultsLimit);

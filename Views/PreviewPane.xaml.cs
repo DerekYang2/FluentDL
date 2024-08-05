@@ -19,6 +19,8 @@ using Windows.Media.Core;
 using FluentDL.ViewModels;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
+using Windows.Media.Playback;
+using Windows.Media.Streaming.Adaptive;
 using ATL;
 using FluentDL.Models;
 using Microsoft.UI.Dispatching;
@@ -133,17 +135,11 @@ namespace FluentDL.Views
 
             if (selectedSong.Source.Equals("youtube"))
             {
+                int index = trackDetailsList.FindIndex(x => x.Label == "Popularity"); // Rename popularity to views
+                trackDetailsList[index].Label = "Views";
+                trackDetailsList.RemoveAt(trackDetailsList.FindIndex(x => x.Label == "Album")); // Remove album
                 PreviewImage.Source = new BitmapImage(new Uri("https://img.youtube.com/vi/" + selectedSong.Id + "/0.jpg"));
-                // Load youtube song on another thread
-                var t = new Thread(async () =>
-                {
-                    var mediaSource = MediaSource.CreateFromUri(new Uri(await YoutubeApi.AudioStreamWorstUrl("https://www.youtube.com/watch?v=" + selectedSong.Id))); // Get lowest bitrate opus for preview
-                    dispatcher.TryEnqueue(() =>
-                    {
-                        SongPreviewPlayer.Source = mediaSource;
-                    });
-                });
-                t.Start();
+                SongPreviewPlayer.Source = MediaSource.CreateFromUri(new Uri(await YoutubeApi.AudioStreamWorstUrl("https://www.youtube.com/watch?v=" + selectedSong.Id)));
             }
 
             if (selectedSong.Source.Equals("local"))
