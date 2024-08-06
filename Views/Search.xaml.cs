@@ -295,6 +295,9 @@ public sealed partial class Search : Page
             case "qobuz":
                 await FluentDL.Services.QobuzApi.AdvancedSearch((ObservableCollection<SongSearchObject>)CustomListView.ItemsSource, artistName, trackName, albumName, cancellationTokenSource.Token, ViewModel.ResultsLimit);
                 break;
+            case "youtube":
+                await FluentDL.Services.YoutubeApi.AdvancedSearch((ObservableCollection<SongSearchObject>)CustomListView.ItemsSource, artistName, trackName, albumName, cancellationTokenSource.Token, ViewModel.ResultsLimit);
+                break;
             default:
                 await FluentDL.Services.DeezerApi.AdvancedSearch((ObservableCollection<SongSearchObject>)CustomListView.ItemsSource, artistName, trackName, albumName, cancellationTokenSource.Token, ViewModel.ResultsLimit);
                 break;
