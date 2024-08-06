@@ -53,16 +53,11 @@ namespace FluentDL.Services
             {
                 var video = await youtube.Videos.GetAsync(url);
                 itemSource.Add(await GetTrack(video.Id));
-                Debug.WriteLine(video.Description);
-                foreach (var keyword in video.Keywords)
-                {
-                    Debug.WriteLine("keyword: " + keyword);
-                }
 
                 statusUpdate.Invoke(InfoBarSeverity.Success, $"Added video \"{video.Title}\"");
             }
 
-            if (url.StartsWith("https://www.youtube.com/playlist?"))
+            if (url.StartsWith("https://www.youtube.com/playlist?") || url.StartsWith("https://music.youtube.com/playlist?"))
             {
                 var playlistName = (await youtube.Playlists.GetAsync(url)).Title;
                 statusUpdate.Invoke(InfoBarSeverity.Informational, $"Adding videos from playlist \"{playlistName}\"");
@@ -237,38 +232,73 @@ namespace FluentDL.Services
 
         public static async Task<SongSearchObject> GetTrack(string id)
         {
+            // Largest image ends in maxresdefault.webp
+            // Use mqdefault.jpg for smaller image (no black borders)
+            /*
+                Image formats:
+                https://i.ytimg.com/vi_webp/{id}/maxresdefault.webp
+                https://img.youtube.com/vi/{id}/default.jpg
+                https://img.youtube.com/vi/{id}/mqdefault.jpg
+                https://img.youtube.com/vi/{id}/hqdefault.jpg
+             */
+
             var video = await youtube.Videos.GetAsync(id);
-            if (video.Description.Contains("Provided to YouTube by")) // Youtube music
+
+            var title = video.Title;
+            var albumName = title;
+            var artists = video.Author.ChannelTitle;
+            if (video.Description.StartsWith("Provided to YouTube by") && video.Description.Contains("\u2117")) // Youtube music
             {
                 // Format is: "Song title" · Artist 1 · Artist 2 · etc
-                // Read each line of the description string until the above line is found
 
                 var lines = video.Description.Split("\n");
 
 
-                var fields = lines[2].Split(" · "); // third line
-                foreach (var field in fields)
+                var fields = lines[2].Trim().Split(" · "); // third line
+
+                title = fields[0];
+
+                var artistsBuilder = new StringBuilder(); // Artists CSV
+                for (int i = 1; i < fields.Length; i++)
                 {
-                    Debug.WriteLine("field: " + field);
+                    artistsBuilder.Append(fields[i]);
+                    if (i < fields.Length - 1)
+                    {
+                        artistsBuilder.Append(", ");
+                    }
                 }
 
-                Debug.WriteLine("line 5:" + lines[4]);
+                artists = artistsBuilder.ToString();
+
+                albumName = lines[4].Trim(); // Fourth line of ytm description contains album name
+            }
+
+            // Loop through thumbnails
+            foreach (var thumbnail in video.Thumbnails)
+            {
+                Debug.WriteLine(thumbnail.Url);
+            }
+
+            var idx = video.Thumbnails.ToList().FindIndex(x => (x.Url.EndsWith("mqdefault.jpg")));
+            if (idx == -1)
+            {
+                idx = 0; // Just take first
             }
 
             return new SongSearchObject()
             {
-                AlbumName = video.Title,
-                Artists = video.Author.ChannelTitle,
+                AlbumName = albumName,
+                Artists = artists,
                 Duration = ((int)video.Duration.Value.TotalSeconds).ToString(),
                 Explicit = false,
                 Source = "youtube",
                 Id = id,
                 TrackPosition = "1",
-                ImageLocation = video.Thumbnails.Last().Url,
+                ImageLocation = video.Thumbnails[idx].Url,
                 LocalBitmapImage = null,
                 Rank = video.Engagement.ViewCount.ToString(),
                 ReleaseDate = ApiHelper.FormatDateTimeOffset(video.UploadDate),
-                Title = video.Title,
+                Title = title,
                 Isrc = null
             };
         }

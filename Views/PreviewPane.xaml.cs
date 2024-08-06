@@ -137,9 +137,18 @@ namespace FluentDL.Views
             {
                 int index = trackDetailsList.FindIndex(x => x.Label == "Popularity"); // Rename popularity to views
                 trackDetailsList[index].Label = "Views";
-                trackDetailsList.RemoveAt(trackDetailsList.FindIndex(x => x.Label == "Album")); // Remove album
                 PreviewImage.Source = new BitmapImage(new Uri("https://img.youtube.com/vi/" + selectedSong.Id + "/0.jpg"));
-                SongPreviewPlayer.Source = MediaSource.CreateFromUri(new Uri(await YoutubeApi.AudioStreamWorstUrl("https://www.youtube.com/watch?v=" + selectedSong.Id)));
+                // Load youtube song on another thread
+                var t = new Thread(async () =>
+                {
+                    var mediaSource = MediaSource.CreateFromUri(new Uri(await YoutubeApi.AudioStreamWorstUrl("https://www.youtube.com/watch?v=" + selectedSong.Id)));
+                    dispatcher.TryEnqueue(() =>
+                    {
+                        SongPreviewPlayer.Source = mediaSource;
+                    });
+                });
+                t.Priority = ThreadPriority.AboveNormal;
+                t.Start();
             }
 
             if (selectedSong.Source.Equals("local"))
