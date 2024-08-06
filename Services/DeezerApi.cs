@@ -587,7 +587,10 @@ internal class DeezerApi
         track.AlbumArtist = jsonObject.GetProperty("artist").GetProperty("name").GetString();
         track.Artist = contribStr;
         track.AudioSourceUrl = jsonObject.GetProperty("link").GetString();
-        track.BPM = jsonObject.GetProperty("bpm").TryGetInt32(out var bpm) ? bpm : 0;
+        track.BPM = jsonObject.GetProperty("bpm").TryGetInt32(out var bpm
+        )
+            ? bpm
+            : 0;
         track.AdditionalFields["YEAR"] = jsonObject.GetProperty("release_date").GetString().Substring(0, 4);
         track.Date = DateTime.Parse(jsonObject.GetProperty("release_date").GetString());
         track.TrackNumber = jsonObject.GetProperty("track_position").GetInt32();

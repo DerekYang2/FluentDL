@@ -75,7 +75,7 @@ public sealed partial class QueuePage : Page
         cancellationTokenSource = new CancellationTokenSource();
         InitPreviewPanelButtons();
         StartStopButton.Visibility = Visibility.Collapsed; // Hide the start/stop button initially
-        OutputComboBox.ItemsSource = new List<string> { "Deezer", "Qobuz", "Spotify" }; // Default list
+        OutputComboBox.ItemsSource = new List<string> { "Deezer", "Qobuz", "Spotify", "YouTube" }; // Default list
 
         QueueViewModel.Source.CollectionChanged += (sender, e) =>
         {
@@ -475,12 +475,14 @@ public sealed partial class QueuePage : Page
         DeezerCheckBox.IsChecked = sources.Contains("deezer");
         QobuzCheckBox.IsChecked = sources.Contains("qobuz");
         SpotifyCheckBox.IsChecked = sources.Contains("spotify");
+        YouTubeCheckBox.IsChecked = sources.Contains("youtube");
         LocalCheckBox.IsChecked = sources.Contains("local");
 
         // If unchecked, disable the output combobox
         DeezerCheckBox.IsEnabled = DeezerCheckBox.IsChecked.Value;
         QobuzCheckBox.IsEnabled = QobuzCheckBox.IsChecked.Value;
         SpotifyCheckBox.IsEnabled = SpotifyCheckBox.IsChecked.Value;
+        YouTubeCheckBox.IsEnabled = YouTubeCheckBox.IsChecked.Value;
         LocalCheckBox.IsEnabled = LocalCheckBox.IsChecked.Value;
 
         // Show conversion dialog
@@ -497,7 +499,7 @@ public sealed partial class QueuePage : Page
             return;
         }
 
-        if (DeezerCheckBox.IsChecked == false && QobuzCheckBox.IsChecked == false && SpotifyCheckBox.IsChecked == false && LocalCheckBox.IsChecked == false)
+        if (DeezerCheckBox.IsChecked == false && QobuzCheckBox.IsChecked == false && SpotifyCheckBox.IsChecked == false && YouTubeCheckBox.IsChecked == false && LocalCheckBox.IsChecked == false)
         {
             ShowInfoBar(InfoBarSeverity.Warning, "Please select at least one input source.", 3);
             return;
@@ -547,6 +549,7 @@ public sealed partial class QueuePage : Page
                 "deezer" => await DeezerApi.GetDeezerTrack(song),
                 "qobuz" => await QobuzApi.GetQobuzTrack(song),
                 "spotify" => await SpotifyApi.GetSpotifyTrack(song),
+                "youtube" => await YoutubeApi.GetYoutubeTrack(song),
                 _ => null
             };
 

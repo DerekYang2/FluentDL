@@ -287,12 +287,12 @@ public sealed partial class Search : Page
             generalSource = (SourceRadioButtons.SelectedItem as RadioButton).Content.ToString(); // Override
         }
 
-        switch (generalSource)
+        switch (generalSource.ToLower())
         {
-            case "Spotify":
+            case "spotify":
                 await FluentDL.Services.SpotifyApi.AdvancedSearch((ObservableCollection<SongSearchObject>)CustomListView.ItemsSource, artistName, trackName, albumName, cancellationTokenSource.Token, ViewModel.ResultsLimit);
                 break;
-            case "Qobuz":
+            case "qobuz":
                 await FluentDL.Services.QobuzApi.AdvancedSearch((ObservableCollection<SongSearchObject>)CustomListView.ItemsSource, artistName, trackName, albumName, cancellationTokenSource.Token, ViewModel.ResultsLimit);
                 break;
             default:
@@ -346,6 +346,10 @@ public sealed partial class Search : Page
         else if (generalQuery.StartsWith("https://www.qobuz.com/") || generalQuery.StartsWith("https://play.qobuz.com/") || generalQuery.StartsWith("https://open.qobuz.com/"))
         {
             await QobuzApi.AddTracksFromLink((ObservableCollection<SongSearchObject>)CustomListView.ItemsSource, generalQuery, cancellationTokenSource.Token, statusUpdate);
+        }
+        else if (generalQuery.StartsWith("https://www.youtube.com/") || generalQuery.StartsWith("https://music.youtube.com/"))
+        {
+            await YoutubeApi.AddTracksFromLink((ObservableCollection<SongSearchObject>)CustomListView.ItemsSource, generalQuery, cancellationTokenSource.Token, statusUpdate);
         }
         else
         {

@@ -370,8 +370,10 @@
                               Unchecked="CheckBox_OnUnchecked"/>
                     <CheckBox x:Name="SpotifyCheckBox" Content="Spotify" Checked="CheckBox_OnChecked"
                               Unchecked="CheckBox_OnUnchecked"/>
+                    <CheckBox x:Name="YouTubeCheckBox" Content="YouTube" Checked="CheckBox_OnChecked"
+                            Unchecked="CheckBox_OnUnchecked"/>
                     <CheckBox x:Name="LocalCheckBox" Content="Local" Checked="CheckBox_OnChecked"
-                              Unchecked="CheckBox_OnUnchecked"/>
+                            Unchecked="CheckBox_OnUnchecked"/>
                     </StackPanel>
 
                 <StackPanel Grid.Column="1">

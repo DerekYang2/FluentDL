@@ -4,14 +4,18 @@ using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using FluentDL.Helpers;
 using FluentDL.Models;
 using FluentDL.Views;
+using Microsoft.UI.Xaml.Controls;
 using YoutubeExplode;
+using YoutubeExplode.Common;
 using YoutubeExplode.Search;
 using YoutubeExplode.Videos;
 using YoutubeExplode.Videos.Streams;
+using static System.Net.WebRequestMethods;
 
 namespace FluentDL.Services
 {
@@ -42,6 +46,38 @@ namespace FluentDL.Services
                 itemSource.Add(await GetTrack(result.Id));
             }
         }
+
+        public static async Task AddTracksFromLink(ObservableCollection<SongSearchObject> itemSource, string url, CancellationToken token, Search.UrlStatusUpdateCallback? statusUpdate)
+        {
+            if (url.StartsWith("https://www.youtube.com/watch?") || url.StartsWith("https://music.youtube.com/watch?v="))
+            {
+                var video = await youtube.Videos.GetAsync(url);
+                itemSource.Add(await GetTrack(video.Id));
+                Debug.WriteLine(video.Description);
+                foreach (var keyword in video.Keywords)
+                {
+                    Debug.WriteLine("keyword: " + keyword);
+                }
+
+                statusUpdate.Invoke(InfoBarSeverity.Success, $"Added video \"{video.Title}\"");
+            }
+
+            if (url.StartsWith("https://www.youtube.com/playlist?"))
+            {
+                var playlistName = (await youtube.Playlists.GetAsync(url)).Title;
+                statusUpdate.Invoke(InfoBarSeverity.Informational, $"Adding videos from playlist \"{playlistName}\"");
+                await foreach (var video in youtube.Playlists.GetVideosAsync(url, token))
+                {
+                    if (token.IsCancellationRequested)
+                    {
+                        break;
+                    }
+
+                    itemSource.Add(await GetTrack(video.Id));
+                }
+            }
+        }
+
 
         public static async Task<VideoSearchResult> GetSearchResult(SongSearchObject song)
         {
@@ -202,6 +238,22 @@ namespace FluentDL.Services
         public static async Task<SongSearchObject> GetTrack(string id)
         {
             var video = await youtube.Videos.GetAsync(id);
+            if (video.Description.Contains("Provided to YouTube by")) // Youtube music
+            {
+                // Format is: "Song title" · Artist 1 · Artist 2 · etc
+                // Read each line of the description string until the above line is found
+
+                var lines = video.Description.Split("\n");
+
+
+                var fields = lines[2].Split(" · "); // third line
+                foreach (var field in fields)
+                {
+                    Debug.WriteLine("field: " + field);
+                }
+
+                Debug.WriteLine("line 5:" + lines[4]);
+            }
 
             return new SongSearchObject()
             {
