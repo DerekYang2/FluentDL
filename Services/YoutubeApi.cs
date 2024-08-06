@@ -67,6 +67,28 @@ namespace FluentDL.Services
             //}
         }
 
+        public static async Task AdvancedSearch(ObservableCollection<SongSearchObject> itemSource, string artistName, string trackName, string albumName, CancellationToken token, int limit = 25)
+        {
+            // Youtube doesn't have an advanced search, must be done manually
+            artistName = artistName.Trim();
+            trackName = trackName.Trim();
+            albumName = albumName.Trim();
+
+            if (string.IsNullOrWhiteSpace(artistName) && string.IsNullOrWhiteSpace(trackName) && string.IsNullOrWhiteSpace(albumName))
+            {
+                return;
+            }
+
+            itemSource.Clear();
+
+            bool isArtistSpecified = !string.IsNullOrWhiteSpace(artistName);
+            bool isTrackSpecified = !string.IsNullOrWhiteSpace(trackName);
+
+            var trackIdList = new HashSet<int>();
+
+            var searchResults = await ytm.SearchAsync<Album>(albumName, token); // Search for album first
+        }
+
         public static async Task AddTracksFromLink(ObservableCollection<SongSearchObject> itemSource, string url, CancellationToken token, Search.UrlStatusUpdateCallback? statusUpdate)
         {
             if (url.StartsWith("https://www.youtube.com/watch?"))
@@ -342,7 +364,7 @@ namespace FluentDL.Services
                 ImageLocation = ytmSong.Thumbnails.Last().Url,
                 Isrc = null,
                 LocalBitmapImage = null,
-                Rank = ytmSong.ViewsCount.ToString(),
+                Rank = FormatLargeValue(ytmSong.ViewsCount),
                 TrackPosition = "1",
                 ReleaseDate = ApiHelper.FormatDateTimeOffset(ytmSong.UploadedAt),
                 Title = ytmSong.Name,
@@ -374,7 +396,7 @@ namespace FluentDL.Services
                 ImageLocation = ytmSong.Thumbnails.Last().Url,
                 Isrc = null,
                 LocalBitmapImage = null,
-                Rank = video.Engagement.ViewCount.ToString(),
+                Rank = FormatLargeValue(video.Engagement.ViewCount),
                 TrackPosition = "1",
                 ReleaseDate = ApiHelper.FormatDateTimeOffset(video.UploadDate),
                 Title = ytmSong.Name,
@@ -434,7 +456,7 @@ namespace FluentDL.Services
                 TrackPosition = "1",
                 ImageLocation = video.Thumbnails[idx].Url,
                 LocalBitmapImage = null,
-                Rank = video.Engagement.ViewCount.ToString(),
+                Rank = FormatLargeValue(video.Engagement.ViewCount),
                 ReleaseDate = ApiHelper.FormatDateTimeOffset(video.UploadDate),
                 Title = song.Name,
                 Isrc = null
@@ -469,6 +491,27 @@ namespace FluentDL.Services
                albumName = lines[4].Trim(); // Fourth line of ytm description contains album name
            }
          */
+
+        // Billion -> B, Million -> M, Thousand -> K
+        public static string FormatLargeValue(long value)
+        {
+            if (value >= 1e9) // Round two decimal places
+            {
+                return string.Format("{0:F2}B", value / 1e9);
+            }
+
+            if (value >= 1e6)
+            {
+                return string.Format("{0:F1}M", value / 1e6);
+            }
+
+            if (value >= 1e3)
+            {
+                return string.Format("{0:F0}K", value / 1e3);
+            }
+
+            return value.ToString();
+        }
 
         public static async Task DownloadAudio(string url, string downloadFolder, string filename)
         {
