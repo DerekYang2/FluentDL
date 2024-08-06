@@ -103,12 +103,12 @@ internal class DeezerApi
         }
     }
 
-    public static async Task<JsonElement> FetchJsonElement(string req)
+    public static async Task<JsonElement> FetchJsonElement(string req, CancellationToken token = default)
     {
         try
         {
             var request = new RestRequest(req);
-            var response = await client.GetAsync(request);
+            var response = await client.GetAsync(request, token);
             return JsonDocument.Parse(response.Content).RootElement;
         }
         catch (Exception e)
@@ -118,7 +118,7 @@ internal class DeezerApi
                 Debug.WriteLine("Failed: " + req);
                 req = req.Replace("%28", "").Replace("%29", ""); // Remove brackets, causes issues occasionally for some reason
                 var request = new RestRequest(req);
-                var response = await client.GetAsync(request);
+                var response = await client.GetAsync(request, token);
                 return JsonDocument.Parse(response.Content).RootElement;
             }
             catch (Exception e2)
@@ -279,7 +279,7 @@ internal class DeezerApi
         return closest;
     }
 
-    public static async Task<SongSearchObject?> GetDeezerTrack(SongSearchObject song)
+    public static async Task<SongSearchObject?> GetDeezerTrack(SongSearchObject song, CancellationToken token = default)
     {
         // Try to find by ISRC first
         if (song.Isrc != null)
@@ -311,6 +311,11 @@ internal class DeezerApi
 
             foreach (var track in jsonObject.GetProperty("data").EnumerateArray())
             {
+                if (token.IsCancellationRequested) // Cancel requested, terminate this method
+                {
+                    return null;
+                }
+
                 var trackId = track.GetProperty("id").ToString();
                 if (!idSet.Contains(trackId)) // If the track id is not already in the set
                 {
@@ -327,6 +332,11 @@ internal class DeezerApi
 
             foreach (var track in jsonObject.GetProperty("data").EnumerateArray())
             {
+                if (token.IsCancellationRequested)
+                {
+                    return null;
+                }
+
                 var trackId = track.GetProperty("id").ToString();
                 if (!idSet.Contains(trackId)) // If the track id is not already in the set
                 {
@@ -343,6 +353,11 @@ internal class DeezerApi
         int minEditDistance = int.MaxValue;
         foreach (var songObj in songObjList)
         {
+            if (token.IsCancellationRequested) // Cancel requested, terminate this method
+            {
+                return null;
+            }
+
             var titlePruned = PruneTitle(trackName);
             var songObjTitlePruned = PruneTitle(songObj.Title);
             if (titlePruned.Equals(songObjTitlePruned) || titlePruned.Replace("radioedit", "").Equals(songObjTitlePruned.Replace("radioedit", ""))) // If the title matches without punctuation
@@ -370,6 +385,11 @@ internal class DeezerApi
         minEditDistance = int.MaxValue; // Reset min edit distance
         foreach (var songObj in songObjList)
         {
+            if (token.IsCancellationRequested) // Cancel requested, terminate this method
+            {
+                return null;
+            }
+
             if (PruneTitle(albumName).Equals(PruneTitle(songObj.AlbumName))) // If the album name is exact match
             {
                 string pruneTargetName = PruneTitle(trackName), pruneName = PruneTitle(songObj.Title);

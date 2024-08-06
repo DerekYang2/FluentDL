@@ -335,7 +335,7 @@ internal class QobuzApi
         return ConvertSongSearchObject(track);
     }
 
-    public static async Task<SongSearchObject?> GetQobuzTrack(SongSearchObject songObj)
+    public static async Task<SongSearchObject?> GetQobuzTrack(SongSearchObject songObj, CancellationToken token = default)
     {
         // No built-in method for this, so we have to get all tracks and search for the ISRC
         string? isrc = songObj.Isrc;
@@ -348,8 +348,8 @@ internal class QobuzApi
 
             do
             {
-                var result = await Task.Run(() => apiService.SearchTracks(query, 5, offset)); // Search through chunks of 5 tracks
-                if (result.Tracks == null)
+                var result = await Task.Run(() => apiService.SearchTracks(query, 5, offset), token); // Search through chunks of 5 tracks
+                if (result.Tracks == null || token.IsCancellationRequested)
                 {
                     break;
                 }

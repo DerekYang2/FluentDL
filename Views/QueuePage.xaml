@@ -43,7 +43,6 @@
             </Button>
 
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8">
-
                 <Button x:Name="ConvertDialogOpenButton" VerticalAlignment="Center"
                         ToolTipService.ToolTip="Convert tracks to other sources"
                         Click="ConvertDialogOpenButton_OnClick">
@@ -76,6 +75,14 @@
                     <StackPanel Orientation="Horizontal">
                         <FontIcon x:Name="StartStopIcon" Glyph="&#xE768;" FontSize="16" Margin="0, 0, 8, 0" />
                         <TextBlock x:Name="StartStopText" Text="Continue" />
+                    </StackPanel>
+                </Button>
+                <Button x:Name="ConvertStopButton" VerticalAlignment="Center" Click="ConvertStopButton_OnClick"
+                        ToolTipService.ToolTip="Stop conversion" Visibility="Collapsed"
+                        Background="Transparent" BorderBrush="Transparent">
+                    <StackPanel Orientation="Horizontal">
+                        <FontIcon x:Name="ConvertStopIcon" Glyph="&#xE71A;" FontSize="16" Margin="0, 0, 8, 0" Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"/>
+                        <TextBlock x:Name="ConvertStopText" Text="Stop" Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"/>
                     </StackPanel>
                 </Button>
             </StackPanel>

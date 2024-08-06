@@ -118,10 +118,15 @@ namespace FluentDL.Services
             return playlistName;
         }
 
-        public static async Task<FullTrack?> GetTrackFromISRC(string isrc)
+        public static async Task<FullTrack?> GetTrackFromISRC(string isrc, CancellationToken token = default)
         {
             // https://api.spotify.com/v1/search?type=track&q=isrc:{isrc}
-            var response = await spotify.Search.Item(new SearchRequest(SearchRequest.Types.Track, $"isrc:{isrc}"));
+            var response = await spotify.Search.Item(new SearchRequest(SearchRequest.Types.Track, $"isrc:{isrc}"), token);
+            if (token.IsCancellationRequested)
+            {
+                return null;
+            }
+
             Debug.WriteLine(response.Tracks.Items.Count);
             if (response.Tracks.Items == null)
             {
@@ -256,12 +261,12 @@ namespace FluentDL.Services
             }
         }
 
-        public static async Task<SongSearchObject?> GetSpotifyTrack(SongSearchObject song)
+        public static async Task<SongSearchObject?> GetSpotifyTrack(SongSearchObject song, CancellationToken token = default)
         {
             // Try to find by ISRC first
             if (song.Isrc != null)
             {
-                var track = await GetTrackFromISRC(song.Isrc);
+                var track = await GetTrackFromISRC(song.Isrc, token);
                 if (track != null)
                 {
                     return ConvertSongSearchObject(track);

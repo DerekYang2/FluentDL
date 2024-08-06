@@ -460,7 +460,7 @@ namespace FluentDL.Services
             return null;
         }
 
-        public static async Task<SongSearchObject?> GetYoutubeTrack(SongSearchObject songObj)
+        public static async Task<SongSearchObject?> GetYoutubeTrack(SongSearchObject songObj, CancellationToken token = default)
         {
             // Convert artists csv to array
             var artists = songObj.Artists.Split(", ");
@@ -470,7 +470,7 @@ namespace FluentDL.Services
             }
 
             var advancedResults = new ObservableCollection<SongSearchObject>();
-            await AdvancedSearch(advancedResults, songObj.Artists, songObj.Title, songObj.AlbumName, default, 5);
+            await AdvancedSearch(advancedResults, songObj.Artists, songObj.Title, songObj.AlbumName, token, 5);
             if (advancedResults.Count > 0)
             {
                 // 1: if author contains artist name and title matches 
@@ -507,7 +507,7 @@ namespace FluentDL.Services
             }
 
             advancedResults.Clear();
-            await AdvancedSearch(advancedResults, songObj.Artists, songObj.Title, "", default, 5);
+            await AdvancedSearch(advancedResults, songObj.Artists, songObj.Title, "", token, 5);
             if (advancedResults.Count > 0)
             {
                 return advancedResults[0];
@@ -535,7 +535,7 @@ namespace FluentDL.Services
             https://lh3.googleusercontent.com/{string}=w120-h120-l90-rj
             https://lh3.googleusercontent.com/{string}=w544-h544-l90-rj (not returned by youtube music api, manually get)
          */
-        public static async Task<Uri> GetMaxResThumbnail(SongSearchObject song)
+        public static async Task<string> GetMaxResThumbnail(SongSearchObject song)
         {
             if (song.ImageLocation.StartsWith("https://lh3.googleusercontent.com")) // If youtube music image
             {
@@ -544,7 +544,7 @@ namespace FluentDL.Services
                 var i = imageUrl.LastIndexOf("=");
                 imageUrl = imageUrl.Substring(0, i + 1); // Include everything up to and including the =
                 imageUrl += "w544-h544-l90-rj"; // Add the max res version
-                return new Uri(imageUrl);
+                return imageUrl;
             }
 
             var video = await youtube.Videos.GetAsync(song.Id);
@@ -562,7 +562,7 @@ namespace FluentDL.Services
                 idx = 0; // Just take first
             }
 
-            return new Uri(video.Thumbnails[idx].Url);
+            return video.Thumbnails[idx].Url;
         }
 
         public static async Task<SongSearchObject> GetTrack(Song ytmSong)

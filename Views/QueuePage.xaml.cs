@@ -513,7 +513,8 @@ public sealed partial class QueuePage : Page
         cancellationTokenSource = new CancellationTokenSource(); // Create a new cancellation token source
 
         // Prepare UI
-        DisableButtons();
+        CommandButton.Visibility = ConvertDialogOpenButton.Visibility = ClearButton.Visibility = Visibility.Collapsed; // Hide buttons
+        ConvertStopButton.Visibility = Visibility.Visible; // Show stop button
         isConverting = true;
 
         // Infobar notification
@@ -550,14 +551,20 @@ public sealed partial class QueuePage : Page
                 continue;
             }
 
+            // TODO: GetTrack should have cancellation tokens
             var newSongObj = outputSource switch
             {
-                "deezer" => await DeezerApi.GetDeezerTrack(song),
-                "qobuz" => await QobuzApi.GetQobuzTrack(song),
-                "spotify" => await SpotifyApi.GetSpotifyTrack(song),
-                "youtube" => await YoutubeApi.GetYoutubeTrack(song),
+                "deezer" => await DeezerApi.GetDeezerTrack(song, cancellationTokenSource.Token),
+                "qobuz" => await QobuzApi.GetQobuzTrack(song, cancellationTokenSource.Token),
+                "spotify" => await SpotifyApi.GetSpotifyTrack(song, cancellationTokenSource.Token),
+                "youtube" => await YoutubeApi.GetYoutubeTrack(song, cancellationTokenSource.Token),
                 _ => null
             };
+
+            if (cancellationTokenSource.Token.IsCancellationRequested) // If conversion is paused
+            {
+                break;
+            }
 
             if (newSongObj != null)
             {
@@ -567,8 +574,17 @@ public sealed partial class QueuePage : Page
             QueueProgress.Value = 100.0 * (i + 1) / totalCount; // Update the progress bar
         }
 
+        CommandButton.Visibility = ConvertDialogOpenButton.Visibility = ClearButton.Visibility = Visibility.Visible; // Show buttons
+        ConvertStopButton.Visibility = Visibility.Collapsed; // Hide stop button
         isConverting = false;
         QueueProgress.Value = ogVal; // Reset the progress bar
-        EnableButtons();
+    }
+
+    private void ConvertStopButton_OnClick(object sender, RoutedEventArgs e)
+    {
+        if (isConverting) // If currently converting
+        {
+            cancellationTokenSource.Cancel(); // Cancel the conversion
+        }
     }
 }

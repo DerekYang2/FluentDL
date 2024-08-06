@@ -1,11 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using ABI.Microsoft.UI.Xaml.Media.Imaging;
 using FluentDL.Models;
+using BitmapImage = Microsoft.UI.Xaml.Media.Imaging.BitmapImage;
 
 namespace FluentDL.Helpers;
 
@@ -130,6 +133,52 @@ internal class ApiHelper
         else
         {
             return "";
+        }
+    }
+
+    // Gets a bitmap image from a URL
+    public static async Task<BitmapImage> GetBitmapImageAsync(string uri)
+    {
+        using var client = new HttpClient();
+        var byteArr = await client.GetByteArrayAsync(uri);
+        var bitmapImage = new BitmapImage();
+        using var stream = new MemoryStream(byteArr);
+        await bitmapImage.SetSourceAsync(stream.AsRandomAccessStream());
+        return bitmapImage;
+    }
+
+    // For any file downloading with progress
+    public static async Task DownloadFileAsync(string downloadUrl, string filePath)
+    {
+        var httpClient = new HttpClient();
+        using (Stream streamToReadFrom = await httpClient.GetStreamAsync(downloadUrl))
+        {
+            using (FileStream streamToWriteTo = System.IO.File.Create(filePath))
+            {
+                long totalBytesRead = 0;
+                Stopwatch stopwatch = Stopwatch.StartNew();
+                byte[] buffer = new byte[32768]; // 32KB buffer size
+                bool firstBufferRead = false;
+
+                int bytesRead;
+                while ((bytesRead = await streamToReadFrom.ReadAsync(buffer, 0, buffer.Length)) > 0)
+                {
+                    // Write only the minimum of buffer.Length and bytesRead bytes to the file
+                    await streamToWriteTo.WriteAsync(buffer, 0, Math.Min(buffer.Length, bytesRead));
+
+                    // Calculate download speed
+                    totalBytesRead += bytesRead;
+                    double speed = totalBytesRead / 1024d / 1024d / stopwatch.Elapsed.TotalSeconds;
+
+                    // Update with the current speed at download start and then max. every 500 ms
+                    if (!firstBufferRead || stopwatch.ElapsedMilliseconds >= 500)
+                    {
+                        Debug.WriteLine($"Downloading... {speed:F3} MB/s");
+                    }
+
+                    firstBufferRead = true;
+                }
+            }
         }
     }
 }
