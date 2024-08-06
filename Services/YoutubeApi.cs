@@ -72,16 +72,15 @@ namespace FluentDL.Services
             if (url.StartsWith("https://www.youtube.com/watch?"))
             {
                 var video = await youtube.Videos.GetAsync(url);
-                itemSource.Add(await GetTrack(video.Id));
-
+                itemSource.Add(await ConvertSongSearchObject(video));
                 statusUpdate.Invoke(InfoBarSeverity.Success, $"Added video \"{video.Title}\"");
             }
 
-            if (url.StartsWith("https://music.youtube.com/watch?v="))
+            if (url.StartsWith("https://music.youtube.com/watch?v=")) // Youtube music has both songs and videos
             {
                 var video = await youtube.Videos.GetAsync(url);
-                var song = await ytm.GetSongVideoInfoAsync(video.Id);
-                itemSource.Add(await GetTrack(song, video));
+                itemSource.Add(await ConvertSongSearchObject(video));
+                statusUpdate.Invoke(InfoBarSeverity.Success, $"Added video \"{video.Title}\"");
             }
 
 
@@ -89,14 +88,16 @@ namespace FluentDL.Services
             {
                 var playlistName = (await youtube.Playlists.GetAsync(url)).Title;
                 statusUpdate.Invoke(InfoBarSeverity.Informational, $"Adding videos from playlist \"{playlistName}\"");
-                await foreach (var video in youtube.Playlists.GetVideosAsync(url, token))
+
+                await foreach (var playlistVideo in youtube.Playlists.GetVideosAsync(url, token))
                 {
                     if (token.IsCancellationRequested)
                     {
                         break;
                     }
 
-                    itemSource.Add(await GetTrack(video.Id));
+                    var video = await youtube.Videos.GetAsync(playlistVideo.Id); // Get the full video object
+                    itemSource.Add(await ConvertSongSearchObject(video));
                 }
             }
         }
@@ -263,6 +264,10 @@ namespace FluentDL.Services
         /*
             Image formats:
             https://i.ytimg.com/vi_webp/{id}/maxresdefault.webp
+            OR
+            https://i.ytimg.com/vi/{id}/maxresdefault.jpg
+            https://i.ytimg.com/vi/{id}/maxresdefault.jpg?{string}
+
             https://img.youtube.com/vi/{id}/default.jpg
             https://img.youtube.com/vi/{id}/mqdefault.jpg
             https://img.youtube.com/vi/{id}/hqdefault.jpg
@@ -285,7 +290,15 @@ namespace FluentDL.Services
             }
 
             var video = await youtube.Videos.GetAsync(song.Id);
-            var idx = video.Thumbnails.ToList().FindIndex(x => (x.Url.EndsWith("maxresdefault.webp")));
+            var idx = video.Thumbnails.ToList().FindIndex(x =>
+            {
+                var url = x.Url;
+                // Remove query string
+                var i = url.LastIndexOf('?');
+                if (i != -1) url = url.Substring(0, i);
+                return url.EndsWith("maxresdefault.webp") || url.EndsWith("maxresdefault.jpg");
+            });
+
             if (idx == -1) // If not found
             {
                 idx = 0; // Just take first
@@ -308,11 +321,14 @@ namespace FluentDL.Services
 
             var albumName = ytmSong.Name;
 
-            Debug.WriteLine(video.Description);
             if (video.Description.StartsWith("Provided to YouTube by") && video.Description.Contains("\u2117")) // Youtube music
             {
                 var lines = video.Description.Split("\n");
                 albumName = lines[4].Trim(); // Fourth line of ytm description contains album name
+            }
+            else // Should not happen
+            {
+                throw new Exception("Youtube music object description failed to parse: " + video.Description);
             }
 
             return new SongSearchObject()
@@ -321,7 +337,7 @@ namespace FluentDL.Services
                 Artists = artistCSV.ToString(),
                 Duration = ytmSong.Duration.TotalSeconds.ToString(),
                 Source = "youtube",
-                Explicit = ytmSong.IsFamiliyFriendly,
+                Explicit = !ytmSong.IsFamiliyFriendly,
                 Id = ytmSong.Id,
                 ImageLocation = ytmSong.Thumbnails.Last().Url,
                 Isrc = null,
@@ -368,37 +384,40 @@ namespace FluentDL.Services
         public static async Task<SongSearchObject> GetTrack(string id)
         {
             var video = await youtube.Videos.GetAsync(id);
+            return await ConvertSongSearchObject(video);
+        }
 
-            var title = video.Title;
-            var albumName = title;
-            var artists = video.Author.ChannelTitle;
-            if (video.Description.StartsWith("Provided to YouTube by") && video.Description.Contains("\u2117")) // Youtube music
+        public static async Task<SongSearchObject> ConvertSongSearchObject(YoutubeExplode.Videos.Video video)
+        {
+            var song = await ytm.GetSongVideoInfoAsync(video.Id);
+
+            if (video.Description.StartsWith("Provided to YouTube by") && video.Description.Contains("\u2117")) // Special case: if YouTube music song
             {
-                // Format is: "Song title" · Artist 1 · Artist 2 · etc
-
-                var lines = video.Description.Split("\n");
-
-
-                var fields = lines[2].Trim().Split(" · "); // third line
-
-                title = fields[0];
-
-                var artistsBuilder = new StringBuilder(); // Artists CSV
-                for (int i = 1; i < fields.Length; i++)
-                {
-                    artistsBuilder.Append(fields[i]);
-                    if (i < fields.Length - 1)
-                    {
-                        artistsBuilder.Append(", ");
-                    }
-                }
-
-                artists = artistsBuilder.ToString();
-
-                albumName = lines[4].Trim(); // Fourth line of ytm description contains album name
+                return await GetTrack(song, video);
             }
 
-            var idx = video.Thumbnails.ToList().FindIndex(x => (x.Url.EndsWith("mqdefault.jpg")));
+            // Normal case: youtube video
+
+            // Get artist csv through ytm object
+            var artistCSV = new StringBuilder();
+            foreach (var artist in song.Artists)
+            {
+                artistCSV.Append(artist.Name);
+                if (artist != song.Artists.Last())
+                {
+                    artistCSV.Append(", ");
+                }
+            }
+
+            var idx = video.Thumbnails.ToList().FindIndex(x =>
+            {
+                var url = x.Url;
+                // Remove query string
+                var i = url.LastIndexOf('?');
+                if (i != -1) url = url.Substring(0, i);
+                return url.EndsWith("maxresdefault.webp") || url.EndsWith("maxresdefault.jpg");
+            });
+
             if (idx == -1) // If not found
             {
                 idx = 0; // Just take first
@@ -406,10 +425,10 @@ namespace FluentDL.Services
 
             return new SongSearchObject()
             {
-                AlbumName = albumName,
-                Artists = artists,
+                AlbumName = video.Title, // Just use the video title as album name
+                Artists = artistCSV.ToString(),
                 Duration = ((int)video.Duration.Value.TotalSeconds).ToString(),
-                Explicit = false,
+                Explicit = !song.IsFamiliyFriendly,
                 Source = "youtube",
                 Id = video.Id,
                 TrackPosition = "1",
@@ -417,10 +436,39 @@ namespace FluentDL.Services
                 LocalBitmapImage = null,
                 Rank = video.Engagement.ViewCount.ToString(),
                 ReleaseDate = ApiHelper.FormatDateTimeOffset(video.UploadDate),
-                Title = title,
+                Title = song.Name,
                 Isrc = null
             };
         }
+
+        /*
+         Old code to parse fields from description, not fully needed anymore because ytm api:
+            if (video.Description.StartsWith("Provided to YouTube by") && video.Description.Contains("\u2117")) // Youtube music
+           {
+               // Format is: "Song title" · Artist 1 · Artist 2 · etc
+
+               var lines = video.Description.Split("\n");
+
+
+               var fields = lines[2].Trim().Split(" · "); // third line
+
+               title = fields[0];
+
+               var artistsBuilder = new StringBuilder(); // Artists CSV
+               for (int i = 1; i < fields.Length; i++)
+               {
+                   artistsBuilder.Append(fields[i]);
+                   if (i < fields.Length - 1)
+                   {
+                       artistsBuilder.Append(", ");
+                   }
+               }
+
+               artists = artistsBuilder.ToString();
+
+               albumName = lines[4].Trim(); // Fourth line of ytm description contains album name
+           }
+         */
 
         public static async Task DownloadAudio(string url, string downloadFolder, string filename)
         {
