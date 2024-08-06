@@ -10,18 +10,24 @@ using FluentDL.Helpers;
 using FluentDL.Models;
 using FluentDL.Views;
 using Microsoft.UI.Xaml.Controls;
+using Windows.Media.Protection.PlayReady;
 using YoutubeExplode;
 using YoutubeExplode.Common;
 using YoutubeExplode.Search;
 using YoutubeExplode.Videos;
 using YoutubeExplode.Videos.Streams;
+using YouTubeMusicAPI.Client;
+using YouTubeMusicAPI.Models;
+using YouTubeMusicAPI.Models.Info;
 using static System.Net.WebRequestMethods;
+using Video = YouTubeMusicAPI.Models.Video;
 
 namespace FluentDL.Services
 {
     internal class YoutubeApi
     {
         private static YoutubeClient youtube = new YoutubeClient();
+        private static YouTubeMusicClient ytm = new YouTubeMusicClient();
 
         public YoutubeApi()
         {
@@ -36,26 +42,48 @@ namespace FluentDL.Services
             }
 
             itemSource.Clear();
-            await foreach (var result in youtube.Search.GetVideosAsync(query, token))
+
+            var searchResults = await ytm.SearchAsync<Song>(query, token);
+
+            foreach (var song in searchResults)
             {
                 if (token.IsCancellationRequested)
                 {
                     break;
                 }
 
-                itemSource.Add(await GetTrack(result.Id));
+                itemSource.Add(await GetTrack(song));
             }
+
+            // NORMAL YOUTUBE SEARCH:
+            //await foreach (var result in youtube.Search.GetVideosAsync(query, token))
+            //{
+            //    if (token.IsCancellationRequested)
+            //    {
+            //        break;
+            //    }
+
+            //    itemSource.Add(await GetTrack(result.Id));
+            //}
         }
 
         public static async Task AddTracksFromLink(ObservableCollection<SongSearchObject> itemSource, string url, CancellationToken token, Search.UrlStatusUpdateCallback? statusUpdate)
         {
-            if (url.StartsWith("https://www.youtube.com/watch?") || url.StartsWith("https://music.youtube.com/watch?v="))
+            if (url.StartsWith("https://www.youtube.com/watch?"))
             {
                 var video = await youtube.Videos.GetAsync(url);
                 itemSource.Add(await GetTrack(video.Id));
 
                 statusUpdate.Invoke(InfoBarSeverity.Success, $"Added video \"{video.Title}\"");
             }
+
+            if (url.StartsWith("https://music.youtube.com/watch?v="))
+            {
+                var video = await youtube.Videos.GetAsync(url);
+                var song = await ytm.GetSongVideoInfoAsync(video.Id);
+                itemSource.Add(await GetTrack(song, video));
+            }
+
 
             if (url.StartsWith("https://www.youtube.com/playlist?") || url.StartsWith("https://music.youtube.com/playlist?"))
             {
@@ -230,18 +258,115 @@ namespace FluentDL.Services
             return await GetTrack((await GetSearchResult(songObj)).Id);
         }
 
+        // Largest image ends in maxresdefault.webp
+        // Use mqdefault.jpg for smaller image (no black borders)
+        /*
+            Image formats:
+            https://i.ytimg.com/vi_webp/{id}/maxresdefault.webp
+            https://img.youtube.com/vi/{id}/default.jpg
+            https://img.youtube.com/vi/{id}/mqdefault.jpg
+            https://img.youtube.com/vi/{id}/hqdefault.jpg
+
+            Youtube music image format:
+            https://lh3.googleusercontent.com/{string}=w60-h60-l90-rj
+            https://lh3.googleusercontent.com/{string}=w120-h120-l90-rj
+            https://lh3.googleusercontent.com/{string}=w544-h544-l90-rj (not returned by youtube music api, manually get)
+         */
+        public static async Task<Uri> GetMaxResThumbnail(SongSearchObject song)
+        {
+            if (song.ImageLocation.StartsWith("https://lh3.googleusercontent.com")) // If youtube music image
+            {
+                string imageUrl = song.ImageLocation;
+                // Delete everything after the last =
+                var i = imageUrl.LastIndexOf("=");
+                imageUrl = imageUrl.Substring(0, i + 1); // Include everything up to and including the =
+                imageUrl += "w544-h544-l90-rj"; // Add the max res version
+                return new Uri(imageUrl);
+            }
+
+            var video = await youtube.Videos.GetAsync(song.Id);
+            var idx = video.Thumbnails.ToList().FindIndex(x => (x.Url.EndsWith("maxresdefault.webp")));
+            if (idx == -1) // If not found
+            {
+                idx = 0; // Just take first
+            }
+
+            return new Uri(video.Thumbnails[idx].Url);
+        }
+
+        public static async Task<SongSearchObject> GetTrack(SongVideoInfo ytmSong, YoutubeExplode.Videos.Video video)
+        {
+            var artistCSV = new StringBuilder();
+            foreach (var artist in ytmSong.Artists)
+            {
+                artistCSV.Append(artist.Name);
+                if (artist != ytmSong.Artists.Last())
+                {
+                    artistCSV.Append(", ");
+                }
+            }
+
+            var albumName = ytmSong.Name;
+
+            Debug.WriteLine(video.Description);
+            if (video.Description.StartsWith("Provided to YouTube by") && video.Description.Contains("\u2117")) // Youtube music
+            {
+                var lines = video.Description.Split("\n");
+                albumName = lines[4].Trim(); // Fourth line of ytm description contains album name
+            }
+
+            return new SongSearchObject()
+            {
+                AlbumName = albumName,
+                Artists = artistCSV.ToString(),
+                Duration = ytmSong.Duration.TotalSeconds.ToString(),
+                Source = "youtube",
+                Explicit = ytmSong.IsFamiliyFriendly,
+                Id = ytmSong.Id,
+                ImageLocation = ytmSong.Thumbnails.Last().Url,
+                Isrc = null,
+                LocalBitmapImage = null,
+                Rank = ytmSong.ViewsCount.ToString(),
+                TrackPosition = "1",
+                ReleaseDate = ApiHelper.FormatDateTimeOffset(ytmSong.UploadedAt),
+                Title = ytmSong.Name,
+            };
+        }
+
+        public static async Task<SongSearchObject> GetTrack(Song ytmSong)
+        {
+            var artistCSV = new StringBuilder();
+            foreach (var artist in ytmSong.Artists)
+            {
+                artistCSV.Append(artist.Name);
+                if (artist != ytmSong.Artists.Last())
+                {
+                    artistCSV.Append(", ");
+                }
+            }
+
+            var video = await youtube.Videos.GetAsync(ytmSong.Id); // Get youtube explode video object, has more technical info like release date + views
+
+            return new SongSearchObject()
+            {
+                AlbumName = ytmSong.Album.Name,
+                Artists = artistCSV.ToString(),
+                Duration = ytmSong.Duration.TotalSeconds.ToString(),
+                Source = "youtube",
+                Explicit = ytmSong.IsExplicit,
+                Id = ytmSong.Id,
+                ImageLocation = ytmSong.Thumbnails.Last().Url,
+                Isrc = null,
+                LocalBitmapImage = null,
+                Rank = video.Engagement.ViewCount.ToString(),
+                TrackPosition = "1",
+                ReleaseDate = ApiHelper.FormatDateTimeOffset(video.UploadDate),
+                Title = ytmSong.Name,
+            };
+        }
+
         public static async Task<SongSearchObject> GetTrack(string id)
         {
-            // Largest image ends in maxresdefault.webp
-            // Use mqdefault.jpg for smaller image (no black borders)
-            /*
-                Image formats:
-                https://i.ytimg.com/vi_webp/{id}/maxresdefault.webp
-                https://img.youtube.com/vi/{id}/default.jpg
-                https://img.youtube.com/vi/{id}/mqdefault.jpg
-                https://img.youtube.com/vi/{id}/hqdefault.jpg
-             */
-
             var video = await youtube.Videos.GetAsync(id);
 
             var title = video.Title;
@@ -273,14 +398,8 @@ namespace FluentDL.Services
                 albumName = lines[4].Trim(); // Fourth line of ytm description contains album name
             }
 
-            // Loop through thumbnails
-            foreach (var thumbnail in video.Thumbnails)
-            {
-                Debug.WriteLine(thumbnail.Url);
-            }
-
             var idx = video.Thumbnails.ToList().FindIndex(x => (x.Url.EndsWith("mqdefault.jpg")));
-            if (idx == -1)
+            if (idx == -1) // If not found
             {
                 idx = 0; // Just take first
             }
@@ -292,7 +411,7 @@ namespace FluentDL.Services
                 Duration = ((int)video.Duration.Value.TotalSeconds).ToString(),
                 Explicit = false,
                 Source = "youtube",
-                Id = id,
+                Id = video.Id,
                 TrackPosition = "1",
                 ImageLocation = video.Thumbnails[idx].Url,
                 LocalBitmapImage = null,

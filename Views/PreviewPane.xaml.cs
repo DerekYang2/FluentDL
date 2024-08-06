@@ -137,7 +137,8 @@ namespace FluentDL.Views
             {
                 int index = trackDetailsList.FindIndex(x => x.Label == "Popularity"); // Rename popularity to views
                 trackDetailsList[index].Label = "Views";
-                PreviewImage.Source = new BitmapImage(new Uri("https://img.youtube.com/vi/" + selectedSong.Id + "/0.jpg"));
+
+                PreviewImage.Source = new BitmapImage(await YoutubeApi.GetMaxResThumbnail(selectedSong));
                 // Load youtube song on another thread
                 var t = new Thread(async () =>
                 {
