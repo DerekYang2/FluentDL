@@ -13,7 +13,15 @@ internal class ApiHelper
 {
     public static bool IsSubstring(string str, string str2)
     {
-        return PrunePunctuation(str.ToLower()).Contains(PrunePunctuation(str2.ToLower())) || PrunePunctuation(str2.ToLower()).Contains(PrunePunctuation(str.ToLower()));
+        str = PrunePunctuation(str).ToLower();
+        str2 = PrunePunctuation(str2).ToLower();
+        // If either is empty, return false
+        if (string.IsNullOrEmpty(str) || string.IsNullOrEmpty(str2))
+        {
+            return false;
+        }
+
+        return str.Contains(str2) || str2.Contains(str);
     }
 
     public static string PrunePunctuation(string str)

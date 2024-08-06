@@ -72,17 +72,17 @@ namespace FluentDL.Services
             return ApiHelper.IsSubstring(str1.ToLower(), str2.ToLower());
         }
 
-        public static async Task AdvancedSearch(ObservableCollection<SongSearchObject> itemSource, string artistName, string trackName, string albumName, CancellationToken token, int limit = 25)
+        public static async Task AdvancedSearch(ObservableCollection<SongSearchObject> itemSource, string artistName, string trackName, string albumName, CancellationToken token = default, int limit = 25)
         {
             // Youtube doesn't have an advanced search, must be done manually
-            artistName = artistName.Trim();
-            trackName = trackName.Trim();
-            albumName = albumName.Trim();
-
             if (string.IsNullOrWhiteSpace(artistName) && string.IsNullOrWhiteSpace(trackName) && string.IsNullOrWhiteSpace(albumName))
             {
                 return;
             }
+
+            artistName = ApiHelper.EnforceAscii(artistName.Trim());
+            trackName = ApiHelper.EnforceAscii(trackName.Trim());
+            albumName = ApiHelper.EnforceAscii(albumName.Trim());
 
             itemSource.Clear();
 
@@ -105,8 +105,7 @@ namespace FluentDL.Services
 
                     if (CloseMatch(album.Name, albumName)) // This album result substring matches
                     {
-                        //OLAK5uy_lHiSD2LJB1P5uAI-xt6a6K5kJnj9s6FU
-                        //https://music.youtube.com/playlist?list={albumId}
+                        // https://music.youtube.com/playlist?list={albumId}
 
                         var playlistUrl = $"https://music.youtube.com/playlist?list={album.Id}";
 
@@ -291,7 +290,6 @@ namespace FluentDL.Services
                 statusUpdate.Invoke(InfoBarSeverity.Success, $"Added video \"{video.Title}\"");
             }
 
-
             if (url.StartsWith("https://www.youtube.com/playlist?") || url.StartsWith("https://music.youtube.com/playlist?"))
             {
                 var playlistName = (await youtube.Playlists.GetAsync(url)).Title;
@@ -464,6 +462,58 @@ namespace FluentDL.Services
 
         public static async Task<SongSearchObject?> GetYoutubeTrack(SongSearchObject songObj)
         {
+            // Convert artists csv to array
+            var artists = songObj.Artists.Split(", ");
+            for (int i = 0; i < artists.Length; i++)
+            {
+                artists[i] = artists[i].ToLower();
+            }
+
+            var advancedResults = new ObservableCollection<SongSearchObject>();
+            await AdvancedSearch(advancedResults, songObj.Artists, songObj.Title, songObj.AlbumName, default, 5);
+            if (advancedResults.Count > 0)
+            {
+                // 1: if author contains artist name and title matches 
+                // 2: if title matches
+                // 3: first result
+
+                // Pass 1
+                foreach (var result in advancedResults)
+                {
+                    var authorsCSV = result.Artists.ToLower();
+                    if (ApiHelper.PrunePunctuation(songObj.Title.ToLower()).Equals(ApiHelper.PrunePunctuation(result.Title.ToLower())))
+                    {
+                        foreach (var artistName in artists)
+                        {
+                            if (authorsCSV.Contains(artistName.ToLower()))
+                            {
+                                return result;
+                            }
+                        }
+                    }
+                }
+
+                // Pass 2
+                foreach (var result in advancedResults)
+                {
+                    if (ApiHelper.PrunePunctuation(songObj.Title.ToLower()).Equals(ApiHelper.PrunePunctuation(result.Title.ToLower())))
+                    {
+                        return result;
+                    }
+                }
+
+                // Pass 3
+                return advancedResults.First();
+            }
+
+            advancedResults.Clear();
+            await AdvancedSearch(advancedResults, songObj.Artists, songObj.Title, "", default, 5);
+            if (advancedResults.Count > 0)
+            {
+                return advancedResults[0];
+            }
+
+            // Fall back to searching for videos
             return await GetTrack((await GetSearchResult(songObj)).Id);
         }
 
@@ -605,7 +655,7 @@ namespace FluentDL.Services
                 Source = "youtube",
                 Explicit = !ytmSong.IsFamiliyFriendly,
                 Id = ytmSong.Id,
-                ImageLocation = ytmSong.Thumbnails.Last().Url,
+                ImageLocation = imageLocation,
                 Isrc = null,
                 LocalBitmapImage = null,
                 Rank = FormatLargeValue(video.Engagement.ViewCount),

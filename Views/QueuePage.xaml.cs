@@ -510,6 +510,7 @@ public sealed partial class QueuePage : Page
 
         // Clear queue command running progress
         QueueViewModel.Reset(); // Reset the queue object result strings and index
+        cancellationTokenSource = new CancellationTokenSource(); // Create a new cancellation token source
 
         // Prepare UI
         DisableButtons();
@@ -536,6 +537,11 @@ public sealed partial class QueuePage : Page
 
         for (int i = 0; i < QueueViewModel.Source.Count; i++)
         {
+            if (cancellationTokenSource.Token.IsCancellationRequested) // If conversion is paused
+            {
+                break;
+            }
+
             var song = QueueViewModel.Source[i];
 
             if (!SelectedSources.Contains(song.Source) || outputSource == song.Source) // If the source is not selected as input or no conversion needed

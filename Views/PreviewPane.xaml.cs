@@ -77,6 +77,7 @@ namespace FluentDL.Views
 
         public async Task Update(SongSearchObject selectedSong)
         {
+            SongPreviewPlayer.Source = null; // Clear previous source
             song = selectedSong;
 
             //PreviewArtistText.Text = selectedSong.Artists;
@@ -97,13 +98,15 @@ namespace FluentDL.Views
             };
 
 
-            // Set 30 second preview
             if (selectedSong.Source.Equals("deezer"))
             {
                 var jsonObject = await FluentDL.Services.DeezerApi.FetchJsonElement("track/" + selectedSong.Id);
-                PreviewImage.Source = new BitmapImage(new Uri(jsonObject.GetProperty("album").GetProperty("cover_big").ToString()));
                 trackDetailsList.Add(new TrackDetail { Label = "Track", Value = jsonObject.GetProperty("track_position").ToString() });
+                PreviewImage.Source = new BitmapImage(new Uri(jsonObject.GetProperty("album").GetProperty("cover_big").ToString()));
 
+                PreviewInfoControl2.ItemsSource = PreviewInfoControl.ItemsSource = trackDetailsList; // First set the details list
+
+                // Load the audio stream
                 var previewUri = jsonObject.GetProperty("preview").ToString();
                 if (!string.IsNullOrWhiteSpace(previewUri)) // Some tracks don't have a preview
                 {
@@ -114,10 +117,25 @@ namespace FluentDL.Views
             if (selectedSong.Source.Equals("qobuz"))
             {
                 var track = QobuzApi.GetQobuzTrack(selectedSong.Id);
-                PreviewImage.Source = new BitmapImage(new Uri(track.Album.Image.Large));
+
                 trackDetailsList.RemoveAt(trackDetailsList.FindIndex(x => x.Label == "Popularity")); // Remove popularity
                 trackDetailsList.Add(new TrackDetail() { Label = "Track", Value = selectedSong.TrackPosition });
                 trackDetailsList.Add(new TrackDetail { Label = "Performers", Value = track.Performers });
+                PreviewImage.Source = new BitmapImage(new Uri(track.Album.Image.Large)); // Get cover art
+
+
+                PreviewInfoControl2.ItemsSource = PreviewInfoControl.ItemsSource = trackDetailsList; // First set the details list
+
+                using (var client = new HttpClient()) // Create async stream from image source
+                {
+                    var byteArr = await client.GetByteArrayAsync(track.Album.Image.Large);
+                    using var stream = new MemoryStream(byteArr);
+                    var bitmapImage = new BitmapImage();
+                    await bitmapImage.SetSourceAsync(stream.AsRandomAccessStream());
+                    PreviewImage.Source = bitmapImage;
+                }
+
+                // Load the audio stream
                 SongPreviewPlayer.Source = MediaSource.CreateFromUri(QobuzApi.GetPreviewUri(selectedSong.Id));
             }
 
@@ -126,6 +144,10 @@ namespace FluentDL.Views
                 var track = await SpotifyApi.GetTrack(selectedSong.Id);
                 PreviewImage.Source = new BitmapImage(new Uri(track.Album.Images[0].Url)); // Get the largest
                 trackDetailsList.Add(new TrackDetail { Label = "Track", Value = selectedSong.TrackPosition });
+
+                PreviewInfoControl2.ItemsSource = PreviewInfoControl.ItemsSource = trackDetailsList; // First set the details list
+
+                // Load the audio stream
                 var previewURL = track.PreviewUrl;
                 if (!string.IsNullOrWhiteSpace(previewURL))
                 {
@@ -137,19 +159,12 @@ namespace FluentDL.Views
             {
                 int index = trackDetailsList.FindIndex(x => x.Label == "Popularity"); // Rename popularity to views
                 trackDetailsList[index].Label = "Views";
-
                 PreviewImage.Source = new BitmapImage(await YoutubeApi.GetMaxResThumbnail(selectedSong));
-                // Load youtube song on another thread
-                var t = new Thread(async () =>
-                {
-                    var mediaSource = MediaSource.CreateFromUri(new Uri(await YoutubeApi.AudioStreamWorstUrl("https://www.youtube.com/watch?v=" + selectedSong.Id)));
-                    dispatcher.TryEnqueue(() =>
-                    {
-                        SongPreviewPlayer.Source = mediaSource;
-                    });
-                });
-                t.Priority = ThreadPriority.AboveNormal;
-                t.Start();
+
+                PreviewInfoControl2.ItemsSource = PreviewInfoControl.ItemsSource = trackDetailsList; // First set details list
+                // Load the audio stream
+                var opusStreamUrl = await YoutubeApi.AudioStreamWorstUrl("https://www.youtube.com/watch?v=" + selectedSong.Id);
+                SongPreviewPlayer.Source = MediaSource.CreateFromUri(new Uri(opusStreamUrl));
             }
 
             if (selectedSong.Source.Equals("local"))
@@ -173,9 +188,9 @@ namespace FluentDL.Views
                 };
                 SongPreviewPlayer.Source = MediaSource.CreateFromUri(new Uri(selectedSong.Id));
                 PreviewImage.Source = await LocalExplorerViewModel.GetBitmapImageAsync(track);
-            }
 
-            PreviewInfoControl2.ItemsSource = PreviewInfoControl.ItemsSource = trackDetailsList;
+                PreviewInfoControl2.ItemsSource = PreviewInfoControl.ItemsSource = trackDetailsList; // Finally set the details list
+            }
         }
 
         public void ClearMediaPlayerSource()
