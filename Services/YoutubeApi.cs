@@ -102,47 +102,104 @@ namespace FluentDL.Services
                 {
                     if (token.IsCancellationRequested) return; // Check if task is cancelled
 
+
                     if (CloseMatch(album.Name, albumName)) // This album result substring matches
                     {
-                        var browseId = await ytm.GetAlbumBrowseIdAsync(album.Id); // Get browse id
-                        var albumInfo = await ytm.GetAlbumInfoAsync(browseId); // Get full album info
-                        foreach (var albumSongInfo in albumInfo.Songs) // Iterate through album tracks
+                        //OLAK5uy_lHiSD2LJB1P5uAI-xt6a6K5kJnj9s6FU
+                        //https://music.youtube.com/playlist?list={albumId}
+
+                        var playlistUrl = $"https://music.youtube.com/playlist?list={album.Id}";
+
+                        try
                         {
-                            if (token.IsCancellationRequested) return; // Check if task is cancelled
-                            var song = await ytm.GetSongVideoInfoAsync(albumSongInfo.Id); // Get full track info
-
-                            bool valid = true; // True as default
-
-                            if (isArtistSpecified) // Album and artist specified
+                            await foreach (var playlistVideo in youtube.Playlists.GetVideosAsync(playlistUrl, token))
                             {
-                                if (isTrackSpecified) // Album, artist, track specified
+                                if (token.IsCancellationRequested)
                                 {
-                                    bool oneArtistMatch = false;
-                                    foreach (var artist in song.Artists) // Check if at least one artist matches
+                                    break;
+                                }
+
+                                var song = await ytm.GetSongVideoInfoAsync(playlistVideo.Id);
+
+                                bool valid = true; // True as default
+
+                                if (isArtistSpecified) // Album and artist specified
+                                {
+                                    if (isTrackSpecified) // Album, artist, track specified
                                     {
-                                        if (CloseMatch(artist.Name, artistName))
+                                        bool oneArtistMatch = false;
+                                        foreach (var artist in song.Artists) // Check if at least one artist matches
                                         {
-                                            oneArtistMatch = true;
-                                            break;
+                                            if (CloseMatch(artist.Name, artistName))
+                                            {
+                                                oneArtistMatch = true;
+                                                break;
+                                            }
                                         }
+
+                                        valid = oneArtistMatch && CloseMatch(trackName, song.Name);
                                     }
-
-                                    valid = oneArtistMatch && CloseMatch(trackName, song.Name);
                                 }
-                            }
-                            else if (isTrackSpecified) // Album and track specified
-                            {
-                                if (isTrackSpecified) // Album and track specified
+                                else if (isTrackSpecified) // Album and track specified
                                 {
-                                    valid = CloseMatch(trackName, song.Name);
+                                    if (isTrackSpecified) // Album and track specified
+                                    {
+                                        valid = CloseMatch(trackName, song.Name);
+                                    }
+                                }
+
+                                if (valid && !trackIdList.Contains(song.Id)) // If valid and not already added
+                                {
+                                    itemSource.Add(await ConvertSongSearchObject(song));
+                                    trackIdList.Add(song.Id);
+                                    if (trackIdList.Count >= limit) break;
                                 }
                             }
+                        }
+                        catch (Exception e) // Attempt other (worse) method if playlist method fails
+                        {
+                            // YTM api method, worse because uses videos rather than songs:
+                            var browseId = await ytm.GetAlbumBrowseIdAsync(album.Id); // Get browse id
+                            var albumInfo = await ytm.GetAlbumInfoAsync(browseId); // Get full album info
 
-                            if (valid && !trackIdList.Contains(song.Id)) // If valid and not already added
+                            foreach (var albumSongInfo in albumInfo.Songs) // Iterate through album tracks
                             {
-                                itemSource.Add(await ConvertSongSearchObject(song));
-                                trackIdList.Add(song.Id);
-                                if (trackIdList.Count >= limit) break;
+                                if (token.IsCancellationRequested) return; // Check if task is cancelled
+                                var song = await ytm.GetSongVideoInfoAsync(albumSongInfo.Id); // Get full track info
+
+                                bool valid = true; // True as default
+
+                                if (isArtistSpecified) // Album and artist specified
+                                {
+                                    if (isTrackSpecified) // Album, artist, track specified
+                                    {
+                                        bool oneArtistMatch = false;
+                                        foreach (var artist in song.Artists) // Check if at least one artist matches
+                                        {
+                                            if (CloseMatch(artist.Name, artistName))
+                                            {
+                                                oneArtistMatch = true;
+                                                break;
+                                            }
+                                        }
+
+                                        valid = oneArtistMatch && CloseMatch(trackName, song.Name);
+                                    }
+                                }
+                                else if (isTrackSpecified) // Album and track specified
+                                {
+                                    if (isTrackSpecified) // Album and track specified
+                                    {
+                                        valid = CloseMatch(trackName, song.Name);
+                                    }
+                                }
+
+                                if (valid && !trackIdList.Contains(song.Id)) // If valid and not already added
+                                {
+                                    itemSource.Add(await ConvertSongSearchObject(song));
+                                    trackIdList.Add(song.Id);
+                                    if (trackIdList.Count >= limit) break;
+                                }
                             }
                         }
                     }
@@ -152,6 +209,69 @@ namespace FluentDL.Services
             }
             else // No album specified
             {
+                if (isTrackSpecified) // If artist and track are specified
+                {
+                    var query = artistName + " " + trackName;
+                    var searchResults = await ytm.SearchAsync<Song>(query, token);
+                    if (token.IsCancellationRequested) return; // If cancelled
+
+                    foreach (var song in searchResults)
+                    {
+                        if (token.IsCancellationRequested || trackIdList.Count >= limit) return; // Check if task is cancelled or limit reached
+
+                        bool oneArtistMatch = false;
+                        foreach (var artist in song.Artists) // Check if at least one artist matches
+                        {
+                            if (CloseMatch(artist.Name, artistName))
+                            {
+                                oneArtistMatch = true;
+                                break;
+                            }
+                        }
+
+                        if (oneArtistMatch && CloseMatch(song.Name, trackName)) // If at least one artist match and track name close match
+                        {
+                            if (!trackIdList.Contains(song.Id)) // If not already added
+                            {
+                                itemSource.Add(await GetTrack(song));
+                                trackIdList.Add(song.Id);
+                            }
+                        }
+                    }
+                }
+                else // If only artist is specified
+                {
+                    var artistResults = await ytm.SearchAsync<Artist>(artistName, token);
+                    if (token.IsCancellationRequested) return; // If cancelled
+
+                    foreach (var artistResult in artistResults)
+                    {
+                        if (token.IsCancellationRequested || trackIdList.Count >= limit) return; // Check if task is cancelled or limit reached
+
+                        var artistInfo = await ytm.GetArtistInfoAsync(artistResult.Id);
+
+                        foreach (var song in artistInfo.Songs) // Iterate through artist tracks
+                        {
+                            if (token.IsCancellationRequested || trackIdList.Count >= limit) return; // Check if task is cancelled or limit reached
+
+                            bool oneArtistMatch = false;
+                            foreach (var artist in song.Artists) // Check if at least one artist matches
+                            {
+                                if (CloseMatch(artist.Name, artistName))
+                                {
+                                    oneArtistMatch = true;
+                                    break;
+                                }
+                            }
+
+                            if (oneArtistMatch && !trackIdList.Contains(song.Id)) // If not already added
+                            {
+                                itemSource.Add(await GetTrack(song.Id));
+                                trackIdList.Add(song.Id);
+                            }
+                        }
+                    }
+                }
             }
         }
 

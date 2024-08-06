@@ -166,6 +166,7 @@ public partial class LocalExplorerViewModel : ObservableRecipient
                 using var stream = new MemoryStream(firstImg.PictureData);
                 var bitmapImage = new BitmapImage();
                 await bitmapImage.SetSourceAsync(stream.AsRandomAccessStream());
+                stream.Close();
                 return bitmapImage;
             }
         }
