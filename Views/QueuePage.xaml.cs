@@ -1,5 +1,6 @@
 ﻿using System.Collections.ObjectModel;
 using System.Diagnostics;
+using System.Drawing;
 using System.Text.RegularExpressions;
 using Windows.ApplicationModel.AppService;
 using Windows.Storage.Pickers;
@@ -18,6 +19,7 @@ using FluentDL.Helpers;
 using FluentDL.Models;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Imaging;
+using Color = Windows.UI.Color;
 using FileSavePicker = Windows.Storage.Pickers.FileSavePicker;
 using Symbol = Microsoft.UI.Xaml.Controls.Symbol;
 
@@ -640,11 +642,16 @@ public sealed partial class QueuePage : Page
                 var queueObj = await QueueViewModel.CreateQueueObject(newSongObj);
                 if (queueObj != null)
                 {
-                    if (successSource.Contains(newSongObj)) queueObj.ConvertBadgeColor = new SolidColorBrush(Windows.UI.Color.FromArgb(255, 15, 213, 101));
-                    else if (warningSource.Contains(newSongObj)) queueObj.ConvertBadgeColor = new SolidColorBrush(Windows.UI.Color.FromArgb(255, 255, 185, 0));
-                    else if (errorSource.Contains(newSongObj)) queueObj.ConvertBadgeColor = new SolidColorBrush(Windows.UI.Color.FromArgb(255, 255, 0, 0));
+                    if (successSource.Contains(newSongObj)) queueObj.ConvertBadgeColor = new SolidColorBrush(Windows.UI.Color.FromArgb(255, 108, 203, 95));
+                    else if (warningSource.Contains(newSongObj)) queueObj.ConvertBadgeColor = new SolidColorBrush(Windows.UI.Color.FromArgb(255, 252, 225, 0));
+
                     QueueViewModel.Replace(i, queueObj);
                 }
+            }
+            else // Failed conversion
+            {
+                song.ConvertBadgeColor = new SolidColorBrush(Windows.UI.Color.FromArgb(255, 255, 153, 164));
+                QueueViewModel.Replace(i, song);
             }
 
             QueueProgress.Value = 100.0 * (i + 1) / totalCount; // Update the progress bar
@@ -654,6 +661,9 @@ public sealed partial class QueuePage : Page
         ConvertStopButton.Visibility = Visibility.Collapsed; // Hide stop button
         isConverting = false;
         QueueProgress.Value = ogVal; // Reset the progress bar
+
+        // Show conversion results dialog
+        await ShowConversionDialog();
     }
 
     private void ConvertStopButton_OnClick(object sender, RoutedEventArgs e)
@@ -662,5 +672,31 @@ public sealed partial class QueuePage : Page
         {
             cancellationTokenSource.Cancel(); // Cancel the conversion
         }
+    }
+
+    private void SelectorBar_OnSelectionChanged(SelectorBar sender, SelectorBarSelectionChangedEventArgs args)
+    {
+        //ObservableCollection<SongSearchObject> collection = new ObservableCollection<SongSearchObject>();
+        //if (sender.SelectedItem == SuccessItem)
+        //{
+        //    collection = new ObservableCollection<SongSearchObject>(successSource);
+        //}
+        //else if (sender.SelectedItem == WarningItem)
+        //{
+        //    collection = new ObservableCollection<SongSearchObject>(warningSource);
+        //}
+        //else if (sender.SelectedItem == ErrorItem)
+        //{
+        //    collection = new ObservableCollection<SongSearchObject>(errorSource);
+        //}
+
+        //Debug.WriteLine("HERE3!");
+    }
+
+    private async Task ShowConversionDialog()
+    {
+        ConversionResultsDialog.XamlRoot = this.XamlRoot;
+        ConversionListView.ItemsSource = successSource.ToList();
+        await ConversionResultsDialog.ShowAsync();
     }
 }

@@ -166,7 +166,6 @@ public sealed partial class Search : Page
 
     private void DisableSearches()
     {
-        OverrideSplitButton.IsEnabled = false;
         SearchBox.IsEnabled = false;
         ShowDialogButton.IsEnabled = false;
         SortComboBox.Visibility = Visibility.Collapsed;
@@ -175,7 +174,6 @@ public sealed partial class Search : Page
 
     private void EnableSearches()
     {
-        OverrideSplitButton.IsEnabled = true;
         SearchBox.IsEnabled = true;
         ShowDialogButton.IsEnabled = true;
         SortComboBox.Visibility = Visibility.Visible;

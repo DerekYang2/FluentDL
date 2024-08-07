@@ -1,9 +1,11 @@
 ﻿using System;
+using System.Drawing;
 using System.Globalization;
 using AngleSharp.Dom;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Data;
 using Microsoft.UI.Xaml.Media;
+using Color = Windows.UI.Color;
 
 namespace FluentDL.Helpers;
 

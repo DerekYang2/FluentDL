@@ -11,6 +11,7 @@
     xmlns:viewModels="using:FluentDL.ViewModels"
     xmlns:converters="using:CommunityToolkit.WinUI.UI.Converters"
     xmlns:system="using:System"
+    xmlns:models="using:FluentDL.Models"
     mc:Ignorable="d"
     NavigationCacheMode="Required">
     <Page.Resources>
@@ -23,7 +24,6 @@
         <helpers:NullVisibilityConverter x:Key="NullVisibilityConverter" />
         <helpers:InverseNullVisibilityConverter x:Key="InverseNullVisibilityConverter" />
         <helpers:SourceToColorConverter x:Key="SourceToColorConverter" />
-
     </Page.Resources>
 
     <Grid>
@@ -172,7 +172,7 @@
 
                         <ProgressRing Grid.Column="2"
                                       Visibility="{x:Bind IsRunning, Converter={StaticResource VisibilityConverter}}" />
-                        <InfoBadge Grid.Column="0" x:Name="infoBadge" HorizontalAlignment="Left" VerticalAlignment="Top" Background="{x:Bind ConvertBadgeColor}" Width="12" Height="12" Margin="-6,-4,0,0"/>
+                        <InfoBadge Grid.Column="0" x:Name="ConvertInfoBadge" HorizontalAlignment="Left" VerticalAlignment="Top" Background="{x:Bind ConvertBadgeColor}" Width="12" Height="12" Margin="-6,-6,0,0"/>
 
                     </Grid>
                 </DataTemplate>
@@ -399,16 +399,64 @@
         <!-- Content Dialog for conversion results-->
         <ContentDialog x:Name="ConversionResultsDialog" CloseButtonText="Close" Title="Conversion Summary" >
             <StackPanel>
-            <InfoBar
-                IsOpen="True"
-                IsClosable="False"
-                Severity="Informational"
-                Message="Select at least one input and output."
-                Margin="0,0,0,12" />
-            <ListView x:Name="SuccessListView">
+
+            <ListView x:Name="ConversionListView"
+                      CornerRadius="4"
+                      BorderThickness="0"
+                      Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                      BorderBrush="{ThemeResource ControlStrongStrokeColorDefaultBrush}"
+                      Margin="0,0,0,10"
+                      VerticalAlignment="Center"
+                      Height="400">
                 <ListView.ItemTemplate>
-                    <DataTemplate>
-                        <TextBlock></TextBlock>
+                    <DataTemplate x:DataType="models:SongSearchObject">
+                        <Grid Margin="0,12,0,12" AutomationProperties.Name="{x:Bind Title}">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="76" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <Border CornerRadius="4" Height="76">
+                                <Border.Background>
+                                    <ImageBrush Stretch="UniformToFill" ImageSource="{x:Bind ImageLocation}" />
+                                </Border.Background>
+                            </Border>
+
+                            <StackPanel Margin="12,0,0,0" Grid.Column="1">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="{x:Bind Title}" FontFamily="Segoe UI Variable Display"
+                                               Style="{ThemeResource BodyStrongTextBlockStyle}"
+                                               HorizontalAlignment="Left"
+                                               TextTrimming="CharacterEllipsis" MaxLines="1" Margin="0, 0, 8, 0" />
+                                    <Border Background="DarkGray" CornerRadius="2" Padding="4, 0"
+                                            VerticalAlignment="Center">
+                                        <TextBlock x:Name="ExplicitBadgeFailed" Text="E"
+                                                   Style="{ThemeResource CaptionTextBlockStyle}"
+                                                   Foreground="Black"
+                                                   Visibility="{x:Bind Explicit, Converter={StaticResource VisibilityConverter}}" />
+                                    </Border>
+                                </StackPanel>
+                                <TextBlock Text="{x:Bind Artists}" FontFamily="Segoe UI Variable Display"
+                                           Style="{ThemeResource BodyTextBlockStyle}"
+                                           TextTrimming="CharacterEllipsis"
+                                           MaxLines="1" />
+                            </StackPanel>
+
+                            <StackPanel Margin="12,0,0,0" Orientation="Horizontal" VerticalAlignment="Bottom"
+                                        Grid.Column="1">
+                                <TextBlock
+                                    Text="{x:Bind ReleaseDate, Converter={StaticResource DateToYearConverter}}"
+                                    HorizontalAlignment="Left"
+                                    Style="{ThemeResource BodyTextBlockStyle}" Margin="0,0,0,0"
+                                    FontFamily="Segoe UI Variable Display" />
+                                <TextBlock Text="&#x2022;" Style="{ThemeResource BodyTextBlockStyle}"
+                                           HorizontalAlignment="Left" Margin="5,0,0,0" />
+                                <TextBlock
+                                    Text="{x:Bind Duration, Converter={StaticResource DurationConverter}}"
+                                    HorizontalAlignment="Left"
+                                    Style="{ThemeResource BodyTextBlockStyle}" Margin="5,0,0,0"
+                                    FontFamily="Segoe UI Variable Display" />
+                            </StackPanel>
+                        </Grid>
                     </DataTemplate>
                 </ListView.ItemTemplate>
             </ListView>
