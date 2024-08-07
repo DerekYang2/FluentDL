@@ -727,7 +727,7 @@ namespace FluentDL.Services
             return value.ToString();
         }
 
-        public static async Task DownloadAudio(string url, string downloadFolder, string filename)
+        public static async Task DownloadAudio(string url, string downloadFolder, string filename, Action<double> progressHandler)
         {
             // if download folder ends with a backslash, remove it
             if (downloadFolder.EndsWith("\\"))
@@ -757,7 +757,7 @@ namespace FluentDL.Services
             var filePath = $"{downloadFolder}\\{filename}.{extension}";
 
             var stream = await youtube.Videos.Streams.GetAsync(streamInfo);
-            await youtube.Videos.Streams.DownloadAsync(streamInfo, filePath);
+            await youtube.Videos.Streams.DownloadAsync(streamInfo, filePath, new Progress<double>(progressHandler));
         }
 
         public static async Task<string> AudioStreamUrl(string url)

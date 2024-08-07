@@ -177,7 +177,13 @@ public sealed partial class QueuePage : Page
                 return;
             }
 
-            var savePicker = new FileSavePicker { SuggestedStartLocation = PickerLocationId.Downloads, SuggestedFileName = $"{songObj.Title} [{songObj.Isrc}].flac" };
+            // Create file name
+            var firstArtist = songObj.Artists.Split(",")[0].Trim();
+            var isrcStr = !string.IsNullOrWhiteSpace(songObj.Isrc) ? $" [{songObj.Isrc}] " : "";
+            var safeFileName = ApiHelper.GetSafeFilename($"{songObj.TrackPosition}. {firstArtist} - {songObj.Title}{isrcStr}.flac");
+
+            // Create a file save picker
+            var savePicker = new FileSavePicker { SuggestedStartLocation = PickerLocationId.Downloads, SuggestedFileName = safeFileName };
 
             savePicker.FileTypeChoices.Add("FLAC", new List<string> { ".flac" });
 
@@ -191,12 +197,7 @@ public sealed partial class QueuePage : Page
 
             if (file != null)
             {
-                var url = ApiHelper.GetUrl(songObj);
-                await YoutubeApi.DownloadAudio(url, Path.GetDirectoryName(file.Path), Path.GetFileNameWithoutExtension(file.Path));
-                // convert opus to flac
-                var opusLocation = Path.Combine(Path.GetDirectoryName(file.Path), Path.GetFileNameWithoutExtension(file.Path) + ".opus");
-                Debug.WriteLine("OPUS LOC: " + opusLocation);
-                FFmpegRunner.ConvertOpusToFlac(opusLocation);
+                await ApiHelper.DownloadObject(songObj, file);
             }
         };
 
@@ -213,14 +214,19 @@ public sealed partial class QueuePage : Page
                 return;
             }
 
+            // Create file name
+            var firstArtist = songObj.Artists.Split(",")[0].Trim();
+            var isrcStr = !string.IsNullOrWhiteSpace(songObj.Isrc) ? $" [{songObj.Isrc}] " : "";
+            var safeFileName = ApiHelper.GetSafeFilename($"{songObj.TrackPosition}. {firstArtist} - {songObj.Title}{isrcStr}Cover Art.jpg");
+
             // Create a file save picker
-            FileSavePicker savePicker = new() { SuggestedStartLocation = PickerLocationId.Downloads, SuggestedFileName = $"{songObj.Title} [{songObj.Isrc}] Cover Art.jpg", };
+            FileSavePicker savePicker = new() { SuggestedStartLocation = PickerLocationId.Downloads, SuggestedFileName = safeFileName, };
             savePicker.FileTypeChoices.Add("Image", new List<string>() { ".jpg", ".png" });
 
-            // Retrieve the window handle (HWND) of the current WinUI 3 window.
+            // Retrieve the window handle (HWND) of the current WinUI 3 window
             var hWnd = WinRT.Interop.WindowNative.GetWindowHandle(App.MainWindow);
 
-            // Initialize the file picker with the window handle (HWND).
+            // Initialize the file picker with the window handle (HWND)
             WinRT.Interop.InitializeWithWindow.Initialize(savePicker, hWnd);
 
             var file = await savePicker.PickSaveFileAsync();
