@@ -66,6 +66,12 @@ public partial class QueueViewModel : ObservableRecipient
         set;
     } = new ObservableCollection<QueueObject>();
 
+    public static int SuccessCount
+    {
+        get;
+        set;
+    } = 0;
+
     private static string command
     {
         get;

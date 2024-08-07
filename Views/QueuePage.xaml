@@ -399,13 +399,69 @@
         <!-- Content Dialog for conversion results-->
         <ContentDialog x:Name="ConversionResultsDialog" CloseButtonText="Close" Title="Conversion Summary" >
             <StackPanel>
+            <TabView x:Name="ConversionTabView" SelectionChanged="ConversionTabView_OnSelectionChanged" IsAddTabButtonVisible="False" CornerRadius="8" Margin="0,0,4,0">
+                <TabView.Resources>
+                    <ResourceDictionary>
+                        <ResourceDictionary.ThemeDictionaries>
+                            <ResourceDictionary x:Key="Light">
+                                <SolidColorBrush x:Key="TabViewBackground" Color="{ThemeResource SystemAccentColorLight2}"/>
+                            </ResourceDictionary>
+                            <ResourceDictionary x:Key="Dark">
+                                <SolidColorBrush x:Key="TabViewItemHeaderBackgroundSelected"  Color="{ThemeResource ControlFillColorDefault}"/>
+                            </ResourceDictionary>
+                        </ResourceDictionary.ThemeDictionaries>
+                    </ResourceDictionary>
+                </TabView.Resources>
+
+                <TabView.TabItems>
+                    <TabViewItem x:Name="SuccessTab" Header="Success" IsClosable="False" HorizontalContentAlignment="Stretch">
+                        <TabViewItem.HeaderTemplate>
+                                <DataTemplate>
+                                    <Grid HorizontalAlignment="Stretch">
+                                        <TextBlock Text="{Binding}" />
+                                        <InfoBadge HorizontalAlignment="Right"
+                                                   Value="{Binding Source={StaticResource QueueViewModel}, Path=SuccessCount}"
+                                                   Margin="2, 0" Background="{ThemeResource SystemFillColorSuccessBrush}"/>
+                                    </Grid>
+                                </DataTemplate>
+                            </TabViewItem.HeaderTemplate>
+                    </TabViewItem>
+
+                    <TabViewItem x:Name="WarningTab" Header="Warning" IsClosable="False" HorizontalContentAlignment="Stretch">
+                        <TabViewItem.HeaderTemplate>
+                            <DataTemplate>
+                                <Grid HorizontalAlignment="Stretch">
+                                    <TextBlock Text="{Binding}" />
+                                    <InfoBadge HorizontalAlignment="Right"
+                                               Value="{Binding Source={StaticResource QueueViewModel}, Path=SuccessCount}"
+                                               Margin="2, 0" Background="{ThemeResource SystemFillColorCautionBrush}"/>
+                                </Grid>
+                            </DataTemplate>
+                        </TabViewItem.HeaderTemplate>
+                    </TabViewItem>
+
+                    <TabViewItem x:Name="ErrorTab" Header="Error" IsClosable="False" HorizontalContentAlignment="Stretch">
+                        <TabViewItem.HeaderTemplate>
+                            <DataTemplate>
+                                <Grid HorizontalAlignment="Stretch">
+                                    <TextBlock Text="{Binding}" />
+                                    <InfoBadge HorizontalAlignment="Right"
+                                               Value="{Binding Source={StaticResource QueueViewModel}, Path=SuccessCount}"
+                                               Margin="2, 0" Background="{ThemeResource SystemFillColorCriticalBrush}"/>
+                                </Grid>
+                            </DataTemplate>
+                        </TabViewItem.HeaderTemplate>
+                    </TabViewItem>
+                </TabView.TabItems>
+            </TabView>
 
             <ListView x:Name="ConversionListView"
                       CornerRadius="4"
                       BorderThickness="0"
                       Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
                       BorderBrush="{ThemeResource ControlStrongStrokeColorDefaultBrush}"
-                      Margin="0,0,0,10"
+                      Margin="0,0,0,0"
+                      Padding="0,0,12,0"
                       VerticalAlignment="Center"
                       Height="400">
                 <ListView.ItemTemplate>

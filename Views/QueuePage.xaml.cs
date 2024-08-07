@@ -609,7 +609,7 @@ public sealed partial class QueuePage : Page
 
         for (int i = 0; i < QueueViewModel.Source.Count; i++)
         {
-            if (cancellationTokenSource.Token.IsCancellationRequested) // If conversion is paused
+            if (cancellationTokenSource.Token.IsCancellationRequested || totalCount == 0) // If conversion is paused
             {
                 break;
             }
@@ -674,29 +674,27 @@ public sealed partial class QueuePage : Page
         }
     }
 
-    private void SelectorBar_OnSelectionChanged(SelectorBar sender, SelectorBarSelectionChangedEventArgs args)
+    private void ConversionTabView_OnSelectionChanged(object sender, SelectionChangedEventArgs e)
     {
-        //ObservableCollection<SongSearchObject> collection = new ObservableCollection<SongSearchObject>();
-        //if (sender.SelectedItem == SuccessItem)
-        //{
-        //    collection = new ObservableCollection<SongSearchObject>(successSource);
-        //}
-        //else if (sender.SelectedItem == WarningItem)
-        //{
-        //    collection = new ObservableCollection<SongSearchObject>(warningSource);
-        //}
-        //else if (sender.SelectedItem == ErrorItem)
-        //{
-        //    collection = new ObservableCollection<SongSearchObject>(errorSource);
-        //}
-
-        //Debug.WriteLine("HERE3!");
+        var selectedItem = ConversionTabView.SelectedItem as TabViewItem;
+        if (selectedItem == SuccessTab)
+        {
+            ConversionListView.ItemsSource = successSource;
+        }
+        else if (selectedItem == WarningTab)
+        {
+            ConversionListView.ItemsSource = warningSource;
+        }
+        else if (selectedItem == ErrorTab)
+        {
+            ConversionListView.ItemsSource = errorSource;
+        }
     }
 
     private async Task ShowConversionDialog()
     {
         ConversionResultsDialog.XamlRoot = this.XamlRoot;
-        ConversionListView.ItemsSource = successSource.ToList();
+        ConversionTabView.SelectedItem = SuccessTab; // Default to success tab
         await ConversionResultsDialog.ShowAsync();
     }
 }
