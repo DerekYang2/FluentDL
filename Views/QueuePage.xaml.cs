@@ -558,6 +558,24 @@ public sealed partial class QueuePage : Page
             return;
         }
 
+        var outputSource = GetOutputSource().ToLower();
+
+        // Loop through and find the total number of queries to process
+        int totalCount = 0;
+        foreach (var song in QueueViewModel.Source)
+        {
+            if (selectedSources.Contains(song.Source) && outputSource != song.Source) // If source is selected as input and isn't the same as output
+            {
+                totalCount++;
+            }
+        }
+
+        if (totalCount == 0)
+        {
+            ShowInfoBar(InfoBarSeverity.Warning, "No tracks to convert", 3);
+            return;
+        }
+
         // Clear preview pane when source is being edited
         PreviewPanel.Clear();
 
@@ -595,21 +613,9 @@ public sealed partial class QueuePage : Page
         QueueProgress.Value = 0; // Set to 0
 
 
-        var outputSource = GetOutputSource().ToLower();
-
-        // Loop through and find the total number of queries to process
-        int totalCount = 0;
-        foreach (var song in QueueViewModel.Source)
-        {
-            if (selectedSources.Contains(song.Source) && outputSource != song.Source) // If source is selected as input and isn't the same as output
-            {
-                totalCount++;
-            }
-        }
-
         for (int i = 0; i < QueueViewModel.Source.Count; i++)
         {
-            if (cancellationTokenSource.Token.IsCancellationRequested || totalCount == 0) // If conversion is paused
+            if (cancellationTokenSource.Token.IsCancellationRequested) // If conversion is paused
             {
                 break;
             }
@@ -625,10 +631,10 @@ public sealed partial class QueuePage : Page
             var newSongObj = outputSource switch
             {
                 "deezer" => await DeezerApi.GetDeezerTrack(song, cancellationTokenSource.Token, conversionUpdateCallback),
-                "qobuz" => await QobuzApi.GetQobuzTrack(song, cancellationTokenSource.Token),
-                "spotify" => await SpotifyApi.GetSpotifyTrack(song, cancellationTokenSource.Token),
-                "youtube" => await YoutubeApi.GetYoutubeTrack(song, cancellationTokenSource.Token),
-                _ => null
+                "qobuz" => await QobuzApi.GetQobuzTrack(song, cancellationTokenSource.Token, conversionUpdateCallback),
+                "spotify" => await SpotifyApi.GetSpotifyTrack(song, cancellationTokenSource.Token, conversionUpdateCallback),
+                "youtube" => await YoutubeApi.GetYoutubeTrack(song, cancellationTokenSource.Token, conversionUpdateCallback),
+                _ => throw new Exception("Unspecified output source") // Should never happen
             };
 
 
@@ -648,7 +654,7 @@ public sealed partial class QueuePage : Page
                     QueueViewModel.Replace(i, queueObj);
                 }
             }
-            else // Failed conversion
+            else // Failed conversion, set current object badge to error
             {
                 song.ConvertBadgeColor = new SolidColorBrush(Windows.UI.Color.FromArgb(255, 255, 153, 164));
                 QueueViewModel.Replace(i, song);
@@ -677,17 +683,24 @@ public sealed partial class QueuePage : Page
     private void ConversionTabView_OnSelectionChanged(object sender, SelectionChangedEventArgs e)
     {
         var selectedItem = ConversionTabView.SelectedItem as TabViewItem;
+        // Set items source based on selected tab
         if (selectedItem == SuccessTab)
         {
             ConversionListView.ItemsSource = successSource;
+            TabInfoBar.Severity = InfoBarSeverity.Success;
+            TabInfoBar.Content = "Exact matches found through ISRC identifiers";
         }
         else if (selectedItem == WarningTab)
         {
             ConversionListView.ItemsSource = warningSource;
+            TabInfoBar.Severity = InfoBarSeverity.Warning;
+            TabInfoBar.Content = "Attempted matches found through metadata";
         }
         else if (selectedItem == ErrorTab)
         {
             ConversionListView.ItemsSource = errorSource;
+            TabInfoBar.Severity = InfoBarSeverity.Error;
+            TabInfoBar.Content = "No matches found";
         }
     }
 
@@ -695,6 +708,11 @@ public sealed partial class QueuePage : Page
     {
         ConversionResultsDialog.XamlRoot = this.XamlRoot;
         ConversionTabView.SelectedItem = SuccessTab; // Default to success tab
+        // Set the counts
+        QueueViewModel.SuccessCount = successSource.Count;
+        QueueViewModel.WarningCount = warningSource.Count;
+        QueueViewModel.ErrorCount = errorSource.Count;
+        // Show the dialog
         await ConversionResultsDialog.ShowAsync();
     }
 }

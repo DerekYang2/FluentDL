@@ -82,8 +82,10 @@
                         ToolTipService.ToolTip="Stop conversion" Visibility="Collapsed"
                         Background="Transparent" BorderBrush="Transparent">
                     <StackPanel Orientation="Horizontal">
-                        <FontIcon x:Name="ConvertStopIcon" Glyph="&#xE71A;" FontSize="16" Margin="0, 0, 8, 0" Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"/>
-                        <TextBlock x:Name="ConvertStopText" Text="Stop" Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"/>
+                        <FontIcon x:Name="ConvertStopIcon" Glyph="&#xE71A;" FontSize="16" Margin="0, 0, 8, 0"
+                                  Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}" />
+                        <TextBlock x:Name="ConvertStopText" Text="Stop"
+                                   Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}" />
                     </StackPanel>
                 </Button>
             </StackPanel>
@@ -152,11 +154,16 @@
                         <Grid Grid.Column="2" CornerRadius="4" Margin="0,0,0,0" VerticalAlignment="Stretch"
                               HorizontalAlignment="Stretch">
                             <StackPanel>
-                                <Border Background="{ThemeResource LayerOnMicaBaseAltFillColorSecondaryBrush}" CornerRadius="2" Padding="6, 2" HorizontalAlignment="Right" VerticalAlignment="Top">
+                                <Border Background="{ThemeResource LayerOnMicaBaseAltFillColorSecondaryBrush}"
+                                        CornerRadius="2" Padding="6, 2" HorizontalAlignment="Right"
+                                        VerticalAlignment="Top">
                                     <StackPanel Orientation="Horizontal">
-                                        <Ellipse StrokeThickness="0" VerticalAlignment="Center" Width="10" Height="10" Margin="0,0, 6, 0"
-                                                 Fill="{x:Bind Source, Converter={StaticResource SourceToColorConverter}}"/>
-                                        <TextBlock x:Name="SourceBadge" Text="{x:Bind Source}" Style="{ThemeResource CaptionTextBlockStyle}" VerticalAlignment="Center" Margin="0, -2, 0, 0"/>
+                                        <Ellipse StrokeThickness="0" VerticalAlignment="Center" Width="10" Height="10"
+                                                 Margin="0,0, 6, 0"
+                                                 Fill="{x:Bind Source, Converter={StaticResource SourceToColorConverter}}" />
+                                        <TextBlock x:Name="SourceBadge" Text="{x:Bind Source}"
+                                                   Style="{ThemeResource CaptionTextBlockStyle}"
+                                                   VerticalAlignment="Center" Margin="0, -2, 0, 0" />
                                     </StackPanel>
                                 </Border>
                             </StackPanel>
@@ -172,7 +179,9 @@
 
                         <ProgressRing Grid.Column="2"
                                       Visibility="{x:Bind IsRunning, Converter={StaticResource VisibilityConverter}}" />
-                        <InfoBadge Grid.Column="0" x:Name="ConvertInfoBadge" HorizontalAlignment="Left" VerticalAlignment="Top" Background="{x:Bind ConvertBadgeColor}" Width="12" Height="12" Margin="-6,-6,0,0"/>
+                        <InfoBadge Grid.Column="0" x:Name="ConvertInfoBadge" HorizontalAlignment="Left"
+                                   VerticalAlignment="Top" Background="{x:Bind ConvertBadgeColor}" Width="12"
+                                   Height="12" Margin="-6,-6,0,0" />
 
                     </Grid>
                 </DataTemplate>
@@ -198,7 +207,8 @@
                     Message="Run custom commands (with Command Prompt) on each queue item. Click on the wildcards below for more details."
                     Margin="0,0,0,0" />
 
-                <ScrollViewer x:Name="ScrollViewerWildcards" HorizontalAlignment="Stretch" HorizontalScrollBarVisibility="Visible"
+                <ScrollViewer x:Name="ScrollViewerWildcards" HorizontalAlignment="Stretch"
+                              HorizontalScrollBarVisibility="Visible"
                               HorizontalScrollMode="Enabled" VerticalScrollMode="Disabled"
                               ToolTipService.ToolTip="Available wildcards">
                     <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,0,0,16">
@@ -359,163 +369,186 @@
                        PrimaryButtonClick="ConversionDialog_OnPrimaryButtonClick"
                        PrimaryButtonStyle="{ThemeResource AccentButtonStyle}">
             <StackPanel>
-            <InfoBar
-                IsOpen="True"
-                IsClosable="False"
-                Severity="Informational"
-                Message="Select at least one input and output."
-                Margin="0,0,0,12" />
+                <InfoBar
+                    IsOpen="True"
+                    IsClosable="False"
+                    Severity="Informational"
+                    Message="Select at least one input and output."
+                    Margin="0,0,0,12" />
 
-            <Grid VerticalAlignment="Stretch">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="*"/>
-                </Grid.ColumnDefinitions>
-                <StackPanel Grid.Column="0">
-                    <TextBlock Text="Input" Style="{ThemeResource CaptionTextBlockStyle}"
-                               Foreground="{ThemeResource TextFillColorSecondary}" Margin="0,0,0,2" />
-                    <CheckBox x:Name="DeezerCheckBox" Content="Deezer" Checked="CheckBox_OnChecked"
-                              Unchecked="CheckBox_OnUnchecked"/>
-                    <CheckBox x:Name="QobuzCheckBox" Content="Qobuz" Checked="CheckBox_OnChecked"
-                              Unchecked="CheckBox_OnUnchecked"/>
-                    <CheckBox x:Name="SpotifyCheckBox" Content="Spotify" Checked="CheckBox_OnChecked"
-                              Unchecked="CheckBox_OnUnchecked"/>
-                    <CheckBox x:Name="YouTubeCheckBox" Content="YouTube" Checked="CheckBox_OnChecked"
-                            Unchecked="CheckBox_OnUnchecked"/>
-                    <CheckBox x:Name="LocalCheckBox" Content="Local" Checked="CheckBox_OnChecked"
-                            Unchecked="CheckBox_OnUnchecked"/>
+                <Grid VerticalAlignment="Stretch">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <StackPanel Grid.Column="0">
+                        <TextBlock Text="Input" Style="{ThemeResource CaptionTextBlockStyle}"
+                                   Foreground="{ThemeResource TextFillColorSecondary}" Margin="0,0,0,2" />
+                        <CheckBox x:Name="DeezerCheckBox" Content="Deezer" Checked="CheckBox_OnChecked"
+                                  Unchecked="CheckBox_OnUnchecked" />
+                        <CheckBox x:Name="QobuzCheckBox" Content="Qobuz" Checked="CheckBox_OnChecked"
+                                  Unchecked="CheckBox_OnUnchecked" />
+                        <CheckBox x:Name="SpotifyCheckBox" Content="Spotify" Checked="CheckBox_OnChecked"
+                                  Unchecked="CheckBox_OnUnchecked" />
+                        <CheckBox x:Name="YouTubeCheckBox" Content="YouTube" Checked="CheckBox_OnChecked"
+                                  Unchecked="CheckBox_OnUnchecked" />
+                        <CheckBox x:Name="LocalCheckBox" Content="Local" Checked="CheckBox_OnChecked"
+                                  Unchecked="CheckBox_OnUnchecked" />
                     </StackPanel>
 
-                <StackPanel Grid.Column="1">
-                    <TextBlock Text="Output" Style="{ThemeResource CaptionTextBlockStyle}"
-                               Foreground="{ThemeResource TextFillColorSecondary}" Margin="0,0,0,4" />
-                    <ComboBox x:Name="OutputComboBox" PlaceholderText="Select output"
-                              Margin="0, 0, 0,0" ToolTipService.ToolTip="The source to convert to" HorizontalAlignment="Stretch"/>
-                </StackPanel>
-            </Grid>
+                    <StackPanel Grid.Column="1">
+                        <TextBlock Text="Output" Style="{ThemeResource CaptionTextBlockStyle}"
+                                   Foreground="{ThemeResource TextFillColorSecondary}" Margin="0,0,0,4" />
+                        <ComboBox x:Name="OutputComboBox" PlaceholderText="Select output"
+                                  Margin="0, 0, 0,0" ToolTipService.ToolTip="The source to convert to"
+                                  HorizontalAlignment="Stretch" />
+                    </StackPanel>
+                </Grid>
             </StackPanel>
         </ContentDialog>
 
         <!-- Content Dialog for conversion results-->
-        <ContentDialog x:Name="ConversionResultsDialog" CloseButtonText="Close" Title="Conversion Summary" >
+        <ContentDialog x:Name="ConversionResultsDialog" CloseButtonText="Close" Title="Conversion Summary">
             <StackPanel>
-            <TabView x:Name="ConversionTabView" SelectionChanged="ConversionTabView_OnSelectionChanged" IsAddTabButtonVisible="False" CornerRadius="8" Margin="0,0,4,0">
-                <TabView.Resources>
-                    <ResourceDictionary>
-                        <ResourceDictionary.ThemeDictionaries>
-                            <ResourceDictionary x:Key="Light">
-                                <SolidColorBrush x:Key="TabViewBackground" Color="{ThemeResource SystemAccentColorLight2}"/>
-                            </ResourceDictionary>
-                            <ResourceDictionary x:Key="Dark">
-                                <SolidColorBrush x:Key="TabViewItemHeaderBackgroundSelected"  Color="{ThemeResource ControlFillColorDefault}"/>
-                            </ResourceDictionary>
-                        </ResourceDictionary.ThemeDictionaries>
-                    </ResourceDictionary>
-                </TabView.Resources>
+                <TabView x:Name="ConversionTabView" SelectionChanged="ConversionTabView_OnSelectionChanged"
+                         IsAddTabButtonVisible="False" Margin="0,0,4,0">
+                    <TabView.Resources>
+                        <ResourceDictionary>
+                            <ResourceDictionary.ThemeDictionaries>
+                                <ResourceDictionary x:Key="Light">
+                                    <SolidColorBrush x:Key="TabViewItemHeaderBackgroundSelected"
+                                                     Color="{ThemeResource ControlFillColorDefault}" />
+                                </ResourceDictionary>
+                                <ResourceDictionary x:Key="Dark">
+                                    <SolidColorBrush x:Key="TabViewItemHeaderBackgroundSelected"
+                                                     Color="{ThemeResource ControlFillColorDefault}" />
+                                </ResourceDictionary>
+                            </ResourceDictionary.ThemeDictionaries>
+                        </ResourceDictionary>
+                    </TabView.Resources>
 
-                <TabView.TabItems>
-                    <TabViewItem x:Name="SuccessTab" Header="Success" IsClosable="False" HorizontalContentAlignment="Stretch">
-                        <TabViewItem.HeaderTemplate>
+                    <TabView.TabItems>
+                        <TabViewItem x:Name="SuccessTab" Header="Success" IsClosable="False"
+                                     HorizontalContentAlignment="Stretch">
+                            <TabViewItem.HeaderTemplate>
                                 <DataTemplate>
                                     <Grid HorizontalAlignment="Stretch">
                                         <TextBlock Text="{Binding}" />
                                         <InfoBadge HorizontalAlignment="Right"
                                                    Value="{Binding Source={StaticResource QueueViewModel}, Path=SuccessCount}"
-                                                   Margin="2, 0" Background="{ThemeResource SystemFillColorSuccessBrush}"/>
+                                                   Margin="2, 0"
+                                                   Background="{ThemeResource SystemFillColorSuccessBrush}" />
                                     </Grid>
                                 </DataTemplate>
                             </TabViewItem.HeaderTemplate>
-                    </TabViewItem>
+                        </TabViewItem>
 
-                    <TabViewItem x:Name="WarningTab" Header="Warning" IsClosable="False" HorizontalContentAlignment="Stretch">
-                        <TabViewItem.HeaderTemplate>
-                            <DataTemplate>
-                                <Grid HorizontalAlignment="Stretch">
-                                    <TextBlock Text="{Binding}" />
-                                    <InfoBadge HorizontalAlignment="Right"
-                                               Value="{Binding Source={StaticResource QueueViewModel}, Path=SuccessCount}"
-                                               Margin="2, 0" Background="{ThemeResource SystemFillColorCautionBrush}"/>
-                                </Grid>
-                            </DataTemplate>
-                        </TabViewItem.HeaderTemplate>
-                    </TabViewItem>
+                        <TabViewItem x:Name="WarningTab" Header="Warning" IsClosable="False"
+                                     HorizontalContentAlignment="Stretch">
+                            <TabViewItem.HeaderTemplate>
+                                <DataTemplate>
+                                    <Grid HorizontalAlignment="Stretch">
+                                        <TextBlock Text="{Binding}" />
+                                        <InfoBadge HorizontalAlignment="Right"
+                                                   Value="{Binding Source={StaticResource QueueViewModel}, Path=WarningCount}"
+                                                   Margin="2, 0"
+                                                   Background="{ThemeResource SystemFillColorCautionBrush}" />
+                                    </Grid>
+                                </DataTemplate>
+                            </TabViewItem.HeaderTemplate>
+                        </TabViewItem>
 
-                    <TabViewItem x:Name="ErrorTab" Header="Error" IsClosable="False" HorizontalContentAlignment="Stretch">
-                        <TabViewItem.HeaderTemplate>
-                            <DataTemplate>
-                                <Grid HorizontalAlignment="Stretch">
-                                    <TextBlock Text="{Binding}" />
-                                    <InfoBadge HorizontalAlignment="Right"
-                                               Value="{Binding Source={StaticResource QueueViewModel}, Path=SuccessCount}"
-                                               Margin="2, 0" Background="{ThemeResource SystemFillColorCriticalBrush}"/>
-                                </Grid>
-                            </DataTemplate>
-                        </TabViewItem.HeaderTemplate>
-                    </TabViewItem>
-                </TabView.TabItems>
-            </TabView>
+                        <TabViewItem x:Name="ErrorTab" Header="Error" IsClosable="False"
+                                     HorizontalContentAlignment="Stretch">
+                            <TabViewItem.HeaderTemplate>
+                                <DataTemplate>
+                                    <Grid HorizontalAlignment="Stretch">
+                                        <TextBlock Text="{Binding}" />
+                                        <InfoBadge HorizontalAlignment="Right"
+                                                   Value="{Binding Source={StaticResource QueueViewModel}, Path=ErrorCount}"
+                                                   Margin="2, 0"
+                                                   Background="{ThemeResource SystemFillColorCriticalBrush}" />
+                                    </Grid>
+                                </DataTemplate>
+                            </TabViewItem.HeaderTemplate>
+                        </TabViewItem>
+                    </TabView.TabItems>
+                </TabView>
 
-            <ListView x:Name="ConversionListView"
-                      CornerRadius="4"
-                      BorderThickness="0"
-                      Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
-                      BorderBrush="{ThemeResource ControlStrongStrokeColorDefaultBrush}"
-                      Margin="0,0,0,0"
-                      Padding="0,0,12,0"
-                      VerticalAlignment="Center"
-                      Height="400">
-                <ListView.ItemTemplate>
-                    <DataTemplate x:DataType="models:SongSearchObject">
-                        <Grid Margin="0,12,0,12" AutomationProperties.Name="{x:Bind Title}">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="76" />
-                                <ColumnDefinition Width="*" />
-                            </Grid.ColumnDefinitions>
-                            <Border CornerRadius="4" Height="76">
-                                <Border.Background>
-                                    <ImageBrush Stretch="UniformToFill" ImageSource="{x:Bind ImageLocation}" />
-                                </Border.Background>
-                            </Border>
-
-                            <StackPanel Margin="12,0,0,0" Grid.Column="1">
-                                <StackPanel Orientation="Horizontal">
-                                    <TextBlock Text="{x:Bind Title}" FontFamily="Segoe UI Variable Display"
-                                               Style="{ThemeResource BodyStrongTextBlockStyle}"
-                                               HorizontalAlignment="Left"
-                                               TextTrimming="CharacterEllipsis" MaxLines="1" Margin="0, 0, 8, 0" />
-                                    <Border Background="DarkGray" CornerRadius="2" Padding="4, 0"
-                                            VerticalAlignment="Center">
-                                        <TextBlock x:Name="ExplicitBadgeFailed" Text="E"
-                                                   Style="{ThemeResource CaptionTextBlockStyle}"
-                                                   Foreground="Black"
-                                                   Visibility="{x:Bind Explicit, Converter={StaticResource VisibilityConverter}}" />
+                <Border x:Name="TabCard"
+                        Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                        BorderBrush="{ThemeResource ControlStrongStrokeColorDefaultBrush}"
+                        CornerRadius="4" Padding="4,8,4,8">
+                    <StackPanel>
+                        <InfoBar        
+                            x:Name="TabInfoBar"
+                            Margin="4, 0, 4, 8"
+                            IsOpen="True"
+                            IsClosable="True"
+                            Severity="Success" Content="Success: tracks that are perfectly matched by their ISRC." />
+                        <ListView x:Name="ConversionListView"
+                                  CornerRadius="4"
+                                  BorderThickness="0"
+                                  Background="Transparent" BorderBrush="Transparent"
+                                  Margin="0,0,0,0"
+                                  Padding="2,0, 12,0"
+                                  VerticalAlignment="Center"
+                                  Height="400">
+                        <ListView.ItemTemplate>
+                            <DataTemplate x:DataType="models:SongSearchObject">
+                                <Grid Margin="0,12,0,12" AutomationProperties.Name="{x:Bind Title}">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="76" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <Border CornerRadius="4" Height="76">
+                                        <Border.Background>
+                                            <ImageBrush Stretch="UniformToFill" ImageSource="{x:Bind ImageLocation}" />
+                                        </Border.Background>
                                     </Border>
-                                </StackPanel>
-                                <TextBlock Text="{x:Bind Artists}" FontFamily="Segoe UI Variable Display"
-                                           Style="{ThemeResource BodyTextBlockStyle}"
-                                           TextTrimming="CharacterEllipsis"
-                                           MaxLines="1" />
-                            </StackPanel>
 
-                            <StackPanel Margin="12,0,0,0" Orientation="Horizontal" VerticalAlignment="Bottom"
-                                        Grid.Column="1">
-                                <TextBlock
-                                    Text="{x:Bind ReleaseDate, Converter={StaticResource DateToYearConverter}}"
-                                    HorizontalAlignment="Left"
-                                    Style="{ThemeResource BodyTextBlockStyle}" Margin="0,0,0,0"
-                                    FontFamily="Segoe UI Variable Display" />
-                                <TextBlock Text="&#x2022;" Style="{ThemeResource BodyTextBlockStyle}"
-                                           HorizontalAlignment="Left" Margin="5,0,0,0" />
-                                <TextBlock
-                                    Text="{x:Bind Duration, Converter={StaticResource DurationConverter}}"
-                                    HorizontalAlignment="Left"
-                                    Style="{ThemeResource BodyTextBlockStyle}" Margin="5,0,0,0"
-                                    FontFamily="Segoe UI Variable Display" />
-                            </StackPanel>
-                        </Grid>
-                    </DataTemplate>
-                </ListView.ItemTemplate>
-            </ListView>
+                                    <StackPanel Margin="12,0,0,0" Grid.Column="1">
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock Text="{x:Bind Title}" FontFamily="Segoe UI Variable Display"
+                                                       Style="{ThemeResource BodyStrongTextBlockStyle}"
+                                                       HorizontalAlignment="Left"
+                                                       TextTrimming="CharacterEllipsis" MaxLines="1"
+                                                       Margin="0, 0, 8, 0" />
+                                            <Border Background="DarkGray" CornerRadius="2" Padding="4, 0"
+                                                    VerticalAlignment="Center">
+                                                <TextBlock x:Name="ExplicitBadgeFailed" Text="E"
+                                                           Style="{ThemeResource CaptionTextBlockStyle}"
+                                                           Foreground="Black"
+                                                           Visibility="{x:Bind Explicit, Converter={StaticResource VisibilityConverter}}" />
+                                            </Border>
+                                        </StackPanel>
+                                        <TextBlock Text="{x:Bind Artists}" FontFamily="Segoe UI Variable Display"
+                                                   Style="{ThemeResource BodyTextBlockStyle}"
+                                                   TextTrimming="CharacterEllipsis"
+                                                   MaxLines="1" />
+                                    </StackPanel>
+
+                                    <StackPanel Margin="12,0,0,0" Orientation="Horizontal" VerticalAlignment="Bottom"
+                                                Grid.Column="1">
+                                        <TextBlock
+                                            Text="{x:Bind ReleaseDate, Converter={StaticResource DateToYearConverter}}"
+                                            HorizontalAlignment="Left"
+                                            Style="{ThemeResource BodyTextBlockStyle}" Margin="0,0,0,0"
+                                            FontFamily="Segoe UI Variable Display" />
+                                        <TextBlock Text="&#x2022;" Style="{ThemeResource BodyTextBlockStyle}"
+                                                   HorizontalAlignment="Left" Margin="5,0,0,0" />
+                                        <TextBlock
+                                            Text="{x:Bind Duration, Converter={StaticResource DurationConverter}}"
+                                            HorizontalAlignment="Left"
+                                            Style="{ThemeResource BodyTextBlockStyle}" Margin="5,0,0,0"
+                                            FontFamily="Segoe UI Variable Display" />
+                                    </StackPanel>
+                                </Grid>
+                            </DataTemplate>
+                        </ListView.ItemTemplate>
+                    </ListView>
+                    </StackPanel>
+                </Border>
             </StackPanel>
         </ContentDialog>
     </Grid>

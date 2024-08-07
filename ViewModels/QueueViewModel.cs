@@ -72,6 +72,18 @@ public partial class QueueViewModel : ObservableRecipient
         set;
     } = 0;
 
+    public static int WarningCount
+    {
+        get;
+        set;
+    } = 0;
+
+    public static int ErrorCount
+    {
+        get;
+        set;
+    } = 0;
+
     private static string command
     {
         get;

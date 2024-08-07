@@ -335,7 +335,7 @@ internal class QobuzApi
         return ConvertSongSearchObject(track);
     }
 
-    public static async Task<SongSearchObject?> GetQobuzTrack(SongSearchObject songObj, CancellationToken token = default)
+    public static async Task<SongSearchObject?> GetQobuzTrack(SongSearchObject songObj, CancellationToken token = default, ConversionUpdateCallback? callback = null)
     {
         // No built-in method for this, so we have to get all tracks and search for the ISRC
         string? isrc = songObj.Isrc;
@@ -358,7 +358,9 @@ internal class QobuzApi
                 {
                     if (track.Isrc == isrc)
                     {
-                        return ConvertSongSearchObject(track);
+                        var retObj = ConvertSongSearchObject(track);
+                        callback?.Invoke(InfoBarSeverity.Success, retObj); // Show a success message
+                        return retObj;
                     }
 
                     offset++;
@@ -369,6 +371,7 @@ internal class QobuzApi
         var searchResults = new List<SongSearchObject>();
 
         // TODO: a match similar to deezer general search
+        callback?.Invoke(InfoBarSeverity.Error, songObj); // Show an error message with original object
         return null;
     }
 

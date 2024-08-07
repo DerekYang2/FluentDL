@@ -261,7 +261,7 @@ namespace FluentDL.Services
             }
         }
 
-        public static async Task<SongSearchObject?> GetSpotifyTrack(SongSearchObject song, CancellationToken token = default)
+        public static async Task<SongSearchObject?> GetSpotifyTrack(SongSearchObject song, CancellationToken token = default, ConversionUpdateCallback? callback = null)
         {
             // Try to find by ISRC first
             if (song.Isrc != null)
@@ -269,10 +269,17 @@ namespace FluentDL.Services
                 var track = await GetTrackFromISRC(song.Isrc, token);
                 if (track != null)
                 {
-                    return ConvertSongSearchObject(track);
+                    var retObj = ConvertSongSearchObject(track);
+                    if (retObj != null) // Update callback with result
+                    {
+                        callback?.Invoke(InfoBarSeverity.Success, retObj);
+                    }
+
+                    return retObj;
                 }
             }
 
+            callback?.Invoke(InfoBarSeverity.Error, song); // Show error with original song object
             return null;
         }
 

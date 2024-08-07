@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
@@ -471,7 +471,7 @@ namespace FluentDL.Services
             return null;
         }
 
-        public static async Task<SongSearchObject?> GetYoutubeTrack(SongSearchObject songObj, CancellationToken token = default)
+        public static async Task<SongSearchObject?> GetYoutubeTrack(SongSearchObject songObj, CancellationToken token = default, ConversionUpdateCallback? callback = null)
         {
             // Convert artists csv to array
             var artists = songObj.Artists.Split(", ");
