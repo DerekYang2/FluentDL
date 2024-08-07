@@ -88,6 +88,7 @@ public sealed partial class QueuePage : Page
         QueueViewModel.Source.CollectionChanged += (sender, e) =>
         {
             OnQueueSourceChange();
+            NoItemsText.Visibility = QueueViewModel.Source.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
         };
 
         // Set conversion variables
@@ -689,18 +690,21 @@ public sealed partial class QueuePage : Page
             ConversionListView.ItemsSource = successSource;
             TabInfoBar.Severity = InfoBarSeverity.Success;
             TabInfoBar.Content = "Exact matches found through ISRC identifiers";
+            NoConversionText.Visibility = successSource.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
         }
         else if (selectedItem == WarningTab)
         {
             ConversionListView.ItemsSource = warningSource;
             TabInfoBar.Severity = InfoBarSeverity.Warning;
             TabInfoBar.Content = "Attempted matches found through metadata";
+            NoConversionText.Visibility = warningSource.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
         }
         else if (selectedItem == ErrorTab)
         {
             ConversionListView.ItemsSource = errorSource;
             TabInfoBar.Severity = InfoBarSeverity.Error;
             TabInfoBar.Content = "No matches found";
+            NoConversionText.Visibility = errorSource.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
         }
     }
 

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
@@ -56,6 +56,8 @@ namespace FluentDL.Services
                 return;
             }
 
+            var ct = 0; // Counter for added results
+
             foreach (var song in searchResults)
             {
                 if (token.IsCancellationRequested)
@@ -64,6 +66,11 @@ namespace FluentDL.Services
                 }
 
                 itemSource.Add(await GetTrack(song));
+                ct++;
+                if (ct >= limit) // If limit is reached
+                {
+                    break;
+                }
             }
 
             // NORMAL YOUTUBE SEARCH:
@@ -481,12 +488,13 @@ namespace FluentDL.Services
             }
 
             var advancedResults = new ObservableCollection<SongSearchObject>();
+
+            // Try searching with all metadata
             await AdvancedSearch(advancedResults, songObj.Artists, songObj.Title, songObj.AlbumName, token, 5);
             if (advancedResults.Count > 0)
             {
                 // 1: if author contains artist name and title matches 
                 // 2: if title matches
-                // 3: first result
 
                 // Pass 1
                 foreach (var result in advancedResults)
@@ -498,6 +506,7 @@ namespace FluentDL.Services
                         {
                             if (authorsCSV.Contains(artistName.ToLower()))
                             {
+                                callback?.Invoke(InfoBarSeverity.Warning, result); // Not found by ISRC
                                 return result;
                             }
                         }
@@ -509,23 +518,52 @@ namespace FluentDL.Services
                 {
                     if (ApiHelper.PrunePunctuation(songObj.Title.ToLower()).Equals(ApiHelper.PrunePunctuation(result.Title.ToLower())))
                     {
+                        callback?.Invoke(InfoBarSeverity.Warning, result); // Not found by ISRC
                         return result;
                     }
                 }
-
-                // Pass 3
-                return advancedResults.First();
             }
 
+            // Try searching without album
             advancedResults.Clear();
             await AdvancedSearch(advancedResults, songObj.Artists, songObj.Title, "", token, 5);
             if (advancedResults.Count > 0)
             {
-                return advancedResults[0];
+                // 1: if author contains artist name and title matches
+                // 2: if title matches
+
+                // Pass 1
+                foreach (var result in advancedResults)
+                {
+                    var authorsCSV = result.Artists.ToLower();
+                    if (ApiHelper.PrunePunctuation(songObj.Title.ToLower()).Equals(ApiHelper.PrunePunctuation(result.Title.ToLower())))
+                    {
+                        foreach (var artistName in artists)
+                        {
+                            if (authorsCSV.Contains(artistName.ToLower()))
+                            {
+                                callback?.Invoke(InfoBarSeverity.Warning, result); // Not found by ISRC
+                                return result;
+                            }
+                        }
+                    }
+                }
+
+                // Pass 2
+                foreach (var result in advancedResults)
+                {
+                    if (ApiHelper.PrunePunctuation(songObj.Title.ToLower()).Equals(ApiHelper.PrunePunctuation(result.Title.ToLower())))
+                    {
+                        callback?.Invoke(InfoBarSeverity.Warning, result); // Not found by ISRC
+                        return result;
+                    }
+                }
             }
 
             // Fall back to searching for videos
-            return await GetTrack((await GetSearchResult(songObj)).Id);
+            var retObj = await GetTrack((await GetSearchResult(songObj)).Id);
+            callback?.Invoke(InfoBarSeverity.Warning, retObj); // Not found by ISRC
+            return retObj;
         }
 
         // Largest image ends in maxresdefault.webp

@@ -188,6 +188,10 @@
             </ListView.ItemTemplate>
         </ListView>
 
+        <TextBlock Grid.Row="2" Grid.Column="0" x:Name="NoItemsText" VerticalAlignment="Center"
+                   HorizontalAlignment="Center" Margin="0,-8,0,0" Visibility="Visible"
+                   Text="Add tracks through Search or Local Explorer."/>
+
         <views:PreviewPane Grid.Row="0" Grid.RowSpan="3" Grid.Column="1" x:Name="PreviewPanel"
                            Padding="12"
                            Margin="12,0,0,12"
@@ -417,11 +421,11 @@
                             <ResourceDictionary.ThemeDictionaries>
                                 <ResourceDictionary x:Key="Light">
                                     <SolidColorBrush x:Key="TabViewItemHeaderBackgroundSelected"
-                                                     Color="{ThemeResource ControlFillColorDefault}" />
+                                                     Color="{ThemeResource CardBackgroundFillColorSecondary}" />
                                 </ResourceDictionary>
                                 <ResourceDictionary x:Key="Dark">
                                     <SolidColorBrush x:Key="TabViewItemHeaderBackgroundSelected"
-                                                     Color="{ThemeResource ControlFillColorDefault}" />
+                                                     Color="{ThemeResource CardBackgroundFillColorSecondary}" />
                                 </ResourceDictionary>
                             </ResourceDictionary.ThemeDictionaries>
                         </ResourceDictionary>
@@ -476,77 +480,86 @@
                 </TabView>
 
                 <Border x:Name="TabCard"
-                        Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                        Background="{ThemeResource CardBackgroundFillColorSecondaryBrush}"
                         BorderBrush="{ThemeResource ControlStrongStrokeColorDefaultBrush}"
                         CornerRadius="4" Padding="4,8,4,8">
                     <StackPanel>
-                        <InfoBar        
+                        <InfoBar
                             x:Name="TabInfoBar"
                             Margin="4, 0, 4, 8"
                             IsOpen="True"
-                            IsClosable="True"
-                            Severity="Success" Content="Success: tracks that are perfectly matched by their ISRC." />
-                        <ListView x:Name="ConversionListView"
-                                  CornerRadius="4"
-                                  BorderThickness="0"
-                                  Background="Transparent" BorderBrush="Transparent"
-                                  Margin="0,0,0,0"
-                                  Padding="2,0, 12,0"
-                                  VerticalAlignment="Center"
-                                  Height="400">
-                        <ListView.ItemTemplate>
-                            <DataTemplate x:DataType="models:SongSearchObject">
-                                <Grid Margin="0,12,0,12" AutomationProperties.Name="{x:Bind Title}">
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="76" />
-                                        <ColumnDefinition Width="*" />
-                                    </Grid.ColumnDefinitions>
-                                    <Border CornerRadius="4" Height="76">
-                                        <Border.Background>
-                                            <ImageBrush Stretch="UniformToFill" ImageSource="{x:Bind ImageLocation}" />
-                                        </Border.Background>
-                                    </Border>
-
-                                    <StackPanel Margin="12,0,0,0" Grid.Column="1">
-                                        <StackPanel Orientation="Horizontal">
-                                            <TextBlock Text="{x:Bind Title}" FontFamily="Segoe UI Variable Display"
-                                                       Style="{ThemeResource BodyStrongTextBlockStyle}"
-                                                       HorizontalAlignment="Left"
-                                                       TextTrimming="CharacterEllipsis" MaxLines="1"
-                                                       Margin="0, 0, 8, 0" />
-                                            <Border Background="DarkGray" CornerRadius="2" Padding="4, 0"
-                                                    VerticalAlignment="Center">
-                                                <TextBlock x:Name="ExplicitBadgeFailed" Text="E"
-                                                           Style="{ThemeResource CaptionTextBlockStyle}"
-                                                           Foreground="Black"
-                                                           Visibility="{x:Bind Explicit, Converter={StaticResource VisibilityConverter}}" />
+                            IsClosable="True" />
+                        <Grid>
+                            <ListView x:Name="ConversionListView"
+                                      CornerRadius="4"
+                                      BorderThickness="0"
+                                      Background="Transparent" BorderBrush="Transparent"
+                                      Margin="0,0,0,0"
+                                      Padding="2,0, 12,0"
+                                      VerticalAlignment="Center"
+                                      Height="400">
+                                <ListView.ItemTemplate>
+                                    <DataTemplate x:DataType="models:SongSearchObject">
+                                        <Grid Margin="0,12,0,12" AutomationProperties.Name="{x:Bind Title}">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="76" />
+                                                <ColumnDefinition Width="*" />
+                                            </Grid.ColumnDefinitions>
+                                            <Border CornerRadius="4" Height="76">
+                                                <Border.Background>
+                                                    <ImageBrush Stretch="UniformToFill"
+                                                                ImageSource="{x:Bind ImageLocation}" />
+                                                </Border.Background>
                                             </Border>
-                                        </StackPanel>
-                                        <TextBlock Text="{x:Bind Artists}" FontFamily="Segoe UI Variable Display"
-                                                   Style="{ThemeResource BodyTextBlockStyle}"
-                                                   TextTrimming="CharacterEllipsis"
-                                                   MaxLines="1" />
-                                    </StackPanel>
 
-                                    <StackPanel Margin="12,0,0,0" Orientation="Horizontal" VerticalAlignment="Bottom"
-                                                Grid.Column="1">
-                                        <TextBlock
-                                            Text="{x:Bind ReleaseDate, Converter={StaticResource DateToYearConverter}}"
-                                            HorizontalAlignment="Left"
-                                            Style="{ThemeResource BodyTextBlockStyle}" Margin="0,0,0,0"
-                                            FontFamily="Segoe UI Variable Display" />
-                                        <TextBlock Text="&#x2022;" Style="{ThemeResource BodyTextBlockStyle}"
-                                                   HorizontalAlignment="Left" Margin="5,0,0,0" />
-                                        <TextBlock
-                                            Text="{x:Bind Duration, Converter={StaticResource DurationConverter}}"
-                                            HorizontalAlignment="Left"
-                                            Style="{ThemeResource BodyTextBlockStyle}" Margin="5,0,0,0"
-                                            FontFamily="Segoe UI Variable Display" />
-                                    </StackPanel>
-                                </Grid>
-                            </DataTemplate>
-                        </ListView.ItemTemplate>
-                    </ListView>
+                                            <StackPanel Margin="12,0,0,0" Grid.Column="1">
+                                                <StackPanel Orientation="Horizontal">
+                                                    <TextBlock Text="{x:Bind Title}"
+                                                               FontFamily="Segoe UI Variable Display"
+                                                               Style="{ThemeResource BodyStrongTextBlockStyle}"
+                                                               HorizontalAlignment="Left"
+                                                               TextTrimming="CharacterEllipsis" MaxLines="1"
+                                                               Margin="0, 0, 8, 0" />
+                                                    <Border Background="DarkGray" CornerRadius="2" Padding="4, 0"
+                                                            VerticalAlignment="Center">
+                                                        <TextBlock x:Name="ExplicitBadgeFailed" Text="E"
+                                                                   Style="{ThemeResource CaptionTextBlockStyle}"
+                                                                   Foreground="Black"
+                                                                   Visibility="{x:Bind Explicit, Converter={StaticResource VisibilityConverter}}" />
+                                                    </Border>
+                                                </StackPanel>
+                                                <TextBlock Text="{x:Bind Artists}"
+                                                           FontFamily="Segoe UI Variable Display"
+                                                           Style="{ThemeResource BodyTextBlockStyle}"
+                                                           TextTrimming="CharacterEllipsis"
+                                                           MaxLines="1" />
+                                            </StackPanel>
+
+                                            <StackPanel Margin="12,0,0,0" Orientation="Horizontal"
+                                                        VerticalAlignment="Bottom"
+                                                        Grid.Column="1">
+                                                <TextBlock
+                                                    Text="{x:Bind ReleaseDate, Converter={StaticResource DateToYearConverter}}"
+                                                    HorizontalAlignment="Left"
+                                                    Style="{ThemeResource BodyTextBlockStyle}" Margin="0,0,0,0"
+                                                    FontFamily="Segoe UI Variable Display" />
+                                                <TextBlock Text="&#x2022;" Style="{ThemeResource BodyTextBlockStyle}"
+                                                           HorizontalAlignment="Left" Margin="5,0,0,0" />
+                                                <TextBlock
+                                                    Text="{x:Bind Duration, Converter={StaticResource DurationConverter}}"
+                                                    HorizontalAlignment="Left"
+                                                    Style="{ThemeResource BodyTextBlockStyle}" Margin="5,0,0,0"
+                                                    FontFamily="Segoe UI Variable Display" />
+                                            </StackPanel>
+                                        </Grid>
+                                    </DataTemplate>
+                                </ListView.ItemTemplate>
+                            </ListView>
+                            <TextBlock x:Name="NoConversionText" VerticalAlignment="Center"
+                                       HorizontalAlignment="Center" Margin="0,-8,0,0" Visibility="Collapsed">
+                                No tracks.
+                            </TextBlock>
+                        </Grid>
                     </StackPanel>
                 </Border>
             </StackPanel>

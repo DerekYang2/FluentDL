@@ -111,6 +111,7 @@ public sealed partial class LocalExplorerPage : Page
         originalList.CollectionChanged += (sender, e) =>
         {
             SetResultsAmount(originalList.Count);
+            NoItemsText.Visibility = originalList.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
         };
 
         // Set first

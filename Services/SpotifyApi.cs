@@ -147,8 +147,16 @@ namespace FluentDL.Services
 
         public static async Task<FullTrack?> GetTrack(string id)
         {
-            var track = await spotify.Tracks.Get(id);
-            return track;
+            try
+            {
+                var track = await spotify.Tracks.Get(id);
+                return track;
+            }
+            catch (Exception e)
+            {
+                Debug.WriteLine(e.Message);
+                return null;
+            }
         }
 
         // TODO: handle invalid playlist ids
