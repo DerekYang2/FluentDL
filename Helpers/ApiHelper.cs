@@ -8,6 +8,7 @@ using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using ABI.Microsoft.UI.Xaml.Media.Imaging;
 using FluentDL.Models;
+using FluentDL.Services;
 using BitmapImage = Microsoft.UI.Xaml.Media.Imaging.BitmapImage;
 
 namespace FluentDL.Helpers;
@@ -33,6 +34,13 @@ internal class ApiHelper
         return Regex.Replace(str, @"[^a-zA-Z0-9]", string.Empty);
     }
 
+    // Convert illegal filename characters to an underscore
+    public static string GetSafeFilename(string filename)
+    {
+        var result = filename.Trim().TrimEnd('.');
+        return string.Join("_", result.Split(Path.GetInvalidFileNameChars()));
+    }
+
     public static string GetUrl(SongSearchObject song)
     {
         var id = song.Id;
@@ -48,6 +56,35 @@ internal class ApiHelper
         };
     }
 
+    public static async Task DownloadObject(SongSearchObject song, Windows.Storage.StorageFile? file)
+    {
+        if (file == null)
+        {
+            return;
+        }
+
+        var url = GetUrl(song);
+        var directory = Path.GetDirectoryName(file.Path);
+        var fileName = Path.GetFileNameWithoutExtension(file.Path);
+        var flacLocation = Path.Combine(directory, fileName + ".flac");
+
+        if (song.Source == "youtube")
+        {
+            await YoutubeApi.DownloadAudio(url, directory, fileName, d =>
+            {
+            });
+            // convert opus to flac
+            var opusLocation = Path.Combine(directory, fileName + ".opus");
+
+            await FFmpegRunner.ConvertOpusToFlac(opusLocation); // Convert opus to flac
+            await YoutubeApi.UpdateMetadata(flacLocation, song.Id);
+        }
+
+        if (song.Source == "deezer")
+        {
+            await DeezerApi.DownloadTrack(song, flacLocation);
+        }
+    }
 
     public static int CalcLevenshteinDistance(string a, string b)
     {
@@ -156,9 +193,9 @@ internal class ApiHelper
             using (FileStream streamToWriteTo = System.IO.File.Create(filePath))
             {
                 long totalBytesRead = 0;
-                Stopwatch stopwatch = Stopwatch.StartNew();
-                byte[] buffer = new byte[32768]; // 32KB buffer size
+                byte[] buffer = new byte[131072]; // 128KB buffer size
                 bool firstBufferRead = false;
+                Stopwatch stopwatch = Stopwatch.StartNew();
 
                 int bytesRead;
                 while ((bytesRead = await streamToReadFrom.ReadAsync(buffer, 0, buffer.Length)) > 0)

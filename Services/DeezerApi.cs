@@ -531,9 +531,10 @@ internal class DeezerApi
         return GetTrackFromJsonElement(jsonObject);
     }
 
-    public static async Task DownloadTrack(SongSearchObject? song, string directory)
+
+    public static async Task DownloadTrack(SongSearchObject? song, string filePath)
     {
-        if (song == null || song.Source != "deezer" || !Path.IsPathRooted(directory))
+        if (song == null || song.Source != "deezer" || !Path.IsPathRooted(filePath))
         {
             return;
         }
@@ -541,9 +542,6 @@ internal class DeezerApi
         var id = long.Parse(song.Id);
         var trackBytes = await deezerClient.Downloader.GetRawTrackBytes(id, Bitrate.FLAC);
         //trackBytes = await deezerClient.Downloader.ApplyMetadataToTrackBytes(id, trackBytes);
-        var firstArtist = song.Artists.Split(", ")[0];
-        // TODO: ensure name is file safe
-        var filePath = Path.Combine(directory, $"{song.TrackPosition}. {firstArtist} - {song.Title} [{song.Isrc}].flac");
         await File.WriteAllBytesAsync(filePath, trackBytes);
         Debug.WriteLine("COMPLETE: " + filePath);
         await UpdateMetadata(filePath, song.Id);
@@ -604,7 +602,7 @@ internal class DeezerApi
         var track = new Track(filePath);
         track.Title = jsonObject.GetProperty("title").GetString();
         track.Album = albumJson.GetProperty("title").GetString();
-        track.AlbumArtist = jsonObject.GetProperty("artist").GetProperty("name").GetString();
+        track.AlbumArtist = albumJson.GetProperty("artist").GetProperty("name").GetString();
         track.Artist = contribStr;
         track.AudioSourceUrl = jsonObject.GetProperty("link").GetString();
         track.BPM = jsonObject.GetProperty("bpm").TryGetInt32(out var bpm

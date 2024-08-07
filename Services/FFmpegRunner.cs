@@ -19,12 +19,12 @@ internal class FFmpegRunner
     /**
      * NOTE: this method removes the original file
      */
-    public static void ConvertOpusToFlac(string initialPath) // Good for converting youtube opus (16 bit, 48000 hz) to flac
+    public static async Task ConvertOpusToFlac(string initialPath) // Good for converting youtube opus (16 bit, 48000 hz) to flac
     {
-        FFMpegArguments.FromFileInput(initialPath)
+        await FFMpegArguments.FromFileInput(initialPath)
             .OutputToFile(initialPath.Replace(".opus", ".flac"), true, options => options
                 .WithCustomArgument("-sample_fmt s16")
-                .WithCustomArgument("-ar 48000")).ProcessSynchronously();
+                .WithCustomArgument("-ar 48000")).ProcessAsynchronously();
 
         // Delete the original opus
         File.Delete(initialPath);

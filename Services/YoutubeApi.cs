@@ -11,6 +11,7 @@ using FluentDL.Models;
 using FluentDL.Views;
 using Microsoft.UI.Xaml.Controls;
 using Windows.Media.Protection.PlayReady;
+using ATL;
 using YoutubeExplode;
 using YoutubeExplode.Common;
 using YoutubeExplode.Search;
@@ -565,6 +566,39 @@ namespace FluentDL.Services
             return video.Thumbnails[idx].Url;
         }
 
+        public static string GetMaxResThumbnail(SongVideoInfo ytmSong, YoutubeExplode.Videos.Video video)
+        {
+            if (video.Description.StartsWith("Provided to YouTube by") && video.Description.Contains("\u2117")) // Song
+            {
+                var imageUrl = ytmSong.Thumbnails.Last().Url; // Use second youtube music image (larger, 120px)
+                if (imageUrl.StartsWith("https://lh3.googleusercontent.com"))
+                {
+                    // Delete everything after the last =
+                    var i = imageUrl.LastIndexOf("=");
+                    imageUrl = imageUrl.Substring(0, i + 1); // Include everything up to and including the =
+                    imageUrl += "w544-h544-l90-rj"; // Add the max res version
+                    return imageUrl;
+                }
+            }
+
+            // Normal video
+            var idx = video.Thumbnails.ToList().FindIndex(x =>
+            {
+                var url = x.Url;
+                // Remove query string
+                var i = url.LastIndexOf('?');
+                if (i != -1) url = url.Substring(0, i);
+                return url.EndsWith("maxresdefault.webp") || url.EndsWith("maxresdefault.jpg");
+            });
+
+            if (idx == -1) // If not found
+            {
+                idx = 0; // Just take first
+            }
+
+            return video.Thumbnails[idx].Url;
+        }
+
         public static async Task<SongSearchObject> GetTrack(Song ytmSong)
         {
             var artistCSV = new StringBuilder();
@@ -750,14 +784,73 @@ namespace FluentDL.Services
                     maxBitRate = streamObj.Bitrate.BitsPerSecond;
                     streamInfo = streamObj;
                 }
-
-                Debug.WriteLine(streamObj.Container + " | " + streamObj.Bitrate + " | " + streamObj.AudioCodec);
             }
 
             var filePath = $"{downloadFolder}\\{filename}.{extension}";
 
             var stream = await youtube.Videos.Streams.GetAsync(streamInfo);
             await youtube.Videos.Streams.DownloadAsync(streamInfo, filePath, new Progress<double>(progressHandler));
+        }
+
+
+        public static async Task UpdateMetadata(string filePath, string id)
+        {
+            var video = await youtube.Videos.GetAsync(id);
+            var ytmSong = await ytm.GetSongVideoInfoAsync(id);
+            // Get artist csv
+            var artistCSV = new StringBuilder();
+            foreach (var artist in ytmSong.Artists)
+            {
+                artistCSV.Append(artist.Name);
+                if (artist != ytmSong.Artists.Last())
+                {
+                    artistCSV.Append(", ");
+                }
+            }
+
+            // These values vary between song or video
+            string albumName;
+
+            if (video.Description.StartsWith("Provided to YouTube by") && video.Description.Contains("\u2117")) // Song
+            {
+                var lines = video.Description.Split("\n");
+                albumName = lines[4].Trim(); // Fourth line of ytm description contains album name
+            }
+            else // Normal video
+            {
+                albumName = video.Title; // Use video title as album name
+            }
+
+
+            Track atlTrack = new Track(filePath) // For metadata
+            {
+                Title = ytmSong.Name,
+                Album = albumName,
+                AlbumArtist = ytmSong.Artists.First().Name,
+                Artist = artistCSV.ToString(),
+                AudioSourceUrl = video.Url,
+                AdditionalFields = { { "YEAR", video.UploadDate.Year.ToString() } },
+                Date = video.UploadDate.Date,
+                TrackNumber = 1,
+                TrackTotal = 1,
+                Popularity = video.Engagement.ViewCount,
+            };
+
+            // Get image bytes for cover art
+            var imageBytes = await new HttpClient().GetByteArrayAsync(GetMaxResThumbnail(ytmSong, video));
+            PictureInfo newPicture = PictureInfo.fromBinaryData(imageBytes, PictureInfo.PIC_TYPE.Front);
+
+            // Append to front if pictures already exist
+            if (atlTrack.EmbeddedPictures.Count > 0)
+            {
+                atlTrack.EmbeddedPictures.Insert(0, newPicture);
+            }
+            else
+            {
+                atlTrack.EmbeddedPictures.Add(newPicture);
+            }
+
+            await atlTrack.SaveAsync();
         }
 
         public static async Task<string> AudioStreamUrl(string url)
