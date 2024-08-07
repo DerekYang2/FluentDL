@@ -11,6 +11,7 @@ using FluentDL.Core.Models;
 using FluentDL.Helpers;
 using FluentDL.Models;
 using FluentDL.Services;
+using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Imaging;
 using static System.Net.WebRequestMethods;
 using DispatcherQueue = Microsoft.UI.Dispatching.DispatcherQueue;
@@ -30,6 +31,12 @@ public class QueueObject : SongSearchObject
         get;
         set;
     }
+
+    public SolidColorBrush ConvertBadgeColor
+    {
+        get;
+        set;
+    } = new SolidColorBrush(Windows.UI.Color.FromArgb(0, 0, 0, 0));
 
     public QueueObject(SongSearchObject song)
     {

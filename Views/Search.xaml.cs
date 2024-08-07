@@ -391,6 +391,8 @@ public sealed partial class Search : Page
         StopSearchButton.Visibility = Visibility.Collapsed;
     }
 
+    /*
+     // Old conversion method
     private async Task LoadSpotifyPlaylist(string playlistId, CancellationToken token = default)
     {
         failedSpotifySongs.Clear();
@@ -429,7 +431,7 @@ public sealed partial class Search : Page
             }
         }
     }
-
+    */
 
     private void SetNoSearchResults()
     {

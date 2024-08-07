@@ -90,4 +90,9 @@ public class SongSearchObject
     {
         return Source + " | Title: " + Title + ", Artists: " + Artists + ", Duration: " + Duration + ", Rank: " + Rank + ", Release Date: " + ReleaseDate + ", Image Location: " + ImageLocation + ", Id: " + Id + ", Album Name: " + AlbumName;
     }
+
+    public override int GetHashCode()
+    {
+        return (Source + Id).GetHashCode();
+    }
 }

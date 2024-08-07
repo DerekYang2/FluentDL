@@ -279,14 +279,16 @@ internal class DeezerApi
         return closest;
     }
 
-    public static async Task<SongSearchObject?> GetDeezerTrack(SongSearchObject song, CancellationToken token = default)
+    public static async Task<SongSearchObject?> GetDeezerTrack(SongSearchObject song, CancellationToken token = default, ConversionUpdateCallback? callback = null)
     {
         // Try to find by ISRC first
         if (song.Isrc != null)
         {
             var songObj = await GetTrackFromISRC(song.Isrc);
+
             if (songObj != null)
             {
+                callback?.Invoke(InfoBarSeverity.Success, songObj);
                 return songObj;
             }
         }
@@ -364,7 +366,9 @@ internal class DeezerApi
             {
                 if (albumName.ToLower().Replace(" ", "").Equals(songObj.AlbumName.ToLower().Replace(" ", ""))) // If the album name is exact match
                 {
-                    return await GetTrack(songObj.Id);
+                    var fullTrack = await GetTrack(songObj.Id);
+                    callback?.Invoke(InfoBarSeverity.Warning, fullTrack);
+                    return fullTrack;
                 }
 
                 var dist = ApiHelper.CalcLevenshteinDistance(PruneTitle(albumName), PruneTitle(songObj.AlbumName));
@@ -378,7 +382,9 @@ internal class DeezerApi
 
         if (closeMatchObj != null)
         {
-            return await GetTrack(closeMatchObj.Id); // Get the full track object
+            var fullTrack = await GetTrack(closeMatchObj.Id);
+            callback?.Invoke(InfoBarSeverity.Warning, fullTrack);
+            return fullTrack;
         }
 
         // pass 2: if exact album match, find least edit distance title name
@@ -407,9 +413,12 @@ internal class DeezerApi
 
         if (closeMatchObj != null)
         {
-            return await GetTrack(closeMatchObj.Id); // Get the full track object
+            var fullTrack = await GetTrack(closeMatchObj.Id);
+            callback?.Invoke(InfoBarSeverity.Warning, fullTrack);
+            return fullTrack;
         }
 
+        callback?.Invoke(InfoBarSeverity.Error, song); // No match found
         return null;
     }
 

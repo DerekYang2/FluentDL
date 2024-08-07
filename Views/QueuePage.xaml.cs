@@ -16,6 +16,7 @@ using Microsoft.UI.Xaml.Data;
 using FluentDL.Contracts.Services;
 using FluentDL.Helpers;
 using FluentDL.Models;
+using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Imaging;
 using FileSavePicker = Windows.Storage.Pickers.FileSavePicker;
 using Symbol = Microsoft.UI.Xaml.Controls.Symbol;
@@ -48,14 +49,19 @@ public class PathToVisibilityConverter : IValueConverter
     public object ConvertBack(object value, Type targetType, object parameter, string language) => throw new NotImplementedException();
 }
 
+public delegate void ConversionUpdateCallback(InfoBarSeverity severity, SongSearchObject song); // Callback for conversion updates
+
 public sealed partial class QueuePage : Page
 {
     // Create dispatcher queue
-    private bool isConverting = false;
     private DispatcherQueue dispatcherQueue;
     private DispatcherTimer dispatcherTimer;
     private CancellationTokenSource cancellationTokenSource;
-    private HashSet<string> SelectedSources = new HashSet<string>();
+
+    // Conversion variables
+    private bool isConverting = false;
+    private HashSet<string> selectedSources;
+    private HashSet<SongSearchObject> successSource, warningSource, errorSource;
 
     public QueueViewModel ViewModel
     {
@@ -81,6 +87,12 @@ public sealed partial class QueuePage : Page
         {
             OnQueueSourceChange();
         };
+
+        // Set conversion variables
+        successSource = new HashSet<SongSearchObject>();
+        warningSource = new HashSet<SongSearchObject>();
+        errorSource = new HashSet<SongSearchObject>();
+        selectedSources = new HashSet<string>();
     }
 
     private async void OutputButton_OnClick(object sender, RoutedEventArgs e)
@@ -487,14 +499,14 @@ public sealed partial class QueuePage : Page
     {
         var checkBox = sender as CheckBox;
         var checkBoxContent = checkBox.Content.ToString();
-        SelectedSources.Add(checkBoxContent.ToLower());
+        selectedSources.Add(checkBoxContent.ToLower());
     }
 
     private void CheckBox_OnUnchecked(object sender, RoutedEventArgs e)
     {
         var checkBox = sender as CheckBox;
         var checkBoxContent = checkBox.Content.ToString();
-        SelectedSources.Remove(checkBoxContent.ToLower());
+        selectedSources.Remove(checkBoxContent.ToLower());
     }
 
     private string? GetOutputSource()
@@ -555,6 +567,24 @@ public sealed partial class QueuePage : Page
         CommandButton.Visibility = ConvertDialogOpenButton.Visibility = ClearButton.Visibility = Visibility.Collapsed; // Hide buttons
         ConvertStopButton.Visibility = Visibility.Visible; // Show stop button
         isConverting = true;
+        successSource.Clear();
+        warningSource.Clear();
+        errorSource.Clear();
+        ConversionUpdateCallback conversionUpdateCallback = (severity, song) =>
+        {
+            switch (severity)
+            {
+                case InfoBarSeverity.Success:
+                    successSource.Add(song);
+                    break;
+                case InfoBarSeverity.Warning:
+                    warningSource.Add(song);
+                    break;
+                case InfoBarSeverity.Error:
+                    errorSource.Add(song);
+                    break;
+            }
+        };
 
         // Infobar notification
         ShowInfoBar(InfoBarSeverity.Informational, $"Converting selected input sources to {GetOutputSource()}", 3);
@@ -569,7 +599,7 @@ public sealed partial class QueuePage : Page
         int totalCount = 0;
         foreach (var song in QueueViewModel.Source)
         {
-            if (SelectedSources.Contains(song.Source) && outputSource != song.Source) // If source is selected as input and isn't the same as output
+            if (selectedSources.Contains(song.Source) && outputSource != song.Source) // If source is selected as input and isn't the same as output
             {
                 totalCount++;
             }
@@ -584,21 +614,21 @@ public sealed partial class QueuePage : Page
 
             var song = QueueViewModel.Source[i];
 
-            if (!SelectedSources.Contains(song.Source) || outputSource == song.Source) // If the source is not selected as input or no conversion needed
+            if (!selectedSources.Contains(song.Source) || outputSource == song.Source) // If the source is not selected as input or no conversion needed
             {
                 QueueProgress.Value = 100.0 * (i + 1) / totalCount; // Update the progress bar
                 continue;
             }
 
-            // TODO: GetTrack should have cancellation tokens
             var newSongObj = outputSource switch
             {
-                "deezer" => await DeezerApi.GetDeezerTrack(song, cancellationTokenSource.Token),
+                "deezer" => await DeezerApi.GetDeezerTrack(song, cancellationTokenSource.Token, conversionUpdateCallback),
                 "qobuz" => await QobuzApi.GetQobuzTrack(song, cancellationTokenSource.Token),
                 "spotify" => await SpotifyApi.GetSpotifyTrack(song, cancellationTokenSource.Token),
                 "youtube" => await YoutubeApi.GetYoutubeTrack(song, cancellationTokenSource.Token),
                 _ => null
             };
+
 
             if (cancellationTokenSource.Token.IsCancellationRequested) // If conversion is paused
             {
@@ -607,7 +637,14 @@ public sealed partial class QueuePage : Page
 
             if (newSongObj != null)
             {
-                QueueViewModel.Replace(i, await QueueViewModel.CreateQueueObject(newSongObj));
+                var queueObj = await QueueViewModel.CreateQueueObject(newSongObj);
+                if (queueObj != null)
+                {
+                    if (successSource.Contains(newSongObj)) queueObj.ConvertBadgeColor = new SolidColorBrush(Windows.UI.Color.FromArgb(255, 15, 213, 101));
+                    else if (warningSource.Contains(newSongObj)) queueObj.ConvertBadgeColor = new SolidColorBrush(Windows.UI.Color.FromArgb(255, 255, 185, 0));
+                    else if (errorSource.Contains(newSongObj)) queueObj.ConvertBadgeColor = new SolidColorBrush(Windows.UI.Color.FromArgb(255, 255, 0, 0));
+                    QueueViewModel.Replace(i, queueObj);
+                }
             }
 
             QueueProgress.Value = 100.0 * (i + 1) / totalCount; // Update the progress bar

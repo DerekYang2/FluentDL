@@ -44,7 +44,17 @@ namespace FluentDL.Services
 
             itemSource.Clear();
 
-            var searchResults = await ytm.SearchAsync<Song>(query, token);
+            IEnumerable<Song> searchResults;
+
+            try
+            {
+                searchResults = await ytm.SearchAsync<Song>(query, token);
+            }
+            catch (Exception e)
+            {
+                Debug.WriteLine(e.Message);
+                return;
+            }
 
             foreach (var song in searchResults)
             {

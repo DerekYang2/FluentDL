@@ -10,6 +10,7 @@
     xmlns:controls1="using:CommunityToolkit.WinUI.UI.Controls"
     xmlns:viewModels="using:FluentDL.ViewModels"
     xmlns:converters="using:CommunityToolkit.WinUI.UI.Converters"
+    xmlns:system="using:System"
     mc:Ignorable="d"
     NavigationCacheMode="Required">
     <Page.Resources>
@@ -107,7 +108,7 @@
                             <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
 
-                        <Border Grid.Column="0" CornerRadius="4" Height="76"
+                        <Border Grid.Column="0" CornerRadius="4" Height="76" Padding="0" Margin="0"
                                 Visibility="{x:Bind LocalBitmapImage, Converter={StaticResource NullVisibilityConverter}}">
                             <Border.Background>
                                 <ImageBrush Stretch="UniformToFill" ImageSource="{x:Bind LocalBitmapImage}">
@@ -171,6 +172,8 @@
 
                         <ProgressRing Grid.Column="2"
                                       Visibility="{x:Bind IsRunning, Converter={StaticResource VisibilityConverter}}" />
+                        <InfoBadge Grid.Column="0" x:Name="infoBadge" HorizontalAlignment="Left" VerticalAlignment="Top" Background="{x:Bind ConvertBadgeColor}" Width="12" Height="12" Margin="-6,-4,0,0"/>
+
                     </Grid>
                 </DataTemplate>
             </ListView.ItemTemplate>
@@ -393,5 +396,23 @@
             </StackPanel>
         </ContentDialog>
 
+        <!-- Content Dialog for conversion results-->
+        <ContentDialog x:Name="ConversionResultsDialog" CloseButtonText="Close" Title="Conversion Summary" >
+            <StackPanel>
+            <InfoBar
+                IsOpen="True"
+                IsClosable="False"
+                Severity="Informational"
+                Message="Select at least one input and output."
+                Margin="0,0,0,12" />
+            <ListView x:Name="SuccessListView">
+                <ListView.ItemTemplate>
+                    <DataTemplate>
+                        <TextBlock></TextBlock>
+                    </DataTemplate>
+                </ListView.ItemTemplate>
+            </ListView>
+            </StackPanel>
+        </ContentDialog>
     </Grid>
 </Page>
