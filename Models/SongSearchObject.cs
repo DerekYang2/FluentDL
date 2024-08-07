@@ -82,6 +82,12 @@ public class SongSearchObject
         set;
     }
 
+    public string? AudioFormat
+    {
+        get;
+        set;
+    }
+
     public SongSearchObject()
     {
     }

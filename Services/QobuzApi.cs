@@ -88,7 +88,7 @@ internal class QobuzApi
                 {
                     var fullAlbumObj = await Task.Run(() => apiService.GetAlbum(album.Id), token);
 
-                    if (fullAlbumObj == null || fullAlbumObj.Tracks == null) continue;
+                    if (fullAlbumObj == null || fullAlbumObj.Tracks == null || fullAlbumObj.Tracks.Items.Count == 0) continue;
 
                     foreach (var track in fullAlbumObj.Tracks.Items)
                     {
@@ -137,7 +137,7 @@ internal class QobuzApi
 
                     if (token.IsCancellationRequested) return; // Check if task is cancelled
 
-                    if (result.Tracks != null)
+                    if (result.Tracks != null && result.Tracks.Items.Count > 0)
                     {
                         foreach (var track in result.Tracks.Items)
                         {
@@ -175,7 +175,7 @@ internal class QobuzApi
                     var result = await Task.Run(() => apiService.SearchTracks(artistName, 10, offset), token);
                     if (token.IsCancellationRequested) return; // Check if task is cancelled
 
-                    if (result.Tracks != null)
+                    if (result.Tracks != null && result.Tracks.Items.Count > 0)
                     {
                         foreach (var track in result.Tracks.Items)
                         {
@@ -227,7 +227,7 @@ internal class QobuzApi
         {
             var album = await Task.Run(() => apiService.GetAlbum(id), token);
 
-            if (album.Tracks != null)
+            if (album.Tracks != null && album.Tracks.Items.Count > 0)
             {
                 statusUpdate?.Invoke(InfoBarSeverity.Informational, $"Loading album \"{album.Title}\" ..."); // Show an informational message
                 itemSource.Clear(); // Clear the item source
@@ -243,7 +243,7 @@ internal class QobuzApi
         {
             var playlist = await Task.Run(() => apiService.GetPlaylist(id, withAuth: loggedIn), token);
 
-            if (playlist.Tracks != null)
+            if (playlist.Tracks != null && playlist.Tracks.Items.Count > 0)
             {
                 statusUpdate?.Invoke(InfoBarSeverity.Informational, $"Loading playlist \"{playlist.Name}\" ..."); // Show an informational message
                 itemSource.Clear(); // Clear the item source
@@ -339,17 +339,18 @@ internal class QobuzApi
     {
         // No built-in method for this, so we have to get all tracks and search for the ISRC
         string? isrc = songObj.Isrc;
+        string query = songObj.Artists.Split(", ")[0] + " " + songObj.Title;
 
         if (isrc != null)
         {
-            string query = songObj.Artists.Split(", ")[0] + " " + songObj.Title;
-
             var offset = 0;
 
             do
             {
                 var result = await Task.Run(() => apiService.SearchTracks(query, 5, offset), token); // Search through chunks of 5 tracks
-                if (result.Tracks == null || token.IsCancellationRequested)
+                if (token.IsCancellationRequested) return null;
+
+                if (result.Tracks == null || result.Tracks.Items.Count == 0)
                 {
                     break;
                 }
@@ -368,9 +369,84 @@ internal class QobuzApi
             } while (offset < 50); // Limit the number of iterations
         }
 
-        var searchResults = new List<SongSearchObject>();
+        // BELOW: try matching by metadata
+        // Convert artists csv to array
+        var artists = songObj.Artists.Split(", ");
+        for (int i = 0; i < artists.Length; i++)
+        {
+            artists[i] = artists[i].ToLower();
+        }
 
-        // TODO: a match similar to deezer general search
+        /*
+        var advancedResults = new ObservableCollection<SongSearchObject>();
+
+        // Try searching with all metadata
+        await AdvancedSearch(advancedResults, songObj.Artists, songObj.Title, songObj.AlbumName, token, 5);
+        if (advancedResults.Count > 0)
+        {
+            // 1 - if author contains artist name and title matches
+            // 2 - if title matches
+
+            // Pass 1
+            foreach (var result in advancedResults)
+            {
+                var resultArtists = result.Artists.Split(", ");
+                // Check if at least one pair of artists match
+                foreach (var artist in artists)
+                {
+                    foreach (var resultArtist in resultArtists)
+                    {
+                        var a1 = ApiHelper.PrunePunctuation(artist.ToLower());
+                        var a2 = ApiHelper.PrunePunctuation(resultArtist.ToLower());
+                        if (a1.Contains(a2) || a2.Contains(a1))
+                        {
+                            callback?.Invoke(InfoBarSeverity.Warning, result); // Not found by ISRC
+                            return result;
+                        }
+                    }
+                }
+            }
+
+            // Pass 2
+            foreach (var result in advancedResults)
+            {
+                if (ApiHelper.PrunePunctuation(songObj.Title.ToLower()).Equals(ApiHelper.PrunePunctuation(result.Title.ToLower())))
+                {
+                    callback?.Invoke(InfoBarSeverity.Warning, result); // Not found by ISRC
+                    return result;
+                }
+            }
+        }
+            */
+        // Try searching without album, same as above
+        var searchResult = await Task.Run(() => apiService.SearchTracks(query, 10), token);
+
+        if (token.IsCancellationRequested) return null; // Check if task is cancelled
+
+        if (searchResult.Tracks != null && searchResult.Tracks.Items.Count > 0)
+        {
+            // Pass 1
+            foreach (var result in searchResult.Tracks.Items)
+            {
+                if (token.IsCancellationRequested) return null;
+
+                var performersStr = result.Performers;
+                // Check if at least one pair of artists match
+                foreach (var artist in artists)
+                {
+                    var a1 = ApiHelper.PrunePunctuation(artist.ToLower());
+                    var a2 = ApiHelper.PrunePunctuation(performersStr.ToLower());
+                    if (a2.Contains(a1) && ApiHelper.PrunePunctuation(songObj.Title.ToLower()).Equals(ApiHelper.PrunePunctuation(result.Title.ToLower())))
+                    {
+                        var retObj = ConvertSongSearchObject(result);
+                        callback?.Invoke(InfoBarSeverity.Warning, retObj); // Not found by ISRC
+                        return retObj;
+                    }
+                }
+            }
+        }
+
+
         callback?.Invoke(InfoBarSeverity.Error, songObj); // Show an error message with original object
         return null;
     }

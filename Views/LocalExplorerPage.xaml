@@ -189,6 +189,7 @@
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="76" />
                                 <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
                             </Grid.ColumnDefinitions>
                             <Border CornerRadius="4" Height="76">
                                 <Border.Background>
@@ -202,6 +203,7 @@
                                                Style="{ThemeResource BodyStrongTextBlockStyle}"
                                                HorizontalAlignment="Left"
                                                TextTrimming="CharacterEllipsis" MaxLines="1" Margin="0, 0, 8, 0" />
+
                                     <Border Background="DarkGray" CornerRadius="2" Padding="4, 0"
                                             VerticalAlignment="Center">
                                         <TextBlock x:Name="ExplicitBadge" Text="E"
@@ -228,6 +230,10 @@
                                            Style="{ThemeResource BodyTextBlockStyle}" Margin="5,0,0,0"
                                            FontFamily="Segoe UI Variable Display" />
                             </StackPanel>
+
+                            <Border Grid.Column="2" Background="{ThemeResource LayerOnMicaBaseAltFillColorSecondaryBrush}" CornerRadius="2" Padding="6, 2" HorizontalAlignment="Right" VerticalAlignment="Top">
+                                <TextBlock x:Name="AudioFormatBadge" Text="{x:Bind AudioFormat}" Style="{ThemeResource CaptionTextBlockStyle}" VerticalAlignment="Center" Margin="0, -2, 0, 0"/>
+                            </Border>
                         </Grid>
                     </DataTemplate>
                 </ListView.ItemTemplate>

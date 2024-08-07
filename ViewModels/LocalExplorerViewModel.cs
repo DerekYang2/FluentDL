@@ -132,6 +132,7 @@ public partial class LocalExplorerViewModel : ObservableRecipient
             ImageLocation = null,
             LocalBitmapImage = null,
             Isrc = GetISRC(track),
+            AudioFormat = track.AudioFormat.ShortName
         };
     }
 

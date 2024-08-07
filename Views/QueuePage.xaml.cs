@@ -560,7 +560,6 @@ public sealed partial class QueuePage : Page
         }
 
         var outputSource = GetOutputSource().ToLower();
-
         // Loop through and find the total number of queries to process
         int totalCount = 0;
         foreach (var song in QueueViewModel.Source)
