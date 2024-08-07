@@ -167,6 +167,39 @@ public sealed partial class QueuePage : Page
             ShowInfoBar(InfoBarSeverity.Success, "Copied to clipboard");
         };
 
+        var downloadButton = new AppBarButton() { Icon = new SymbolIcon(Symbol.Download), Label = "Download" };
+        downloadButton.Click += async (sender, e) =>
+        {
+            var songObj = PreviewPanel.GetSong();
+            if (songObj == null)
+            {
+                ShowInfoBar(InfoBarSeverity.Error, "Failed to download track");
+                return;
+            }
+
+            var savePicker = new FileSavePicker { SuggestedStartLocation = PickerLocationId.Downloads, SuggestedFileName = $"{songObj.Title} [{songObj.Isrc}].flac" };
+
+            savePicker.FileTypeChoices.Add("FLAC", new List<string> { ".flac" });
+
+            // Retrieve the window handle (HWND) of the current WinUI 3 window
+            var hWnd = WinRT.Interop.WindowNative.GetWindowHandle(App.MainWindow);
+
+            // Initialize the file picker with the window handle (HWND)
+            WinRT.Interop.InitializeWithWindow.Initialize(savePicker, hWnd);
+
+            var file = await savePicker.PickSaveFileAsync();
+
+            if (file != null)
+            {
+                var url = ApiHelper.GetUrl(songObj);
+                await YoutubeApi.DownloadAudio(url, Path.GetDirectoryName(file.Path), Path.GetFileNameWithoutExtension(file.Path));
+                // convert opus to flac
+                var opusLocation = Path.Combine(Path.GetDirectoryName(file.Path), Path.GetFileNameWithoutExtension(file.Path) + ".opus");
+                Debug.WriteLine("OPUS LOC: " + opusLocation);
+                FFmpegRunner.ConvertOpusToFlac(opusLocation);
+            }
+        };
+
         var downloadCoverButton = new AppBarButton() { Icon = new FontIcon { Glyph = "\uEE71" }, Label = "Download Cover" };
         downloadCoverButton.Click += async (sender, e) =>
         {
@@ -215,7 +248,7 @@ public sealed partial class QueuePage : Page
             PreviewPanel.Clear();
         };
 
-        PreviewPanel.SetAppBarButtons(new List<AppBarButton> { copySourceButton, downloadCoverButton, removeButton });
+        PreviewPanel.SetAppBarButtons(new List<AppBarButton> { copySourceButton, downloadButton, downloadCoverButton, removeButton });
     }
 
     private async void CustomListView_OnSelectionChanged(object sender, SelectionChangedEventArgs e)

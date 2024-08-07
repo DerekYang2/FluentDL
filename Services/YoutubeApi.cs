@@ -740,9 +740,7 @@ namespace FluentDL.Services
             var streamInfo = streamManifest.GetAudioOnlyStreams().GetWithHighestBitrate();
 
             string extension = streamInfo.Container.ToString();
-            extension = "aac";
-            /*
-             // BELOW IS CODE FOR OPUS CODEC
+
             long maxBitRate = 0;
             foreach (var streamObj in streamManifest.GetAudioStreams()) // Get the opus stream with highest bitrate
             {
@@ -755,7 +753,6 @@ namespace FluentDL.Services
 
                 Debug.WriteLine(streamObj.Container + " | " + streamObj.Bitrate + " | " + streamObj.AudioCodec);
             }
-            */
 
             var filePath = $"{downloadFolder}\\{filename}.{extension}";
 
