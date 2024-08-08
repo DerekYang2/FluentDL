@@ -22,6 +22,7 @@ using YouTubeMusicAPI.Models;
 using YouTubeMusicAPI.Models.Info;
 using static System.Net.WebRequestMethods;
 using Video = YouTubeMusicAPI.Models.Video;
+using AngleSharp.Text;
 
 namespace FluentDL.Services
 {
@@ -120,8 +121,25 @@ namespace FluentDL.Services
                 {
                     if (token.IsCancellationRequested) return; // Check if task is cancelled
 
+                    // Ensure album artist matches to quickly filter out results
+                    var oneArtistMatch = false;
+                    if (isArtistSpecified) // If artist is specified
+                    {
+                        foreach (var queryArtist in album.Artists)
+                        {
+                            if (CloseMatch(queryArtist.Name, artistName))
+                            {
+                                oneArtistMatch = true;
+                                break;
+                            }
+                        }
+                    }
+                    else // If artist is not specified
+                    {
+                        oneArtistMatch = true; // Assume true if artist not specified
+                    }
 
-                    if (CloseMatch(album.Name, albumName)) // This album result substring matches
+                    if (oneArtistMatch && CloseMatch(album.Name, albumName)) // This album result substring matches
                     {
                         // https://music.youtube.com/playlist?list={albumId}
 
@@ -144,7 +162,7 @@ namespace FluentDL.Services
                                 {
                                     if (isTrackSpecified) // Album, artist, track specified
                                     {
-                                        bool oneArtistMatch = false;
+                                        oneArtistMatch = false;
                                         foreach (var artist in song.Artists) // Check if at least one artist matches
                                         {
                                             if (CloseMatch(artist.Name, artistName))
@@ -190,7 +208,7 @@ namespace FluentDL.Services
                                 {
                                     if (isTrackSpecified) // Album, artist, track specified
                                     {
-                                        bool oneArtistMatch = false;
+                                        oneArtistMatch = false;
                                         foreach (var artist in song.Artists) // Check if at least one artist matches
                                         {
                                             if (CloseMatch(artist.Name, artistName))
@@ -487,90 +505,110 @@ namespace FluentDL.Services
                 artists[i] = artists[i].ToLower();
             }
 
-            var advancedResults = new ObservableCollection<SongSearchObject>();
+            var artistName = songObj.Artists.Split(", ")[0]; // Get one artist
+            var trackName = songObj.Title;
+            var albumName = songObj.AlbumName;
 
-            // Try searching with all metadata
-            await AdvancedSearch(advancedResults, songObj.Artists, songObj.Title, songObj.AlbumName, token, 5);
-            if (advancedResults.Count > 0)
+            IEnumerable<Album>? searchResults = null;
+            try
             {
-                // 1: if author contains artist name and title matches 
-                // 2: if title matches
+                searchResults = await ytm.SearchAsync<Album>(albumName, token); // Search for album first
+            }
+            catch (Exception e)
+            {
+                Debug.WriteLine("Error searching for album: " + e.Message);
+            }
 
-                // Pass 1
-                foreach (var result in advancedResults)
+            if (token.IsCancellationRequested) return null; // If cancelled
+
+            if (searchResults != null)
+            {
+                // Start searching through albums
+                foreach (var album in searchResults)
                 {
-                    var authorsCSV = result.Artists.ToLower();
-                    if (ApiHelper.PrunePunctuation(songObj.Title.ToLower()).Equals(ApiHelper.PrunePunctuation(result.Title.ToLower())))
+                    if (token.IsCancellationRequested) return null; // Check if task is cancelled
+
+                    // Ensure album artist matches
+                    bool oneArtistMatch = false;
+                    foreach (var queryArtist in album.Artists)
                     {
                         foreach (var artist in artists)
                         {
-                            if (authorsCSV.Contains(artist.ToLower()))
+                            if (CloseMatch(queryArtist.Name, artist))
                             {
-                                callback?.Invoke(InfoBarSeverity.Warning, result); // Not found by ISRC
-                                return result;
+                                oneArtistMatch = true;
+                                break;
                             }
                         }
                     }
-                }
 
-                // Pass 2
-                foreach (var result in advancedResults)
-                {
-                    if (ApiHelper.PrunePunctuation(songObj.Title.ToLower()).Equals(ApiHelper.PrunePunctuation(result.Title.ToLower())))
+                    if (oneArtistMatch && CloseMatch(album.Name, albumName)) // This album result substring matches
                     {
-                        callback?.Invoke(InfoBarSeverity.Warning, result); // Not found by ISRC
-                        return result;
+                        var playlistUrl = $"https://music.youtube.com/playlist?list={album.Id}";
+
+                        await foreach (var playlistVideo in youtube.Playlists.GetVideosAsync(playlistUrl, token))
+                        {
+                            var song = await ytm.GetSongVideoInfoAsync(playlistVideo.Id, token);
+                            if (token.IsCancellationRequested)
+                            {
+                                return null;
+                            }
+
+
+                            oneArtistMatch = false;
+                            foreach (var queryArtist in song.Artists) // Check if at least one artist matches for track
+                            {
+                                foreach (var artist in artists)
+                                {
+                                    if (CloseMatch(queryArtist.Name, artist))
+                                    {
+                                        oneArtistMatch = true;
+                                        break;
+                                    }
+                                }
+                            }
+
+                            if (oneArtistMatch && CloseMatch(song.Name, trackName))
+                            {
+                                var retObj = await ConvertSongSearchObject(song);
+                                callback?.Invoke(InfoBarSeverity.Warning, retObj); // Not found by ISRC
+                                return retObj;
+                            }
+                        }
                     }
                 }
             }
 
+
             // Try searching without album
-            advancedResults.Clear();
-            // await AdvancedSearch(advancedResults, songObj.Artists, songObj.Title, "", token, 5);
-
-            var artistName = songObj.Artists.Split(", ")[0];
-            var trackName = songObj.Title;
-
             var query = artistName + " " + trackName;
-            var searchResults = await ytm.SearchAsync<Song>(query, token);
+            var searchResults2 = await ytm.SearchAsync<Song>(query, token);
 
-            if (searchResults.Count > 0)
+            if (token.IsCancellationRequested) return null; // If cancelled
+
+            foreach (var result in searchResults2)
             {
-                // 1: if author contains artist name and title matches
-                // 2: if title matches
-
-                // Pass 1
-                foreach (var result in searchResults)
+                if (ApiHelper.PrunePunctuation(songObj.Title.ToLower()).Equals(ApiHelper.PrunePunctuation(result.Name.ToLower())))
                 {
-                    var authorsCSV = result.Artists.ToLower();
-                    if (ApiHelper.PrunePunctuation(songObj.Title.ToLower()).Equals(ApiHelper.PrunePunctuation(result.Title.ToLower())))
+                    foreach (var artist in artists)
                     {
-                        foreach (var artist in artists)
+                        foreach (var artistResult in result.Artists)
                         {
-                            if (authorsCSV.Contains(artist.ToLower()))
+                            if (CloseMatch(artistResult.Name, artist))
                             {
-                                callback?.Invoke(InfoBarSeverity.Warning, result); // Not found by ISRC
-                                return result;
+                                var retObj = await GetTrack(result);
+                                callback?.Invoke(InfoBarSeverity.Warning, retObj); // Not found by ISRC
+                                return retObj;
                             }
                         }
-                    }
-                }
-
-                // Pass 2
-                foreach (var result in advancedResults)
-                {
-                    if (ApiHelper.PrunePunctuation(songObj.Title.ToLower()).Equals(ApiHelper.PrunePunctuation(result.Title.ToLower())))
-                    {
-                        callback?.Invoke(InfoBarSeverity.Warning, result); // Not found by ISRC
-                        return result;
                     }
                 }
             }
 
             // Fall back to searching for videos
-            var retObj = await GetTrack((await GetSearchResult(songObj)).Id);
-            callback?.Invoke(InfoBarSeverity.Warning, retObj); // Not found by ISRC
-            return retObj;
+            var ret = await GetTrack((await GetSearchResult(songObj)).Id);
+            callback?.Invoke(InfoBarSeverity.Warning, ret); // Not found by ISRC
+            return ret;
         }
 
         // Largest image ends in maxresdefault.webp

@@ -85,7 +85,25 @@ internal class QobuzApi
             {
                 if (token.IsCancellationRequested) return; // Check if task is cancelled
 
-                if (CloseMatch(albumName, album.Title))
+                // Ensure artist matches to quickly filter out irrelevant albums
+                var oneArtistMatch = false;
+                if (isArtistSpecified)
+                {
+                    foreach (var artist in album.Artists) // For every artist in album
+                    {
+                        if (CloseMatch(artistName, artist.Name))
+                        {
+                            oneArtistMatch = true;
+                            break;
+                        }
+                    }
+                }
+                else
+                {
+                    oneArtistMatch = true; // Assume true if artist not specified
+                }
+
+                if (oneArtistMatch && CloseMatch(albumName, album.Title))
                 {
                     var fullAlbumObj = await Task.Run(() => apiService.GetAlbum(album.Id), token);
 
@@ -391,7 +409,21 @@ internal class QobuzApi
         {
             if (token.IsCancellationRequested) return null; // Check if task is cancelled
 
-            if (CloseMatch(albumName, album.Title)) // Album close match
+            // Ensure artist matches before checking tracks
+            var oneArtistMatch = false;
+            foreach (var artist in artists) // For every artist in SongObject
+            {
+                foreach (var albumArtist in album.Artists) // For every artist in album
+                {
+                    if (CloseMatch(artist, albumArtist.Name))
+                    {
+                        oneArtistMatch = true;
+                        break;
+                    }
+                }
+            }
+
+            if (oneArtistMatch && CloseMatch(albumName, album.Title)) // Album close match
             {
                 var fullAlbumObj = await Task.Run(() => apiService.GetAlbum(album.Id), token);
 
@@ -401,7 +433,7 @@ internal class QobuzApi
                 {
                     if (track.Id == null) continue;
 
-                    var oneArtistMatch = false;
+                    oneArtistMatch = false;
                     foreach (var artist in artists) // For every artist in SongObject
                     {
                         var a1 = ApiHelper.PrunePunctuation(artist.ToLower());
@@ -430,7 +462,6 @@ internal class QobuzApi
 
         if (searchResult.Tracks != null && searchResult.Tracks.Items.Count > 0)
         {
-            // Pass 1
             foreach (var result in searchResult.Tracks.Items)
             {
                 if (token.IsCancellationRequested) return null;
