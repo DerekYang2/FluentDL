@@ -502,9 +502,9 @@ namespace FluentDL.Services
                     var authorsCSV = result.Artists.ToLower();
                     if (ApiHelper.PrunePunctuation(songObj.Title.ToLower()).Equals(ApiHelper.PrunePunctuation(result.Title.ToLower())))
                     {
-                        foreach (var artistName in artists)
+                        foreach (var artist in artists)
                         {
-                            if (authorsCSV.Contains(artistName.ToLower()))
+                            if (authorsCSV.Contains(artist.ToLower()))
                             {
                                 callback?.Invoke(InfoBarSeverity.Warning, result); // Not found by ISRC
                                 return result;
@@ -526,21 +526,28 @@ namespace FluentDL.Services
 
             // Try searching without album
             advancedResults.Clear();
-            await AdvancedSearch(advancedResults, songObj.Artists, songObj.Title, "", token, 5);
-            if (advancedResults.Count > 0)
+            // await AdvancedSearch(advancedResults, songObj.Artists, songObj.Title, "", token, 5);
+
+            var artistName = songObj.Artists.Split(", ")[0];
+            var trackName = songObj.Title;
+
+            var query = artistName + " " + trackName;
+            var searchResults = await ytm.SearchAsync<Song>(query, token);
+
+            if (searchResults.Count > 0)
             {
                 // 1: if author contains artist name and title matches
                 // 2: if title matches
 
                 // Pass 1
-                foreach (var result in advancedResults)
+                foreach (var result in searchResults)
                 {
                     var authorsCSV = result.Artists.ToLower();
                     if (ApiHelper.PrunePunctuation(songObj.Title.ToLower()).Equals(ApiHelper.PrunePunctuation(result.Title.ToLower())))
                     {
-                        foreach (var artistName in artists)
+                        foreach (var artist in artists)
                         {
-                            if (authorsCSV.Contains(artistName.ToLower()))
+                            if (authorsCSV.Contains(artist.ToLower()))
                             {
                                 callback?.Invoke(InfoBarSeverity.Warning, result); // Not found by ISRC
                                 return result;
