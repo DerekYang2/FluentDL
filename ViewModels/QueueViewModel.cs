@@ -15,6 +15,8 @@ using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Imaging;
 using static System.Net.WebRequestMethods;
 using DispatcherQueue = Microsoft.UI.Dispatching.DispatcherQueue;
+using System.ComponentModel;
+using System.Runtime.CompilerServices;
 
 namespace FluentDL.ViewModels;
 
@@ -58,7 +60,7 @@ public class QueueObject : SongSearchObject
     }
 }
 
-public partial class QueueViewModel : ObservableRecipient
+public partial class QueueViewModel : ObservableRecipient, INotifyPropertyChanged
 {
     public static ObservableCollection<QueueObject> Source
     {
@@ -66,23 +68,46 @@ public partial class QueueViewModel : ObservableRecipient
         set;
     } = new ObservableCollection<QueueObject>();
 
-    public static int SuccessCount
-    {
-        get;
-        set;
-    } = 0;
+    private int _successCount;
 
-    public static int WarningCount
+    public int SuccessCount
     {
-        get;
-        set;
-    } = 0;
+        get => _successCount;
+        set => SetField(ref _successCount, value, nameof(SuccessCount));
+    }
 
-    public static int ErrorCount
+    private int _warningCount;
+
+    public int WarningCount
     {
-        get;
-        set;
-    } = 0;
+        get => _warningCount;
+        set => SetField(ref _warningCount, value, nameof(WarningCount));
+    }
+
+    private int _errorCount;
+
+    public int ErrorCount
+    {
+        get => _errorCount;
+        set => SetField(ref _errorCount, value, nameof(ErrorCount));
+    }
+
+    // boiler-plate
+    public event PropertyChangedEventHandler PropertyChanged;
+
+    protected virtual void OnPropertyChanged(string propertyName)
+    {
+        PropertyChangedEventHandler handler = PropertyChanged;
+        if (handler != null) handler(this, new PropertyChangedEventArgs(propertyName));
+    }
+
+    protected bool SetField<T>(ref T field, T value, string propertyName)
+    {
+        if (EqualityComparer<T>.Default.Equals(field, value)) return false;
+        field = value;
+        OnPropertyChanged(propertyName);
+        return true;
+    }
 
     private static string command
     {
@@ -231,6 +256,16 @@ public partial class QueueViewModel : ObservableRecipient
         {
             var cleanObj = Source[i];
             cleanObj.ResultString = null;
+            Source[i] = cleanObj;
+        }
+    }
+
+    public static void ResetConversionResults()
+    {
+        for (int i = 0; i < Source.Count; i++) // Remove all result str, set new obj to refresh ui
+        {
+            var cleanObj = Source[i];
+            cleanObj.ConvertBadgeColor = new SolidColorBrush(Windows.UI.Color.FromArgb(0, 0, 0, 0)); // Reset the badge color
             Source[i] = cleanObj;
         }
     }

@@ -303,50 +303,47 @@ internal class DeezerApi
         }
 
         var songObjList = new List<SongSearchObject>(); // List of SongSearchObject results
-        HashSet<string> idSet = new HashSet<string>(); // HashSet to prevent duplicate tracks
+        HashSet<string> idSet = new HashSet<string>(); // Set of track ids
 
-        foreach (var artistName in artists) // Try searching for each artist
+        // With album
+        var req = "search?q=" + WebUtility.UrlEncode(("artist:%22" + song.Artists + "%22 ") + (trackName.Length > 0 ? "track:%22" + trackName + "%22 " : "") + (albumName.Length > 0 ? "album:%22" + albumName + "%22" : ""));
+        var jsonObject = await FetchJsonElement(req); // Create json object from the response
+
+        foreach (var track in jsonObject.GetProperty("data").EnumerateArray())
         {
-            // With album
-            var req = "search?q=" + WebUtility.UrlEncode((artistName.Length > 0 ? "artist:%22" + artistName + "%22 " : "") + (trackName.Length > 0 ? "track:%22" + trackName + "%22 " : "") + (albumName.Length > 0 ? "album:%22" + albumName + "%22" : ""));
-            var jsonObject = await FetchJsonElement(req); // Create json object from the response
-
-            foreach (var track in jsonObject.GetProperty("data").EnumerateArray())
+            if (token.IsCancellationRequested) // Cancel requested, terminate this method
             {
-                if (token.IsCancellationRequested) // Cancel requested, terminate this method
-                {
-                    return null;
-                }
-
-                var trackId = track.GetProperty("id").ToString();
-                if (!idSet.Contains(trackId)) // If the track id is not already in the set
-                {
-                    idSet.Add(trackId);
-                    //var songObj = await GetTrack(trackId);
-                    var songObj = GetTrackQuick(track);
-                    songObjList.Add(songObj);
-                }
+                return null;
             }
 
-            // Without album
-            req = "search?q=" + WebUtility.UrlEncode((artistName.Length > 0 ? "artist:%22" + artistName + "%22 " : "") + (trackName.Length > 0 ? "track:%22" + trackName + "%22 " : "")) + "?strict=on"; // Strict search
-            jsonObject = await FetchJsonElement(req); // Create json object from the response
-
-            foreach (var track in jsonObject.GetProperty("data").EnumerateArray())
+            var trackId = track.GetProperty("id").ToString();
+            if (!idSet.Contains(trackId)) // If the track id is not already in the set
             {
-                if (token.IsCancellationRequested)
-                {
-                    return null;
-                }
+                idSet.Add(trackId);
+                //var songObj = await GetTrack(trackId);
+                var songObj = GetTrackQuick(track);
+                songObjList.Add(songObj);
+            }
+        }
 
-                var trackId = track.GetProperty("id").ToString();
-                if (!idSet.Contains(trackId)) // If the track id is not already in the set
-                {
-                    idSet.Add(trackId);
-                    // var songObj = await GetTrack(trackId);
-                    var songObj = GetTrackQuick(track);
-                    songObjList.Add(songObj);
-                }
+        // Without album
+        req = "search?q=" + WebUtility.UrlEncode(("artist:%22" + song.Artists + "%22 ") + (trackName.Length > 0 ? "track:%22" + trackName + "%22 " : "")) + "?strict=on"; // Strict search
+        jsonObject = await FetchJsonElement(req); // Create json object from the response
+
+        foreach (var track in jsonObject.GetProperty("data").EnumerateArray())
+        {
+            if (token.IsCancellationRequested)
+            {
+                return null;
+            }
+
+            var trackId = track.GetProperty("id").ToString();
+            if (!idSet.Contains(trackId)) // If the track id is not already in the set
+            {
+                idSet.Add(trackId);
+                // var songObj = await GetTrack(trackId);
+                var songObj = GetTrackQuick(track);
+                songObjList.Add(songObj);
             }
         }
 

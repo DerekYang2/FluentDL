@@ -1,5 +1,6 @@
 ﻿<Page
     x:Class="FluentDL.Views.QueuePage"
+    x:Name="Root"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
@@ -437,9 +438,9 @@
                             <TabViewItem.HeaderTemplate>
                                 <DataTemplate>
                                     <Grid HorizontalAlignment="Stretch">
-                                        <TextBlock Text="{Binding}" />
+                                        <TextBlock Text="{Binding ElementName=SuccessTab, Path=Header}" />
                                         <InfoBadge HorizontalAlignment="Right"
-                                                   Value="{Binding Source={StaticResource QueueViewModel}, Path=SuccessCount}"
+                                                   Value="{Binding ElementName=Root, Path=ViewModel.SuccessCount, Mode=OneWay}"
                                                    Margin="2, 0"
                                                    Background="{ThemeResource SystemFillColorSuccessBrush}" />
                                     </Grid>
@@ -452,9 +453,9 @@
                             <TabViewItem.HeaderTemplate>
                                 <DataTemplate>
                                     <Grid HorizontalAlignment="Stretch">
-                                        <TextBlock Text="{Binding}" />
+                                        <TextBlock Text="{Binding ElementName=WarningTab, Path=Header}" />
                                         <InfoBadge HorizontalAlignment="Right"
-                                                   Value="{Binding Source={StaticResource QueueViewModel}, Path=WarningCount}"
+                                                   Value="{Binding ElementName=Root, Path=ViewModel.WarningCount, Mode=OneWay}"
                                                    Margin="2, 0"
                                                    Background="{ThemeResource SystemFillColorCautionBrush}" />
                                     </Grid>
@@ -467,9 +468,9 @@
                             <TabViewItem.HeaderTemplate>
                                 <DataTemplate>
                                     <Grid HorizontalAlignment="Stretch">
-                                        <TextBlock Text="{Binding}" />
+                                        <TextBlock Text="{Binding ElementName=ErrorTab, Path=Header}" />
                                         <InfoBadge HorizontalAlignment="Right"
-                                                   Value="{Binding Source={StaticResource QueueViewModel}, Path=ErrorCount}"
+                                                   Value="{Binding ElementName=Root, Path=ViewModel.ErrorCount, Mode=OneWay}"
                                                    Margin="2, 0"
                                                    Background="{ThemeResource SystemFillColorCriticalBrush}" />
                                     </Grid>

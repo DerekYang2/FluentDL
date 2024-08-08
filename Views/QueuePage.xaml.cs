@@ -132,8 +132,6 @@ public sealed partial class QueuePage : Page
                 ShowInfoBar(InfoBarSeverity.Informational, "Queue paused");
             }
 
-            NoItemsText.Visibility = QueueViewModel.Source.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
-
             if (QueueViewModel.Source.Count == 0)
             {
                 ProgressText.Text = "No tracks in queue";
@@ -156,6 +154,8 @@ public sealed partial class QueuePage : Page
                     App.GetService<IAppNotificationService>().Show(string.Format("QueueCompletePayload".GetLocalized(), AppContext.BaseDirectory)); // Send notification
                 }
             }
+
+            NoItemsText.Visibility = QueueViewModel.Source.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
         });
     }
 
@@ -588,9 +588,14 @@ public sealed partial class QueuePage : Page
         CommandButton.Visibility = ConvertDialogOpenButton.Visibility = ClearButton.Visibility = Visibility.Collapsed; // Hide buttons
         ConvertStopButton.Visibility = Visibility.Visible; // Show stop button
         isConverting = true;
+
+        // Clear the conversion results
         successSource.Clear();
         warningSource.Clear();
         errorSource.Clear();
+        QueueViewModel.ResetConversionResults(); // Clear all badges and results on queue objects
+        ViewModel.SuccessCount = ViewModel.WarningCount = ViewModel.ErrorCount = 0; // Reset the counts
+
         ConversionUpdateCallback conversionUpdateCallback = (severity, song) =>
         {
             switch (severity)
@@ -712,10 +717,12 @@ public sealed partial class QueuePage : Page
     {
         ConversionResultsDialog.XamlRoot = this.XamlRoot;
         ConversionTabView.SelectedItem = SuccessTab; // Default to success tab
+
         // Set the counts
-        QueueViewModel.SuccessCount = successSource.Count;
-        QueueViewModel.WarningCount = warningSource.Count;
-        QueueViewModel.ErrorCount = errorSource.Count;
+        ViewModel.SuccessCount = successSource.Count;
+        ViewModel.WarningCount = warningSource.Count;
+        ViewModel.ErrorCount = errorSource.Count;
+
         // Show the dialog
         await ConversionResultsDialog.ShowAsync();
     }

@@ -287,6 +287,42 @@ namespace FluentDL.Services
                 }
             }
 
+            // Find by metadata
+            var artistCSV = song.Artists;
+            var artists = artistCSV.Split(", ");
+            var trackName = song.Title;
+            var albumName = song.AlbumName;
+
+            var reqStr = "";
+            if (!string.IsNullOrWhiteSpace(artistCSV))
+            {
+                reqStr += $"artist:{artistCSV} ";
+            }
+
+            if (!string.IsNullOrWhiteSpace(trackName))
+            {
+                reqStr += $"track:{trackName} ";
+            }
+
+            if (!string.IsNullOrWhiteSpace(albumName))
+            {
+                reqStr += $"album:{albumName} ";
+            }
+
+            reqStr = reqStr.Trim(); // Trim the query
+
+            var response = await spotify.Search.Item(new SearchRequest(SearchRequest.Types.Track, reqStr) { Limit = 20 }, token);
+
+            if (response.Tracks.Items == null)
+            {
+                callback?.Invoke(InfoBarSeverity.Error, song); // Show error with original song object
+                return null;
+            }
+
+            foreach (FullTrack track in response.Tracks.Items)
+            {
+            }
+
             callback?.Invoke(InfoBarSeverity.Error, song); // Show error with original song object
             return null;
         }
