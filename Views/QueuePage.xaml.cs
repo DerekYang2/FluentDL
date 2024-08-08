@@ -88,7 +88,6 @@ public sealed partial class QueuePage : Page
         QueueViewModel.Source.CollectionChanged += (sender, e) =>
         {
             OnQueueSourceChange();
-            NoItemsText.Visibility = QueueViewModel.Source.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
         };
 
         // Set conversion variables
@@ -132,6 +131,8 @@ public sealed partial class QueuePage : Page
                 SetContinueUI(); // If paused, UI should show continue
                 ShowInfoBar(InfoBarSeverity.Informational, "Queue paused");
             }
+
+            NoItemsText.Visibility = QueueViewModel.Source.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
 
             if (QueueViewModel.Source.Count == 0)
             {
