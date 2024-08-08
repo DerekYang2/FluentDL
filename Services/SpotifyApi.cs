@@ -2,9 +2,12 @@
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
+using System.Diagnostics.Eventing.Reader;
 using System.Linq;
+using System.Net;
 using System.Text;
 using System.Threading.Tasks;
+using FluentDL.Helpers;
 using FluentDL.Models;
 using FluentDL.Views;
 using Microsoft.UI.Dispatching;
@@ -35,6 +38,14 @@ namespace FluentDL.Services
             }
         }
 
+        private static bool CloseMatch(string str1, string str2)
+        {
+            return ApiHelper.IsSubstring(str1.ToLower(), str2.ToLower());
+        }
+
+        // For whatever reason, a request like below throws bad request error
+        // REQUEST: artist:"The Beep Test" track:"The Beep Test: 20 Metre (Complete Test)" album:"The Beep Test: The Best 20 Metre and 15 Metre Bleep Test for Personal Fitness & Recruitment Practice to the Police, RAF, Army, Fire Brigade, Royal Air Force, Royal Navy and the Emergency Services"
+
         public static async Task AdvancedSearch(ObservableCollection<SongSearchObject> itemSource, string artistName, string trackName, string albumName, CancellationToken token, int limit = 25)
         {
             // Trim
@@ -49,22 +60,41 @@ namespace FluentDL.Services
             var reqStr = "";
             if (!string.IsNullOrWhiteSpace(artistName))
             {
-                reqStr += $"artist:{artistName} ";
+                reqStr += $"artist:\"{artistName}\" ";
             }
 
             if (!string.IsNullOrWhiteSpace(trackName))
             {
-                reqStr += $"track:{trackName} ";
+                reqStr += $"track:\"{trackName}\" ";
             }
 
             if (!string.IsNullOrWhiteSpace(albumName))
             {
-                reqStr += $"album:{albumName} ";
+                reqStr += $"album:\"{albumName}\" ";
             }
 
             reqStr = reqStr.Trim(); // Trim the query
 
-            var response = await spotify.Search.Item(new SearchRequest(SearchRequest.Types.Track, reqStr) { Limit = limit }, token);
+            SearchResponse? response;
+            try
+            {
+                response = await spotify.Search.Item(new SearchRequest(SearchRequest.Types.Track, reqStr) { Limit = limit }, token);
+            }
+            catch (Exception e)
+            {
+                Debug.WriteLine("Failed to advanced search: " + e.Message);
+                // Remove album: and everything after
+                var albumIdx = reqStr.IndexOf("album:");
+                if (albumIdx != -1)
+                {
+                    reqStr = reqStr.Substring(0, albumIdx);
+                    response = await spotify.Search.Item(new SearchRequest(SearchRequest.Types.Track, reqStr) { Limit = 20 }, token);
+                }
+                else
+                {
+                    return;
+                }
+            }
 
             if (response.Tracks.Items == null)
             {
@@ -296,31 +326,101 @@ namespace FluentDL.Services
             var reqStr = "";
             if (!string.IsNullOrWhiteSpace(artistCSV))
             {
-                reqStr += $"artist:{artistCSV} ";
+                reqStr += $"artist:\"{artistCSV}\" ";
             }
 
             if (!string.IsNullOrWhiteSpace(trackName))
             {
-                reqStr += $"track:{trackName} ";
+                reqStr += $"track:\"{trackName}\" ";
             }
 
             if (!string.IsNullOrWhiteSpace(albumName))
             {
-                reqStr += $"album:{albumName} ";
+                reqStr += $"album:\"{albumName}\" ";
             }
 
             reqStr = reqStr.Trim(); // Trim the query
+            var songObjList = new List<SongSearchObject>(); // List of SongSearchObject results
+            HashSet<string> idSet = new HashSet<string>(); // Set of track ids
 
-            var response = await spotify.Search.Item(new SearchRequest(SearchRequest.Types.Track, reqStr) { Limit = 20 }, token);
-
-            if (response.Tracks.Items == null)
+            SearchResponse? response;
+            try
             {
-                callback?.Invoke(InfoBarSeverity.Error, song); // Show error with original song object
-                return null;
+                response = await spotify.Search.Item(new SearchRequest(SearchRequest.Types.Track, reqStr) { Limit = 20 }, token);
+            }
+            catch (Exception e)
+            {
+                Debug.WriteLine("Failed to advanced search: " + e.Message);
+                // Remove album: and everything after
+                var albumIdx = reqStr.IndexOf("album:");
+                if (albumIdx != -1)
+                {
+                    reqStr = reqStr.Substring(0, albumIdx);
+                    response = await spotify.Search.Item(new SearchRequest(SearchRequest.Types.Track, reqStr) { Limit = 20 }, token);
+                }
+                else
+                {
+                    return null;
+                }
             }
 
-            foreach (FullTrack track in response.Tracks.Items)
+            if (response.Tracks.Items != null)
             {
+                foreach (FullTrack track in response.Tracks.Items) // Add to songObjList if 
+                {
+                    if (token.IsCancellationRequested) return null;
+
+                    var songObject = ConvertSongSearchObject(track);
+
+                    if (songObject == null) continue;
+
+                    if (!idSet.Contains(songObject.Id))
+                    {
+                        idSet.Add(songObject.Id);
+
+                        var oneArtistMatch = artists.Any(a => track.Artists.Any(ta => CloseMatch(a, ta.Name)));
+
+                        if (oneArtistMatch)
+                        {
+                            songObjList.Add(songObject);
+                        }
+                    }
+                }
+            }
+
+            // Pass 1: exact title match, find least edit distance album name
+            SongSearchObject? closeMatchObj = null;
+            int minEditDistance = int.MaxValue;
+            foreach (var songObj in songObjList)
+            {
+                if (token.IsCancellationRequested) // Cancel requested, terminate this method
+                {
+                    return null;
+                }
+
+                var titlePruned = ApiHelper.PruneTitle(trackName);
+                var songObjTitlePruned = ApiHelper.PruneTitle(songObj.Title);
+                if (titlePruned.Equals(songObjTitlePruned) || titlePruned.Replace("radioedit", "").Equals(songObjTitlePruned.Replace("radioedit", ""))) // If the title matches without punctuation
+                {
+                    if (albumName.ToLower().Replace(" ", "").Equals(songObj.AlbumName.ToLower().Replace(" ", ""))) // If the album name is exact match
+                    {
+                        callback?.Invoke(InfoBarSeverity.Warning, songObj);
+                        return songObj; // Return direct match
+                    }
+
+                    var dist = ApiHelper.CalcLevenshteinDistance(ApiHelper.PruneTitle(albumName), ApiHelper.PruneTitle(songObj.AlbumName));
+                    if (dist < minEditDistance)
+                    {
+                        minEditDistance = dist;
+                        closeMatchObj = songObj;
+                    }
+                }
+            }
+
+            if (closeMatchObj != null) // Return the least edit distance album name
+            {
+                callback?.Invoke(InfoBarSeverity.Warning, closeMatchObj);
+                return closeMatchObj;
             }
 
             callback?.Invoke(InfoBarSeverity.Error, song); // Show error with original song object

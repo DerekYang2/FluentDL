@@ -28,6 +28,42 @@ internal class ApiHelper
         return str.Contains(str2) || str2.Contains(str);
     }
 
+    public static string PruneTitle(string title)
+    {
+        var titlePruned = title.ToLower().Trim();
+
+        // Remove (feat. X) from the title
+        var index = titlePruned.IndexOf("(feat.");
+        if (index != -1)
+        {
+            var closingIndex = titlePruned.IndexOf(")", index);
+            titlePruned = titlePruned.Remove(index, closingIndex - index + 1);
+        }
+
+        // Remove (ft. X) from the title
+        var index2 = titlePruned.IndexOf("(ft.");
+        if (index2 != -1)
+        {
+            var closingIndex = titlePruned.IndexOf(")", index2);
+            titlePruned = titlePruned.Remove(index2, closingIndex - index2 + 1);
+        }
+
+        // Remove (with X) from the title
+        var index3 = titlePruned.IndexOf("(with");
+        if (index3 != -1)
+        {
+            var closingIndex = titlePruned.IndexOf(")", index3);
+            titlePruned = titlePruned.Remove(index3, closingIndex - index3 + 1);
+        }
+
+        // Remove punctuation that may cause inconsistency
+        titlePruned = titlePruned.Replace(" ", "").Replace("(", "").Replace(")", "").Replace("-", "").Replace(".", "").Replace("[", "").Replace("]", "").Replace("—", "").Replace("'", "").Replace("\"", "");
+
+        // Remove non ascii and replaced accented with normal
+        titlePruned = ApiHelper.EnforceAscii(titlePruned);
+        return titlePruned.Trim();
+    }
+
     public static string PrunePunctuation(string str)
     {
         // Remove all punctuation and whitespace from string, only include alphanumeric characters
