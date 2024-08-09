@@ -1,4 +1,4 @@
-using System.Collections.ObjectModel;
+﻿using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -622,5 +622,76 @@ internal class QobuzApi
                 }
             }
         }
+    }
+
+
+    public static async Task UpdateMetadata(string filePath, string trackId)
+    {
+        var track = await GetInternalTrack(trackId);
+
+        var listedArtist = track.Performer.Name;
+        var contribList = GetAllContributorsList(track.Performers);
+
+        if (contribList.Contains(listedArtist)) // Move listed artist to the front
+        {
+            contribList.Remove(listedArtist);
+            contribList.Insert(0, listedArtist);
+        }
+
+        var contribStr = string.Join(", ", contribList);
+
+        Debug.WriteLine("Contrib Str :" + contribStr);
+
+        var albumArtistStr = string.Join(", ", track.Album.Artists.ToList());
+
+        Debug.WriteLine("Album Artist Str: " + albumArtistStr);
+
+        // Get Genres
+        var genreStr = string.Join(", ", track.Album.GenresList.ToList());
+
+        Debug.WriteLine("Genre str: " + genreStr);
+
+        Debug.WriteLine("DATE: " + track.ReleaseDateOriginal.GetValueOrDefault().Date.ToString("yyyy-MM-dd"));
+        var releaseDateString = track.ReleaseDateOriginal.GetValueOrDefault().Date.ToString("yyyy-MM-dd");
+
+        var tfile = TagLib.File.Create(filePath);
+        tfile.Mode = File.AccessMode.Write;
+
+        TagLib.Ogg.XiphComment custom = (TagLib.Ogg.XiphComment)tfile.GetTag(TagLib.TagTypes.Xiph);
+
+        tfile.Tag.Title = track.Title;
+        tfile.Tag.Album = track.Album.Title;
+        //atlTrack.AlbumArtist = albumArtistStr;
+        tfile.Tag.Performers = contribList.ToArray();
+
+        // Release Year tag (The "tfile.Tag.Year" field actually writes to the DATE tag, so use custom tag)
+        custom.SetField("YEAR", releaseDateString.Substring(0, 4));
+
+        // Release Date tag
+        custom.SetField("DATE", releaseDateString);
+
+
+        tfile.Tag.Track = Convert.ToUInt32(track.TrackNumber);
+        // Override TRACKNUMBER tag again to prevent using "two-digit zero-filled value"
+        // See https://github.com/mono/taglib-sharp/pull/240 where this change was introduced in taglib-sharp v2.3
+        custom.SetField("TRACKNUMBER", Convert.ToUInt32(track.TrackNumber));
+
+        tfile.Tag.TrackCount = Convert.ToUInt32(track.Album.TracksCount);
+        //atlTrack.Genre = genreStr;
+        tfile.Tag.ISRC = track.Isrc;
+
+        custom.SetField("UPC", track.Album.Upc);
+
+        // Get image bytes for cover art
+        var imageBytes = await new HttpClient().GetByteArrayAsync(track.Album.Image.Large);
+
+        // Define cover art to use for FLAC file(s)
+        TagLib.Id3v2.AttachmentFrame pic = new TagLib.Id3v2.AttachmentFrame { TextEncoding = TagLib.StringType.Latin1, MimeType = System.Net.Mime.MediaTypeNames.Image.Jpeg, Type = TagLib.PictureType.FrontCover, Data = new ByteVector(imageBytes) };
+
+        // Save cover art to FLAC file.
+        tfile.Tag.Pictures = new TagLib.IPicture[1] { pic };
+
+
+        tfile.Save();
     }
 }

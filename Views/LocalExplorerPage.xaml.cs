@@ -549,6 +549,8 @@ public sealed partial class LocalExplorerPage : Page
 
     private async void MetadataDialog_OnPrimaryButtonClick(ContentDialog sender, ContentDialogButtonClickEventArgs args)
     {
+        // Stop media player
+        //PreviewPanel.ClearMediaPlayerSource();
         ViewModel.SetImagePath(CoverArtTextBox.Text);
         await ViewModel.SaveMetadata();
         // Find the song and update it in the listview + preview panel
@@ -586,6 +588,7 @@ public sealed partial class LocalExplorerPage : Page
         index = listViewSource.IndexOf(listViewSource.First(s => s.Id == song.Id));
         listViewSource[index] = song;
 
+        PreviewPanel.Show();
         // Update the preview panel
         await PreviewPanel.Update(song, ViewModel.GetMetadataObject(song.Id));
     }

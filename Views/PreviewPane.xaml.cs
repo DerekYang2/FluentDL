@@ -26,6 +26,7 @@ using FluentDL.Models;
 using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml.Shapes;
 using Newtonsoft.Json.Linq;
+using Path = Microsoft.UI.Xaml.Shapes.Path;
 
 
 // To learn more about WinUI, the WinUI project structure,
@@ -75,9 +76,12 @@ namespace FluentDL.Views
             PreviewScrollView.Visibility = Visibility.Visible;
         }
 
-        public async Task Update(SongSearchObject selectedSong)
+        public async Task Update(SongSearchObject selectedSong, object? trackInfoObj = null)
         {
-            SongPreviewPlayer.Source = null; // Clear previous source
+            ClearMediaPlayerSource();
+            PreviewImage.Source = null; // Clear previous source
+            PreviewImage.UpdateLayout();
+
             song = selectedSong;
 
             //PreviewArtistText.Text = selectedSong.Artists;
@@ -116,7 +120,7 @@ namespace FluentDL.Views
 
             if (selectedSong.Source.Equals("qobuz"))
             {
-                var track = QobuzApi.GetQobuzTrack(selectedSong.Id);
+                var track = await QobuzApi.GetInternalTrack(selectedSong.Id);
 
                 trackDetailsList.RemoveAt(trackDetailsList.FindIndex(x => x.Label == "Popularity")); // Remove popularity
                 trackDetailsList.Add(new TrackDetail() { Label = "Track", Value = selectedSong.TrackPosition });
@@ -162,33 +166,61 @@ namespace FluentDL.Views
 
             if (selectedSong.Source.Equals("local"))
             {
-                var track = new Track(selectedSong.Id); // Create track object from file path (id)
-                trackDetailsList = new List<TrackDetail>
+                if (trackInfoObj is MetadataObject metadata)
                 {
-                    new() { Label = "Contributing Artists", Value = selectedSong.Artists },
-                    new() { Label = "Album", Value = selectedSong.AlbumName },
-                    new() { Label = "Album Artist", Value = track.AlbumArtist ?? track.Artist ?? "N/A" },
-                    new() { Label = "Genre", Value = (track.Genre ?? "N/A").Replace(";", ", ") },
-                    new() { Label = "Length", Value = new DurationConverter().Convert(selectedSong.Duration, null, null, null).ToString() },
-                    new() { Label = "Release Date", Value = new DateVerboseConverter().Convert(selectedSong.ReleaseDate, null, null, null).ToString() },
-                    new() { Label = "Track Position", Value = selectedSong.TrackPosition },
-                    new() { Label = "Type", Value = track.AudioFormat.ShortName },
-                    new() { Label = "Size", Value = GetFileLength(selectedSong.Id) },
-                    new() { Label = "Bit rate", Value = track.Bitrate + " kbps" },
-                    new() { Label = "Channels", Value = track.ChannelsArrangement.Description },
-                    new() { Label = "Sample rate", Value = track.SampleRate + " Hz" },
-                    new() { Label = "Bit depth", Value = track.BitDepth + " bit" },
-                };
-                SongPreviewPlayer.Source = MediaSource.CreateFromUri(new Uri(selectedSong.Id));
-                PreviewImage.Source = await LocalExplorerViewModel.GetBitmapImageAsync(track);
+                    trackDetailsList = new List<TrackDetail>
+                    {
+                        new() { Label = "Contributing Artists", Value = selectedSong.Artists },
+                        new() { Label = "Album", Value = selectedSong.AlbumName },
+                        new() { Label = "Album Artist", Value = string.Join(", ", metadata.AlbumArtists ?? Array.Empty<string>()) },
+                        new() { Label = "Genre", Value = string.Join(", ", metadata.Genre ?? Array.Empty<string>()) },
+                        new() { Label = "Length", Value = metadata.Duration.ToString() },
+                        new() { Label = "Release Date", Value = selectedSong.ReleaseDate },
+                        new() { Label = "Track Position", Value = selectedSong.TrackPosition },
+                        new() { Label = "Type", Value = metadata.Codec ?? "" },
+                        new() { Label = "Size", Value = GetFileLength(selectedSong.Id) },
+                        new() { Label = "Bit rate", Value = metadata.tfile.Properties.AudioBitrate + " kbps" },
+                        new() { Label = "Channels", Value = metadata.tfile.Properties.AudioChannels.ToString() },
+                        new() { Label = "Sample rate", Value = metadata.tfile.Properties.AudioSampleRate + " Hz" },
+                        new() { Label = "Bit depth", Value = metadata.tfile.Properties.BitsPerSample + " bit" },
+                    };
+                    SongPreviewPlayer.Source = MediaSource.CreateFromUri(new Uri(selectedSong.Id));
+                    var byteBuffer = metadata.GetAlbumArt();
 
-                PreviewInfoControl2.ItemsSource = PreviewInfoControl.ItemsSource = trackDetailsList; // Finally set the details list
+                    if (byteBuffer != null)
+                    {
+                        var bitmapImage = new BitmapImage();
+                        using var stream = new MemoryStream(byteBuffer);
+                        await bitmapImage.SetSourceAsync(stream.AsRandomAccessStream());
+                        PreviewImage.Source = bitmapImage;
+                    }
+
+                    PreviewInfoControl2.ItemsSource = PreviewInfoControl.ItemsSource = trackDetailsList; // Finally set the details list
+                }
+                else
+                {
+                    throw new Exception("Metadata object is null");
+                }
             }
         }
 
         public void ClearMediaPlayerSource()
         {
+            MediaPlayer mediaPlayer = SongPreviewPlayer.MediaPlayer;
+            IMediaPlaybackSource source = SongPreviewPlayer.Source;
+            if (mediaPlayer.PlaybackSession.CanPause)
+            {
+                mediaPlayer.Pause();
+            }
+
             SongPreviewPlayer.Source = null;
+            SongPreviewPlayer.SetMediaPlayer(null);
+            if (source is MediaSource mediaSource)
+            {
+                mediaSource.Dispose();
+            }
+
+            mediaPlayer.Dispose();
         }
 
         public SongSearchObject? GetSong()
