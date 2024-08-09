@@ -24,6 +24,7 @@ using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml.Controls;
 using RestSharp;
 using YoutubeExplode.Search;
+using YouTubeMusicAPI.Models;
 
 namespace FluentDL.Services;
 
@@ -128,6 +129,11 @@ internal class DeezerApi
                 return new JsonElement();
             }
         }
+    }
+
+    private static bool CloseMatch(string str1, string str2)
+    {
+        return ApiHelper.IsSubstring(str1.ToLower(), str2.ToLower());
     }
 
     public static string PruneTitle(string title)
@@ -322,7 +328,15 @@ internal class DeezerApi
                 idSet.Add(trackId);
                 //var songObj = await GetTrack(trackId);
                 var songObj = GetTrackQuick(track);
-                songObjList.Add(songObj);
+
+                // Check if close artist match to add to list
+                var queryArtists = song.Artists.Split(", ").ToList();
+                var oneArtistMatch = queryArtists.Any(queryArtist => artists.Any(artist => CloseMatch(queryArtist, artist)));
+
+                if (oneArtistMatch)
+                {
+                    songObjList.Add(songObj);
+                }
             }
         }
 
@@ -343,7 +357,15 @@ internal class DeezerApi
                 idSet.Add(trackId);
                 // var songObj = await GetTrack(trackId);
                 var songObj = GetTrackQuick(track);
-                songObjList.Add(songObj);
+
+                // Check if close artist match to add to list
+                var queryArtists = song.Artists.Split(", ").ToList();
+                var oneArtistMatch = queryArtists.Any(queryArtist => artists.Any(artist => CloseMatch(queryArtist, artist)));
+
+                if (oneArtistMatch)
+                {
+                    songObjList.Add(songObj);
+                }
             }
         }
 
@@ -538,7 +560,7 @@ internal class DeezerApi
     }
 
 
-    public static async Task DownloadTrack(SongSearchObject? song, string filePath)
+    public static async Task DownloadTrack(string filePath, SongSearchObject? song)
     {
         if (song == null || song.Source != "deezer" || !Path.IsPathRooted(filePath))
         {

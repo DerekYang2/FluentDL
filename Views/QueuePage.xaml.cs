@@ -90,6 +90,9 @@ public sealed partial class QueuePage : Page
             OnQueueSourceChange();
         };
 
+        NoItemsText.Visibility = QueueViewModel.Source.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
+
+
         // Set conversion variables
         successSource = new HashSet<SongSearchObject>();
         warningSource = new HashSet<SongSearchObject>();

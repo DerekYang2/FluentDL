@@ -118,7 +118,12 @@ internal class ApiHelper
 
         if (song.Source == "deezer")
         {
-            await DeezerApi.DownloadTrack(song, flacLocation);
+            await DeezerApi.DownloadTrack(flacLocation, song);
+        }
+
+        if (song.Source == "qobuz")
+        {
+            await QobuzApi.DownloadTrack(flacLocation, song);
         }
     }
 
@@ -221,7 +226,7 @@ internal class ApiHelper
     }
 
     // For any file downloading with progress
-    public static async Task DownloadFileAsync(string downloadUrl, string filePath)
+    public static async Task DownloadFileAsync(string filePath, string downloadUrl)
     {
         var httpClient = new HttpClient();
         using (Stream streamToReadFrom = await httpClient.GetStreamAsync(downloadUrl))

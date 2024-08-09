@@ -32,9 +32,15 @@ namespace FluentDL.Services
             if (!string.IsNullOrWhiteSpace(clientId) && !string.IsNullOrWhiteSpace(clientSecret))
             {
                 var request = new ClientCredentialsRequest(clientId, clientSecret);
-                var response = await new OAuthClient(config).RequestToken(request);
-
-                spotify = new SpotifyClient(config.WithToken(response.AccessToken));
+                try
+                {
+                    var response = await new OAuthClient(config).RequestToken(request);
+                    spotify = new SpotifyClient(config.WithToken(response.AccessToken));
+                }
+                catch (Exception e)
+                {
+                    Debug.WriteLine("Failed to initialize Spotify API: " + e.Message);
+                }
             }
         }
 
