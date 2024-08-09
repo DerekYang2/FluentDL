@@ -11,7 +11,6 @@ using FluentDL.Services;
 using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml.Media.Imaging;
 using WinRT.Interop;
-using ATL.Logging;
 using FluentDL.Models;
 
 namespace FluentDL.Views;
@@ -165,7 +164,7 @@ public sealed partial class LocalExplorerPage : Page
                 {
                     ViewModel.SetUpdateObject(selectedSong);
                     MetadataTable.ItemsSource = ViewModel.CurrentMetadataList; // Fill table with the metadata list 
-                    CoverArtTextBox.Text = ViewModel.GetCurrentImagePath();
+                    CoverArtTextBox.Text = ViewModel.GetCurrentImagePath() ?? "";
                     MetadataDialog.ShowAsync();
                 });
             }
@@ -364,7 +363,7 @@ public sealed partial class LocalExplorerPage : Page
                     continue;
                 }
 
-                var song = LocalExplorerViewModel.ParseFile(file.Path);
+                var song = ViewModel.ParseFile(file.Path);
 
                 if (song == null) continue; // Skip if song is null
 
@@ -376,7 +375,7 @@ public sealed partial class LocalExplorerPage : Page
                     fileSet.Add(song.Id);
                 });
 
-                var memoryStream = LocalExplorerViewModel.GetAlbumArtMemoryStream(song);
+                var memoryStream = ViewModel.GetAlbumArtMemoryStream(song.Id);
 
                 if (memoryStream != null) // Set album art if available
                 {
@@ -548,15 +547,14 @@ public sealed partial class LocalExplorerPage : Page
         }
     }
 
-    private void MetadataDialog_OnPrimaryButtonClick(ContentDialog sender, ContentDialogButtonClickEventArgs args)
+    private async void MetadataDialog_OnPrimaryButtonClick(ContentDialog sender, ContentDialogButtonClickEventArgs args)
     {
         ViewModel.SetImagePath(CoverArtTextBox.Text);
-        ViewModel.SaveMetadata();
+        await ViewModel.SaveMetadata();
     }
 
     private void MetadataDialog_OnCloseButtonClick(ContentDialog sender, ContentDialogButtonClickEventArgs args)
     {
-        ViewModel.DiscardMetadata();
     }
 
     private void ComboBox_OnDropDownOpened(object? sender, object e)

@@ -1,4 +1,4 @@
-using System.Collections.ObjectModel;
+﻿using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Text.RegularExpressions;
 using System.Windows.Input;
@@ -40,67 +40,40 @@ public partial class LocalExplorerViewModel : ObservableRecipient
     {
         currentEditPath = song.Id;
 
-        if (!tmpUpdates.ContainsKey(currentEditPath)) // If the file is not already in the map, add it
+        if (!tmpUpdates.ContainsKey(currentEditPath)) // Should not happen
         {
-            // Get all metadata from the song object
-            var currentTrack = new Track(song.Id);
-
-            // Only include settable metadata fields
-            var newList = new ObservableCollection<MetadataPair>()
-            {
-                new() { Key = "Title", Value = currentTrack.Title ?? "" },
-                new() { Key = "Contributing artists", Value = currentTrack.Artist ?? "" },
-                new() { Key = "Genre", Value = currentTrack.Genre ?? "" },
-                new() { Key = "Album", Value = currentTrack.Album ?? "" },
-                new() { Key = "Album artist", Value = currentTrack.AlbumArtist ?? "" },
-                new() { Key = "ISRC", Value = currentTrack.ISRC ?? "" },
-                new() { Key = "BPM", Value = (currentTrack.BPM ?? 0).ToString() },
-                new() { Key = "Date", Value = (currentTrack.Date ?? new DateTime()).ToString() },
-                new() { Key = "Track number", Value = (currentTrack.TrackNumber ?? 0).ToString() },
-                new() { Key = "Track total", Value = (currentTrack.TrackTotal ?? 0).ToString() },
-            };
-
-            foreach (var pair in currentTrack.AdditionalFields)
-            {
-                if (pair.Key.Equals("YEAR")) continue; // This is a special field set by this program, do not edit it
-                newList.Add(new MetadataPair() { Key = pair.Key, Value = pair.Value });
-            }
-
-            tmpUpdates.Add(currentEditPath, new MetadataUpdateInfo(newList, currentEditPath, ""));
+            throw new KeyNotFoundException("The file path does not exist in the dictionary.");
         }
 
-        CurrentMetadataList = tmpUpdates[currentEditPath].GetMetadataList(); // Set the metadata list for the current file
+        CurrentMetadataList = tmpUpdates[currentEditPath].GetMetadataPairCollection(); // Set the metadata list for the current file
     }
 
     public string? GetCurrentImagePath()
     {
-        return tmpUpdates[currentEditPath].GetImagePath();
+        return tmpUpdates[currentEditPath].AlbumArtPath;
     }
 
     public void SetImagePath(string path)
     {
-        tmpUpdates[currentEditPath].SetImagePath(path); // Set the image path for the current file
+        tmpUpdates[currentEditPath].AlbumArtPath = path; // Set the image path for the current file
     }
 
-    public void SaveMetadata()
+    public async Task SaveMetadata()
     {
-        App.metadataUpdates.Add(currentEditPath, tmpUpdates[currentEditPath]); // Add the metadata update to the list of pending updates
+        tmpUpdates[currentEditPath].SetFields(CurrentMetadataList); // Apply metadata updates to the object
+        await tmpUpdates[currentEditPath].SaveAsync(); // Save the metadata to the file
+        //App.AddMetadataUpdate(currentEditPath, tmpUpdates[currentEditPath]); // Add the metadata update to the list of pending updates
     }
 
-    public void DiscardMetadata()
+    public static string? GetISRC(TagLib.File track)
     {
-        tmpUpdates.Remove(currentEditPath);
-    }
-
-    public static string? GetISRC(Track track)
-    {
-        if (track.ISRC != null)
+        if (track.Tag.ISRC != null)
         {
-            return track.ISRC;
+            return track.Tag.ISRC;
         }
 
         // Attempt to get from filename
-        var fileName = Path.GetFileName(track.Path);
+        var fileName = track.Name;
         if (fileName != null)
         {
             var isrc = Regex.Match(fileName, @"[A-Z]{2}[A-Z0-9]{3}\d{2}\d{5}").Value;
@@ -113,83 +86,76 @@ public partial class LocalExplorerViewModel : ObservableRecipient
         return null;
     }
 
-    public static SongSearchObject? ParseFile(string path)
+    public SongSearchObject? ParseFile(string path)
     {
-        var track = new Track(path);
+        var metadataObj = new MetadataObject(path);
+        tmpUpdates[path] = metadataObj;
 
+        var fileName = Path.GetFileNameWithoutExtension(path);
         return new SongSearchObject()
         {
             Source = "local",
             Id = path,
-            Title = track.Title,
-            Artists = track.Artist.Replace("; ", ", ").Replace(";", ", "),
-            AlbumName = track.Album,
-            Duration = track.Duration.ToString(),
-            ReleaseDate = track.Date.ToString().Substring(0, 10),
-            TrackPosition = (track.TrackNumber ?? 1).ToString(),
-            Explicit = track.Title.ToLower().Contains("explicit") || track.Title.ToLower().Contains("[e]"),
+            Title = metadataObj.Title ?? fileName,
+            Artists = string.Join(", ", metadataObj.Artists ?? new string[] { "N/A" }),
+            AlbumName = metadataObj.AlbumName ?? "N/A",
+            Duration = metadataObj.Duration.ToString(),
+            ReleaseDate = metadataObj.ReleaseDate?.ToString("yyyy-MM-dd") ?? "",
+            TrackPosition = (metadataObj.TrackNumber ?? 1).ToString(),
+            Explicit = (metadataObj.Title ?? "").ToLower().Contains("explicit") || fileName.ToLower().Contains("[e]"),
             Rank = "0",
             ImageLocation = null,
             LocalBitmapImage = null,
-            Isrc = GetISRC(track),
-            AudioFormat = track.AudioFormat.ShortName
+            Isrc = metadataObj.Isrc,
+            AudioFormat = metadataObj.Codec ?? Path.GetExtension(path)
         };
     }
 
-    public static BitmapImage? GetBitmapImage(Track track)
-    {
-        System.Collections.Generic.IList<PictureInfo> embeddedPictures = track.EmbeddedPictures;
-        if (embeddedPictures.Count > 0)
-        {
-            var firstImg = embeddedPictures[0];
-            // Create bitmap image from byte array
-            var bitmapImage = new BitmapImage();
-            using (var stream = new MemoryStream(firstImg.PictureData))
-            {
-                bitmapImage.SetSource(stream.AsRandomAccessStream());
-            }
+    //public static BitmapImage? GetBitmapImage(Track track)
+    //{
+    //    System.Collections.Generic.IList<PictureInfo> embeddedPictures = track.EmbeddedPictures;
+    //    if (embeddedPictures.Count > 0)
+    //    {
+    //        var firstImg = embeddedPictures[0];
+    //        // Create bitmap image from byte array
+    //        var bitmapImage = new BitmapImage();
+    //        using (var stream = new MemoryStream(firstImg.PictureData))
+    //        {
+    //            bitmapImage.SetSource(stream.AsRandomAccessStream());
+    //        }
 
-            return bitmapImage;
+    //        return bitmapImage;
+    //    }
+
+    //    return null;
+    //}
+
+    public async Task<BitmapImage?> GetBitmapImageAsync(string filePath)
+    {
+        var memoryStream = GetAlbumArtMemoryStream(filePath);
+        if (memoryStream == null)
+        {
+            return null;
         }
 
-        return null;
+        var bitmapImage = new BitmapImage();
+        await bitmapImage.SetSourceAsync(memoryStream.AsRandomAccessStream());
+        return bitmapImage;
     }
 
-    public static async Task<BitmapImage?> GetBitmapImageAsync(Track track)
+    public MemoryStream? GetAlbumArtMemoryStream(string filePath)
     {
-        System.Collections.Generic.IList<PictureInfo> embeddedPictures = track.EmbeddedPictures;
-        try
+        if (!tmpUpdates.TryGetValue(filePath, out var value))
         {
-            if (embeddedPictures.Count > 0)
-            {
-                var firstImg = embeddedPictures[0];
-                // Create bitmap image from byte array
-                using var stream = new MemoryStream(firstImg.PictureData);
-                var bitmapImage = new BitmapImage();
-                await bitmapImage.SetSourceAsync(stream.AsRandomAccessStream());
-                stream.Close();
-                return bitmapImage;
-            }
-        }
-        catch (Exception e)
-        {
-            Debug.WriteLine(e.Message);
+            throw new KeyNotFoundException("The file path does not exist in the dictionary.");
         }
 
-        return null;
-    }
-
-    public static MemoryStream? GetAlbumArtMemoryStream(SongSearchObject song)
-    {
-        var track = new Track(song.Id);
-
-        System.Collections.Generic.IList<PictureInfo> embeddedPictures = track.EmbeddedPictures;
-        if (embeddedPictures.Count > 0)
+        var byteArr = value.AlbumArt;
+        if (byteArr == null)
         {
-            var firstImg = embeddedPictures[0];
-            return new MemoryStream(firstImg.PictureData);
+            return null;
         }
 
-        return null;
+        return new MemoryStream(byteArr);
     }
 }

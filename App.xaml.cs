@@ -58,7 +58,7 @@ public partial class App : Application
         set;
     }
 
-    public static Dictionary<string, MetadataUpdateInfo> metadataUpdates = new Dictionary<string, MetadataUpdateInfo>();
+    private static Dictionary<string, MetadataObject> metadataUpdates = new Dictionary<string, MetadataObject>();
 
     public App()
     {
@@ -110,17 +110,26 @@ public partial class App : Application
         App.GetService<IAppNotificationService>().Initialize();
         UnhandledException += App_UnhandledException;
 
-        MainWindow.Closed += async (sender, args) => // Save pending metadata updates on app close, will be applied on restart
+        MainWindow.Closed += (sender, args) => // Save pending metadata updates on app close, will be applied on restart
         {
-            var pendingJsonObject = new JsonObject { ["List"] = new JsonArray() };
-
-            foreach (var metadataUpdateInfo in metadataUpdates.Values)
+            foreach (var metadataObject in metadataUpdates.Values)
             {
-                pendingJsonObject["List"].AsArray().Add(metadataUpdateInfo.GetJsonObject());
+                metadataObject.Save();
             }
+            //var pendingJsonObject = new JsonObject { ["List"] = new JsonArray() };
 
-            await App.GetService<ILocalSettingsService>().SaveSettingAsync("PendingMetadata", pendingJsonObject.ToString());
+            //foreach (var metadataUpdateInfo in metadataUpdates.Values)
+            //{
+            //    pendingJsonObject["List"].AsArray().Add(metadataUpdateInfo.GetJsonObject());
+            //}
+
+            //await App.GetService<ILocalSettingsService>().SaveSettingAsync("PendingMetadata", pendingJsonObject.ToString());
         };
+    }
+
+    public static void AddMetadataUpdate(string path, MetadataObject metadataObject)
+    {
+        metadataUpdates.Add(path, metadataObject);
     }
 
     private async Task UpdateMetadata()

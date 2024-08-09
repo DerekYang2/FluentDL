@@ -1,12 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using FluentDL.Models;
+using QobuzApiSharp.Models.Content;
 using TagLib;
 
 namespace FluentDL.Helpers
@@ -91,7 +93,7 @@ namespace FluentDL.Helpers
             set;
         }
 
-        public string? FilePath
+        private string? FilePath
         {
             get;
             set;
@@ -109,11 +111,13 @@ namespace FluentDL.Helpers
             internal set;
         }
 
+        private TagLib.File tfile;
+
         public MetadataObject(string filePath)
         {
             FilePath = filePath;
-            var tfile = TagLib.File.Create(filePath);
-            tfile.Mode = TagLib.File.AccessMode.Read;
+            tfile = TagLib.File.Create(filePath);
+            tfile.Mode = TagLib.File.AccessMode.Closed;
 
             // Set codec
             foreach (var codec in tfile.Properties.Codecs)
@@ -125,6 +129,9 @@ namespace FluentDL.Helpers
                 }
             }
 
+            // Set duration
+            Duration = (int)Math.Round(tfile.Properties.Duration.TotalSeconds);
+
             bool isFlac = Codec.ToLower().Contains("flac") || tfile.Name.EndsWith(".flac");
 
             AlbumArtists = tfile.Tag.AlbumArtists;
@@ -135,10 +142,14 @@ namespace FluentDL.Helpers
             Isrc = GetISRC(tfile);
             TrackNumber = Convert.ToInt32(tfile.Tag.Track);
             TrackTotal = Convert.ToInt32(tfile.Tag.TrackCount);
+            if (tfile.Tag.Year != 0)
+            {
+                ReleaseDate = new DateTime(Convert.ToInt32(tfile.Tag.Year), 1, 1); // Default to January 1st if only year is provided
+            }
 
             TagLib.Ogg.XiphComment custom;
 
-            if (isFlac)
+            if (isFlac) // TODO: look into tags for other formats
             {
                 custom = (TagLib.Ogg.XiphComment)tfile.GetTag(TagLib.TagTypes.Xiph);
 
@@ -153,7 +164,6 @@ namespace FluentDL.Helpers
                 Url = custom.GetFirstField("URL");
             }
 
-            // Cover art
             IPicture[] pictures = tfile.Tag.Pictures;
             if (pictures.Length > 0)
             {
@@ -170,21 +180,8 @@ namespace FluentDL.Helpers
             }
         }
 
-        public void Save(string? filePath = null)
+        public void Save()
         {
-            if (filePath == null) // Use original file path if not provided
-            {
-                filePath = FilePath;
-            }
-
-            if (filePath == null) // If file path is still null, return
-            {
-                return;
-            }
-
-            var tfile = TagLib.File.Create(filePath);
-            tfile.Mode = TagLib.File.AccessMode.Write;
-
             tfile.Tag.AlbumArtists = AlbumArtists;
             tfile.Tag.Album = AlbumName;
             tfile.Tag.Performers = Artists;
@@ -229,6 +226,16 @@ namespace FluentDL.Helpers
             }
 
             tfile.Save();
+        }
+
+        public async Task SaveAsync()
+        {
+            if (AlbumArt == null && !string.IsNullOrWhiteSpace(AlbumArtPath)) // Save cover art if it exists
+            {
+                AlbumArt = await new HttpClient().GetByteArrayAsync(AlbumArtPath); // Download image
+            }
+
+            await Task.Run(() => Save());
         }
 
         private static string? GetISRC(TagLib.File track)

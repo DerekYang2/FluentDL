@@ -52,11 +52,11 @@ internal class MetadataUpdateInfo
 
     public async Task SaveMetadata()
     {
-        if (ImgPath != null) // If an image path is set, save the image
-        {
-            metadataObject.AlbumArt = await new HttpClient().GetByteArrayAsync(ImgPath);
-        }
+        //if (ImgPath != null) // If an image path is set, save the image
+        //{
+        //    metadataObject.AlbumArt = await new HttpClient().GetByteArrayAsync(ImgPath);
+        //}
 
-        metadataObject.Save(FilePath); // Save the metadata to the file
+        //metadataObject.Save(FilePath); // Save the metadata to the file
     }
 }
