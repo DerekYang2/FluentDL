@@ -17,6 +17,7 @@ using FluentDL.Helpers;
 using Microsoft.UI.Xaml.Media.Imaging;
 using FluentDL.Models;
 using TagLib;
+using File = TagLib.File;
 
 namespace FluentDL.ViewModels;
 
@@ -35,6 +36,10 @@ public partial class LocalExplorerViewModel : ObservableRecipient
     {
     }
 
+    public string GetCurrentEditPath()
+    {
+        return currentEditPath;
+    }
 
     public void SetUpdateObject(SongSearchObject song)
     {
@@ -86,10 +91,25 @@ public partial class LocalExplorerViewModel : ObservableRecipient
         return null;
     }
 
+    public MetadataObject? GetMetadataObject(string path)
+    {
+        return tmpUpdates.GetValueOrDefault(path);
+    }
+
     public SongSearchObject? ParseFile(string path)
     {
-        var metadataObj = new MetadataObject(path);
-        tmpUpdates[path] = metadataObj;
+        if (!Path.Exists(path))
+        {
+            return null;
+        }
+
+        if (!tmpUpdates.TryGetValue(path, out var value)) // Add the file to the dictionary if it does not exist
+        {
+            value = new MetadataObject(path); // Create a new metadata object
+            tmpUpdates[path] = value; // Add the metadata object to the dictionary
+        }
+
+        var metadataObj = value;
 
         var fileName = Path.GetFileNameWithoutExtension(path);
         return new SongSearchObject()
@@ -150,7 +170,7 @@ public partial class LocalExplorerViewModel : ObservableRecipient
             throw new KeyNotFoundException("The file path does not exist in the dictionary.");
         }
 
-        var byteArr = value.AlbumArt;
+        var byteArr = value.GetAlbumArt();
         if (byteArr == null)
         {
             return null;

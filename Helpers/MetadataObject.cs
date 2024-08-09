@@ -7,6 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using System.Threading.Tasks.Dataflow;
 using FluentDL.Models;
 using QobuzApiSharp.Models.Content;
 using TagLib;
@@ -111,7 +112,7 @@ namespace FluentDL.Helpers
             internal set;
         }
 
-        private TagLib.File tfile;
+        public TagLib.File tfile;
 
         public MetadataObject(string filePath)
         {
@@ -236,6 +237,15 @@ namespace FluentDL.Helpers
             }
 
             await Task.Run(() => Save());
+        }
+
+        public byte[]? GetAlbumArt()
+        {
+            if (AlbumArt == null) return null;
+            // Get a deep copy of the album art byte array
+            byte[] deepCopy = new byte[AlbumArt.Length];
+            Buffer.BlockCopy(AlbumArt, 0, deepCopy, 0, AlbumArt.Length);
+            return deepCopy;
         }
 
         private static string? GetISRC(TagLib.File track)

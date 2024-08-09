@@ -422,7 +422,7 @@ public sealed partial class LocalExplorerPage : Page
         }
 
         PreviewPanel.Show();
-        await PreviewPanel.Update(selectedSong);
+        await PreviewPanel.Update(selectedSong, ViewModel.GetMetadataObject(selectedSong.Id));
     }
 
     private void SortListView()
@@ -551,6 +551,43 @@ public sealed partial class LocalExplorerPage : Page
     {
         ViewModel.SetImagePath(CoverArtTextBox.Text);
         await ViewModel.SaveMetadata();
+        // Find the song and update it in the listview + preview panel
+        var path = ViewModel.GetCurrentEditPath();
+
+        // Check that path is in fileSet
+        if (!fileSet.Contains(path))
+        {
+            return;
+        }
+
+        // Get the new song
+        var song = ViewModel.ParseFile(path);
+
+        if (song == null) return; // Skip if song is null
+
+        // Set song art
+        using var memoryStream = await Task.Run(() => ViewModel.GetAlbumArtMemoryStream(song.Id));
+
+        if (memoryStream != null) // Set album art if available
+        {
+            var bitmapImage = new BitmapImage
+            {
+                DecodePixelHeight = 76, // No need to set height, aspect ratio is automatically handled
+            };
+            await bitmapImage.SetSourceAsync(memoryStream.AsRandomAccessStream());
+            song.LocalBitmapImage = bitmapImage;
+        }
+
+        // Update the song in the listview
+        var index = originalList.IndexOf(originalList.First(s => s.Id == song.Id));
+        originalList[index] = song;
+
+        var listViewSource = (ObservableCollection<SongSearchObject>)FileListView.ItemsSource;
+        index = listViewSource.IndexOf(listViewSource.First(s => s.Id == song.Id));
+        listViewSource[index] = song;
+
+        // Update the preview panel
+        await PreviewPanel.Update(song, ViewModel.GetMetadataObject(song.Id));
     }
 
     private void MetadataDialog_OnCloseButtonClick(ContentDialog sender, ContentDialogButtonClickEventArgs args)
