@@ -14,7 +14,7 @@ internal class DateToYearConverter : IValueConverter
     // Converts YYYY-MM-DD to YYYY
     public object Convert(object? value, Type targetType, object parameter, string language)
     {
-        if (value == null) return "";
+        if (string.IsNullOrWhiteSpace((string?)value)) return "";
         return value.ToString().Substring(0, 4);
     }
 
@@ -29,8 +29,9 @@ internal class DateVerboseConverter : IValueConverter
     // Converts YYYY-MM-DD to Month DD, YYYY
     public object Convert(object? value, Type targetType, object parameter, string language)
     {
-        if (value == null) return "";
-        return DateTime.Parse(value.ToString()).ToString("MMMM dd, yyyy", CultureInfo.InvariantCulture);
+        if (string.IsNullOrWhiteSpace((string?)value)) return "";
+        if (value.ToString().Length == 4) return value.ToString();
+        return DateTime.Parse(value.ToString()).ToString("MMMM %d, yyyy");
     }
 
     public object ConvertBack(object value, Type targetType, object parameter, string language)
@@ -44,7 +45,7 @@ internal class DurationConverter : IValueConverter
     // Converts seconds to H hr, M min, S sec
     public object Convert(object? value, Type targetType, object parameter, string language)
     {
-        if (value == null) return "";
+        if (string.IsNullOrWhiteSpace((string?)value)) return "";
         int seconds = int.Parse(value.ToString());
         int sec = seconds % 60;
         seconds /= 60;

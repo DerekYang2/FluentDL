@@ -175,9 +175,9 @@ namespace FluentDL.Views
                         new() { Label = "Album Artist", Value = string.Join(", ", metadata.AlbumArtists ?? Array.Empty<string>()) },
                         new() { Label = "Genre", Value = string.Join(", ", metadata.Genre ?? Array.Empty<string>()) },
                         new() { Label = "Length", Value = metadata.Duration.ToString() },
-                        new() { Label = "Release Date", Value = selectedSong.ReleaseDate },
+                        new TrackDetail { Label = "Release Date", Value = new DateVerboseConverter().Convert(selectedSong.ReleaseDate, null, null, null).ToString() },
                         new() { Label = "Track Position", Value = selectedSong.TrackPosition },
-                        new() { Label = "Type", Value = metadata.Codec ?? "" },
+                        new() { Label = "Type", Value = metadata.Codec ?? System.IO.Path.GetExtension(selectedSong.Id) },
                         new() { Label = "Size", Value = GetFileLength(selectedSong.Id) },
                         new() { Label = "Bit rate", Value = metadata.tfile.Properties.AudioBitrate + " kbps" },
                         new() { Label = "Channels", Value = metadata.tfile.Properties.AudioChannels.ToString() },
@@ -187,7 +187,7 @@ namespace FluentDL.Views
                     SongPreviewPlayer.Source = MediaSource.CreateFromUri(new Uri(selectedSong.Id));
                     var byteBuffer = metadata.GetAlbumArt();
 
-                    if (byteBuffer != null)
+                    if (byteBuffer is { Length: > 0 })
                     {
                         var bitmapImage = new BitmapImage();
                         using var stream = new MemoryStream(byteBuffer);
@@ -206,8 +206,13 @@ namespace FluentDL.Views
 
         public void ClearMediaPlayerSource()
         {
-            MediaPlayer mediaPlayer = SongPreviewPlayer.MediaPlayer;
-            IMediaPlaybackSource source = SongPreviewPlayer.Source;
+            var mediaPlayer = SongPreviewPlayer.MediaPlayer;
+            var source = SongPreviewPlayer.Source;
+            if (mediaPlayer == null || source == null) // Already cleared
+            {
+                return;
+            }
+
             if (mediaPlayer.PlaybackSession.CanPause)
             {
                 mediaPlayer.Pause();

@@ -133,7 +133,7 @@ namespace FluentDL.Helpers
             // Set duration
             Duration = (int)Math.Round(tfile.Properties.Duration.TotalSeconds);
 
-            bool isFlac = Codec.ToLower().Contains("flac") || tfile.Name.EndsWith(".flac");
+            bool isFlac = (Codec?.ToLower().Contains("flac") ?? false) || tfile.Name.EndsWith(".flac");
 
             AlbumArtists = tfile.Tag.AlbumArtists;
             AlbumName = tfile.Tag.Album;
@@ -221,27 +221,42 @@ namespace FluentDL.Helpers
             if (AlbumArt != null) // Save cover art if it exists
             {
                 // Define cover art to use for FLAC file(s)
-                TagLib.Id3v2.AttachmentFrame pic = new TagLib.Id3v2.AttachmentFrame { TextEncoding = TagLib.StringType.Latin1, MimeType = System.Net.Mime.MediaTypeNames.Image.Jpeg, Type = TagLib.PictureType.FrontCover, Data = new ByteVector(AlbumArt) };
+                TagLib.Id3v2.AttachmentFrame pic = new TagLib.Id3v2.AttachmentFrame { TextEncoding = StringType.Latin1, MimeType = System.Net.Mime.MediaTypeNames.Image.Jpeg, Type = PictureType.FrontCover, Data = new ByteVector(AlbumArt) };
                 // Save cover art to FLAC file.
-                tfile.Tag.Pictures = new TagLib.IPicture[1] { pic };
+                tfile.Tag.Pictures = new IPicture[] { pic };
             }
 
-            tfile.Save();
+            try
+            {
+                tfile.Save();
+            }
+            catch (Exception e)
+            {
+                Debug.WriteLine("FAILED TO SAVE METADATA: " + e.Message);
+            }
         }
 
         public async Task SaveAsync()
         {
-            if (AlbumArt == null && !string.IsNullOrWhiteSpace(AlbumArtPath)) // Save cover art if it exists
+            // Check if path is local or remote
+            if (!string.IsNullOrWhiteSpace(AlbumArtPath))
             {
-                AlbumArt = await new HttpClient().GetByteArrayAsync(AlbumArtPath); // Download image
+                if (Path.Exists(AlbumArtPath)) // Local
+                {
+                    AlbumArt = await System.IO.File.ReadAllBytesAsync(AlbumArtPath); // Covert image to byte array
+                }
+                else
+                {
+                    AlbumArt = await new HttpClient().GetByteArrayAsync(AlbumArtPath); // Download image
+                }
             }
 
-            await Task.Run(() => Save());
+            await Task.Run(() => Save()); // Save metadata
         }
 
         public byte[]? GetAlbumArt()
         {
-            if (AlbumArt == null) return null;
+            if (AlbumArt == null || AlbumArt.Length == 0) return null; // Return null if no album art
             // Get a deep copy of the album art byte array
             byte[] deepCopy = new byte[AlbumArt.Length];
             Buffer.BlockCopy(AlbumArt, 0, deepCopy, 0, AlbumArt.Length);

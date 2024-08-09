@@ -85,9 +85,13 @@
         </ScrollView>
 
         <MediaPlayerElement Grid.Column="1" Grid.Row="2" x:Name="SongPreviewPlayer" AutoPlay="False"
-                            AreTransportControlsEnabled="True" RelativePanel.AlignBottomWithPanel="True"
-                            Visibility="Collapsed" 
-                            />
+                            AreTransportControlsEnabled="True" RelativePanel.AlignBottomWithPanel="True" 
+                            Visibility="Collapsed" IsFullWindow="False" CornerRadius="8">
+            <MediaPlayerElement.TransportControls>
+                <MediaTransportControls IsCompact="False" IsSeekBarVisible="True" IsVolumeButtonVisible="True" IsVolumeEnabled="True">
+                </MediaTransportControls>
+            </MediaPlayerElement.TransportControls>
+        </MediaPlayerElement>
 
         <TextBlock Grid.Column="1" x:Name="NoneSelectedText" Text="No track selected." Style="{ThemeResource BodyText}"
                    HorizontalAlignment="Center" VerticalAlignment="Center"

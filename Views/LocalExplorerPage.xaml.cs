@@ -550,7 +550,8 @@ public sealed partial class LocalExplorerPage : Page
     private async void MetadataDialog_OnPrimaryButtonClick(ContentDialog sender, ContentDialogButtonClickEventArgs args)
     {
         // Stop media player
-        //PreviewPanel.ClearMediaPlayerSource();
+
+        PreviewPanel.ClearMediaPlayerSource();
         ViewModel.SetImagePath(CoverArtTextBox.Text);
         await ViewModel.SaveMetadata();
         // Find the song and update it in the listview + preview panel
