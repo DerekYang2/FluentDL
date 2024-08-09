@@ -11,7 +11,7 @@ using TagLib;
 
 namespace FluentDL.Helpers
 {
-    internal class MetadataObject
+    public class MetadataObject
     {
         public string[]? AlbumArtists
         {
@@ -79,23 +79,41 @@ namespace FluentDL.Helpers
             set;
         }
 
-        public string? Codec
-        {
-            get;
-            set;
-        }
-
         public byte[]? AlbumArt
         {
             get;
             set;
         }
 
+        public string? AlbumArtPath
+        {
+            get;
+            set;
+        }
+
+        public string? FilePath
+        {
+            get;
+            set;
+        }
+
+        public string? Codec
+        {
+            get;
+            internal set;
+        }
+
+        public int Duration
+        {
+            get;
+            internal set;
+        }
+
         public MetadataObject(string filePath)
         {
+            FilePath = filePath;
             var tfile = TagLib.File.Create(filePath);
             tfile.Mode = TagLib.File.AccessMode.Read;
-            bool isFlac = tfile.Name.EndsWith(".flac");
 
             // Set codec
             foreach (var codec in tfile.Properties.Codecs)
@@ -106,6 +124,8 @@ namespace FluentDL.Helpers
                     break;
                 }
             }
+
+            bool isFlac = Codec.ToLower().Contains("flac") || tfile.Name.EndsWith(".flac");
 
             AlbumArtists = tfile.Tag.AlbumArtists;
             AlbumName = tfile.Tag.Album;
@@ -150,8 +170,18 @@ namespace FluentDL.Helpers
             }
         }
 
-        public void Save(string filePath)
+        public void Save(string? filePath = null)
         {
+            if (filePath == null) // Use original file path if not provided
+            {
+                filePath = FilePath;
+            }
+
+            if (filePath == null) // If file path is still null, return
+            {
+                return;
+            }
+
             var tfile = TagLib.File.Create(filePath);
             tfile.Mode = TagLib.File.AccessMode.Write;
 
@@ -220,6 +250,70 @@ namespace FluentDL.Helpers
             }
 
             return null;
+        }
+
+        public ObservableCollection<MetadataPair> GetMetadataPairCollection()
+        {
+            return new ObservableCollection<MetadataPair>
+            {
+                new() { Key = "Title", Value = Title },
+                new() { Key = "Contributing artists", Value = string.Join(";", Artists ?? Array.Empty<string>()) },
+                new() { Key = "Genre", Value = string.Join(";", Genre ?? Array.Empty<string>()) },
+                new() { Key = "Album", Value = AlbumName },
+                new() { Key = "Album artist", Value = string.Join(";", AlbumArtists ?? Array.Empty<string>()) },
+                new() { Key = "ISRC", Value = Isrc },
+                new() { Key = "Date", Value = ReleaseDate?.ToString("yyyy-MM-dd") },
+                new() { Key = "Track number", Value = TrackNumber.ToString() },
+                new() { Key = "Track total", Value = TrackTotal.ToString() }
+            };
+        }
+
+        public void SetFields(ObservableCollection<MetadataPair> collection)
+        {
+            foreach (var pair in collection)
+            {
+                if (string.IsNullOrWhiteSpace(pair.Value)) continue;
+
+                switch (pair.Key)
+                {
+                    case "Title":
+                        Title = pair.Value;
+                        break;
+                    case "Contributing artists":
+                        // split and trim each item
+                        Artists = (pair.Value.Contains(";") ? pair.Value.Split(";") : pair.Value.Split(",")).Select(x => x.Trim()).ToArray();
+                        break;
+                    case "Genre":
+                        Genre = (pair.Value.Contains(";") ? pair.Value.Split(";") : pair.Value.Split(",")).Select(x => x.Trim()).ToArray();
+                        break;
+                    case "Album":
+                        AlbumName = pair.Value;
+                        break;
+                    case "Album artist":
+                        AlbumArtists = (pair.Value.Contains(";") ? pair.Value.Split(";") : pair.Value.Split(",")).Select(x => x.Trim()).ToArray();
+                        break;
+                    case "ISRC":
+                        Isrc = pair.Value;
+                        break;
+                    case "Date":
+                        if (pair.Value.Length == 4 && int.TryParse(pair.Value, out var year))
+                        {
+                            ReleaseDate = new DateTime(year, 1, 1); // Assume January 1st if only year is provided
+                        }
+                        else if (DateTime.TryParse(pair.Value, out var date))
+                        {
+                            ReleaseDate = date;
+                        }
+
+                        break;
+                    case "Track number":
+                        TrackNumber = Convert.ToInt32(pair.Value);
+                        break;
+                    case "Track total":
+                        TrackTotal = Convert.ToInt32(pair.Value);
+                        break;
+                }
+            }
         }
     }
 }

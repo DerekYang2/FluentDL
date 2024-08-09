@@ -39,6 +39,7 @@
     <PackageReference Include="QobuzApiSharp" Version="0.0.8" />
     <PackageReference Include="RestSharp" Version="111.4.1" />
     <PackageReference Include="SpotifyAPI.Web" Version="7.1.1" />
+    <PackageReference Include="TagLibSharp" Version="2.3.0" />
     <PackageReference Include="WinUIEx" Version="2.3.2" />
     <PackageReference Include="YoutubeExplode" Version="6.4.0" />
     <PackageReference Include="YouTubeMusicAPI" Version="1.1.4" />

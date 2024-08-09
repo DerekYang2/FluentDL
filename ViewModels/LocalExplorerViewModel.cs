@@ -1,4 +1,4 @@
-﻿using System.Collections.ObjectModel;
+using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Text.RegularExpressions;
 using System.Windows.Input;
@@ -11,19 +11,19 @@ using FluentDL.Contracts.ViewModels;
 using FluentDL.Core.Contracts.Services;
 using FluentDL.Core.Models;
 using FluentDL.Services;
-using ATL.AudioData;
-using ATL;
-using ATL.Logging;
 using CommunityToolkit.WinUI.UI.Controls;
+using FFMpegCore.Builders.MetaData;
+using FluentDL.Helpers;
 using Microsoft.UI.Xaml.Media.Imaging;
 using FluentDL.Models;
+using TagLib;
 
 namespace FluentDL.ViewModels;
 
 public partial class LocalExplorerViewModel : ObservableRecipient
 {
     private string currentEditPath = ""; // Path of the file currently being edited
-    private Dictionary<string, MetadataUpdateInfo> tmpUpdates = new Dictionary<string, MetadataUpdateInfo>();
+    private Dictionary<string, MetadataObject> tmpUpdates = new Dictionary<string, MetadataObject>();
 
     public ObservableCollection<MetadataPair> CurrentMetadataList
     {
