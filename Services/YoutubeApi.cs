@@ -11,7 +11,6 @@ using FluentDL.Models;
 using FluentDL.Views;
 using Microsoft.UI.Xaml.Controls;
 using Windows.Media.Protection.PlayReady;
-using ATL;
 using YoutubeExplode;
 using YoutubeExplode.Common;
 using YoutubeExplode.Search;
@@ -890,15 +889,11 @@ namespace FluentDL.Services
         {
             var video = await youtube.Videos.GetAsync(id);
             var ytmSong = await ytm.GetSongVideoInfoAsync(id);
-            // Get artist csv
-            var artistCSV = new StringBuilder();
+
+            var artists = new List<string>();
             foreach (var artist in ytmSong.Artists)
             {
-                artistCSV.Append(artist.Name);
-                if (artist != ytmSong.Artists.Last())
-                {
-                    artistCSV.Append(", ");
-                }
+                artists.Add(artist.Name);
             }
 
             // These values vary between song or video
@@ -914,36 +909,50 @@ namespace FluentDL.Services
                 albumName = video.Title; // Use video title as album name
             }
 
-
-            Track atlTrack = new Track(filePath) // For metadata
+            var metadata = new MetadataObject(filePath)
             {
                 Title = ytmSong.Name,
-                Album = albumName,
-                AlbumArtist = ytmSong.Artists.First().Name,
-                Artist = artistCSV.ToString(),
-                AudioSourceUrl = video.Url,
-                AdditionalFields = { { "YEAR", video.UploadDate.Year.ToString() } },
-                Date = video.UploadDate.Date,
+                Artists = artists.ToArray(),
+                AlbumArtPath = GetMaxResThumbnail(ytmSong, video),
+                AlbumName = albumName,
+                AlbumArtists = new[] { artists.First() },
+                ReleaseDate = video.UploadDate.Date,
                 TrackNumber = 1,
                 TrackTotal = 1,
-                Popularity = video.Engagement.ViewCount,
+                Url = video.Url,
             };
 
-            // Get image bytes for cover art
-            var imageBytes = await new HttpClient().GetByteArrayAsync(GetMaxResThumbnail(ytmSong, video));
-            PictureInfo newPicture = PictureInfo.fromBinaryData(imageBytes, PictureInfo.PIC_TYPE.Front);
+            await metadata.SaveAsync();
 
-            // Append to front if pictures already exist
-            if (atlTrack.EmbeddedPictures.Count > 0)
-            {
-                atlTrack.EmbeddedPictures.Insert(0, newPicture);
-            }
-            else
-            {
-                atlTrack.EmbeddedPictures.Add(newPicture);
-            }
+            //Track atlTrack = new Track(filePath) // For metadata
+            //{
+            //    Title = ytmSong.Name,
+            //    Album = albumName,
+            //    AlbumArtist = ytmSong.Artists.First().Name,
+            //    Artist = artistCSV.ToString(),
+            //    AudioSourceUrl = video.Url,
+            //    AdditionalFields = { { "YEAR", video.UploadDate.Year.ToString() } },
+            //    Date = video.UploadDate.Date,
+            //    TrackNumber = 1,
+            //    TrackTotal = 1,
+            //    Popularity = video.Engagement.ViewCount,
+            //};
 
-            await atlTrack.SaveAsync();
+            //// Get image bytes for cover art
+            //var imageBytes = await new HttpClient().GetByteArrayAsync(GetMaxResThumbnail(ytmSong, video));
+            //PictureInfo newPicture = PictureInfo.fromBinaryData(imageBytes, PictureInfo.PIC_TYPE.Front);
+
+            //// Append to front if pictures already exist
+            //if (atlTrack.EmbeddedPictures.Count > 0)
+            //{
+            //    atlTrack.EmbeddedPictures.Insert(0, newPicture);
+            //}
+            //else
+            //{
+            //    atlTrack.EmbeddedPictures.Add(newPicture);
+            //}
+
+            //await atlTrack.SaveAsync();
         }
 
         public static async Task<string> AudioStreamUrl(string url)

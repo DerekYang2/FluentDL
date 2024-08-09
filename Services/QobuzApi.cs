@@ -654,7 +654,7 @@ internal class QobuzApi
         {
             Title = track.Title,
             Artists = contribList.ToArray(),
-            Genre = PruneGenreList(track.Album.GenresList).ToArray(),
+            Genres = PruneGenreList(track.Album.GenresList).ToArray(),
             AlbumName = track.Album.Title,
             AlbumArtists = track.Album.Artists.Select(x => x.Name).ToArray(),
             Isrc = track.Isrc,

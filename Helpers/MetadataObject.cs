@@ -40,7 +40,7 @@ namespace FluentDL.Helpers
             set;
         }
 
-        public string[]? Genre
+        public string[]? Genres
         {
             get;
             set;
@@ -139,7 +139,7 @@ namespace FluentDL.Helpers
             AlbumName = tfile.Tag.Album;
             Artists = tfile.Tag.Performers;
             Title = tfile.Tag.Title;
-            Genre = tfile.Tag.Genres;
+            Genres = tfile.Tag.Genres;
             Isrc = GetISRC(tfile);
             TrackNumber = Convert.ToInt32(tfile.Tag.Track);
             TrackTotal = Convert.ToInt32(tfile.Tag.TrackCount);
@@ -187,7 +187,7 @@ namespace FluentDL.Helpers
             tfile.Tag.Album = AlbumName;
             tfile.Tag.Performers = Artists;
             tfile.Tag.Title = Title;
-            tfile.Tag.Genres = Genre;
+            tfile.Tag.Genres = Genres;
             tfile.Tag.ISRC = Isrc;
             tfile.Tag.Track = Convert.ToUInt32(TrackNumber);
             tfile.Tag.TrackCount = Convert.ToUInt32(TrackTotal);
@@ -290,7 +290,7 @@ namespace FluentDL.Helpers
             {
                 new() { Key = "Title", Value = Title },
                 new() { Key = "Contributing artists", Value = string.Join(";", Artists ?? Array.Empty<string>()) },
-                new() { Key = "Genre", Value = string.Join(";", Genre ?? Array.Empty<string>()) },
+                new() { Key = "Genre", Value = string.Join(";", Genres ?? Array.Empty<string>()) },
                 new() { Key = "Album", Value = AlbumName },
                 new() { Key = "Album artist", Value = string.Join(";", AlbumArtists ?? Array.Empty<string>()) },
                 new() { Key = "ISRC", Value = Isrc },
@@ -316,7 +316,7 @@ namespace FluentDL.Helpers
                         Artists = (pair.Value.Contains(";") ? pair.Value.Split(";") : pair.Value.Split(",")).Select(x => x.Trim()).ToArray();
                         break;
                     case "Genre":
-                        Genre = (pair.Value.Contains(";") ? pair.Value.Split(";") : pair.Value.Split(",")).Select(x => x.Trim()).ToArray();
+                        Genres = (pair.Value.Contains(";") ? pair.Value.Split(";") : pair.Value.Split(",")).Select(x => x.Trim()).ToArray();
                         break;
                     case "Album":
                         AlbumName = pair.Value;

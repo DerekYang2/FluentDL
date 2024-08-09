@@ -562,6 +562,19 @@ internal class DeezerApi
         Debug.WriteLine("COMPLETE Metadata: " + filePath);
     }
 
+    public static async Task<string> GetGenreStr(int albumId)
+    {
+        var albumJson = await FetchJsonElement("album/" + albumId);
+        // Get Genres
+        var genreList = new List<string>();
+        foreach (var genreData in albumJson.GetProperty("genres").GetProperty("data").EnumerateArray())
+        {
+            genreList.Add(genreData.GetProperty("name").GetString());
+        }
+
+        return string.Join(", ", genreList);
+    }
+
     public static async Task UpdateMetadata(string filePath, string trackId)
     {
         var jsonObject = await FetchJsonElement("track/" + trackId);
@@ -603,7 +616,7 @@ internal class DeezerApi
             ReleaseDate = DateTime.ParseExact(jsonObject.GetProperty("release_date").GetString(), "yyyy-MM-dd", CultureInfo.InvariantCulture),
             TrackNumber = jsonObject.GetProperty("track_position").GetInt32(),
             AlbumArtPath = albumJson.GetProperty("cover_big").GetString(),
-            Genre = genreList.ToArray(),
+            Genres = genreList.ToArray(),
             TrackTotal = albumJson.GetProperty("nb_tracks").GetInt32(),
             Upc = albumJson.GetProperty("upc").GetString(),
             Url = jsonObject.GetProperty("link").GetString(),

@@ -1,33 +1,11 @@
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Runtime.InteropServices.WindowsRuntime;
-using Windows.Foundation;
-using Windows.Foundation.Collections;
 using FluentDL.Helpers;
 using FluentDL.Services;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
-using Microsoft.UI.Xaml.Controls.Primitives;
-using Microsoft.UI.Xaml.Data;
-using Microsoft.UI.Xaml.Input;
-using Microsoft.UI.Xaml.Media;
-using Microsoft.UI.Xaml.Navigation;
 using Microsoft.UI.Xaml.Media.Imaging;
 using Windows.Media.Core;
-using FluentDL.ViewModels;
-using System.Collections.ObjectModel;
-using System.Diagnostics;
-using Windows.Media.Playback;
-using Windows.Media.Streaming.Adaptive;
-using ATL;
 using FluentDL.Models;
 using Microsoft.UI.Dispatching;
-using Microsoft.UI.Xaml.Shapes;
-using Newtonsoft.Json.Linq;
-using QobuzApiSharp.Models.Content;
-using Path = Microsoft.UI.Xaml.Shapes.Path;
 
 
 // To learn more about WinUI, the WinUI project structure,
@@ -106,9 +84,11 @@ namespace FluentDL.Views
             if (selectedSong.Source.Equals("deezer"))
             {
                 var jsonObject = await FluentDL.Services.DeezerApi.FetchJsonElement("track/" + selectedSong.Id);
+                var albumObj = jsonObject.GetProperty("album");
                 trackDetailsList.Add(new TrackDetail { Label = "Track", Value = jsonObject.GetProperty("track_position").ToString() });
+                trackDetailsList.Add(new TrackDetail { Label = "Genre", Value = await DeezerApi.GetGenreStr(albumObj.GetProperty("id").GetInt32()) });
 
-                PreviewImage.Source = new BitmapImage(new Uri(jsonObject.GetProperty("album").GetProperty("cover_big").ToString()));
+                PreviewImage.Source = new BitmapImage(new Uri(albumObj.GetProperty("cover_big").ToString()));
                 PreviewInfoControl2.ItemsSource = PreviewInfoControl.ItemsSource = trackDetailsList; // First set the details list
                 // Load the audio stream
                 var previewUri = jsonObject.GetProperty("preview").ToString();
@@ -171,7 +151,7 @@ namespace FluentDL.Views
                         new() { Label = "Contributing Artists", Value = selectedSong.Artists },
                         new() { Label = "Album", Value = selectedSong.AlbumName },
                         new() { Label = "Album Artist", Value = string.Join(", ", metadata.AlbumArtists ?? Array.Empty<string>()) },
-                        new() { Label = "Genre", Value = string.Join(", ", metadata.Genre ?? Array.Empty<string>()) },
+                        new() { Label = "Genre", Value = string.Join(", ", metadata.Genres ?? Array.Empty<string>()) },
                         new() { Label = "Length", Value = metadata.Duration.ToString() },
                         new TrackDetail { Label = "Release Date", Value = new DateVerboseConverter().Convert(selectedSong.ReleaseDate, null, null, null).ToString() },
                         new() { Label = "Track Position", Value = selectedSong.TrackPosition },

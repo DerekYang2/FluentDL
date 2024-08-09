@@ -458,5 +458,43 @@ namespace FluentDL.Services
                 Isrc = track.ExternalIds["isrc"],
             };
         }
+
+        public static async Task<List<string>> GetGenres(string trackId)
+        {
+            var fullAlbum = await spotify.Albums.Get(trackId);
+            return fullAlbum.Genres;
+        }
+
+        public static async Task UpdateMetadata(string filePath, string id)
+        {
+            var track = await GetTrack(id);
+            if (track == null)
+            {
+                return;
+            }
+
+            var fullAlbum = await spotify.Albums.Get(track.Album.Id); // Get the full album for genres + upc
+            var artistList = track.Artists.Select(a => a.Name);
+            var albumArtistList = fullAlbum.Artists.Select(a => a.Name);
+            var genreList = fullAlbum.Genres;
+
+            var metadata = new MetadataObject(filePath)
+            {
+                Title = track.Name,
+                Artists = artistList.ToArray(),
+                AlbumName = track.Album.Name,
+                AlbumArtists = albumArtistList.ToArray(),
+                Isrc = track.ExternalIds["isrc"],
+                ReleaseDate = DateTime.Parse(track.Album.ReleaseDate),
+                AlbumArtPath = track.Album.Images.First().Url, // First is the largest image
+                Genres = genreList.ToArray(),
+                TrackNumber = track.TrackNumber,
+                TrackTotal = track.Album.TotalTracks,
+                Upc = fullAlbum.ExternalIds["upc"],
+                Url = track.Uri,
+            };
+
+            await metadata.SaveAsync();
+        }
     }
 }
