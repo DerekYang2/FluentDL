@@ -31,7 +31,7 @@ internal class DateVerboseConverter : IValueConverter
     {
         if (string.IsNullOrWhiteSpace((string?)value)) return "";
         if (value.ToString().Length == 4) return value.ToString();
-        return DateTime.Parse(value.ToString()).ToString("MMMM %d, yyyy");
+        return DateTime.Parse(value.ToString()).ToString("MMMM %d, yyyy", CultureInfo.InvariantCulture);
     }
 
     public object ConvertBack(object value, Type targetType, object parameter, string language)
@@ -46,13 +46,17 @@ internal class DurationConverter : IValueConverter
     public object Convert(object? value, Type targetType, object parameter, string language)
     {
         if (string.IsNullOrWhiteSpace((string?)value)) return "";
-        int seconds = int.Parse(value.ToString());
-        int sec = seconds % 60;
-        seconds /= 60;
-        int min = seconds % 60;
-        seconds /= 60;
-        int hr = seconds;
-        return (hr > 0 ? hr + " hr, " : "") + (min > 0 ? min + " min, " : "") + sec + " sec";
+        if (int.TryParse(value.ToString(), out int seconds))
+        {
+            int sec = seconds % 60;
+            seconds /= 60;
+            int min = seconds % 60;
+            seconds /= 60;
+            int hr = seconds;
+            return (hr > 0 ? hr + " hr, " : "") + (min > 0 ? min + " min, " : "") + sec + " sec";
+        }
+
+        return "";
     }
 
     public object ConvertBack(object value, Type targetType, object parameter, string language)

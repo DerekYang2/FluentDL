@@ -1,10 +1,4 @@
 ﻿using System.Diagnostics;
-using System.Text.Json;
-using System.Text.Json.Nodes;
-using ABI.Microsoft.UI.Xaml.Controls;
-using AngleSharp.Dom;
-using ATL;
-using ATL.Logging;
 using FluentDL.Activation;
 using FluentDL.Contracts.Services;
 using FluentDL.Core.Contracts.Services;
@@ -45,8 +39,6 @@ public partial class App : Application
         return service;
     }
 
-    LoggingTest log = new LoggingTest();
-
     public static WindowEx MainWindow
     {
         get;
@@ -57,8 +49,6 @@ public partial class App : Application
         get;
         set;
     }
-
-    private static Dictionary<string, MetadataObject> metadataUpdates = new Dictionary<string, MetadataObject>();
 
     public App()
     {
@@ -110,48 +100,11 @@ public partial class App : Application
         App.GetService<IAppNotificationService>().Initialize();
         UnhandledException += App_UnhandledException;
 
-        MainWindow.Closed += (sender, args) => // Save pending metadata updates on app close, will be applied on restart
+        MainWindow.Closed += (sender, args) =>
         {
-            foreach (var metadataObject in metadataUpdates.Values)
-            {
-                metadataObject.Save();
-            }
-            //var pendingJsonObject = new JsonObject { ["List"] = new JsonArray() };
-
-            //foreach (var metadataUpdateInfo in metadataUpdates.Values)
-            //{
-            //    pendingJsonObject["List"].AsArray().Add(metadataUpdateInfo.GetJsonObject());
-            //}
-
-            //await App.GetService<ILocalSettingsService>().SaveSettingAsync("PendingMetadata", pendingJsonObject.ToString());
         };
     }
 
-    public static void AddMetadataUpdate(string path, MetadataObject metadataObject)
-    {
-        metadataUpdates.Add(path, metadataObject);
-    }
-
-    private async Task UpdateMetadata()
-    {
-        var jsonStr = await App.GetService<ILocalSettingsService>().ReadSettingAsync<string>("PendingMetadata");
-        if (!string.IsNullOrWhiteSpace(jsonStr))
-        {
-            var rootObject = JsonNode.Parse(jsonStr).AsObject();
-            foreach (var item in rootObject["List"].AsArray())
-            {
-                Debug.WriteLine("SUCCESS: " + MetadataJsonHelper.SaveTrack(item.AsObject()));
-            }
-
-            foreach (var logItem in log.messages)
-            {
-                Debug.WriteLine(logItem.Message);
-            }
-        }
-
-        // Clear pending metadata updates
-        await App.GetService<ILocalSettingsService>().SaveSettingAsync("PendingMetadata", "");
-    }
 
     private void App_UnhandledException(object sender, Microsoft.UI.Xaml.UnhandledExceptionEventArgs e)
     {
@@ -171,12 +124,7 @@ public partial class App : Application
         // Fetch previous command list
         await LocalCommands.Init();
 
-        // Write pending metadata updates
-        Thread t = new Thread(async () =>
-            await UpdateMetadata()
-        );
-        t.Start();
-        // Initialize ffmpeg
+        // Initialize FFMpeg 
         FFmpegRunner.Initialize();
 
         // Initialize api objects
@@ -191,22 +139,5 @@ public partial class App : Application
         });
         t2.Priority = ThreadPriority.AboveNormal;
         t2.Start();
-    }
-}
-
-public class LoggingTest : ILogDevice
-{
-    public Log theLog = new Log();
-    public List<Log.LogItem> messages = new List<Log.LogItem>();
-
-    public LoggingTest()
-    {
-        LogDelegator.SetLog(ref theLog);
-        theLog.Register(this);
-    }
-
-    public void DoLog(Log.LogItem anItem)
-    {
-        messages.Add(anItem);
     }
 }

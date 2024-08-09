@@ -6,7 +6,6 @@ using System.Text;
 using System.Text.RegularExpressions;
 using ABI.Windows.Media.Core;
 using AngleSharp.Text;
-using ATL.AudioData;
 using FluentDL.Helpers;
 using FluentDL.Models;
 using FluentDL.Views;
@@ -21,8 +20,6 @@ namespace FluentDL.Services;
 
 internal class QobuzApi
 {
-    static LoggingTest log = new LoggingTest();
-
     private static QobuzApiService apiService = new QobuzApiService();
     private static bool loggedIn = false;
 
@@ -624,6 +621,21 @@ internal class QobuzApi
         }
     }
 
+    /**
+     * Qobuz genre list sometimes includes sub-genres separately, such as
+     * Musiques du monde | Musiques du monde→Europe | Musiques du monde→Europe→Chanson française
+     */
+    public static List<string> PruneGenreList(List<string> rawGenreList)
+    {
+        var genreList = new List<string>();
+        foreach (var genre in rawGenreList)
+        {
+            var genreArray = genre.Split("\u2192");
+            genreList.Add(genreArray.Last().Trim());
+        }
+
+        return genreList.ToList();
+    }
 
     public static async Task UpdateMetadata(string filePath, string trackId)
     {
@@ -638,27 +650,11 @@ internal class QobuzApi
             contribList.Insert(0, listedArtist);
         }
 
-        var contribStr = string.Join(", ", contribList);
-
-        Debug.WriteLine("Contrib Str :" + contribStr);
-
-        var albumArtistStr = string.Join(", ", track.Album.Artists.ToList());
-
-        Debug.WriteLine("Album Artist Str: " + albumArtistStr);
-
-        // Get Genres
-        var genreStr = string.Join(", ", track.Album.GenresList.ToList());
-
-        Debug.WriteLine("Genre str: " + genreStr);
-
-        Debug.WriteLine("DATE: " + track.ReleaseDateOriginal.GetValueOrDefault().Date.ToString("yyyy-MM-dd"));
-        var releaseDateString = track.ReleaseDateOriginal.GetValueOrDefault().Date.ToString("yyyy-MM-dd");
-
         var metadata = new MetadataObject(filePath)
         {
             Title = track.Title,
             Artists = contribList.ToArray(),
-            Genre = track.Album.GenresList.Select(ApiHelper.EnforceAscii).ToArray(),
+            Genre = PruneGenreList(track.Album.GenresList).ToArray(),
             AlbumName = track.Album.Title,
             AlbumArtists = track.Album.Artists.Select(x => x.Name).ToArray(),
             Isrc = track.Isrc,
@@ -666,47 +662,50 @@ internal class QobuzApi
             TrackNumber = track.TrackNumber.GetValueOrDefault(),
             TrackTotal = track.Album.TracksCount,
             Upc = track.Album.Upc,
-            AlbumArtPath = track.Album.Image.Large
+            AlbumArtPath = track.Album.Image.Large,
         };
         await metadata.SaveAsync();
-        //var tfile = TagLib.File.Create(filePath);
-        //tfile.Mode = File.AccessMode.Write;
 
-        //TagLib.Ogg.XiphComment custom = (TagLib.Ogg.XiphComment)tfile.GetTag(TagLib.TagTypes.Xiph);
+        /*
+        var tfile = TagLib.File.Create(filePath);
+        tfile.Mode = File.AccessMode.Write;
 
-        //tfile.Tag.Title = track.Title;
-        //tfile.Tag.Album = track.Album.Title;
-        ////atlTrack.AlbumArtist = albumArtistStr;
-        //tfile.Tag.Performers = contribList.ToArray();
+        TagLib.Ogg.XiphComment custom = (TagLib.Ogg.XiphComment)tfile.GetTag(TagLib.TagTypes.Xiph);
 
-        //// Release Year tag (The "tfile.Tag.Year" field actually writes to the DATE tag, so use custom tag)
-        //custom.SetField("YEAR", releaseDateString.Substring(0, 4));
+        tfile.Tag.Title = track.Title;
+        tfile.Tag.Album = track.Album.Title;
+        //atlTrack.AlbumArtist = albumArtistStr;
+        tfile.Tag.Performers = contribList.ToArray();
 
-        //// Release Date tag
-        //custom.SetField("DATE", releaseDateString);
+        // Release Year tag (The "tfile.Tag.Year" field actually writes to the DATE tag, so use custom tag)
+        custom.SetField("YEAR", releaseDateString.Substring(0, 4));
 
-
-        //tfile.Tag.Track = Convert.ToUInt32(track.TrackNumber);
-        //// Override TRACKNUMBER tag again to prevent using "two-digit zero-filled value"
-        //// See https://github.com/mono/taglib-sharp/pull/240 where this change was introduced in taglib-sharp v2.3
-        //custom.SetField("TRACKNUMBER", Convert.ToUInt32(track.TrackNumber));
-
-        //tfile.Tag.TrackCount = Convert.ToUInt32(track.Album.TracksCount);
-        ////atlTrack.Genre = genreStr;
-        //tfile.Tag.ISRC = track.Isrc;
-
-        //custom.SetField("UPC", track.Album.Upc);
-
-        //// Get image bytes for cover art
-        //var imageBytes = await new HttpClient().GetByteArrayAsync(track.Album.Image.Large);
-
-        //// Define cover art to use for FLAC file(s)
-        //TagLib.Id3v2.AttachmentFrame pic = new TagLib.Id3v2.AttachmentFrame { TextEncoding = TagLib.StringType.Latin1, MimeType = System.Net.Mime.MediaTypeNames.Image.Jpeg, Type = TagLib.PictureType.FrontCover, Data = new ByteVector(imageBytes) };
-
-        //// Save cover art to FLAC file.
-        //tfile.Tag.Pictures = new TagLib.IPicture[1] { pic };
+        // Release Date tag
+        custom.SetField("DATE", releaseDateString);
 
 
-        //tfile.Save();
+        tfile.Tag.Track = Convert.ToUInt32(track.TrackNumber);
+        // Override TRACKNUMBER tag again to prevent using "two-digit zero-filled value"
+        // See https://github.com/mono/taglib-sharp/pull/240 where this change was introduced in taglib-sharp v2.3
+        custom.SetField("TRACKNUMBER", Convert.ToUInt32(track.TrackNumber));
+
+        tfile.Tag.TrackCount = Convert.ToUInt32(track.Album.TracksCount);
+        //atlTrack.Genre = genreStr;
+        tfile.Tag.ISRC = track.Isrc;
+
+        custom.SetField("UPC", track.Album.Upc);
+
+        // Get image bytes for cover art
+        var imageBytes = await new HttpClient().GetByteArrayAsync(track.Album.Image.Large);
+
+        // Define cover art to use for FLAC file(s)
+        TagLib.Id3v2.AttachmentFrame pic = new TagLib.Id3v2.AttachmentFrame { TextEncoding = TagLib.StringType.Latin1, MimeType = System.Net.Mime.MediaTypeNames.Image.Jpeg, Type = TagLib.PictureType.FrontCover, Data = new ByteVector(imageBytes) };
+
+        // Save cover art to FLAC file.
+        tfile.Tag.Pictures = new TagLib.IPicture[1] { pic };
+
+
+        tfile.Save();
+        */
     }
 }

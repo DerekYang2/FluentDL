@@ -26,6 +26,7 @@ using FluentDL.Models;
 using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml.Shapes;
 using Newtonsoft.Json.Linq;
+using QobuzApiSharp.Models.Content;
 using Path = Microsoft.UI.Xaml.Shapes.Path;
 
 
@@ -107,9 +108,8 @@ namespace FluentDL.Views
                 var jsonObject = await FluentDL.Services.DeezerApi.FetchJsonElement("track/" + selectedSong.Id);
                 trackDetailsList.Add(new TrackDetail { Label = "Track", Value = jsonObject.GetProperty("track_position").ToString() });
 
+                PreviewImage.Source = new BitmapImage(new Uri(jsonObject.GetProperty("album").GetProperty("cover_big").ToString()));
                 PreviewInfoControl2.ItemsSource = PreviewInfoControl.ItemsSource = trackDetailsList; // First set the details list
-
-                PreviewImage.Source = await ApiHelper.GetBitmapImageAsync(jsonObject.GetProperty("album").GetProperty("cover_big").ToString());
                 // Load the audio stream
                 var previewUri = jsonObject.GetProperty("preview").ToString();
                 if (!string.IsNullOrWhiteSpace(previewUri)) // Some tracks don't have a preview
@@ -124,13 +124,11 @@ namespace FluentDL.Views
 
                 trackDetailsList.RemoveAt(trackDetailsList.FindIndex(x => x.Label == "Popularity")); // Remove popularity
                 trackDetailsList.Add(new TrackDetail() { Label = "Track", Value = selectedSong.TrackPosition });
-                trackDetailsList.Add(new TrackDetail { Label = "Performers", Value = track.Performers });
+                trackDetailsList.Add(new TrackDetail { Label = "Genre", Value = string.Join(", ", QobuzApi.PruneGenreList(track.Album.GenresList)) });
                 PreviewImage.Source = new BitmapImage(new Uri(track.Album.Image.Large)); // Get cover art
-
 
                 PreviewInfoControl2.ItemsSource = PreviewInfoControl.ItemsSource = trackDetailsList; // First set the details list
 
-                PreviewImage.Source = await ApiHelper.GetBitmapImageAsync(track.Album.Image.Large);
                 // Load the audio stream
                 SongPreviewPlayer.Source = MediaSource.CreateFromUri(QobuzApi.GetPreviewUri(selectedSong.Id));
             }
@@ -140,8 +138,8 @@ namespace FluentDL.Views
                 var track = await SpotifyApi.GetTrack(selectedSong.Id);
                 trackDetailsList.Add(new TrackDetail { Label = "Track", Value = selectedSong.TrackPosition });
 
+                PreviewImage.Source = new BitmapImage(new Uri(track.Album.Images[0].Url)); // Get the largest
                 PreviewInfoControl2.ItemsSource = PreviewInfoControl.ItemsSource = trackDetailsList; // First set the details list
-                PreviewImage.Source = await ApiHelper.GetBitmapImageAsync(track.Album.Images[0].Url); // Get the largest
 
                 // Load the audio stream
                 var previewURL = track.PreviewUrl;
@@ -156,8 +154,8 @@ namespace FluentDL.Views
                 int index = trackDetailsList.FindIndex(x => x.Label == "Popularity"); // Rename popularity to views
                 trackDetailsList[index].Label = "Views";
 
+                PreviewImage.Source = new BitmapImage(new Uri(await YoutubeApi.GetMaxResThumbnail(selectedSong))); // Get max res thumbnail
                 PreviewInfoControl2.ItemsSource = PreviewInfoControl.ItemsSource = trackDetailsList; // First set details list
-                PreviewImage.Source = await ApiHelper.GetBitmapImageAsync(await YoutubeApi.GetMaxResThumbnail(selectedSong)); // Get max res thumbnail
 
                 // Load the audio stream
                 var opusStreamUrl = await YoutubeApi.AudioStreamWorstUrl("https://www.youtube.com/watch?v=" + selectedSong.Id);
