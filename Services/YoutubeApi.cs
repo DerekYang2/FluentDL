@@ -853,16 +853,10 @@ namespace FluentDL.Services
             return value.ToString();
         }
 
-        public static async Task DownloadAudio(string url, string downloadFolder, string filename, Action<double> progressHandler)
-        {
-            // if download folder ends with a backslash, remove it
-            if (downloadFolder.EndsWith("\\"))
-            {
-                downloadFolder = downloadFolder.Substring(0, downloadFolder.Length - 1);
-            }
 
-            Debug.WriteLine(url + " | " + downloadFolder);
-            var streamManifest = await youtube.Videos.Streams.GetManifestAsync(url);
+        public static async Task DownloadAudio(string filePath, VideoId id)
+        {
+            var streamManifest = await youtube.Videos.Streams.GetManifestAsync(id);
             var streamInfo = streamManifest.GetAudioOnlyStreams().GetWithHighestBitrate();
 
             string extension = streamInfo.Container.ToString();
@@ -878,10 +872,7 @@ namespace FluentDL.Services
                 }
             }
 
-            var filePath = $"{downloadFolder}\\{filename}.{extension}";
-
-            var stream = await youtube.Videos.Streams.GetAsync(streamInfo);
-            await youtube.Videos.Streams.DownloadAsync(streamInfo, filePath, new Progress<double>(progressHandler));
+            await youtube.Videos.Streams.DownloadAsync(streamInfo, filePath /*, new Progress<double>(progressHandler)*/);
         }
 
 

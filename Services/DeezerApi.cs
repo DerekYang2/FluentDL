@@ -557,9 +557,6 @@ internal class DeezerApi
         var trackBytes = await deezerClient.Downloader.GetRawTrackBytes(id, Bitrate.FLAC);
         //trackBytes = await deezerClient.Downloader.ApplyMetadataToTrackBytes(id, trackBytes);
         await File.WriteAllBytesAsync(filePath, trackBytes);
-        Debug.WriteLine("COMPLETE: " + filePath);
-        await UpdateMetadata(filePath, song.Id);
-        Debug.WriteLine("COMPLETE Metadata: " + filePath);
     }
 
     public static async Task<string> GetGenreStr(int albumId)

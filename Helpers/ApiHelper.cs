@@ -99,19 +99,14 @@ internal class ApiHelper
             return;
         }
 
-        var url = GetUrl(song);
         var directory = Path.GetDirectoryName(file.Path);
         var fileName = Path.GetFileNameWithoutExtension(file.Path);
         var flacLocation = Path.Combine(directory, fileName + ".flac");
+        var opusLocation = Path.Combine(directory, fileName + ".opus");
 
         if (song.Source == "youtube")
         {
-            await YoutubeApi.DownloadAudio(url, directory, fileName, d =>
-            {
-            });
-            // convert opus to flac
-            var opusLocation = Path.Combine(directory, fileName + ".opus");
-
+            await YoutubeApi.DownloadAudio(opusLocation, song.Id);
             await FFmpegRunner.ConvertOpusToFlac(opusLocation); // Convert opus to flac
             await YoutubeApi.UpdateMetadata(flacLocation, song.Id);
         }
@@ -119,11 +114,13 @@ internal class ApiHelper
         if (song.Source == "deezer")
         {
             await DeezerApi.DownloadTrack(flacLocation, song);
+            await DeezerApi.UpdateMetadata(flacLocation, song.Id);
         }
 
         if (song.Source == "qobuz")
         {
             await QobuzApi.DownloadTrack(flacLocation, song);
+            await QobuzApi.UpdateMetadata(flacLocation, song.Id);
         }
     }
 
@@ -229,34 +226,27 @@ internal class ApiHelper
     public static async Task DownloadFileAsync(string filePath, string downloadUrl)
     {
         var httpClient = new HttpClient();
-        using (Stream streamToReadFrom = await httpClient.GetStreamAsync(downloadUrl))
+        await using Stream streamRead = await httpClient.GetStreamAsync(downloadUrl);
+        await using FileStream streamWrite = System.IO.File.Create(filePath);
+        var totalBytesRead = 0;
+        var buffer = new byte[131072]; // 128KB buffer size
+        var firstBufferRead = false;
+        Stopwatch stopwatch = Stopwatch.StartNew();
+
+        int bytesRead;
+        while ((bytesRead = await streamRead.ReadAsync(buffer, 0, buffer.Length)) > 0)
         {
-            using (FileStream streamToWriteTo = System.IO.File.Create(filePath))
+            await streamWrite.WriteAsync(buffer, 0, Math.Min(buffer.Length, bytesRead));
+
+            totalBytesRead += bytesRead;
+            var speed = totalBytesRead / 1024d / 1024d / stopwatch.Elapsed.TotalSeconds;
+
+            if (!firstBufferRead || stopwatch.ElapsedMilliseconds >= 500)
             {
-                long totalBytesRead = 0;
-                byte[] buffer = new byte[131072]; // 128KB buffer size
-                bool firstBufferRead = false;
-                Stopwatch stopwatch = Stopwatch.StartNew();
-
-                int bytesRead;
-                while ((bytesRead = await streamToReadFrom.ReadAsync(buffer, 0, buffer.Length)) > 0)
-                {
-                    // Write only the minimum of buffer.Length and bytesRead bytes to the file
-                    await streamToWriteTo.WriteAsync(buffer, 0, Math.Min(buffer.Length, bytesRead));
-
-                    // Calculate download speed
-                    totalBytesRead += bytesRead;
-                    double speed = totalBytesRead / 1024d / 1024d / stopwatch.Elapsed.TotalSeconds;
-
-                    // Update with the current speed at download start and then max. every 500 ms
-                    if (!firstBufferRead || stopwatch.ElapsedMilliseconds >= 500)
-                    {
-                        Debug.WriteLine($"Downloading... {speed:F3} MB/s");
-                    }
-
-                    firstBufferRead = true;
-                }
+                Debug.WriteLine($"Downloading... {speed:F3} MB/s");
             }
+
+            firstBufferRead = true;
         }
     }
 }

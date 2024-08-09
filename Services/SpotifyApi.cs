@@ -459,11 +459,57 @@ namespace FluentDL.Services
             };
         }
 
-        public static async Task<List<string>> GetGenres(string trackId)
+        public static async Task<SortedSet<string>> GetGenres(List<SimpleArtist> artists)
         {
-            var fullAlbum = await spotify.Albums.Get(trackId);
-            return fullAlbum.Genres;
+            var genreSet = new SortedSet<string>();
+            foreach (var artist in artists)
+            {
+                var fullArtist = await spotify.Artists.Get(artist.Id);
+                foreach (var genre in fullArtist.Genres)
+                {
+                    genreSet.Add(genre);
+                }
+            }
+
+            return genreSet;
         }
+
+        public static async Task<bool> DownloadEquivalentTrack(string filePath, SongSearchObject song)
+        {
+            SongSearchObject? equivalent = await DeezerApi.GetDeezerTrack(song); // Try Deezer first
+            if (equivalent != null) // Found on Deezer
+            {
+                await DeezerApi.DownloadTrack(filePath, equivalent);
+                return true;
+            }
+
+            // Not found on Deezer, try Qobuz
+            equivalent = await QobuzApi.GetQobuzTrack(song);
+
+
+            if (equivalent != null) // Found on Qobuz
+            {
+                await QobuzApi.DownloadTrack(filePath, equivalent);
+                return true;
+            }
+
+            // Not found on Qobuz, try youtube
+            equivalent = await YoutubeApi.GetYoutubeTrack(song);
+
+            if (equivalent != null) // Found on Youtube
+            {
+                var directory = Path.GetDirectoryName(filePath);
+                var fileName = Path.GetFileNameWithoutExtension(filePath);
+                var opusLocation = Path.Combine(directory, fileName + ".opus");
+
+                await YoutubeApi.DownloadAudio(opusLocation, song.Id); // Download audio as opus
+                await FFmpegRunner.ConvertOpusToFlac(opusLocation); // Convert opus to flac
+                return true;
+            }
+
+            return false; // Not found on any platform
+        }
+
 
         public static async Task UpdateMetadata(string filePath, string id)
         {
@@ -476,7 +522,7 @@ namespace FluentDL.Services
             var fullAlbum = await spotify.Albums.Get(track.Album.Id); // Get the full album for genres + upc
             var artistList = track.Artists.Select(a => a.Name);
             var albumArtistList = fullAlbum.Artists.Select(a => a.Name);
-            var genreList = fullAlbum.Genres;
+            var genreList = await GetGenres(track.Artists);
 
             var metadata = new MetadataObject(filePath)
             {
