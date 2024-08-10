@@ -83,7 +83,14 @@ public sealed partial class QueuePage : Page
         cancellationTokenSource = new CancellationTokenSource();
         InitPreviewPanelButtons();
         StartStopButton.Visibility = Visibility.Collapsed; // Hide the start/stop button initially
-        OutputComboBox.ItemsSource = new List<string> { "Deezer", "Qobuz", "Spotify", "YouTube" }; // Default list
+        OutputComboBox.ItemsSource = new List<string>
+        {
+            "Deezer",
+            "Qobuz",
+            "Spotify",
+            "YouTube",
+            "Local"
+        }; // Default list
 
         QueueViewModel.Source.CollectionChanged += (sender, e) =>
         {
@@ -637,36 +644,42 @@ public sealed partial class QueuePage : Page
                 continue;
             }
 
-            var newSongObj = outputSource switch
+            if (outputSource == "local") // Conversion to local, download the track
             {
-                "deezer" => await DeezerApi.GetDeezerTrack(song, cancellationTokenSource.Token, conversionUpdateCallback),
-                "qobuz" => await QobuzApi.GetQobuzTrack(song, cancellationTokenSource.Token, conversionUpdateCallback),
-                "spotify" => await SpotifyApi.GetSpotifyTrack(song, cancellationTokenSource.Token, conversionUpdateCallback),
-                "youtube" => await YoutubeApi.GetYoutubeTrack(song, cancellationTokenSource.Token, conversionUpdateCallback),
-                _ => throw new Exception("Unspecified output source") // Should never happen
-            };
-
-
-            if (cancellationTokenSource.Token.IsCancellationRequested) // If conversion is paused
-            {
-                break;
             }
-
-            if (newSongObj != null)
+            else
             {
-                var queueObj = await QueueViewModel.CreateQueueObject(newSongObj);
-                if (queueObj != null)
+                var newSongObj = outputSource switch
                 {
-                    if (successSource.Contains(newSongObj)) queueObj.ConvertBadgeColor = new SolidColorBrush(Windows.UI.Color.FromArgb(255, 108, 203, 95));
-                    else if (warningSource.Contains(newSongObj)) queueObj.ConvertBadgeColor = new SolidColorBrush(Windows.UI.Color.FromArgb(255, 252, 225, 0));
+                    "deezer" => await DeezerApi.GetDeezerTrack(song, cancellationTokenSource.Token, conversionUpdateCallback),
+                    "qobuz" => await QobuzApi.GetQobuzTrack(song, cancellationTokenSource.Token, conversionUpdateCallback),
+                    "spotify" => await SpotifyApi.GetSpotifyTrack(song, cancellationTokenSource.Token, conversionUpdateCallback),
+                    "youtube" => await YoutubeApi.GetYoutubeTrack(song, cancellationTokenSource.Token, conversionUpdateCallback),
+                    _ => throw new Exception("Unspecified output source") // Should never happen
+                };
 
-                    QueueViewModel.Replace(i, queueObj);
+
+                if (cancellationTokenSource.Token.IsCancellationRequested) // If conversion is paused
+                {
+                    break;
                 }
-            }
-            else // Failed conversion, set current object badge to error
-            {
-                song.ConvertBadgeColor = new SolidColorBrush(Windows.UI.Color.FromArgb(255, 255, 153, 164));
-                QueueViewModel.Replace(i, song);
+
+                if (newSongObj != null)
+                {
+                    var queueObj = await QueueViewModel.CreateQueueObject(newSongObj);
+                    if (queueObj != null)
+                    {
+                        if (successSource.Contains(newSongObj)) queueObj.ConvertBadgeColor = new SolidColorBrush(Windows.UI.Color.FromArgb(255, 108, 203, 95));
+                        else if (warningSource.Contains(newSongObj)) queueObj.ConvertBadgeColor = new SolidColorBrush(Windows.UI.Color.FromArgb(255, 252, 225, 0));
+
+                        QueueViewModel.Replace(i, queueObj);
+                    }
+                }
+                else // Failed conversion, set current object badge to error
+                {
+                    song.ConvertBadgeColor = new SolidColorBrush(Windows.UI.Color.FromArgb(255, 255, 153, 164));
+                    QueueViewModel.Replace(i, song);
+                }
             }
 
             QueueProgress.Value = 100.0 * (i + 1) / totalCount; // Update the progress bar

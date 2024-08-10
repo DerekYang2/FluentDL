@@ -386,7 +386,7 @@ internal class QobuzApi
         return ConvertSongSearchObject(track);
     }
 
-    public static async Task<SongSearchObject?> GetQobuzTrack(SongSearchObject songObj, CancellationToken token = default, ConversionUpdateCallback? callback = null)
+    public static async Task<SongSearchObject?> GetQobuzTrack(SongSearchObject songObj, CancellationToken token = default, ConversionUpdateCallback? callback = null, bool onlyISRC = false)
     {
         // No built-in method for this, so we have to get all tracks and search for the ISRC
         string? isrc = songObj.Isrc;
@@ -418,6 +418,12 @@ internal class QobuzApi
                     offset++;
                 }
             } while (offset < 50); // Limit the number of iterations
+        }
+
+        if (onlyISRC) // If only ISRC is allowed, return null
+        {
+            callback?.Invoke(InfoBarSeverity.Error, songObj); // Show an error message with original object
+            return null;
         }
 
         // BELOW: try matching by metadata

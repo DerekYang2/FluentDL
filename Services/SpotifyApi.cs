@@ -474,9 +474,9 @@ namespace FluentDL.Services
             return genreSet;
         }
 
-        public static async Task<bool> DownloadEquivalentTrack(string filePath, SongSearchObject song)
+        public static async Task<bool> DownloadEquivalentTrack(string filePath, SongSearchObject song, bool strict = true)
         {
-            SongSearchObject? equivalent = await DeezerApi.GetDeezerTrack(song); // Try Deezer first
+            SongSearchObject? equivalent = await DeezerApi.GetDeezerTrack(song, onlyISRC: strict); // Try Deezer first
             if (equivalent != null) // Found on Deezer
             {
                 await DeezerApi.DownloadTrack(filePath, equivalent);
@@ -484,13 +484,18 @@ namespace FluentDL.Services
             }
 
             // Not found on Deezer, try Qobuz
-            equivalent = await QobuzApi.GetQobuzTrack(song);
+            equivalent = await QobuzApi.GetQobuzTrack(song, onlyISRC: strict);
 
 
             if (equivalent != null) // Found on Qobuz
             {
                 await QobuzApi.DownloadTrack(filePath, equivalent);
                 return true;
+            }
+
+            if (strict) // If strict, do not try youtube
+            {
+                return false;
             }
 
             // Not found on Qobuz, try youtube
@@ -503,7 +508,7 @@ namespace FluentDL.Services
                 var opusLocation = Path.Combine(directory, fileName + ".opus");
 
                 await YoutubeApi.DownloadAudio(opusLocation, song.Id); // Download audio as opus
-                await FFmpegRunner.ConvertOpusToFlac(opusLocation); // Convert opus to flac
+                await FFmpegRunner.ConvertToFlac(opusLocation); // Convert opus to flac
                 return true;
             }
 

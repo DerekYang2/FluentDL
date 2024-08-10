@@ -271,7 +271,7 @@ internal class DeezerApi
         return closest;
     }
 
-    public static async Task<SongSearchObject?> GetDeezerTrack(SongSearchObject song, CancellationToken token = default, ConversionUpdateCallback? callback = null)
+    public static async Task<SongSearchObject?> GetDeezerTrack(SongSearchObject song, CancellationToken token = default, ConversionUpdateCallback? callback = null, bool onlyISRC = false)
     {
         // Try to find by ISRC first
         if (song.Isrc != null)
@@ -283,6 +283,12 @@ internal class DeezerApi
                 callback?.Invoke(InfoBarSeverity.Success, songObj);
                 return songObj;
             }
+        }
+
+        if (onlyISRC) // If only ISRC search
+        {
+            callback?.Invoke(InfoBarSeverity.Error, song);
+            return null;
         }
 
         var artists = song.Artists.Split(", ").ToList();

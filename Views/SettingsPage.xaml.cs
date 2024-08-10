@@ -133,4 +133,9 @@ public sealed partial class SettingsPage : Page
 
         await localSettings.SaveSettingAsync(SettingsViewModel.SearchSource, (SearchSourceComboBox.SelectedItem as ComboBoxItem).Content.ToString());
     }
+
+    private void SelectFolderButton_OnClick(object sender, RoutedEventArgs e)
+    {
+        throw new NotImplementedException();
+    }
 }

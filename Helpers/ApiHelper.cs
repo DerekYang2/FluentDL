@@ -107,7 +107,7 @@ internal class ApiHelper
         if (song.Source == "youtube")
         {
             await YoutubeApi.DownloadAudio(opusLocation, song.Id);
-            await FFmpegRunner.ConvertOpusToFlac(opusLocation); // Convert opus to flac
+            await FFmpegRunner.ConvertToFlac(opusLocation); // Convert opus to flac
             await YoutubeApi.UpdateMetadata(flacLocation, song.Id);
         }
 
@@ -121,6 +121,12 @@ internal class ApiHelper
         {
             await QobuzApi.DownloadTrack(flacLocation, song);
             await QobuzApi.UpdateMetadata(flacLocation, song.Id);
+        }
+
+        if (song.Source == "spotify")
+        {
+            await SpotifyApi.DownloadEquivalentTrack(flacLocation, song);
+            await SpotifyApi.UpdateMetadata(flacLocation, song.Id);
         }
     }
 
