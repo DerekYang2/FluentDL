@@ -6,6 +6,7 @@ using FluentDL.Contracts.Services;
 using FluentDL.Helpers;
 using Microsoft.UI.Xaml;
 using Windows.ApplicationModel;
+using Microsoft.UI.Xaml.Controls;
 
 namespace FluentDL.ViewModels;
 
@@ -19,6 +20,11 @@ public partial class SettingsViewModel : ObservableRecipient
     public static readonly string SearchSource = "search_source";
     public static readonly string DownloadDirectory = "download_directory";
     public static readonly string AskBeforeDownload = "ask_before_download";
+    public static readonly string DeezerQuality = "deezer_quality";
+    public static readonly string QobuzQuality = "qobuz_quality";
+    public static readonly string SpotifyQuality = "spotify_quality";
+    public static readonly string YoutubeQuality = "youtube_quality";
+
     private readonly IThemeSelectorService _themeSelectorService;
 
     [ObservableProperty] private ElementTheme _elementTheme;

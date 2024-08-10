@@ -35,9 +35,15 @@ public sealed partial class SettingsPage : Page
 
     private async void SettingsPage_Loaded(object sender, RoutedEventArgs e)
     {
-        // Set download directory
-        FolderTextBox.Text = await localSettings.ReadSettingAsync<string>(SettingsViewModel.DownloadDirectory) ?? "";
+        // Set quality combo boxes
+        DeezerQualityComboBox.SelectedIndex = await localSettings.ReadSettingAsync<int?>(SettingsViewModel.DeezerQuality) ?? 0;
+        QobuzQualityComboBox.SelectedIndex = await localSettings.ReadSettingAsync<int?>(SettingsViewModel.QobuzQuality) ?? 0;
+        SpotifyQualityComboBox.SelectedIndex = await localSettings.ReadSettingAsync<int?>(SettingsViewModel.SpotifyQuality) ?? 0;
+        YoutubeQualityComboBox.SelectedIndex = await localSettings.ReadSettingAsync<int?>(SettingsViewModel.YoutubeQuality) ?? 0;
 
+        // Set download directory
+        LocationCard.Description = await localSettings.ReadSettingAsync<string>(SettingsViewModel.DownloadDirectory) ?? "No folder selected";
+        if (string.IsNullOrWhiteSpace(LocationCard.Description.ToString())) LocationCard.Description = "No folder selected";
         // Set ask before download toggle
         AskToggle.IsOn = await localSettings.ReadSettingAsync<bool>(SettingsViewModel.AskBeforeDownload);
 
@@ -162,18 +168,14 @@ public sealed partial class SettingsPage : Page
             StorageApplicationPermissions.FutureAccessList.AddOrReplace("PickedFolderToken", folder); // Save the folder for future access
 
             // Set the folder path in the text box
-            FolderTextBox.Text = folder.Path;
-        }
-    }
+            LocationCard.Description = folder.Path;
 
-    private async void FolderTextBox_OnTextChanged(object sender, TextChangedEventArgs e)
-    {
-        var path = (sender as TextBox).Text;
-        if (Directory.Exists(path) && Path.IsPathRooted(path))
-        {
-            // Save to settings
-            await localSettings.SaveSettingAsync(SettingsViewModel.DownloadDirectory, path);
-            Debug.WriteLine("Saved download directory: " + path);
+            if (Directory.Exists(folder.Path) && Path.IsPathRooted(folder.Path))
+            {
+                // Save to settings
+                await localSettings.SaveSettingAsync(SettingsViewModel.DownloadDirectory, folder.Path);
+                Debug.WriteLine("Saved download directory: " + folder.Path);
+            }
         }
     }
 
@@ -181,5 +183,61 @@ public sealed partial class SettingsPage : Page
     {
         var isToggled = (sender as ToggleSwitch).IsOn;
         await localSettings.SaveSettingAsync(SettingsViewModel.AskBeforeDownload, isToggled);
+    }
+
+    private void OverwriteToggle_OnToggled(object sender, RoutedEventArgs e)
+    {
+        throw new NotImplementedException();
+    }
+
+    private async void DeezerQualityComboBox_OnSelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        // 0 -> MP3 128kbps
+        // 1 -> MP3 320kbps
+        // 2 -> FLAC 1411kbps
+
+        await localSettings.SaveSettingAsync(SettingsViewModel.DeezerQuality, DeezerQualityComboBox.SelectedIndex);
+    }
+
+    private async void QobuzQualityComboBox_OnSelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        /*
+           "5" -> MP3 320kbps CBR
+           "6" -> FLAC 16bit/44.1kHz
+           "7" -> FLAC 24bit/96kHz
+           "27" -> FLAC 24bit/192kHz
+         */
+
+        await localSettings.SaveSettingAsync(SettingsViewModel.QobuzQuality, QobuzQualityComboBox.SelectedIndex);
+    }
+
+    private async void YoutubeQualityComboBox_OnSelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        // 0 - opus
+        // 1 - flac (opus)
+        // 2 - m4a (aac)
+
+        await localSettings.SaveSettingAsync(SettingsViewModel.YoutubeQuality, YoutubeQualityComboBox.SelectedIndex);
+    }
+
+    private async void SpotifyQualityComboBox_OnSelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        // 0 - spotify mp3
+        // 1 - spotify flac
+        await localSettings.SaveSettingAsync(SettingsViewModel.SpotifyQuality, SpotifyQualityComboBox.SelectedIndex);
+    }
+
+    private void ComboBox_OnDropDownOpened(object? sender, object e)
+    {
+        var comboBox = sender as ComboBox;
+        if (comboBox == null || comboBox.SelectedItem == null)
+        {
+            return;
+        }
+
+        if (comboBox.SelectedItem is ComboBoxItem item) // Set placeholder to string to prevent collapse
+        {
+            comboBox.PlaceholderText = item.Content.ToString();
+        }
     }
 }

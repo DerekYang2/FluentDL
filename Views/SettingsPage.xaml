@@ -39,42 +39,69 @@
                 </local:SettingsCard>
 
                 <!-- DOWNLOAD SETTINGS ______________________________________________________________________________________________ -->
-                <TextBlock Text="Download" Style="{StaticResource TextBlockSectionStyle}" />
+                <TextBlock Text="Downloads" Style="{StaticResource TextBlockSectionStyle}" />
 
                 <local:SettingsExpander x:Name="DownloadFolder"
                                         Description="Configure settings regarding download location behavior"
-                                        Header="Download Folder"
+                                        Header="Download Location"
                                         HorizontalContentAlignment="Stretch">
                     <local:SettingsExpander.HeaderIcon>
                         <FontIcon Glyph="&#xE8B7;" />
                     </local:SettingsExpander.HeaderIcon>
                     <local:SettingsExpander.Items>
-                        <local:SettingsCard Header="Download Folder" Description="The default folder where downloads are saved"
+                        <local:SettingsCard x:Name="LocationCard"  Header="Location" Description="The default folder where downloads are saved"
                                             HorizontalContentAlignment="Stretch">
-                            <Grid>
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*" />
-                                    <ColumnDefinition Width="Auto" />
-                                </Grid.ColumnDefinitions>
-                                <TextBox Grid.Column="0" x:Name="FolderTextBox" PlaceholderText="No folder selected" Width="500" CornerRadius="4,0,0,4" IsReadOnly="False" TextWrapping="NoWrap" 
-                                         TextChanged="FolderTextBox_OnTextChanged"/>
-                                <Button Grid.Column="1" x:Name="SelectFolderButton" CornerRadius="0, 4,4,0" Padding="8,8" Margin="0"
-                                        BorderBrush="{ThemeResource DividerStrokeColorDefaultBrush}" Background="{ThemeResource ControlFillColorTertiaryBrush}"
-                                Click="SelectFolderButton_OnClick">
-                                    <FontIcon Glyph="&#xE8F4;" FontSize="16" FontFamily="Segoe Fluent Icons" />
+                                <Button Grid.Column="1" x:Name="SelectFolderButton" Click="SelectFolderButton_OnClick" Content="Change">
                                 </Button>
-
-                            </Grid>
                         </local:SettingsCard>
                         <local:SettingsCard Header="Ask what to do with each download" Description="Always ask where to save each download rather than using the default folder">
                             <ToggleSwitch x:Name="AskToggle" IsOn="False" OnContent="" OffContent="" Toggled="AskToggle_OnToggled"/>
+                        </local:SettingsCard>
+                        <local:SettingsCard Header="Overwrite existing files" Description="Automatically overwrite existing files with the same name">
+                            <ToggleSwitch x:Name="OverwriteToggle" IsOn="False" OnContent="" OffContent="" Toggled="OverwriteToggle_OnToggled"/>
+                        </local:SettingsCard>
+                    </local:SettingsExpander.Items>
+
+                </local:SettingsExpander>
+                <local:SettingsExpander x:Name = "DownloadOptions" Description="Set download options for different streaming sources" Header="Download Quality">
+                    <local:SettingsExpander.HeaderIcon>
+                        <FontIcon Glyph="&#xE97C;" />
+                    </local:SettingsExpander.HeaderIcon>
+                    <local:SettingsExpander.Items>
+                        <local:SettingsCard x:Name="DeezerQuality" Header="Deezer" Description="Select the quality of Deezer downloads">
+                            <ComboBox x:Name="DeezerQualityComboBox" SelectionChanged="DeezerQualityComboBox_OnSelectionChanged" DropDownOpened="ComboBox_OnDropDownOpened">
+                                <ComboBoxItem x:Name="DeezerMP3_128" Content="MP3 (128kbps)"/>
+                                <ComboBoxItem x:Name="DeezerMP3_320" Content="MP3 (320kbps)"/>
+                                <ComboBoxItem x:Name="DeezerFLAC" Content="FLAC"/>
+                            </ComboBox>
+                        </local:SettingsCard>
+                        <local:SettingsCard x:Name="QobuzQuality" Header="Qobuz" Description="Select the quality of Qobuz downloads">
+                            <ComboBox x:Name="QobuzQualityComboBox" SelectionChanged="QobuzQualityComboBox_OnSelectionChanged" DropDownOpened="ComboBox_OnDropDownOpened">
+                                <ComboBoxItem x:Name="QobuzMP3" Content="MP3 (320kbps)"/>
+                                <ComboBoxItem x:Name="QobuzFLAC6" Content="FLAC (16bit/44.1kHz)"/>
+                                <ComboBoxItem x:Name="QobuzFLAC7" Content="FLAC (24bit/96kHz)"/>
+                                <ComboBoxItem x:Name="QobuzFlAC27" Content="FLAC (24bit/192kHz)"/>
+                            </ComboBox>
+                        </local:SettingsCard>
+                        <local:SettingsCard x:Name="SpotifyQuality" Header="Spotify" Description="Spotify downloads are found from other sources. If fail, will fallback to YouTube.">
+                            <ComboBox x:Name="SpotifyQualityComboBox" SelectionChanged="SpotifyQualityComboBox_OnSelectionChanged" DropDownOpened="ComboBox_OnDropDownOpened">
+                                <ComboBoxItem x:Name="SpotifyMP3" Content="MP3"/>
+                                <ComboBoxItem x:Name="SpotifyFLAC" Content="FLAC"/>
+                            </ComboBox>
+                        </local:SettingsCard>
+                        <local:SettingsCard x:Name="YoutubeQuality" Header="YouTube" Description="Select the quality of YouTube downloads">
+                            <ComboBox x:Name="YoutubeQualityComboBox" SelectionChanged="YoutubeQualityComboBox_OnSelectionChanged" DropDownOpened="ComboBox_OnDropDownOpened">
+                                <ComboBoxItem x:Name="YoutubeOpus" Content="Opus (128kbps) - Good quality, best size, bad compatibility"/>
+                                <ComboBoxItem x:Name="YoutubeFlac" Content="FLAC from Opus - Opus quality, large size, good compatibility"/>
+                                <ComboBoxItem x:Name="YoutubeAAC" Content="AAC (128kbps) - Medium quality, good size, best compatibility"/>
+                            </ComboBox>
                         </local:SettingsCard>
                     </local:SettingsExpander.Items>
 
                 </local:SettingsExpander>
 
-                <!-- API SETTINGS __________________________________________________________________________________________________ -->
-                <TextBlock Text="API" Style="{StaticResource TextBlockSectionStyle}" />
+                <!-- Auth SETTINGS __________________________________________________________________________________________________ -->
+                <TextBlock Text="Authentication" Style="{StaticResource TextBlockSectionStyle}" />
 
                 <local:SettingsExpander x:Name="DeezerExpander"
                                         VerticalAlignment="Top"
@@ -82,7 +109,7 @@
                                         Header="Deezer"
                                         HorizontalContentAlignment="Stretch">
                     <local:SettingsExpander.HeaderIcon>
-                        <FontIcon Glyph="&#xF78D;" />
+                        <FontIcon Glyph="&#xE72E;" />
                     </local:SettingsExpander.HeaderIcon>
                     <local:SettingsExpander.Items>
                         <local:SettingsCard Header="Deezer ARL" Description="Enter your Deezer ARL"
@@ -98,7 +125,7 @@
                                         Header="Qobuz"
                                         HorizontalContentAlignment="Stretch">
                     <local:SettingsExpander.HeaderIcon>
-                        <FontIcon Glyph="&#xF78D;" />
+                        <FontIcon Glyph="&#xE72E;" />
                     </local:SettingsExpander.HeaderIcon>
                     <local:SettingsExpander.Items>
                         <local:SettingsCard Header="User ID" Description="Enter your user ID"
@@ -135,7 +162,7 @@
                     </local:SettingsExpander.Description>
 
                     <local:SettingsExpander.HeaderIcon>
-                        <FontIcon Glyph="&#xF78D;" />
+                        <FontIcon Glyph="&#xE72E;" />
                     </local:SettingsExpander.HeaderIcon>
                     <local:SettingsExpander.Items>
                         <local:SettingsCard Header="Client ID" Description="Enter your client ID string"
