@@ -17,7 +17,8 @@ public partial class SettingsViewModel : ObservableRecipient
     public static readonly string QobuzId = "qobuz_id";
     public static readonly string QobuzToken = "qobuz_token";
     public static readonly string SearchSource = "search_source";
-
+    public static readonly string DownloadDirectory = "download_directory";
+    public static readonly string AskBeforeDownload = "ask_before_download";
     private readonly IThemeSelectorService _themeSelectorService;
 
     [ObservableProperty] private ElementTheme _elementTheme;

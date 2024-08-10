@@ -27,7 +27,7 @@
                 <!-- GENERAL SETTINGS ______________________________________________________________________________________________ -->
                 <TextBlock Text="General" Style="{StaticResource TextBlockSectionStyle}" />
                 <local:SettingsCard x:Name="GeneralSearchSource"
-                                       Description="Set the source for general searches (any query that is not a defined URL)."
+                                       Description="Set the source for general searches (any query that is not a defined URL)"
                                        Header="Search Source"
                                        HeaderIcon="{ui:FontIcon Glyph=&#xF6FA;}">
                     <ComboBox x:Name="SearchSourceComboBox" SelectionChanged="SearchSourceComboBox_OnSelectionChanged">
@@ -42,30 +42,32 @@
                 <TextBlock Text="Download" Style="{StaticResource TextBlockSectionStyle}" />
 
                 <local:SettingsExpander x:Name="DownloadFolder"
-                                        Description="Configure settings regarding download location behavior."
+                                        Description="Configure settings regarding download location behavior"
                                         Header="Download Folder"
                                         HorizontalContentAlignment="Stretch">
                     <local:SettingsExpander.HeaderIcon>
                         <FontIcon Glyph="&#xE8B7;" />
                     </local:SettingsExpander.HeaderIcon>
                     <local:SettingsExpander.Items>
-                        <local:SettingsCard Header="Download Folder" Description="The default folder where downloads are saved."
+                        <local:SettingsCard Header="Download Folder" Description="The default folder where downloads are saved"
                                             HorizontalContentAlignment="Stretch">
                             <Grid>
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="*" />
                                     <ColumnDefinition Width="Auto" />
                                 </Grid.ColumnDefinitions>
-                                <TextBox Grid.Column="0" x:Name="FolderTextBox" PlaceholderText="No folder selected" HorizontalAlignment="Stretch" CornerRadius="4,0,0,4" IsReadOnly="False" TextWrapping="NoWrap"/>
-                                <Button Grid.Column="1" x:Name="SelectFolderButton" CornerRadius="0, 4,4,0" Style="{ThemeResource AccentButtonStyle}"
+                                <TextBox Grid.Column="0" x:Name="FolderTextBox" PlaceholderText="No folder selected" Width="500" CornerRadius="4,0,0,4" IsReadOnly="False" TextWrapping="NoWrap" 
+                                         TextChanged="FolderTextBox_OnTextChanged"/>
+                                <Button Grid.Column="1" x:Name="SelectFolderButton" CornerRadius="0, 4,4,0" Padding="8,8" Margin="0"
+                                        BorderBrush="{ThemeResource DividerStrokeColorDefaultBrush}" Background="{ThemeResource ControlFillColorTertiaryBrush}"
                                 Click="SelectFolderButton_OnClick">
-                                    <StackPanel Orientation="Horizontal">
-                                        <FontIcon Glyph="&#xE8F4;" FontSize="16" Margin="0, 0, 8, 0"/>
-                                        <TextBlock Text="Select"/>
-                                    </StackPanel>
+                                    <FontIcon Glyph="&#xE8F4;" FontSize="16" FontFamily="Segoe Fluent Icons" />
                                 </Button>
 
                             </Grid>
+                        </local:SettingsCard>
+                        <local:SettingsCard Header="Ask what to do with each download" Description="Always ask where to save each download rather than using the default folder">
+                            <ToggleSwitch x:Name="AskToggle" IsOn="False" OnContent="" OffContent="" Toggled="AskToggle_OnToggled"/>
                         </local:SettingsCard>
                     </local:SettingsExpander.Items>
 
@@ -76,14 +78,14 @@
 
                 <local:SettingsExpander x:Name="DeezerExpander"
                                         VerticalAlignment="Top"
-                                        Description="Set authentication tokens for Deezer."
+                                        Description="Set authentication tokens for Deezer"
                                         Header="Deezer"
                                         HorizontalContentAlignment="Stretch">
                     <local:SettingsExpander.HeaderIcon>
                         <FontIcon Glyph="&#xF78D;" />
                     </local:SettingsExpander.HeaderIcon>
                     <local:SettingsExpander.Items>
-                        <local:SettingsCard Header="Deezer ARL" Description="Enter your Deezer ARL."
+                        <local:SettingsCard Header="Deezer ARL" Description="Enter your Deezer ARL"
                                             HorizontalContentAlignment="Stretch">
                             <helpers:CustomPasswordBox x:Name="DeezerARLInput" VerticalAlignment="Center" Width="500" Tooltip="Deezer ARL" Header="Deezer ARL"/>
                         </local:SettingsCard>
@@ -92,14 +94,14 @@
 
                 <local:SettingsExpander x:Name="QobuzExpander"
                                         VerticalAlignment="Top"
-                                        Description="Set authentication tokens for Qobuz."
+                                        Description="Set authentication tokens for Qobuz"
                                         Header="Qobuz"
                                         HorizontalContentAlignment="Stretch">
                     <local:SettingsExpander.HeaderIcon>
                         <FontIcon Glyph="&#xF78D;" />
                     </local:SettingsExpander.HeaderIcon>
                     <local:SettingsExpander.Items>
-                        <local:SettingsCard Header="User ID" Description="Enter your user ID."
+                        <local:SettingsCard Header="User ID" Description="Enter your user ID"
                                             HorizontalContentAlignment="Stretch">
                             <TextBox x:Name="QobuzIDInput"
                                      Width="500"
@@ -117,7 +119,7 @@
                             </TextBox>
                         </local:SettingsCard>
                         <local:SettingsCard x:Name="QobuzAuthToken" Header="Authentication Token"
-                                            Description="Enter your authentication token."
+                                            Description="Enter your authentication token"
                                             HorizontalContentAlignment="Stretch">
                             <helpers:CustomPasswordBox x:Name="QobuzTokenInput" VerticalAlignment="Center" Width="500" Tooltip="Qobuz authentication token" Header="Authentication token"/>
                         </local:SettingsCard>
@@ -136,7 +138,7 @@
                         <FontIcon Glyph="&#xF78D;" />
                     </local:SettingsExpander.HeaderIcon>
                     <local:SettingsExpander.Items>
-                        <local:SettingsCard Header="Client ID" Description="Enter your client ID string."
+                        <local:SettingsCard Header="Client ID" Description="Enter your client ID string"
                                             HorizontalContentAlignment="Stretch">
                             <TextBox x:Name="ClientIdInput"
                                      Width="500"
@@ -154,7 +156,7 @@
                             </TextBox>
                         </local:SettingsCard>
                         <local:SettingsCard x:Name="ClientSecretCard" Header="Client Secret"
-                                            Description="Enter your client secret string."
+                                            Description="Enter your client secret string"
                                             HorizontalContentAlignment="Stretch">
                             <helpers:CustomPasswordBox x:Name="SpotifySecretInput" VerticalAlignment="Center" Width="500" Tooltip="Spotify client secret" Header="Client secret"/>
                         </local:SettingsCard>
@@ -166,7 +168,7 @@
 
                 <local:SettingsExpander x:Name="ThemeExpander"
                                         VerticalAlignment="Top"
-                                        Description="Select app theme."
+                                        Description="Select app theme"
                                         Header="Theme">
                     <local:SettingsExpander.HeaderIcon>
                         <FontIcon Glyph="&#xE790;" />

@@ -1,4 +1,7 @@
 ﻿using System.Diagnostics;
+using Windows.Storage;
+using Windows.Storage.AccessCache;
+using Windows.Storage.Pickers;
 using CommunityToolkit.WinUI;
 using FluentDL.Contracts.Services;
 using FluentDL.Services;
@@ -16,7 +19,6 @@ public sealed partial class SettingsPage : Page
     private DispatcherQueue dispatcher;
     private ILocalSettingsService localSettings;
 
-
     public SettingsViewModel ViewModel
     {
         get;
@@ -33,6 +35,12 @@ public sealed partial class SettingsPage : Page
 
     private async void SettingsPage_Loaded(object sender, RoutedEventArgs e)
     {
+        // Set download directory
+        FolderTextBox.Text = await localSettings.ReadSettingAsync<string>(SettingsViewModel.DownloadDirectory) ?? "";
+
+        // Set ask before download toggle
+        AskToggle.IsOn = await localSettings.ReadSettingAsync<bool>(SettingsViewModel.AskBeforeDownload);
+
         // Set Ids/Secrets
         ClientIdInput.Text = (await localSettings.ReadSettingAsync<string>(SettingsViewModel.SpotifyClientId)) ?? "";
         SpotifySecretInput.Password = (await localSettings.ReadSettingAsync<string>(SettingsViewModel.SpotifyClientSecret)) ?? "";
@@ -134,8 +142,44 @@ public sealed partial class SettingsPage : Page
         await localSettings.SaveSettingAsync(SettingsViewModel.SearchSource, (SearchSourceComboBox.SelectedItem as ComboBoxItem).Content.ToString());
     }
 
-    private void SelectFolderButton_OnClick(object sender, RoutedEventArgs e)
+    private async void SelectFolderButton_OnClick(object sender, RoutedEventArgs e)
     {
-        throw new NotImplementedException();
+        FolderPicker openPicker = new Windows.Storage.Pickers.FolderPicker();
+
+        // Retrieve the window handle of the current WinUI 3 window.
+        var hWnd = WinRT.Interop.WindowNative.GetWindowHandle(App.MainWindow);
+
+        // Initialize the folder picker with the window handle.
+        WinRT.Interop.InitializeWithWindow.Initialize(openPicker, hWnd);
+
+        openPicker.SuggestedStartLocation = PickerLocationId.ComputerFolder;
+        openPicker.FileTypeFilter.Add("*");
+
+        // Open the picker for the user to pick a folder
+        StorageFolder folder = await openPicker.PickSingleFolderAsync();
+        if (folder != null)
+        {
+            StorageApplicationPermissions.FutureAccessList.AddOrReplace("PickedFolderToken", folder); // Save the folder for future access
+
+            // Set the folder path in the text box
+            FolderTextBox.Text = folder.Path;
+        }
+    }
+
+    private async void FolderTextBox_OnTextChanged(object sender, TextChangedEventArgs e)
+    {
+        var path = (sender as TextBox).Text;
+        if (Directory.Exists(path) && Path.IsPathRooted(path))
+        {
+            // Save to settings
+            await localSettings.SaveSettingAsync(SettingsViewModel.DownloadDirectory, path);
+            Debug.WriteLine("Saved download directory: " + path);
+        }
+    }
+
+    private async void AskToggle_OnToggled(object sender, RoutedEventArgs e)
+    {
+        var isToggled = (sender as ToggleSwitch).IsOn;
+        await localSettings.SaveSettingAsync(SettingsViewModel.AskBeforeDownload, isToggled);
     }
 }
