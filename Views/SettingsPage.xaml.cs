@@ -167,14 +167,18 @@ public sealed partial class SettingsPage : Page
         {
             StorageApplicationPermissions.FutureAccessList.AddOrReplace("PickedFolderToken", folder); // Save the folder for future access
 
-            // Set the folder path in the text box
-            LocationCard.Description = folder.Path;
-
             if (Directory.Exists(folder.Path) && Path.IsPathRooted(folder.Path))
             {
+                // Set the folder path in the text box
+                LocationCard.Description = folder.Path;
                 // Save to settings
                 await localSettings.SaveSettingAsync(SettingsViewModel.DownloadDirectory, folder.Path);
                 Debug.WriteLine("Saved download directory: " + folder.Path);
+            }
+            else
+            {
+                LocationCard.Description = "Invalid folder path";
+                Debug.WriteLine("Invalid folder path: " + folder.Path); // TODO: replace with infobar or dialog
             }
         }
     }

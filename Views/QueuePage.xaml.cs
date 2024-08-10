@@ -3,6 +3,8 @@ using System.Diagnostics;
 using System.Drawing;
 using System.Text.RegularExpressions;
 using Windows.ApplicationModel.AppService;
+using Windows.Storage;
+using Windows.Storage.AccessCache;
 using Windows.Storage.Pickers;
 using ABI.Windows.Storage.Pickers;
 using ABI.Windows.UI.ApplicationSettings;
@@ -19,6 +21,7 @@ using FluentDL.Helpers;
 using FluentDL.Models;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Imaging;
+using Microsoft.UI.Xaml.Navigation;
 using Color = Windows.UI.Color;
 using FileSavePicker = Windows.Storage.Pickers.FileSavePicker;
 using Symbol = Microsoft.UI.Xaml.Controls.Symbol;
@@ -105,6 +108,11 @@ public sealed partial class QueuePage : Page
         warningSource = new HashSet<SongSearchObject>();
         errorSource = new HashSet<SongSearchObject>();
         selectedSources = new HashSet<string>();
+    }
+
+    protected override void OnNavigatedFrom(NavigationEventArgs e)
+    {
+        Debug.WriteLine("NAVIGATED AWAY");
     }
 
     private async void OutputButton_OnClick(object sender, RoutedEventArgs e)
@@ -205,7 +213,7 @@ public sealed partial class QueuePage : Page
 
             // Create file name
             var firstArtist = songObj.Artists.Split(",")[0].Trim();
-            var isrcStr = !string.IsNullOrWhiteSpace(songObj.Isrc) ? $" [{songObj.Isrc}] " : "";
+            var isrcStr = !string.IsNullOrWhiteSpace(songObj.Isrc) ? $" [{songObj.Isrc}]" : "";
             var safeFileName = ApiHelper.GetSafeFilename($"{songObj.TrackPosition}. {firstArtist} - {songObj.Title}{isrcStr}.flac");
 
             // Create a file save picker
@@ -294,7 +302,14 @@ public sealed partial class QueuePage : Page
         }
 
         PreviewPanel.Show();
-        await PreviewPanel.Update(selectedSong);
+        if (selectedSong.Source == "local")
+        {
+            await PreviewPanel.Update(selectedSong, LocalExplorerViewModel.GetMetadataObject(selectedSong.Id));
+        }
+        else
+        {
+            await PreviewPanel.Update(selectedSong);
+        }
     }
 
     private async void CommandButton_OnClick(object sender, RoutedEventArgs e)
@@ -587,6 +602,39 @@ public sealed partial class QueuePage : Page
             return;
         }
 
+        // Set download location if output is local and ask before download is enabled or download directory is not set
+        var directory = await SettingsViewModel.GetSetting<string>(SettingsViewModel.DownloadDirectory);
+
+        if (outputSource == "local" && (await SettingsViewModel.GetSetting<bool>(SettingsViewModel.AskBeforeDownload) || string.IsNullOrWhiteSpace(directory)))
+        {
+            var openPicker = new Windows.Storage.Pickers.FolderPicker();
+
+            // Retrieve the window handle of the current WinUI 3 window.
+            var hWnd = WinRT.Interop.WindowNative.GetWindowHandle(App.MainWindow);
+
+            // Initialize the folder picker with the window handle.
+            WinRT.Interop.InitializeWithWindow.Initialize(openPicker, hWnd);
+
+            openPicker.SuggestedStartLocation = PickerLocationId.Downloads;
+            openPicker.FileTypeFilter.Add("*");
+
+            // Open the picker for the user to pick a folder
+            StorageFolder folder = await openPicker.PickSingleFolderAsync();
+            if (folder != null)
+            {
+                StorageApplicationPermissions.FutureAccessList.AddOrReplace("PickedFolderToken", folder); // Save the folder for future access
+                directory = folder.Path;
+            }
+            else // No folder selected
+            {
+                if (string.IsNullOrWhiteSpace(directory)) // If no directory is set, return
+                {
+                    ShowInfoBar(InfoBarSeverity.Warning, "No download directory selected", 3);
+                    return;
+                }
+            }
+        }
+
         // Clear preview pane when source is being edited
         PreviewPanel.Clear();
 
@@ -644,12 +692,16 @@ public sealed partial class QueuePage : Page
                 continue;
             }
 
+            SongSearchObject? newSongObj = null;
+            string? fileLocation = null;
             if (outputSource == "local") // Conversion to local, download the track
             {
+                fileLocation = await ApiHelper.DownloadObject(song, directory, conversionUpdateCallback);
+                newSongObj = song;
             }
             else
             {
-                var newSongObj = outputSource switch
+                newSongObj = outputSource switch
                 {
                     "deezer" => await DeezerApi.GetDeezerTrack(song, cancellationTokenSource.Token, conversionUpdateCallback),
                     "qobuz" => await QobuzApi.GetQobuzTrack(song, cancellationTokenSource.Token, conversionUpdateCallback),
@@ -657,29 +709,55 @@ public sealed partial class QueuePage : Page
                     "youtube" => await YoutubeApi.GetYoutubeTrack(song, cancellationTokenSource.Token, conversionUpdateCallback),
                     _ => throw new Exception("Unspecified output source") // Should never happen
                 };
+            }
 
+            if (cancellationTokenSource.Token.IsCancellationRequested) // If conversion is paused
+            {
+                break;
+            }
 
-                if (cancellationTokenSource.Token.IsCancellationRequested) // If conversion is paused
+            if (newSongObj != null)
+            {
+                QueueObject? queueObj;
+                if (outputSource == "local")
                 {
-                    break;
-                }
+                    // Get the downloaded song as an object
+                    var localSong = LocalExplorerViewModel.ParseFile(fileLocation);
 
-                if (newSongObj != null)
-                {
-                    var queueObj = await QueueViewModel.CreateQueueObject(newSongObj);
-                    if (queueObj != null)
+                    if (localSong == null) return; // Skip if song is null
+
+                    // Set song art
+                    using var memoryStream = await Task.Run(() => LocalExplorerViewModel.GetAlbumArtMemoryStream(localSong.Id));
+
+                    if (memoryStream != null) // Set album art if available
                     {
-                        if (successSource.Contains(newSongObj)) queueObj.ConvertBadgeColor = new SolidColorBrush(Windows.UI.Color.FromArgb(255, 108, 203, 95));
-                        else if (warningSource.Contains(newSongObj)) queueObj.ConvertBadgeColor = new SolidColorBrush(Windows.UI.Color.FromArgb(255, 252, 225, 0));
-
-                        QueueViewModel.Replace(i, queueObj);
+                        var bitmapImage = new BitmapImage
+                        {
+                            DecodePixelHeight = 76, // No need to set height, aspect ratio is automatically handled
+                        };
+                        await bitmapImage.SetSourceAsync(memoryStream.AsRandomAccessStream());
+                        localSong.LocalBitmapImage = bitmapImage;
                     }
+
+                    queueObj = await QueueViewModel.CreateQueueObject(localSong);
                 }
-                else // Failed conversion, set current object badge to error
+                else
                 {
-                    song.ConvertBadgeColor = new SolidColorBrush(Windows.UI.Color.FromArgb(255, 255, 153, 164));
-                    QueueViewModel.Replace(i, song);
+                    queueObj = await QueueViewModel.CreateQueueObject(newSongObj);
                 }
+
+                if (queueObj != null)
+                {
+                    if (successSource.Contains(newSongObj)) queueObj.ConvertBadgeColor = new SolidColorBrush(Windows.UI.Color.FromArgb(255, 108, 203, 95));
+                    else if (warningSource.Contains(newSongObj)) queueObj.ConvertBadgeColor = new SolidColorBrush(Windows.UI.Color.FromArgb(255, 252, 225, 0));
+
+                    QueueViewModel.Replace(i, queueObj);
+                }
+            }
+            else // Failed conversion, set current object badge to error
+            {
+                song.ConvertBadgeColor = new SolidColorBrush(Windows.UI.Color.FromArgb(255, 255, 153, 164));
+                QueueViewModel.Replace(i, song);
             }
 
             QueueProgress.Value = 100.0 * (i + 1) / totalCount; // Update the progress bar
