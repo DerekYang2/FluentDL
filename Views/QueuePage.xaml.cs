@@ -110,9 +110,30 @@ public sealed partial class QueuePage : Page
         selectedSources = new HashSet<string>();
     }
 
+    protected async override void OnNavigatedTo(NavigationEventArgs e)
+    {
+        // Get the selected item
+        var selectedSong = (SongSearchObject)CustomListView.SelectedItem;
+        if (selectedSong == null)
+        {
+            return;
+        }
+
+        PreviewPanel.Show();
+        if (selectedSong.Source == "local")
+        {
+            await PreviewPanel.Update(selectedSong, LocalExplorerViewModel.GetMetadataObject(selectedSong.Id));
+        }
+        else
+        {
+            await PreviewPanel.Update(selectedSong);
+        }
+    }
+
     protected override void OnNavigatedFrom(NavigationEventArgs e)
     {
-        Debug.WriteLine("NAVIGATED AWAY");
+        // Clear preview 
+        PreviewPanel.Clear();
     }
 
     private async void OutputButton_OnClick(object sender, RoutedEventArgs e)
@@ -205,9 +226,16 @@ public sealed partial class QueuePage : Page
         downloadButton.Click += async (sender, e) =>
         {
             var songObj = PreviewPanel.GetSong();
+
             if (songObj == null)
             {
                 ShowInfoBar(InfoBarSeverity.Error, "Failed to download track");
+                return;
+            }
+
+            if (songObj.Source == "local")
+            {
+                ShowInfoBar(InfoBarSeverity.Warning, "Track is already local");
                 return;
             }
 
@@ -238,11 +266,10 @@ public sealed partial class QueuePage : Page
         var downloadCoverButton = new AppBarButton() { Icon = new FontIcon { Glyph = "\uEE71" }, Label = "Download Cover" };
         downloadCoverButton.Click += async (sender, e) =>
         {
-            var bitmapImg = PreviewPanel.GetImage();
             var songObj = PreviewPanel.GetSong();
 
             // Check if the image is null
-            if (bitmapImg == null || songObj == null)
+            if (songObj == null)
             {
                 ShowInfoBar(InfoBarSeverity.Error, "Failed to download cover");
                 return;
@@ -268,8 +295,33 @@ public sealed partial class QueuePage : Page
             // Save bitmap image as jpg/png
             if (file != null)
             {
-                var coverBytes = await new HttpClient().GetByteArrayAsync(bitmapImg.UriSource);
+                byte[]? coverBytes;
+                if (songObj.Source == "local")
+                {
+                    coverBytes = await Task.Run(() => LocalExplorerViewModel.GetAlbumArtBytes(songObj.Id));
+                }
+                else
+                {
+                    try
+                    {
+                        var bitmapImg = PreviewPanel.GetImage();
+                        coverBytes = await new HttpClient().GetByteArrayAsync(bitmapImg?.UriSource);
+                    }
+                    catch (Exception ex)
+                    {
+                        Debug.WriteLine(ex.Message);
+                        return;
+                    }
+                }
+
+                if (coverBytes == null)
+                {
+                    ShowInfoBar(InfoBarSeverity.Error, "Failed to download cover");
+                    return;
+                }
+
                 await File.WriteAllBytesAsync(file.Path, coverBytes);
+                ShowInfoBar(InfoBarSeverity.Success, "Successfully downloaded cover");
             }
 
             //await DeezerApi.DownloadTrack(await DeezerApi.GetTrack(PreviewPanel.GetSong().Id), "E:\\Other Downloads\\test");
@@ -686,11 +738,17 @@ public sealed partial class QueuePage : Page
 
             var song = QueueViewModel.Source[i];
 
+
             if (!selectedSources.Contains(song.Source) || outputSource == song.Source) // If the source is not selected as input or no conversion needed
             {
                 QueueProgress.Value = 100.0 * (i + 1) / totalCount; // Update the progress bar
                 continue;
             }
+
+            // Set song to running (progress ring will appear)
+            song.IsRunning = true;
+            QueueViewModel.Source[i] = song;
+
 
             SongSearchObject? newSongObj = null;
             string? fileLocation = null;
@@ -724,7 +782,7 @@ public sealed partial class QueuePage : Page
                     // Get the downloaded song as an object
                     var localSong = LocalExplorerViewModel.ParseFile(fileLocation);
 
-                    if (localSong == null) return; // Skip if song is null
+                    if (localSong == null) break; // Skip if song is null
 
                     // Set song art
                     using var memoryStream = await Task.Run(() => LocalExplorerViewModel.GetAlbumArtMemoryStream(localSong.Id));
@@ -751,11 +809,13 @@ public sealed partial class QueuePage : Page
                     if (successSource.Contains(newSongObj)) queueObj.ConvertBadgeColor = new SolidColorBrush(Windows.UI.Color.FromArgb(255, 108, 203, 95));
                     else if (warningSource.Contains(newSongObj)) queueObj.ConvertBadgeColor = new SolidColorBrush(Windows.UI.Color.FromArgb(255, 252, 225, 0));
 
+                    queueObj.IsRunning = false; // Set song to not running
                     QueueViewModel.Replace(i, queueObj);
                 }
             }
             else // Failed conversion, set current object badge to error
             {
+                song.IsRunning = false; // Set song to not running
                 song.ConvertBadgeColor = new SolidColorBrush(Windows.UI.Color.FromArgb(255, 255, 153, 164));
                 QueueViewModel.Replace(i, song);
             }
@@ -764,6 +824,7 @@ public sealed partial class QueuePage : Page
         }
 
         CommandButton.Visibility = ConvertDialogOpenButton.Visibility = ClearButton.Visibility = Visibility.Visible; // Show buttons
+        ConvertStopText.Text = "Stop"; // Reset stop button text
         ConvertStopButton.Visibility = Visibility.Collapsed; // Hide stop button
         isConverting = false;
         QueueProgress.Value = ogVal; // Reset the progress bar
@@ -777,6 +838,7 @@ public sealed partial class QueuePage : Page
         if (isConverting) // If currently converting
         {
             cancellationTokenSource.Cancel(); // Cancel the conversion
+            ConvertStopText.Text = "Stopping ...";
         }
     }
 

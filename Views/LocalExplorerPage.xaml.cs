@@ -12,6 +12,7 @@ using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml.Media.Imaging;
 using WinRT.Interop;
 using FluentDL.Models;
+using Microsoft.UI.Xaml.Navigation;
 
 namespace FluentDL.Views;
 
@@ -172,6 +173,24 @@ public sealed partial class LocalExplorerPage : Page
 
         var openButton = new AppBarButton { Icon = new FontIcon { Glyph = "\uE8A7" }, Label = "Open" };
         PreviewPanel.SetAppBarButtons(new List<AppBarButton> { addButton, removeButton, editButton, openButton });
+    }
+
+    protected async override void OnNavigatedTo(NavigationEventArgs e) // Navigated to page
+    {
+        // Get the selected item
+        var selectedSong = (SongSearchObject)FileListView.SelectedItem;
+        if (selectedSong == null)
+        {
+            return;
+        }
+
+        PreviewPanel.Show();
+        await PreviewPanel.Update(selectedSong, LocalExplorerViewModel.GetMetadataObject(selectedSong.Id));
+    }
+
+    protected override void OnNavigatedFrom(NavigationEventArgs e) // Navigated away from page
+    {
+        PreviewPanel.Clear(); // Clear preview 
     }
 
     public void SetResultsAmount(int amount)
@@ -363,7 +382,7 @@ public sealed partial class LocalExplorerPage : Page
                     continue;
                 }
 
-                var song = ViewModel.ParseFile(file.Path);
+                var song = LocalExplorerViewModel.ParseFile(file.Path);
 
                 if (song == null) continue; // Skip if song is null
 
@@ -375,7 +394,7 @@ public sealed partial class LocalExplorerPage : Page
                     fileSet.Add(song.Id);
                 });
 
-                var memoryStream = ViewModel.GetAlbumArtMemoryStream(song.Id);
+                var memoryStream = LocalExplorerViewModel.GetAlbumArtMemoryStream(song.Id);
 
                 if (memoryStream != null) // Set album art if available
                 {
@@ -422,7 +441,7 @@ public sealed partial class LocalExplorerPage : Page
         }
 
         PreviewPanel.Show();
-        await PreviewPanel.Update(selectedSong, ViewModel.GetMetadataObject(selectedSong.Id));
+        await PreviewPanel.Update(selectedSong, LocalExplorerViewModel.GetMetadataObject(selectedSong.Id));
     }
 
     private void SortListView()
@@ -550,8 +569,8 @@ public sealed partial class LocalExplorerPage : Page
     private async void MetadataDialog_OnPrimaryButtonClick(ContentDialog sender, ContentDialogButtonClickEventArgs args)
     {
         // Stop media player
-
         PreviewPanel.ClearMediaPlayerSource();
+
         ViewModel.SetImagePath(CoverArtTextBox.Text);
         await ViewModel.SaveMetadata();
         // Find the song and update it in the listview + preview panel
@@ -564,12 +583,12 @@ public sealed partial class LocalExplorerPage : Page
         }
 
         // Get the new song
-        var song = ViewModel.ParseFile(path);
+        var song = LocalExplorerViewModel.ParseFile(path);
 
         if (song == null) return; // Skip if song is null
 
         // Set song art
-        using var memoryStream = await Task.Run(() => ViewModel.GetAlbumArtMemoryStream(song.Id));
+        using var memoryStream = await Task.Run(() => LocalExplorerViewModel.GetAlbumArtMemoryStream(song.Id));
 
         if (memoryStream != null) // Set album art if available
         {
@@ -591,7 +610,7 @@ public sealed partial class LocalExplorerPage : Page
 
         PreviewPanel.Show();
         // Update the preview panel
-        await PreviewPanel.Update(song, ViewModel.GetMetadataObject(song.Id));
+        await PreviewPanel.Update(song, LocalExplorerViewModel.GetMetadataObject(song.Id));
     }
 
     private void MetadataDialog_OnCloseButtonClick(ContentDialog sender, ContentDialogButtonClickEventArgs args)

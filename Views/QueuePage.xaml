@@ -178,7 +178,7 @@
                             </Button>
                         </Grid>
 
-                        <ProgressRing Grid.Column="2"
+                        <ProgressRing Grid.Column="2" VerticalAlignment="Bottom" HorizontalAlignment="Right"
                                       Visibility="{x:Bind IsRunning, Converter={StaticResource VisibilityConverter}}" />
                         <InfoBadge Grid.Column="0" x:Name="ConvertInfoBadge" HorizontalAlignment="Left"
                                    VerticalAlignment="Top" Background="{x:Bind ConvertBadgeColor}" Width="12"

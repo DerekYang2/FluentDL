@@ -24,7 +24,7 @@ namespace FluentDL.ViewModels;
 public partial class LocalExplorerViewModel : ObservableRecipient
 {
     private string currentEditPath = ""; // Path of the file currently being edited
-    private Dictionary<string, MetadataObject> tmpUpdates = new Dictionary<string, MetadataObject>();
+    private static Dictionary<string, MetadataObject> tmpUpdates = new Dictionary<string, MetadataObject>();
 
     public ObservableCollection<MetadataPair> CurrentMetadataList
     {
@@ -91,12 +91,12 @@ public partial class LocalExplorerViewModel : ObservableRecipient
         return null;
     }
 
-    public MetadataObject? GetMetadataObject(string path)
+    public static MetadataObject? GetMetadataObject(string path)
     {
         return tmpUpdates.GetValueOrDefault(path);
     }
 
-    public SongSearchObject? ParseFile(string path)
+    public static SongSearchObject? ParseFile(string path)
     {
         if (!Path.Exists(path))
         {
@@ -150,7 +150,7 @@ public partial class LocalExplorerViewModel : ObservableRecipient
     //    return null;
     //}
 
-    public async Task<BitmapImage?> GetBitmapImageAsync(string filePath)
+    public static async Task<BitmapImage?> GetBitmapImageAsync(string filePath)
     {
         var memoryStream = GetAlbumArtMemoryStream(filePath);
         if (memoryStream == null)
@@ -163,7 +163,17 @@ public partial class LocalExplorerViewModel : ObservableRecipient
         return bitmapImage;
     }
 
-    public MemoryStream? GetAlbumArtMemoryStream(string filePath)
+    public static byte[]? GetAlbumArtBytes(string filePath)
+    {
+        if (!tmpUpdates.TryGetValue(filePath, out var value))
+        {
+            throw new KeyNotFoundException("The file path does not exist in the dictionary.");
+        }
+
+        return value.GetAlbumArt();
+    }
+
+    public static MemoryStream? GetAlbumArtMemoryStream(string filePath)
     {
         if (!tmpUpdates.TryGetValue(filePath, out var value))
         {

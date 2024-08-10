@@ -9,6 +9,7 @@ using FluentDL.Models;
 using Microsoft.UI.Dispatching;
 using YoutubeExplode.Search;
 using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Navigation;
 
 namespace FluentDL.Views;
 // TODO: loading for search
@@ -154,6 +155,24 @@ public sealed partial class Search : Page
         };
 
         PreviewPanel.SetAppBarButtons(new List<AppBarButton> { addButton, shareButton, openButton });
+    }
+
+    protected async override void OnNavigatedTo(NavigationEventArgs e) // Navigated to page
+    {
+        // Get the selected item
+        var selectedSong = (SongSearchObject)CustomListView.SelectedItem;
+        if (selectedSong == null)
+        {
+            return;
+        }
+
+        PreviewPanel.Show();
+        await PreviewPanel.Update(selectedSong);
+    }
+
+    protected override void OnNavigatedFrom(NavigationEventArgs e) // Navigated away from page
+    {
+        PreviewPanel.Clear(); // Clear preview 
     }
 
     private void AttachCollectionChangedEvent(ObservableCollection<SongSearchObject> collection)
