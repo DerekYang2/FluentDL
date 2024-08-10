@@ -474,13 +474,14 @@ namespace FluentDL.Services
             return genreSet;
         }
 
-        public static async Task<bool> DownloadEquivalentTrack(string filePath, SongSearchObject song, bool strict = true)
+        public static async Task DownloadEquivalentTrack(string filePath, SongSearchObject song, bool strict = true, ConversionUpdateCallback? callback = default)
         {
             SongSearchObject? equivalent = await DeezerApi.GetDeezerTrack(song, onlyISRC: strict); // Try Deezer first
             if (equivalent != null) // Found on Deezer
             {
                 await DeezerApi.DownloadTrack(filePath, equivalent);
-                return true;
+                callback?.Invoke(InfoBarSeverity.Success, song);
+                return;
             }
 
             // Not found on Deezer, try Qobuz
@@ -490,12 +491,14 @@ namespace FluentDL.Services
             if (equivalent != null) // Found on Qobuz
             {
                 await QobuzApi.DownloadTrack(filePath, equivalent);
-                return true;
+                callback?.Invoke(InfoBarSeverity.Success, song);
+                return;
             }
 
             if (strict) // If strict, do not try youtube
             {
-                return false;
+                callback?.Invoke(InfoBarSeverity.Error, song); // Show error, not downloaded
+                return;
             }
 
             // Not found on Qobuz, try youtube
@@ -509,15 +512,21 @@ namespace FluentDL.Services
 
                 await YoutubeApi.DownloadAudio(opusLocation, song.Id); // Download audio as opus
                 await FFmpegRunner.ConvertToFlac(opusLocation); // Convert opus to flac
-                return true;
+                callback?.Invoke(InfoBarSeverity.Warning, song); // Not perfect match
+                return;
             }
 
-            return false; // Not found on any platform
+            callback?.Invoke(InfoBarSeverity.Error, song); // Show error, not downloaded
         }
 
 
         public static async Task UpdateMetadata(string filePath, string id)
         {
+            if (!File.Exists(filePath))
+            {
+                return;
+            }
+
             var track = await GetTrack(id);
             if (track == null)
             {

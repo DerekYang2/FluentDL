@@ -47,6 +47,7 @@ namespace FluentDL.Views
             PreviewImage.Source = null;
             PreviewInfoControl.ItemsSource = new List<TrackDetail>();
             PreviewInfoControl2.ItemsSource = new List<TrackDetail>();
+            ClearMediaPlayerSource();
         }
 
         public void Show()

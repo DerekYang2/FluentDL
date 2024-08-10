@@ -9,6 +9,8 @@ using System.Threading.Tasks;
 using ABI.Microsoft.UI.Xaml.Media.Imaging;
 using FluentDL.Models;
 using FluentDL.Services;
+using FluentDL.Views;
+using Microsoft.UI.Xaml.Controls;
 using BitmapImage = Microsoft.UI.Xaml.Media.Imaging.BitmapImage;
 
 namespace FluentDL.Helpers;
@@ -90,6 +92,76 @@ internal class ApiHelper
             "local" => id,
             _ => string.Empty
         };
+    }
+
+    public static async Task<string> DownloadObject(SongSearchObject song, string directory, ConversionUpdateCallback? callback = default)
+    {
+        // Create file name
+        var firstArtist = song.Artists.Split(",")[0].Trim();
+        var isrcStr = !string.IsNullOrWhiteSpace(song.Isrc) ? $" [{song.Isrc}]" : "";
+        var fileName = GetSafeFilename($"{song.TrackPosition}. {firstArtist} - {song.Title}{isrcStr}"); // File name no extension
+
+        // Create file path
+        var flacLocation = Path.Combine(directory, fileName + ".flac");
+        var opusLocation = Path.Combine(directory, fileName + ".opus");
+
+        if (song.Source == "youtube")
+        {
+            try
+            {
+                await YoutubeApi.DownloadAudio(opusLocation, song.Id);
+                await FFmpegRunner.ConvertToFlac(opusLocation); // Convert opus to flac
+                await YoutubeApi.UpdateMetadata(flacLocation, song.Id);
+                callback?.Invoke(InfoBarSeverity.Success, song); // Assume success
+                return flacLocation;
+            }
+            catch (Exception e)
+            {
+                callback?.Invoke(InfoBarSeverity.Error, song);
+                Debug.WriteLine("Failed to download song: " + e.Message);
+            }
+        }
+
+        if (song.Source == "deezer")
+        {
+            try
+            {
+                await DeezerApi.DownloadTrack(flacLocation, song);
+                await DeezerApi.UpdateMetadata(flacLocation, song.Id);
+                callback?.Invoke(InfoBarSeverity.Success, song); // Assume success
+                return flacLocation;
+            }
+            catch (Exception e)
+            {
+                callback?.Invoke(InfoBarSeverity.Error, song);
+                Debug.WriteLine("Failed to download song: " + e.Message);
+            }
+        }
+
+        if (song.Source == "qobuz")
+        {
+            try
+            {
+                await QobuzApi.DownloadTrack(flacLocation, song);
+                await QobuzApi.UpdateMetadata(flacLocation, song.Id);
+                callback?.Invoke(InfoBarSeverity.Success, song); // Assume success
+                return flacLocation;
+            }
+            catch (Exception e)
+            {
+                callback?.Invoke(InfoBarSeverity.Error, song);
+                Debug.WriteLine("Failed to download song: " + e.Message);
+            }
+        }
+
+        if (song.Source == "spotify")
+        {
+            await SpotifyApi.DownloadEquivalentTrack(flacLocation, song, true, callback);
+            await SpotifyApi.UpdateMetadata(flacLocation, song.Id);
+            return flacLocation;
+        }
+
+        return string.Empty;
     }
 
     public static async Task DownloadObject(SongSearchObject song, Windows.Storage.StorageFile? file)

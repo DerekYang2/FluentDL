@@ -24,6 +24,7 @@ public partial class SettingsViewModel : ObservableRecipient
     public static readonly string QobuzQuality = "qobuz_quality";
     public static readonly string SpotifyQuality = "spotify_quality";
     public static readonly string YoutubeQuality = "youtube_quality";
+    private static ILocalSettingsService localSettings = App.GetService<ILocalSettingsService>();
 
     private readonly IThemeSelectorService _themeSelectorService;
 
@@ -52,6 +53,12 @@ public partial class SettingsViewModel : ObservableRecipient
                 }
             });
     }
+
+    public static async Task<T?> GetSetting<T>(string key)
+    {
+        return await localSettings.ReadSettingAsync<T>(key);
+    }
+
 
     private static string GetVersionDescription()
     {
