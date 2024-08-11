@@ -8,6 +8,7 @@ using ABI.Windows.Media.Core;
 using AngleSharp.Text;
 using FluentDL.Helpers;
 using FluentDL.Models;
+using FluentDL.ViewModels;
 using FluentDL.Views;
 using Microsoft.UI.Xaml.Controls;
 using QobuzApiSharp.Models.Content;
@@ -570,7 +571,18 @@ internal class QobuzApi
 
     public static async Task DownloadTrack(string filePath, SongSearchObject song)
     {
-        var fileUrl = apiService.GetTrackFileUrl(song.Id, "27");
+        // Get the format from settings
+        var selectedIndex = await SettingsViewModel.GetSetting<int?>(SettingsViewModel.QobuzQuality) ?? 0;
+        var format = selectedIndex switch
+        {
+            0 => "5",
+            1 => "6",
+            2 => "7",
+            3 => "27",
+            _ => "6" // Flac, 16/44.1 as default
+        };
+
+        var fileUrl = apiService.GetTrackFileUrl(song.Id, format);
         await ApiHelper.DownloadFileAsync(filePath, fileUrl.Url);
 
         //var trackBytes = await new HttpClient().GetByteArrayAsync(fileUrl.Url);

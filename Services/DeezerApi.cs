@@ -8,6 +8,7 @@ using DeezNET;
 using DeezNET.Data;
 using FluentDL.Helpers;
 using FluentDL.Models;
+using FluentDL.ViewModels;
 using FluentDL.Views;
 using Microsoft.UI.Xaml.Controls;
 using RestSharp;
@@ -96,7 +97,15 @@ internal class DeezerApi
         {
             var request = new RestRequest(req);
             var response = await client.GetAsync(request, token);
-            return JsonDocument.Parse(response.Content).RootElement;
+            var rootElement = JsonDocument.Parse(response.Content).RootElement;
+            if (rootElement.ToString().Contains("Quota limit exceeded")) // If the request is rate limited
+            {
+                // wait 5 seconds and try again
+                await Task.Delay(5000);
+                return await FetchJsonElement(req, token);
+            }
+
+            return rootElement;
         }
         catch (Exception e)
         {
@@ -106,7 +115,16 @@ internal class DeezerApi
                 req = req.Replace("%28", "").Replace("%29", ""); // Remove brackets, causes issues occasionally for some reason
                 var request = new RestRequest(req);
                 var response = await client.GetAsync(request, token);
-                return JsonDocument.Parse(response.Content).RootElement;
+                var rootElement = JsonDocument.Parse(response.Content).RootElement;
+
+                if (rootElement.ToString().Contains("Quota limit exceeded")) // If the request is rate limited
+                {
+                    // wait 5 seconds and try again
+                    await Task.Delay(5000);
+                    return await FetchJsonElement(req, token);
+                }
+
+                return rootElement;
             }
             catch (Exception e2)
             {
@@ -307,27 +325,30 @@ internal class DeezerApi
         var req = "search?q=" + WebUtility.UrlEncode(("artist:%22" + song.Artists + "%22 ") + (trackName.Length > 0 ? "track:%22" + trackName + "%22 " : "") + (albumName.Length > 0 ? "album:%22" + albumName + "%22" : ""));
         var jsonObject = await FetchJsonElement(req); // Create json object from the response
 
-        foreach (var track in jsonObject.GetProperty("data").EnumerateArray())
+        if (jsonObject.TryGetProperty("data", out var dataElement))
         {
-            if (token.IsCancellationRequested) // Cancel requested, terminate this method
+            foreach (var track in dataElement.EnumerateArray())
             {
-                return null;
-            }
-
-            var trackId = track.GetProperty("id").ToString();
-            if (!idSet.Contains(trackId)) // If the track id is not already in the set
-            {
-                idSet.Add(trackId);
-                //var songObj = await GetTrack(trackId);
-                var songObj = GetTrackQuick(track);
-
-                // Check if close artist match to add to list
-                var queryArtists = song.Artists.Split(", ").ToList();
-                var oneArtistMatch = queryArtists.Any(queryArtist => artists.Any(artist => CloseMatch(queryArtist, artist)));
-
-                if (oneArtistMatch)
+                if (token.IsCancellationRequested) // Cancel requested, terminate this method
                 {
-                    songObjList.Add(songObj);
+                    return null;
+                }
+
+                var trackId = track.GetProperty("id").ToString();
+                if (!idSet.Contains(trackId)) // If the track id is not already in the set
+                {
+                    idSet.Add(trackId);
+                    //var songObj = await GetTrack(trackId);
+                    var songObj = GetTrackQuick(track);
+
+                    // Check if close artist match to add to list
+                    var queryArtists = song.Artists.Split(", ").ToList();
+                    var oneArtistMatch = queryArtists.Any(queryArtist => artists.Any(artist => CloseMatch(queryArtist, artist)));
+
+                    if (oneArtistMatch)
+                    {
+                        songObjList.Add(songObj);
+                    }
                 }
             }
         }
@@ -336,27 +357,30 @@ internal class DeezerApi
         req = "search?q=" + WebUtility.UrlEncode(("artist:%22" + song.Artists + "%22 ") + (trackName.Length > 0 ? "track:%22" + trackName + "%22 " : "")) + "?strict=on"; // Strict search
         jsonObject = await FetchJsonElement(req); // Create json object from the response
 
-        foreach (var track in jsonObject.GetProperty("data").EnumerateArray())
+        if (jsonObject.TryGetProperty("data", out var dataElement2))
         {
-            if (token.IsCancellationRequested)
+            foreach (var track in dataElement2.EnumerateArray())
             {
-                return null;
-            }
-
-            var trackId = track.GetProperty("id").ToString();
-            if (!idSet.Contains(trackId)) // If the track id is not already in the set
-            {
-                idSet.Add(trackId);
-                // var songObj = await GetTrack(trackId);
-                var songObj = GetTrackQuick(track);
-
-                // Check if close artist match to add to list
-                var queryArtists = song.Artists.Split(", ").ToList();
-                var oneArtistMatch = queryArtists.Any(queryArtist => artists.Any(artist => CloseMatch(queryArtist, artist)));
-
-                if (oneArtistMatch)
+                if (token.IsCancellationRequested)
                 {
-                    songObjList.Add(songObj);
+                    return null;
+                }
+
+                var trackId = track.GetProperty("id").ToString();
+                if (!idSet.Contains(trackId)) // If the track id is not already in the set
+                {
+                    idSet.Add(trackId);
+                    // var songObj = await GetTrack(trackId);
+                    var songObj = GetTrackQuick(track);
+
+                    // Check if close artist match to add to list
+                    var queryArtists = song.Artists.Split(", ").ToList();
+                    var oneArtistMatch = queryArtists.Any(queryArtist => artists.Any(artist => CloseMatch(queryArtist, artist)));
+
+                    if (oneArtistMatch)
+                    {
+                        songObjList.Add(songObj);
+                    }
                 }
             }
         }
@@ -489,41 +513,38 @@ internal class DeezerApi
 
         // Get the contributors of the track
         var contributors = new HashSet<string>();
-        var contribCsv = "";
-
-        foreach (var contribObject in jsonObject.GetProperty("contributors").EnumerateArray())
+        if (jsonObject.TryGetProperty("contributors", out var contribElement))
         {
-            var name = contribObject.GetProperty("name").GetString();
-            if (name.Contains(','))
+            foreach (var contribObject in contribElement.EnumerateArray())
             {
-                // Split
-                var names = name.Split(", ");
-                foreach (var n in names)
+                var name = contribObject.GetProperty("name").GetString();
+                if (name.Contains(','))
                 {
-                    if (!contributors.Contains(n))
+                    // Split
+                    var names = name.Split(", ");
+                    foreach (var n in names)
                     {
-                        contribCsv += n + ", ";
-                        contributors.Add(n);
+                        if (!contributors.Contains(n))
+                        {
+                            contributors.Add(n);
+                        }
                     }
                 }
-            }
-            else if (!contributors.Contains(name)) // If the name is not already in the list and does not contain a comma
-            {
-                contribCsv += name + ", ";
-                contributors.Add(name);
+                else
+                {
+                    contributors.Add(name);
+                }
             }
         }
 
-        contribCsv = contribCsv.Remove(contribCsv.Length - 2); // Remove the last comma and space
-
-        return new SongSearchObject()
+        return new SongSearchObject
         {
             Source = "deezer",
             Title = jsonObject.GetProperty("title").GetString(),
             ImageLocation = jsonObject.GetProperty("album").GetProperty("cover").GetString(),
             Id = jsonObject.GetProperty("id").ToString(),
             ReleaseDate = jsonObject.GetProperty("release_date").ToString(),
-            Artists = contribCsv,
+            Artists = string.Join(", ", contributors),
             Duration = jsonObject.GetProperty("duration").ToString(),
             Rank = jsonObject.GetProperty("rank").ToString(),
             AlbumName = jsonObject.GetProperty("album").GetProperty("title").GetString(),
@@ -560,7 +581,17 @@ internal class DeezerApi
         }
 
         var id = long.Parse(song.Id);
-        var trackBytes = await deezerClient.Downloader.GetRawTrackBytes(id, Bitrate.FLAC);
+
+        // Get quality based on setting
+        var settingIdx = await SettingsViewModel.GetSetting<int?>(SettingsViewModel.DeezerQuality) ?? 0;
+        var bitrateEnum = settingIdx switch
+        {
+            0 => Bitrate.MP3_128,
+            1 => Bitrate.MP3_320,
+            _ => Bitrate.FLAC // 2 or anything else
+        };
+
+        var trackBytes = await deezerClient.Downloader.GetRawTrackBytes(id, bitrateEnum);
         //trackBytes = await deezerClient.Downloader.ApplyMetadataToTrackBytes(id, trackBytes);
         await File.WriteAllBytesAsync(filePath, trackBytes);
     }

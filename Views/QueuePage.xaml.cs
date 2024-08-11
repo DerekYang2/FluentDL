@@ -768,9 +768,6 @@ public sealed partial class QueuePage : Page
 
         for (int threadNum = 0; threadNum < 5; threadNum++)
         {
-            // Sleep for 200 ms
-            await Task.Delay(200);
-
             Thread t = new Thread(async () =>
             {
                 while (IsRunning)
