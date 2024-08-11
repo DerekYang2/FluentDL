@@ -573,11 +573,15 @@ internal class DeezerApi
     }
 
 
-    public static async Task DownloadTrack(string filePath, SongSearchObject? song, DeezNET.Data.Bitrate? bitrateEnum = null)
+    public static async Task<string> DownloadTrack(string filePath, SongSearchObject? song, DeezNET.Data.Bitrate? bitrateEnum = null)
     {
+        // Remove extension if it exists
+        filePath = ApiHelper.RemoveExtension(filePath);
+        Debug.WriteLine("Second path: " + filePath);
+
         if (song == null || song.Source != "deezer" || !Path.IsPathRooted(filePath))
         {
-            return;
+            throw new Exception("Invalid song");
         }
 
         var id = long.Parse(song.Id);
@@ -594,9 +598,21 @@ internal class DeezerApi
             };
         }
 
+        // Add the extension according to bitrateEnum
+        filePath += bitrateEnum switch
+        {
+            Bitrate.MP3_128 => ".mp3",
+            Bitrate.MP3_320 => ".mp3",
+            Bitrate.FLAC => ".flac",
+            _ => throw new ArgumentOutOfRangeException("Invalid bitrate enum")
+        };
+
+        Debug.WriteLine("FINAL PATH: " + filePath);
+
         var trackBytes = await deezerClient.Downloader.GetRawTrackBytes(id, (Bitrate)bitrateEnum);
         //trackBytes = await deezerClient.Downloader.ApplyMetadataToTrackBytes(id, trackBytes);
         await File.WriteAllBytesAsync(filePath, trackBytes);
+        return filePath;
     }
 
     public static async Task<string> GetGenreStr(int albumId)

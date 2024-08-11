@@ -159,7 +159,7 @@ namespace FluentDL.Views
                         new() { Label = "Album", Value = selectedSong.AlbumName },
                         new() { Label = "Album Artist", Value = string.Join(", ", metadata.AlbumArtists ?? Array.Empty<string>()) },
                         new() { Label = "Genre", Value = string.Join(", ", metadata.Genres ?? Array.Empty<string>()) },
-                        new() { Label = "Length", Value = metadata.Duration.ToString() },
+                        new() { Label = "Length", Value = new DurationConverter().Convert(metadata.Duration, null, null, null).ToString() },
                         new() { Label = "Release Date", Value = new DateVerboseConverter().Convert(selectedSong.ReleaseDate, null, null, null).ToString() },
                         new() { Label = "Track Position", Value = selectedSong.TrackPosition },
                         new() { Label = "Type", Value = metadata.Codec ?? System.IO.Path.GetExtension(selectedSong.Id) },
@@ -224,29 +224,37 @@ namespace FluentDL.Views
 
         private string GetFileLength(string filePath)
         {
-            long input = new FileInfo(filePath).Length;
-            string output;
-
-            switch (input.ToString().Length)
+            try
             {
-                case > 12:
-                    output = string.Format("{0:F1} TB", input / 1000000000000.0);
-                    break;
-                case > 9:
-                    output = string.Format("{0:F1} GB", input / 1000000000.0);
-                    break;
-                case > 6:
-                    output = string.Format("{0:F1} MB", input / 1000000.0);
-                    break;
-                case > 3:
-                    output = string.Format("{0:F1} KB", input / 1000.0);
-                    break;
-                default:
-                    output = string.Format("{0} B", input);
-                    break;
-            }
+                long input = new FileInfo(filePath).Length;
+                string output;
 
-            return output;
+                switch (input.ToString().Length)
+                {
+                    case > 12:
+                        output = string.Format("{0:F1} TB", input / 1000000000000.0);
+                        break;
+                    case > 9:
+                        output = string.Format("{0:F1} GB", input / 1000000000.0);
+                        break;
+                    case > 6:
+                        output = string.Format("{0:F1} MB", input / 1000000.0);
+                        break;
+                    case > 3:
+                        output = string.Format("{0:F1} KB", input / 1000.0);
+                        break;
+                    default:
+                        output = string.Format("{0} B", input);
+                        break;
+                }
+
+                return output;
+            }
+            catch (Exception e)
+            {
+                Debug.WriteLine(e.Message);
+                return "Unknown";
+            }
         }
     }
 }

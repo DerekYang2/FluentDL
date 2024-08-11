@@ -45,14 +45,28 @@ internal class DurationConverter : IValueConverter
     // Converts seconds to H hr, M min, S sec
     public object Convert(object? value, Type targetType, object parameter, string language)
     {
-        if (string.IsNullOrWhiteSpace((string?)value)) return "";
-        if (int.TryParse(value.ToString(), out int seconds))
+        int? seconds = null;
+        if (value is string valstr)
         {
-            int sec = seconds % 60;
+            if (string.IsNullOrWhiteSpace(valstr)) return "";
+
+            if (int.TryParse(valstr, out int result))
+            {
+                seconds = result;
+            }
+        }
+        else if (value is int valint)
+        {
+            seconds = valint;
+        }
+
+        if (seconds != null)
+        {
+            int sec = (int)(seconds % 60);
             seconds /= 60;
-            int min = seconds % 60;
+            int min = (int)(seconds % 60);
             seconds /= 60;
-            int hr = seconds;
+            int hr = (int)seconds;
             return (hr > 0 ? hr + " hr, " : "") + (min > 0 ? min + " min, " : "") + sec + " sec";
         }
 

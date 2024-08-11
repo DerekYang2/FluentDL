@@ -569,22 +569,32 @@ internal class QobuzApi
     }
 
 
-    public static async Task DownloadTrack(string filePath, SongSearchObject song)
+    public static async Task<string> DownloadTrack(string filePath, SongSearchObject song, string? format = null)
     {
-        // Get the format from settings
-        var selectedIndex = await SettingsViewModel.GetSetting<int?>(SettingsViewModel.QobuzQuality) ?? 0;
-        var format = selectedIndex switch
+        // Remove extension if it exists
+        filePath = ApiHelper.RemoveExtension(filePath);
+
+        if (format == null) // If format is not specified, get it from the settings
         {
-            0 => "5",
-            1 => "6",
-            2 => "7",
-            3 => "27",
-            _ => "6" // Flac, 16/44.1 as default
-        };
+            // Get the format from settings
+            var selectedIndex = await SettingsViewModel.GetSetting<int?>(SettingsViewModel.QobuzQuality) ?? 0;
+
+            format = selectedIndex switch
+            {
+                0 => "5",
+                1 => "6",
+                2 => "7",
+                3 => "27",
+                _ => "6" // Flac, 16/44.1 as default
+            };
+        }
+
+        // Add the extension
+        filePath += "." + (format == "5" ? "mp3" : "flac"); // Only one format is mp3
 
         var fileUrl = apiService.GetTrackFileUrl(song.Id, format);
         await ApiHelper.DownloadFileAsync(filePath, fileUrl.Url);
-
+        return filePath;
         //var trackBytes = await new HttpClient().GetByteArrayAsync(fileUrl.Url);
         //await File.WriteAllBytesAsync(filePath, trackBytes);
     }

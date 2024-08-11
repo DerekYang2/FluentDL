@@ -476,8 +476,11 @@ namespace FluentDL.Services
             return genreSet;
         }
 
-        public static async Task DownloadEquivalentTrack(string filePath, SongSearchObject song, bool strict = true, ConversionUpdateCallback? callback = default)
+        public static async Task<string?> DownloadEquivalentTrack(string filePath, SongSearchObject song, bool strict = true, ConversionUpdateCallback? callback = default)
         {
+            // Remove extension if it exists
+            filePath = ApiHelper.RemoveExtension(filePath);
+
             SongSearchObject? equivalent = await DeezerApi.GetDeezerTrack(song, onlyISRC: strict); // Try Deezer first
 
             // 0 - mp3, 1 - flac
@@ -491,9 +494,9 @@ namespace FluentDL.Services
                     _ => DeezNET.Data.Bitrate.FLAC,
                 };
 
-                await DeezerApi.DownloadTrack(filePath, equivalent, bitrateEnum);
+                var resultPath = await DeezerApi.DownloadTrack(filePath, equivalent, bitrateEnum);
                 callback?.Invoke(InfoBarSeverity.Success, song);
-                return;
+                return resultPath;
             }
 
             // Not found on Deezer, try Qobuz
@@ -502,15 +505,15 @@ namespace FluentDL.Services
 
             if (equivalent != null) // Found on Qobuz
             {
-                await QobuzApi.DownloadTrack(filePath, equivalent);
+                var resultPath = await QobuzApi.DownloadTrack(filePath, equivalent, settingIdx == 0 ? "5" : " 6"); // mp3 or 16/44.1 flac
                 callback?.Invoke(InfoBarSeverity.Success, song);
-                return;
+                return resultPath;
             }
 
-            if (strict) // If strict, do not try youtube
+            if (strict || settingIdx == 0) // If strict or mp3, do not try youtube
             {
                 callback?.Invoke(InfoBarSeverity.Error, song); // Show error, not downloaded
-                return;
+                return null;
             }
 
             // Not found on Qobuz, try youtube
@@ -524,11 +527,13 @@ namespace FluentDL.Services
 
                 await YoutubeApi.DownloadAudio(opusLocation, song.Id); // Download audio as opus
                 await FFmpegRunner.ConvertToFlac(opusLocation); // Convert opus to flac
+
                 callback?.Invoke(InfoBarSeverity.Warning, song); // Not perfect match
-                return;
+                return opusLocation.Replace(".opus", ".flac"); // Return flac location
             }
 
             callback?.Invoke(InfoBarSeverity.Error, song); // Show error, not downloaded
+            return null;
         }
 
 

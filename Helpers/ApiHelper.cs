@@ -80,6 +80,22 @@ internal class ApiHelper
         return string.Join("_", result.Split(Path.GetInvalidFileNameChars()));
     }
 
+    public static string RemoveExtension(string filename)
+    {
+        var idx = filename.LastIndexOf('.');
+        if (idx == -1) return filename;
+
+        var ext = filename.Substring(idx);
+        // Check if ext is a valid extension (only contains letters)
+
+        if (ext.All(char.IsLetter)) // If it is a valid extension
+        {
+            return filename.Substring(0, idx); // Remove the extension
+        }
+
+        return filename; // Return the original filename
+    }
+
     public static string GetUrl(SongSearchObject song)
     {
         var id = song.Id;
@@ -103,10 +119,12 @@ internal class ApiHelper
         var fileName = GetSafeFilename($"{song.TrackPosition}. {firstArtist} - {song.Title}{isrcStr}"); // File name no extension
 
         // Create file path
-        var flacLocation = Path.Combine(directory, fileName + ".flac");
+        var locationNoExt = Path.Combine(directory, fileName);
+        Debug.WriteLine("LOCATION: " + locationNoExt);
 
         if (song.Source == "youtube")
         {
+            var flacLocation = Path.Combine(directory, fileName + ".flac");
             var opusLocation = Path.Combine(directory, fileName + ".opus");
             var mp4Location = Path.Combine(directory, fileName + ".mp4");
             var m4aLocation = Path.Combine(directory, fileName + ".m4a");
@@ -151,10 +169,10 @@ internal class ApiHelper
         {
             try
             {
-                await DeezerApi.DownloadTrack(flacLocation, song);
-                await DeezerApi.UpdateMetadata(flacLocation, song.Id);
+                var resultPath = await DeezerApi.DownloadTrack(locationNoExt, song);
+                await DeezerApi.UpdateMetadata(resultPath, song.Id);
                 callback?.Invoke(InfoBarSeverity.Success, song); // Assume success
-                return flacLocation;
+                return resultPath;
             }
             catch (Exception e)
             {
@@ -167,10 +185,10 @@ internal class ApiHelper
         {
             try
             {
-                await QobuzApi.DownloadTrack(flacLocation, song);
-                await QobuzApi.UpdateMetadata(flacLocation, song.Id);
+                var resultPath = await QobuzApi.DownloadTrack(locationNoExt, song);
+                await QobuzApi.UpdateMetadata(resultPath, song.Id);
                 callback?.Invoke(InfoBarSeverity.Success, song); // Assume success
-                return flacLocation;
+                return resultPath;
             }
             catch (Exception e)
             {
@@ -181,9 +199,18 @@ internal class ApiHelper
 
         if (song.Source == "spotify")
         {
-            await SpotifyApi.DownloadEquivalentTrack(flacLocation, song, true, callback);
-            await SpotifyApi.UpdateMetadata(flacLocation, song.Id);
-            return flacLocation;
+            var resultPath = await SpotifyApi.DownloadEquivalentTrack(locationNoExt, song, true, callback);
+
+            if (resultPath != null)
+            {
+                await SpotifyApi.UpdateMetadata(resultPath, song.Id);
+                return resultPath;
+            }
+            else
+            {
+                callback?.Invoke(InfoBarSeverity.Error, song);
+                Debug.WriteLine("Failed to download spotify song.");
+            }
         }
 
         return string.Empty;

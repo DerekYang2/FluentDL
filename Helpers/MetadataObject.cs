@@ -133,8 +133,6 @@ namespace FluentDL.Helpers
             // Set duration
             Duration = (int)Math.Round(tfile.Properties.Duration.TotalSeconds);
 
-            bool isFlac = (Codec?.ToLower().Contains("flac") ?? false) || tfile.Name.EndsWith(".flac");
-
             AlbumArtists = tfile.Tag.AlbumArtists;
             AlbumName = tfile.Tag.Album;
             Artists = tfile.Tag.Performers;
@@ -148,11 +146,9 @@ namespace FluentDL.Helpers
                 ReleaseDate = new DateTime(Convert.ToInt32(tfile.Tag.Year), 1, 1); // Default to January 1st if only year is provided
             }
 
-            TagLib.Ogg.XiphComment custom;
-
-            if (isFlac) // TODO: look into tags for other formats
+            if (Path.GetExtension(tfile.Name) == ".flac")
             {
-                custom = (TagLib.Ogg.XiphComment)tfile.GetTag(TagLib.TagTypes.Xiph);
+                var custom = (TagLib.Ogg.XiphComment)tfile.GetTag(TagLib.TagTypes.Xiph);
 
                 // Release Date tag
                 if (DateTime.TryParse(custom.GetFirstField("DATE"), out var date))
@@ -163,6 +159,17 @@ namespace FluentDL.Helpers
                 // UPC tag
                 Upc = custom.GetFirstField("UPC");
                 Url = custom.GetFirstField("URL");
+            }
+            else if (Path.GetExtension(tfile.Name) == ".mp3")
+            {
+                var custom = (TagLib.Id3v2.Tag)tfile.GetTag(TagTypes.Id3v2, true);
+                // Release Date tag
+                if (DateTime.TryParse(custom.GetTextAsString("TDRL"), out var date))
+                {
+                    ReleaseDate = date;
+                }
+
+                Url = custom.GetTextAsString("WOAS");
             }
 
             IPicture[] pictures = tfile.Tag.Pictures;
@@ -191,13 +198,12 @@ namespace FluentDL.Helpers
             tfile.Tag.ISRC = Isrc;
             tfile.Tag.Track = Convert.ToUInt32(TrackNumber);
             tfile.Tag.TrackCount = Convert.ToUInt32(TrackTotal);
-            TagLib.Ogg.XiphComment custom;
 
             // CUSTOM TAGS: https://wiki.hydrogenaud.io/index.php?title=Tag_Mapping
 
-            if (tfile.Name.EndsWith(".flac"))
+            if (Path.GetExtension(tfile.Name) == ".flac")
             {
-                custom = (TagLib.Ogg.XiphComment)tfile.GetTag(TagLib.TagTypes.Xiph);
+                var custom = (TagLib.Ogg.XiphComment)tfile.GetTag(TagLib.TagTypes.Xiph);
 
                 // Override TRACKNUMBER tag again to prevent using "two-digit zero-filled value"
                 // See https://github.com/mono/taglib-sharp/pull/240 where this change was introduced in taglib-sharp v2.3
@@ -217,6 +223,25 @@ namespace FluentDL.Helpers
                 // UPC tag
                 custom.SetField("UPC", Upc);
                 custom.SetField("URL", Url);
+            }
+            else if (Path.GetExtension(tfile.Name) == ".mp3")
+            {
+                var custom = (TagLib.Id3v2.Tag)tfile.GetTag(TagTypes.Id3v2, true);
+
+                // Set single year
+                tfile.Tag.Year = Convert.ToUInt32(ReleaseDate?.Year ?? 0);
+
+                // Set the full release date
+                var releaseDateString = ReleaseDate?.ToString("yyyy-MM-dd") ?? "";
+                if (!string.IsNullOrWhiteSpace(releaseDateString))
+                {
+                    custom.SetTextFrame("TDRL", releaseDateString);
+                }
+
+                custom.SetNumberFrame("TRCK", Convert.ToUInt32(TrackNumber), tfile.Tag.TrackCount);
+
+                // SRC URL
+                custom.SetTextFrame("WOAS", Url);
             }
             else
             {
