@@ -754,166 +754,172 @@ public sealed partial class QueuePage : Page
         var token = cancellationTokenSource.Token;
         IsRunning = true;
 
-        Thread t = new Thread(async () =>
+        var EndConversionLambda = async () =>
         {
-            while (IsRunning)
+            CommandButton.Visibility = ConvertDialogOpenButton.Visibility = ClearButton.Visibility = Visibility.Visible; // Show buttons
+            ConvertStopText.Text = "Stop"; // Reset stop button text
+            ConvertStopButton.Visibility = Visibility.Collapsed; // Hide stop button
+            isConverting = false;
+            QueueProgress.Value = ogVal; // Reset the progress bar
+
+            // Show conversion results dialog
+            await ShowConversionDialog();
+        };
+
+        for (int threadNum = 0; threadNum < 5; threadNum++)
+        {
+            // Sleep for 200 ms
+            await Task.Delay(200);
+
+            Thread t = new Thread(async () =>
             {
-                if (token.IsCancellationRequested) // Break the loop if the token is cancelled
+                while (IsRunning)
                 {
-                    IsRunning = false;
-                    return;
-                }
+                    if (token.IsCancellationRequested) // Break the loop if the token is cancelled
+                    {
+                        IsRunning = false;
+                        dispatcherQueue.TryEnqueue(async () => await EndConversionLambda());
+                        return;
+                    }
 
-                var i = index;
-                Interlocked.Increment(ref index);
+                    var i = Interlocked.Increment(ref index) - 1;
 
-                if (i >= totalCount)
-                {
-                    return;
-                }
+                    if (i >= totalCount)
+                    {
+                        return;
+                    }
+
+                    var song = QueueViewModel.Source[i];
+                    if (!selectedSources.Contains(song.Source) || outputSource == song.Source) // If the source is not selected as input or no conversion needed
+                    {
+                        var processCountCaptured = Interlocked.Increment(ref processedCount); // Increment the processed count
+
+                        dispatcherQueue.TryEnqueue(() =>
+                        {
+                            QueueProgress.Value = 100.0 * processCountCaptured / totalCount; // Update the progress bar
+                        });
 
 
-                Debug.WriteLine(i);
+                        if (processCountCaptured == totalCount) // If all tracks are processed
+                        {
+                            IsRunning = false;
+                            dispatcherQueue.TryEnqueue(async () => await EndConversionLambda());
+                            return;
+                        }
 
-                var song = QueueViewModel.Source[i];
-                if (!selectedSources.Contains(song.Source) || outputSource == song.Source) // If the source is not selected as input or no conversion needed
-                {
-                    var processCountCaptured = Interlocked.Increment(ref processedCount);
+                        continue;
+                    }
+
+                    // Set song to running (progress ring will appear)
+                    dispatcherQueue.TryEnqueue(() =>
+                    {
+                        song.IsRunning = true;
+                        QueueViewModel.Source[i] = song;
+                    });
+
+                    SongSearchObject? newSongObj = null;
+                    string? fileLocation = null;
+                    if (outputSource == "local") // Conversion to local, download the track
+                    {
+                        fileLocation = await ApiHelper.DownloadObject(song, directory, conversionUpdateCallback);
+                        newSongObj = song;
+                    }
+                    else
+                    {
+                        newSongObj = outputSource switch
+                        {
+                            "deezer" => await DeezerApi.GetDeezerTrack(song, cancellationTokenSource.Token, conversionUpdateCallback),
+                            "qobuz" => await QobuzApi.GetQobuzTrack(song, cancellationTokenSource.Token, conversionUpdateCallback),
+                            "spotify" => await SpotifyApi.GetSpotifyTrack(song, cancellationTokenSource.Token, conversionUpdateCallback),
+                            "youtube" => await YoutubeApi.GetYoutubeTrack(song, cancellationTokenSource.Token, conversionUpdateCallback),
+                            _ => throw new Exception("Unspecified output source") // Should never happen
+                        };
+                    }
+
+                    if (token.IsCancellationRequested) // If conversion is paused
+                    {
+                        IsRunning = false;
+
+                        // Turn of loading progress ring
+                        dispatcherQueue.TryEnqueue(() =>
+                        {
+                            song.IsRunning = false;
+                            QueueViewModel.Replace(i, song);
+                        });
+
+                        // End conversion
+                        dispatcherQueue.TryEnqueue(async () => await EndConversionLambda());
+                        return;
+                    }
+
+                    dispatcherQueue.TryEnqueue(async () =>
+                    {
+                        if (newSongObj != null)
+                        {
+                            QueueObject? queueObj;
+                            if (outputSource == "local")
+                            {
+                                // Get the downloaded song as an object
+                                var localSong = LocalExplorerViewModel.ParseFile(fileLocation);
+
+                                if (localSong == null) throw new Exception("Local song is null"); // Should not happen
+
+                                // Set song art
+                                using var memoryStream = await Task.Run(() => LocalExplorerViewModel.GetAlbumArtMemoryStream(localSong.Id));
+
+                                if (memoryStream != null) // Set album art if available
+                                {
+                                    var bitmapImage = new BitmapImage
+                                    {
+                                        DecodePixelHeight = 76, // No need to set height, aspect ratio is automatically handled
+                                    };
+                                    await bitmapImage.SetSourceAsync(memoryStream.AsRandomAccessStream());
+                                    localSong.LocalBitmapImage = bitmapImage;
+                                }
+
+                                queueObj = await QueueViewModel.CreateQueueObject(localSong);
+                            }
+                            else
+                            {
+                                queueObj = await QueueViewModel.CreateQueueObject(newSongObj);
+                            }
+
+                            if (queueObj != null)
+                            {
+                                if (successSource.Contains(newSongObj)) queueObj.ConvertBadgeColor = new SolidColorBrush(Windows.UI.Color.FromArgb(255, 108, 203, 95));
+                                else if (warningSource.Contains(newSongObj)) queueObj.ConvertBadgeColor = new SolidColorBrush(Windows.UI.Color.FromArgb(255, 252, 225, 0));
+
+                                queueObj.IsRunning = false; // Set song to not running
+                                QueueViewModel.Replace(i, queueObj);
+                            }
+                        }
+                        else // Failed conversion, set current object badge to error
+                        {
+                            song.IsRunning = false; // Set song to not running
+                            song.ConvertBadgeColor = new SolidColorBrush(Windows.UI.Color.FromArgb(255, 255, 153, 164));
+                            QueueViewModel.Replace(i, song);
+                        }
+                    });
+
+                    var processCaptured = Interlocked.Increment(ref processedCount); // Increment the processed count
 
                     dispatcherQueue.TryEnqueue(() =>
                     {
-                        QueueProgress.Value = 100.0 * processCountCaptured / totalCount; // Update the progress bar
+                        QueueProgress.Value = 100.0 * processCaptured / totalCount; // Update the progress bar
                     });
 
 
-                    if (processCountCaptured == totalCount) // If all tracks are processed
+                    if (processCaptured == totalCount) // If all tracks are processed
                     {
                         IsRunning = false;
-                        dispatcherQueue.TryEnqueue(async () =>
-                        {
-                            CommandButton.Visibility = ConvertDialogOpenButton.Visibility = ClearButton.Visibility = Visibility.Visible; // Show buttons
-                            ConvertStopText.Text = "Stop"; // Reset stop button text
-                            ConvertStopButton.Visibility = Visibility.Collapsed; // Hide stop button
-                            isConverting = false;
-                            QueueProgress.Value = ogVal; // Reset the progress bar
-
-                            // Show conversion results dialog
-                            await ShowConversionDialog();
-                        });
+                        dispatcherQueue.TryEnqueue(async () => await EndConversionLambda());
+                        return;
                     }
-
-                    continue;
                 }
-
-                // Set song to running (progress ring will appear)
-                dispatcherQueue.TryEnqueue(() =>
-                {
-                    song.IsRunning = true;
-                    QueueViewModel.Source[i] = song;
-                });
-
-                SongSearchObject? newSongObj = null;
-                string? fileLocation = null;
-                if (outputSource == "local") // Conversion to local, download the track
-                {
-                    fileLocation = await ApiHelper.DownloadObject(song, directory, conversionUpdateCallback);
-                    newSongObj = song;
-                }
-                else
-                {
-                    newSongObj = outputSource switch
-                    {
-                        "deezer" => await DeezerApi.GetDeezerTrack(song, cancellationTokenSource.Token, conversionUpdateCallback),
-                        "qobuz" => await QobuzApi.GetQobuzTrack(song, cancellationTokenSource.Token, conversionUpdateCallback),
-                        "spotify" => await SpotifyApi.GetSpotifyTrack(song, cancellationTokenSource.Token, conversionUpdateCallback),
-                        "youtube" => await YoutubeApi.GetYoutubeTrack(song, cancellationTokenSource.Token, conversionUpdateCallback),
-                        _ => throw new Exception("Unspecified output source") // Should never happen
-                    };
-                }
-
-                if (token.IsCancellationRequested) // If conversion is paused
-                {
-                    IsRunning = false;
-                    return;
-                }
-
-                dispatcherQueue.TryEnqueue(async () =>
-                {
-                    if (newSongObj != null)
-                    {
-                        QueueObject? queueObj;
-                        if (outputSource == "local")
-                        {
-                            // Get the downloaded song as an object
-                            var localSong = LocalExplorerViewModel.ParseFile(fileLocation);
-
-                            if (localSong == null) return; // Skip if song is null
-
-                            // Set song art
-                            using var memoryStream = await Task.Run(() => LocalExplorerViewModel.GetAlbumArtMemoryStream(localSong.Id));
-
-                            if (memoryStream != null) // Set album art if available
-                            {
-                                var bitmapImage = new BitmapImage
-                                {
-                                    DecodePixelHeight = 76, // No need to set height, aspect ratio is automatically handled
-                                };
-                                await bitmapImage.SetSourceAsync(memoryStream.AsRandomAccessStream());
-                                localSong.LocalBitmapImage = bitmapImage;
-                            }
-
-                            queueObj = await QueueViewModel.CreateQueueObject(localSong);
-                        }
-                        else
-                        {
-                            queueObj = await QueueViewModel.CreateQueueObject(newSongObj);
-                        }
-
-                        if (queueObj != null)
-                        {
-                            if (successSource.Contains(newSongObj)) queueObj.ConvertBadgeColor = new SolidColorBrush(Windows.UI.Color.FromArgb(255, 108, 203, 95));
-                            else if (warningSource.Contains(newSongObj)) queueObj.ConvertBadgeColor = new SolidColorBrush(Windows.UI.Color.FromArgb(255, 252, 225, 0));
-
-                            queueObj.IsRunning = false; // Set song to not running
-                            QueueViewModel.Replace(i, queueObj);
-                        }
-                    }
-                    else // Failed conversion, set current object badge to error
-                    {
-                        song.IsRunning = false; // Set song to not running
-                        song.ConvertBadgeColor = new SolidColorBrush(Windows.UI.Color.FromArgb(255, 255, 153, 164));
-                        QueueViewModel.Replace(i, song);
-                    }
-                });
-
-                var processCaptured = Interlocked.Increment(ref processedCount);
-
-                dispatcherQueue.TryEnqueue(() =>
-                {
-                    QueueProgress.Value = 100.0 * processCaptured / totalCount; // Update the progress bar
-                });
-
-                Interlocked.Increment(ref processedCount);
-
-                if (processCaptured == totalCount) // If all tracks are processed
-                {
-                    IsRunning = false;
-                    dispatcherQueue.TryEnqueue(async () =>
-                    {
-                        CommandButton.Visibility = ConvertDialogOpenButton.Visibility = ClearButton.Visibility = Visibility.Visible; // Show buttons
-                        ConvertStopText.Text = "Stop"; // Reset stop button text
-                        ConvertStopButton.Visibility = Visibility.Collapsed; // Hide stop button
-                        isConverting = false;
-                        QueueProgress.Value = ogVal; // Reset the progress bar
-
-                        // Show conversion results dialog
-                        await ShowConversionDialog();
-                    });
-                }
-            }
-        });
-        t.Start();
-
+            });
+            t.Priority = ThreadPriority.AboveNormal;
+            t.Start();
+        }
         //for (int i = 0; i < QueueViewModel.Source.Count; i++)
         //{
         //    if (cancellationTokenSource.Token.IsCancellationRequested) // If conversion is paused
@@ -1008,15 +1014,16 @@ public sealed partial class QueuePage : Page
         //    QueueProgress.Value = 100.0 * (i + 1) / totalCount; // Update the progress bar
         //}
 
-        CommandButton.Visibility = ConvertDialogOpenButton.Visibility = ClearButton.Visibility = Visibility.Visible; // Show buttons
-        ConvertStopText.Text = "Stop"; // Reset stop button text
-        ConvertStopButton.Visibility = Visibility.Collapsed; // Hide stop button
-        isConverting = false;
-        QueueProgress.Value = ogVal; // Reset the progress bar
+        //CommandButton.Visibility = ConvertDialogOpenButton.Visibility = ClearButton.Visibility = Visibility.Visible; // Show buttons
+        //ConvertStopText.Text = "Stop"; // Reset stop button text
+        //ConvertStopButton.Visibility = Visibility.Collapsed; // Hide stop button
+        //isConverting = false;
+        //QueueProgress.Value = ogVal; // Reset the progress bar
 
-        // Show conversion results dialog
-        await ShowConversionDialog();
+        //// Show conversion results dialog
+        //await ShowConversionDialog();
     }
+
 
     /*
              Thread t = new Thread(async () =>
