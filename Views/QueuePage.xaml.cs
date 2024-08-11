@@ -859,22 +859,26 @@ public sealed partial class QueuePage : Page
                                 // Get the downloaded song as an object
                                 var localSong = LocalExplorerViewModel.ParseFile(fileLocation);
 
-                                if (localSong == null) throw new Exception("Local song is null"); // Should not happen
-
-                                // Set song art
-                                using var memoryStream = await Task.Run(() => LocalExplorerViewModel.GetAlbumArtMemoryStream(localSong.Id));
-
-                                if (memoryStream != null) // Set album art if available
+                                if (localSong != null)
                                 {
-                                    var bitmapImage = new BitmapImage
-                                    {
-                                        DecodePixelHeight = 76, // No need to set height, aspect ratio is automatically handled
-                                    };
-                                    await bitmapImage.SetSourceAsync(memoryStream.AsRandomAccessStream());
-                                    localSong.LocalBitmapImage = bitmapImage;
-                                }
+                                    using var memoryStream = await Task.Run(() => LocalExplorerViewModel.GetAlbumArtMemoryStream(localSong.Id));
 
-                                queueObj = await QueueViewModel.CreateQueueObject(localSong);
+                                    if (memoryStream != null) // Set album art if available
+                                    {
+                                        var bitmapImage = new BitmapImage
+                                        {
+                                            DecodePixelHeight = 76, // No need to set height, aspect ratio is automatically handled
+                                        };
+                                        await bitmapImage.SetSourceAsync(memoryStream.AsRandomAccessStream());
+                                        localSong.LocalBitmapImage = bitmapImage;
+                                    }
+
+                                    queueObj = await QueueViewModel.CreateQueueObject(localSong);
+                                }
+                                else // Can happen when trying to parse opus files
+                                {
+                                    queueObj = QueueViewModel.Source[i]; // Set to the initial object so badge is shown below
+                                }
                             }
                             else
                             {

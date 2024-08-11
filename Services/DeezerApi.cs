@@ -573,7 +573,7 @@ internal class DeezerApi
     }
 
 
-    public static async Task DownloadTrack(string filePath, SongSearchObject? song)
+    public static async Task DownloadTrack(string filePath, SongSearchObject? song, DeezNET.Data.Bitrate? bitrateEnum = null)
     {
         if (song == null || song.Source != "deezer" || !Path.IsPathRooted(filePath))
         {
@@ -582,16 +582,19 @@ internal class DeezerApi
 
         var id = long.Parse(song.Id);
 
-        // Get quality based on setting
-        var settingIdx = await SettingsViewModel.GetSetting<int?>(SettingsViewModel.DeezerQuality) ?? 0;
-        var bitrateEnum = settingIdx switch
+        if (bitrateEnum == null)
         {
-            0 => Bitrate.MP3_128,
-            1 => Bitrate.MP3_320,
-            _ => Bitrate.FLAC // 2 or anything else
-        };
+            // Get quality based on setting
+            var settingIdx = await SettingsViewModel.GetSetting<int?>(SettingsViewModel.DeezerQuality) ?? 0;
+            bitrateEnum = settingIdx switch
+            {
+                0 => Bitrate.MP3_128,
+                1 => Bitrate.MP3_320,
+                _ => Bitrate.FLAC // 2 or anything else
+            };
+        }
 
-        var trackBytes = await deezerClient.Downloader.GetRawTrackBytes(id, bitrateEnum);
+        var trackBytes = await deezerClient.Downloader.GetRawTrackBytes(id, (Bitrate)bitrateEnum);
         //trackBytes = await deezerClient.Downloader.ApplyMetadataToTrackBytes(id, trackBytes);
         await File.WriteAllBytesAsync(filePath, trackBytes);
     }

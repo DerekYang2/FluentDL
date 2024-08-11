@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using ABI.Microsoft.UI.Xaml.Media.Imaging;
 using FluentDL.Models;
 using FluentDL.Services;
+using FluentDL.ViewModels;
 using FluentDL.Views;
 using Microsoft.UI.Xaml.Controls;
 using BitmapImage = Microsoft.UI.Xaml.Media.Imaging.BitmapImage;
@@ -103,13 +104,36 @@ internal class ApiHelper
 
         // Create file path
         var flacLocation = Path.Combine(directory, fileName + ".flac");
-        var opusLocation = Path.Combine(directory, fileName + ".opus");
 
         if (song.Source == "youtube")
         {
+            var opusLocation = Path.Combine(directory, fileName + ".opus");
+            var aacLocation = Path.Combine(directory, fileName + ".aac");
             try
             {
-                await YoutubeApi.DownloadAudio(opusLocation, song.Id);
+                // 0 - opus
+                // 1 - flac (opus)
+                // 2 - m4a (aac)
+                var settingIdx = await SettingsViewModel.GetSetting<int?>(SettingsViewModel.YoutubeQuality) ?? 0;
+                Debug.WriteLine(settingIdx);
+                if (settingIdx == 2)
+                {
+                    await YoutubeApi.DownloadAudioAAC(aacLocation, song.Id);
+                    await YoutubeApi.UpdateMetadata(aacLocation, song.Id);
+                    callback?.Invoke(InfoBarSeverity.Success, song); // Assume success
+                    return aacLocation;
+                }
+
+                await YoutubeApi.DownloadAudio(opusLocation, song.Id); // Download opus stream
+
+                if (settingIdx == 0) // Do not convert to flac
+                {
+                    await YoutubeApi.UpdateMetadata(opusLocation, song.Id);
+                    callback?.Invoke(InfoBarSeverity.Success, song); // Assume success
+                    return opusLocation;
+                }
+
+                // Convert to flac
                 await FFmpegRunner.ConvertToFlac(opusLocation); // Convert opus to flac
                 await YoutubeApi.UpdateMetadata(flacLocation, song.Id);
                 callback?.Invoke(InfoBarSeverity.Success, song); // Assume success

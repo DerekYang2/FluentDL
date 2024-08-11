@@ -7,8 +7,10 @@ using System.Linq;
 using System.Net;
 using System.Text;
 using System.Threading.Tasks;
+using DeezNET.Data;
 using FluentDL.Helpers;
 using FluentDL.Models;
+using FluentDL.ViewModels;
 using FluentDL.Views;
 using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml.Controls;
@@ -477,9 +479,19 @@ namespace FluentDL.Services
         public static async Task DownloadEquivalentTrack(string filePath, SongSearchObject song, bool strict = true, ConversionUpdateCallback? callback = default)
         {
             SongSearchObject? equivalent = await DeezerApi.GetDeezerTrack(song, onlyISRC: strict); // Try Deezer first
+
+            // 0 - mp3, 1 - flac
+            var settingIdx = await SettingsViewModel.GetSetting<int?>(SettingsViewModel.SpotifyQuality);
+
             if (equivalent != null) // Found on Deezer
             {
-                await DeezerApi.DownloadTrack(filePath, equivalent);
+                var bitrateEnum = settingIdx switch
+                {
+                    0 => DeezNET.Data.Bitrate.MP3_320,
+                    _ => DeezNET.Data.Bitrate.FLAC,
+                };
+
+                await DeezerApi.DownloadTrack(filePath, equivalent, bitrateEnum);
                 callback?.Invoke(InfoBarSeverity.Success, song);
                 return;
             }

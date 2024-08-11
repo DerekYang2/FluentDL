@@ -875,6 +875,32 @@ namespace FluentDL.Services
             await youtube.Videos.Streams.DownloadAsync(streamInfo, filePath /*, new Progress<double>(progressHandler)*/);
         }
 
+        /*
+           Example codecs:
+           Codec: mp4a.40.2 145.77 Kbit/s
+           Codec: mp4a.40.5 50.11 Kbit/s
+           Codec: mp4a.40.2 128.69 Kbit/s
+           Codec: opus 65.11 Kbit/s
+           Codec: opus 80.41 Kbit/s
+           Codec: opus 134.56 Kbit/s
+         */
+        public static async Task DownloadAudioAAC(string filePath, VideoId id)
+        {
+            var streamManifest = await youtube.Videos.Streams.GetManifestAsync(id);
+            var streamInfo = streamManifest.GetAudioOnlyStreams().GetWithHighestBitrate();
+
+            long maxBitRate = 0;
+            foreach (var streamObj in streamManifest.GetAudioStreams()) // Get the aac stream with highest bitrate
+            {
+                if (streamObj.AudioCodec.Contains("mp4a") && streamObj.Bitrate.BitsPerSecond > maxBitRate)
+                {
+                    maxBitRate = streamObj.Bitrate.BitsPerSecond;
+                    streamInfo = streamObj;
+                }
+            }
+
+            await youtube.Videos.Streams.DownloadAsync(streamInfo, filePath /*, new Progress<double>(progressHandler)*/);
+        }
 
         public static async Task UpdateMetadata(string filePath, string id)
         {
@@ -900,20 +926,27 @@ namespace FluentDL.Services
                 albumName = video.Title; // Use video title as album name
             }
 
-            var metadata = new MetadataObject(filePath)
+            try
             {
-                Title = ytmSong.Name,
-                Artists = artists.ToArray(),
-                AlbumArtPath = GetMaxResThumbnail(ytmSong, video),
-                AlbumName = albumName,
-                AlbumArtists = new[] { artists.First() },
-                ReleaseDate = video.UploadDate.Date,
-                TrackNumber = 1,
-                TrackTotal = 1,
-                Url = video.Url,
-            };
+                var metadata = new MetadataObject(filePath)
+                {
+                    Title = ytmSong.Name,
+                    Artists = artists.ToArray(),
+                    AlbumArtPath = GetMaxResThumbnail(ytmSong, video),
+                    AlbumName = albumName,
+                    AlbumArtists = new[] { artists.First() },
+                    ReleaseDate = video.UploadDate.Date,
+                    TrackNumber = 1,
+                    TrackTotal = 1,
+                    Url = video.Url,
+                };
 
-            await metadata.SaveAsync();
+                await metadata.SaveAsync();
+            }
+            catch (Exception e)
+            {
+                Debug.WriteLine("Error updating metadata: " + e.Message);
+            }
 
             //Track atlTrack = new Track(filePath) // For metadata
             //{
