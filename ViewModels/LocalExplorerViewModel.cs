@@ -105,7 +105,16 @@ public partial class LocalExplorerViewModel : ObservableRecipient
 
         if (!tmpUpdates.TryGetValue(path, out var value)) // Add the file to the dictionary if it does not exist
         {
-            value = new MetadataObject(path); // Create a new metadata object
+            try
+            {
+                value = new MetadataObject(path); // Create a new metadata object
+            }
+            catch (Exception e)
+            {
+                Debug.WriteLine("Could not parse file: " + e.Message);
+                return null;
+            }
+
             tmpUpdates[path] = value; // Add the metadata object to the dictionary
         }
 

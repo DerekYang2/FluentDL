@@ -856,7 +856,6 @@ public sealed partial class QueuePage : Page
                             QueueObject? queueObj;
                             if (outputSource == "local")
                             {
-                                // Get the downloaded song as an object
                                 var localSong = LocalExplorerViewModel.ParseFile(fileLocation);
 
                                 if (localSong != null)
@@ -1192,21 +1191,21 @@ public sealed partial class QueuePage : Page
         {
             ConversionListView.ItemsSource = successSource;
             TabInfoBar.Severity = InfoBarSeverity.Success;
-            TabInfoBar.Content = "Exact matches found through ISRC identifiers";
+            TabInfoBar.Content = "Exact conversions using ISRC or other ids";
             NoConversionText.Visibility = successSource.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
         }
         else if (selectedItem == WarningTab)
         {
             ConversionListView.ItemsSource = warningSource;
             TabInfoBar.Severity = InfoBarSeverity.Warning;
-            TabInfoBar.Content = "Attempted matches found through metadata";
+            TabInfoBar.Content = "Attempted conversions using metadata";
             NoConversionText.Visibility = warningSource.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
         }
         else if (selectedItem == ErrorTab)
         {
             ConversionListView.ItemsSource = errorSource;
             TabInfoBar.Severity = InfoBarSeverity.Error;
-            TabInfoBar.Content = "No matches found";
+            TabInfoBar.Content = "Failed conversions";
             NoConversionText.Visibility = errorSource.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
         }
     }

@@ -93,7 +93,7 @@
                             <ComboBox x:Name="YoutubeQualityComboBox" SelectionChanged="YoutubeQualityComboBox_OnSelectionChanged" DropDownOpened="ComboBox_OnDropDownOpened">
                                 <ComboBoxItem x:Name="YoutubeOpus" Content="Opus (128kbps) - Good quality, best size, bad compatibility"/>
                                 <ComboBoxItem x:Name="YoutubeFlac" Content="FLAC from Opus - Opus quality, large size, good compatibility"/>
-                                <ComboBoxItem x:Name="YoutubeAAC" Content="AAC (128kbps) - Medium quality, good size, best compatibility"/>
+                                <ComboBoxItem x:Name="YoutubeAAC" Content="AAC (128kbps) - Medium quality, good size, good compatibility"/>
                             </ComboBox>
                         </local:SettingsCard>
                     </local:SettingsExpander.Items>

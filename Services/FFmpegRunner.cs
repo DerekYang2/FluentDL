@@ -42,6 +42,22 @@ internal class FFmpegRunner
         File.Delete(initialPath);
     }
 
+    public static async Task ConvertMP4toM4A(string initialPath)
+    {
+        if (!initialPath.EndsWith(".mp4"))
+        {
+            throw new ArgumentException("The file must be an mp4 file.");
+        }
+        //ffmpeg -i input.mp4 -c copy -map 0:a:0 output.m4a
+
+        await FFMpegArguments.FromFileInput(initialPath)
+            .OutputToFile(initialPath.Replace(".mp4", ".m4a"), true, options => options
+                .WithCustomArgument("-c copy -map 0:a:0")).ProcessAsynchronously();
+
+        // Delete the original mp4
+        File.Delete(initialPath);
+    }
+
     // Does not delete the original file
     public static void CreateMp3FromFlac(string initialPath)
     {

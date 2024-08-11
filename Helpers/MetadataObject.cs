@@ -191,8 +191,9 @@ namespace FluentDL.Helpers
             tfile.Tag.ISRC = Isrc;
             tfile.Tag.Track = Convert.ToUInt32(TrackNumber);
             tfile.Tag.TrackCount = Convert.ToUInt32(TrackTotal);
-
             TagLib.Ogg.XiphComment custom;
+
+            // CUSTOM TAGS: https://wiki.hydrogenaud.io/index.php?title=Tag_Mapping
 
             if (tfile.Name.EndsWith(".flac"))
             {
@@ -216,6 +217,10 @@ namespace FluentDL.Helpers
                 // UPC tag
                 custom.SetField("UPC", Upc);
                 custom.SetField("URL", Url);
+            }
+            else
+            {
+                tfile.Tag.Year = Convert.ToUInt32(ReleaseDate?.Year ?? 0);
             }
 
             if (AlbumArt != null) // Save cover art if it exists

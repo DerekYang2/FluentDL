@@ -108,20 +108,21 @@ internal class ApiHelper
         if (song.Source == "youtube")
         {
             var opusLocation = Path.Combine(directory, fileName + ".opus");
-            var aacLocation = Path.Combine(directory, fileName + ".aac");
+            var mp4Location = Path.Combine(directory, fileName + ".mp4");
+            var m4aLocation = Path.Combine(directory, fileName + ".m4a");
             try
             {
                 // 0 - opus
                 // 1 - flac (opus)
                 // 2 - m4a (aac)
                 var settingIdx = await SettingsViewModel.GetSetting<int?>(SettingsViewModel.YoutubeQuality) ?? 0;
-                Debug.WriteLine(settingIdx);
                 if (settingIdx == 2)
                 {
-                    await YoutubeApi.DownloadAudioAAC(aacLocation, song.Id);
-                    await YoutubeApi.UpdateMetadata(aacLocation, song.Id);
+                    await YoutubeApi.DownloadAudioAAC(mp4Location, song.Id);
+                    await FFmpegRunner.ConvertMP4toM4A(mp4Location);
+                    await YoutubeApi.UpdateMetadata(m4aLocation, song.Id);
                     callback?.Invoke(InfoBarSeverity.Success, song); // Assume success
-                    return aacLocation;
+                    return m4aLocation;
                 }
 
                 await YoutubeApi.DownloadAudio(opusLocation, song.Id); // Download opus stream

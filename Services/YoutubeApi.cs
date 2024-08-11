@@ -553,7 +553,6 @@ namespace FluentDL.Services
                                 return null;
                             }
 
-
                             oneArtistMatch = false;
                             foreach (var queryArtist in song.Artists) // Check if at least one artist matches for track
                             {
@@ -890,7 +889,7 @@ namespace FluentDL.Services
             var streamInfo = streamManifest.GetAudioOnlyStreams().GetWithHighestBitrate();
 
             long maxBitRate = 0;
-            foreach (var streamObj in streamManifest.GetAudioStreams()) // Get the aac stream with highest bitrate
+            foreach (var streamObj in streamManifest.GetAudioOnlyStreams()) // Get the aac stream with highest bitrate
             {
                 if (streamObj.AudioCodec.Contains("mp4a") && streamObj.Bitrate.BitsPerSecond > maxBitRate)
                 {
