@@ -1,5 +1,6 @@
 ﻿using System.Collections.ObjectModel;
 using System.Diagnostics;
+using System.Diagnostics.Eventing.Reader;
 using System.Drawing;
 using System.Text.RegularExpressions;
 using Windows.ApplicationModel.AppService;
@@ -27,6 +28,7 @@ using FileSavePicker = Windows.Storage.Pickers.FileSavePicker;
 using Symbol = Microsoft.UI.Xaml.Controls.Symbol;
 using System.Diagnostics.Metrics;
 using Microsoft.UI.Xaml.Documents;
+using FolderPicker = ABI.Windows.Storage.Pickers.FolderPicker;
 
 namespace FluentDL.Views;
 
@@ -261,7 +263,9 @@ public sealed partial class QueuePage : Page
                 }
             }
 
-            ShowInfoBarPermanent(InfoBarSeverity.Informational, $"Downloading \"{songObj.Title}\" to \"{directory}\"", title: "Download in Progress");
+            //ShowInfoBarPermanent(InfoBarSeverity.Informational, $"Downloading \"{songObj.Title}\" to \"{directory}\"", title: "Download in Progress");
+            ShowInfoBarPermanent(InfoBarSeverity.Informational, $"Downloading <a href='{ApiHelper.GetUrl(songObj)}'>{songObj.Title}</a> to <a href='{directory}'>{directory}</a>");
+
             InfobarProgress.Visibility = Visibility.Visible; // Show the infobar's progress bar
 
             // Download the track
@@ -569,8 +573,8 @@ public sealed partial class QueuePage : Page
             PageInfoBar.IsOpen = true;
             PageInfoBar.Opacity = 1;
             PageInfoBar.Severity = severity;
-            PageInfoBar.Title = title;
-            PageInfoBar.Message = message;
+            //PageInfoBar.Title = title;
+            ParseInfobarText(message);
         });
         dispatcherTimer.Interval = TimeSpan.FromSeconds(seconds);
         dispatcherTimer.Start();
@@ -583,20 +587,69 @@ public sealed partial class QueuePage : Page
             PageInfoBar.IsOpen = true;
             PageInfoBar.Opacity = 1;
             PageInfoBar.Severity = severity;
-            PageInfoBar.Title = title;
-            PageInfoBar.Message = message;
-
+            //PageInfoBar.Title = title;
             // Test
-            InfoBarTextBlock.Inlines.Clear();
-            InfoBarTextBlock.Inlines.Add(new Run { Text = "TEST " });
+            ParseInfobarText(message);
+        });
+    }
 
-            Hyperlink hyperLink = new Hyperlink() { NavigateUri = new Uri("https://google.com") };
-            hyperLink.Inlines.Add(new Run { Text = "Google" });
+    public void ParseInfobarText(string str)
+    {
+        var r = new Regex(@"<a.*?href=(""|')(?<href>.*?)(""|').*?>(?<value>.*?)</a>");
+
+        var prevIdx = 0;
+        InfoBarTextBlock.Inlines.Clear();
+
+        foreach (Match match in r.Matches(str))
+        {
+            var link = match.Groups["href"].Value;
+            var text = match.Groups["value"].Value;
+
+            // Get index of match
+            var index = match.Index;
+            var length = match.Length;
+
+            // Get the text before the match
+            var before = str.Substring(prevIdx, index - prevIdx);
+            InfoBarTextBlock.Inlines.Add(new Run { Text = before });
+
+            // Add the hyperlink
+            Hyperlink hyperLink;
+            // Check if hyperlink is online or local file
+            if (Directory.Exists(link) || File.Exists(link))
+            {
+                hyperLink = new Hyperlink();
+                hyperLink.Inlines.Add(new Run { Text = text });
+
+                // Custom click event to open file in explorer (selects the file)
+                hyperLink.Click += (sender, e) =>
+                {
+                    if (Directory.Exists(link))
+                    {
+                        // Open the folder
+                        Process.Start("explorer.exe", link);
+                    }
+                    else if (File.Exists(link))
+                    {
+                        var argument = $"/select, \"{link}\"";
+                        System.Diagnostics.Process.Start("explorer.exe", argument);
+                    }
+                };
+            }
+            else
+            {
+                hyperLink = new Hyperlink { NavigateUri = new Uri(link) };
+                hyperLink.Inlines.Add(new Run { Text = text });
+            }
 
             InfoBarTextBlock.Inlines.Add(hyperLink);
 
-            InfoBarTextBlock.Inlines.Add(new Run { Text = " TEST" });
-        });
+            // Update previous index
+            prevIdx = index + length;
+        }
+
+        // Add the remaining text
+        InfoBarTextBlock.Inlines.Add(new Run { Text = str.Substring(prevIdx) });
     }
 
     private void ForceHideInfoBar()

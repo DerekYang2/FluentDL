@@ -358,10 +358,10 @@
                 <ScalarTransition Duration="0:0:0.25" />
             </InfoBar.OpacityTransition>
             <InfoBar.Content>
-                <StackPanel>
-                    <TextBlock x:Name="InfoBarTextBlock"/>
-                    <ProgressBar x:Name="InfobarProgress" IsIndeterminate="True" Margin="4,0,4,6" HorizontalAlignment="Stretch" Visibility="Collapsed"/>
-                </StackPanel>
+                <Grid x:Name="InfobarContent" Margin="0, 0, 0, 0" Padding="0, 0, 0, 0" VerticalAlignment="Center">
+                    <TextBlock x:Name="InfoBarTextBlock" Margin="0, 0, 0, 0" VerticalAlignment="Center"/>
+                    <ProgressBar x:Name="InfobarProgress" IsIndeterminate="True" Margin="0,0,0,-8" HorizontalAlignment="Stretch" Visibility="Collapsed" VerticalAlignment="Bottom"/>
+                </Grid>
             </InfoBar.Content>
         </InfoBar>
 
