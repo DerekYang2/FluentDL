@@ -27,8 +27,10 @@ using Color = Windows.UI.Color;
 using FileSavePicker = Windows.Storage.Pickers.FileSavePicker;
 using Symbol = Microsoft.UI.Xaml.Controls.Symbol;
 using System.Diagnostics.Metrics;
+using ABI.Microsoft.UI.Text;
 using Microsoft.UI.Xaml.Documents;
 using FolderPicker = ABI.Windows.Storage.Pickers.FolderPicker;
+using FontWeights = Microsoft.UI.Text.FontWeights;
 
 namespace FluentDL.Views;
 
@@ -264,7 +266,7 @@ public sealed partial class QueuePage : Page
             }
 
             //ShowInfoBarPermanent(InfoBarSeverity.Informational, $"Downloading \"{songObj.Title}\" to \"{directory}\"", title: "Download in Progress");
-            ShowInfoBarPermanent(InfoBarSeverity.Informational, $"Downloading <a href='{ApiHelper.GetUrl(songObj)}'>{songObj.Title}</a> to <a href='{directory}'>{directory}</a>");
+            ShowInfoBarPermanent(InfoBarSeverity.Informational, $"Saving <a href='{ApiHelper.GetUrl(songObj)}'>{songObj.Title}</a> to <a href='{directory}'>{directory}</a>", title: "Download in Progress");
 
             InfobarProgress.Visibility = Visibility.Visible; // Show the infobar's progress bar
 
@@ -574,7 +576,7 @@ public sealed partial class QueuePage : Page
             PageInfoBar.Opacity = 1;
             PageInfoBar.Severity = severity;
             //PageInfoBar.Title = title;
-            ParseInfobarText(message);
+            ParseInfobarText($"<b>{title}</b>    {message}");
         });
         dispatcherTimer.Interval = TimeSpan.FromSeconds(seconds);
         dispatcherTimer.Start();
@@ -588,64 +590,95 @@ public sealed partial class QueuePage : Page
             PageInfoBar.Opacity = 1;
             PageInfoBar.Severity = severity;
             //PageInfoBar.Title = title;
-            // Test
-            ParseInfobarText(message);
+            ParseInfobarText($"<b>{title}</b>    {message}");
         });
     }
 
     public void ParseInfobarText(string str)
     {
-        var r = new Regex(@"<a.*?href=(""|')(?<href>.*?)(""|').*?>(?<value>.*?)</a>");
-
+        // Parse <a href=''></a> tags and <b></b> tags
+        var r = new Regex(@"<a.*?href=(""|')(?<href>.*?)(""|').*?>(?<value>.*?)</a>|<b>(?<value>.*?)</b>");
         var prevIdx = 0;
         InfoBarTextBlock.Inlines.Clear();
 
         foreach (Match match in r.Matches(str))
         {
-            var link = match.Groups["href"].Value;
-            var text = match.Groups["value"].Value;
-
-            // Get index of match
-            var index = match.Index;
-            var length = match.Length;
-
-            // Get the text before the match
-            var before = str.Substring(prevIdx, index - prevIdx);
-            InfoBarTextBlock.Inlines.Add(new Run { Text = before });
-
-            // Add the hyperlink
-            Hyperlink hyperLink;
-            // Check if hyperlink is online or local file
-            if (Directory.Exists(link) || File.Exists(link))
+            // Check if the match is a hyperlink or bold text
+            if (match.Groups["href"].Success)
             {
-                hyperLink = new Hyperlink();
-                hyperLink.Inlines.Add(new Run { Text = text });
+                var link = match.Groups["href"].Value;
 
-                // Custom click event to open file in explorer (selects the file)
-                hyperLink.Click += (sender, e) =>
+                // if value is empty, use the link as the value
+                string text;
+                if (match.Groups["value"].Value == "")
                 {
-                    if (Directory.Exists(link))
+                    text = link;
+                }
+                else
+                {
+                    text = match.Groups["value"].Value;
+                }
+
+                // Get index of match
+                var index = match.Index;
+                var length = match.Length;
+
+                // Get the text before the match
+                var before = str.Substring(prevIdx, index - prevIdx);
+                InfoBarTextBlock.Inlines.Add(new Run { Text = before });
+
+                // Add the hyperlink
+                Hyperlink hyperLink;
+                // Check if hyperlink is online or local file
+                if (Directory.Exists(link) || File.Exists(link))
+                {
+                    hyperLink = new Hyperlink();
+                    hyperLink.Inlines.Add(new Run { Text = text });
+
+                    // Custom click event to open file in explorer (selects the file)
+                    hyperLink.Click += (sender, e) =>
                     {
-                        // Open the folder
-                        Process.Start("explorer.exe", link);
-                    }
-                    else if (File.Exists(link))
-                    {
-                        var argument = $"/select, \"{link}\"";
-                        System.Diagnostics.Process.Start("explorer.exe", argument);
-                    }
-                };
+                        if (Directory.Exists(link))
+                        {
+                            // Open the folder
+                            Process.Start("explorer.exe", link);
+                        }
+                        else if (File.Exists(link))
+                        {
+                            var argument = $"/select, \"{link}\"";
+                            System.Diagnostics.Process.Start("explorer.exe", argument);
+                        }
+                    };
+                }
+                else
+                {
+                    hyperLink = new Hyperlink { NavigateUri = new Uri(link) };
+                    hyperLink.Inlines.Add(new Run { Text = text });
+                }
+
+                InfoBarTextBlock.Inlines.Add(hyperLink);
+
+                // Update previous index
+                prevIdx = index + length;
             }
-            else
+            else if (match.Groups["value"].Success)
             {
-                hyperLink = new Hyperlink { NavigateUri = new Uri(link) };
-                hyperLink.Inlines.Add(new Run { Text = text });
+                var text = match.Groups["value"].Value;
+
+                // Get index of match
+                var index = match.Index;
+                var length = match.Length;
+
+                // Get the text before the match
+                var before = str.Substring(prevIdx, index - prevIdx);
+                InfoBarTextBlock.Inlines.Add(new Run { Text = before });
+
+                // Add the bold text
+                InfoBarTextBlock.Inlines.Add(new Run { Text = text, FontWeight = FontWeights.SemiBold });
+
+                // Update previous index
+                prevIdx = index + length;
             }
-
-            InfoBarTextBlock.Inlines.Add(hyperLink);
-
-            // Update previous index
-            prevIdx = index + length;
         }
 
         // Add the remaining text
