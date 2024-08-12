@@ -44,8 +44,10 @@ public sealed partial class SettingsPage : Page
         // Set download directory
         LocationCard.Description = await localSettings.ReadSettingAsync<string>(SettingsViewModel.DownloadDirectory) ?? "No folder selected";
         if (string.IsNullOrWhiteSpace(LocationCard.Description.ToString())) LocationCard.Description = "No folder selected";
-        // Set ask before download toggle
+
+        // Set ToggleSwitches
         AskToggle.IsOn = await localSettings.ReadSettingAsync<bool>(SettingsViewModel.AskBeforeDownload);
+        OverwriteToggle.IsOn = await localSettings.ReadSettingAsync<bool>(SettingsViewModel.Overwrite);
 
         // Set Ids/Secrets
         ClientIdInput.Text = (await localSettings.ReadSettingAsync<string>(SettingsViewModel.SpotifyClientId)) ?? "";
@@ -191,7 +193,8 @@ public sealed partial class SettingsPage : Page
 
     private void OverwriteToggle_OnToggled(object sender, RoutedEventArgs e)
     {
-        throw new NotImplementedException();
+        var isToggled = (sender as ToggleSwitch).IsOn;
+        localSettings.SaveSettingAsync(SettingsViewModel.Overwrite, isToggled);
     }
 
     private async void DeezerQualityComboBox_OnSelectionChanged(object sender, SelectionChangedEventArgs e)

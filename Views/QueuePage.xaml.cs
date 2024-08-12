@@ -240,28 +240,47 @@ public sealed partial class QueuePage : Page
                 return;
             }
 
-            // Create file name
-            var firstArtist = songObj.Artists.Split(",")[0].Trim();
-            var isrcStr = !string.IsNullOrWhiteSpace(songObj.Isrc) ? $" [{songObj.Isrc}]" : "";
-            var safeFileName = ApiHelper.GetSafeFilename($"{songObj.TrackPosition}. {firstArtist} - {songObj.Title}{isrcStr}.flac");
+            // Create a folder picker (for download directory)
+            var directory = await SettingsViewModel.GetSetting<string>(SettingsViewModel.DownloadDirectory);
 
-            // Create a file save picker
-            var savePicker = new FileSavePicker { SuggestedStartLocation = PickerLocationId.Downloads, SuggestedFileName = safeFileName };
-
-            savePicker.FileTypeChoices.Add("FLAC", new List<string> { ".flac" });
-
-            // Retrieve the window handle (HWND) of the current WinUI 3 window
-            var hWnd = WinRT.Interop.WindowNative.GetWindowHandle(App.MainWindow);
-
-            // Initialize the file picker with the window handle (HWND)
-            WinRT.Interop.InitializeWithWindow.Initialize(savePicker, hWnd);
-
-            var file = await savePicker.PickSaveFileAsync();
-
-            if (file != null)
+            // If user needs to select a directory
+            if (await SettingsViewModel.GetSetting<bool>(SettingsViewModel.AskBeforeDownload) || string.IsNullOrWhiteSpace(directory))
             {
-                await ApiHelper.DownloadObject(songObj, file);
+                // Open the picker for the user to pick a folder
+                var folder = await StoragePickerHelper.PickFolderAsync(PickerLocationId.Downloads);
+                if (folder != null)
+                {
+                    StorageApplicationPermissions.FutureAccessList.AddOrReplace("PickedFolderToken", folder); // Save the folder for future access
+                    directory = folder.Path;
+                }
+                else // Selected "cancel"
+                {
+                    ShowInfoBar(InfoBarSeverity.Warning, "No download directory selected", 3);
+                    return;
+                }
             }
+
+            ShowInfoBar(InfoBarSeverity.Informational, $"Downloading \"{songObj.Title}\" to \"{directory}\"", 3);
+
+            // Download the track
+            await ApiHelper.DownloadObject(songObj, directory, (severity, song) =>
+            {
+                dispatcherQueue.TryEnqueue(() =>
+                {
+                    if (severity == InfoBarSeverity.Error)
+                    {
+                        ShowInfoBar(severity, $"Failed to download \"{songObj.Title}\"", 3);
+                    }
+                    else if (severity == InfoBarSeverity.Success)
+                    {
+                        ShowInfoBar(severity, $"Successfully downloaded \"{songObj.Title}\"", 3);
+                    }
+                    else if (severity == InfoBarSeverity.Warning)
+                    {
+                        ShowInfoBar(severity, $"Downloaded a possible equivalent to \"{songObj.Title}\"", 3);
+                    }
+                });
+            });
         };
 
         var downloadCoverButton = new AppBarButton() { Icon = new FontIcon { Glyph = "\uEE71" }, Label = "Download Cover" };
@@ -681,31 +700,17 @@ public sealed partial class QueuePage : Page
 
         if (outputSource == "local" && (await SettingsViewModel.GetSetting<bool>(SettingsViewModel.AskBeforeDownload) || string.IsNullOrWhiteSpace(directory)))
         {
-            var openPicker = new Windows.Storage.Pickers.FolderPicker();
-
-            // Retrieve the window handle of the current WinUI 3 window.
-            var hWnd = WinRT.Interop.WindowNative.GetWindowHandle(App.MainWindow);
-
-            // Initialize the folder picker with the window handle.
-            WinRT.Interop.InitializeWithWindow.Initialize(openPicker, hWnd);
-
-            openPicker.SuggestedStartLocation = PickerLocationId.Downloads;
-            openPicker.FileTypeFilter.Add("*");
-
             // Open the picker for the user to pick a folder
-            StorageFolder folder = await openPicker.PickSingleFolderAsync();
+            var folder = await StoragePickerHelper.PickFolderAsync(PickerLocationId.Downloads);
             if (folder != null)
             {
                 StorageApplicationPermissions.FutureAccessList.AddOrReplace("PickedFolderToken", folder); // Save the folder for future access
                 directory = folder.Path;
             }
-            else // No folder selected
+            else // No folder selected (cancel)
             {
-                if (string.IsNullOrWhiteSpace(directory)) // If no directory is set, return
-                {
-                    ShowInfoBar(InfoBarSeverity.Warning, "No download directory selected", 3);
-                    return;
-                }
+                ShowInfoBar(InfoBarSeverity.Warning, "No download directory selected", 3);
+                return;
             }
         }
 
