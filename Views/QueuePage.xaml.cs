@@ -26,6 +26,7 @@ using Color = Windows.UI.Color;
 using FileSavePicker = Windows.Storage.Pickers.FileSavePicker;
 using Symbol = Microsoft.UI.Xaml.Controls.Symbol;
 using System.Diagnostics.Metrics;
+using Microsoft.UI.Xaml.Documents;
 
 namespace FluentDL.Views;
 
@@ -260,24 +261,26 @@ public sealed partial class QueuePage : Page
                 }
             }
 
-            ShowInfoBar(InfoBarSeverity.Informational, $"Downloading \"{songObj.Title}\" to \"{directory}\"", 3);
+            ShowInfoBarPermanent(InfoBarSeverity.Informational, $"Downloading \"{songObj.Title}\" to \"{directory}\"", title: "Download in Progress");
+            InfobarProgress.Visibility = Visibility.Visible; // Show the infobar's progress bar
 
             // Download the track
             await ApiHelper.DownloadObject(songObj, directory, (severity, song) =>
             {
                 dispatcherQueue.TryEnqueue(() =>
                 {
+                    InfobarProgress.Visibility = Visibility.Collapsed; // Hide the infobar's progress bar
                     if (severity == InfoBarSeverity.Error)
                     {
-                        ShowInfoBar(severity, $"Failed to download \"{songObj.Title}\"", 3);
+                        ShowInfoBar(severity, $"Failed to download \"{songObj.Title}\"", 5, "Download Result");
                     }
                     else if (severity == InfoBarSeverity.Success)
                     {
-                        ShowInfoBar(severity, $"Successfully downloaded \"{songObj.Title}\"", 3);
+                        ShowInfoBar(severity, $"Successfully downloaded \"{songObj.Title}\"", 5, "Download Result");
                     }
                     else if (severity == InfoBarSeverity.Warning)
                     {
-                        ShowInfoBar(severity, $"Downloaded a possible equivalent to \"{songObj.Title}\"", 3);
+                        ShowInfoBar(severity, $"Downloaded a possible equivalent to \"{songObj.Title}\"", 5, "Download Result");
                     }
                 });
             });
@@ -559,24 +562,70 @@ public sealed partial class QueuePage : Page
         PageInfoBar.Opacity = 0;
     }
 
-    private void ShowInfoBar(InfoBarSeverity severity, string message, int seconds = 2)
+    private void ShowInfoBar(InfoBarSeverity severity, string message, int seconds = 2, string title = "")
     {
         dispatcherQueue.TryEnqueue(() =>
         {
             PageInfoBar.IsOpen = true;
             PageInfoBar.Opacity = 1;
             PageInfoBar.Severity = severity;
-            PageInfoBar.Content = message;
+            PageInfoBar.Title = title;
+            PageInfoBar.Message = message;
         });
         dispatcherTimer.Interval = TimeSpan.FromSeconds(seconds);
         dispatcherTimer.Start();
     }
 
+    private void ShowInfoBarPermanent(InfoBarSeverity severity, string message, string title = "")
+    {
+        dispatcherQueue.TryEnqueue(() =>
+        {
+            PageInfoBar.IsOpen = true;
+            PageInfoBar.Opacity = 1;
+            PageInfoBar.Severity = severity;
+            PageInfoBar.Title = title;
+            PageInfoBar.Message = message;
+
+            // Test
+            InfoBarTextBlock.Inlines.Clear();
+            InfoBarTextBlock.Inlines.Add(new Run { Text = "TEST " });
+
+            Hyperlink hyperLink = new Hyperlink() { NavigateUri = new Uri("https://google.com") };
+            hyperLink.Inlines.Add(new Run { Text = "Google" });
+
+            InfoBarTextBlock.Inlines.Add(hyperLink);
+
+            InfoBarTextBlock.Inlines.Add(new Run { Text = " TEST" });
+        });
+    }
+
+    private void ForceHideInfoBar()
+    {
+        if (!dispatcherTimer.IsEnabled) return; // Already closed
+
+        PageInfoBar.Opacity = 0;
+        dispatcherTimer.Stop();
+
+        // Set IsOpen to false after 0.25 seconds
+        Task.Factory.StartNew(() =>
+        {
+            System.Threading.Thread.Sleep(250);
+            dispatcherQueue.TryEnqueue(() =>
+            {
+                PageInfoBar.IsOpen = false;
+            });
+        });
+    }
+
     // Event handler to close the info bar and stop the timer (only ticks once)
     private void dispatcherTimer_Tick(object sender, object e)
     {
+        var timer = sender as DispatcherTimer;
+        if (!timer.IsEnabled) return; // Already closed
+
         PageInfoBar.Opacity = 0;
-        (sender as DispatcherTimer).Stop();
+        timer.Stop();
+
         // Set IsOpen to false after 0.25 seconds
         Task.Factory.StartNew(() =>
         {

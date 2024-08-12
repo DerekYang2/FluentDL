@@ -592,6 +592,11 @@ internal class QobuzApi
         // Add the extension
         filePath += "." + (format == "5" ? "mp3" : "flac"); // Only one format is mp3
 
+        if (System.IO.File.Exists(filePath) && await SettingsViewModel.GetSetting<bool>(SettingsViewModel.Overwrite) == false)
+        {
+            throw new Exception("File already exists");
+        }
+
         var fileUrl = apiService.GetTrackFileUrl(song.Id, format);
         await ApiHelper.DownloadFileAsync(filePath, fileUrl.Url);
         return filePath;

@@ -577,12 +577,12 @@ internal class DeezerApi
     {
         // Remove extension if it exists
         filePath = ApiHelper.RemoveExtension(filePath);
-        Debug.WriteLine("Second path: " + filePath);
 
         if (song == null || song.Source != "deezer" || !Path.IsPathRooted(filePath))
         {
             throw new Exception("Invalid song");
         }
+
 
         var id = long.Parse(song.Id);
 
@@ -607,7 +607,10 @@ internal class DeezerApi
             _ => throw new ArgumentOutOfRangeException("Invalid bitrate enum")
         };
 
-        Debug.WriteLine("FINAL PATH: " + filePath);
+        if (File.Exists(filePath) && await SettingsViewModel.GetSetting<bool>(SettingsViewModel.Overwrite) == false)
+        {
+            throw new Exception("File already exists");
+        }
 
         var trackBytes = await deezerClient.Downloader.GetRawTrackBytes(id, (Bitrate)bitrateEnum);
         //trackBytes = await deezerClient.Downloader.ApplyMetadataToTrackBytes(id, trackBytes);

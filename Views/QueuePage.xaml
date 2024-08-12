@@ -348,6 +348,23 @@
             </StackPanel>
         </ContentDialog>
 
+
+        <InfoBar Grid.Row="0" Grid.RowSpan="3" Grid.Column="0" Grid.ColumnSpan="2" x:Name="PageInfoBar"
+                 Canvas.ZIndex="1" VerticalAlignment="Bottom" HorizontalAlignment="Center" IsOpen="False" Opacity="0"
+                 Margin="12" Background="{ThemeResource AcrylicBackgroundFillColorDefaultBrush}"
+                 CloseButtonClick="PageInfoBar_OnCloseButtonClick"
+                 HorizontalContentAlignment="Stretch">
+            <InfoBar.OpacityTransition>
+                <ScalarTransition Duration="0:0:0.25" />
+            </InfoBar.OpacityTransition>
+            <InfoBar.Content>
+                <StackPanel>
+                    <TextBlock x:Name="InfoBarTextBlock"/>
+                    <ProgressBar x:Name="InfobarProgress" IsIndeterminate="True" Margin="4,0,4,6" HorizontalAlignment="Stretch" Visibility="Collapsed"/>
+                </StackPanel>
+            </InfoBar.Content>
+        </InfoBar>
+
         <!-- Content Dialog for cli output-->
         <ContentDialog x:Name="OutputDialog" PrimaryButtonText="Copy" CloseButtonText="Close"
                        Title="Output" IsSecondaryButtonEnabled="True" IsPrimaryButtonEnabled="True"
@@ -358,15 +375,6 @@
                 <RichEditBox x:Name="OutputTextBox" HorizontalAlignment="Stretch" Height="Auto" />
             </StackPanel>
         </ContentDialog>
-
-        <InfoBar Grid.Row="0" Grid.RowSpan="3" Grid.Column="0" Grid.ColumnSpan="2" x:Name="PageInfoBar"
-                 Canvas.ZIndex="1" VerticalAlignment="Bottom" HorizontalAlignment="Center" IsOpen="False" Opacity="0"
-                 Margin="12" Background="{ThemeResource AcrylicBackgroundFillColorDefaultBrush}"
-                 CloseButtonClick="PageInfoBar_OnCloseButtonClick">
-            <InfoBar.OpacityTransition>
-                <ScalarTransition Duration="0:0:0.25" />
-            </InfoBar.OpacityTransition>
-        </InfoBar>
 
         <!-- Content Dialog for conversion-->
         <ContentDialog x:Name="ConversionDialog" PrimaryButtonText="Convert" CloseButtonText="Close"

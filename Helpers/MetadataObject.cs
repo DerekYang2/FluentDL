@@ -271,7 +271,7 @@ namespace FluentDL.Helpers
             // Check if path is local or remote
             if (!string.IsNullOrWhiteSpace(AlbumArtPath))
             {
-                if (Path.Exists(AlbumArtPath)) // Local
+                if (System.IO.File.Exists(AlbumArtPath)) // Local
                 {
                     AlbumArt = await System.IO.File.ReadAllBytesAsync(AlbumArtPath); // Covert image to byte array
                 }

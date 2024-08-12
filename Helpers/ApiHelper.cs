@@ -136,11 +136,22 @@ internal class ApiHelper
                 var settingIdx = await SettingsViewModel.GetSetting<int?>(SettingsViewModel.YoutubeQuality) ?? 0;
                 if (settingIdx == 2)
                 {
+                    if (File.Exists(mp4Location) && await SettingsViewModel.GetSetting<bool>(SettingsViewModel.Overwrite) == false) // Do not overwrite
+                    {
+                        throw new Exception("File already exists."); // Will be caught below
+                    }
+
                     await YoutubeApi.DownloadAudioAAC(mp4Location, song.Id);
                     await FFmpegRunner.ConvertMP4toM4A(mp4Location);
                     await YoutubeApi.UpdateMetadata(m4aLocation, song.Id);
                     callback?.Invoke(InfoBarSeverity.Success, song); // Assume success
                     return m4aLocation;
+                }
+
+
+                if (File.Exists(opusLocation) && await SettingsViewModel.GetSetting<bool>(SettingsViewModel.Overwrite) == false) // Do not overwrite
+                {
+                    throw new Exception("File already exists."); // Will be caught below
                 }
 
                 await YoutubeApi.DownloadAudio(opusLocation, song.Id); // Download opus stream
@@ -206,11 +217,8 @@ internal class ApiHelper
                 await SpotifyApi.UpdateMetadata(resultPath, song.Id);
                 return resultPath;
             }
-            else
-            {
-                callback?.Invoke(InfoBarSeverity.Error, song);
-                Debug.WriteLine("Failed to download spotify song.");
-            }
+
+            callback?.Invoke(InfoBarSeverity.Error, song); // Null - error
         }
 
         return string.Empty;

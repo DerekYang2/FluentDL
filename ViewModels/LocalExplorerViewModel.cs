@@ -98,7 +98,7 @@ public partial class LocalExplorerViewModel : ObservableRecipient
 
     public static SongSearchObject? ParseFile(string path)
     {
-        if (!Path.Exists(path))
+        if (!System.IO.File.Exists(path))
         {
             return null;
         }
