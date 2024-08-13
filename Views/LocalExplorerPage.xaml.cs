@@ -13,6 +13,12 @@ using Microsoft.UI.Xaml.Media.Imaging;
 using WinRT.Interop;
 using FluentDL.Models;
 using Microsoft.UI.Xaml.Navigation;
+using Windows.System;
+using Microsoft.UI.Text;
+using Microsoft.UI.Xaml.Documents;
+using System.Text.RegularExpressions;
+using FluentDL.Helpers;
+using DispatcherQueue = Microsoft.UI.Dispatching.DispatcherQueue;
 
 namespace FluentDL.Views;
 
@@ -438,17 +444,49 @@ public sealed partial class LocalExplorerPage : Page
     }
 
     // Infobar related methods
-    private void ShowInfoBar(InfoBarSeverity severity, string message, int seconds = 2)
+    private void ShowInfoBar(InfoBarSeverity severity, string message, int seconds = 2, string title = "")
     {
+        title = title.Trim();
+        message = message.Trim();
         dispatcher.TryEnqueue(() =>
         {
             PageInfoBar.IsOpen = true;
             PageInfoBar.Opacity = 1;
             PageInfoBar.Severity = severity;
-            PageInfoBar.Content = message;
+            //PageInfoBar.Title = title;
+
+            if (!string.IsNullOrWhiteSpace(title))
+            {
+                UrlParser.ParseTextBlock(InfoBarTextBlock, $"<b>{title}</b>   {message}");
+            }
+            else
+            {
+                UrlParser.ParseTextBlock(InfoBarTextBlock, message);
+            }
         });
         dispatcherTimer.Interval = TimeSpan.FromSeconds(seconds);
         dispatcherTimer.Start();
+    }
+
+    private void ShowInfoBarPermanent(InfoBarSeverity severity, string message, string title = "")
+    {
+        title = title.Trim();
+        message = message.Trim();
+        dispatcher.TryEnqueue(() =>
+        {
+            PageInfoBar.IsOpen = true;
+            PageInfoBar.Opacity = 1;
+            PageInfoBar.Severity = severity;
+            //PageInfoBar.Title = title;
+            if (!string.IsNullOrWhiteSpace(title))
+            {
+                UrlParser.ParseTextBlock(InfoBarTextBlock, $"<b>{title}</b>    {message}");
+            }
+            else
+            {
+                UrlParser.ParseTextBlock(InfoBarTextBlock, message);
+            }
+        });
     }
 
     private void dispatcherTimer_Tick(object sender, object e)
