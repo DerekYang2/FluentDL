@@ -58,7 +58,7 @@ internal class DeezerApi
             {
                 list.Add(songObj);
                 // Send message to infobar
-                statusUpdate?.Invoke(InfoBarSeverity.Success, $"Loaded track \"{songObj.Title}\"");
+                statusUpdate?.Invoke(InfoBarSeverity.Success, $"Loaded track <a href='{url}'>{songObj.Title}</a>");
             }
         }
 
@@ -70,7 +70,7 @@ internal class DeezerApi
 
                 // Send message to infobar
                 var listName = await urlData.GetTitle(deezerClient);
-                statusUpdate?.Invoke(InfoBarSeverity.Informational, $"Loading {(url.Contains("/album/") ? "album" : "playlist")} \"{listName}\" ...");
+                statusUpdate?.Invoke(InfoBarSeverity.Informational, $"Loading {(url.Contains("/album/") ? "album" : "playlist")} <a href='{url}'>{listName}</a>", -1);
 
                 list.Clear(); // Clear the item source for lists like playlist/albums
 
@@ -87,6 +87,8 @@ internal class DeezerApi
                         list.Add(songObj);
                     }
                 }
+
+                statusUpdate?.Invoke(InfoBarSeverity.Success, $"Loaded {(url.Contains("/album/") ? "album" : "playlist")} <a href='{url}'>{listName}</a>");
             }
         }
     }

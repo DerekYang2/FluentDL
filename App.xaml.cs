@@ -120,24 +120,30 @@ public partial class App : Application
 
         await App.GetService<IActivationService>().ActivateAsync(args);
 
-
-        // Fetch previous command list
-        await LocalCommands.Init();
-
-        // Initialize FFMpeg 
-        FFmpegRunner.Initialize();
-
-        // Initialize api objects
-        var localSettings = App.GetService<ILocalSettingsService>();
-        await SpotifyApi.Initialize(await localSettings.ReadSettingAsync<string>(SettingsViewModel.SpotifyClientId), await localSettings.ReadSettingAsync<string>(SettingsViewModel.SpotifyClientSecret));
-        await DeezerApi.InitDeezerClient(await localSettings.ReadSettingAsync<string>(SettingsViewModel.DeezerARL));
-
-        Thread t2 = new Thread(async () => // Start separate thread, this takes a while compared to other API wrappers
+        try
         {
-            QobuzApi.Initialize(await localSettings.ReadSettingAsync<string>(SettingsViewModel.QobuzId), await localSettings.ReadSettingAsync<string>(SettingsViewModel.QobuzToken));
-            Debug.WriteLine("Logged in Qobuz");
-        });
-        t2.Priority = ThreadPriority.AboveNormal;
-        t2.Start();
+            // Fetch previous command list
+            await LocalCommands.Init();
+
+            // Initialize FFMpeg 
+            FFmpegRunner.Initialize();
+
+            // Initialize api objects
+            var localSettings = App.GetService<ILocalSettingsService>();
+            await SpotifyApi.Initialize(await localSettings.ReadSettingAsync<string>(SettingsViewModel.SpotifyClientId), await localSettings.ReadSettingAsync<string>(SettingsViewModel.SpotifyClientSecret));
+            await DeezerApi.InitDeezerClient(await localSettings.ReadSettingAsync<string>(SettingsViewModel.DeezerARL));
+
+            Thread t2 = new Thread(async () => // Start separate thread, this takes a while compared to other API wrappers
+            {
+                QobuzApi.Initialize(await localSettings.ReadSettingAsync<string>(SettingsViewModel.QobuzId), await localSettings.ReadSettingAsync<string>(SettingsViewModel.QobuzToken));
+                Debug.WriteLine("Logged in Qobuz");
+            });
+            t2.Priority = ThreadPriority.AboveNormal;
+            t2.Start();
+        }
+        catch (Exception e)
+        {
+            Debug.WriteLine(e);
+        }
     }
 }

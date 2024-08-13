@@ -10,6 +10,9 @@ using Microsoft.UI.Dispatching;
 using YoutubeExplode.Search;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Navigation;
+using Microsoft.UI.Text;
+using Microsoft.UI.Xaml.Documents;
+using System.Text.RegularExpressions;
 
 namespace FluentDL.Views;
 // TODO: loading for search
@@ -64,7 +67,7 @@ public class TrackDetail
 
 public sealed partial class Search : Page
 {
-    public delegate void UrlStatusUpdateCallback(InfoBarSeverity severity, string message); // Callback for url status update (for infobars)
+    public delegate void UrlStatusUpdateCallback(InfoBarSeverity severity, string message, int duration = 2); // Callback for url status update (for infobars)
 
     private TerminalSubprocess _terminalSubprocess;
     private ObservableCollection<SongSearchObject> originalList;
@@ -129,14 +132,21 @@ public sealed partial class Search : Page
             if (PreviewPanel.GetSong() != null)
             {
                 var beforeCount = QueueViewModel.Source.Count;
-                QueueViewModel.Add(PreviewPanel.GetSong());
+                var song = PreviewPanel.GetSong();
+                if (song == null)
+                {
+                    ShowInfoBar(InfoBarSeverity.Warning, "No song selected"); // Technically shouldn't happen
+                    return;
+                }
+
+                QueueViewModel.Add(song);
                 if (QueueViewModel.Source.Count == beforeCount) // No change
                 {
-                    ShowInfoBar(InfoBarSeverity.Warning, $"{PreviewPanel.GetSong().Title} already in queue");
+                    ShowInfoBar(InfoBarSeverity.Warning, $"<a href='{ApiHelper.GetUrl(song)}'>{song.Title}</a> already in queue");
                 }
                 else
                 {
-                    ShowInfoBar(InfoBarSeverity.Success, $"{PreviewPanel.GetSong().Title} added to queue");
+                    ShowInfoBar(InfoBarSeverity.Success, $"<a href='{ApiHelper.GetUrl(song)}'>{song.Title}</a> added to queue");
                 }
             }
         };
@@ -350,11 +360,24 @@ public sealed partial class Search : Page
         // Format of links https://open.spotify.com/playlist/{id}?
         // OR https://open.spotify.com/playlist/{id}?...
 
-        UrlStatusUpdateCallback statusUpdate = (severity, message) => ShowInfoBar(severity, message, 3);
+        UrlStatusUpdateCallback statusUpdate = (severity, message, duration) =>
+        {
+            if (duration == -1)
+            {
+                ShowInfoBarPermanent(severity, message);
+                InfobarProgress.Visibility = Visibility.Visible;
+            }
+            else
+            {
+                InfobarProgress.Visibility = Visibility.Collapsed;
+                ShowInfoBar(severity, message, duration);
+            }
+        };
 
         if (generalQuery.StartsWith("https://open.spotify.com/"))
         {
             await SpotifyApi.AddTracksFromLink((ObservableCollection<SongSearchObject>)CustomListView.ItemsSource, generalQuery, cancellationTokenSource.Token, statusUpdate);
+
             /*
             var playlistId = generalQuery.Split("/").Last();
             //Spotify to deezer conversion
@@ -592,17 +615,169 @@ public sealed partial class Search : Page
         PageInfoBar.Opacity = 0;
     }
 
-    public void ShowInfoBar(InfoBarSeverity severity, string message, int seconds = 2)
+    private void ParseInfobarText(string str)
     {
+        // Parse <a href=''></a> tags and <b></b> tags
+        var r = new Regex(@"<a.*?href=(""|')(?<href>.*?)(""|').*?>(?<value>.*?)</a>|<b>(?<value>.*?)</b>");
+        var prevIdx = 0;
+        InfoBarTextBlock.Inlines.Clear();
+
+        foreach (Match match in r.Matches(str))
+        {
+            // Check if the match is a hyperlink or bold text
+            if (match.Groups["href"].Success)
+            {
+                var link = match.Groups["href"].Value;
+
+                // if value is empty, use the link as the value
+                string text;
+                if (match.Groups["value"].Value == "")
+                {
+                    text = link;
+                }
+                else
+                {
+                    text = match.Groups["value"].Value;
+                }
+
+                // Get index of match
+                var index = match.Index;
+                var length = match.Length;
+
+                // Get the text before the match
+                var before = str.Substring(prevIdx, index - prevIdx);
+                InfoBarTextBlock.Inlines.Add(new Run { Text = before });
+
+                // Add the hyperlink
+                Hyperlink hyperLink;
+                // Check if hyperlink is online or local file
+                if (Directory.Exists(link) || File.Exists(link))
+                {
+                    hyperLink = new Hyperlink();
+                    hyperLink.Inlines.Add(new Run { Text = text });
+
+                    // Custom click event to open file in explorer (selects the file)
+                    hyperLink.Click += (sender, e) =>
+                    {
+                        if (Directory.Exists(link))
+                        {
+                            // Open the folder
+                            Process.Start("explorer.exe", link);
+                        }
+                        else if (File.Exists(link))
+                        {
+                            var argument = $"/select, \"{link}\"";
+                            System.Diagnostics.Process.Start("explorer.exe", argument);
+                        }
+                    };
+                }
+                else
+                {
+                    hyperLink = new Hyperlink { NavigateUri = new Uri(link) };
+                    hyperLink.Inlines.Add(new Run { Text = text });
+                }
+
+                InfoBarTextBlock.Inlines.Add(hyperLink);
+
+                // Update previous index
+                prevIdx = index + length;
+            }
+            else if (match.Groups["value"].Success)
+            {
+                var text = match.Groups["value"].Value;
+
+                // Get index of match
+                var index = match.Index;
+                var length = match.Length;
+
+                // Get the text before the match
+                var before = str.Substring(prevIdx, index - prevIdx);
+                InfoBarTextBlock.Inlines.Add(new Run { Text = before });
+
+                // Add the bold text
+                InfoBarTextBlock.Inlines.Add(new Run { Text = text, FontWeight = FontWeights.SemiBold });
+
+                // Update previous index
+                prevIdx = index + length;
+            }
+        }
+
+        // Add the remaining text
+        InfoBarTextBlock.Inlines.Add(new Run { Text = str.Substring(prevIdx) });
+    }
+
+    private void ShowInfoBar(InfoBarSeverity severity, string message, int seconds = 2, string title = "")
+    {
+        title = title.Trim();
+        message = message.Trim();
         dispatcher.TryEnqueue(() =>
         {
             PageInfoBar.IsOpen = true;
             PageInfoBar.Opacity = 1;
             PageInfoBar.Severity = severity;
-            PageInfoBar.Content = message;
+            //PageInfoBar.Title = title;
+
+            if (!string.IsNullOrWhiteSpace(title))
+            {
+                ParseInfobarText($"<b>{title}</b>    {message}");
+            }
+            else
+            {
+                ParseInfobarText(message);
+            }
         });
         dispatcherTimer.Interval = TimeSpan.FromSeconds(seconds);
         dispatcherTimer.Start();
+    }
+
+    private void ShowInfoBarPermanent(InfoBarSeverity severity, string message, string title = "")
+    {
+        title = title.Trim();
+        message = message.Trim();
+        dispatcher.TryEnqueue(() =>
+        {
+            PageInfoBar.IsOpen = true;
+            PageInfoBar.Opacity = 1;
+            PageInfoBar.Severity = severity;
+            //PageInfoBar.Title = title;
+            if (!string.IsNullOrWhiteSpace(title))
+            {
+                ParseInfobarText($"<b>{title}</b>    {message}");
+            }
+            else
+            {
+                ParseInfobarText(message);
+            }
+        });
+    }
+
+    private void ForceHideInfoBar()
+    {
+        dispatcher.TryEnqueue(() =>
+        {
+            PageInfoBar.Opacity = 0;
+            if (dispatcherTimer.IsEnabled)
+            {
+                dispatcherTimer.Stop();
+            }
+
+            // Set IsOpen to false after 0.25 seconds
+            Task.Factory.StartNew(() =>
+            {
+                System.Threading.Thread.Sleep(250);
+                try
+                {
+                    dispatcher.TryEnqueue(() =>
+                    {
+                        PageInfoBar.IsOpen = false;
+                    });
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine(ex.Message);
+                }
+            });
+        });
     }
 
     // Event handler to close the info bar and stop the timer (only ticks once)
