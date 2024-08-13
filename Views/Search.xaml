@@ -422,10 +422,20 @@
         </Grid>
 
         <!-- InfoBar -->
-        <InfoBar x:Name="PageInfoBar" Canvas.ZIndex="1" VerticalAlignment="Bottom" HorizontalAlignment="Center" IsOpen="False" Opacity="0" Margin="12" Background="{ThemeResource AcrylicBackgroundFillColorDefaultBrush}" CloseButtonClick="PageInfoBar_OnCloseButtonClick" x:FieldModifier="public">
+        <InfoBar x:Name="PageInfoBar" Canvas.ZIndex="1" VerticalAlignment="Bottom" HorizontalAlignment="Center" IsOpen="False" Opacity="0"
+                 Margin="12" Background="{ThemeResource AcrylicBackgroundFillColorDefaultBrush}"
+                 CloseButtonClick="PageInfoBar_OnCloseButtonClick"
+                 HorizontalContentAlignment="Stretch" x:FieldModifier="public">
             <InfoBar.OpacityTransition>
-                <ScalarTransition Duration="0:0:0.25"/>
+                <ScalarTransition Duration="0:0:0.25" />
             </InfoBar.OpacityTransition>
+            <InfoBar.Content>
+                <Grid x:Name="InfobarContent" Margin="0, 0, 0, 0" Padding="0, 0, 0, 0" VerticalAlignment="Center">
+                    <TextBlock x:Name="InfoBarTextBlock" Margin="0, 0, 0, 0" VerticalAlignment="Center"/>
+                    <ProgressBar x:Name="InfobarProgress" IsIndeterminate="True" Margin="0,0,0,-8" HorizontalAlignment="Stretch" Visibility="Collapsed" VerticalAlignment="Bottom"/>
+                </Grid>
+            </InfoBar.Content>
         </InfoBar>
+
     </Grid>
 </Page>

@@ -345,12 +345,12 @@ public sealed partial class QueuePage : Page
 
                 if (coverBytes == null)
                 {
-                    ShowInfoBar(InfoBarSeverity.Error, "Failed to download cover");
+                    ShowInfoBar(InfoBarSeverity.Error, "Failed to save cover", 5, "Download Result");
                     return;
                 }
 
                 await File.WriteAllBytesAsync(file.Path, coverBytes);
-                ShowInfoBar(InfoBarSeverity.Success, "Successfully downloaded cover");
+                ShowInfoBar(InfoBarSeverity.Success, "Successfully saved to <a href='" + file.Path + "'>" + file.Name + "</a>", 5, "Download Result");
             }
 
             //await DeezerApi.DownloadTrack(await DeezerApi.GetTrack(PreviewPanel.GetSong().Id), "E:\\Other Downloads\\test");
@@ -570,13 +570,23 @@ public sealed partial class QueuePage : Page
 
     private void ShowInfoBar(InfoBarSeverity severity, string message, int seconds = 2, string title = "")
     {
+        title = title.Trim();
+        message = message.Trim();
         dispatcherQueue.TryEnqueue(() =>
         {
             PageInfoBar.IsOpen = true;
             PageInfoBar.Opacity = 1;
             PageInfoBar.Severity = severity;
             //PageInfoBar.Title = title;
-            ParseInfobarText($"<b>{title}</b>    {message}");
+
+            if (!string.IsNullOrWhiteSpace(title))
+            {
+                ParseInfobarText($"<b>{title}</b>    {message}");
+            }
+            else
+            {
+                ParseInfobarText(message);
+            }
         });
         dispatcherTimer.Interval = TimeSpan.FromSeconds(seconds);
         dispatcherTimer.Start();
@@ -584,17 +594,26 @@ public sealed partial class QueuePage : Page
 
     private void ShowInfoBarPermanent(InfoBarSeverity severity, string message, string title = "")
     {
+        title = title.Trim();
+        message = message.Trim();
         dispatcherQueue.TryEnqueue(() =>
         {
             PageInfoBar.IsOpen = true;
             PageInfoBar.Opacity = 1;
             PageInfoBar.Severity = severity;
             //PageInfoBar.Title = title;
-            ParseInfobarText($"<b>{title}</b>    {message}");
+            if (!string.IsNullOrWhiteSpace(title))
+            {
+                ParseInfobarText($"<b>{title}</b>    {message}");
+            }
+            else
+            {
+                ParseInfobarText(message);
+            }
         });
     }
 
-    public void ParseInfobarText(string str)
+    private void ParseInfobarText(string str)
     {
         // Parse <a href=''></a> tags and <b></b> tags
         var r = new Regex(@"<a.*?href=(""|')(?<href>.*?)(""|').*?>(?<value>.*?)</a>|<b>(?<value>.*?)</b>");
@@ -687,18 +706,29 @@ public sealed partial class QueuePage : Page
 
     private void ForceHideInfoBar()
     {
-        if (!dispatcherTimer.IsEnabled) return; // Already closed
-
-        PageInfoBar.Opacity = 0;
-        dispatcherTimer.Stop();
-
-        // Set IsOpen to false after 0.25 seconds
-        Task.Factory.StartNew(() =>
+        dispatcherQueue.TryEnqueue(() =>
         {
-            System.Threading.Thread.Sleep(250);
-            dispatcherQueue.TryEnqueue(() =>
+            PageInfoBar.Opacity = 0;
+            if (dispatcherTimer.IsEnabled)
             {
-                PageInfoBar.IsOpen = false;
+                dispatcherTimer.Stop();
+            }
+
+            // Set IsOpen to false after 0.25 seconds
+            Task.Factory.StartNew(() =>
+            {
+                System.Threading.Thread.Sleep(250);
+                try
+                {
+                    dispatcherQueue.TryEnqueue(() =>
+                    {
+                        PageInfoBar.IsOpen = false;
+                    });
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine(ex.Message);
+                }
             });
         });
     }
@@ -712,14 +742,20 @@ public sealed partial class QueuePage : Page
         PageInfoBar.Opacity = 0;
         timer.Stop();
 
-        // Set IsOpen to false after 0.25 seconds
         Task.Factory.StartNew(() =>
         {
             System.Threading.Thread.Sleep(250);
-            dispatcherQueue.TryEnqueue(() =>
+            try // Can crash if app is closed
             {
-                PageInfoBar.IsOpen = false;
-            });
+                dispatcherQueue.TryEnqueue(() =>
+                {
+                    PageInfoBar.IsOpen = false;
+                });
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine(ex.Message);
+            }
         });
     }
 
@@ -885,7 +921,7 @@ public sealed partial class QueuePage : Page
         };
 
         // Infobar notification
-        ShowInfoBar(InfoBarSeverity.Informational, $"Converting selected input sources to {GetOutputSource()}", 3);
+        ShowInfoBarPermanent(InfoBarSeverity.Informational, $"Converting selected input sources to {GetOutputSource()}", "Conversion in Progress");
 
         var ogVal = QueueProgress.Value; // Save the original value of the progress bar
         QueueProgress.Value = 0; // Set to 0
@@ -902,6 +938,7 @@ public sealed partial class QueuePage : Page
             isConverting = false;
             QueueProgress.Value = ogVal; // Reset the progress bar
 
+            ForceHideInfoBar();
             // Show conversion results dialog
             await ShowConversionDialog();
         };
