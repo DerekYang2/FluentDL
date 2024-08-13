@@ -253,38 +253,51 @@ internal class QobuzApi
         {
             var track = apiService.GetTrack(id);
             itemSource.Add(ConvertSongSearchObject(track));
-            statusUpdate?.Invoke(InfoBarSeverity.Success, $"Loaded track \"{track.Title}\""); // Show a success message
-        }
 
-        if (isAlbum)
+            statusUpdate?.Invoke(InfoBarSeverity.Success, $"<b>Qobuz</b>   Loaded track <a href=\"{url}\">{track.Title}</a>"); // Show a success message
+        }
+        else if (isAlbum)
         {
             var album = await Task.Run(() => apiService.GetAlbum(id), token);
 
             if (album.Tracks != null && album.Tracks.Items.Count > 0)
             {
-                statusUpdate?.Invoke(InfoBarSeverity.Informational, $"Loading album \"{album.Title}\" ..."); // Show an informational message
+                statusUpdate?.Invoke(InfoBarSeverity.Informational, $"<b>Qobuz</b>   Loading album <a href='{url}'>{album.Title}</a>", -1); // Show an informational message
                 itemSource.Clear(); // Clear the item source
                 foreach (var track in album.Tracks.Items)
                 {
-                    if (token.IsCancellationRequested) return;
+                    if (token.IsCancellationRequested)
+                    {
+                        statusUpdate?.Invoke(InfoBarSeverity.Warning, $"<b>Qobuz</b>   Cancelled loading album <a href='{url}'>{album.Title}</a>"); // Show a warning message
+                        return;
+                    }
+
                     itemSource.Add(await Task.Run(() => CreateSongSearchObject(track, album), token));
                 }
+
+                statusUpdate?.Invoke(InfoBarSeverity.Success, $"<b>Qobuz</b>   Loaded album <a href='{url}'>{album.Title}</a>"); // Show a success message
             }
         }
-
-        if (isPlaylist)
+        else if (isPlaylist)
         {
             var playlist = await Task.Run(() => apiService.GetPlaylist(id, withAuth: loggedIn), token);
 
             if (playlist.Tracks != null && playlist.Tracks.Items.Count > 0)
             {
-                statusUpdate?.Invoke(InfoBarSeverity.Informational, $"Loading playlist \"{playlist.Name}\" ..."); // Show an informational message
+                statusUpdate?.Invoke(InfoBarSeverity.Informational, $"<b>Qobuz</b>   Loading playlist <a href='{url}'>{playlist.Name}</a>", -1); // Show an informational message
                 itemSource.Clear(); // Clear the item source
                 foreach (var track in playlist.Tracks.Items) // Need to recreate the tracks so they have album objects
                 {
-                    if (token.IsCancellationRequested) return;
+                    if (token.IsCancellationRequested)
+                    {
+                        statusUpdate?.Invoke(InfoBarSeverity.Warning, $"<b>Qobuz</b>   Cancelled loading playlist <a href='{url}'>{playlist.Name}</a>"); // Show a warning message
+                        return;
+                    }
+
                     itemSource.Add(await Task.Run(() => ConvertSongSearchObject(apiService.GetTrack(track.Id.ToString())), token));
                 }
+
+                statusUpdate?.Invoke(InfoBarSeverity.Success, $"<b>Qobuz</b>   Loaded playlist <a href='{url}'>{playlist.Name}</a>"); // Show a success message
             }
         }
     }

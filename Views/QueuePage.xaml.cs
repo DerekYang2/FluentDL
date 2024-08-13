@@ -581,7 +581,7 @@ public sealed partial class QueuePage : Page
 
             if (!string.IsNullOrWhiteSpace(title))
             {
-                ParseInfobarText($"<b>{title}</b>    {message}");
+                ParseInfobarText($"<b>{title}</b>   {message}");
             }
             else
             {

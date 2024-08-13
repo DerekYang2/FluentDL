@@ -719,7 +719,7 @@ public sealed partial class Search : Page
 
             if (!string.IsNullOrWhiteSpace(title))
             {
-                ParseInfobarText($"<b>{title}</b>    {message}");
+                ParseInfobarText($"<b>{title}</b>   {message}");
             }
             else
             {

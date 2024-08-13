@@ -314,32 +314,56 @@ namespace FluentDL.Services
             if (url.StartsWith("https://www.youtube.com/watch?"))
             {
                 var video = await youtube.Videos.GetAsync(url);
-                itemSource.Add(await ConvertSongSearchObject(video));
-                statusUpdate.Invoke(InfoBarSeverity.Success, $"Added video \"{video.Title}\"");
+                var songObj = await ConvertSongSearchObject(video);
+                itemSource.Add(songObj);
+
+                if (video.Description.StartsWith("Provided to YouTube by") && video.Description.Contains("\u2117")) // Song
+                {
+                    statusUpdate?.Invoke(InfoBarSeverity.Success, $"<b>YouTube</b>   Loaded track <a href='{url}'>{songObj.Title}</a>");
+                }
+                else // Video
+                {
+                    statusUpdate?.Invoke(InfoBarSeverity.Success, $"<b>YouTube</b>   Loaded video <a href='{url}'>{songObj.Title}</a>");
+                }
             }
 
             if (url.StartsWith("https://music.youtube.com/watch?v=")) // Youtube music has both songs and videos
             {
                 var video = await youtube.Videos.GetAsync(url);
-                itemSource.Add(await ConvertSongSearchObject(video));
-                statusUpdate.Invoke(InfoBarSeverity.Success, $"Added video \"{video.Title}\"");
+                var songObj = await ConvertSongSearchObject(video);
+                itemSource.Add(songObj);
+
+                if (video.Description.StartsWith("Provided to YouTube by") && video.Description.Contains("\u2117")) // Song
+                {
+                    statusUpdate?.Invoke(InfoBarSeverity.Success, $"<b>YouTube Music</b>   Loaded track <a href='{url}'>{songObj.Title}</a>");
+                }
+                else // Video
+                {
+                    statusUpdate?.Invoke(InfoBarSeverity.Success, $"<b>YouTube Music</b>   Loaded video <a href='{url}'>{songObj.Title}</a>");
+                }
             }
 
             if (url.StartsWith("https://www.youtube.com/playlist?") || url.StartsWith("https://music.youtube.com/playlist?"))
             {
                 var playlistName = (await youtube.Playlists.GetAsync(url)).Title;
-                statusUpdate.Invoke(InfoBarSeverity.Informational, $"Adding videos from playlist \"{playlistName}\"");
+
+                // Show a permanent, loading message
+                statusUpdate?.Invoke(InfoBarSeverity.Informational, $"<b>YouTube</b>   Loading playlist <a href='{url}'>{playlistName}</a>", -1);
 
                 await foreach (var playlistVideo in youtube.Playlists.GetVideosAsync(url, token))
                 {
                     if (token.IsCancellationRequested)
                     {
-                        break;
+                        statusUpdate?.Invoke(InfoBarSeverity.Warning, $"<b>YouTube</b>   Cancelled loading playlist <a href='{url}'>{playlistName}</a>");
+                        return;
                     }
 
                     var video = await youtube.Videos.GetAsync(playlistVideo.Id); // Get the full video object
                     itemSource.Add(await ConvertSongSearchObject(video));
                 }
+
+                // Replace the loading message with a result message
+                statusUpdate?.Invoke(InfoBarSeverity.Success, $"<b>YouTube</b>   Loaded playlist <a href='{url}'>{playlistName}</a>");
             }
         }
 

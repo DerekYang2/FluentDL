@@ -243,7 +243,8 @@ namespace FluentDL.Services
 
             if (url.StartsWith("https://open.spotify.com/playlist/"))
             {
-                statusUpdate?.Invoke(InfoBarSeverity.Informational, $"Loading playlist \"{await GetPlaylistName(id)}\" ...");
+                var playlistName = await GetPlaylistName(id);
+                statusUpdate?.Invoke(InfoBarSeverity.Informational, $"<b>Spotify</b>   Loading playlist <a href='{url}'>{playlistName}</a>", -1);
 
                 var pages = await spotify.Playlists.GetItems(id, cancel: token);
                 var allPages = await spotify.PaginateAll(pages, cancellationToken: token);
@@ -256,7 +257,8 @@ namespace FluentDL.Services
                     {
                         if (token.IsCancellationRequested)
                         {
-                            break; // Stop if cancelled
+                            statusUpdate?.Invoke(InfoBarSeverity.Warning, $"<b>Spotify</b>   Cancelled loading playlist <a href='{url}'>{playlistName}</a>");
+                            return; // Stop if cancelled
                         }
 
                         var songObj = await Task.Run(() => ConvertSongSearchObject(track), token);
@@ -266,12 +268,14 @@ namespace FluentDL.Services
                         }
                     }
                 }
+
+                statusUpdate?.Invoke(InfoBarSeverity.Success, $"<b>Spotify</b>   Loaded playlist <a href='{url}'>{playlistName}</a>");
             }
 
             if (url.StartsWith("https://open.spotify.com/album/"))
             {
                 var album = await spotify.Albums.Get(id, token);
-                statusUpdate?.Invoke(InfoBarSeverity.Informational, $"Loading album \"{album.Name}\" ...");
+                statusUpdate?.Invoke(InfoBarSeverity.Informational, $"<b>Spotify</b>   Loading album <a href='{url}'>{album.Name}</a>", -1);
 
                 var pages = album.Tracks;
                 var allPages = await spotify.PaginateAll(pages, cancellationToken: token);
@@ -282,7 +286,8 @@ namespace FluentDL.Services
                 {
                     if (token.IsCancellationRequested)
                     {
-                        break; // Stop if cancelled
+                        statusUpdate?.Invoke(InfoBarSeverity.Warning, $"<b>Spotify</b>   Cancelled loading album <a href='{url}'>{album.Name}</a>");
+                        return; // Stop if cancelled
                     }
 
                     // Get full track
@@ -293,6 +298,8 @@ namespace FluentDL.Services
                         itemSource.Add(songObj);
                     }
                 }
+
+                statusUpdate?.Invoke(InfoBarSeverity.Success, $"<b>Spotify</b>   Loaded album <a href='{url}'>{album.Name}</a>");
             }
 
             if (url.StartsWith("https://open.spotify.com/track/")) // Single track, no need to clear item source
@@ -302,7 +309,7 @@ namespace FluentDL.Services
                 if (songObj != null)
                 {
                     itemSource.Add(songObj);
-                    statusUpdate?.Invoke(InfoBarSeverity.Success, $"Loaded track \"{fullTrack.Name}\"");
+                    statusUpdate?.Invoke(InfoBarSeverity.Success, $"<b>Spotify</b>   Loaded track <a href='{url}'>{fullTrack.Name}</a>");
                 }
             }
         }
