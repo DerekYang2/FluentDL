@@ -10,6 +10,7 @@
     xmlns:controls="using:CommunityToolkit.WinUI.UI.Controls"
     xmlns:controls1="using:Microsoft.UI.Xaml.Controls"
     xmlns:controls2="using:CommunityToolkit.WinUI.Controls"
+    xmlns:marqueeTextRns="using:CommunityToolkit.Labs.WinUI.MarqueeTextRns"
     mc:Ignorable="d">
     <Grid
         x:Name="RelativePreviewPanel"
@@ -69,12 +70,10 @@
                             <ItemsControl x:Name="PreviewInfoControl2">
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate x:DataType="views:TrackDetail">
-                                        <TextBlock Text="{x:Bind Value}" Style="{ThemeResource BodyText}"
-                                                   HorizontalAlignment="Right"
-                                                   Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"
-                                                   LineHeight="22"
-                                                   TextTrimming="CharacterEllipsis"
-                                                   ToolTipService.ToolTip="{x:Bind Value}" />
+                                        <marqueeTextRns:MarqueeText Text="{x:Bind Value}"  
+                                                                    FontFamily="Segoe UI Variable Display" 
+                                                                    Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"
+                                                                    Behavior="Looping" Direction="Left" HorizontalAlignment="Stretch" Margin="0, 0, 0, 0" RepeatBehavior="Forever" Height="22"/>
                                     </DataTemplate>
                                 </ItemsControl.ItemTemplate>
                             </ItemsControl>

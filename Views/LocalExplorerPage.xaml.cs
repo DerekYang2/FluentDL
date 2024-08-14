@@ -22,6 +22,8 @@ using DispatcherQueue = Microsoft.UI.Dispatching.DispatcherQueue;
 
 namespace FluentDL.Views;
 
+// TODO: notification after clear is a bit broken
+
 public sealed partial class LocalExplorerPage : Page
 {
     private ObservableCollection<SongSearchObject> originalList;
@@ -241,9 +243,17 @@ public sealed partial class LocalExplorerPage : Page
         if (folder != null)
         {
             StorageApplicationPermissions.FutureAccessList.AddOrReplace("PickedFolderToken", folder);
-            ShowInfoBar(InfoBarSeverity.Informational, $"Scanning {folder.Name} for audio files ...");
+            ShowInfoBarPermanent(InfoBarSeverity.Informational, $"Scanning <a href='{folder.Path}'>{folder.Name}</a> for audio files", "Upload");
+            InfobarProgress.Visibility = Visibility.Visible;
             // Get all music files in the folder
-            Thread t = new Thread(async () => ProcessFiles(await folder.GetFilesAsync()));
+            Thread t = new Thread(async () =>
+            {
+                ProcessFiles(await folder.GetFilesAsync());
+                dispatcher.TryEnqueue(() =>
+                {
+                    InfobarProgress.Visibility = Visibility.Collapsed; // Hide progress bar
+                });
+            });
             t.Start();
         }
         else
@@ -284,7 +294,8 @@ public sealed partial class LocalExplorerPage : Page
 
         if (files.Count > 0)
         {
-            ShowInfoBar(InfoBarSeverity.Informational, $"Loading {files.Count} files ..."); // TODO: single vs plural
+            ShowInfoBarPermanent(InfoBarSeverity.Informational, $"Loading {files.Count} local tracks", "Upload"); // TODO: single vs plural
+            InfobarProgress.Visibility = Visibility.Visible;
         }
         else
         {
@@ -292,7 +303,14 @@ public sealed partial class LocalExplorerPage : Page
         }
 
         // Create thread to process the files
-        Thread t = new Thread(() => ProcessFiles(files));
+        Thread t = new Thread(() =>
+        {
+            ProcessFiles(files);
+            dispatcher.TryEnqueue(() =>
+            {
+                InfobarProgress.Visibility = Visibility.Collapsed; // Hide progress bar
+            });
+        });
         t.Start();
 
         SortListView();
@@ -330,6 +348,7 @@ public sealed partial class LocalExplorerPage : Page
                 SortOrderComboBox.IsEnabled = false;
             });
 
+            int addedCount = 0;
             foreach (var file in files)
             {
                 if (fileSet.Contains(file.Path) || !supportedExtensions.Contains(file.FileType.ToLower())) // file.Path is the Id of a song
@@ -347,6 +366,7 @@ public sealed partial class LocalExplorerPage : Page
                     originalList.Add(song);
                     ((ObservableCollection<SongSearchObject>)FileListView.ItemsSource).Add(song);
                     fileSet.Add(song.Id);
+                    addedCount++;
                 });
 
                 var memoryStream = LocalExplorerViewModel.GetAlbumArtMemoryStream(song.Id);
@@ -381,6 +401,15 @@ public sealed partial class LocalExplorerPage : Page
                 ClearButton.IsEnabled = true;
                 SortComboBox.IsEnabled = true;
                 SortOrderComboBox.IsEnabled = true;
+                // Infobar
+                if (addedCount < files.Count)
+                {
+                    ShowInfoBar(InfoBarSeverity.Informational, $"Added {addedCount} tracks to local explorer (duplicates ignored)");
+                }
+                else
+                {
+                    ShowInfoBar(InfoBarSeverity.Success, $"Added {addedCount} tracks to local explorer");
+                }
             });
         }
     }
@@ -598,6 +627,8 @@ public sealed partial class LocalExplorerPage : Page
         PreviewPanel.Show();
         // Update the preview panel
         await PreviewPanel.Update(song, LocalExplorerViewModel.GetMetadataObject(song.Id));
+
+        ShowInfoBar(InfoBarSeverity.Success, $"Saved metadata for <a href='{song.Id}'>{song.Title}</a>");
     }
 
     private void MetadataDialog_OnCloseButtonClick(ContentDialog sender, ContentDialogButtonClickEventArgs args)
