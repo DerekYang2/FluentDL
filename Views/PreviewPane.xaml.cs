@@ -8,6 +8,8 @@ using Microsoft.UI.Xaml.Media.Imaging;
 using Windows.Media.Core;
 using FluentDL.Models;
 using Microsoft.UI.Dispatching;
+using Microsoft.UI.Xaml.Input;
+using CommunityToolkit.Labs.WinUI.MarqueeTextRns;
 
 
 // To learn more about WinUI, the WinUI project structure,
@@ -255,6 +257,42 @@ namespace FluentDL.Views
                 Debug.WriteLine(e.Message);
                 return "Unknown";
             }
+        }
+
+        private void PreviewMarquee_OnPointerEntered(object sender, PointerRoutedEventArgs e)
+        {
+            var MarqueeControl = sender as MarqueeText;
+            if (MarqueeControl == null)
+            {
+                Debug.WriteLine("Marquee control is null");
+                return;
+            }
+
+            MarqueeControl.StartMarquee();
+        }
+
+        private void PreviewMarquee_OnPointerExited(object sender, PointerRoutedEventArgs e)
+        {
+            var MarqueeControl = sender as MarqueeText;
+            if (MarqueeControl == null)
+            {
+                Debug.WriteLine("Marquee control is null");
+                return;
+            }
+
+            MarqueeControl.StopMarquee();
+        }
+
+        private void PreviewMarquee_OnLoaded(object sender, RoutedEventArgs e)
+        {
+            var MarqueeControl = sender as MarqueeText;
+            if (MarqueeControl == null)
+            {
+                Debug.WriteLine("Marquee control is null");
+                return;
+            }
+
+            MarqueeControl.StopMarquee(); // Initialize marquee as stopped
         }
     }
 }

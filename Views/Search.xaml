@@ -376,15 +376,14 @@
                                 </Border.Background>
                             </Border>
 
-                            <marqueeTextRns:MarqueeText Grid.Row="0" Grid.Column="1" Margin="12, 0,0,0" Text="{x:Bind Title}"  
-                                                        FontFamily="Segoe UI Variable Display" 
-                                                        Style="{ThemeResource BodyStrongTextBlockStyle}"
+                            <marqueeTextRns:MarqueeText Grid.Row="0" Grid.Column="1" Margin="12, 0,0,0" 
+                                                        Text="{x:Bind Title}" FontFamily="Segoe UI Variable Display" FontWeight="Semibold"
                                                         Behavior="Looping" Direction="Left" RepeatBehavior="Forever" VerticalAlignment="Center"/>
 
-
-                            <TextBlock Grid.Row="1" Grid.Column="1" Text="{x:Bind Artists}" FontFamily="Segoe UI Variable Display"
-                                        Style="{ThemeResource BodyTextBlockStyle}" TextTrimming="CharacterEllipsis" HorizontalAlignment="Left"
-                                        MaxLines="1" Margin="12, 0, 0, 0"/>
+                
+                            <marqueeTextRns:MarqueeText Grid.Row="1" Grid.Column="1" Margin="12, 0, 0, 0" 
+                                                        Text="{x:Bind Artists}" FontFamily="Segoe UI Variable Display" 
+                                                        Behavior="Looping" Direction="Left" RepeatBehavior="Forever" VerticalAlignment="Center"/>
 
                             <StackPanel Grid.Row="2" Margin="12,0,0,0" Orientation="Horizontal" VerticalAlignment="Bottom"
                                         Grid.Column="1">

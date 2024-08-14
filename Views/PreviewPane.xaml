@@ -70,10 +70,12 @@
                             <ItemsControl x:Name="PreviewInfoControl2">
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate x:DataType="views:TrackDetail">
-                                        <marqueeTextRns:MarqueeText Text="{x:Bind Value}"  
+                                        <marqueeTextRns:MarqueeText Text="{x:Bind Value}"  controls1:ToolTipService.ToolTip="{x:Bind Value}"
                                                                     FontFamily="Segoe UI Variable Display" 
-                                                                    Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"
-                                                                    Behavior="Looping" Direction="Left" HorizontalAlignment="Stretch" Margin="0, 0, 0, 0" RepeatBehavior="Forever" Height="22"/>
+                                                                    Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}" 
+                                                                    Speed="50"
+                                                                    Behavior="Looping" Direction="Left" HorizontalAlignment="Stretch" Margin="0, 0, 0, 0" RepeatBehavior="Forever" Height="22" 
+                                                                    PointerEntered="PreviewMarquee_OnPointerEntered" PointerExited="PreviewMarquee_OnPointerExited" Loaded="PreviewMarquee_OnLoaded"/>
                                     </DataTemplate>
                                 </ItemsControl.ItemTemplate>
                             </ItemsControl>
