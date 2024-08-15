@@ -424,7 +424,7 @@ public sealed partial class QueuePage : Page
         QueueViewModel.SetCommand(commandInputText);
         QueueViewModel.Reset(); // Reset the queue object result strings and index
         cancellationTokenSource = new CancellationTokenSource();
-        QueueViewModel.RunCommand(directoryInputText, cancellationTokenSource.Token);
+        await QueueViewModel.RunCommand(directoryInputText, cancellationTokenSource.Token);
         SetPauseUI();
 
         LocalCommands.AddCommand(commandInputText); // Add the command to the previous command list
@@ -458,8 +458,8 @@ public sealed partial class QueuePage : Page
         else // If the queue is not running, start
         {
             cancellationTokenSource = new CancellationTokenSource();
-            QueueViewModel.RunCommand(DirectoryInput.Text, cancellationTokenSource.Token);
             SetPauseUI();
+            QueueViewModel.RunCommand(DirectoryInput.Text, cancellationTokenSource.Token);
         }
     }
 
@@ -851,7 +851,9 @@ public sealed partial class QueuePage : Page
             await ShowConversionDialog();
         };
 
-        for (int threadNum = 0; threadNum < 5; threadNum++)
+        var downloadThreads = await SettingsViewModel.GetSetting<int?>(SettingsViewModel.DownloadThreads) ?? 1;
+
+        for (int threadNum = 0; threadNum < downloadThreads; threadNum++)
         {
             Thread t = new Thread(async () =>
             {
@@ -916,22 +918,6 @@ public sealed partial class QueuePage : Page
                             "youtube" => await YoutubeApi.GetYoutubeTrack(song, cancellationTokenSource.Token, conversionUpdateCallback),
                             _ => throw new Exception("Unspecified output source") // Should never happen
                         };
-                    }
-
-                    if (token.IsCancellationRequested) // If conversion is paused
-                    {
-                        IsRunning = false;
-
-                        // Turn of loading progress ring
-                        dispatcherQueue.TryEnqueue(() =>
-                        {
-                            song.IsRunning = false;
-                            QueueViewModel.Replace(i, song);
-                        });
-
-                        // End conversion
-                        dispatcherQueue.TryEnqueue(async () => await EndConversionLambda());
-                        return;
                     }
 
                     dispatcherQueue.TryEnqueue(async () =>

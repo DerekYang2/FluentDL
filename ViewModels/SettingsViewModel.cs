@@ -25,6 +25,9 @@ public partial class SettingsViewModel : ObservableRecipient
     public static readonly string SpotifyQuality = "spotify_quality";
     public static readonly string YoutubeQuality = "youtube_quality";
     public static readonly string Overwrite = "overwrite";
+    public static readonly string CommandThreads = "command_threads";
+    public static readonly string DownloadThreads = "download_threads";
+
     private static ILocalSettingsService localSettings = App.GetService<ILocalSettingsService>();
 
     private readonly IThemeSelectorService _themeSelectorService;

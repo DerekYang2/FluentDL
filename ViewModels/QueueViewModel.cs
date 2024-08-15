@@ -280,7 +280,7 @@ public partial class QueueViewModel : ObservableRecipient, INotifyPropertyChange
         command = newCommand;
     }
 
-    public static void RunCommand(string? directory, CancellationToken token)
+    public static async Task RunCommand(string? directory, CancellationToken token)
     {
         if (IsRunning || index >= Source.Count)
         {
@@ -289,45 +289,70 @@ public partial class QueueViewModel : ObservableRecipient, INotifyPropertyChange
 
         IsRunning = true; // Start running 
 
-        Thread thread = new Thread(() =>
+        int threadCount = await SettingsViewModel.GetSetting<int?>(SettingsViewModel.CommandThreads) ?? 1;
+
+        for (int t = 0; t < threadCount; t++) // Edit this to change the number of threads
         {
-            while (index < Source.Count)
+            Thread thread = new Thread(() =>
             {
-                if (token.IsCancellationRequested) // Break the loop if the token is cancelled
+                while (IsRunning) // Multithreaded loop
                 {
-                    break; // Break out of the loop
+                    if (token.IsCancellationRequested) // Break the loop if the token is cancelled
+                    {
+                        IsRunning = false;
+                        return;
+                    }
+
+                    var i = Interlocked.Increment(ref index) - 1; // Increment the index in a thread-safe manner
+
+                    if (i >= Source.Count)
+                    {
+                        return;
+                    }
+
+                    // Update the is running of the current object
+                    dispatcher.TryEnqueue(() =>
+                    {
+                        var newObj = Source[i];
+                        newObj.IsRunning = true;
+                        Source[i] = newObj;
+                    });
+
+                    // Get the url of the current object
+                    string url;
+                    switch (Source[i].Source)
+                    {
+                        case "deezer":
+                            url = "https://www.deezer.com/track/" + Source[i].Id;
+                            break;
+                        case "youtube":
+                            url = "https://www.youtube.com/watch?v=" + Source[i].Id;
+                            break;
+                        default:
+                            url = string.Empty;
+                            break;
+                    }
+
+                    var thisCommand = command.Replace("%title%", Source[i].Title).Replace("%artist%", Source[i].Artists).Replace("%url%", url);
+                    // Run the command
+                    var resultStr = TerminalSubprocess.GetRunCommandSync(thisCommand, directory);
+
+                    // Update the actual object
+                    dispatcher.TryEnqueue(() =>
+                    {
+                        var newObj = Source[i];
+                        newObj.ResultString = resultStr;
+                        newObj.IsRunning = false;
+                        Source[i] = newObj; // This actually refreshes the UI of ObservableCollection
+                        if (GetCompletedCount() == Source.Count) // Check if all completed
+                        {
+                            IsRunning = false;
+                        }
+                    });
                 }
-
-                var i = index; // Capture the current index
-                index++; // Increment the index
-
-                // Update the is running of the current object
-                dispatcher.TryEnqueue(() =>
-                {
-                    var newObj = Source[i];
-                    newObj.IsRunning = true;
-                    Source[i] = newObj;
-                });
-
-                var isLocal = Source[i].Source.Equals("local");
-                var thisCommand = command.Replace("{url}", ApiHelper.GetUrl(Source[i])).Replace("{ext}", (isLocal ? Path.GetExtension(Source[i].Id) : ".").Substring(1)).Replace("{file_name}", isLocal ? Path.GetFileName(Source[i].Id) : "").Replace("{title}", Source[i].Title).Replace("{image_url}", Source[i].ImageLocation ?? "").Replace("{id}", isLocal ? "" : Source[i].Id).Replace("{release_date}", Source[i].ReleaseDate).Replace("{artists}", Source[i].Artists).Replace("{duration}", Source[i].Duration).Replace("{album}", Source[i].AlbumName).Replace("{isrc}", Source[i].Isrc);
-                // Run the command
-                var resultStr = TerminalSubprocess.GetRunCommandSync(thisCommand, directory);
-
-                // Update the actual object
-                dispatcher.TryEnqueue(() =>
-                {
-                    var newObj = Source[i];
-                    newObj.ResultString = resultStr;
-                    newObj.IsRunning = false;
-                    Source[i] = newObj; // This actually refreshes the UI of ObservableCollection
-                });
-            }
-
-            // Finished running
-            IsRunning = false;
-        });
-        thread.Start();
+            });
+            thread.Start();
+        }
     }
 
     // Use for multithreaded run

@@ -9,6 +9,7 @@ using FluentDL.ViewModels;
 using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Controls.Primitives;
 using Microsoft.UI.Xaml.Input;
 
 namespace FluentDL.Views;
@@ -35,6 +36,10 @@ public sealed partial class SettingsPage : Page
 
     private async void SettingsPage_Loaded(object sender, RoutedEventArgs e)
     {
+        // Set sliders
+        DownloadThreadsSlider.Value = await localSettings.ReadSettingAsync<int?>(SettingsViewModel.DownloadThreads) ?? 1;
+        CommandThreadsSlider.Value = await localSettings.ReadSettingAsync<int?>(SettingsViewModel.CommandThreads) ?? 1;
+
         // Set quality combo boxes
         DeezerQualityComboBox.SelectedIndex = await localSettings.ReadSettingAsync<int?>(SettingsViewModel.DeezerQuality) ?? 0;
         QobuzQualityComboBox.SelectedIndex = await localSettings.ReadSettingAsync<int?>(SettingsViewModel.QobuzQuality) ?? 0;
@@ -246,5 +251,30 @@ public sealed partial class SettingsPage : Page
         {
             comboBox.PlaceholderText = item.Content.ToString();
         }
+    }
+
+    // Save the value when the slider loses focus
+    private async void CommandThreadsSlider_OnLostFocus(object sender, RoutedEventArgs e)
+    {
+        var slider = sender as Slider;
+        if (slider == null)
+        {
+            return;
+        }
+
+        var value = (int)slider.Value;
+        await localSettings.SaveSettingAsync(SettingsViewModel.CommandThreads, value);
+    }
+
+    private async void DownloadThreadsSlider_OnLostFocus(object sender, RoutedEventArgs e)
+    {
+        var slider = sender as Slider;
+        if (slider == null)
+        {
+            return;
+        }
+
+        var value = (int)slider.Value;
+        await localSettings.SaveSettingAsync(SettingsViewModel.DownloadThreads, value);
     }
 }

@@ -37,7 +37,15 @@
                         <ComboBoxItem x:Name="YouTube" Content="YouTube"/>
                     </ComboBox>
                 </local:SettingsCard>
-
+                <local:SettingsCard x:Name="CommandThreadsCard" 
+                                    Description="The number of threads to use when runner terminal commands" 
+                                    Header="Command Runner Threads">
+                    <local:SettingsCard.HeaderIcon>
+                        <FontIcon Glyph="&#xE964;" />
+                    </local:SettingsCard.HeaderIcon>
+                    <Slider x:Name="CommandThreadsSlider" Minimum="1" Maximum="5" StepFrequency="1" TickFrequency="1" SnapsTo="Ticks" TickPlacement="Outside" LostFocus="CommandThreadsSlider_OnLostFocus"/>
+                </local:SettingsCard>
+                    
                 <!-- DOWNLOAD SETTINGS ______________________________________________________________________________________________ -->
                 <TextBlock Text="Downloads" Style="{StaticResource TextBlockSectionStyle}" />
 
@@ -65,7 +73,7 @@
                 </local:SettingsExpander>
                 <local:SettingsExpander x:Name = "DownloadOptions" Description="Set download options for different streaming sources" Header="Download Quality">
                     <local:SettingsExpander.HeaderIcon>
-                        <FontIcon Glyph="&#xE97C;" />
+                        <FontIcon Glyph="&#xE93C;" />
                     </local:SettingsExpander.HeaderIcon>
                     <local:SettingsExpander.Items>
                         <local:SettingsCard x:Name="DeezerQuality" Header="Deezer" Description="Select the quality of Deezer downloads">
@@ -99,6 +107,16 @@
                     </local:SettingsExpander.Items>
 
                 </local:SettingsExpander>
+
+                <local:SettingsCard x:Name="DownloadThreadsCard" 
+                                    Description="The number of download threads for local conversion." 
+                                    Header="Command Runner Threads">
+                    <local:SettingsCard.HeaderIcon>
+                        <FontIcon Glyph="&#xE964;" />
+                    </local:SettingsCard.HeaderIcon>
+                    <Slider x:Name="DownloadThreadsSlider" Minimum="1" Maximum="5" StepFrequency="1" TickFrequency="1" SnapsTo="Ticks" TickPlacement="Outside" LostFocus="DownloadThreadsSlider_OnLostFocus"/>
+                </local:SettingsCard>
+
 
                 <!-- Auth SETTINGS __________________________________________________________________________________________________ -->
                 <TextBlock Text="Authentication" Style="{StaticResource TextBlockSectionStyle}" />
