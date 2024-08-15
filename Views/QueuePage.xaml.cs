@@ -60,7 +60,7 @@ public class PathToVisibilityConverter : IValueConverter
     public object ConvertBack(object value, Type targetType, object parameter, string language) => throw new NotImplementedException();
 }
 
-public delegate void ConversionUpdateCallback(InfoBarSeverity severity, SongSearchObject song); // Callback for conversion updates
+public delegate void ConversionUpdateCallback(InfoBarSeverity severity, SongSearchObject song, string? location = null); // Callback for conversion updates
 
 public sealed partial class QueuePage : Page
 {
@@ -265,28 +265,27 @@ public sealed partial class QueuePage : Page
                 }
             }
 
-            //ShowInfoBarPermanent(InfoBarSeverity.Informational, $"Downloading \"{songObj.Title}\" to \"{directory}\"", title: "Download in Progress");
-            ShowInfoBarPermanent(InfoBarSeverity.Informational, $"Saving <a href='{ApiHelper.GetUrl(songObj)}'>{songObj.Title}</a> to <a href='{directory}'>{directory}</a>", title: "Download in Progress");
+            ShowInfoBarPermanent(InfoBarSeverity.Informational, $"Saving <a href='{ApiHelper.GetUrl(songObj)}'>{songObj.Title}</a> to <a href='{directory}'>{Path.GetDirectoryName(directory)}</a>", title: "Download in Progress");
 
             InfobarProgress.Visibility = Visibility.Visible; // Show the infobar's progress bar
 
             // Download the track
-            await ApiHelper.DownloadObject(songObj, directory, (severity, song) =>
+            await ApiHelper.DownloadObject(songObj, directory, (severity, song, location) =>
             {
                 dispatcherQueue.TryEnqueue(() =>
                 {
                     InfobarProgress.Visibility = Visibility.Collapsed; // Hide the infobar's progress bar
                     if (severity == InfoBarSeverity.Error)
                     {
-                        ShowInfoBar(severity, $"Failed to download \"{songObj.Title}\"", 5, "Download Result");
+                        ShowInfoBar(severity, $"Failed to download <a href='{ApiHelper.GetUrl(songObj)}'>{songObj.Title}</a>", 5);
                     }
                     else if (severity == InfoBarSeverity.Success)
                     {
-                        ShowInfoBar(severity, $"Successfully downloaded \"{songObj.Title}\"", 5, "Download Result");
+                        ShowInfoBar(severity, $"Successfully downloaded <a href='{location}'>{songObj.Title}</a>", 5);
                     }
                     else if (severity == InfoBarSeverity.Warning)
                     {
-                        ShowInfoBar(severity, $"Downloaded a possible equivalent to \"{songObj.Title}\"", 5, "Download Result");
+                        ShowInfoBar(severity, $"Downloaded a possible equivalent of <a href='{location}'>{songObj.Title}</a>", 5);
                     }
                 });
             });
@@ -345,12 +344,12 @@ public sealed partial class QueuePage : Page
 
                 if (coverBytes == null)
                 {
-                    ShowInfoBar(InfoBarSeverity.Error, "Failed to save cover", 5, "Download Result");
+                    ShowInfoBar(InfoBarSeverity.Error, "Failed to save cover", 5);
                     return;
                 }
 
                 await File.WriteAllBytesAsync(file.Path, coverBytes);
-                ShowInfoBar(InfoBarSeverity.Success, "Successfully saved to <a href='" + file.Path + "'>" + file.Name + "</a>", 5, "Download Result");
+                ShowInfoBar(InfoBarSeverity.Success, $"Cover saved to <a href='{file.Path}'>{file.Name}</a>", 5);
             }
 
             //await DeezerApi.DownloadTrack(await DeezerApi.GetTrack(PreviewPanel.GetSong().Id), "E:\\Other Downloads\\test");
@@ -813,7 +812,7 @@ public sealed partial class QueuePage : Page
         QueueViewModel.ResetConversionResults(); // Clear all badges and results on queue objects
         ViewModel.SuccessCount = ViewModel.WarningCount = ViewModel.ErrorCount = 0; // Reset the counts
 
-        ConversionUpdateCallback conversionUpdateCallback = (severity, song) =>
+        ConversionUpdateCallback conversionUpdateCallback = (severity, song, location) =>
         {
             switch (severity)
             {

@@ -504,7 +504,7 @@ namespace FluentDL.Services
                 try // Wrap in try catch because deezer can throw exception (overwrite or api exception)
                 {
                     var resultPath = await DeezerApi.DownloadTrack(filePath, equivalent, bitrateEnum);
-                    callback?.Invoke(InfoBarSeverity.Success, song);
+                    callback?.Invoke(InfoBarSeverity.Success, song, resultPath);
                     return resultPath;
                 }
                 catch (Exception e)
@@ -523,7 +523,7 @@ namespace FluentDL.Services
                 try
                 {
                     var resultPath = await QobuzApi.DownloadTrack(filePath, equivalent, settingIdx == 0 ? "5" : " 6"); // mp3 or 16/44.1 flac
-                    callback?.Invoke(InfoBarSeverity.Success, song);
+                    callback?.Invoke(InfoBarSeverity.Success, song, resultPath);
                     return resultPath;
                 }
                 catch (Exception e)
@@ -555,8 +555,9 @@ namespace FluentDL.Services
                 await YoutubeApi.DownloadAudio(opusLocation, song.Id); // Download audio as opus
                 await FFmpegRunner.ConvertToFlac(opusLocation); // Convert opus to flac
 
-                callback?.Invoke(InfoBarSeverity.Warning, song); // Not perfect match
-                return opusLocation.Replace(".opus", ".flac"); // Return flac location
+                var flacLocation = opusLocation.Replace(".opus", ".flac");
+                callback?.Invoke(InfoBarSeverity.Warning, song, flacLocation); // Not perfect match
+                return flacLocation; // Return flac location
             }
 
             return null;

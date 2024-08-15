@@ -183,7 +183,7 @@
                       BorderBrush="{ThemeResource ControlStrongStrokeColorDefaultBrush}"
                       Grid.Row="3"
                       Grid.Column="0"
-                      Margin="0,0,0,10" Padding="0,0,12,0">
+                      Margin="0,0,0,12" Padding="0,0,12,0">
                 <ListView.ItemTemplate>
                     <DataTemplate x:DataType="models1:SongSearchObject">
                         <Grid Margin="0,12,0,12" AutomationProperties.Name="{x:Bind Title}" Height="76">
@@ -213,8 +213,7 @@
                                                         Text="{x:Bind Artists}" FontFamily="Segoe UI Variable Display" 
                                                         Behavior="Looping" Direction="Left" RepeatBehavior="Forever" VerticalAlignment="Center"/>
 
-                            <StackPanel Grid.Row="2" Margin="12,0,0,0" Orientation="Horizontal" VerticalAlignment="Bottom"
-                                        Grid.Column="1">
+                            <StackPanel Grid.Row="2" Grid.Column="1" Margin="12,0,0,0" Orientation="Horizontal" VerticalAlignment="Bottom">
                                 <TextBlock Text="{x:Bind ReleaseDate, Converter={StaticResource DateToYearConverter}}"
                                            HorizontalAlignment="Left"
                                            Style="{ThemeResource BodyTextBlockStyle}" Margin="0,0,0,0"
@@ -227,12 +226,11 @@
                                            FontFamily="Segoe UI Variable Display" />
                             </StackPanel>
 
-                            <StackPanel Grid.Row="0" Grid.Column="2" Orientation="Horizontal" Spacing="12">
-                                <Border Background="DarkGray" CornerRadius="2" Padding="4, 0" VerticalAlignment="Center" HorizontalAlignment="Right" Margin="0, -2, 0, 0">
+                            <StackPanel Grid.Row="0" Grid.Column="2" Orientation="Horizontal" Spacing="12" Margin="12,0,0,0">
+                                <Border Background="DarkGray" CornerRadius="2" Padding="4, 0" VerticalAlignment="Center" HorizontalAlignment="Right" Margin="0, -2, 0, 0" Visibility="{x:Bind Explicit, Converter={StaticResource VisibilityConverter}}">
                                     <TextBlock x:Name="ExplicitBadge" Text="E"
                                                Style="{ThemeResource CaptionTextBlockStyle}"
-                                               Foreground="Black"
-                                               Visibility="{x:Bind Explicit, Converter={StaticResource VisibilityConverter}}" />
+                                               Foreground="Black"/>
                                 </Border>
                                 <Border Background="{ThemeResource LayerOnMicaBaseAltFillColorSecondaryBrush}" CornerRadius="2" Padding="6, 2" HorizontalAlignment="Right" VerticalAlignment="Top">
                                     <TextBlock x:Name="AudioFormatBadge" Text="{x:Bind AudioFormat}" Style="{ThemeResource CaptionTextBlockStyle}" VerticalAlignment="Center" Margin="0, -2, 0, 0"/>

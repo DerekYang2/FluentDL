@@ -350,16 +350,31 @@ namespace FluentDL.Services
                 // Show a permanent, loading message
                 statusUpdate?.Invoke(InfoBarSeverity.Informational, $"<b>YouTube</b>   Loading playlist <a href='{url}'>{playlistName}</a>", -1);
 
-                await foreach (var playlistVideo in youtube.Playlists.GetVideosAsync(url, token))
+                try
                 {
-                    if (token.IsCancellationRequested)
+                    await foreach (var playlistVideo in youtube.Playlists.GetVideosAsync(url, token))
+                    {
+                        if (token.IsCancellationRequested)
+                        {
+                            statusUpdate?.Invoke(InfoBarSeverity.Warning, $"<b>YouTube</b>   Cancelled loading playlist <a href='{url}'>{playlistName}</a>");
+                            return;
+                        }
+
+                        var video = await youtube.Videos.GetAsync(playlistVideo.Id); // Get the full video object
+                        itemSource.Add(await ConvertSongSearchObject(video));
+                    }
+                }
+                catch (Exception e)
+                {
+                    if (token.IsCancellationRequested) // Can crash on cancel
                     {
                         statusUpdate?.Invoke(InfoBarSeverity.Warning, $"<b>YouTube</b>   Cancelled loading playlist <a href='{url}'>{playlistName}</a>");
                         return;
                     }
 
-                    var video = await youtube.Videos.GetAsync(playlistVideo.Id); // Get the full video object
-                    itemSource.Add(await ConvertSongSearchObject(video));
+                    Debug.WriteLine("Error loading playlist: " + e.Message);
+                    statusUpdate?.Invoke(InfoBarSeverity.Error, $"<b>YouTube</b>   Error loading playlist <a href='{url}'>{playlistName}</a>");
+                    return;
                 }
 
                 // Replace the loading message with a result message
@@ -569,33 +584,41 @@ namespace FluentDL.Services
                     {
                         var playlistUrl = $"https://music.youtube.com/playlist?list={album.Id}";
 
-                        await foreach (var playlistVideo in youtube.Playlists.GetVideosAsync(playlistUrl, token))
+                        try
                         {
-                            var song = await ytm.GetSongVideoInfoAsync(playlistVideo.Id, token);
-                            if (token.IsCancellationRequested)
+                            await foreach (var playlistVideo in youtube.Playlists.GetVideosAsync(playlistUrl, token))
                             {
-                                return null;
-                            }
-
-                            oneArtistMatch = false;
-                            foreach (var queryArtist in song.Artists) // Check if at least one artist matches for track
-                            {
-                                foreach (var artist in artists)
+                                var song = await ytm.GetSongVideoInfoAsync(playlistVideo.Id, token);
+                                if (token.IsCancellationRequested)
                                 {
-                                    if (CloseMatch(queryArtist.Name, artist))
+                                    return null;
+                                }
+
+                                oneArtistMatch = false;
+                                foreach (var queryArtist in song.Artists) // Check if at least one artist matches for track
+                                {
+                                    foreach (var artist in artists)
                                     {
-                                        oneArtistMatch = true;
-                                        break;
+                                        if (CloseMatch(queryArtist.Name, artist))
+                                        {
+                                            oneArtistMatch = true;
+                                            break;
+                                        }
                                     }
                                 }
-                            }
 
-                            if (oneArtistMatch && CloseMatch(song.Name, trackName))
-                            {
-                                var retObj = await ConvertSongSearchObject(song);
-                                callback?.Invoke(InfoBarSeverity.Warning, retObj); // Not found by ISRC
-                                return retObj;
+                                if (oneArtistMatch && CloseMatch(song.Name, trackName))
+                                {
+                                    var retObj = await ConvertSongSearchObject(song);
+                                    callback?.Invoke(InfoBarSeverity.Warning, retObj); // Not found by ISRC
+                                    return retObj;
+                                }
                             }
+                        }
+                        catch (Exception e) // Can crash on invalid playlist or token cancel (for some reason)
+                        {
+                            Debug.WriteLine("Error loading playlist: " + e.Message);
+                            return null;
                         }
                     }
                 }

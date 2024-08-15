@@ -144,7 +144,7 @@ internal class ApiHelper
                     await YoutubeApi.DownloadAudioAAC(mp4Location, song.Id);
                     await FFmpegRunner.ConvertMP4toM4A(mp4Location);
                     await YoutubeApi.UpdateMetadata(m4aLocation, song.Id);
-                    callback?.Invoke(InfoBarSeverity.Success, song); // Assume success
+                    callback?.Invoke(InfoBarSeverity.Success, song, m4aLocation); // Assume success
                     return m4aLocation;
                 }
 
@@ -159,14 +159,14 @@ internal class ApiHelper
                 if (settingIdx == 0) // Do not convert to flac
                 {
                     await YoutubeApi.UpdateMetadata(opusLocation, song.Id);
-                    callback?.Invoke(InfoBarSeverity.Success, song); // Assume success
+                    callback?.Invoke(InfoBarSeverity.Success, song, opusLocation); // Assume success
                     return opusLocation;
                 }
 
                 // Convert to flac
                 await FFmpegRunner.ConvertToFlac(opusLocation); // Convert opus to flac
                 await YoutubeApi.UpdateMetadata(flacLocation, song.Id);
-                callback?.Invoke(InfoBarSeverity.Success, song); // Assume success
+                callback?.Invoke(InfoBarSeverity.Success, song, flacLocation); // Assume success
                 return flacLocation;
             }
             catch (Exception e)
@@ -182,7 +182,7 @@ internal class ApiHelper
             {
                 var resultPath = await DeezerApi.DownloadTrack(locationNoExt, song);
                 await DeezerApi.UpdateMetadata(resultPath, song.Id);
-                callback?.Invoke(InfoBarSeverity.Success, song); // Assume success
+                callback?.Invoke(InfoBarSeverity.Success, song, resultPath); // Assume success
                 return resultPath;
             }
             catch (Exception e)
@@ -198,7 +198,7 @@ internal class ApiHelper
             {
                 var resultPath = await QobuzApi.DownloadTrack(locationNoExt, song);
                 await QobuzApi.UpdateMetadata(resultPath, song.Id);
-                callback?.Invoke(InfoBarSeverity.Success, song); // Assume success
+                callback?.Invoke(InfoBarSeverity.Success, song, resultPath); // Assume success
                 return resultPath;
             }
             catch (Exception e)

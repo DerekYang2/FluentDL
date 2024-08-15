@@ -294,7 +294,15 @@ public sealed partial class LocalExplorerPage : Page
 
         if (files.Count > 0)
         {
-            ShowInfoBarPermanent(InfoBarSeverity.Informational, $"Loading {files.Count} local tracks", "Upload"); // TODO: single vs plural
+            if (files.Count == 1) // Singular
+            {
+                ShowInfoBarPermanent(InfoBarSeverity.Informational, $"Loading {files.Count} local track", "Upload");
+            }
+            else // Plural
+            {
+                ShowInfoBarPermanent(InfoBarSeverity.Informational, $"Loading {files.Count} local tracks", "Upload");
+            }
+
             InfobarProgress.Visibility = Visibility.Visible;
         }
         else

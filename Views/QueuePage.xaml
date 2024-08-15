@@ -13,6 +13,7 @@
     xmlns:converters="using:CommunityToolkit.WinUI.UI.Converters"
     xmlns:system="using:System"
     xmlns:models="using:FluentDL.Models"
+    xmlns:marqueeTextRns="using:CommunityToolkit.Labs.WinUI.MarqueeTextRns"
     mc:Ignorable="d"
     NavigationCacheMode="Required">
     <Page.Resources>
@@ -100,46 +101,40 @@
                   BorderThickness="0"
                   SelectionChanged="CustomListView_OnSelectionChanged"
                   BorderBrush="{ThemeResource ControlStrongStrokeColorDefaultBrush}"
-                  Margin="0,0,0,0"
+                  Margin="0,0,0,12"
                   Padding="0,0,12,0">
             <ListView.ItemTemplate>
                 <DataTemplate x:DataType="viewModels:QueueObject">
-                    <Grid Margin="0,12, 0,12" AutomationProperties.Name="{x:Bind Title}">
+                    <Grid Margin="0,12, 0,12" AutomationProperties.Name="{x:Bind Title}" Height="76">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"></RowDefinition>
+                            <RowDefinition Height="Auto"></RowDefinition>
+                            <RowDefinition Height="*"></RowDefinition>
+                        </Grid.RowDefinitions>
+
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="76" />
                             <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
 
-                        <Border Grid.Column="0" CornerRadius="4" Height="76" Padding="0" Margin="0"
-                                Visibility="{x:Bind LocalBitmapImage, Converter={StaticResource NullVisibilityConverter}}">
+                        <Border Grid.Row="0" Grid.RowSpan="3" Grid.Column="0" CornerRadius="4" Height="76" Padding="0" Margin="0"
+                                            Visibility="{x:Bind LocalBitmapImage, Converter={StaticResource NullVisibilityConverter}}">
                             <Border.Background>
                                 <ImageBrush Stretch="UniformToFill" ImageSource="{x:Bind LocalBitmapImage}">
                                 </ImageBrush>
                             </Border.Background>
                         </Border>
 
-                        <StackPanel Margin="15,0,0,0" Grid.Column="1">
-                            <StackPanel Orientation="Horizontal">
-                                <TextBlock Text="{x:Bind Title}" FontFamily="Segoe UI Variable Display"
-                                           Style="{ThemeResource BodyStrongTextBlockStyle}"
-                                           HorizontalAlignment="Left"
-                                           TextTrimming="CharacterEllipsis" MaxLines="1" Margin="0, 0, 8, 0" />
-                                <Border Background="DarkGray" CornerRadius="2" Padding="4, 0" Margin="0, 0, 8, 0"
-                                        VerticalAlignment="Center"
-                                        Visibility="{x:Bind Explicit, Converter={StaticResource VisibilityConverter}}">
-                                    <TextBlock x:Name="ExplicitBadge" Text="E"
-                                               Style="{ThemeResource CaptionTextBlockStyle}"
-                                               Foreground="Black" />
-                                </Border>
-                            </StackPanel>
-                            <TextBlock Text="{x:Bind Artists}" FontFamily="Segoe UI Variable Display"
-                                       Style="{ThemeResource BodyTextBlockStyle}" TextTrimming="CharacterEllipsis"
-                                       MaxLines="1" />
-                        </StackPanel>
+                        <marqueeTextRns:MarqueeText Grid.Row="0" Grid.Column="1" Margin="12, 0,0,0" Text="{x:Bind Title}"  
+                                                    FontFamily="Segoe UI Variable Display" FontWeight="Semibold"
+                                                    Behavior="Looping" Direction="Left" RepeatBehavior="Forever" VerticalAlignment="Center"/>
 
-                        <StackPanel Margin="15,0,0,0" Orientation="Horizontal" VerticalAlignment="Bottom"
-                                    Grid.Column="1">
+                        <marqueeTextRns:MarqueeText Grid.Row="1" Grid.Column="1" Margin="12, 0, 0, 0" 
+                                                    Text="{x:Bind Artists}" FontFamily="Segoe UI Variable Display" 
+                                                    Behavior="Looping" Direction="Left" RepeatBehavior="Forever" VerticalAlignment="Center"/>
+
+                        <StackPanel Grid.Row="2" Grid.Column="1" Margin="12,0,0,0" Orientation="Horizontal" VerticalAlignment="Bottom">
                             <TextBlock Text="{x:Bind ReleaseDate, Converter={StaticResource DateToYearConverter}}"
                                        HorizontalAlignment="Left"
                                        Style="{ThemeResource BodyTextBlockStyle}" Margin="0,0,0,0"
@@ -152,35 +147,41 @@
                                        FontFamily="Segoe UI Variable Display" />
                         </StackPanel>
 
-                        <Grid Grid.Column="2" CornerRadius="4" Margin="0,0,0,0" VerticalAlignment="Stretch"
-                              HorizontalAlignment="Stretch">
-                            <StackPanel>
-                                <Border Background="{ThemeResource LayerOnMicaBaseAltFillColorSecondaryBrush}"
-                                        CornerRadius="2" Padding="6, 2" HorizontalAlignment="Right"
-                                        VerticalAlignment="Top">
-                                    <StackPanel Orientation="Horizontal">
-                                        <Ellipse StrokeThickness="0" VerticalAlignment="Center" Width="10" Height="10"
-                                                 Margin="0,0, 6, 0"
-                                                 Fill="{x:Bind Source, Converter={StaticResource SourceToColorConverter}}" />
-                                        <TextBlock x:Name="SourceBadge" Text="{x:Bind Source}"
-                                                   Style="{ThemeResource CaptionTextBlockStyle}"
-                                                   VerticalAlignment="Center" Margin="0, -2, 0, 0" />
-                                    </StackPanel>
-                                </Border>
-                            </StackPanel>
-                            <Button x:Name="OutputButton" VerticalAlignment="Bottom" HorizontalAlignment="Stretch"
-                                    Click="OutputButton_OnClick"
-                                    Visibility="{x:Bind ResultString, Converter={StaticResource PathToVisibilityConverter}}">
+                        <StackPanel Grid.Row="0" Grid.Column="2" Orientation="Horizontal" Spacing="12" Margin="12, 0, 0,0" HorizontalAlignment="Right">
+                            
+                            <Border Background="DarkGray" CornerRadius="2" 
+                                    VerticalAlignment="Center" HorizontalAlignment="Right" 
+                                    Padding="4, 0" Margin="0, -2, 0, 0"
+                                    Visibility="{x:Bind Explicit, Converter={StaticResource VisibilityConverter}}">
+                                <TextBlock x:Name="ExplicitBadge" Text="E"
+                                           Style="{ThemeResource CaptionTextBlockStyle}"
+                                           Foreground="Black"/>
+                            </Border>
+                            <Border  Background="{ThemeResource LayerOnMicaBaseAltFillColorSecondaryBrush}" 
+                                     CornerRadius="2" Padding="6, 2" 
+                                     HorizontalAlignment="Right" VerticalAlignment="Top">
                                 <StackPanel Orientation="Horizontal">
-                                    <FontIcon x:Name="OutputIcon" Glyph="&#xE8A7;" FontSize="16" Margin="0, 0, 8, 0" />
-                                    <TextBlock Text="Output" />
+                                    <Ellipse StrokeThickness="0" VerticalAlignment="Center" Width="10" Height="10" Margin="0,0, 6, 0"
+                                             Fill="{x:Bind Source, Converter={StaticResource SourceToColorConverter}}"/>
+                                    <TextBlock x:Name="SourceBadge" Text="{x:Bind Source}" Style="{ThemeResource CaptionTextBlockStyle}" VerticalAlignment="Center" Margin="0, -2, 0, 0"/>
                                 </StackPanel>
-                            </Button>
-                        </Grid>
+                            </Border>
 
-                        <ProgressRing Grid.Column="2" VerticalAlignment="Bottom" HorizontalAlignment="Right"
+                        </StackPanel>
+
+                        <Button Grid.Row="2" Grid.Column="2" x:Name="OutputButton" VerticalAlignment="Bottom" HorizontalAlignment="Stretch"
+                                            Click="OutputButton_OnClick"
+                                            Visibility="{x:Bind ResultString, Converter={StaticResource PathToVisibilityConverter}}">
+                            <StackPanel Orientation="Horizontal">
+                                <FontIcon x:Name="OutputIcon" Glyph="&#xE8A7;" FontSize="16" Margin="0, 0, 8, 0" />
+                                <TextBlock Text="Output" />
+                            </StackPanel>
+                        </Button>
+
+                        <ProgressRing Grid.Row="2" Grid.Column="2" VerticalAlignment="Bottom" HorizontalAlignment="Right"
                                       Visibility="{x:Bind IsRunning, Converter={StaticResource VisibilityConverter}}" />
-                        <InfoBadge Grid.Column="0" x:Name="ConvertInfoBadge" HorizontalAlignment="Left"
+
+                        <InfoBadge Grid.Row="0" Grid.Column="0" x:Name="ConvertInfoBadge" HorizontalAlignment="Left"
                                    VerticalAlignment="Top" Background="{x:Bind ConvertBadgeColor}" Width="12"
                                    Height="12" Margin="-6,-6,0,0" />
 
@@ -195,7 +196,7 @@
 
         <views:PreviewPane Grid.Row="0" Grid.RowSpan="3" Grid.Column="1" x:Name="PreviewPanel"
                            Padding="12"
-                           Margin="12,0,0,12"
+                           Margin="12,-2,0,12"
                            VerticalAlignment="Stretch" />
 
         <!-- Content Dialog for command running-->
@@ -276,7 +277,7 @@
                             <Button.Flyout>
                                 <Flyout>
                                     <TextBlock MaxWidth="400" TextWrapping="WrapWholeWords"
-                                               Text="The release date of the track, format YY-MM-DD" />
+                                               Text="The release date of the track, format YYYY-MM-DD" />
                                 </Flyout>
                             </Button.Flyout>
                         </Button>
