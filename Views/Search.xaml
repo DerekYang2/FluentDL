@@ -399,7 +399,7 @@
                                            FontFamily="Segoe UI Variable Display" />
                             </StackPanel>
 
-                            <StackPanel Grid.Row="0" Grid.Column="2" Orientation="Horizontal" Spacing="12" Margin="12, 0, 0,0">
+                            <StackPanel Grid.Row="0" Grid.Column="2" Orientation="Horizontal" Spacing="12" Margin="12, 0, 0,0" HorizontalAlignment="Right">
                                 <Border Background="DarkGray" CornerRadius="2" VerticalAlignment="Center" HorizontalAlignment="Right" 
                                         Padding="4, 0" Margin="0, -2, 0, 0"
                                         Visibility="{x:Bind Explicit, Converter={StaticResource VisibilityConverter}}">
@@ -417,6 +417,11 @@
                                     </StackPanel>
                                 </Border>
                             </StackPanel>
+
+                            
+                            <Button Grid.Row="2" Grid.Column="2" x:Name="AddQueueButton" VerticalAlignment="Bottom" HorizontalAlignment="Right" Padding="4, 4, 3, 3" ToolTipService.ToolTip="Add to queue" Click="AddQueueButton_OnClick" Tag="{Binding}">
+                                    <FontIcon x:Name="AddQueueIcon" Glyph="&#xE710;" FontSize="20" />
+                            </Button>
                         </Grid>
                     </DataTemplate>
                 </ListView.ItemTemplate>

@@ -236,6 +236,11 @@
                                     <TextBlock x:Name="AudioFormatBadge" Text="{x:Bind AudioFormat}" Style="{ThemeResource CaptionTextBlockStyle}" VerticalAlignment="Center" Margin="0, -2, 0, 0"/>
                                 </Border>
                             </StackPanel>
+
+                            <Button Grid.Row="2" Grid.Column="2" x:Name="AddQueueButton" VerticalAlignment="Bottom" HorizontalAlignment="Right" Padding="4, 4, 3, 3" ToolTipService.ToolTip="Add to queue" Click="AddQueueButton_OnClick" Tag="{Binding}">
+                                <FontIcon x:Name="AddQueueIcon" Glyph="&#xE710;" FontSize="20" />
+                            </Button>
+
                         </Grid>
                     </DataTemplate>
                 </ListView.ItemTemplate>

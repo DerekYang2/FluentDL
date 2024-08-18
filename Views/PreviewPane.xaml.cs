@@ -170,6 +170,7 @@ namespace FluentDL.Views
                         new() { Label = "Channels", Value = metadata.tfile.Properties.AudioChannels.ToString() },
                         new() { Label = "Sample rate", Value = metadata.tfile.Properties.AudioSampleRate + " Hz" },
                         new() { Label = "Bit depth", Value = metadata.tfile.Properties.BitsPerSample + " bit" },
+                        new() { Label = "Location", Value = selectedSong.Id }
                     };
 
                     SongPreviewPlayer.Source = MediaSource.CreateFromUri(new Uri(selectedSong.Id));

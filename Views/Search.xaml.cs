@@ -150,8 +150,23 @@ public sealed partial class Search : Page
                 }
             }
         };
+        var shareButton = new AppBarButton() { Icon = new SymbolIcon(Symbol.Link), Label = "Share Link" };
+        shareButton.Click += (sender, e) =>
+        {
+            var selectedSong = PreviewPanel.GetSong();
 
-        var shareButton = new AppBarButton { Icon = new SymbolIcon(Symbol.Share), Label = "Share" };
+            if (selectedSong == null)
+            {
+                ShowInfoBar(InfoBarSeverity.Error, "Failed to copy source to clipboard");
+                return;
+            }
+
+            var uri = ApiHelper.GetUrl(selectedSong);
+
+            Clipboard.CopyToClipboard(uri);
+            ShowInfoBar(InfoBarSeverity.Success, "Copied to clipboard");
+        };
+
         var openButton = new AppBarButton { Icon = new FontIcon { Glyph = "\uE8A7" }, Label = "Open" };
 
         openButton.Click += (sender, e) =>
@@ -736,5 +751,31 @@ public sealed partial class Search : Page
     private async void FlyoutBase_OnClosed(object? sender, object e)
     {
         await ViewModel.SaveResultsLimit();
+    }
+
+    private void AddQueueButton_OnClick(object sender, RoutedEventArgs e)
+    {
+        // Get the button that was clicked
+        var button = sender as Button;
+
+        // Retrieve the item from the Tag property
+        var song = button?.Tag as SongSearchObject;
+
+        var beforeCount = QueueViewModel.Source.Count;
+        if (song == null)
+        {
+            ShowInfoBar(InfoBarSeverity.Warning, "No song selected"); // Technically shouldn't happen
+            return;
+        }
+
+        QueueViewModel.Add(song);
+        if (QueueViewModel.Source.Count == beforeCount) // No change
+        {
+            ShowInfoBar(InfoBarSeverity.Warning, $"<a href='{ApiHelper.GetUrl(song)}'>{song.Title}</a> already in queue");
+        }
+        else
+        {
+            ShowInfoBar(InfoBarSeverity.Success, $"<a href='{ApiHelper.GetUrl(song)}'>{song.Title}</a> added to queue");
+        }
     }
 }

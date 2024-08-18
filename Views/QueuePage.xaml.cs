@@ -107,7 +107,7 @@ public sealed partial class QueuePage : Page
         };
 
         NoItemsText.Visibility = QueueViewModel.Source.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
-
+        ClearButton.IsEnabled = QueueViewModel.Source.Count > 0;
 
         // Set conversion variables
         successSource = new HashSet<SongSearchObject>();
@@ -201,12 +201,13 @@ public sealed partial class QueuePage : Page
             }
 
             NoItemsText.Visibility = QueueViewModel.Source.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
+            ClearButton.IsEnabled = QueueViewModel.Source.Count > 0;
         });
     }
 
     private void InitPreviewPanelButtons()
     {
-        var copySourceButton = new AppBarButton() { Icon = new SymbolIcon(Symbol.Link), Label = "Copy Source" };
+        var copySourceButton = new AppBarButton() { Icon = new SymbolIcon(Symbol.Link), Label = "Share Link" };
         copySourceButton.Click += (sender, e) =>
         {
             var selectedSong = PreviewPanel.GetSong();
@@ -439,7 +440,8 @@ public sealed partial class QueuePage : Page
     private void ClearButton_OnClick(object sender, RoutedEventArgs e)
     {
         QueueViewModel.Clear();
-        StartStopButton.Visibility = Visibility.Collapsed; // Display start stop
+        StartStopButton.Visibility = Visibility.Collapsed;
+        ShowInfoBar(InfoBarSeverity.Informational, "Queue cleared");
     }
 
     private void StartStopButton_OnClick(object sender, RoutedEventArgs e)
@@ -912,10 +914,10 @@ public sealed partial class QueuePage : Page
                     {
                         newSongObj = outputSource switch
                         {
-                            "deezer" => await DeezerApi.GetDeezerTrack(song, cancellationTokenSource.Token, conversionUpdateCallback),
-                            "qobuz" => await QobuzApi.GetQobuzTrack(song, cancellationTokenSource.Token, conversionUpdateCallback),
-                            "spotify" => await SpotifyApi.GetSpotifyTrack(song, cancellationTokenSource.Token, conversionUpdateCallback),
-                            "youtube" => await YoutubeApi.GetYoutubeTrack(song, cancellationTokenSource.Token, conversionUpdateCallback),
+                            "deezer" => await DeezerApi.GetDeezerTrack(song, token, conversionUpdateCallback),
+                            "qobuz" => await QobuzApi.GetQobuzTrack(song, token, conversionUpdateCallback),
+                            "spotify" => await SpotifyApi.GetSpotifyTrack(song, token, conversionUpdateCallback),
+                            "youtube" => await YoutubeApi.GetYoutubeTrack(song, token, conversionUpdateCallback),
                             _ => throw new Exception("Unspecified output source") // Should never happen
                         };
                     }
@@ -967,7 +969,12 @@ public sealed partial class QueuePage : Page
                         else // Failed conversion, set current object badge to error
                         {
                             song.IsRunning = false; // Set song to not running
-                            song.ConvertBadgeColor = new SolidColorBrush(Windows.UI.Color.FromArgb(255, 255, 153, 164));
+
+                            if (!token.IsCancellationRequested) // If token is cancelled, don't show error badge
+                            {
+                                song.ConvertBadgeColor = new SolidColorBrush(Windows.UI.Color.FromArgb(255, 255, 153, 164));
+                            }
+
                             QueueViewModel.Replace(i, song);
                         }
                     });
@@ -993,7 +1000,7 @@ public sealed partial class QueuePage : Page
         }
         //for (int i = 0; i < QueueViewModel.Source.Count; i++)
         //{
-        //    if (cancellationTokenSource.Token.IsCancellationRequested) // If conversion is paused
+        //    if (token.IsCancellationRequested) // If conversion is paused
         //    {
         //        break;
         //    }

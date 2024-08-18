@@ -120,10 +120,13 @@ public sealed partial class LocalExplorerPage : Page
         {
             SetResultsAmount(originalList.Count);
             NoItemsText.Visibility = originalList.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
+            ClearButton.IsEnabled = originalList.Count > 0;
+            ClearButton.IsEnabled = QueueViewModel.Source.Count > 0;
         };
 
         // Set first
         SetResultsAmount(0);
+        ClearButton.IsEnabled = originalList.Count > 0;
     }
 
     private void InitPreviewPanelButtons()
@@ -132,18 +135,18 @@ public sealed partial class LocalExplorerPage : Page
         var addButton = new AppBarButton { Icon = new SymbolIcon(Symbol.Add), Label = "Add to queue" };
         addButton.Click += (sender, e) =>
         {
-            if (PreviewPanel.GetSong() != null)
+            var song = PreviewPanel.GetSong();
+            if (song != null)
             {
                 var beforeCount = QueueViewModel.Source.Count;
-                QueueViewModel.Add(PreviewPanel.GetSong());
-
+                QueueViewModel.Add(song);
                 if (QueueViewModel.Source.Count == beforeCount) // No change
                 {
-                    ShowInfoBar(InfoBarSeverity.Informational, $"{PreviewPanel.GetSong().Title} already in queue");
+                    ShowInfoBar(InfoBarSeverity.Warning, $"<a href='{ApiHelper.GetUrl(song)}'>{song.Title}</a> already in queue");
                 }
                 else
                 {
-                    ShowInfoBar(InfoBarSeverity.Success, $"{PreviewPanel.GetSong().Title} added to queue");
+                    ShowInfoBar(InfoBarSeverity.Success, $"<a href='{ApiHelper.GetUrl(song)}'>{song.Title}</a> added to queue");
                 }
             }
         };
@@ -637,6 +640,32 @@ public sealed partial class LocalExplorerPage : Page
         await PreviewPanel.Update(song, LocalExplorerViewModel.GetMetadataObject(song.Id));
 
         ShowInfoBar(InfoBarSeverity.Success, $"Saved metadata for <a href='{song.Id}'>{song.Title}</a>");
+    }
+
+    private void AddQueueButton_OnClick(object sender, RoutedEventArgs e)
+    {
+        // Get the button that was clicked
+        var button = sender as Button;
+
+        // Retrieve the item from the Tag property
+        var song = button?.Tag as SongSearchObject;
+
+        var beforeCount = QueueViewModel.Source.Count;
+        if (song == null)
+        {
+            ShowInfoBar(InfoBarSeverity.Warning, "No song selected"); // Technically shouldn't happen
+            return;
+        }
+
+        QueueViewModel.Add(song);
+        if (QueueViewModel.Source.Count == beforeCount) // No change
+        {
+            ShowInfoBar(InfoBarSeverity.Warning, $"<a href='{ApiHelper.GetUrl(song)}'>{song.Title}</a> already in queue");
+        }
+        else
+        {
+            ShowInfoBar(InfoBarSeverity.Success, $"<a href='{ApiHelper.GetUrl(song)}'>{song.Title}</a> added to queue");
+        }
     }
 
     private void MetadataDialog_OnCloseButtonClick(ContentDialog sender, ContentDialogButtonClickEventArgs args)
