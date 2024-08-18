@@ -313,7 +313,6 @@ internal class QobuzApi
             contribList.Insert(0, listedArtist);
         }
 
-
         return new SongSearchObject()
         {
             AlbumName = track.Album.Title,
@@ -325,7 +324,7 @@ internal class QobuzApi
             TrackPosition = (track.TrackNumber ?? 1).ToString(),
             ImageLocation = track.Album.Image.Small,
             LocalBitmapImage = null,
-            Rank = "0",
+            Rank = (track.Album.Popularity ?? 0).ToString(),
             ReleaseDate = track.ReleaseDateOriginal.GetValueOrDefault().ToString("yyyy-MM-dd"),
             Title = track.Title,
             Isrc = track.Isrc
@@ -354,7 +353,7 @@ internal class QobuzApi
             TrackPosition = track.TrackNumber.GetValueOrDefault().ToString(),
             ImageLocation = album.Image.Small,
             LocalBitmapImage = null,
-            Rank = "0",
+            Rank = (album.Popularity ?? 0).ToString(),
             ReleaseDate = track.ReleaseDateOriginal.GetValueOrDefault().ToString("yyyy-MM-dd"),
             Title = track.Title,
             Isrc = track.Isrc

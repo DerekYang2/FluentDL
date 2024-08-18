@@ -78,11 +78,7 @@ namespace FluentDL.Views
 
             var trackDetailsList = new ObservableCollection<TrackDetail>
             {
-                new TrackDetail { Label = "Contributing Artists", Value = selectedSong.Artists },
-                new TrackDetail { Label = "Release Date", Value = new DateVerboseConverter().Convert(selectedSong.ReleaseDate, null, null, null).ToString() },
-                new TrackDetail { Label = "Popularity", Value = selectedSong.Rank },
-                new TrackDetail { Label = "Length", Value = new DurationConverter().Convert(selectedSong.Duration, null, null, null).ToString() },
-                new TrackDetail { Label = "Album", Value = selectedSong.AlbumName },
+                new TrackDetail { Label = "Contributing Artists", Value = selectedSong.Artists }, new TrackDetail { Label = "Release Date", Value = new DateVerboseConverter().Convert(selectedSong.ReleaseDate, null, null, null).ToString() }, new TrackDetail { Label = "Length", Value = new DurationConverter().Convert(selectedSong.Duration, null, null, null).ToString() }, new TrackDetail { Label = "Album", Value = selectedSong.AlbumName },
             };
 
 
@@ -95,6 +91,8 @@ namespace FluentDL.Views
 
                 trackDetailsList.Add(new TrackDetail { Label = "Track", Value = jsonObject.GetProperty("track_position").ToString() });
                 trackDetailsList.Add(new TrackDetail { Label = "Genre", Value = await DeezerApi.GetGenreStr(albumObj.GetProperty("id").GetInt32()) });
+                trackDetailsList.Add(new TrackDetail { Label = "Popularity", Value = "" });
+                SetPopularityIcon(ApiHelper.GetRank(selectedSong));
 
                 // Load the audio stream
                 var previewUri = jsonObject.GetProperty("preview").ToString();
@@ -108,13 +106,13 @@ namespace FluentDL.Views
             {
                 var track = await QobuzApi.GetInternalTrack(selectedSong.Id);
 
-
                 PreviewImage.Source = new BitmapImage(new Uri(track.Album.Image.Large)); // Get cover art
 
-                trackDetailsList.RemoveAt(trackDetailsList.ToList().FindIndex(x => x.Label == "Popularity")); // Remove popularity
+                // trackDetailsList.RemoveAt(trackDetailsList.ToList().FindIndex(x => x.Label == "Popularity")); // Remove popularity
                 PreviewInfoControl2.ItemsSource = PreviewInfoControl.ItemsSource = trackDetailsList;
                 trackDetailsList.Add(new TrackDetail() { Label = "Track", Value = selectedSong.TrackPosition });
                 trackDetailsList.Add(new TrackDetail { Label = "Genre", Value = string.Join(", ", QobuzApi.PruneGenreList(track.Album.GenresList)) });
+                PopularityIcon.Visibility = Visibility.Collapsed;
 
                 // Load the audio stream
                 SongPreviewPlayer.Source = MediaSource.CreateFromUri(QobuzApi.GetPreviewUri(selectedSong.Id));
@@ -129,6 +127,8 @@ namespace FluentDL.Views
                 trackDetailsList.Add(new TrackDetail { Label = "Track", Value = selectedSong.TrackPosition });
                 var genreStr = string.Join(", ", await SpotifyApi.GetGenres(track.Artists));
                 trackDetailsList.Add(new TrackDetail { Label = "Genre", Value = genreStr });
+                trackDetailsList.Add(new TrackDetail { Label = "Popularity", Value = "" });
+                SetPopularityIcon(ApiHelper.GetRank(selectedSong));
 
                 // Load the audio stream
                 var previewURL = track.PreviewUrl;
@@ -140,11 +140,11 @@ namespace FluentDL.Views
 
             if (selectedSong.Source.Equals("youtube"))
             {
-                var index = trackDetailsList.ToList().FindIndex(x => x.Label == "Popularity"); // Rename popularity to views
-                trackDetailsList[index].Label = "Views";
+                trackDetailsList.Add(new TrackDetail { Label = "Views", Value = selectedSong.Rank });
 
                 PreviewImage.Source = new BitmapImage(new Uri(await YoutubeApi.GetMaxResThumbnail(selectedSong))); // Get max res thumbnail
                 PreviewInfoControl2.ItemsSource = PreviewInfoControl.ItemsSource = trackDetailsList; // First set details list
+                PopularityIcon.Visibility = Visibility.Collapsed;
 
                 // Load the audio stream
                 var opusStreamUrl = await YoutubeApi.AudioStreamWorstUrl("https://www.youtube.com/watch?v=" + selectedSong.Id);
@@ -155,6 +155,7 @@ namespace FluentDL.Views
             {
                 if (trackInfoObj is MetadataObject metadata)
                 {
+                    PopularityIcon.Visibility = Visibility.Collapsed;
                     PreviewInfoControl2.ItemsSource = PreviewInfoControl.ItemsSource = new ObservableCollection<TrackDetail> // Set the details list
                     {
                         new() { Label = "Contributing Artists", Value = selectedSong.Artists },
@@ -258,6 +259,27 @@ namespace FluentDL.Views
                 Debug.WriteLine(e.Message);
                 return "Unknown";
             }
+        }
+
+        // popVal is between 1 and 5
+        private void SetPopularityIcon(int popVal)
+        {
+            if (popVal == 0)
+            {
+                PopularityIcon.Visibility = Visibility.Collapsed;
+                return;
+            }
+
+            PopularityIcon.Visibility = Visibility.Visible;
+            PopularityIcon.Glyph = popVal switch
+            {
+                1 => "\uE904",
+                2 => "\uE905",
+                3 => "\uE906",
+                4 => "\uE907",
+                5 => "\uE908",
+                _ => "\uE904"
+            };
         }
 
         private void PreviewMarquee_OnPointerEntered(object sender, PointerRoutedEventArgs e)

@@ -52,8 +52,10 @@
                 <StackPanel x:Name="PreviewInfoStack" Orientation="Vertical" HorizontalAlignment="Stretch"
                             VerticalAlignment="Top" Margin="16, 0, 16, 12">
                     <TextBlock x:Name="PreviewTitleText" Text="" Style="{ThemeResource HeaderText}"
-                               HorizontalAlignment="Left" Margin="0, 0,0,8" TextWrapping="WrapWholeWords"
+                               Margin="0, 0,0,8" TextWrapping="WrapWholeWords"
+                               VerticalAlignment="Top" HorizontalAlignment="Left"
                                LineHeight="22" />
+
                     <controls:DockPanel>
                         <Border Margin="0,0,8,0">
                             <ItemsControl x:Name="PreviewInfoControl">
@@ -67,18 +69,22 @@
                         </Border>
 
                         <Border HorizontalAlignment="Right">
-                            <ItemsControl x:Name="PreviewInfoControl2">
-                                <ItemsControl.ItemTemplate>
-                                    <DataTemplate x:DataType="views:TrackDetail">
-                                        <marqueeTextRns:MarqueeText Text="{x:Bind Value}"  controls1:ToolTipService.ToolTip="{x:Bind Value}"
-                                                                    FontFamily="Segoe UI Variable Display" 
-                                                                    Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}" 
-                                                                    Speed="50"
-                                                                    Behavior="Looping" Direction="Left" HorizontalAlignment="Stretch" Margin="0, 0, 0, 0" RepeatBehavior="Forever" Height="22" 
-                                                                    PointerEntered="PreviewMarquee_OnPointerEntered" PointerExited="PreviewMarquee_OnPointerExited" Loaded="PreviewMarquee_OnLoaded"/>
-                                    </DataTemplate>
-                                </ItemsControl.ItemTemplate>
-                            </ItemsControl>
+                            <StackPanel>
+                                <ItemsControl x:Name="PreviewInfoControl2">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate x:DataType="views:TrackDetail">
+                                            <marqueeTextRns:MarqueeText Text="{x:Bind Value}"  controls1:ToolTipService.ToolTip="{x:Bind Value}"
+                                                                        FontFamily="Segoe UI Variable Display" 
+                                                                        Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}" 
+                                                                        Speed="50"
+                                                                        Behavior="Looping" Direction="Left" HorizontalAlignment="Stretch" Margin="0, 0, 0, 0" RepeatBehavior="Forever" Height="22" 
+                                                                        PointerEntered="PreviewMarquee_OnPointerEntered" PointerExited="PreviewMarquee_OnPointerExited" Loaded="PreviewMarquee_OnLoaded"/>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                                <FontIcon x:Name="PopularityIcon" Visibility="Collapsed" Margin="0, -22, 0, 0"
+                                    Glyph="&#xE904;" HorizontalAlignment="Left" Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}" Height="22"/>
+                            </StackPanel>
                         </Border>
                     </controls:DockPanel>
                 </StackPanel>

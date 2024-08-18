@@ -24,7 +24,7 @@
     </Page.Resources>
 
     <Grid>
-        <!-- Advanced search dialog --> 
+        <!-- Advanced search dialog -->
         <ContentDialog x:Name="SearchDialog" PrimaryButtonText="Search" CloseButtonText="Cancel"
                        Title="Advanced Search" IsSecondaryButtonEnabled="True" IsPrimaryButtonEnabled="True"
                        PrimaryButtonClick="SearchDialogClick" PrimaryButtonStyle="{ThemeResource AccentButtonStyle}">
@@ -206,7 +206,7 @@
                                     BorderThickness="0"
                                     CornerRadius="4,0,0,4"
                                     Background="Transparent"
-                                    />      
+                                    />
 
                     <SplitButton.Flyout>
                         <Flyout Placement="Bottom" Closed="FlyoutBase_OnClosed">
@@ -220,9 +220,9 @@
                                     <NumberBox.HeaderTemplate>
                                         <DataTemplate>
                                             <Grid>
-                                            <TextBlock Text="{Binding}" Style="{ThemeResource CaptionTextBlockStyle}" 
+                                                <TextBlock Text="{Binding}" Style="{ThemeResource CaptionTextBlockStyle}" 
                                                        Foreground="{ThemeResource TextFillColorSecondary}" />
-                                            <FontIcon Glyph="&#xE946;" HorizontalAlignment="Right" FontSize="16" 
+                                                <FontIcon Glyph="&#xE946;" HorizontalAlignment="Right" FontSize="16" 
                                                       ToolTipService.ToolTip="Maximum results for Spotify is 50"/>
                                             </Grid>
                                         </DataTemplate>
@@ -380,7 +380,7 @@
                                                         Text="{x:Bind Title}" FontFamily="Segoe UI Variable Display" FontWeight="Semibold"
                                                         Behavior="Looping" Direction="Left" RepeatBehavior="Forever" VerticalAlignment="Center"/>
 
-                
+
                             <marqueeTextRns:MarqueeText Grid.Row="1" Grid.Column="1" Margin="12, 0, 0, 0" 
                                                         Text="{x:Bind Artists}" FontFamily="Segoe UI Variable Display" 
                                                         Behavior="Looping" Direction="Left" RepeatBehavior="Forever" VerticalAlignment="Center"/>
@@ -418,9 +418,9 @@
                                 </Border>
                             </StackPanel>
 
-                            
+
                             <Button Grid.Row="2" Grid.Column="2" x:Name="AddQueueButton" VerticalAlignment="Bottom" HorizontalAlignment="Right" Padding="4, 4, 3, 3" ToolTipService.ToolTip="Add to queue" Click="AddQueueButton_OnClick" Tag="{Binding}">
-                                    <FontIcon x:Name="AddQueueIcon" Glyph="&#xE710;" FontSize="20" />
+                                <FontIcon x:Name="AddQueueIcon" Glyph="&#xE710;" FontSize="20" />
                             </Button>
                         </Grid>
                     </DataTemplate>
