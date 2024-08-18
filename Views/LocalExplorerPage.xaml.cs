@@ -690,4 +690,14 @@ public sealed partial class LocalExplorerPage : Page
             comboBox.PlaceholderText = sortObject.Text + sortObject.Highlight;
         }
     }
+
+    private void EditButton_OnClick(object sender, RoutedEventArgs e)
+    {
+        throw new NotImplementedException();
+    }
+
+    private void OpenInBrowserButton_OnClick(object sender, RoutedEventArgs e)
+    {
+        throw new NotImplementedException();
+    }
 }

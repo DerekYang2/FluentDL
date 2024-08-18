@@ -127,59 +127,48 @@ public sealed partial class Search : Page
     {
         // Initialize preview panel command bar
         var addButton = new AppBarButton { Icon = new SymbolIcon(Symbol.Add), Label = "Add to queue" };
-        addButton.Click += async (sender, e) =>
-        {
-            if (PreviewPanel.GetSong() != null)
-            {
-                var beforeCount = QueueViewModel.Source.Count;
-                var song = PreviewPanel.GetSong();
-                if (song == null)
-                {
-                    ShowInfoBar(InfoBarSeverity.Warning, "No song selected"); // Technically shouldn't happen
-                    return;
-                }
+        addButton.Click += async (sender, e) => AddSongToQueue(PreviewPanel.GetSong());
 
-                QueueViewModel.Add(song);
-                if (QueueViewModel.Source.Count == beforeCount) // No change
-                {
-                    ShowInfoBar(InfoBarSeverity.Warning, $"<a href='{ApiHelper.GetUrl(song)}'>{song.Title}</a> already in queue");
-                }
-                else
-                {
-                    ShowInfoBar(InfoBarSeverity.Success, $"<a href='{ApiHelper.GetUrl(song)}'>{song.Title}</a> added to queue");
-                }
-            }
-        };
         var shareButton = new AppBarButton() { Icon = new SymbolIcon(Symbol.Link), Label = "Share Link" };
-        shareButton.Click += (sender, e) =>
-        {
-            var selectedSong = PreviewPanel.GetSong();
-
-            if (selectedSong == null)
-            {
-                ShowInfoBar(InfoBarSeverity.Error, "Failed to copy source to clipboard");
-                return;
-            }
-
-            var uri = ApiHelper.GetUrl(selectedSong);
-
-            Clipboard.CopyToClipboard(uri);
-            ShowInfoBar(InfoBarSeverity.Success, "Copied to clipboard");
-        };
+        shareButton.Click += (sender, e) => CopySongLink(PreviewPanel.GetSong());
 
         var openButton = new AppBarButton { Icon = new FontIcon { Glyph = "\uE8A7" }, Label = "Open" };
-
-        openButton.Click += (sender, e) =>
-        {
-            var song = PreviewPanel.GetSong();
-            if (song != null)
-            {
-                var uri = new Uri(ApiHelper.GetUrl(song));
-                Windows.System.Launcher.LaunchUriAsync(uri); // Open link in browser
-            }
-        };
+        openButton.Click += (sender, e) => OpenSongInBrowser(PreviewPanel.GetSong());
 
         PreviewPanel.SetAppBarButtons(new List<AppBarButton> { addButton, shareButton, openButton });
+    }
+
+    private void AddQueueButton_OnClick(object sender, RoutedEventArgs e)
+    {
+        // Get the button that was clicked
+        var button = sender as Button;
+
+        // Retrieve the item from the tag property
+        var song = button?.Tag as SongSearchObject;
+
+        AddSongToQueue(song);
+    }
+
+    private void ShareLinkButton_OnClick(object sender, RoutedEventArgs e)
+    {
+        // Get the button that was clicked
+        var button = sender as Button;
+
+        // Retrieve the item from the tag property
+        var song = button?.Tag as SongSearchObject;
+
+        CopySongLink(song);
+    }
+
+    private void OpenInBrowserButton_OnClick(object sender, RoutedEventArgs e)
+    {
+        // Get the button that was clicked
+        var button = sender as Button;
+
+        // Retrieve the item from the tag property
+        var song = button?.Tag as SongSearchObject;
+
+        OpenSongInBrowser(song);
     }
 
     protected async override void OnNavigatedTo(NavigationEventArgs e) // Navigated to page
@@ -630,6 +619,100 @@ public sealed partial class Search : Page
         PageInfoBar.Opacity = 0;
     }
 
+    // Event handler to close the info bar and stop the timer (only ticks once)
+    private void dispatcherTimer_Tick(object sender, object e)
+    {
+        PageInfoBar.Opacity = 0;
+        (sender as DispatcherTimer).Stop();
+        // Set IsOpen to false after 0.25 seconds
+        Task.Factory.StartNew(() =>
+        {
+            System.Threading.Thread.Sleep(250);
+            dispatcher.TryEnqueue(() =>
+            {
+                PageInfoBar.IsOpen = false;
+            });
+        });
+    }
+
+    private void Help_OnClick(object sender, RoutedEventArgs e)
+    {
+        App.MainWindow.DispatcherQueue.TryEnqueue(() =>
+        {
+            App.MainWindow.ShowMessageDialogAsync("Help message\ntest");
+        });
+    }
+
+    private void ComboBox_OnDropDownOpened(object? sender, object e)
+    {
+        var comboBox = sender as ComboBox;
+        if (comboBox == null || comboBox.SelectedItem == null)
+        {
+            return;
+        }
+
+        if (comboBox.SelectedItem is ComboBoxItem item)
+        {
+            comboBox.PlaceholderText = item.Content.ToString();
+        }
+
+        if (comboBox.SelectedItem is SortObject sortObject)
+        {
+            comboBox.PlaceholderText = sortObject.Text + sortObject.Highlight;
+        }
+    }
+
+    // Save search results limit
+    private async void FlyoutBase_OnClosed(object? sender, object e)
+    {
+        await ViewModel.SaveResultsLimit();
+    }
+
+    // HELPER FUNCTIONS ----------------------------------------------------------------------------------------------------
+    private void AddSongToQueue(SongSearchObject? song)
+    {
+        if (song == null)
+        {
+            ShowInfoBar(InfoBarSeverity.Warning, "No song selected"); // Technically shouldn't happen
+            return;
+        }
+
+        var beforeCount = QueueViewModel.Source.Count;
+
+        QueueViewModel.Add(song);
+        if (QueueViewModel.Source.Count == beforeCount) // No change
+        {
+            ShowInfoBar(InfoBarSeverity.Warning, $"<a href='{ApiHelper.GetUrl(song)}'>{song.Title}</a> already in queue");
+        }
+        else
+        {
+            ShowInfoBar(InfoBarSeverity.Success, $"<a href='{ApiHelper.GetUrl(song)}'>{song.Title}</a> added to queue");
+        }
+    }
+
+    private void CopySongLink(SongSearchObject? song)
+    {
+        if (song == null)
+        {
+            ShowInfoBar(InfoBarSeverity.Error, "Failed to copy source to clipboard");
+            return;
+        }
+
+        var uri = ApiHelper.GetUrl(song);
+
+        Clipboard.CopyToClipboard(uri);
+        ShowInfoBar(InfoBarSeverity.Success, "Copied to clipboard");
+    }
+
+    private static void OpenSongInBrowser(SongSearchObject? song)
+    {
+        if (song != null)
+        {
+            var uri = new Uri(ApiHelper.GetUrl(song));
+            Windows.System.Launcher.LaunchUriAsync(uri); // Open link in browser
+        }
+    }
+
     private void ShowInfoBar(InfoBarSeverity severity, string message, int seconds = 2, string title = "")
     {
         title = title.Trim();
@@ -702,80 +785,5 @@ public sealed partial class Search : Page
                 }
             });
         });
-    }
-
-    // Event handler to close the info bar and stop the timer (only ticks once)
-    private void dispatcherTimer_Tick(object sender, object e)
-    {
-        PageInfoBar.Opacity = 0;
-        (sender as DispatcherTimer).Stop();
-        // Set IsOpen to false after 0.25 seconds
-        Task.Factory.StartNew(() =>
-        {
-            System.Threading.Thread.Sleep(250);
-            dispatcher.TryEnqueue(() =>
-            {
-                PageInfoBar.IsOpen = false;
-            });
-        });
-    }
-
-    private void Help_OnClick(object sender, RoutedEventArgs e)
-    {
-        App.MainWindow.DispatcherQueue.TryEnqueue(() =>
-        {
-            App.MainWindow.ShowMessageDialogAsync("Help message\ntest");
-        });
-    }
-
-    private void ComboBox_OnDropDownOpened(object? sender, object e)
-    {
-        var comboBox = sender as ComboBox;
-        if (comboBox == null || comboBox.SelectedItem == null)
-        {
-            return;
-        }
-
-        if (comboBox.SelectedItem is ComboBoxItem item)
-        {
-            comboBox.PlaceholderText = item.Content.ToString();
-        }
-
-        if (comboBox.SelectedItem is SortObject sortObject)
-        {
-            comboBox.PlaceholderText = sortObject.Text + sortObject.Highlight;
-        }
-    }
-
-    // Save search results limit
-    private async void FlyoutBase_OnClosed(object? sender, object e)
-    {
-        await ViewModel.SaveResultsLimit();
-    }
-
-    private void AddQueueButton_OnClick(object sender, RoutedEventArgs e)
-    {
-        // Get the button that was clicked
-        var button = sender as Button;
-
-        // Retrieve the item from the Tag property
-        var song = button?.Tag as SongSearchObject;
-
-        var beforeCount = QueueViewModel.Source.Count;
-        if (song == null)
-        {
-            ShowInfoBar(InfoBarSeverity.Warning, "No song selected"); // Technically shouldn't happen
-            return;
-        }
-
-        QueueViewModel.Add(song);
-        if (QueueViewModel.Source.Count == beforeCount) // No change
-        {
-            ShowInfoBar(InfoBarSeverity.Warning, $"<a href='{ApiHelper.GetUrl(song)}'>{song.Title}</a> already in queue");
-        }
-        else
-        {
-            ShowInfoBar(InfoBarSeverity.Success, $"<a href='{ApiHelper.GetUrl(song)}'>{song.Title}</a> added to queue");
-        }
     }
 }
