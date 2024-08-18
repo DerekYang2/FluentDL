@@ -238,14 +238,14 @@
                             </StackPanel>
 
                             <StackPanel Grid.Row="2" Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Bottom" HorizontalAlignment="Right" Spacing="4">
-                                <Button Grid.Row="2" Grid.Column="2" x:Name="AddQueueButton" VerticalAlignment="Bottom" HorizontalAlignment="Right" Padding="4, 4, 3, 3" ToolTipService.ToolTip="Add to queue" Click="AddQueueButton_OnClick" Tag="{Binding}">
-                                    <FontIcon x:Name="AddQueueIcon" Glyph="&#xE710;" FontSize="20" />
+                                <Button x:Name="AddToQueueShortcutButton" VerticalAlignment="Bottom" HorizontalAlignment="Right" Padding="4, 4, 3, 3" ToolTipService.ToolTip="Add to queue" Click="AddToQueueShortcutButton_OnClick" Tag="{Binding}">
+                                    <FontIcon Glyph="&#xE710;" FontSize="20" />
                                 </Button>
-                                <Button Grid.Row="2" Grid.Column="2" x:Name="EditButton" VerticalAlignment="Bottom" HorizontalAlignment="Right" Padding="4, 4, 3, 3" ToolTipService.ToolTip="Add to queue" Click="EditButton_OnClick" Tag="{Binding}">
-                                    <FontIcon x:Name="EditIcon" Glyph="&#xE70F;" FontSize="20" />
+                                <Button x:Name="EditButton" VerticalAlignment="Bottom" HorizontalAlignment="Right" Padding="4, 4, 3, 3" ToolTipService.ToolTip="Edit song metadata" Click="EditButton_OnClick" Tag="{Binding}">
+                                    <FontIcon Glyph="&#xE70F;" FontSize="20" />
                                 </Button>
-                                <Button x:Name="OpenInBrowserButton" VerticalAlignment="Bottom" HorizontalAlignment="Right" Padding="4, 4, 3, 3" ToolTipService.ToolTip="Open in browser" Click="OpenInBrowserButton_OnClick" Tag="{Binding}">
-                                    <FontIcon x:Name="OpenLinkIcon" Glyph="&#xE8A7;" FontSize="20" />
+                                <Button x:Name="OpenInBrowserButton" VerticalAlignment="Bottom" HorizontalAlignment="Right" Padding="4, 4, 3, 3" ToolTipService.ToolTip="Open in File Explorer" Click="OpenInBrowserButton_OnClick" Tag="{Binding}">
+                                    <FontIcon Glyph="&#xE8A7;" FontSize="20" />
                                 </Button>
                             </StackPanel>
 

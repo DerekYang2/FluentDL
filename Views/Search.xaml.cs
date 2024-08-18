@@ -129,7 +129,7 @@ public sealed partial class Search : Page
         var addButton = new AppBarButton { Icon = new SymbolIcon(Symbol.Add), Label = "Add to queue" };
         addButton.Click += async (sender, e) => AddSongToQueue(PreviewPanel.GetSong());
 
-        var shareButton = new AppBarButton() { Icon = new SymbolIcon(Symbol.Link), Label = "Share Link" };
+        var shareButton = new AppBarButton() { Icon = new SymbolIcon(Symbol.Link), Label = "Share link" };
         shareButton.Click += (sender, e) => CopySongLink(PreviewPanel.GetSong());
 
         var openButton = new AppBarButton { Icon = new FontIcon { Glyph = "\uE8A7" }, Label = "Open" };
@@ -701,7 +701,7 @@ public sealed partial class Search : Page
         var uri = ApiHelper.GetUrl(song);
 
         Clipboard.CopyToClipboard(uri);
-        ShowInfoBar(InfoBarSeverity.Success, "Copied to clipboard");
+        ShowInfoBar(InfoBarSeverity.Success, "Copied link to clipboard");
     }
 
     private static void OpenSongInBrowser(SongSearchObject? song)

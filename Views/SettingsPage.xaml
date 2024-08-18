@@ -45,7 +45,26 @@
                     </local:SettingsCard.HeaderIcon>
                     <Slider x:Name="CommandThreadsSlider" Minimum="1" Maximum="5" StepFrequency="1" TickFrequency="1" SnapsTo="Ticks" TickPlacement="Outside" LostFocus="CommandThreadsSlider_OnLostFocus"/>
                 </local:SettingsCard>
-                    
+                <local:SettingsExpander x:Name="ShortcutButtonExpander"
+                                        Description="Add or remove shortcut buttons for each page. These buttons can always be found in the sidebar."
+                                        Header="Shortcut Buttons"
+                                        HorizontalContentAlignment="Stretch">
+                    <local:SettingsExpander.HeaderIcon>
+                        <FontIcon Glyph="&#xE8B0;" />
+                    </local:SettingsExpander.HeaderIcon>
+                    <local:SettingsExpander.Items>
+                        <local:SettingsCard x:Name="SearchPageShortcuts" Header="Search Page" Description="Configure shortcut buttons for the search page">
+                            <StackPanel>
+                                <TextBlock Text="Button" Style="{ThemeResource CaptionTextBlockStyle}"
+                                           Foreground="{ThemeResource TextFillColorSecondary}" Margin="0,0,0,2" />
+                                <CheckBox x:Name="SearchAddCheckbox" Content="Add to queue"/>
+                                <CheckBox x:Name="SearchShareCheckbox" Content="Share link"/>
+                                <CheckBox x:Name="SearchOpenCheckbox" Content="Open"/>
+                            </StackPanel>
+                        </local:SettingsCard>
+                    </local:SettingsExpander.Items>
+                </local:SettingsExpander>
+
                 <!-- DOWNLOAD SETTINGS ______________________________________________________________________________________________ -->
                 <TextBlock Text="Downloads" Style="{StaticResource TextBlockSectionStyle}" />
 

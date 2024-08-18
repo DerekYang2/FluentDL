@@ -133,23 +133,7 @@ public sealed partial class LocalExplorerPage : Page
     {
         // Initialize preview panel command bar
         var addButton = new AppBarButton { Icon = new SymbolIcon(Symbol.Add), Label = "Add to queue" };
-        addButton.Click += (sender, e) =>
-        {
-            var song = PreviewPanel.GetSong();
-            if (song != null)
-            {
-                var beforeCount = QueueViewModel.Source.Count;
-                QueueViewModel.Add(song);
-                if (QueueViewModel.Source.Count == beforeCount) // No change
-                {
-                    ShowInfoBar(InfoBarSeverity.Warning, $"<a href='{ApiHelper.GetUrl(song)}'>{song.Title}</a> already in queue");
-                }
-                else
-                {
-                    ShowInfoBar(InfoBarSeverity.Success, $"<a href='{ApiHelper.GetUrl(song)}'>{song.Title}</a> added to queue");
-                }
-            }
-        };
+        addButton.Click += (sender, e) => AddSongToQueue(PreviewPanel.GetSong());
 
         var removeButton = new AppBarButton() { Icon = new SymbolIcon(Symbol.Delete), Label = "Remove" };
         removeButton.Click += (sender, e) =>
@@ -166,24 +150,42 @@ public sealed partial class LocalExplorerPage : Page
         };
 
         var editButton = new AppBarButton { Icon = new SymbolIcon(Symbol.Edit), Label = "Edit" };
-        editButton.Click += (sender, e) =>
-        {
-            var selectedSong = PreviewPanel.GetSong();
-            if (selectedSong != null)
-            {
-                MetadataDialog.XamlRoot = this.XamlRoot;
-                dispatcher.TryEnqueue(() =>
-                {
-                    ViewModel.SetUpdateObject(selectedSong);
-                    MetadataTable.ItemsSource = ViewModel.CurrentMetadataList; // Fill table with the metadata list 
-                    CoverArtTextBox.Text = ViewModel.GetCurrentImagePath() ?? "";
-                    MetadataDialog.ShowAsync();
-                });
-            }
-        };
+        editButton.Click += (sender, e) => OpenMetadataDialog(PreviewPanel.GetSong());
 
         var openButton = new AppBarButton { Icon = new FontIcon { Glyph = "\uE8A7" }, Label = "Open" };
+        openButton.Click += (sender, e) => OpenSongInExplorer(PreviewPanel.GetSong());
+
         PreviewPanel.SetAppBarButtons(new List<AppBarButton> { addButton, removeButton, editButton, openButton });
+    }
+
+    private void AddToQueueShortcutButton_OnClick(object sender, RoutedEventArgs e)
+    {
+        // Get the button that was clicked
+        var button = sender as Button;
+
+        // Retrieve the item from the tag property
+        var song = button?.Tag as SongSearchObject;
+        AddSongToQueue(song);
+    }
+
+    private void EditButton_OnClick(object sender, RoutedEventArgs e)
+    {
+        // Get the button that was clicked
+        var button = sender as Button;
+
+        // Retrieve the item from the tag property
+        var song = button?.Tag as SongSearchObject;
+        OpenMetadataDialog(song);
+    }
+
+    private void OpenInBrowserButton_OnClick(object sender, RoutedEventArgs e)
+    {
+        // Get the button that was clicked
+        var button = sender as Button;
+
+        // Retrieve the item from the tag property
+        var song = button?.Tag as SongSearchObject;
+        OpenSongInExplorer(song);
     }
 
     protected async override void OnNavigatedTo(NavigationEventArgs e) // Navigated to page
@@ -642,32 +644,6 @@ public sealed partial class LocalExplorerPage : Page
         ShowInfoBar(InfoBarSeverity.Success, $"Saved metadata for <a href='{song.Id}'>{song.Title}</a>");
     }
 
-    private void AddQueueButton_OnClick(object sender, RoutedEventArgs e)
-    {
-        // Get the button that was clicked
-        var button = sender as Button;
-
-        // Retrieve the item from the Tag property
-        var song = button?.Tag as SongSearchObject;
-
-        var beforeCount = QueueViewModel.Source.Count;
-        if (song == null)
-        {
-            ShowInfoBar(InfoBarSeverity.Warning, "No song selected"); // Technically shouldn't happen
-            return;
-        }
-
-        QueueViewModel.Add(song);
-        if (QueueViewModel.Source.Count == beforeCount) // No change
-        {
-            ShowInfoBar(InfoBarSeverity.Warning, $"<a href='{ApiHelper.GetUrl(song)}'>{song.Title}</a> already in queue");
-        }
-        else
-        {
-            ShowInfoBar(InfoBarSeverity.Success, $"<a href='{ApiHelper.GetUrl(song)}'>{song.Title}</a> added to queue");
-        }
-    }
-
     private void MetadataDialog_OnCloseButtonClick(ContentDialog sender, ContentDialogButtonClickEventArgs args)
     {
     }
@@ -691,13 +667,48 @@ public sealed partial class LocalExplorerPage : Page
         }
     }
 
-    private void EditButton_OnClick(object sender, RoutedEventArgs e)
+    private void OpenMetadataDialog(SongSearchObject? selectedSong)
     {
-        throw new NotImplementedException();
+        if (selectedSong != null)
+        {
+            MetadataDialog.XamlRoot = this.XamlRoot;
+            dispatcher.TryEnqueue(() =>
+            {
+                ViewModel.SetUpdateObject(selectedSong);
+                MetadataTable.ItemsSource = ViewModel.CurrentMetadataList; // Fill table with the metadata list 
+                CoverArtTextBox.Text = ViewModel.GetCurrentImagePath() ?? "";
+                MetadataDialog.ShowAsync();
+            });
+        }
     }
 
-    private void OpenInBrowserButton_OnClick(object sender, RoutedEventArgs e)
+    private void AddSongToQueue(SongSearchObject? song)
     {
-        throw new NotImplementedException();
+        if (song == null)
+        {
+            ShowInfoBar(InfoBarSeverity.Warning, "No song selected"); // Technically shouldn't happen
+            return;
+        }
+
+        var beforeCount = QueueViewModel.Source.Count;
+
+        QueueViewModel.Add(song);
+        if (QueueViewModel.Source.Count == beforeCount) // No change
+        {
+            ShowInfoBar(InfoBarSeverity.Warning, $"<a href='{ApiHelper.GetUrl(song)}'>{song.Title}</a> already in queue");
+        }
+        else
+        {
+            ShowInfoBar(InfoBarSeverity.Success, $"<a href='{ApiHelper.GetUrl(song)}'>{song.Title}</a> added to queue");
+        }
+    }
+
+    private static void OpenSongInExplorer(SongSearchObject? song)
+    {
+        if (song != null)
+        {
+            var argument = $"/select, \"{song.Id}\"";
+            System.Diagnostics.Process.Start("explorer.exe", argument);
+        }
     }
 }
