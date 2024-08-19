@@ -15,6 +15,7 @@
     xmlns:marqueeTextRns="using:CommunityToolkit.Labs.WinUI.MarqueeTextRns"
     mc:Ignorable="d"
     NavigationCacheMode="Required"
+    x:Name="RootPage"
     >
 
     <Page.Resources>
@@ -238,13 +239,16 @@
                             </StackPanel>
 
                             <StackPanel Grid.Row="2" Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Bottom" HorizontalAlignment="Right" Spacing="4">
-                                <Button x:Name="AddToQueueShortcutButton" VerticalAlignment="Bottom" HorizontalAlignment="Right" Padding="4, 4, 3, 3" ToolTipService.ToolTip="Add to queue" Click="AddToQueueShortcutButton_OnClick" Tag="{Binding}">
+                                <Button x:Name="AddToQueueShortcutButton" VerticalAlignment="Bottom" HorizontalAlignment="Right" Padding="4, 4, 3, 3" ToolTipService.ToolTip="Add to queue" Click="AddToQueueShortcutButton_OnClick" Tag="{Binding}"
+                                        Visibility="{Binding ElementName=RootPage, Path=ViewModel.AddVisibility}">
                                     <FontIcon Glyph="&#xE710;" FontSize="20" />
                                 </Button>
-                                <Button x:Name="EditButton" VerticalAlignment="Bottom" HorizontalAlignment="Right" Padding="4, 4, 3, 3" ToolTipService.ToolTip="Edit song metadata" Click="EditButton_OnClick" Tag="{Binding}">
+                                <Button x:Name="EditButton" VerticalAlignment="Bottom" HorizontalAlignment="Right" Padding="4, 4, 3, 3" ToolTipService.ToolTip="Edit song metadata" Click="EditButton_OnClick" Tag="{Binding}"
+                                        Visibility="{Binding ElementName=RootPage, Path=ViewModel.EditVisibility}">
                                     <FontIcon Glyph="&#xE70F;" FontSize="20" />
                                 </Button>
-                                <Button x:Name="OpenInBrowserButton" VerticalAlignment="Bottom" HorizontalAlignment="Right" Padding="4, 4, 3, 3" ToolTipService.ToolTip="Open in File Explorer" Click="OpenInBrowserButton_OnClick" Tag="{Binding}">
+                                <Button x:Name="OpenInBrowserButton" VerticalAlignment="Bottom" HorizontalAlignment="Right" Padding="4, 4, 3, 3" ToolTipService.ToolTip="Open in File Explorer" Click="OpenInBrowserButton_OnClick" Tag="{Binding}"
+                                        Visibility="{Binding ElementName=RootPage, Path=ViewModel.OpenVisibility}">
                                     <FontIcon Glyph="&#xE8A7;" FontSize="20" />
                                 </Button>
                             </StackPanel>

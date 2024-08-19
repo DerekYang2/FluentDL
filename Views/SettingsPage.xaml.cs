@@ -81,6 +81,11 @@ public sealed partial class SettingsPage : Page
         SearchAddCheckbox.IsChecked = await localSettings.ReadSettingAsync<bool>(SettingsViewModel.SearchAddChecked);
         SearchShareCheckbox.IsChecked = await localSettings.ReadSettingAsync<bool>(SettingsViewModel.SearchShareChecked);
         SearchOpenCheckbox.IsChecked = await localSettings.ReadSettingAsync<bool>(SettingsViewModel.SearchOpenChecked);
+
+        // Set local explorer checkboxes
+        LocalExplorerAddCheckbox.IsChecked = await localSettings.ReadSettingAsync<bool>(SettingsViewModel.LocalExplorerAddChecked);
+        LocalExplorerEditCheckbox.IsChecked = await localSettings.ReadSettingAsync<bool>(SettingsViewModel.LocalExplorerEditChecked);
+        LocalExplorerOpenCheckbox.IsChecked = await localSettings.ReadSettingAsync<bool>(SettingsViewModel.LocalExplorerOpenChecked);
     }
 
     private async void ClientIdInput_OnLostFocus(object sender, RoutedEventArgs e)
@@ -294,6 +299,44 @@ public sealed partial class SettingsPage : Page
                 break;
             case "2":
                 localSettings.SaveSettingAsync(SettingsViewModel.SearchOpenChecked, false);
+                break;
+        }
+    }
+
+    private async void LocalExplorer_OnChecked(object sender, RoutedEventArgs e)
+    {
+        var checkBox = sender as CheckBox;
+        var index = checkBox.Tag.ToString();
+
+        switch (index)
+        {
+            case "0":
+                await localSettings.SaveSettingAsync(SettingsViewModel.LocalExplorerAddChecked, true);
+                break;
+            case "1":
+                await localSettings.SaveSettingAsync(SettingsViewModel.LocalExplorerEditChecked, true);
+                break;
+            case "2":
+                await localSettings.SaveSettingAsync(SettingsViewModel.LocalExplorerOpenChecked, true);
+                break;
+        }
+    }
+
+    private void LocalExplorer_OnUnchecked(object sender, RoutedEventArgs e)
+    {
+        var checkBox = sender as CheckBox;
+        var index = checkBox.Tag.ToString();
+
+        switch (index)
+        {
+            case "0":
+                localSettings.SaveSettingAsync(SettingsViewModel.LocalExplorerAddChecked, false);
+                break;
+            case "1":
+                localSettings.SaveSettingAsync(SettingsViewModel.LocalExplorerEditChecked, false);
+                break;
+            case "2":
+                localSettings.SaveSettingAsync(SettingsViewModel.LocalExplorerOpenChecked, false);
                 break;
         }
     }

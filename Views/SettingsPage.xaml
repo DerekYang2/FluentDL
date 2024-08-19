@@ -46,21 +46,37 @@
                     <Slider x:Name="CommandThreadsSlider" Minimum="1" Maximum="5" StepFrequency="1" TickFrequency="1" SnapsTo="Ticks" TickPlacement="Outside" LostFocus="CommandThreadsSlider_OnLostFocus"/>
                 </local:SettingsCard>
                 <local:SettingsExpander x:Name="ShortcutButtonExpander"
-                                        Description="Add or remove shortcut buttons for each page. These buttons can always be found in the sidebar."
+                                        Description="Add or remove shortcut buttons for each page's track list. These buttons may always be found in the sidebar."
                                         Header="Shortcut Buttons"
                                         HorizontalContentAlignment="Stretch">
                     <local:SettingsExpander.HeaderIcon>
                         <FontIcon Glyph="&#xE8B0;" />
                     </local:SettingsExpander.HeaderIcon>
                     <local:SettingsExpander.Items>
-                        <local:SettingsCard x:Name="SearchPageShortcuts" Header="Search Page" Description="Configure shortcut buttons for the search page"
+                        <local:SettingsCard x:Name="SearchPageShortcuts" Header="Search Page" Description="Select the shortcut buttons that should be shown in Search"
                                             HorizontalContentAlignment="Left" ContentAlignment="Vertical">
+                            <local:SettingsCard.HeaderIcon>
+                                <FontIcon Glyph="&#xE721;" />
+                            </local:SettingsCard.HeaderIcon>
                             <StackPanel>
                                 <CheckBox x:Name="SearchAddCheckbox" Content="Add to queue" Checked="Search_OnChecked" Unchecked="Search_OnUnchecked" Tag="0"/>
                                 <CheckBox x:Name="SearchShareCheckbox" Content="Share link" Checked="Search_OnChecked" Unchecked="Search_OnUnchecked" Tag="1"/>
                                 <CheckBox x:Name="SearchOpenCheckbox" Content="Open" Checked="Search_OnChecked" Unchecked="Search_OnUnchecked" Tag="2"/>
                             </StackPanel>
                         </local:SettingsCard>
+
+                        <local:SettingsCard x:Name="LocalExplorerPageShortcuts" Header="Local Explorer Page" Description="Select the shortcut buttons that should be shown in Local Explorer"
+                                            HorizontalContentAlignment="Left" ContentAlignment="Vertical">
+                            <local:SettingsCard.HeaderIcon>
+                                <FontIcon Glyph="&#xEC50;" />
+                            </local:SettingsCard.HeaderIcon>
+                            <StackPanel>
+                                <CheckBox x:Name="LocalExplorerAddCheckbox" Content="Add to queue" Checked="LocalExplorer_OnChecked" Unchecked="LocalExplorer_OnUnchecked" Tag="0"/>
+                                <CheckBox x:Name="LocalExplorerEditCheckbox" Content="Edit song metadata" Checked="LocalExplorer_OnChecked" Unchecked="LocalExplorer_OnUnchecked" Tag="1"/>
+                                <CheckBox x:Name="LocalExplorerOpenCheckbox" Content="Open in File Explorer" Checked="LocalExplorer_OnChecked" Unchecked="LocalExplorer_OnUnchecked" Tag="2"/>
+                            </StackPanel>
+                        </local:SettingsCard>
+
                     </local:SettingsExpander.Items>
                 </local:SettingsExpander>
 

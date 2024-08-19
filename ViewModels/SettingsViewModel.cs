@@ -33,6 +33,10 @@ public partial class SettingsViewModel : ObservableRecipient
         SearchShareChecked = "search_share_checked",
         SearchOpenChecked = "search_open_checked";
 
+    public static readonly string LocalExplorerAddChecked = "local_explorer_add_checked",
+        LocalExplorerEditChecked = "local_explorer_edit_checked",
+        LocalExplorerOpenChecked = "local_explorer_open_checked";
+
     private static ILocalSettingsService localSettings = App.GetService<ILocalSettingsService>();
 
     private readonly IThemeSelectorService _themeSelectorService;
