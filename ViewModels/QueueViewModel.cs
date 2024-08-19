@@ -364,22 +364,22 @@ public partial class QueueViewModel : ObservableRecipient, INotifyPropertyChange
                         Source[i] = newObj;
                     });
 
+                    var isLocal = Source[i].Source.Equals("local");
                     // Get the url of the current object
-                    string url;
-                    switch (Source[i].Source)
-                    {
-                        case "deezer":
-                            url = "https://www.deezer.com/track/" + Source[i].Id;
-                            break;
-                        case "youtube":
-                            url = "https://www.youtube.com/watch?v=" + Source[i].Id;
-                            break;
-                        default:
-                            url = string.Empty;
-                            break;
-                    }
+                    var url = ApiHelper.GetUrl(Source[i]);
 
-                    var thisCommand = command.Replace("%title%", Source[i].Title).Replace("%artist%", Source[i].Artists).Replace("%url%", url);
+                    var thisCommand = command.Replace("{url}", url)
+                        .Replace("{ext}", (isLocal ? Path.GetExtension(Source[i].Id) : ".").Substring(1))
+                        .Replace("{file_name}", isLocal ? Path.GetFileName(Source[i].Id) : "")
+                        .Replace("{title}", Source[i].Title)
+                        .Replace("{image_url}", Source[i].ImageLocation ?? "")
+                        .Replace("{id}", isLocal ? "" : Source[i].Id)
+                        .Replace("{release_date}", Source[i].ReleaseDate)
+                        .Replace("{artists}", Source[i].Artists)
+                        .Replace("{duration}", Source[i].Duration)
+                        .Replace("{album}", Source[i].AlbumName)
+                        .Replace("{isrc}", Source[i].Isrc);
+
                     // Run the command
                     var resultStr = TerminalSubprocess.GetRunCommandSync(thisCommand, directory);
 
@@ -398,75 +398,6 @@ public partial class QueueViewModel : ObservableRecipient, INotifyPropertyChange
                         IsRunning = false;
                         callback.Invoke(InfoBarSeverity.Success, "Command running complete.");
                     }
-                }
-            });
-            thread.Start();
-        }
-    }
-
-    // Use for multithreaded run
-    private static void MultiThreadedRun(string command, string? directory, CancellationToken token)
-    {
-        IsRunning = true; // Start running
-        for (int t = 0; t < 1; t++) // Edit this to change the number of threads
-        {
-            Thread thread = new Thread(() =>
-            {
-                while (IsRunning) // Multithreaded loop
-                {
-                    if (token.IsCancellationRequested) // Break the loop if the token is cancelled
-                    {
-                        IsRunning = false;
-                        return;
-                    }
-
-                    int i = index;
-                    Interlocked.Increment(ref index); // Increment the index in a thread-safe manner
-
-                    if (i >= Source.Count)
-                    {
-                        return;
-                    }
-
-                    // Update the is running of the current object
-                    dispatcher.TryEnqueue(() =>
-                    {
-                        var newObj = Source[i];
-                        newObj.IsRunning = true;
-                        Source[i] = newObj;
-                    });
-
-                    // Get the url of the current object
-                    string url;
-                    switch (Source[i].Source)
-                    {
-                        case "deezer":
-                            url = "https://www.deezer.com/track/" + Source[i].Id;
-                            break;
-                        case "youtube":
-                            url = "https://www.youtube.com/watch?v=" + Source[i].Id;
-                            break;
-                        default:
-                            url = string.Empty;
-                            break;
-                    }
-
-                    var thisCommand = command.Replace("%title%", Source[i].Title).Replace("%artist%", Source[i].Artists).Replace("%url%", url);
-                    // Run the command
-                    var resultStr = TerminalSubprocess.GetRunCommandSync(thisCommand, directory);
-
-                    // Update the actual object
-                    dispatcher.TryEnqueue(() =>
-                    {
-                        var newObj = Source[i];
-                        newObj.ResultString = resultStr;
-                        newObj.IsRunning = false;
-                        Source[i] = newObj; // This actually refreshes the UI of ObservableCollection
-                        if (GetCompletedCount() == Source.Count) // Check if all completed
-                        {
-                            IsRunning = false;
-                        }
-                    });
                 }
             });
             thread.Start();

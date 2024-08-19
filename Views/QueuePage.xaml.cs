@@ -1,3 +1,4 @@
+﻿using System.Collections.Concurrent;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Diagnostics.Eventing.Reader;
@@ -76,7 +77,7 @@ public sealed partial class QueuePage : Page
 
     // Conversion variables
     private HashSet<string> selectedSources;
-    private HashSet<SongSearchObject> successSource, warningSource, errorSource;
+    private ConcurrentDictionary<SongSearchObject, int> successSource, warningSource, errorSource;
 
     private static readonly object _lock = new object();
     private static bool _isConverting = false;
@@ -135,9 +136,10 @@ public sealed partial class QueuePage : Page
         ClearButton.IsEnabled = QueueViewModel.Source.Count > 0;
 
         // Set conversion variables
-        successSource = new HashSet<SongSearchObject>();
-        warningSource = new HashSet<SongSearchObject>();
-        errorSource = new HashSet<SongSearchObject>();
+        successSource = new ConcurrentDictionary<SongSearchObject, int>();
+        warningSource = new ConcurrentDictionary<SongSearchObject, int>();
+        errorSource = new ConcurrentDictionary<SongSearchObject, int>();
+
         selectedSources = new HashSet<string>();
 
         // Create callback
@@ -883,14 +885,16 @@ public sealed partial class QueuePage : Page
             switch (severity)
             {
                 case InfoBarSeverity.Success:
-                    successSource.Add(song);
+                    successSource.TryAdd(song, 0);
                     break;
                 case InfoBarSeverity.Warning:
-                    warningSource.Add(song);
+                    warningSource.TryAdd(song, 0);
                     break;
                 case InfoBarSeverity.Error:
-                    errorSource.Add(song);
+                    errorSource.TryAdd(song, 0);
                     break;
+                default:
+                    throw new Exception("Unspecified severity in callback");
             }
         };
 
@@ -1031,8 +1035,9 @@ public sealed partial class QueuePage : Page
 
                             if (queueObj != null)
                             {
-                                if (successSource.Contains(newSongObj)) queueObj.ConvertBadgeColor = new SolidColorBrush(Windows.UI.Color.FromArgb(255, 108, 203, 95));
-                                else if (warningSource.Contains(newSongObj)) queueObj.ConvertBadgeColor = new SolidColorBrush(Windows.UI.Color.FromArgb(255, 252, 225, 0));
+                                if (successSource.ContainsKey(newSongObj)) queueObj.ConvertBadgeColor = new SolidColorBrush(Windows.UI.Color.FromArgb(255, 108, 203, 95));
+                                else if (warningSource.ContainsKey(newSongObj)) queueObj.ConvertBadgeColor = new SolidColorBrush(Windows.UI.Color.FromArgb(255, 252, 225, 0));
+                                else throw new Exception("Unspecified severity for setbadge");
 
                                 queueObj.IsRunning = false; // Set song to not running
                                 QueueViewModel.Replace(i, queueObj);
@@ -1339,21 +1344,21 @@ public sealed partial class QueuePage : Page
         // Set items source based on selected tab
         if (selectedItem == SuccessTab)
         {
-            ConversionListView.ItemsSource = successSource;
+            ConversionListView.ItemsSource = successSource.Keys;
             TabInfoBar.Severity = InfoBarSeverity.Success;
             TabInfoBar.Content = "Exact conversions using ISRC or other ids";
             NoConversionText.Visibility = successSource.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
         }
         else if (selectedItem == WarningTab)
         {
-            ConversionListView.ItemsSource = warningSource;
+            ConversionListView.ItemsSource = warningSource.Keys;
             TabInfoBar.Severity = InfoBarSeverity.Warning;
             TabInfoBar.Content = "Attempted conversions using metadata";
             NoConversionText.Visibility = warningSource.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
         }
         else if (selectedItem == ErrorTab)
         {
-            ConversionListView.ItemsSource = errorSource;
+            ConversionListView.ItemsSource = errorSource.Keys;
             TabInfoBar.Severity = InfoBarSeverity.Error;
             TabInfoBar.Content = "Failed conversions";
             NoConversionText.Visibility = errorSource.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
@@ -1363,15 +1368,22 @@ public sealed partial class QueuePage : Page
     private async Task ShowConversionDialog()
     {
         ConversionResultsDialog.XamlRoot = this.XamlRoot;
-        ConversionTabView.SelectedItem = SuccessTab; // Default to success tab
-        ConversionTabView.SelectedItem = WarningTab; // Default to success tab
-        ConversionTabView.SelectedItem = SuccessTab; // Default to success tab
-
 
         // Set the counts
         ViewModel.SuccessCount = successSource.Count;
         ViewModel.WarningCount = warningSource.Count;
         ViewModel.ErrorCount = errorSource.Count;
+
+        ConversionTabView.SelectedItem = SuccessTab; // Default to success tab
+        // If no results in success tab, default to warning tab
+        if (ViewModel.SuccessCount == 0)
+        {
+            ConversionTabView.SelectedItem = WarningTab;
+        } // If no results in warning tab, default to error tab
+        else if (ViewModel.WarningCount == 0)
+        {
+            ConversionTabView.SelectedItem = ErrorTab;
+        }
 
         // Show the dialog
         await ConversionResultsDialog.ShowAsync();
