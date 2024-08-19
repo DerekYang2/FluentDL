@@ -64,6 +64,11 @@ public delegate void ConversionUpdateCallback(InfoBarSeverity severity, SongSear
 
 public sealed partial class QueuePage : Page
 {
+    public delegate void QueueRunCallback(InfoBarSeverity severity, string message);
+
+    // Create callback
+    private QueueRunCallback queueRunCallback;
+
     // Create dispatcher queue
     private DispatcherQueue dispatcherQueue;
     private DispatcherTimer dispatcherTimer;
@@ -134,25 +139,41 @@ public sealed partial class QueuePage : Page
         warningSource = new HashSet<SongSearchObject>();
         errorSource = new HashSet<SongSearchObject>();
         selectedSources = new HashSet<string>();
+
+        // Create callback
+        queueRunCallback = (severity, message) =>
+        {
+            dispatcherQueue.TryEnqueue(() =>
+            {
+                ShowInfoBar(severity, message);
+                App.GetService<IAppNotificationService>().Show(string.Format("QueueCompletePayload".GetLocalized(), AppContext.BaseDirectory));
+            });
+        };
+
+        // Set on load
+        this.Loaded += QueuePage_Loaded;
+    }
+
+    private async void QueuePage_Loaded(object sender, RoutedEventArgs e)
+    {
+        await ViewModel.InitializeAsync(); // Initialize the settings for shortcut buttons
     }
 
     protected async override void OnNavigatedTo(NavigationEventArgs e)
     {
         // Get the selected item
         var selectedSong = (SongSearchObject)CustomListView.SelectedItem;
-        if (selectedSong == null)
+        if (selectedSong != null)
         {
-            return;
-        }
-
-        PreviewPanel.Show();
-        if (selectedSong.Source == "local")
-        {
-            await PreviewPanel.Update(selectedSong, LocalExplorerViewModel.GetMetadataObject(selectedSong.Id));
-        }
-        else
-        {
-            await PreviewPanel.Update(selectedSong);
+            PreviewPanel.Show();
+            if (selectedSong.Source == "local")
+            {
+                await PreviewPanel.Update(selectedSong, LocalExplorerViewModel.GetMetadataObject(selectedSong.Id));
+            }
+            else
+            {
+                await PreviewPanel.Update(selectedSong);
+            }
         }
     }
 
@@ -216,7 +237,7 @@ public sealed partial class QueuePage : Page
                 {
                     StartStopButton.Visibility = Visibility.Collapsed; // Hide the start/stop button
                     EnableButtons();
-                    App.GetService<IAppNotificationService>().Show(string.Format("QueueCompletePayload".GetLocalized(), AppContext.BaseDirectory)); // Send notification
+                    // App.GetService<IAppNotificationService>().Show(string.Format("QueueCompletePayload".GetLocalized(), AppContext.BaseDirectory)); // Send notification
                 }
             }
 
@@ -479,8 +500,9 @@ public sealed partial class QueuePage : Page
         StartStopButton.Visibility = Visibility.Visible; // Display start stop
         QueueViewModel.SetCommand(commandInputText);
         QueueViewModel.Reset(); // Reset the queue object result strings and index
+
         cancellationTokenSource = new CancellationTokenSource();
-        await QueueViewModel.RunCommand(directoryInputText, cancellationTokenSource.Token);
+        await QueueViewModel.RunCommand(directoryInputText, cancellationTokenSource.Token, queueRunCallback);
         SetPauseUI();
 
         LocalCommands.AddCommand(commandInputText); // Add the command to the previous command list
@@ -516,7 +538,7 @@ public sealed partial class QueuePage : Page
         {
             cancellationTokenSource = new CancellationTokenSource();
             SetPauseUI();
-            QueueViewModel.RunCommand(DirectoryInput.Text, cancellationTokenSource.Token);
+            QueueViewModel.RunCommand(DirectoryInput.Text, cancellationTokenSource.Token, queueRunCallback);
         }
     }
 
@@ -878,6 +900,7 @@ public sealed partial class QueuePage : Page
             ConvertStopText.Text = "Stop"; // Reset stop button text
             ConvertStopButton.Visibility = Visibility.Collapsed; // Hide stop button
             QueueProgress.Value = ogVal; // Reset the progress bar
+            App.GetService<IAppNotificationService>().Show(string.Format("QueueCompletePayload".GetLocalized(), AppContext.BaseDirectory));
 
             ForceHideInfoBar();
             // Show conversion results dialog
@@ -1323,6 +1346,9 @@ public sealed partial class QueuePage : Page
     {
         ConversionResultsDialog.XamlRoot = this.XamlRoot;
         ConversionTabView.SelectedItem = SuccessTab; // Default to success tab
+        ConversionTabView.SelectedItem = WarningTab; // Default to success tab
+        ConversionTabView.SelectedItem = SuccessTab; // Default to success tab
+
 
         // Set the counts
         ViewModel.SuccessCount = successSource.Count;

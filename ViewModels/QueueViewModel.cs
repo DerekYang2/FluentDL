@@ -17,6 +17,10 @@ using static System.Net.WebRequestMethods;
 using DispatcherQueue = Microsoft.UI.Dispatching.DispatcherQueue;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
+using FluentDL.Contracts.Services;
+using FluentDL.Views;
+using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Controls;
 
 namespace FluentDL.ViewModels;
 
@@ -115,6 +119,33 @@ public partial class QueueViewModel : ObservableRecipient, INotifyPropertyChange
         set;
     } = string.Empty;
 
+    public Visibility ShareVisibility
+    {
+        get;
+        set;
+    }
+
+    public Visibility DownloadVisibility
+    {
+        get;
+        set;
+    }
+
+    public Visibility DownloadCoverVisibility
+    {
+        get;
+        set;
+    }
+
+    public Visibility RemoveVisibility
+    {
+        get;
+        set;
+    }
+
+    private ILocalSettingsService localSettings;
+
+
     public static DispatcherQueue dispatcher = DispatcherQueue.GetForCurrentThread();
     private static HashSet<string> trackSet = new HashSet<string>();
     private static int index;
@@ -142,8 +173,22 @@ public partial class QueueViewModel : ObservableRecipient, INotifyPropertyChange
 
     public QueueViewModel()
     {
+        localSettings = App.GetService<ILocalSettingsService>();
         dispatcher = DispatcherQueue.GetForCurrentThread();
         index = 0;
+    }
+
+    public async Task InitializeAsync()
+    {
+        ShareVisibility = await localSettings.ReadSettingAsync<bool?>(SettingsViewModel.QueueShareChecked) == true ? Visibility.Visible : Visibility.Collapsed;
+        DownloadVisibility = await localSettings.ReadSettingAsync<bool?>(SettingsViewModel.QueueDownloadChecked) == true ? Visibility.Visible : Visibility.Collapsed;
+        DownloadCoverVisibility = await localSettings.ReadSettingAsync<bool?>(SettingsViewModel.QueueDownloadCoverChecked) == true ? Visibility.Visible : Visibility.Collapsed;
+        RemoveVisibility = await localSettings.ReadSettingAsync<bool?>(SettingsViewModel.QueueRemoveChecked) == true ? Visibility.Visible : Visibility.Collapsed;
+
+        //Debug.WriteLine("ShareVisibility: " + (await localSettings.ReadSettingAsync<bool?>(SettingsViewModel.QueueShareChecked) == true ? "Visible" : "Collapsed"));
+        //Debug.WriteLine("DownloadVisibility: " + (await localSettings.ReadSettingAsync<bool?>(SettingsViewModel.QueueDownloadChecked) == true ? "Visible" : "Collapsed"));
+        //Debug.WriteLine("DownloadCoverVisibility: " + (await localSettings.ReadSettingAsync<bool?>(SettingsViewModel.QueueDownloadCoverChecked) == true ? "Visible" : "Collapsed"));
+        //Debug.WriteLine("RemoveVisibility: " + (await localSettings.ReadSettingAsync<bool?>(SettingsViewModel.QueueRemoveChecked) == true ? "Visible" : "Collapsed"));
     }
 
     public static async Task<IRandomAccessStream?> GetRandomAccessStreamFromUrl(string uri)
@@ -280,7 +325,7 @@ public partial class QueueViewModel : ObservableRecipient, INotifyPropertyChange
         command = newCommand;
     }
 
-    public static async Task RunCommand(string? directory, CancellationToken token)
+    public static async Task RunCommand(string? directory, CancellationToken token, QueuePage.QueueRunCallback callback)
     {
         if (IsRunning || index >= Source.Count)
         {
@@ -290,6 +335,7 @@ public partial class QueueViewModel : ObservableRecipient, INotifyPropertyChange
         IsRunning = true; // Start running 
 
         int threadCount = await SettingsViewModel.GetSetting<int?>(SettingsViewModel.CommandThreads) ?? 1;
+        int completedCount = 0;
 
         for (int t = 0; t < threadCount; t++) // Edit this to change the number of threads
         {
@@ -344,11 +390,14 @@ public partial class QueueViewModel : ObservableRecipient, INotifyPropertyChange
                         newObj.ResultString = resultStr;
                         newObj.IsRunning = false;
                         Source[i] = newObj; // This actually refreshes the UI of ObservableCollection
-                        if (GetCompletedCount() == Source.Count) // Check if all completed
-                        {
-                            IsRunning = false;
-                        }
                     });
+
+                    var capturedCount = Interlocked.Increment(ref completedCount);
+                    if (capturedCount == Source.Count) // Check if all completed
+                    {
+                        IsRunning = false;
+                        callback.Invoke(InfoBarSeverity.Success, "Command running complete.");
+                    }
                 }
             });
             thread.Start();
