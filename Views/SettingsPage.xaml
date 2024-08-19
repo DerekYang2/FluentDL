@@ -77,6 +77,20 @@
                             </StackPanel>
                         </local:SettingsCard>
 
+                        <!-- New settings card for Queue Page -->
+                        <local:SettingsCard x:Name="QueuePageShortcuts" Header="Queue Page" Description="Select the shortcut buttons that should be shown in Queue"
+                                            HorizontalContentAlignment="Left" ContentAlignment="Vertical">
+                            <local:SettingsCard.HeaderIcon>
+                                <FontIcon Glyph="&#xE7C3;" />
+                            </local:SettingsCard.HeaderIcon>
+                            <StackPanel>
+                                <CheckBox x:Name="QueueShareCheckbox" Content="Share link" Checked="Queue_OnChecked" Unchecked="Queue_OnUnchecked" Tag="0"/>
+                                <CheckBox x:Name="QueueDownloadCheckbox" Content="Download track" Checked="Queue_OnChecked" Unchecked="Queue_OnUnchecked" Tag="1"/>
+                                <CheckBox x:Name="QueueDownloadCoverCheckbox" Content="Download cover" Checked="Queue_OnChecked" Unchecked="Queue_OnUnchecked" Tag="2"/>
+                                <CheckBox x:Name="QueueRemoveCheckbox" Content="Remove from queue" Checked="Queue_OnChecked" Unchecked="Queue_OnUnchecked" Tag="3"/>
+                            </StackPanel>
+                        </local:SettingsCard>
+
                     </local:SettingsExpander.Items>
                 </local:SettingsExpander>
 

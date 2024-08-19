@@ -37,6 +37,11 @@ public partial class SettingsViewModel : ObservableRecipient
         LocalExplorerEditChecked = "local_explorer_edit_checked",
         LocalExplorerOpenChecked = "local_explorer_open_checked";
 
+    public static readonly string QueueShareChecked = "queue_share_checked",
+        QueueDownloadChecked = "queue_download_checked",
+        QueueDownloadCoverChecked = "queue_download_cover_checked",
+        QueueRemoveChecked = "queue_remove_checked";
+
     private static ILocalSettingsService localSettings = App.GetService<ILocalSettingsService>();
 
     private readonly IThemeSelectorService _themeSelectorService;

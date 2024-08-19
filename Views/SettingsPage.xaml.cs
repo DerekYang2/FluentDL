@@ -57,9 +57,9 @@ public sealed partial class SettingsPage : Page
         // Set Ids/Secrets
         ClientIdInput.Text = (await localSettings.ReadSettingAsync<string>(SettingsViewModel.SpotifyClientId)) ?? "";
         SpotifySecretInput.Password = (await localSettings.ReadSettingAsync<string>(SettingsViewModel.SpotifyClientSecret)) ?? "";
-        DeezerARLInput.Password = await localSettings.ReadSettingAsync<string>(SettingsViewModel.DeezerARL);
-        QobuzIDInput.Text = await localSettings.ReadSettingAsync<string>(SettingsViewModel.QobuzId);
-        QobuzTokenInput.Password = await localSettings.ReadSettingAsync<string>(SettingsViewModel.QobuzToken);
+        DeezerARLInput.Password = await localSettings.ReadSettingAsync<string>(SettingsViewModel.DeezerARL) ?? "";
+        QobuzIDInput.Text = await localSettings.ReadSettingAsync<string>(SettingsViewModel.QobuzId) ?? "";
+        QobuzTokenInput.Password = await localSettings.ReadSettingAsync<string>(SettingsViewModel.QobuzToken) ?? "";
 
         // Set lost input focus events
         DeezerARLInput.LostFocus += DeezerARLInput_OnLostFocus;
@@ -86,6 +86,12 @@ public sealed partial class SettingsPage : Page
         LocalExplorerAddCheckbox.IsChecked = await localSettings.ReadSettingAsync<bool>(SettingsViewModel.LocalExplorerAddChecked);
         LocalExplorerEditCheckbox.IsChecked = await localSettings.ReadSettingAsync<bool>(SettingsViewModel.LocalExplorerEditChecked);
         LocalExplorerOpenCheckbox.IsChecked = await localSettings.ReadSettingAsync<bool>(SettingsViewModel.LocalExplorerOpenChecked);
+
+        // Set queue checkboxes
+        QueueShareCheckbox.IsChecked = await localSettings.ReadSettingAsync<bool>(SettingsViewModel.QueueShareChecked);
+        QueueDownloadCheckbox.IsChecked = await localSettings.ReadSettingAsync<bool>(SettingsViewModel.QueueDownloadChecked);
+        QueueDownloadCoverCheckbox.IsChecked = await localSettings.ReadSettingAsync<bool>(SettingsViewModel.QueueDownloadCoverChecked);
+        QueueRemoveCheckbox.IsChecked = await localSettings.ReadSettingAsync<bool>(SettingsViewModel.QueueRemoveChecked);
     }
 
     private async void ClientIdInput_OnLostFocus(object sender, RoutedEventArgs e)
@@ -260,11 +266,6 @@ public sealed partial class SettingsPage : Page
         await localSettings.SaveSettingAsync(SettingsViewModel.DownloadThreads, value);
     }
 
-    /*
-     *                                <CheckBox x:Name="SearchAddCheckbox" Content="Add to queue" Checked="Search_OnChecked" Unchecked="Search_OnUnchecked" Tag="0"/>
-       <CheckBox x:Name="SearchShareCheckbox" Content="Share link" Checked="Search_OnChecked" Unchecked="Search_OnUnchecked" Tag="1"/>
-       <CheckBox x:Name="SearchOpenCheckbox" Content="Open" Checked="Search_OnChecked" Unchecked="Search_OnUnchecked" Tag="2"/>
-     */
     private async void Search_OnChecked(object sender, RoutedEventArgs e)
     {
         var checkBox = sender as CheckBox;
@@ -337,6 +338,50 @@ public sealed partial class SettingsPage : Page
                 break;
             case "2":
                 localSettings.SaveSettingAsync(SettingsViewModel.LocalExplorerOpenChecked, false);
+                break;
+        }
+    }
+
+    private void Queue_OnChecked(object sender, RoutedEventArgs e)
+    {
+        var checkbox = sender as CheckBox;
+        var index = checkbox.Tag.ToString();
+
+        switch (index)
+        {
+            case "0":
+                localSettings.SaveSettingAsync(SettingsViewModel.QueueShareChecked, true);
+                break;
+            case "1":
+                localSettings.SaveSettingAsync(SettingsViewModel.QueueDownloadChecked, true);
+                break;
+            case "2":
+                localSettings.SaveSettingAsync(SettingsViewModel.QueueDownloadCoverChecked, true);
+                break;
+            case "3":
+                localSettings.SaveSettingAsync(SettingsViewModel.QueueRemoveChecked, true);
+                break;
+        }
+    }
+
+    private void Queue_OnUnchecked(object sender, RoutedEventArgs e)
+    {
+        var checkbox = sender as CheckBox;
+        var index = checkbox.Tag.ToString();
+
+        switch (index)
+        {
+            case "0":
+                localSettings.SaveSettingAsync(SettingsViewModel.QueueShareChecked, false);
+                break;
+            case "1":
+                localSettings.SaveSettingAsync(SettingsViewModel.QueueDownloadChecked, false);
+                break;
+            case "2":
+                localSettings.SaveSettingAsync(SettingsViewModel.QueueDownloadCoverChecked, false);
+                break;
+            case "3":
+                localSettings.SaveSettingAsync(SettingsViewModel.QueueRemoveChecked, false);
                 break;
         }
     }

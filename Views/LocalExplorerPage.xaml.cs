@@ -127,6 +127,31 @@ public sealed partial class LocalExplorerPage : Page
         // Set first
         SetResultsAmount(0);
         ClearButton.IsEnabled = originalList.Count > 0;
+
+        // Set on load
+        this.Loaded += LocalExplorerPage_Loaded;
+    }
+
+    private async void LocalExplorerPage_Loaded(object sender, RoutedEventArgs e)
+    {
+        await ViewModel.InitializeAsync();
+    }
+
+    protected async override void OnNavigatedTo(NavigationEventArgs e) // Navigated to page
+    {
+        // Get the selected item
+        var selectedSong = (SongSearchObject)FileListView.SelectedItem;
+        if (selectedSong != null)
+        {
+            PreviewPanel.Show();
+            await PreviewPanel.Update(selectedSong, LocalExplorerViewModel.GetMetadataObject(selectedSong.Id));
+        }
+
+        // Initialize the settings for shortcut buttons
+        await ViewModel.InitializeAsync();
+
+        // Refresh the listview items 
+        SortListView();
     }
 
     private void InitPreviewPanelButtons()
@@ -186,19 +211,6 @@ public sealed partial class LocalExplorerPage : Page
         // Retrieve the item from the tag property
         var song = button?.Tag as SongSearchObject;
         OpenSongInExplorer(song);
-    }
-
-    protected async override void OnNavigatedTo(NavigationEventArgs e) // Navigated to page
-    {
-        // Get the selected item
-        var selectedSong = (SongSearchObject)FileListView.SelectedItem;
-        if (selectedSong == null)
-        {
-            return;
-        }
-
-        PreviewPanel.Show();
-        await PreviewPanel.Update(selectedSong, LocalExplorerViewModel.GetMetadataObject(selectedSong.Id));
     }
 
     protected override void OnNavigatedFrom(NavigationEventArgs e) // Navigated away from page

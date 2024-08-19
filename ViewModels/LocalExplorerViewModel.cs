@@ -16,6 +16,7 @@ using FFMpegCore.Builders.MetaData;
 using FluentDL.Helpers;
 using Microsoft.UI.Xaml.Media.Imaging;
 using FluentDL.Models;
+using Microsoft.UI.Xaml;
 using TagLib;
 using File = TagLib.File;
 
@@ -23,6 +24,7 @@ namespace FluentDL.ViewModels;
 
 public partial class LocalExplorerViewModel : ObservableRecipient
 {
+    private ILocalSettingsService localSettings;
     private string currentEditPath = ""; // Path of the file currently being edited
     private static Dictionary<string, MetadataObject> tmpUpdates = new Dictionary<string, MetadataObject>();
 
@@ -32,8 +34,34 @@ public partial class LocalExplorerViewModel : ObservableRecipient
         set;
     }
 
+    public Visibility AddVisibility
+    {
+        get;
+        set;
+    }
+
+    public Visibility EditVisibility
+    {
+        get;
+        set;
+    }
+
+    public Visibility OpenVisibility
+    {
+        get;
+        set;
+    }
+
     public LocalExplorerViewModel()
     {
+        localSettings = App.GetService<ILocalSettingsService>();
+    }
+
+    public async Task InitializeAsync()
+    {
+        AddVisibility = await localSettings.ReadSettingAsync<bool?>(SettingsViewModel.LocalExplorerAddChecked) == true ? Visibility.Visible : Visibility.Collapsed;
+        EditVisibility = await localSettings.ReadSettingAsync<bool?>(SettingsViewModel.LocalExplorerEditChecked) == true ? Visibility.Visible : Visibility.Collapsed;
+        OpenVisibility = await localSettings.ReadSettingAsync<bool?>(SettingsViewModel.LocalExplorerOpenChecked) == true ? Visibility.Visible : Visibility.Collapsed;
     }
 
     public string GetCurrentEditPath()
