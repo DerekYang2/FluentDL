@@ -3,6 +3,7 @@ using Microsoft.UI.Xaml.Controls;
 using FluentDL.Services;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
+using System.Numerics;
 using FluentDL.Contracts.Services;
 using FluentDL.Helpers;
 using FluentDL.Models;
@@ -13,6 +14,7 @@ using Microsoft.UI.Xaml.Navigation;
 using Microsoft.UI.Text;
 using Microsoft.UI.Xaml.Documents;
 using System.Text.RegularExpressions;
+using Microsoft.UI.Xaml.Hosting;
 
 namespace FluentDL.Views;
 // TODO: loading for search
@@ -123,6 +125,32 @@ public sealed partial class Search : Page
         cancellationTokenSource = new CancellationTokenSource();
 
         this.Loaded += SearchPage_Loaded;
+
+        InitAnimation();
+    }
+
+    private void InitAnimation()
+    {
+        var visual = ElementCompositionPreview.GetElementVisual(ResultsIcon);
+        var compositor = visual.Compositor;
+        // Set the center point for scaling
+        visual.CenterPoint = new Vector3((float)ResultsIcon.ActualWidth / 2, (float)ResultsIcon.ActualHeight / 2, 1);
+
+        // Create the scale up animation
+        var scaleUpAnimation = compositor.CreateVector3KeyFrameAnimation();
+        scaleUpAnimation.InsertKeyFrame(0.0f, new Vector3(1.0f, 1.0f, 1.0f));
+        scaleUpAnimation.InsertKeyFrame(1.0f, new Vector3(1.5f, 1.5f, 1.0f));
+        scaleUpAnimation.Duration = TimeSpan.FromMilliseconds(200);
+
+        // Create the scale down animation
+        var scaleDownAnimation = compositor.CreateVector3KeyFrameAnimation();
+        scaleDownAnimation.InsertKeyFrame(0.0f, new Vector3(1.5f, 1.5f, 1.0f));
+        scaleDownAnimation.InsertKeyFrame(1.0f, new Vector3(1.0f, 1.0f, 1.0f));
+        scaleDownAnimation.Duration = TimeSpan.FromMilliseconds(200);
+
+        // Attach event handlers to the button
+        AddToQueueButton.PointerEntered += (s, e) => visual.StartAnimation("Scale", scaleUpAnimation);
+        AddToQueueButton.PointerExited += (s, e) => visual.StartAnimation("Scale", scaleDownAnimation);
     }
 
     private async void SearchPage_Loaded(object sender, RoutedEventArgs e)
