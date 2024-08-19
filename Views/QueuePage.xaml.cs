@@ -70,9 +70,29 @@ public sealed partial class QueuePage : Page
     private CancellationTokenSource cancellationTokenSource;
 
     // Conversion variables
-    private bool isConverting = false;
     private HashSet<string> selectedSources;
     private HashSet<SongSearchObject> successSource, warningSource, errorSource;
+
+    private static readonly object _lock = new object();
+    private static bool _isConverting = false;
+
+    public static bool IsConverting
+    {
+        get
+        {
+            lock (_lock)
+            {
+                return _isConverting;
+            }
+        }
+        set
+        {
+            lock (_lock)
+            {
+                _isConverting = value;
+            }
+        }
+    }
 
     public QueueViewModel ViewModel
     {
@@ -163,7 +183,7 @@ public sealed partial class QueuePage : Page
 
     private void OnQueueSourceChange()
     {
-        if (isConverting) // Ignore the below
+        if (IsConverting) // Ignore the below
         {
             return;
         }
@@ -207,169 +227,204 @@ public sealed partial class QueuePage : Page
 
     private void InitPreviewPanelButtons()
     {
-        var copySourceButton = new AppBarButton() { Icon = new SymbolIcon(Symbol.Link), Label = "Share Link" };
-        copySourceButton.Click += (sender, e) =>
-        {
-            var selectedSong = PreviewPanel.GetSong();
-            var uri = selectedSong.Source switch
-            {
-                "spotify" => $"https://open.spotify.com/track/{selectedSong.Id}",
-                "deezer" => $"https://www.deezer.com/track/{selectedSong.Id}",
-                "youtube" => $"https://www.youtube.com/watch?v={selectedSong.Id}",
-                "local" => selectedSong.Id,
-                _ => null
-            };
-            if (uri == null)
-            {
-                ShowInfoBar(InfoBarSeverity.Error, "Failed to copy source to clipboard");
-                return;
-            }
-
-            Clipboard.CopyToClipboard(uri);
-            ShowInfoBar(InfoBarSeverity.Success, "Copied to clipboard");
-        };
+        var shareLinkButton = new AppBarButton() { Icon = new SymbolIcon(Symbol.Link), Label = "Share Link" };
+        shareLinkButton.Click += (sender, e) => CopySongLink(PreviewPanel.GetSong());
 
         var downloadButton = new AppBarButton() { Icon = new SymbolIcon(Symbol.Download), Label = "Download" };
-        downloadButton.Click += async (sender, e) =>
-        {
-            var songObj = PreviewPanel.GetSong();
-
-            if (songObj == null)
-            {
-                ShowInfoBar(InfoBarSeverity.Error, "Failed to download track");
-                return;
-            }
-
-            if (songObj.Source == "local")
-            {
-                ShowInfoBar(InfoBarSeverity.Warning, "Track is already local");
-                return;
-            }
-
-            // Create a folder picker (for download directory)
-            var directory = await SettingsViewModel.GetSetting<string>(SettingsViewModel.DownloadDirectory);
-
-            // If user needs to select a directory
-            if (await SettingsViewModel.GetSetting<bool>(SettingsViewModel.AskBeforeDownload) || string.IsNullOrWhiteSpace(directory))
-            {
-                // Open the picker for the user to pick a folder
-                var folder = await StoragePickerHelper.PickFolderAsync(PickerLocationId.Downloads);
-                if (folder != null)
-                {
-                    StorageApplicationPermissions.FutureAccessList.AddOrReplace("PickedFolderToken", folder); // Save the folder for future access
-                    directory = folder.Path;
-                }
-                else // Selected "cancel"
-                {
-                    ShowInfoBar(InfoBarSeverity.Warning, "No download directory selected", 3);
-                    return;
-                }
-            }
-
-            ShowInfoBarPermanent(InfoBarSeverity.Informational, $"Saving <a href='{ApiHelper.GetUrl(songObj)}'>{songObj.Title}</a> to <a href='{directory}'>{Path.GetDirectoryName(directory)}</a>", title: "Download in Progress");
-
-            InfobarProgress.Visibility = Visibility.Visible; // Show the infobar's progress bar
-
-            // Download the track
-            await ApiHelper.DownloadObject(songObj, directory, (severity, song, location) =>
-            {
-                dispatcherQueue.TryEnqueue(() =>
-                {
-                    InfobarProgress.Visibility = Visibility.Collapsed; // Hide the infobar's progress bar
-                    if (severity == InfoBarSeverity.Error)
-                    {
-                        ShowInfoBar(severity, $"Failed to download <a href='{ApiHelper.GetUrl(songObj)}'>{songObj.Title}</a>", 5);
-                    }
-                    else if (severity == InfoBarSeverity.Success)
-                    {
-                        ShowInfoBar(severity, $"Successfully downloaded <a href='{location}'>{songObj.Title}</a>", 5);
-                    }
-                    else if (severity == InfoBarSeverity.Warning)
-                    {
-                        ShowInfoBar(severity, $"Downloaded a possible equivalent of <a href='{location}'>{songObj.Title}</a>", 5);
-                    }
-                });
-            });
-        };
+        downloadButton.Click += async (sender, e) => await DownloadSong(PreviewPanel.GetSong());
 
         var downloadCoverButton = new AppBarButton() { Icon = new FontIcon { Glyph = "\uEE71" }, Label = "Download Cover" };
-        downloadCoverButton.Click += async (sender, e) =>
-        {
-            var songObj = PreviewPanel.GetSong();
-
-            // Check if the image is null
-            if (songObj == null)
-            {
-                ShowInfoBar(InfoBarSeverity.Error, "Failed to download cover");
-                return;
-            }
-
-            // Create file name
-            var firstArtist = songObj.Artists.Split(",")[0].Trim();
-            var isrcStr = !string.IsNullOrWhiteSpace(songObj.Isrc) ? $" [{songObj.Isrc}] " : "";
-            var safeFileName = ApiHelper.GetSafeFilename($"{songObj.TrackPosition}. {firstArtist} - {songObj.Title}{isrcStr}Cover Art.jpg");
-
-            // Create a file save picker
-            FileSavePicker savePicker = new() { SuggestedStartLocation = PickerLocationId.Downloads, SuggestedFileName = safeFileName, };
-            savePicker.FileTypeChoices.Add("Image", new List<string>() { ".jpg", ".png" });
-
-            // Retrieve the window handle (HWND) of the current WinUI 3 window
-            var hWnd = WinRT.Interop.WindowNative.GetWindowHandle(App.MainWindow);
-
-            // Initialize the file picker with the window handle (HWND)
-            WinRT.Interop.InitializeWithWindow.Initialize(savePicker, hWnd);
-
-            var file = await savePicker.PickSaveFileAsync();
-
-            // Save bitmap image as jpg/png
-            if (file != null)
-            {
-                byte[]? coverBytes;
-                if (songObj.Source == "local")
-                {
-                    coverBytes = await Task.Run(() => LocalExplorerViewModel.GetAlbumArtBytes(songObj.Id));
-                }
-                else
-                {
-                    try
-                    {
-                        var bitmapImg = PreviewPanel.GetImage();
-                        coverBytes = await new HttpClient().GetByteArrayAsync(bitmapImg?.UriSource);
-                    }
-                    catch (Exception ex)
-                    {
-                        Debug.WriteLine(ex.Message);
-                        return;
-                    }
-                }
-
-                if (coverBytes == null)
-                {
-                    ShowInfoBar(InfoBarSeverity.Error, "Failed to save cover", 5);
-                    return;
-                }
-
-                await File.WriteAllBytesAsync(file.Path, coverBytes);
-                ShowInfoBar(InfoBarSeverity.Success, $"Cover saved to <a href='{file.Path}'>{file.Name}</a>", 5);
-            }
-
-            //await DeezerApi.DownloadTrack(await DeezerApi.GetTrack(PreviewPanel.GetSong().Id), "E:\\Other Downloads\\test");
-        };
+        downloadCoverButton.Click += async (sender, e) => await DownloadSongCover(PreviewPanel.GetSong());
 
         var removeButton = new AppBarButton() { Icon = new SymbolIcon(Symbol.Delete), Label = "Remove" };
-        removeButton.Click += (sender, e) =>
+        removeButton.Click += (sender, e) => RemoveSongFromQueue(PreviewPanel.GetSong());
+
+        PreviewPanel.SetAppBarButtons(new List<AppBarButton> { shareLinkButton, downloadButton, downloadCoverButton, removeButton });
+    }
+
+    private void ShareLinkButton_OnClick(object sender, RoutedEventArgs e)
+    {
+        var button = sender as Button;
+        var song = button?.Tag as SongSearchObject;
+
+        CopySongLink(song);
+    }
+
+    private async void ShortcutDownloadButton_OnClick(object sender, RoutedEventArgs e)
+    {
+        var button = sender as Button;
+        var song = button?.Tag as SongSearchObject;
+
+        await DownloadSong(song);
+    }
+
+    private async void DownloadCoverButton_OnClick(object sender, RoutedEventArgs e)
+    {
+        var button = sender as Button;
+        var song = button?.Tag as SongSearchObject;
+
+        await DownloadSongCover(song);
+    }
+
+    private void RemoveButton_OnClick(object sender, RoutedEventArgs e)
+    {
+        var button = sender as Button;
+        var song = button?.Tag as SongSearchObject;
+
+        RemoveSongFromQueue(song);
+    }
+
+    private void CopySongLink(SongSearchObject? song)
+    {
+        if (song == null)
         {
-            var selectedSong = PreviewPanel.GetSong();
-            if (selectedSong == null)
+            ShowInfoBar(InfoBarSeverity.Error, "Failed to copy source to clipboard");
+            return;
+        }
+
+        var uri = ApiHelper.GetUrl(song);
+
+        Clipboard.CopyToClipboard(uri);
+        ShowInfoBar(InfoBarSeverity.Success, "Copied link to clipboard");
+    }
+
+    private void RemoveSongFromQueue(SongSearchObject? selectedSong)
+    {
+        if (selectedSong == null)
+        {
+            ShowInfoBar(InfoBarSeverity.Warning, "Error removing track from queue", 3);
+            return;
+        }
+
+        if (IsConverting || QueueViewModel.IsRunning)
+        {
+            ShowInfoBar(InfoBarSeverity.Warning, "Cannot remove track while queue is running", 3);
+            return;
+        }
+
+        QueueViewModel.Remove(selectedSong);
+        PreviewPanel.Clear();
+    }
+
+    private async Task DownloadSongCover(SongSearchObject? songObj)
+    {
+        // Check if the image is null
+        if (songObj == null)
+        {
+            ShowInfoBar(InfoBarSeverity.Error, "Failed to download cover");
+            return;
+        }
+
+        // Create file name
+        var firstArtist = songObj.Artists.Split(",")[0].Trim();
+        var isrcStr = !string.IsNullOrWhiteSpace(songObj.Isrc) ? $" [{songObj.Isrc}] " : "";
+        var safeFileName = ApiHelper.GetSafeFilename($"{songObj.TrackPosition}. {firstArtist} - {songObj.Title}{isrcStr}Cover Art.jpg");
+
+        // Create a file save picker
+        FileSavePicker savePicker = new() { SuggestedStartLocation = PickerLocationId.Downloads, SuggestedFileName = safeFileName, };
+        savePicker.FileTypeChoices.Add("Image", new List<string>() { ".jpg", ".png" });
+
+        // Retrieve the window handle (HWND) of the current WinUI 3 window
+        var hWnd = WinRT.Interop.WindowNative.GetWindowHandle(App.MainWindow);
+
+        // Initialize the file picker with the window handle (HWND)
+        WinRT.Interop.InitializeWithWindow.Initialize(savePicker, hWnd);
+
+        var file = await savePicker.PickSaveFileAsync();
+
+        // Save bitmap image as jpg/png
+        if (file != null)
+        {
+            byte[]? coverBytes;
+            if (songObj.Source == "local")
             {
+                coverBytes = await Task.Run(() => LocalExplorerViewModel.GetAlbumArtBytes(songObj.Id));
+            }
+            else
+            {
+                try
+                {
+                    var bitmapImg = PreviewPanel.GetImage();
+                    coverBytes = await new HttpClient().GetByteArrayAsync(bitmapImg?.UriSource);
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine(ex.Message);
+                    return;
+                }
+            }
+
+            if (coverBytes == null)
+            {
+                ShowInfoBar(InfoBarSeverity.Error, "Failed to save cover", 5);
                 return;
             }
 
-            QueueViewModel.Remove(selectedSong);
-            PreviewPanel.Clear();
-        };
+            await File.WriteAllBytesAsync(file.Path, coverBytes);
+            ShowInfoBar(InfoBarSeverity.Success, $"Cover saved to <a href='{file.Path}'>{file.Name}</a>", 5);
+        }
 
-        PreviewPanel.SetAppBarButtons(new List<AppBarButton> { copySourceButton, downloadButton, downloadCoverButton, removeButton });
+        //await DeezerApi.DownloadTrack(await DeezerApi.GetTrack(PreviewPanel.GetSong().Id), "E:\\Other Downloads\\test");
+    }
+
+    private async Task DownloadSong(SongSearchObject? songObj)
+    {
+        if (songObj == null)
+        {
+            ShowInfoBar(InfoBarSeverity.Error, "Failed to download track");
+            return;
+        }
+
+        if (songObj.Source == "local")
+        {
+            ShowInfoBar(InfoBarSeverity.Warning, "Track is already local");
+            return;
+        }
+
+        // Create a folder picker (for download directory)
+        var directory = await SettingsViewModel.GetSetting<string>(SettingsViewModel.DownloadDirectory);
+
+        // If user needs to select a directory
+        if (await SettingsViewModel.GetSetting<bool>(SettingsViewModel.AskBeforeDownload) || string.IsNullOrWhiteSpace(directory))
+        {
+            // Open the picker for the user to pick a folder
+            var folder = await StoragePickerHelper.PickFolderAsync(PickerLocationId.Downloads);
+            if (folder != null)
+            {
+                StorageApplicationPermissions.FutureAccessList.AddOrReplace("PickedFolderToken", folder); // Save the folder for future access
+                directory = folder.Path;
+            }
+            else // Selected "cancel"
+            {
+                ShowInfoBar(InfoBarSeverity.Warning, "No download directory selected", 3);
+                return;
+            }
+        }
+
+        ShowInfoBarPermanent(InfoBarSeverity.Informational, $"Saving <a href='{ApiHelper.GetUrl(songObj)}'>{songObj.Title}</a> to <a href='{directory}'>{Path.GetDirectoryName(directory)}</a>", title: "Download in Progress");
+
+        InfobarProgress.Visibility = Visibility.Visible; // Show the infobar's progress bar
+
+        // Download the track
+        await ApiHelper.DownloadObject(songObj, directory, (severity, song, location) =>
+        {
+            dispatcherQueue.TryEnqueue(() =>
+            {
+                InfobarProgress.Visibility = Visibility.Collapsed; // Hide the infobar's progress bar
+                if (severity == InfoBarSeverity.Error)
+                {
+                    ShowInfoBar(severity, $"Failed to download <a href='{ApiHelper.GetUrl(songObj)}'>{songObj.Title}</a>", 5);
+                }
+                else if (severity == InfoBarSeverity.Success)
+                {
+                    ShowInfoBar(severity, $"Successfully downloaded <a href='{location}'>{songObj.Title}</a>", 5);
+                }
+                else if (severity == InfoBarSeverity.Warning)
+                {
+                    ShowInfoBar(severity, $"Downloaded a possible equivalent of <a href='{location}'>{songObj.Title}</a>", 5);
+                }
+            });
+        });
     }
 
     private async void CustomListView_OnSelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -723,27 +778,6 @@ public sealed partial class QueuePage : Page
         ConversionDialog.ShowAsync();
     }
 
-    private static readonly object _lock = new object();
-    private static bool _isRunning = false;
-
-    public static bool IsRunning
-    {
-        get
-        {
-            lock (_lock)
-            {
-                return _isRunning;
-            }
-        }
-        set
-        {
-            lock (_lock)
-            {
-                _isRunning = value;
-            }
-        }
-    }
-
     private async void ConversionDialog_OnPrimaryButtonClick(ContentDialog sender, ContentDialogButtonClickEventArgs args)
     {
         // Check for valid input
@@ -805,8 +839,6 @@ public sealed partial class QueuePage : Page
         // Prepare UI
         CommandButton.Visibility = ConvertDialogOpenButton.Visibility = ClearButton.Visibility = Visibility.Collapsed; // Hide buttons
         ConvertStopButton.Visibility = Visibility.Visible; // Show stop button
-        isConverting = true;
-
         // Clear the conversion results
         successSource.Clear();
         warningSource.Clear();
@@ -838,14 +870,13 @@ public sealed partial class QueuePage : Page
 
         int index = 0, processedCount = 0;
         var token = cancellationTokenSource.Token;
-        IsRunning = true;
+        IsConverting = true;
 
         var EndConversionLambda = async () =>
         {
             CommandButton.Visibility = ConvertDialogOpenButton.Visibility = ClearButton.Visibility = Visibility.Visible; // Show buttons
             ConvertStopText.Text = "Stop"; // Reset stop button text
             ConvertStopButton.Visibility = Visibility.Collapsed; // Hide stop button
-            isConverting = false;
             QueueProgress.Value = ogVal; // Reset the progress bar
 
             ForceHideInfoBar();
@@ -859,11 +890,11 @@ public sealed partial class QueuePage : Page
         {
             Thread t = new Thread(async () =>
             {
-                while (IsRunning)
+                while (IsConverting)
                 {
                     if (token.IsCancellationRequested) // Break the loop if the token is cancelled
                     {
-                        IsRunning = false;
+                        IsConverting = false;
                         dispatcherQueue.TryEnqueue(async () => await EndConversionLambda());
                         return;
                     }
@@ -888,7 +919,7 @@ public sealed partial class QueuePage : Page
 
                         if (processCountCaptured == totalCount) // If all tracks are processed
                         {
-                            IsRunning = false;
+                            IsConverting = false;
                             dispatcherQueue.TryEnqueue(async () => await EndConversionLambda());
                             return;
                         }
@@ -989,7 +1020,7 @@ public sealed partial class QueuePage : Page
 
                     if (processCaptured == totalCount) // If all tracks are processed
                     {
-                        IsRunning = false;
+                        IsConverting = false;
                         dispatcherQueue.TryEnqueue(async () => await EndConversionLambda());
                         return;
                     }
@@ -1254,7 +1285,7 @@ public sealed partial class QueuePage : Page
      */
     private void ConvertStopButton_OnClick(object sender, RoutedEventArgs e)
     {
-        if (isConverting) // If currently converting
+        if (IsConverting) // If currently converting
         {
             cancellationTokenSource.Cancel(); // Cancel the conversion
             ConvertStopText.Text = "Stopping ...";

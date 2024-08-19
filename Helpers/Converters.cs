@@ -93,6 +93,20 @@ internal class VisibilityConverter : IValueConverter
     }
 }
 
+internal class CollapsedConverter : IValueConverter
+{
+    // Converts bool to Visibility (inverted)
+    public object Convert(object value, Type targetType, object parameter, string language)
+    {
+        return (bool)value ? Microsoft.UI.Xaml.Visibility.Collapsed : Microsoft.UI.Xaml.Visibility.Visible;
+    }
+
+    public object ConvertBack(object value, Type targetType, object parameter, string language)
+    {
+        throw new NotImplementedException();
+    }
+}
+
 internal class NullVisibilityConverter : IValueConverter
 {
     // Converts imagelocation path to Visibility
