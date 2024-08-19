@@ -266,13 +266,18 @@ public sealed partial class QueuePage : Page
         var downloadButton = new AppBarButton() { Icon = new SymbolIcon(Symbol.Download), Label = "Download" };
         downloadButton.Click += async (sender, e) => await DownloadSong(PreviewPanel.GetSong());
 
-        var downloadCoverButton = new AppBarButton() { Icon = new FontIcon { Glyph = "\uEE71" }, Label = "Download Cover" };
+        var downloadCoverButton = new AppBarButton() { Icon = new FontIcon { Glyph = "\uEE71" }, Label = "Save Cover" };
         downloadCoverButton.Click += async (sender, e) => await DownloadSongCover(PreviewPanel.GetSong());
 
         var removeButton = new AppBarButton() { Icon = new SymbolIcon(Symbol.Delete), Label = "Remove" };
         removeButton.Click += (sender, e) => RemoveSongFromQueue(PreviewPanel.GetSong());
 
-        PreviewPanel.SetAppBarButtons(new List<AppBarButton> { shareLinkButton, downloadButton, downloadCoverButton, removeButton });
+        AnimationHelper.AttachScaleAnimation(shareLinkButton);
+        AnimationHelper.AttachSpringDownAnimation(downloadButton);
+        AnimationHelper.AttachSpringUpAnimation(downloadCoverButton);
+        AnimationHelper.AttachScaleAnimation(removeButton);
+
+        PreviewPanel.SetAppBarButtons(new List<AppBarButton> { downloadButton, downloadCoverButton, removeButton, shareLinkButton });
     }
 
     private void ShareLinkButton_OnClick(object sender, RoutedEventArgs e)

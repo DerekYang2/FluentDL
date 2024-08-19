@@ -59,6 +59,20 @@ namespace FluentDL.Helpers
             return springDownAnimation;
         }
 
+        public static Vector3KeyFrameAnimation CreateSpringUp(Visual visual, float pixelsUp, double durationMs)
+        {
+            var compositor = visual.Compositor;
+
+            // Create the spring up animation
+            var springUpAnimation = compositor.CreateVector3KeyFrameAnimation();
+            springUpAnimation.InsertKeyFrame(0.0f, new Vector3(0.0f, pixelsUp, 0.0f));
+            springUpAnimation.InsertKeyFrame(0.5f, new Vector3(0.0f, -pixelsUp, 0.0f));
+            springUpAnimation.InsertKeyFrame(1.0f, new Vector3(0.0f, 0.0f, 0.0f));
+            springUpAnimation.Duration = TimeSpan.FromMilliseconds(durationMs);
+
+            return springUpAnimation;
+        }
+
         public static void AttachScaleAnimation(AppBarButton button)
         {
             var visual = ElementCompositionPreview.GetElementVisual(button.Icon);
@@ -75,6 +89,47 @@ namespace FluentDL.Helpers
                 // Set the center point for scaling
                 visual.CenterPoint = GetCenterPoint(button.Icon);
                 visual.StartAnimation("Scale", scaleDownAnimation);
+            }), true);
+        }
+
+        public static void AttachScaleAnimation(Button button, FrameworkElement icon)
+        {
+            var visual = ElementCompositionPreview.GetElementVisual(icon);
+            var scaleUpAnimation = AnimationHelper.CreateScaleUp(visual, 1.3f, 200);
+            var scaleDownAnimation = AnimationHelper.CreateScaleDown(visual, 1.3f, 200);
+
+            button.AddHandler(UIElement.PointerPressedEvent, new PointerEventHandler((s, e) =>
+            {
+                // Set the center point for scaling
+                visual.CenterPoint = AnimationHelper.GetCenterPoint(icon);
+                visual.StartAnimation("Scale", scaleUpAnimation);
+            }), true);
+
+            button.AddHandler(UIElement.PointerReleasedEvent, new PointerEventHandler((s, e) =>
+            {
+                // Set the center point for scaling
+                visual.CenterPoint = AnimationHelper.GetCenterPoint(icon);
+                visual.StartAnimation("Scale", scaleDownAnimation);
+            }), true);
+        }
+
+        public static void AttachSpringDownAnimation(AppBarButton button)
+        {
+            var visual = ElementCompositionPreview.GetElementVisual(button.Icon);
+            var springDownAnimation = CreateSpringDown(visual, 4, 500);
+            button.AddHandler(UIElement.PointerPressedEvent, new PointerEventHandler((s, e) =>
+            {
+                visual.StartAnimation("Offset", springDownAnimation);
+            }), true);
+        }
+
+        public static void AttachSpringUpAnimation(AppBarButton button)
+        {
+            var visual = ElementCompositionPreview.GetElementVisual(button.Icon);
+            var springUpAnimation = CreateSpringUp(visual, 4, 500);
+            button.AddHandler(UIElement.PointerReleasedEvent, new PointerEventHandler((s, e) =>
+            {
+                visual.StartAnimation("Offset", springUpAnimation);
             }), true);
         }
     }

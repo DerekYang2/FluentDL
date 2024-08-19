@@ -133,25 +133,14 @@ public sealed partial class Search : Page
 
     private void InitAnimation()
     {
-        var visual = ElementCompositionPreview.GetElementVisual(ResultsIcon);
+        // Animation for add to queue button
+        AnimationHelper.AttachScaleAnimation(AddToQueueButton, ResultsIcon);
 
-        // Create the scale up animation
-        var scaleUpAnimation = AnimationHelper.CreateScaleUp(visual, 1.3f, 200);
-        var scaleDownAnimation = AnimationHelper.CreateScaleDown(visual, 1.3f, 200);
+        // Animation for advanced search button
+        AnimationHelper.AttachScaleAnimation(ShowDialogButton, ShowDialogIcon);
 
-        AddToQueueButton.AddHandler(PointerPressedEvent, new PointerEventHandler((s, e) =>
-        {
-            // Set the center point for scaling
-            visual.CenterPoint = AnimationHelper.GetCenterPoint(ResultsIcon);
-            visual.StartAnimation("Scale", scaleUpAnimation);
-        }), true);
-
-        AddToQueueButton.AddHandler(PointerReleasedEvent, new PointerEventHandler((s, e) =>
-        {
-            // Set the center point for scaling
-            visual.CenterPoint = AnimationHelper.GetCenterPoint(ResultsIcon);
-            visual.StartAnimation("Scale", scaleDownAnimation);
-        }), true);
+        // Animation for help button
+        AnimationHelper.AttachScaleAnimation(HelpButton, HelpIcon);
     }
 
     private async void SearchPage_Loaded(object sender, RoutedEventArgs e)

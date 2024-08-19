@@ -249,14 +249,14 @@
 
                 <Button Grid.Column="1" x:Name="ShowDialogButton" Click="ShowDialog_OnClick_Click" ToolTipService.ToolTip="Open advanced search">
                     <StackPanel Orientation="Horizontal">
-                        <FontIcon Glyph="&#xE71C;" FontSize="16" Margin="0, 0, 8, 0" />
+                        <FontIcon x:Name="ShowDialogIcon" Glyph="&#xE71C;" FontSize="16" Margin="0, 0, 8, 0" />
                         <TextBlock Text="Advanced" />
                     </StackPanel>
                 </Button>
 
-                <Button Grid.Column="2" x:Name="Help" ToolTipService.ToolTip="Open help" Click="Help_OnClick">
+                <Button Grid.Column="2" x:Name="HelpButton" ToolTipService.ToolTip="Open help" Click="Help_OnClick">
                     <StackPanel Orientation="Horizontal">
-                        <FontIcon Glyph="&#xE897;" FontSize="16" Margin="0, 0, 8, 0" />
+                        <FontIcon x:Name="HelpIcon" Glyph="&#xE897;" FontSize="16" Margin="0, 0, 8, 0" />
                         <TextBlock Text="Help" />
                     </StackPanel>
                 </Button>
