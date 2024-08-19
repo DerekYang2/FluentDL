@@ -53,13 +53,12 @@
                         <FontIcon Glyph="&#xE8B0;" />
                     </local:SettingsExpander.HeaderIcon>
                     <local:SettingsExpander.Items>
-                        <local:SettingsCard x:Name="SearchPageShortcuts" Header="Search Page" Description="Configure shortcut buttons for the search page">
+                        <local:SettingsCard x:Name="SearchPageShortcuts" Header="Search Page" Description="Configure shortcut buttons for the search page"
+                                            HorizontalContentAlignment="Left" ContentAlignment="Vertical">
                             <StackPanel>
-                                <TextBlock Text="Button" Style="{ThemeResource CaptionTextBlockStyle}"
-                                           Foreground="{ThemeResource TextFillColorSecondary}" Margin="0,0,0,2" />
-                                <CheckBox x:Name="SearchAddCheckbox" Content="Add to queue"/>
-                                <CheckBox x:Name="SearchShareCheckbox" Content="Share link"/>
-                                <CheckBox x:Name="SearchOpenCheckbox" Content="Open"/>
+                                <CheckBox x:Name="SearchAddCheckbox" Content="Add to queue" Checked="Search_OnChecked" Unchecked="Search_OnUnchecked" Tag="0"/>
+                                <CheckBox x:Name="SearchShareCheckbox" Content="Share link" Checked="Search_OnChecked" Unchecked="Search_OnUnchecked" Tag="1"/>
+                                <CheckBox x:Name="SearchOpenCheckbox" Content="Open" Checked="Search_OnChecked" Unchecked="Search_OnUnchecked" Tag="2"/>
                             </StackPanel>
                         </local:SettingsCard>
                     </local:SettingsExpander.Items>

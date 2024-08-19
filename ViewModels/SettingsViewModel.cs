@@ -28,6 +28,11 @@ public partial class SettingsViewModel : ObservableRecipient
     public static readonly string CommandThreads = "command_threads";
     public static readonly string DownloadThreads = "download_threads";
 
+    // Shortcut button checkboxes
+    public static readonly string SearchAddChecked = "search_add_checked",
+        SearchShareChecked = "search_share_checked",
+        SearchOpenChecked = "search_open_checked";
+
     private static ILocalSettingsService localSettings = App.GetService<ILocalSettingsService>();
 
     private readonly IThemeSelectorService _themeSelectorService;

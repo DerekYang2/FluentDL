@@ -15,6 +15,7 @@
     xmlns:marqueeTextRns="using:CommunityToolkit.Labs.WinUI.MarqueeTextRns"
     mc:Ignorable="d"
     NavigationCacheMode="Required"
+    x:Name="RootPage"
     >
     <Page.Resources>
         <helpers:DateToYearConverter x:Key="DateToYearConverter" />
@@ -419,13 +420,16 @@
                             </StackPanel>
 
                             <StackPanel Grid.Row="2" Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Bottom" HorizontalAlignment="Right" Spacing="4">
-                                <Button x:Name="AddQueueButton" VerticalAlignment="Bottom" HorizontalAlignment="Right" Padding="4, 4, 3, 3" ToolTipService.ToolTip="Add to queue" Click="AddQueueButton_OnClick" Tag="{Binding}">
+                                <Button x:Name="AddQueueButton" VerticalAlignment="Bottom" HorizontalAlignment="Right" Padding="4, 4, 3, 3" ToolTipService.ToolTip="Add to queue" Click="AddQueueButton_OnClick" Tag="{Binding}"
+                                        Visibility="{Binding ElementName=RootPage, Path=ViewModel.AddQueueVisibility}">
                                     <FontIcon x:Name="AddQueueIcon" Glyph="&#xE710;" FontSize="20" />
                                 </Button>
-                                <Button x:Name="ShareLinkButton" VerticalAlignment="Bottom" HorizontalAlignment="Right" Padding="4, 4, 3, 3" ToolTipService.ToolTip="Copy track link" Click="ShareLinkButton_OnClick" Tag="{Binding}">
+                                <Button x:Name="ShareLinkButton" VerticalAlignment="Bottom" HorizontalAlignment="Right" Padding="4, 4, 3, 3" ToolTipService.ToolTip="Copy track link" Click="ShareLinkButton_OnClick" Tag="{Binding}"
+                                        Visibility="{Binding ElementName=RootPage, Path=ViewModel.ShareVisibility}">
                                     <FontIcon x:Name="ShareLinkIcon" Glyph="&#xE71B;" FontSize="20" />
                                 </Button>
-                                <Button x:Name="OpenInBrowserButton" VerticalAlignment="Bottom" HorizontalAlignment="Right" Padding="4, 4, 3, 3" ToolTipService.ToolTip="Open in browser" Click="OpenInBrowserButton_OnClick" Tag="{Binding}">
+                                <Button x:Name="OpenInBrowserButton" VerticalAlignment="Bottom" HorizontalAlignment="Right" Padding="4, 4, 3, 3" ToolTipService.ToolTip="Open in browser" Click="OpenInBrowserButton_OnClick" Tag="{Binding}"
+                                        Visibility="{Binding ElementName=RootPage, Path=ViewModel.OpenVisibility}">
                                     <FontIcon x:Name="OpenLinkIcon" Glyph="&#xE8A7;" FontSize="20" />
                                 </Button>
                             </StackPanel>

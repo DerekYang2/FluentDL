@@ -77,33 +77,10 @@ public sealed partial class SettingsPage : Page
             }
         }
 
-        /*
-        Thread thread = new Thread(() =>
-        {
-            var ripConfigPath = TerminalSubprocess.GetRunCommandSync("rip config path", "c:\\");
-
-            // Find first index of ' and second index of ' in the string
-            var firstIndex = ripConfigPath.IndexOf('\'');
-            var secondIndex = ripConfigPath.IndexOf('\'', firstIndex + 1);
-            ripConfigPath = ripConfigPath.Substring(firstIndex + 1, secondIndex - firstIndex - 1);
-
-            dispatcher.TryEnqueue(() =>
-            {
-                configTextBlock.Text = ripConfigPath;
-            });
-
-
-            // Open the toml text file at ripConfigPath and save contents to string
-            var configFileStr = System.IO.File.ReadAllText(ripConfigPath);
-            Debug.WriteLine("CONFIG FILE:" + configFileStr);
-
-            dispatcher.TryEnqueue(DispatcherQueuePriority.Low, () =>
-            {
-                RichEditBox.Document.SetText(Microsoft.UI.Text.TextSetOptions.None, configFileStr);
-            });
-        });
-        thread.Start();
-        */
+        // Set search checkboxes
+        SearchAddCheckbox.IsChecked = await localSettings.ReadSettingAsync<bool>(SettingsViewModel.SearchAddChecked);
+        SearchShareCheckbox.IsChecked = await localSettings.ReadSettingAsync<bool>(SettingsViewModel.SearchShareChecked);
+        SearchOpenCheckbox.IsChecked = await localSettings.ReadSettingAsync<bool>(SettingsViewModel.SearchOpenChecked);
     }
 
     private async void ClientIdInput_OnLostFocus(object sender, RoutedEventArgs e)
@@ -276,5 +253,48 @@ public sealed partial class SettingsPage : Page
 
         var value = (int)slider.Value;
         await localSettings.SaveSettingAsync(SettingsViewModel.DownloadThreads, value);
+    }
+
+    /*
+     *                                <CheckBox x:Name="SearchAddCheckbox" Content="Add to queue" Checked="Search_OnChecked" Unchecked="Search_OnUnchecked" Tag="0"/>
+       <CheckBox x:Name="SearchShareCheckbox" Content="Share link" Checked="Search_OnChecked" Unchecked="Search_OnUnchecked" Tag="1"/>
+       <CheckBox x:Name="SearchOpenCheckbox" Content="Open" Checked="Search_OnChecked" Unchecked="Search_OnUnchecked" Tag="2"/>
+     */
+    private async void Search_OnChecked(object sender, RoutedEventArgs e)
+    {
+        var checkBox = sender as CheckBox;
+        var index = checkBox.Tag.ToString();
+
+        switch (index)
+        {
+            case "0":
+                await localSettings.SaveSettingAsync(SettingsViewModel.SearchAddChecked, true);
+                break;
+            case "1":
+                await localSettings.SaveSettingAsync(SettingsViewModel.SearchShareChecked, true);
+                break;
+            case "2":
+                await localSettings.SaveSettingAsync(SettingsViewModel.SearchOpenChecked, true);
+                break;
+        }
+    }
+
+    private void Search_OnUnchecked(object sender, RoutedEventArgs e)
+    {
+        var checkBox = sender as CheckBox;
+        var index = checkBox.Tag.ToString();
+
+        switch (index)
+        {
+            case "0":
+                localSettings.SaveSettingAsync(SettingsViewModel.SearchAddChecked, false);
+                break;
+            case "1":
+                localSettings.SaveSettingAsync(SettingsViewModel.SearchShareChecked, false);
+                break;
+            case "2":
+                localSettings.SaveSettingAsync(SettingsViewModel.SearchOpenChecked, false);
+                break;
+        }
     }
 }

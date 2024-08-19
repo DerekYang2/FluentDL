@@ -121,6 +121,28 @@ public sealed partial class Search : Page
             }
         };
         cancellationTokenSource = new CancellationTokenSource();
+
+        this.Loaded += SearchPage_Loaded;
+    }
+
+    private async void SearchPage_Loaded(object sender, RoutedEventArgs e)
+    {
+        await ViewModel.InitializeAsync(); // Initialize settings
+    }
+
+    protected async override void OnNavigatedTo(NavigationEventArgs e) // Navigated to page
+    {
+        await ViewModel.InitializeAsync(); // Initialize settings
+        // Get the selected item
+        var selectedSong = (SongSearchObject)CustomListView.SelectedItem;
+        if (selectedSong != null)
+        {
+            PreviewPanel.Show();
+            await PreviewPanel.Update(selectedSong);
+        }
+
+        // Refresh all list view items
+        SortCustomListView();
     }
 
     private void InitPreviewPanelButtons()
@@ -169,19 +191,6 @@ public sealed partial class Search : Page
         var song = button?.Tag as SongSearchObject;
 
         OpenSongInBrowser(song);
-    }
-
-    protected async override void OnNavigatedTo(NavigationEventArgs e) // Navigated to page
-    {
-        // Get the selected item
-        var selectedSong = (SongSearchObject)CustomListView.SelectedItem;
-        if (selectedSong == null)
-        {
-            return;
-        }
-
-        PreviewPanel.Show();
-        await PreviewPanel.Update(selectedSong);
     }
 
     protected override void OnNavigatedFrom(NavigationEventArgs e) // Navigated away from page
