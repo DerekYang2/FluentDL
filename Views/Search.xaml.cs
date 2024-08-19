@@ -14,7 +14,10 @@ using Microsoft.UI.Xaml.Navigation;
 using Microsoft.UI.Text;
 using Microsoft.UI.Xaml.Documents;
 using System.Text.RegularExpressions;
+using AngleSharp.Dom;
 using Microsoft.UI.Xaml.Hosting;
+using Microsoft.UI.Xaml.Input;
+using Visibility = Microsoft.UI.Xaml.Visibility;
 
 namespace FluentDL.Views;
 // TODO: loading for search
@@ -125,37 +128,36 @@ public sealed partial class Search : Page
         cancellationTokenSource = new CancellationTokenSource();
 
         this.Loaded += SearchPage_Loaded;
-
         InitAnimation();
     }
 
     private void InitAnimation()
     {
         var visual = ElementCompositionPreview.GetElementVisual(ResultsIcon);
-        var compositor = visual.Compositor;
-        // Set the center point for scaling
-        visual.CenterPoint = new Vector3((float)ResultsIcon.ActualWidth / 2, (float)ResultsIcon.ActualHeight / 2, 1);
 
         // Create the scale up animation
-        var scaleUpAnimation = compositor.CreateVector3KeyFrameAnimation();
-        scaleUpAnimation.InsertKeyFrame(0.0f, new Vector3(1.0f, 1.0f, 1.0f));
-        scaleUpAnimation.InsertKeyFrame(1.0f, new Vector3(1.5f, 1.5f, 1.0f));
-        scaleUpAnimation.Duration = TimeSpan.FromMilliseconds(200);
+        var scaleUpAnimation = AnimationHelper.CreateScaleUp(visual, 1.3f, 200);
+        var scaleDownAnimation = AnimationHelper.CreateScaleDown(visual, 1.3f, 200);
 
-        // Create the scale down animation
-        var scaleDownAnimation = compositor.CreateVector3KeyFrameAnimation();
-        scaleDownAnimation.InsertKeyFrame(0.0f, new Vector3(1.5f, 1.5f, 1.0f));
-        scaleDownAnimation.InsertKeyFrame(1.0f, new Vector3(1.0f, 1.0f, 1.0f));
-        scaleDownAnimation.Duration = TimeSpan.FromMilliseconds(200);
+        AddToQueueButton.AddHandler(PointerPressedEvent, new PointerEventHandler((s, e) =>
+        {
+            // Set the center point for scaling
+            visual.CenterPoint = AnimationHelper.GetCenterPoint(ResultsIcon);
+            visual.StartAnimation("Scale", scaleUpAnimation);
+        }), true);
 
-        // Attach event handlers to the button
-        AddToQueueButton.PointerEntered += (s, e) => visual.StartAnimation("Scale", scaleUpAnimation);
-        AddToQueueButton.PointerExited += (s, e) => visual.StartAnimation("Scale", scaleDownAnimation);
+        AddToQueueButton.AddHandler(PointerReleasedEvent, new PointerEventHandler((s, e) =>
+        {
+            // Set the center point for scaling
+            visual.CenterPoint = AnimationHelper.GetCenterPoint(ResultsIcon);
+            visual.StartAnimation("Scale", scaleDownAnimation);
+        }), true);
     }
 
     private async void SearchPage_Loaded(object sender, RoutedEventArgs e)
     {
         await ViewModel.InitializeAsync(); // Initialize settings
+        //ResultsIcon.Loaded += (s, e) => InitAnimation();
     }
 
     protected async override void OnNavigatedTo(NavigationEventArgs e) // Navigated to page
@@ -184,6 +186,11 @@ public sealed partial class Search : Page
 
         var openButton = new AppBarButton { Icon = new FontIcon { Glyph = "\uE8A7" }, Label = "Open" };
         openButton.Click += (sender, e) => OpenSongInBrowser(PreviewPanel.GetSong());
+
+        // Init animations
+        AnimationHelper.AttachScaleAnimation(addButton);
+        AnimationHelper.AttachScaleAnimation(shareButton);
+        AnimationHelper.AttachScaleAnimation(openButton);
 
         PreviewPanel.SetAppBarButtons(new List<AppBarButton> { addButton, shareButton, openButton });
     }
@@ -822,5 +829,10 @@ public sealed partial class Search : Page
                 }
             });
         });
+    }
+
+    private void AddQueueButton_OnPointerPressed(object sender, PointerRoutedEventArgs e)
+    {
+        Debug.WriteLine("HERE!!");
     }
 }

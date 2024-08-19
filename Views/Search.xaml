@@ -13,6 +13,7 @@
     xmlns:models="using:FluentDL.Models"
     xmlns:controls3="using:CommunityToolkit.WinUI.Controls"
     xmlns:marqueeTextRns="using:CommunityToolkit.Labs.WinUI.MarqueeTextRns"
+    xmlns:animatedVisuals="using:Microsoft.UI.Xaml.Controls.AnimatedVisuals"
     mc:Ignorable="d"
     NavigationCacheMode="Required"
     x:Name="RootPage"
@@ -194,7 +195,6 @@
                     <ColumnDefinition Width="Auto" />
                     <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
-
                 <SplitButton Grid.Column="0" x:Name="OverrideSplitButton" 
                              Padding="0" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" 
                              ToolTipService.ToolTip="Override search source">
