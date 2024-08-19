@@ -318,6 +318,7 @@ internal class DeezerApi
 
         if (artists.Count == 0 && trackName.Length == 0 && albumName.Length == 0) // If no search query
         {
+            callback?.Invoke(InfoBarSeverity.Error, song);
             return null;
         }
 

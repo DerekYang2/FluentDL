@@ -173,24 +173,25 @@
                         <StackPanel Grid.Row="2" Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Bottom" HorizontalAlignment="Right" Spacing="4" >
                             <StackPanel Orientation="Horizontal" VerticalAlignment="Bottom" HorizontalAlignment="Right" Spacing="4" Visibility="{x:Bind IsRunning, Converter={StaticResource CollapsedConverter}}">
                                 <Button x:Name="ShareLinkButton" VerticalAlignment="Bottom" HorizontalAlignment="Right" Padding="4, 4, 3, 3" ToolTipService.ToolTip="Copy track link" Click="ShareLinkButton_OnClick" Tag="{Binding}"
-                                        Visibility="{Binding ElementName=RootPage, Path=ViewModel.ShareVisibility}">
+                                        Visibility="{Binding ElementName=RootPage, Path=ViewModel.ShareVisibility, Mode=OneWay}">
                                     <FontIcon Glyph="&#xE71B;" FontSize="20" />
                                 </Button>
                                 <Button x:Name="ShortcutDownloadButton" VerticalAlignment="Bottom" HorizontalAlignment="Right" Padding="4, 4, 3, 3" ToolTipService.ToolTip="Download track" Click="ShortcutDownloadButton_OnClick" Tag="{Binding}" 
-                                        Visibility="{Binding ElementName=RootPage, Path=ViewModel.DownloadVisibility}">
+                                        Visibility="{Binding ElementName=RootPage, Path=ViewModel.DownloadVisibility, Mode=OneWay}">
                                     <FontIcon Glyph="&#xE896;" FontSize="20" />
                                 </Button>
                                 <Button x:Name="DownloadCoverButton" VerticalAlignment="Bottom" HorizontalAlignment="Right" Padding="4, 4, 3, 3" ToolTipService.ToolTip="Download cover" Click="DownloadCoverButton_OnClick" Tag="{Binding}" 
-                                        Visibility="{Binding ElementName=RootPage, Path=ViewModel.DownloadCoverVisibility}">
+                                        Visibility="{Binding ElementName=RootPage, Path=ViewModel.DownloadCoverVisibility, Mode=OneWay}">
                                     <FontIcon Glyph="&#xEE71;" FontSize="20" />
                                 </Button>
                                 <Button x:Name="RemoveButton" VerticalAlignment="Bottom" HorizontalAlignment="Right" Padding="4, 4, 3, 3" ToolTipService.ToolTip="Remove from queue" Click="RemoveButton_OnClick" Tag="{Binding}" 
-                                        Visibility="{Binding ElementName=RootPage, Path=ViewModel.RemoveVisibility}">
+                                        Visibility="{Binding ElementName=RootPage, Path=ViewModel.RemoveVisibility, Mode=OneWay}">
                                     <FontIcon Glyph="&#xE74D;" FontSize="20" />
                                 </Button>
                             </StackPanel>
 
                             <Button x:Name="OutputButton" VerticalAlignment="Bottom" HorizontalAlignment="Right" Padding="4, 4, 3, 3" ToolTipService.ToolTip="View command output" Click="OutputButton_OnClick" Tag="{Binding}" 
+                                    Style="{ThemeResource AccentButtonStyle}"
                                     Visibility="{x:Bind ResultString, Converter={StaticResource PathToVisibilityConverter}}">
                                 <FontIcon Glyph="&#xE756;" FontSize="20" />
                             </Button>

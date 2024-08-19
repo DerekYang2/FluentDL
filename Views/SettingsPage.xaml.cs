@@ -27,9 +27,10 @@ public sealed partial class SettingsPage : Page
 
     public SettingsPage()
     {
+        localSettings = App.GetService<ILocalSettingsService>();
+
         ViewModel = App.GetService<SettingsViewModel>();
         InitializeComponent();
-        localSettings = App.GetService<ILocalSettingsService>();
         this.Loaded += SettingsPage_Loaded;
         dispatcher = DispatcherQueue.GetForCurrentThread();
     }
@@ -53,6 +54,7 @@ public sealed partial class SettingsPage : Page
         // Set ToggleSwitches
         AskToggle.IsOn = await localSettings.ReadSettingAsync<bool>(SettingsViewModel.AskBeforeDownload);
         OverwriteToggle.IsOn = await localSettings.ReadSettingAsync<bool>(SettingsViewModel.Overwrite);
+        NotificationsToggle.IsOn = await localSettings.ReadSettingAsync<bool>(SettingsViewModel.Notifications);
 
         // Set Ids/Secrets
         ClientIdInput.Text = (await localSettings.ReadSettingAsync<string>(SettingsViewModel.SpotifyClientId)) ?? "";
@@ -285,7 +287,7 @@ public sealed partial class SettingsPage : Page
         }
     }
 
-    private void Search_OnUnchecked(object sender, RoutedEventArgs e)
+    private async void Search_OnUnchecked(object sender, RoutedEventArgs e)
     {
         var checkBox = sender as CheckBox;
         var index = checkBox.Tag.ToString();
@@ -293,13 +295,13 @@ public sealed partial class SettingsPage : Page
         switch (index)
         {
             case "0":
-                localSettings.SaveSettingAsync(SettingsViewModel.SearchAddChecked, false);
+                await localSettings.SaveSettingAsync(SettingsViewModel.SearchAddChecked, false);
                 break;
             case "1":
-                localSettings.SaveSettingAsync(SettingsViewModel.SearchShareChecked, false);
+                await localSettings.SaveSettingAsync(SettingsViewModel.SearchShareChecked, false);
                 break;
             case "2":
-                localSettings.SaveSettingAsync(SettingsViewModel.SearchOpenChecked, false);
+                await localSettings.SaveSettingAsync(SettingsViewModel.SearchOpenChecked, false);
                 break;
         }
     }
@@ -323,7 +325,7 @@ public sealed partial class SettingsPage : Page
         }
     }
 
-    private void LocalExplorer_OnUnchecked(object sender, RoutedEventArgs e)
+    private async void LocalExplorer_OnUnchecked(object sender, RoutedEventArgs e)
     {
         var checkBox = sender as CheckBox;
         var index = checkBox.Tag.ToString();
@@ -331,18 +333,18 @@ public sealed partial class SettingsPage : Page
         switch (index)
         {
             case "0":
-                localSettings.SaveSettingAsync(SettingsViewModel.LocalExplorerAddChecked, false);
+                await localSettings.SaveSettingAsync(SettingsViewModel.LocalExplorerAddChecked, false);
                 break;
             case "1":
-                localSettings.SaveSettingAsync(SettingsViewModel.LocalExplorerEditChecked, false);
+                await localSettings.SaveSettingAsync(SettingsViewModel.LocalExplorerEditChecked, false);
                 break;
             case "2":
-                localSettings.SaveSettingAsync(SettingsViewModel.LocalExplorerOpenChecked, false);
+                await localSettings.SaveSettingAsync(SettingsViewModel.LocalExplorerOpenChecked, false);
                 break;
         }
     }
 
-    private void Queue_OnChecked(object sender, RoutedEventArgs e)
+    private async void Queue_OnChecked(object sender, RoutedEventArgs e)
     {
         var checkbox = sender as CheckBox;
         var index = checkbox.Tag.ToString();
@@ -350,21 +352,21 @@ public sealed partial class SettingsPage : Page
         switch (index)
         {
             case "0":
-                localSettings.SaveSettingAsync(SettingsViewModel.QueueShareChecked, true);
+                await localSettings.SaveSettingAsync(SettingsViewModel.QueueShareChecked, true);
                 break;
             case "1":
-                localSettings.SaveSettingAsync(SettingsViewModel.QueueDownloadChecked, true);
+                await localSettings.SaveSettingAsync(SettingsViewModel.QueueDownloadChecked, true);
                 break;
             case "2":
-                localSettings.SaveSettingAsync(SettingsViewModel.QueueDownloadCoverChecked, true);
+                await localSettings.SaveSettingAsync(SettingsViewModel.QueueDownloadCoverChecked, true);
                 break;
             case "3":
-                localSettings.SaveSettingAsync(SettingsViewModel.QueueRemoveChecked, true);
+                await localSettings.SaveSettingAsync(SettingsViewModel.QueueRemoveChecked, true);
                 break;
         }
     }
 
-    private void Queue_OnUnchecked(object sender, RoutedEventArgs e)
+    private async void Queue_OnUnchecked(object sender, RoutedEventArgs e)
     {
         var checkbox = sender as CheckBox;
         var index = checkbox.Tag.ToString();
@@ -372,17 +374,23 @@ public sealed partial class SettingsPage : Page
         switch (index)
         {
             case "0":
-                localSettings.SaveSettingAsync(SettingsViewModel.QueueShareChecked, false);
+                await localSettings.SaveSettingAsync(SettingsViewModel.QueueShareChecked, false);
                 break;
             case "1":
-                localSettings.SaveSettingAsync(SettingsViewModel.QueueDownloadChecked, false);
+                await localSettings.SaveSettingAsync(SettingsViewModel.QueueDownloadChecked, false);
                 break;
             case "2":
-                localSettings.SaveSettingAsync(SettingsViewModel.QueueDownloadCoverChecked, false);
+                await localSettings.SaveSettingAsync(SettingsViewModel.QueueDownloadCoverChecked, false);
                 break;
             case "3":
-                localSettings.SaveSettingAsync(SettingsViewModel.QueueRemoveChecked, false);
+                await localSettings.SaveSettingAsync(SettingsViewModel.QueueRemoveChecked, false);
                 break;
         }
+    }
+
+    private async void NotificationsToggle_OnToggled(object sender, RoutedEventArgs e)
+    {
+        var isToggled = (sender as ToggleSwitch).IsOn;
+        await localSettings.SaveSettingAsync(SettingsViewModel.Notifications, isToggled);
     }
 }

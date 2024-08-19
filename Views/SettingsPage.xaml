@@ -37,20 +37,19 @@
                         <ComboBoxItem x:Name="YouTube" Content="YouTube"/>
                     </ComboBox>
                 </local:SettingsCard>
-                <local:SettingsCard x:Name="CommandThreadsCard" 
-                                    Description="The number of threads to use when runner terminal commands" 
-                                    Header="Command Runner Threads">
+                <local:SettingsCard x:Name="NotificationsCard" Description="Enable or disable app notifications for queue conversion/command running completion" Header="Notifications">
                     <local:SettingsCard.HeaderIcon>
-                        <FontIcon Glyph="&#xE964;" />
+                        <FontIcon Glyph="&#xE7E7;" />
                     </local:SettingsCard.HeaderIcon>
-                    <Slider x:Name="CommandThreadsSlider" Minimum="1" Maximum="5" StepFrequency="1" TickFrequency="1" SnapsTo="Ticks" TickPlacement="Outside" LostFocus="CommandThreadsSlider_OnLostFocus"/>
+                    <ToggleSwitch x:Name="NotificationsToggle" OnContent="" OffContent="" Toggled="NotificationsToggle_OnToggled"/>
                 </local:SettingsCard>
+
                 <local:SettingsExpander x:Name="ShortcutButtonExpander"
                                         Description="Add or remove shortcut buttons for each page's track list. These buttons may always be found in the sidebar."
                                         Header="Shortcut Buttons"
                                         HorizontalContentAlignment="Stretch">
                     <local:SettingsExpander.HeaderIcon>
-                        <FontIcon Glyph="&#xE8B0;" />
+                        <FontIcon Glyph="&#xE945;" />
                     </local:SettingsExpander.HeaderIcon>
                     <local:SettingsExpander.Items>
                         <local:SettingsCard x:Name="SearchPageShortcuts" Header="Search Page" Description="Select the shortcut buttons that should be shown in Search"
@@ -81,7 +80,7 @@
                         <local:SettingsCard x:Name="QueuePageShortcuts" Header="Queue Page" Description="Select the shortcut buttons that should be shown in Queue"
                                             HorizontalContentAlignment="Left" ContentAlignment="Vertical">
                             <local:SettingsCard.HeaderIcon>
-                                <FontIcon Glyph="&#xE7C3;" />
+                                <FontIcon Glyph="&#xE9D5;" />
                             </local:SettingsCard.HeaderIcon>
                             <StackPanel>
                                 <CheckBox x:Name="QueueShareCheckbox" Content="Share link" Checked="Queue_OnChecked" Unchecked="Queue_OnUnchecked" Tag="0"/>
@@ -93,7 +92,14 @@
 
                     </local:SettingsExpander.Items>
                 </local:SettingsExpander>
-
+                <local:SettingsCard x:Name="CommandThreadsCard" 
+                                    Description="The number of threads to use for custom command running" 
+                                    Header="Command Runner Threads">
+                    <local:SettingsCard.HeaderIcon>
+                        <FontIcon Glyph="&#xE964;" />
+                    </local:SettingsCard.HeaderIcon>
+                    <Slider x:Name="CommandThreadsSlider" Minimum="1" Maximum="5" StepFrequency="1" TickFrequency="1" SnapsTo="Ticks" TickPlacement="Outside" LostFocus="CommandThreadsSlider_OnLostFocus"/>
+                </local:SettingsCard>
                 <!-- DOWNLOAD SETTINGS ______________________________________________________________________________________________ -->
                 <TextBlock Text="Downloads" Style="{StaticResource TextBlockSectionStyle}" />
 
@@ -157,8 +163,8 @@
                 </local:SettingsExpander>
 
                 <local:SettingsCard x:Name="DownloadThreadsCard" 
-                                    Description="The number of download threads for local conversion." 
-                                    Header="Command Runner Threads">
+                                    Description="The number of threads for queue conversions." 
+                                    Header="Conversion Threads">
                     <local:SettingsCard.HeaderIcon>
                         <FontIcon Glyph="&#xE964;" />
                     </local:SettingsCard.HeaderIcon>

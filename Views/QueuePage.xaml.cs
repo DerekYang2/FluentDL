@@ -1,4 +1,4 @@
-﻿using System.Collections.ObjectModel;
+using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Diagnostics.Eventing.Reader;
 using System.Drawing;
@@ -146,7 +146,15 @@ public sealed partial class QueuePage : Page
             dispatcherQueue.TryEnqueue(() =>
             {
                 ShowInfoBar(severity, message);
-                App.GetService<IAppNotificationService>().Show(string.Format("QueueCompletePayload".GetLocalized(), AppContext.BaseDirectory));
+                SettingsViewModel.GetSetting<bool?>(SettingsViewModel.Notifications).ContinueWith((task) =>
+                {
+                    var showNotif = task.Result ?? false;
+
+                    if (showNotif)
+                    {
+                        App.GetService<IAppNotificationService>().Show(string.Format("QueueCompletePayload".GetLocalized(), AppContext.BaseDirectory));
+                    }
+                });
             });
         };
 
@@ -175,6 +183,8 @@ public sealed partial class QueuePage : Page
                 await PreviewPanel.Update(selectedSong);
             }
         }
+
+        await ViewModel.InitializeAsync(); // Initialize the settings for shortcut buttons
     }
 
     protected override void OnNavigatedFrom(NavigationEventArgs e)
@@ -900,7 +910,15 @@ public sealed partial class QueuePage : Page
             ConvertStopText.Text = "Stop"; // Reset stop button text
             ConvertStopButton.Visibility = Visibility.Collapsed; // Hide stop button
             QueueProgress.Value = ogVal; // Reset the progress bar
-            App.GetService<IAppNotificationService>().Show(string.Format("QueueCompletePayload".GetLocalized(), AppContext.BaseDirectory));
+
+            SettingsViewModel.GetSetting<bool?>(SettingsViewModel.Notifications).ContinueWith((task) =>
+            {
+                var showNotif = task.Result ?? false;
+                if (showNotif)
+                {
+                    App.GetService<IAppNotificationService>().Show(string.Format("QueueCompletePayload".GetLocalized(), AppContext.BaseDirectory));
+                }
+            });
 
             ForceHideInfoBar();
             // Show conversion results dialog
