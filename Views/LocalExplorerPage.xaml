@@ -314,6 +314,20 @@
                     </InfoBar.Content>
                 </InfoBar>
 
+                <TextBlock Text="Output Folder" Style="{ThemeResource CaptionTextBlockStyle}"
+                           Foreground="{ThemeResource TextFillColorSecondary}" Margin="0,0,0,4" />
+                <Grid Margin="0,0,0,8">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <Button x:Name="SelectOutputButton" Grid.Column="0" Grid.Row="0" CornerRadius="4, 0,0,4" Style="{ThemeResource AccentButtonStyle}"
+                            Click="SelectOutputButton_OnClick" Padding="8, 8">
+                            <FontIcon x:Name="SelectOutputIcon" Glyph="&#xE8F4;" FontSize="16"/>
+                    </Button>
+                    <TextBox x:Name="OutputTextBox" Grid.Column="1" Grid.Row="0" PlaceholderText="No folder selected" HorizontalAlignment="Stretch" CornerRadius="0, 4, 4, 0" IsReadOnly="False" TextWrapping="NoWrap"/>
+                </Grid>
+
                 <StackPanel Grid.Column="1">
                     <TextBlock Text="Output Format" Style="{ThemeResource CaptionTextBlockStyle}"
                                Foreground="{ThemeResource TextFillColorSecondary}" Margin="0,0,0,4" />
@@ -326,7 +340,7 @@
                               Margin="0, 0, 0,0" 
                               HorizontalAlignment="Stretch" />
                 </StackPanel>
-
+                
             </StackPanel>
         </ContentDialog>
     </Grid>

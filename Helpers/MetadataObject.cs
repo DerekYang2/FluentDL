@@ -4,6 +4,7 @@ using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
@@ -11,6 +12,7 @@ using System.Threading.Tasks.Dataflow;
 using FluentDL.Models;
 using QobuzApiSharp.Models.Content;
 using TagLib;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace FluentDL.Helpers
 {
@@ -146,7 +148,7 @@ namespace FluentDL.Helpers
                 ReleaseDate = new DateTime(Convert.ToInt32(tfile.Tag.Year), 1, 1); // Default to January 1st if only year is provided
             }
 
-            if (Path.GetExtension(tfile.Name) == ".flac")
+            if (Path.GetExtension(tfile.Name) == ".flac" || Path.GetExtension(tfile.Name) == ".ogg") // Both .flac and .ogg files use the XiphComments
             {
                 var custom = (TagLib.Ogg.XiphComment)tfile.GetTag(TagLib.TagTypes.Xiph);
 
@@ -173,6 +175,7 @@ namespace FluentDL.Helpers
             }
 
             IPicture[] pictures = tfile.Tag.Pictures;
+
             if (pictures.Length > 0)
             {
                 // Get front cover
@@ -201,7 +204,7 @@ namespace FluentDL.Helpers
 
             // CUSTOM TAGS: https://wiki.hydrogenaud.io/index.php?title=Tag_Mapping
 
-            if (Path.GetExtension(tfile.Name) == ".flac")
+            if (Path.GetExtension(tfile.Name) == ".flac" || Path.GetExtension(tfile.Name) == ".ogg")
             {
                 var custom = (TagLib.Ogg.XiphComment)tfile.GetTag(TagLib.TagTypes.Xiph);
 
@@ -250,10 +253,22 @@ namespace FluentDL.Helpers
 
             if (AlbumArt != null) // Save cover art if it exists
             {
-                // Define cover art to use for FLAC file(s)
-                TagLib.Id3v2.AttachmentFrame pic = new TagLib.Id3v2.AttachmentFrame { TextEncoding = StringType.Latin1, MimeType = System.Net.Mime.MediaTypeNames.Image.Jpeg, Type = PictureType.FrontCover, Data = new ByteVector(AlbumArt) };
-                // Save cover art to FLAC file.
-                tfile.Tag.Pictures = new IPicture[] { pic };
+                if (Path.GetExtension(tfile.Name) == ".ogg")
+                {
+                    var custom = (TagLib.Ogg.XiphComment)tfile.GetTag(TagLib.TagTypes.Xiph);
+
+                    TagLib.Flac.Picture pic = new TagLib.Flac.Picture(new Picture(new ByteVector(AlbumArt))) { MimeType = System.Net.Mime.MediaTypeNames.Image.Jpeg, Type = PictureType.FrontCover };
+                    TagLib.ByteVector picData = pic.Render();
+
+
+                    custom.SetField("METADATA_BLOCK_PICTURE", Convert.ToBase64String(picData.Data));
+                }
+                else
+                {
+                    TagLib.Id3v2.AttachmentFrame pic = new TagLib.Id3v2.AttachmentFrame { TextEncoding = StringType.Latin1, MimeType = System.Net.Mime.MediaTypeNames.Image.Jpeg, Type = PictureType.FrontCover, Data = new ByteVector(AlbumArt) };
+                    // Save cover art to FLAC file.
+                    tfile.Tag.Pictures = new IPicture[] { pic };
+                }
             }
 
             try

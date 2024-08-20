@@ -1,4 +1,4 @@
-﻿using System.Collections.ObjectModel;
+using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Linq.Expressions;
 using FluentDL.ViewModels;
@@ -18,6 +18,7 @@ using Microsoft.UI.Text;
 using Microsoft.UI.Xaml.Documents;
 using System.Text.RegularExpressions;
 using FluentDL.Helpers;
+using TagLib.Id3v2;
 using DispatcherQueue = Microsoft.UI.Dispatching.DispatcherQueue;
 
 namespace FluentDL.Views;
@@ -770,19 +771,13 @@ public sealed partial class LocalExplorerPage : Page
 
         foreach (var song in originalList)
         {
-            if (outputFormat == null)
-            {
-                ShowInfoBar(InfoBarSeverity.Warning, "No output format selected");
-                return;
-            }
-
             switch (selectedIndex)
             {
                 case 0:
                     await FFmpegRunner.ConvertToFlac(song.Id);
                     break;
                 case 1:
-                    await FFmpegRunner.ConvertToMp3(song.Id);
+                    await ConvertToMp3(song);
                     break;
             }
         }
@@ -810,6 +805,11 @@ public sealed partial class LocalExplorerPage : Page
             _ => new List<string>(),
         };
 
+        SubsettingHeader.Text = selectedIndex switch
+        {
+            1 => "Bitrate",
+            _ => "",
+        };
 
         // If empty, hide the subsetting combobox
         if (SubsettingComboBox.ItemsSource as List<string> is { Count: 0 })
@@ -823,5 +823,34 @@ public sealed partial class LocalExplorerPage : Page
             SubsettingHeader.Visibility = Visibility.Visible;
             SubsettingComboBox.SelectedIndex = 0;
         }
+    }
+
+    private async Task ConvertToMp3(SongSearchObject song)
+    {
+        var subIndex = SubsettingComboBox.SelectedIndex;
+        switch (subIndex)
+        {
+            case 0:
+                await FFmpegRunner.ConvertToMp3(song.Id);
+                break;
+            case 1:
+                await FFmpegRunner.ConvertToMp3(song.Id, 128);
+                break;
+            case 2:
+                await FFmpegRunner.ConvertToMp3(song.Id, 192);
+                break;
+            case 3:
+                await FFmpegRunner.ConvertToMp3(song.Id, 256);
+                break;
+            case 4:
+                await FFmpegRunner.ConvertToMp3(song.Id, 320);
+                break;
+        }
+    }
+
+    private async void SelectOutputButton_OnClick(object sender, RoutedEventArgs e)
+    {
+        var folder = await StoragePickerHelper.PickFolderAsync(PickerLocationId.MusicLibrary);
+        OutputTextBox.Text = folder?.Path ?? "";
     }
 }
