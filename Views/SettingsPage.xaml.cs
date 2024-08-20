@@ -180,6 +180,40 @@ public sealed partial class SettingsPage : Page
         }
     }
 
+    private async void SelectFFmpegButton_OnClick(object sender, RoutedEventArgs e)
+    {
+        FolderPicker openPicker = new Windows.Storage.Pickers.FolderPicker();
+
+
+        // Retrieve the window handle of the current WinUI 3 window.
+        var hWnd = WinRT.Interop.WindowNative.GetWindowHandle(App.MainWindow);
+
+        // Initialize the folder picker with the window handle.
+        WinRT.Interop.InitializeWithWindow.Initialize(openPicker, hWnd);
+
+        openPicker.SuggestedStartLocation = PickerLocationId.ComputerFolder;
+        openPicker.FileTypeFilter.Add("*");
+
+        // Open the picker for the user to pick a folder
+        StorageFolder folder = await openPicker.PickSingleFolderAsync();
+        if (folder != null)
+        {
+            StorageApplicationPermissions.FutureAccessList.AddOrReplace("PickedFolderToken", folder); // Save the folder for future access
+
+            if (Directory.Exists(folder.Path) && Path.IsPathRooted(folder.Path))
+            {
+                // Set the folder path in the text box
+                FFmpegPathCard.Description = folder.Path;
+                Debug.WriteLine("Saved download directory: " + folder.Path);
+            }
+            else
+            {
+                FFmpegPathCard.Description = "Invalid folder path";
+                Debug.WriteLine("Invalid folder path: " + folder.Path);
+            }
+        }
+    }
+
     private async void AskToggle_OnToggled(object sender, RoutedEventArgs e)
     {
         var isToggled = (sender as ToggleSwitch).IsOn;

@@ -43,7 +43,6 @@
                     </local:SettingsCard.HeaderIcon>
                     <ToggleSwitch x:Name="NotificationsToggle" OnContent="" OffContent="" Toggled="NotificationsToggle_OnToggled"/>
                 </local:SettingsCard>
-
                 <local:SettingsExpander x:Name="ShortcutButtonExpander"
                                         Description="Add or remove shortcut buttons for each page's track list. These buttons may always be found in the sidebar."
                                         Header="Shortcut Buttons"
@@ -100,7 +99,20 @@
                     </local:SettingsCard.HeaderIcon>
                     <Slider x:Name="CommandThreadsSlider" Minimum="1" Maximum="5" StepFrequency="1" TickFrequency="1" SnapsTo="Ticks" TickPlacement="Outside" LostFocus="CommandThreadsSlider_OnLostFocus"/>
                 </local:SettingsCard>
-                <!-- DOWNLOAD SETTINGS ______________________________________________________________________________________________ -->
+                <local:SettingsExpander x:Name="FFmpegExpander" 
+                                        Description="Set the path to a /bin folder (which should contain ffmpeg.exe). If not set, the app will use the built-in FFmpeg version."
+                                        Header="FFmpeg" HorizontalContentAlignment="Stretch">
+                    <local:SettingsExpander.HeaderIcon>
+                        <FontIcon Glyph="&#xE8B7;" />
+                    </local:SettingsExpander.HeaderIcon>
+                    <local:SettingsExpander.Items>
+                        <local:SettingsCard x:Name="FFmpegPathCard" Header="Path" Description="No binary folder selected" HorizontalContentAlignment="Stretch">
+                            <Button x:Name="SelectFFmpegButton" Click="SelectFFmpegButton_OnClick" Content="Change"/>
+                        </local:SettingsCard>
+                    </local:SettingsExpander.Items>
+                </local:SettingsExpander>
+
+                    <!-- DOWNLOAD SETTINGS ______________________________________________________________________________________________ -->
                 <TextBlock Text="Downloads" Style="{StaticResource TextBlockSectionStyle}" />
 
                 <local:SettingsExpander x:Name="DownloadFolder"
