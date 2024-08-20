@@ -195,7 +195,7 @@ internal class ApiHelper
                     }
 
                     await YoutubeApi.DownloadAudioAAC(mp4Location, song.Id);
-                    await FFmpegRunner.ConvertMP4toM4A(mp4Location);
+                    await FFmpegRunner.ConvertMp4ToM4aAsync(mp4Location);
                     await YoutubeApi.UpdateMetadata(m4aLocation, song.Id);
                     callback?.Invoke(InfoBarSeverity.Success, song, m4aLocation); // Assume success
                     return m4aLocation;
@@ -222,7 +222,7 @@ internal class ApiHelper
                     throw new Exception("FFmpeg is not initialized.");
                 }
 
-                await FFmpegRunner.ConvertToFlac(opusLocation); // Convert opus to flac
+                await FFmpegRunner.ConvertToFlacAsync(opusLocation); // Convert opus to flac
                 await YoutubeApi.UpdateMetadata(flacLocation, song.Id);
                 callback?.Invoke(InfoBarSeverity.Success, song, flacLocation); // Assume success
                 return flacLocation;
@@ -297,7 +297,7 @@ internal class ApiHelper
         if (song.Source == "youtube")
         {
             await YoutubeApi.DownloadAudio(opusLocation, song.Id);
-            await FFmpegRunner.ConvertToFlac(opusLocation); // Convert opus to flac
+            await FFmpegRunner.ConvertToFlacAsync(opusLocation); // Convert opus to flac
             await YoutubeApi.UpdateMetadata(flacLocation, song.Id);
         }
 

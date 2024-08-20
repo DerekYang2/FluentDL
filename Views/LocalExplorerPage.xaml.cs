@@ -1,4 +1,4 @@
-using System.Collections.ObjectModel;
+﻿using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Linq.Expressions;
 using FluentDL.ViewModels;
@@ -763,6 +763,20 @@ public sealed partial class LocalExplorerPage : Page
     {
         var selectedIndex = OutputComboBox.SelectedIndex;
         var outputFormat = OutputComboBox.SelectedItem as string;
+        var outputDirectory = OutputTextBox.Text;
+
+        // Handle input issues
+        if (outputFormat == null)
+        {
+            ShowInfoBar(InfoBarSeverity.Warning, "No output format selected");
+            return;
+        }
+
+        if (!Directory.Exists(outputDirectory))
+        {
+            ShowInfoBar(InfoBarSeverity.Warning, "Output directory does not exist");
+            return;
+        }
 
         Debug.WriteLine("Selected index: " + selectedIndex);
 
@@ -774,10 +788,10 @@ public sealed partial class LocalExplorerPage : Page
             switch (selectedIndex)
             {
                 case 0:
-                    await FFmpegRunner.ConvertToFlac(song.Id);
+                    await FFmpegRunner.CreateFlacAsync(song.Id, 48000, 16, outputDirectory);
                     break;
                 case 1:
-                    await ConvertToMp3(song);
+                    await CreateMp3Helper(song, outputDirectory);
                     break;
             }
         }
@@ -825,25 +839,25 @@ public sealed partial class LocalExplorerPage : Page
         }
     }
 
-    private async Task ConvertToMp3(SongSearchObject song)
+    private async Task CreateMp3Helper(SongSearchObject song, string? outputDirectory)
     {
         var subIndex = SubsettingComboBox.SelectedIndex;
         switch (subIndex)
         {
             case 0:
-                await FFmpegRunner.ConvertToMp3(song.Id);
+                await FFmpegRunner.CreateMp3Async(song.Id, outputDirectory);
                 break;
             case 1:
-                await FFmpegRunner.ConvertToMp3(song.Id, 128);
+                await FFmpegRunner.CreateMp3Async(song.Id, 128, outputDirectory);
                 break;
             case 2:
-                await FFmpegRunner.ConvertToMp3(song.Id, 192);
+                await FFmpegRunner.CreateMp3Async(song.Id, 192, outputDirectory);
                 break;
             case 3:
-                await FFmpegRunner.ConvertToMp3(song.Id, 256);
+                await FFmpegRunner.CreateMp3Async(song.Id, 256, outputDirectory);
                 break;
             case 4:
-                await FFmpegRunner.ConvertToMp3(song.Id, 320);
+                await FFmpegRunner.CreateMp3Async(song.Id, 320, outputDirectory);
                 break;
         }
     }

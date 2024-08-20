@@ -38,7 +38,7 @@ internal class FFmpegRunner
     /**
      * NOTE: this method removes the original file
      */
-    public static async Task ConvertToFlac(string initialPath, int samplingRate = 48000)
+    public static async Task ConvertToFlacAsync(string initialPath, int samplingRate = 48000)
     {
         // Check if already flac
         if (initialPath.EndsWith(".flac"))
@@ -67,7 +67,28 @@ internal class FFmpegRunner
         File.Delete(initialPath);
     }
 
-    public static async Task ConvertMP4toM4A(string initialPath)
+    public static async Task CreateFlacAsync(string initialPath, int samplingRate = 48000, int bitDepth = 16, string? outputDirectory = null)
+    {
+        var directory = outputDirectory ?? Path.GetDirectoryName(initialPath);
+        var fileName = Path.GetFileNameWithoutExtension(initialPath);
+
+        string outputPath;
+        if (Path.IsPathRooted(initialPath)) // If the path is absolute
+        {
+            outputPath = Path.Combine(directory, fileName + ".flac");
+        }
+        else // If the path is relative
+        {
+            outputPath = fileName + ".flac";
+        }
+
+        await FFMpegArguments.FromFileInput(initialPath)
+            .OutputToFile(outputPath, true, options => options
+                .WithCustomArgument($"-sample_fmt s{bitDepth}")
+                .WithAudioSamplingRate(samplingRate)).ProcessAsynchronously();
+    }
+
+    public static async Task ConvertMp4ToM4aAsync(string initialPath)
     {
         if (!initialPath.EndsWith(".mp4"))
         {
@@ -84,10 +105,21 @@ internal class FFmpegRunner
     }
 
     // Does not delete the original file, converts to mp3 (variable bit rate)
-    public static async Task ConvertToMp3(string initialPath)
+    public static async Task CreateMp3Async(string initialPath, string? outputDirectory = null)
     {
-        var lastIndex = initialPath.LastIndexOf('.');
-        var outputPath = initialPath.Substring(0, lastIndex) + ".mp3";
+        var directory = outputDirectory ?? Path.GetDirectoryName(initialPath);
+        var fileName = Path.GetFileNameWithoutExtension(initialPath);
+
+        string outputPath;
+        if (Path.IsPathRooted(initialPath)) // If the path is absolute
+        {
+            outputPath = Path.Combine(directory, fileName + ".mp3");
+        }
+        else // If the path is relative
+        {
+            outputPath = fileName + ".mp3";
+        }
+
         await FFMpegArguments.FromFileInput(initialPath)
             .OutputToFile(outputPath, true, options => options
                 .WithAudioCodec(AudioCodec.LibMp3Lame)
@@ -98,10 +130,21 @@ internal class FFmpegRunner
     }
 
     // Convert to mp3 with cbr (constant bit rate)
-    public static async Task ConvertToMp3(string initialPath, int bitRate)
+    public static async Task CreateMp3Async(string initialPath, int bitRate, string? outputDirectory = null)
     {
-        var lastIndex = initialPath.LastIndexOf('.');
-        var outputPath = initialPath.Substring(0, lastIndex) + ".mp3";
+        var directory = outputDirectory ?? Path.GetDirectoryName(initialPath);
+        var fileName = Path.GetFileNameWithoutExtension(initialPath);
+
+        string outputPath;
+        if (Path.IsPathRooted(initialPath)) // If the path is absolute
+        {
+            outputPath = Path.Combine(directory, fileName + ".mp3");
+        }
+        else // If the path is relative
+        {
+            outputPath = fileName + ".mp3";
+        }
+
         await FFMpegArguments.FromFileInput(initialPath)
             .OutputToFile(outputPath, true, options => options
                 .WithAudioCodec(AudioCodec.LibMp3Lame)
