@@ -132,5 +132,25 @@ namespace FluentDL.Helpers
                 visual.StartAnimation("Offset", springUpAnimation);
             }), true);
         }
+
+        public static void AttachSpringDownAnimation(Button button, FrameworkElement icon)
+        {
+            var visual = ElementCompositionPreview.GetElementVisual(icon);
+            var springDownAnimation = CreateSpringDown(visual, 4, 500);
+            button.AddHandler(UIElement.PointerPressedEvent, new PointerEventHandler((s, e) =>
+            {
+                visual.StartAnimation("Offset", springDownAnimation);
+            }), true);
+        }
+
+        public static void AttachSpringUpAnimation(Button button, FrameworkElement icon)
+        {
+            var visual = ElementCompositionPreview.GetElementVisual(icon);
+            var springUpAnimation = CreateSpringUp(visual, 4, 500);
+            button.AddHandler(UIElement.PointerReleasedEvent, new PointerEventHandler((s, e) =>
+            {
+                visual.StartAnimation("Offset", springUpAnimation);
+            }), true);
+        }
     }
 }

@@ -117,6 +117,7 @@ public sealed partial class QueuePage : Page
         CustomListView.ItemsSource = QueueViewModel.Source;
         cancellationTokenSource = new CancellationTokenSource();
         InitPreviewPanelButtons();
+        InitializeAnimations();
         StartStopButton.Visibility = Visibility.Collapsed; // Hide the start/stop button initially
         OutputComboBox.ItemsSource = new List<string>
         {
@@ -167,6 +168,14 @@ public sealed partial class QueuePage : Page
     private async void QueuePage_Loaded(object sender, RoutedEventArgs e)
     {
         await ViewModel.InitializeAsync(); // Initialize the settings for shortcut buttons
+    }
+
+    private void InitializeAnimations()
+    {
+        AnimationHelper.AttachScaleAnimation(ConvertDialogOpenButton, ConvertDialogOpenIcon);
+        AnimationHelper.AttachScaleAnimation(CommandButton, CommandIcon);
+        AnimationHelper.AttachScaleAnimation(ClearButton, ClearIcon);
+        AnimationHelper.AttachScaleAnimation(StartStopButton, StartStopIcon);
     }
 
     protected async override void OnNavigatedTo(NavigationEventArgs e)

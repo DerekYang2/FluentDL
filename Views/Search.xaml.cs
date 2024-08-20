@@ -179,7 +179,7 @@ public sealed partial class Search : Page
         // Init animations
         AnimationHelper.AttachScaleAnimation(addButton);
         AnimationHelper.AttachScaleAnimation(shareButton);
-        AnimationHelper.AttachScaleAnimation(openButton);
+        AnimationHelper.AttachSpringUpAnimation(openButton);
 
         PreviewPanel.SetAppBarButtons(new List<AppBarButton> { addButton, shareButton, openButton });
     }

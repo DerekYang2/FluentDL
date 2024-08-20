@@ -46,7 +46,7 @@
                     <Button x:Name="UploadImageButton" Grid.Column="0" Grid.Row="0" CornerRadius="4, 0,0,4" Style="{ThemeResource AccentButtonStyle}"
                             Click="UploadImageButton_OnClick">
                         <StackPanel Orientation="Horizontal">
-                            <FontIcon Glyph="&#xEE71;" FontSize="16" Margin="0, 0, 8, 0"/>
+                            <FontIcon x:Name="UploadImageIcon" Glyph="&#xEE71;" FontSize="16" Margin="0, 0, 8, 0"/>
                             <TextBlock Text="Add cover art"/>
                         </StackPanel>
                     </Button>
@@ -94,14 +94,14 @@
                 <StackPanel Orientation="Horizontal" Spacing="8">
                 <Button x:Name="UploadButton" VerticalAlignment="Center" Click="UploadButton_OnClick" ToolTipService.ToolTip="Scan a folder for audio files (recursive)">
                     <StackPanel Orientation="Horizontal">
-                        <FontIcon Glyph="&#xE8F4;" FontSize="16" Margin="0, 0, 8, 0"/>
+                        <FontIcon x:Name="UploadButtonIcon" Glyph="&#xE8F4;" FontSize="16" Margin="0, 0, 8, 0"/>
                         <TextBlock Text="Add folder"/>
                     </StackPanel>
                 </Button>
 
                 <Button x:Name="UploadFileButton" VerticalAlignment="Center" Click="UploadFileButton_OnClick" ToolTipService.ToolTip="Browse for audio files">
                     <StackPanel Orientation="Horizontal">
-                        <FontIcon  Glyph="&#xE898;" FontSize="16" Margin="0, 0, 8, 0"/>
+                        <FontIcon x:Name="UploadFileButtonIcon" Glyph="&#xE898;" FontSize="16" Margin="0, 0, 8, 0"/>
                         <TextBlock Text="Add files"/>
                     </StackPanel>
                 </Button>
@@ -109,7 +109,7 @@
 
                 <Button x:Name="ClearButton" HorizontalAlignment="Right" VerticalAlignment="Center" Click="ClearButton_OnClick">
                     <StackPanel Orientation="Horizontal">
-                        <FontIcon Glyph="&#xE894;" FontSize="16" Margin="0, 0, 8, 0"/>
+                        <FontIcon x:Name="ClearButtonIcon" Glyph="&#xE894;" FontSize="16" Margin="0, 0, 8, 0"/>
                         <TextBlock Text="Clear"/>
                     </StackPanel>
                 </Button>

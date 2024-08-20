@@ -114,6 +114,7 @@ public sealed partial class LocalExplorerPage : Page
         originalList = new ObservableCollection<SongSearchObject>();
         fileSet = new HashSet<string>();
         InitPreviewPanelButtons();
+        InitializeAnimations();
 
         // Attach changed event for originalList (when any songs are added or removed from the local explorer)
         originalList.CollectionChanged += (sender, e) =>
@@ -121,7 +122,6 @@ public sealed partial class LocalExplorerPage : Page
             SetResultsAmount(originalList.Count);
             NoItemsText.Visibility = originalList.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
             ClearButton.IsEnabled = originalList.Count > 0;
-            ClearButton.IsEnabled = QueueViewModel.Source.Count > 0;
         };
 
         // Set first
@@ -135,6 +135,15 @@ public sealed partial class LocalExplorerPage : Page
     private async void LocalExplorerPage_Loaded(object sender, RoutedEventArgs e)
     {
         await ViewModel.InitializeAsync();
+    }
+
+    private void InitializeAnimations()
+    {
+        AnimationHelper.AttachSpringUpAnimation(UploadImageButton, UploadImageIcon);
+        AnimationHelper.AttachScaleAnimation(UploadButton, UploadButtonIcon);
+        AnimationHelper.AttachSpringUpAnimation(UploadFileButton, UploadFileButtonIcon);
+        AnimationHelper.AttachScaleAnimation(ClearButton, ClearButtonIcon);
+        AnimationHelper.AttachScaleAnimation(AddToQueueButton, ResultsIcon);
     }
 
     protected async override void OnNavigatedTo(NavigationEventArgs e) // Navigated to page
@@ -179,6 +188,12 @@ public sealed partial class LocalExplorerPage : Page
 
         var openButton = new AppBarButton { Icon = new FontIcon { Glyph = "\uE8A7" }, Label = "Open" };
         openButton.Click += (sender, e) => OpenSongInExplorer(PreviewPanel.GetSong());
+
+        // Initialize animations
+        AnimationHelper.AttachScaleAnimation(addButton);
+        AnimationHelper.AttachScaleAnimation(removeButton);
+        AnimationHelper.AttachScaleAnimation(editButton);
+        AnimationHelper.AttachSpringUpAnimation(openButton);
 
         PreviewPanel.SetAppBarButtons(new List<AppBarButton> { addButton, removeButton, editButton, openButton });
     }
