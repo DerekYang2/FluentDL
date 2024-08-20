@@ -144,6 +144,7 @@ public sealed partial class LocalExplorerPage : Page
         AnimationHelper.AttachSpringUpAnimation(UploadFileButton, UploadFileButtonIcon);
         AnimationHelper.AttachScaleAnimation(ClearButton, ClearButtonIcon);
         AnimationHelper.AttachScaleAnimation(AddToQueueButton, ResultsIcon);
+        AnimationHelper.AttachSpringRightAnimation(ConvertDialogOpenButton, ConvertDialogOpenIcon);
     }
 
     protected async override void OnNavigatedTo(NavigationEventArgs e) // Navigated to page
@@ -737,5 +738,18 @@ public sealed partial class LocalExplorerPage : Page
             var argument = $"/select, \"{song.Id}\"";
             System.Diagnostics.Process.Start("explorer.exe", argument);
         }
+    }
+
+    // Convert dialog related methods ------------------------------------------------
+
+    private async void ConvertDialogOpenButton_OnClick(object sender, RoutedEventArgs e)
+    {
+        ConversionDialog.XamlRoot = this.XamlRoot;
+        await ConversionDialog.ShowAsync();
+    }
+
+    private void ConversionDialog_OnPrimaryButtonClick(ContentDialog sender, ContentDialogButtonClickEventArgs args)
+    {
+        throw new NotImplementedException();
     }
 }

@@ -107,12 +107,25 @@
                 </Button>
                 </StackPanel>
 
-                <Button x:Name="ClearButton" HorizontalAlignment="Right" VerticalAlignment="Center" Click="ClearButton_OnClick">
-                    <StackPanel Orientation="Horizontal">
-                        <FontIcon x:Name="ClearButtonIcon" Glyph="&#xE894;" FontSize="16" Margin="0, 0, 8, 0"/>
-                        <TextBlock Text="Clear"/>
-                    </StackPanel>
-                </Button>
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8">
+                    <Button x:Name="ConvertDialogOpenButton" VerticalAlignment="Center" Click="ConvertDialogOpenButton_OnClick"
+                            ToolTipService.ToolTip="Convert tracks to other sources">
+                        <StackPanel Orientation="Horizontal">
+                            <FontIcon x:Name="ConvertDialogOpenIcon" Glyph="&#xEA3C;" FontSize="16" Margin="0, 0, 8, 0" RenderTransformOrigin="0.5,0.5">
+                                <FontIcon.RenderTransform>
+                                    <RotateTransform Angle="90" />
+                                </FontIcon.RenderTransform>
+                            </FontIcon>
+                            <TextBlock Text="Convert" />
+                        </StackPanel>
+                    </Button>
+                    <Button x:Name="ClearButton" VerticalAlignment="Center" Click="ClearButton_OnClick">
+                        <StackPanel Orientation="Horizontal">
+                            <FontIcon x:Name="ClearButtonIcon" Glyph="&#xE894;" FontSize="16" Margin="0, 0, 8, 0"/>
+                            <TextBlock Text="Clear"/>
+                        </StackPanel>
+                    </Button>
+                </StackPanel>
             </controls:DockPanel>
 
             <!-- ROW 2 of 4: Second row and sort boxes -->
@@ -282,5 +295,20 @@
                 </Grid>
             </InfoBar.Content>
         </InfoBar>
+
+        <!-- Convert Dialog -->
+        <ContentDialog x:Name="ConversionDialog" PrimaryButtonText="Convert" CloseButtonText="Close"
+                       Title="Convert Audio Format" IsPrimaryButtonEnabled="True"
+                       PrimaryButtonClick="ConversionDialog_OnPrimaryButtonClick"
+                       PrimaryButtonStyle="{ThemeResource AccentButtonStyle}">
+            <StackPanel>
+                <InfoBar
+                    IsOpen="True"
+                    IsClosable="False"
+                    Severity="Informational"
+                    Message="Convert files to FLAC, MP3, AAC, or OGG with FFmpeg."
+                    Margin="0,0,0,12" />
+            </StackPanel>
+        </ContentDialog>
     </Grid>
 </Page>

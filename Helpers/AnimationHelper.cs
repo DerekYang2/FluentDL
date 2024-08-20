@@ -73,6 +73,20 @@ namespace FluentDL.Helpers
             return springUpAnimation;
         }
 
+        // Offset animation for the x axis, positive is to the right, negative is to the left
+        public static Vector3KeyFrameAnimation CreateSpringX(Visual visual, float offsetX, double durationMs)
+        {
+            var compositor = visual.Compositor;
+
+            // Create the spring x animation
+            var springXAnimation = compositor.CreateVector3KeyFrameAnimation();
+            springXAnimation.InsertKeyFrame(0.0f, new Vector3(-offsetX, 0.0f, 0.0f));
+            springXAnimation.InsertKeyFrame(0.5f, new Vector3(offsetX, 0.0f, 0.0f));
+            springXAnimation.InsertKeyFrame(1.0f, new Vector3(0.0f, 0.0f, 0.0f));
+
+            return springXAnimation;
+        }
+
         public static void AttachScaleAnimation(AppBarButton button)
         {
             var visual = ElementCompositionPreview.GetElementVisual(button.Icon);
@@ -151,6 +165,47 @@ namespace FluentDL.Helpers
             {
                 visual.StartAnimation("Offset", springUpAnimation);
             }), true);
+        }
+
+        public static void AttachSpringXAnimation(AppBarButton button, float offsetX)
+        {
+            var visual = ElementCompositionPreview.GetElementVisual(button.Icon);
+            var springXAnimation = CreateSpringX(visual, offsetX, 500);
+            button.AddHandler(UIElement.PointerPressedEvent, new PointerEventHandler((s, e) =>
+            {
+                visual.StartAnimation("Offset", springXAnimation);
+            }), true);
+        }
+
+        public static void AttachSpringXAnimation(Button button, FrameworkElement icon, float offsetX)
+        {
+            var visual = ElementCompositionPreview.GetElementVisual(icon);
+            var springXAnimation = CreateSpringX(visual, offsetX, 500);
+            button.AddHandler(UIElement.PointerPressedEvent, new PointerEventHandler((s, e) =>
+            {
+                visual.StartAnimation("Offset", springXAnimation);
+            }), true);
+        }
+
+
+        public static void AttachSpringRightAnimation(AppBarButton button)
+        {
+            AttachSpringXAnimation(button, 4);
+        }
+
+        public static void AttachSpringRightAnimation(Button button, FrameworkElement icon)
+        {
+            AttachSpringXAnimation(button, icon, 4);
+        }
+
+        public static void AttachSpringLeftAnimation(AppBarButton button)
+        {
+            AttachSpringXAnimation(button, -4);
+        }
+
+        public static void AttachSpringLeftAnimation(Button button, FrameworkElement icon)
+        {
+            AttachSpringXAnimation(button, icon, -4);
         }
     }
 }

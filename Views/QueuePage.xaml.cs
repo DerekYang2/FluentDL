@@ -172,7 +172,7 @@ public sealed partial class QueuePage : Page
 
     private void InitializeAnimations()
     {
-        AnimationHelper.AttachScaleAnimation(ConvertDialogOpenButton, ConvertDialogOpenIcon);
+        AnimationHelper.AttachSpringRightAnimation(ConvertDialogOpenButton, ConvertDialogOpenIcon);
         AnimationHelper.AttachScaleAnimation(CommandButton, CommandIcon);
         AnimationHelper.AttachScaleAnimation(ClearButton, ClearIcon);
         AnimationHelper.AttachScaleAnimation(StartStopButton, StartStopIcon);
