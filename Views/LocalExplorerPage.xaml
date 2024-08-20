@@ -306,8 +306,27 @@
                     IsOpen="True"
                     IsClosable="False"
                     Severity="Informational"
-                    Message="Convert files to FLAC, MP3, AAC, or OGG with FFmpeg."
-                    Margin="0,0,0,12" />
+                    Margin="0,0,0,12">
+                    <InfoBar.Content>
+                        <TextBlock Margin="0,0, 12,0">
+                            Convert files to FLAC, MP3, AAC, or OGG with <Hyperlink NavigateUri="https://ffmpeg.org">FFmpeg</Hyperlink>.
+                        </TextBlock>
+                    </InfoBar.Content>
+                </InfoBar>
+
+                <StackPanel Grid.Column="1">
+                    <TextBlock Text="Output Format" Style="{ThemeResource CaptionTextBlockStyle}"
+                               Foreground="{ThemeResource TextFillColorSecondary}" Margin="0,0,0,4" />
+                    <ComboBox x:Name="OutputComboBox" PlaceholderText="Select output format"
+                              Margin="0, 0, 0,0" ToolTipService.ToolTip="The format to convert to"
+                              HorizontalAlignment="Stretch" SelectionChanged="OutputComboBox_OnSelectionChanged"/>
+                    <TextBlock x:Name="SubsettingHeader" Style="{ThemeResource CaptionTextBlockStyle}" Visibility="Collapsed"
+                               Foreground="{ThemeResource TextFillColorSecondary}" Margin="0,8,0,4" />
+                    <ComboBox x:Name="SubsettingComboBox" Visibility="Collapsed"
+                              Margin="0, 0, 0,0" 
+                              HorizontalAlignment="Stretch" />
+                </StackPanel>
+
             </StackPanel>
         </ContentDialog>
     </Grid>

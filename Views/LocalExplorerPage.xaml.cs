@@ -110,6 +110,16 @@ public sealed partial class LocalExplorerPage : Page
         SortComboBox.SelectedIndex = 0;
         SortOrderComboBox.SelectedIndex = 0;
 
+        OutputComboBox.ItemsSource = new List<string>
+        {
+            ".flac",
+            ".mp3",
+            ".m4a (AAC)",
+            ".m4a (ALAC)",
+            ".ogg (Vorbis)",
+            ".ogg (Opus)",
+        };
+
         FileListView.ItemsSource = new ObservableCollection<SongSearchObject>();
         originalList = new ObservableCollection<SongSearchObject>();
         fileSet = new HashSet<string>();
@@ -748,8 +758,70 @@ public sealed partial class LocalExplorerPage : Page
         await ConversionDialog.ShowAsync();
     }
 
-    private void ConversionDialog_OnPrimaryButtonClick(ContentDialog sender, ContentDialogButtonClickEventArgs args)
+    private async void ConversionDialog_OnPrimaryButtonClick(ContentDialog sender, ContentDialogButtonClickEventArgs args)
     {
-        throw new NotImplementedException();
+        var selectedIndex = OutputComboBox.SelectedIndex;
+        var outputFormat = OutputComboBox.SelectedItem as string;
+
+        Debug.WriteLine("Selected index: " + selectedIndex);
+
+        ShowInfoBarPermanent(InfoBarSeverity.Informational, "Converting tracks to " + outputFormat);
+        InfobarProgress.Visibility = Visibility.Visible;
+
+        foreach (var song in originalList)
+        {
+            if (outputFormat == null)
+            {
+                ShowInfoBar(InfoBarSeverity.Warning, "No output format selected");
+                return;
+            }
+
+            switch (selectedIndex)
+            {
+                case 0:
+                    await FFmpegRunner.ConvertToFlac(song.Id);
+                    break;
+                case 1:
+                    await FFmpegRunner.ConvertToMp3(song.Id);
+                    break;
+            }
+        }
+
+        ShowInfoBar(InfoBarSeverity.Success, "Conversion complete");
+        InfobarProgress.Visibility = Visibility.Collapsed;
+    }
+
+    private void OutputComboBox_OnSelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        var MP3Subsettings = new List<string>
+        {
+            "Variable bit rate (VBR)",
+            "128 kbps",
+            "192 kbps",
+            "256 kbps",
+            "320 kbps",
+        };
+
+        var selectedIndex = OutputComboBox.SelectedIndex;
+
+        SubsettingComboBox.ItemsSource = selectedIndex switch
+        {
+            1 => MP3Subsettings,
+            _ => new List<string>(),
+        };
+
+
+        // If empty, hide the subsetting combobox
+        if (SubsettingComboBox.ItemsSource as List<string> is { Count: 0 })
+        {
+            SubsettingComboBox.Visibility = Visibility.Collapsed;
+            SubsettingHeader.Visibility = Visibility.Collapsed;
+        }
+        else
+        {
+            SubsettingComboBox.Visibility = Visibility.Visible;
+            SubsettingHeader.Visibility = Visibility.Visible;
+            SubsettingComboBox.SelectedIndex = 0;
+        }
     }
 }
