@@ -43,6 +43,8 @@ public partial class SettingsViewModel : ObservableRecipient
         QueueDownloadCoverChecked = "queue_download_cover_checked",
         QueueRemoveChecked = "queue_remove_checked";
 
+    public static readonly string FFmpegPath = "ffmpeg_path";
+
     private static ILocalSettingsService localSettings = App.GetService<ILocalSettingsService>();
 
     private readonly IThemeSelectorService _themeSelectorService;

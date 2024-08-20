@@ -189,6 +189,11 @@ internal class ApiHelper
                         throw new Exception("File already exists."); // Will be caught below
                     }
 
+                    if (!FFmpegRunner.IsInitialized)
+                    {
+                        throw new Exception("FFmpeg is not initialized.");
+                    }
+
                     await YoutubeApi.DownloadAudioAAC(mp4Location, song.Id);
                     await FFmpegRunner.ConvertMP4toM4A(mp4Location);
                     await YoutubeApi.UpdateMetadata(m4aLocation, song.Id);
@@ -212,6 +217,11 @@ internal class ApiHelper
                 }
 
                 // Convert to flac
+                if (!FFmpegRunner.IsInitialized)
+                {
+                    throw new Exception("FFmpeg is not initialized.");
+                }
+
                 await FFmpegRunner.ConvertToFlac(opusLocation); // Convert opus to flac
                 await YoutubeApi.UpdateMetadata(flacLocation, song.Id);
                 callback?.Invoke(InfoBarSeverity.Success, song, flacLocation); // Assume success

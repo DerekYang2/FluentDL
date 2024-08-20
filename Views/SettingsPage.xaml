@@ -106,7 +106,7 @@
                         <FontIcon Glyph="&#xE8B7;" />
                     </local:SettingsExpander.HeaderIcon>
                     <local:SettingsExpander.Items>
-                        <local:SettingsCard x:Name="FFmpegPathCard" Header="Path" Description="No binary folder selected" HorizontalContentAlignment="Stretch">
+                        <local:SettingsCard x:Name="FFmpegPathCard" Header="Path" Description="No folder selected" HorizontalContentAlignment="Stretch">
                             <Button x:Name="SelectFFmpegButton" Click="SelectFFmpegButton_OnClick" Content="Change"/>
                         </local:SettingsCard>
                     </local:SettingsExpander.Items>

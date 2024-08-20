@@ -51,6 +51,10 @@ public sealed partial class SettingsPage : Page
         LocationCard.Description = await localSettings.ReadSettingAsync<string>(SettingsViewModel.DownloadDirectory) ?? "No folder selected";
         if (string.IsNullOrWhiteSpace(LocationCard.Description.ToString())) LocationCard.Description = "No folder selected";
 
+        // Set FFmpeg path
+        FFmpegPathCard.Description = await localSettings.ReadSettingAsync<string>(SettingsViewModel.FFmpegPath) ?? "No folder selected";
+        if (string.IsNullOrWhiteSpace(FFmpegPathCard.Description.ToString())) FFmpegPathCard.Description = "No folder selected";
+
         // Set ToggleSwitches
         AskToggle.IsOn = await localSettings.ReadSettingAsync<bool>(SettingsViewModel.AskBeforeDownload);
         OverwriteToggle.IsOn = await localSettings.ReadSettingAsync<bool>(SettingsViewModel.Overwrite);
@@ -204,6 +208,7 @@ public sealed partial class SettingsPage : Page
             {
                 // Set the folder path in the text box
                 FFmpegPathCard.Description = folder.Path;
+                await localSettings.SaveSettingAsync(SettingsViewModel.FFmpegPath, folder.Path);
                 Debug.WriteLine("Saved download directory: " + folder.Path);
             }
             else

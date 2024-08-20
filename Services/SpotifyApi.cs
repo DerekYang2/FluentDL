@@ -552,6 +552,11 @@ namespace FluentDL.Services
                     return null;
                 }
 
+                if (!FFmpegRunner.IsInitialized)
+                {
+                    return null;
+                }
+
                 await YoutubeApi.DownloadAudio(opusLocation, song.Id); // Download audio as opus
                 await FFmpegRunner.ConvertToFlac(opusLocation); // Convert opus to flac
 

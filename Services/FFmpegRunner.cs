@@ -6,14 +6,33 @@ using System.Text;
 using System.Threading.Tasks;
 using FFMpegCore;
 using FFMpegCore.Enums;
+using FluentDL.ViewModels;
 
 namespace FluentDL.Services;
 
 internal class FFmpegRunner
 {
-    public static void Initialize()
+    public static bool IsInitialized = false;
+
+    public static async Task Initialize()
     {
-        GlobalFFOptions.Configure(options => options.BinaryFolder = Path.Combine(AppContext.BaseDirectory, "Assets/ffmpeg/bin"));
+        try
+        {
+            var ffmpegPath = await SettingsViewModel.GetSetting<string?>(SettingsViewModel.FFmpegPath) ?? string.Empty;
+            if (!Directory.Exists(ffmpegPath))
+            {
+                ffmpegPath = Path.Combine(AppContext.BaseDirectory, "Assets/ffmpeg/bin");
+            }
+
+            Debug.WriteLine("FFMPEG PATH: " + ffmpegPath);
+
+            GlobalFFOptions.Configure(options => options.BinaryFolder = ffmpegPath);
+            IsInitialized = true;
+        }
+        catch (Exception e)
+        {
+            Debug.WriteLine(e.Message);
+        }
     }
 
     /**
@@ -58,12 +77,24 @@ internal class FFmpegRunner
         File.Delete(initialPath);
     }
 
-    // Does not delete the original file
-    public static void CreateMp3FromFlac(string initialPath)
+    // Does not delete the original file, converts to mp3 (variable bit rate)
+    public static async Task ConvertToMp3(string initialPath)
     {
-        FFMpegArguments.FromFileInput(initialPath)
-            .OutputToFile(initialPath.Replace(".flac", ".mp3"), true, options => options
-                .WithAudioCodec(AudioCodec.LibMp3Lame).WithCustomArgument("-q:a 0").WithCustomArgument("-c:v copy")).ProcessSynchronously();
+        var lastIndex = initialPath.LastIndexOf('.');
+        var outputPath = initialPath.Substring(0, lastIndex) + ".mp3";
+        await FFMpegArguments.FromFileInput(initialPath)
+            .OutputToFile(outputPath, true, options => options
+                .WithAudioCodec(AudioCodec.LibMp3Lame).WithCustomArgument("-q:a 0").WithCustomArgument("-c:v copy")).ProcessAsynchronously();
+    }
+
+    // Convert to mp3 with cbr (constant bit rate)
+    public static async Task ConvertToMp3(string initialPath, int bitRate)
+    {
+        var lastIndex = initialPath.LastIndexOf('.');
+        var outputPath = initialPath.Substring(0, lastIndex) + ".mp3";
+        await FFMpegArguments.FromFileInput(initialPath)
+            .OutputToFile(outputPath, true, options => options
+                .WithAudioCodec(AudioCodec.LibMp3Lame).WithCustomArgument($"-b:a {bitRate}k").WithCustomArgument("-c:v copy")).ProcessAsynchronously();
     }
 
     public static void CreateAACFromFlac(string initialPath)

@@ -126,7 +126,7 @@ public partial class App : Application
             await LocalCommands.Init();
 
             // Initialize FFMpeg 
-            FFmpegRunner.Initialize();
+            await FFmpegRunner.Initialize();
 
             // Initialize api objects
             var localSettings = App.GetService<ILocalSettingsService>();
