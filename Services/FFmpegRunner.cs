@@ -67,6 +67,35 @@ internal class FFmpegRunner
         File.Delete(initialPath);
     }
 
+    public static void ConvertToFlac(string initialPath, int samplingRate = 48000)
+    {
+        // Check if already flac
+        if (initialPath.EndsWith(".flac"))
+        {
+            return;
+        }
+
+        var directory = Path.GetDirectoryName(initialPath);
+        var fileName = Path.GetFileNameWithoutExtension(initialPath);
+        string outputPath;
+        if (Path.IsPathRooted(initialPath)) // If the path is absolute
+        {
+            outputPath = Path.Combine(directory, fileName + ".flac");
+        }
+        else // If the path is relative
+        {
+            outputPath = fileName + ".flac";
+        }
+
+        FFMpegArguments.FromFileInput(initialPath)
+            .OutputToFile(outputPath, true, options => options
+                .WithCustomArgument("-sample_fmt s16")
+                .WithAudioSamplingRate(samplingRate)).ProcessSynchronously();
+
+        // Delete the original opus
+        File.Delete(initialPath);
+    }
+
     public static async Task CreateFlacAsync(string initialPath, int samplingRate = 48000, int bitDepth = 16, string? outputDirectory = null)
     {
         var directory = outputDirectory ?? Path.GetDirectoryName(initialPath);
@@ -87,6 +116,28 @@ internal class FFmpegRunner
                 .WithCustomArgument($"-sample_fmt s{bitDepth}")
                 .WithAudioSamplingRate(samplingRate)).ProcessAsynchronously();
     }
+
+    public static void CreateFlac(string initialPath, int samplingRate = 48000, int bitDepth = 16, string? outputDirectory = null)
+    {
+        var directory = outputDirectory ?? Path.GetDirectoryName(initialPath);
+        var fileName = Path.GetFileNameWithoutExtension(initialPath);
+
+        string outputPath;
+        if (Path.IsPathRooted(initialPath)) // If the path is absolute
+        {
+            outputPath = Path.Combine(directory, fileName + ".flac");
+        }
+        else // If the path is relative
+        {
+            outputPath = fileName + ".flac";
+        }
+
+        FFMpegArguments.FromFileInput(initialPath)
+            .OutputToFile(outputPath, true, options => options
+                .WithCustomArgument($"-sample_fmt s{bitDepth}")
+                .WithAudioSamplingRate(samplingRate)).ProcessSynchronously();
+    }
+
 
     public static async Task ConvertMp4ToM4aAsync(string initialPath)
     {
