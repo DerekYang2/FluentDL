@@ -799,6 +799,12 @@ public sealed partial class LocalExplorerPage : Page
                 case 3:
                     await FFmpegRunner.CreateAlacAsync(song.Id, outputDirectory);
                     break;
+                case 4:
+                    await CreateVorbisHelper(song, outputDirectory);
+                    break;
+                case 5:
+                    await CreateOpusHelper(song, outputDirectory);
+                    break;
             }
         }
 
@@ -819,12 +825,16 @@ public sealed partial class LocalExplorerPage : Page
 
         var AacSubsettings = new List<string> { "128 kbps", "192 kbps", "256 kbps" };
 
+        var OggSubsettings = new List<string> { "128 kbps", "192 kbps", "256 kbps" };
+
         var selectedIndex = OutputComboBox.SelectedIndex;
 
         SubsettingComboBox.ItemsSource = selectedIndex switch
         {
             1 => MP3Subsettings,
             2 => AacSubsettings,
+            4 => OggSubsettings,
+            5 => OggSubsettings,
             _ => new List<string>(),
         };
 
@@ -832,6 +842,8 @@ public sealed partial class LocalExplorerPage : Page
         {
             1 => "Bitrate",
             2 => "Bitrate (CBR)",
+            4 => "Bitrate (CBR)",
+            5 => "Bitrate (CBR)",
             _ => "",
         };
 
@@ -885,6 +897,40 @@ public sealed partial class LocalExplorerPage : Page
                 break;
             case 2:
                 await FFmpegRunner.CreateAacAsync(song.Id, 256, outputDirectory);
+                break;
+        }
+    }
+
+    private async Task CreateVorbisHelper(SongSearchObject song, string? outputDirectory)
+    {
+        var subIndex = SubsettingComboBox.SelectedIndex;
+        switch (subIndex)
+        {
+            case 0:
+                await FFmpegRunner.CreateVorbisAsync(song.Id, 128, outputDirectory);
+                break;
+            case 1:
+                await FFmpegRunner.CreateVorbisAsync(song.Id, 192, outputDirectory);
+                break;
+            case 2:
+                await FFmpegRunner.CreateVorbisAsync(song.Id, 256, outputDirectory);
+                break;
+        }
+    }
+
+    private async Task CreateOpusHelper(SongSearchObject song, string? outputDirectory)
+    {
+        var subIndex = SubsettingComboBox.SelectedIndex;
+        switch (subIndex)
+        {
+            case 0:
+                await FFmpegRunner.CreateOpusAsync(song.Id, 128, outputDirectory);
+                break;
+            case 1:
+                await FFmpegRunner.CreateOpusAsync(song.Id, 192, outputDirectory);
+                break;
+            case 2:
+                await FFmpegRunner.CreateOpusAsync(song.Id, 256, outputDirectory);
                 break;
         }
     }

@@ -220,13 +220,28 @@ internal class FFmpegRunner
             outputPath = fileName + ".m4a";
         }
 
-        FFMpegArguments.FromFileInput(initialPath)
-            .OutputToFile(outputPath, true, options => options
-                .WithAudioCodec(AudioCodec.Aac)
-                .WithCustomArgument("-c:v copy")
-                .WithCustomArgument("-map_metadata 0")
-                .WithCustomArgument("-c:a aac")
-                .WithCustomArgument($"-b:a {bitRate}k")).ProcessSynchronously();
+        try
+        {
+            FFMpegArguments.FromFileInput(initialPath)
+                .OutputToFile(outputPath, true, options => options
+                    .WithAudioCodec(AudioCodec.LibFdk_Aac)
+                    .WithCustomArgument("-c:v copy")
+                    .WithCustomArgument("-map_metadata 0")
+                    .WithCustomArgument("-c:a aac")
+                    .WithCustomArgument($"-b:a {bitRate}k")).ProcessSynchronously();
+        }
+        catch (Exception e)
+        {
+            Debug.WriteLine("CONVERSION TO AAC FAILED: " + e.Message);
+            // Try again with AudioCodec.Aac
+            FFMpegArguments.FromFileInput(initialPath)
+                .OutputToFile(outputPath, true, options => options
+                    .WithAudioCodec(AudioCodec.Aac)
+                    .WithCustomArgument("-c:v copy")
+                    .WithCustomArgument("-map_metadata 0")
+                    .WithCustomArgument("-c:a aac")
+                    .WithCustomArgument($"-b:a {bitRate}k")).ProcessSynchronously();
+        }
     }
 
 
@@ -245,12 +260,26 @@ internal class FFmpegRunner
             outputPath = fileName + ".m4a";
         }
 
-        await FFMpegArguments.FromFileInput(initialPath)
-            .OutputToFile(outputPath, true, options => options.WithCustomArgument("-c:v copy")
-                .WithAudioCodec(AudioCodec.Aac)
-                .WithCustomArgument("-map_metadata 0")
-                .WithCustomArgument("-c:a aac")
-                .WithCustomArgument($"-b:a {bitRate}k")).ProcessAsynchronously();
+        try
+        {
+            await FFMpegArguments.FromFileInput(initialPath)
+                .OutputToFile(outputPath, true, options => options.WithCustomArgument("-c:v copy")
+                    .WithAudioCodec(AudioCodec.LibFdk_Aac)
+                    .WithCustomArgument("-map_metadata 0")
+                    .WithCustomArgument("-c:a aac")
+                    .WithCustomArgument($"-b:a {bitRate}k")).ProcessAsynchronously();
+        }
+        catch (Exception e)
+        {
+            Debug.WriteLine("CONVERSION TO AAC FAILED: " + e.Message);
+            // Try again with AudioCodec.Aac
+            await FFMpegArguments.FromFileInput(initialPath)
+                .OutputToFile(outputPath, true, options => options.WithCustomArgument("-c:v copy")
+                    .WithAudioCodec(AudioCodec.Aac)
+                    .WithCustomArgument("-map_metadata 0")
+                    .WithCustomArgument("-c:a aac")
+                    .WithCustomArgument($"-b:a {bitRate}k")).ProcessAsynchronously();
+        }
     }
 
     public static void CreateAlac(string initialPath, string? outputDirectory = null)
@@ -288,15 +317,32 @@ internal class FFmpegRunner
             outputPath = fileName + ".m4a";
         }
 
-        await FFMpegArguments.FromFileInput(initialPath)
-            .OutputToFile(outputPath, true, options => options.WithCustomArgument("-c:v copy")
-                .WithAudioCodec(AudioCodec.Aac)
-                .WithCustomArgument("-map_metadata 0")
-                .WithCustomArgument("-c:a aac")
-                .WithCustomArgument($"-b:a {bitRate}k")).ProcessAsynchronously();
+        try
+        {
+            await FFMpegArguments.FromFileInput(initialPath)
+                .OutputToFile(outputPath, true, options => options.WithCustomArgument("-c:v copy")
+                    .WithAudioCodec(AudioCodec.LibFdk_Aac)
+                    .WithCustomArgument("-map_metadata 0")
+                    .WithCustomArgument("-c:a aac")
+                    .WithCustomArgument($"-b:a {bitRate}k")).ProcessAsynchronously();
 
-        // Delete original
-        File.Delete(initialPath);
+            // Delete original
+            File.Delete(initialPath);
+        }
+        catch (Exception e)
+        {
+            Debug.WriteLine("CONVERSION TO AAC FAILED: " + e.Message);
+            // Try again with AudioCodec.Aac
+            await FFMpegArguments.FromFileInput(initialPath)
+                .OutputToFile(outputPath, true, options => options.WithCustomArgument("-c:v copy")
+                    .WithAudioCodec(AudioCodec.Aac)
+                    .WithCustomArgument("-map_metadata 0")
+                    .WithCustomArgument("-c:a aac")
+                    .WithCustomArgument($"-b:a {bitRate}k")).ProcessAsynchronously();
+
+            // Delete original
+            File.Delete(initialPath);
+        }
     }
 
     public static async Task CreateAlacAsync(string initialPath, string? outputDirectory = null)
@@ -317,5 +363,64 @@ internal class FFmpegRunner
         await FFMpegArguments.FromFileInput(initialPath)
             .OutputToFile(outputPath, true, options => options.WithCustomArgument("-c:v copy").WithCustomArgument("-map_metadata 0")
                 .WithCustomArgument("-c:a alac")).ProcessAsynchronously();
+    }
+
+    public static async Task CreateVorbisAsync(string initialPath, int bitRate, string? outputDirectory = null)
+    {
+        var directory = outputDirectory ?? Path.GetDirectoryName(initialPath);
+        var fileName = Path.GetFileNameWithoutExtension(initialPath);
+
+        string outputPath;
+        if (Path.IsPathRooted(initialPath)) // If the path is absolute
+        {
+            outputPath = Path.Combine(directory, fileName + ".ogg");
+        }
+        else // If the path is relative
+        {
+            outputPath = fileName + ".ogg";
+        }
+
+        try
+        {
+            await FFMpegArguments.FromFileInput(initialPath)
+                .OutputToFile(outputPath, true, options => options
+                    .WithCustomArgument("-c:a libvorbis")
+                    .WithCustomArgument("-c:v copy")
+                    .WithCustomArgument("-map_metadata 0")
+                    .WithCustomArgument($"-b:a {bitRate}k")).ProcessAsynchronously();
+        }
+        catch (Exception e)
+        {
+            Debug.WriteLine("CONVERSION TO VORBIS FAILED: " + e.Message);
+        }
+    }
+
+    public static async Task CreateOpusAsync(string initialPath, int bitRate, string? outputDirectory = null)
+    {
+        var directory = outputDirectory ?? Path.GetDirectoryName(initialPath);
+        var fileName = Path.GetFileNameWithoutExtension(initialPath);
+
+        string outputPath;
+        if (Path.IsPathRooted(initialPath)) // If the path is absolute
+        {
+            outputPath = Path.Combine(directory, fileName + ".ogg");
+        }
+        else // If the path is relative
+        {
+            outputPath = fileName + ".ogg";
+        }
+
+        try
+        {
+            await FFMpegArguments.FromFileInput(initialPath)
+                .OutputToFile(outputPath, true, options => options.WithCustomArgument("-c:v copy")
+                    .WithCustomArgument("-map_metadata 0")
+                    .WithCustomArgument("-c:a libopus")
+                    .WithCustomArgument($"-b:a {bitRate}k")).ProcessAsynchronously();
+        }
+        catch (Exception e)
+        {
+            Debug.WriteLine("CONVERSION TO OPUS FAILED: " + e.Message);
+        }
     }
 }
