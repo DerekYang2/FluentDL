@@ -96,7 +96,7 @@ internal class FFmpegRunner
         File.Delete(initialPath);
     }
 
-    public static async Task CreateFlacAsync(string initialPath, int samplingRate = 48000, int bitDepth = 16, string? outputDirectory = null)
+    public static async Task CreateFlacAsync(string initialPath, string? outputDirectory = null)
     {
         var directory = outputDirectory ?? Path.GetDirectoryName(initialPath);
         var fileName = Path.GetFileNameWithoutExtension(initialPath);
@@ -113,11 +113,11 @@ internal class FFmpegRunner
 
         await FFMpegArguments.FromFileInput(initialPath)
             .OutputToFile(outputPath, true, options => options
-                .WithCustomArgument($"-sample_fmt s{bitDepth}")
-                .WithAudioSamplingRate(samplingRate)).ProcessAsynchronously();
+                .WithCustomArgument("-c:v copy")
+                .WithCustomArgument("-map_metadata 0")).ProcessAsynchronously();
     }
 
-    public static void CreateFlac(string initialPath, int samplingRate = 48000, int bitDepth = 16, string? outputDirectory = null)
+    public static void CreateFlac(string initialPath, string? outputDirectory = null)
     {
         var directory = outputDirectory ?? Path.GetDirectoryName(initialPath);
         var fileName = Path.GetFileNameWithoutExtension(initialPath);
@@ -134,8 +134,8 @@ internal class FFmpegRunner
 
         FFMpegArguments.FromFileInput(initialPath)
             .OutputToFile(outputPath, true, options => options
-                .WithCustomArgument($"-sample_fmt s{bitDepth}")
-                .WithAudioSamplingRate(samplingRate)).ProcessSynchronously();
+                .WithCustomArgument("-c:v copy")
+                .WithCustomArgument("-map_metadata 0")).ProcessSynchronously();
     }
 
 
@@ -205,17 +205,117 @@ internal class FFmpegRunner
                 .WithCustomArgument("-id3v2_version 3")).ProcessAsynchronously();
     }
 
-    public static void CreateAACFromFlac(string initialPath)
+    public static void CreateAac(string initialPath, int bitRate, string? outputDirectory = null)
     {
+        var directory = outputDirectory ?? Path.GetDirectoryName(initialPath);
+        var fileName = Path.GetFileNameWithoutExtension(initialPath);
+
+        string outputPath;
+        if (Path.IsPathRooted(initialPath)) // If the path is absolute
+        {
+            outputPath = Path.Combine(directory, fileName + ".m4a");
+        }
+        else // If the path is relative
+        {
+            outputPath = fileName + ".m4a";
+        }
+
         FFMpegArguments.FromFileInput(initialPath)
-            .OutputToFile(initialPath.Replace(".flac", ".aac"), true, options => options
-                .WithCustomArgument("-b:a 256k")).ProcessSynchronously();
+            .OutputToFile(outputPath, true, options => options
+                .WithAudioCodec(AudioCodec.Aac)
+                .WithCustomArgument("-c:v copy")
+                .WithCustomArgument("-map_metadata 0")
+                .WithCustomArgument("-c:a aac")
+                .WithCustomArgument($"-b:a {bitRate}k")).ProcessSynchronously();
     }
 
-    public static void CreateALACFromFLAC(string initialPath)
+
+    public static async Task CreateAacAsync(string initialPath, int bitRate, string? outputDirectory = null)
     {
+        var directory = outputDirectory ?? Path.GetDirectoryName(initialPath);
+        var fileName = Path.GetFileNameWithoutExtension(initialPath);
+
+        string outputPath;
+        if (Path.IsPathRooted(initialPath)) // If the path is absolute
+        {
+            outputPath = Path.Combine(directory, fileName + ".m4a");
+        }
+        else // If the path is relative
+        {
+            outputPath = fileName + ".m4a";
+        }
+
+        await FFMpegArguments.FromFileInput(initialPath)
+            .OutputToFile(outputPath, true, options => options.WithCustomArgument("-c:v copy")
+                .WithAudioCodec(AudioCodec.Aac)
+                .WithCustomArgument("-map_metadata 0")
+                .WithCustomArgument("-c:a aac")
+                .WithCustomArgument($"-b:a {bitRate}k")).ProcessAsynchronously();
+    }
+
+    public static void CreateAlac(string initialPath, string? outputDirectory = null)
+    {
+        var directory = outputDirectory ?? Path.GetDirectoryName(initialPath);
+        var fileName = Path.GetFileNameWithoutExtension(initialPath);
+
+        string outputPath;
+        if (Path.IsPathRooted(initialPath)) // If the path is absolute
+        {
+            outputPath = Path.Combine(directory, fileName + ".m4a");
+        }
+        else // If the path is relative
+        {
+            outputPath = fileName + ".m4a";
+        }
+
         FFMpegArguments.FromFileInput(initialPath)
-            .OutputToFile(initialPath.Replace(".flac", ".m4a"), true, options => options.WithCustomArgument("-c:v copy").WithCustomArgument("-c:a alac")
-            ).ProcessSynchronously();
+            .OutputToFile(outputPath, true, options => options.WithCustomArgument("-c:v copy").WithCustomArgument("-map_metadata 0")
+                .WithCustomArgument("-c:a alac")).ProcessSynchronously();
+    }
+
+    public static async Task ConvertAacAsync(string initialPath, int bitRate, string? outputDirectory = null)
+    {
+        var directory = outputDirectory ?? Path.GetDirectoryName(initialPath);
+        var fileName = Path.GetFileNameWithoutExtension(initialPath);
+
+        string outputPath;
+        if (Path.IsPathRooted(initialPath)) // If the path is absolute
+        {
+            outputPath = Path.Combine(directory, fileName + ".m4a");
+        }
+        else // If the path is relative
+        {
+            outputPath = fileName + ".m4a";
+        }
+
+        await FFMpegArguments.FromFileInput(initialPath)
+            .OutputToFile(outputPath, true, options => options.WithCustomArgument("-c:v copy")
+                .WithAudioCodec(AudioCodec.Aac)
+                .WithCustomArgument("-map_metadata 0")
+                .WithCustomArgument("-c:a aac")
+                .WithCustomArgument($"-b:a {bitRate}k")).ProcessAsynchronously();
+
+        // Delete original
+        File.Delete(initialPath);
+    }
+
+    public static async Task CreateAlacAsync(string initialPath, string? outputDirectory = null)
+    {
+        var directory = outputDirectory ?? Path.GetDirectoryName(initialPath);
+        var fileName = Path.GetFileNameWithoutExtension(initialPath);
+
+        string outputPath;
+        if (Path.IsPathRooted(initialPath)) // If the path is absolute
+        {
+            outputPath = Path.Combine(directory, fileName + ".m4a");
+        }
+        else // If the path is relative
+        {
+            outputPath = fileName + ".m4a";
+        }
+
+        await FFMpegArguments.FromFileInput(initialPath)
+            .OutputToFile(outputPath, true, options => options.WithCustomArgument("-c:v copy").WithCustomArgument("-map_metadata 0")
+                .WithCustomArgument("-c:a alac")).ProcessAsynchronously();
     }
 }

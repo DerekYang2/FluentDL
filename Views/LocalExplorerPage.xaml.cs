@@ -788,10 +788,16 @@ public sealed partial class LocalExplorerPage : Page
             switch (selectedIndex)
             {
                 case 0:
-                    await FFmpegRunner.CreateFlacAsync(song.Id, 48000, 16, outputDirectory);
+                    await FFmpegRunner.CreateFlacAsync(song.Id, outputDirectory);
                     break;
                 case 1:
                     await CreateMp3Helper(song, outputDirectory);
+                    break;
+                case 2:
+                    await CreateAacHelper(song, outputDirectory);
+                    break;
+                case 3:
+                    await FFmpegRunner.CreateAlacAsync(song.Id, outputDirectory);
                     break;
             }
         }
@@ -811,17 +817,21 @@ public sealed partial class LocalExplorerPage : Page
             "320 kbps",
         };
 
+        var AacSubsettings = new List<string> { "128 kbps", "192 kbps", "256 kbps" };
+
         var selectedIndex = OutputComboBox.SelectedIndex;
 
         SubsettingComboBox.ItemsSource = selectedIndex switch
         {
             1 => MP3Subsettings,
+            2 => AacSubsettings,
             _ => new List<string>(),
         };
 
         SubsettingHeader.Text = selectedIndex switch
         {
             1 => "Bitrate",
+            2 => "Bitrate (CBR)",
             _ => "",
         };
 
@@ -858,6 +868,23 @@ public sealed partial class LocalExplorerPage : Page
                 break;
             case 4:
                 await FFmpegRunner.CreateMp3Async(song.Id, 320, outputDirectory);
+                break;
+        }
+    }
+
+    private async Task CreateAacHelper(SongSearchObject song, string? outputDirectory)
+    {
+        var subIndex = SubsettingComboBox.SelectedIndex;
+        switch (subIndex)
+        {
+            case 0:
+                await FFmpegRunner.CreateAacAsync(song.Id, 128, outputDirectory);
+                break;
+            case 1:
+                await FFmpegRunner.CreateAacAsync(song.Id, 192, outputDirectory);
+                break;
+            case 2:
+                await FFmpegRunner.CreateAacAsync(song.Id, 256, outputDirectory);
                 break;
         }
     }
