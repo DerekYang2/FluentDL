@@ -51,7 +51,7 @@
                         </StackPanel>
                     </Button>
                     <TextBox x:Name="CoverArtTextBox" Grid.Column="1" Grid.Row="0" PlaceholderText="No image file selected" HorizontalAlignment="Stretch" CornerRadius="0, 4, 4, 0" IsReadOnly="False" TextWrapping="NoWrap"/>
-                    
+
                     <controls:DataGrid Grid.Column="0" Grid.ColumnSpan="2" Grid.Row="1"
                                        Margin="0,12,0,0"
                                        x:Name="MetadataTable"
@@ -92,19 +92,19 @@
             <!-- ROW 1 of 4: Command buttons -->
             <controls:DockPanel Grid.Column="0" Grid.Row="0" Margin="0, 2, 0, 8">
                 <StackPanel Orientation="Horizontal" Spacing="8">
-                <Button x:Name="UploadButton" VerticalAlignment="Center" Click="UploadButton_OnClick" ToolTipService.ToolTip="Scan a folder for audio files (recursive)">
-                    <StackPanel Orientation="Horizontal">
-                        <FontIcon x:Name="UploadButtonIcon" Glyph="&#xE8F4;" FontSize="16" Margin="0, 0, 8, 0"/>
-                        <TextBlock Text="Add folder"/>
-                    </StackPanel>
-                </Button>
+                    <Button x:Name="UploadButton" VerticalAlignment="Center" Click="UploadButton_OnClick" ToolTipService.ToolTip="Scan a folder for audio files (recursive)">
+                        <StackPanel Orientation="Horizontal">
+                            <FontIcon x:Name="UploadButtonIcon" Glyph="&#xE8F4;" FontSize="16" Margin="0, 0, 8, 0"/>
+                            <TextBlock Text="Add folder"/>
+                        </StackPanel>
+                    </Button>
 
-                <Button x:Name="UploadFileButton" VerticalAlignment="Center" Click="UploadFileButton_OnClick" ToolTipService.ToolTip="Browse for audio files">
-                    <StackPanel Orientation="Horizontal">
-                        <FontIcon x:Name="UploadFileButtonIcon" Glyph="&#xE898;" FontSize="16" Margin="0, 0, 8, 0"/>
-                        <TextBlock Text="Add files"/>
-                    </StackPanel>
-                </Button>
+                    <Button x:Name="UploadFileButton" VerticalAlignment="Center" Click="UploadFileButton_OnClick" ToolTipService.ToolTip="Browse for audio files">
+                        <StackPanel Orientation="Horizontal">
+                            <FontIcon x:Name="UploadFileButtonIcon" Glyph="&#xE898;" FontSize="16" Margin="0, 0, 8, 0"/>
+                            <TextBlock Text="Add files"/>
+                        </StackPanel>
+                    </Button>
                 </StackPanel>
 
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8">
@@ -301,123 +301,139 @@
                        Title="Convert Audio Format" IsPrimaryButtonEnabled="True"
                        PrimaryButtonClick="ConversionDialog_OnPrimaryButtonClick" CloseButtonClick="ConversionDialog_OnCloseButtonClick" Closing="ConversionDialog_OnClosing"
                        PrimaryButtonStyle="{ThemeResource AccentButtonStyle}">
-            <StackPanel>
-                <InfoBar
-                    IsOpen="True"
-                    IsClosable="False"
-                    Severity="Informational"
-                    Margin="0,0,0,12">
+            <ContentDialog.Resources>
+                <x:Double x:Key="ContentDialogMaxWidth">1000</x:Double>
+            </ContentDialog.Resources>
+            <StackPanel HorizontalAlignment="Stretch">
+                <InfoBar x:Name="ConversionInfobar" VerticalAlignment="Bottom" HorizontalAlignment="Stretch" IsOpen="True" IsClosable="False" Severity="Informational"
+                         Margin="0,0,0,4" HorizontalContentAlignment="Stretch" Width="600">
+                    <InfoBar.OpacityTransition>
+                        <ScalarTransition Duration="0:0:0.25" />
+                    </InfoBar.OpacityTransition>
                     <InfoBar.Content>
-                        <TextBlock Margin="0,0, 12,0">
-                            Convert files to FLAC, MP3, AAC, or OGG with <Hyperlink NavigateUri="https://ffmpeg.org">FFmpeg</Hyperlink>.
-                        </TextBlock>
+                        <Grid x:Name="ConversionInfobarContent" VerticalAlignment="Center">
+                            <TextBlock x:Name="ConversionInfobarText" Margin="0, 0, 12, 0"/>
+                            <ProgressBar x:Name="ConversionInfobarProgress" IsIndeterminate="True" Margin="0,0,12,-8" HorizontalAlignment="Stretch" Visibility="Collapsed" VerticalAlignment="Bottom"/>
+                        </Grid>
                     </InfoBar.Content>
                 </InfoBar>
 
-                <TextBlock Text="Output Folder" Style="{ThemeResource CaptionTextBlockStyle}"
-                           Foreground="{ThemeResource TextFillColorSecondary}" Margin="0,0,0,4" />
-                <Grid Margin="0,0,0,8">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="Auto" />
-                        <ColumnDefinition Width="*" />
-                    </Grid.ColumnDefinitions>
-                    <Button x:Name="SelectOutputButton" Grid.Column="0" Grid.Row="0" CornerRadius="4, 0,0,4" Style="{ThemeResource AccentButtonStyle}"
-                            Click="SelectOutputButton_OnClick" Padding="8, 8">
+                <StackPanel x:Name="ConversionSettingStackPanel" Visibility="Visible" Margin="0,0,0,8">
+                    <TextBlock Text="Output Folder" Style="{ThemeResource CaptionTextBlockStyle}"
+                                Foreground="{ThemeResource TextFillColorSecondary}" Margin="0,0,0,4" />
+
+                    <Grid Margin="0,0,0,8">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <Button x:Name="SelectOutputButton" Grid.Column="0" Grid.Row="0" CornerRadius="4, 0,0,4" Style="{ThemeResource AccentButtonStyle}"
+                                Click="SelectOutputButton_OnClick" Padding="8, 8">
                             <FontIcon x:Name="SelectOutputIcon" Glyph="&#xE8F4;" FontSize="16"/>
-                    </Button>
-                    <TextBox x:Name="OutputTextBox" Grid.Column="1" Grid.Row="0" PlaceholderText="No folder selected" HorizontalAlignment="Stretch" CornerRadius="0, 4, 4, 0" IsReadOnly="False" TextWrapping="NoWrap"/>
-                </Grid>
+                        </Button>
+                        <TextBox x:Name="OutputTextBox" Grid.Column="1" Grid.Row="0" PlaceholderText="No folder selected" HorizontalAlignment="Stretch" CornerRadius="0, 4, 4, 0" IsReadOnly="False" TextWrapping="NoWrap"/>
+                    </Grid>
 
-                <StackPanel Grid.Column="1">
-                    <TextBlock Text="Output Format" Style="{ThemeResource CaptionTextBlockStyle}"
-                               Foreground="{ThemeResource TextFillColorSecondary}" Margin="0,0,0,4" />
-                    <ComboBox x:Name="OutputComboBox" PlaceholderText="Select output format"
-                              Margin="0, 0, 0,0" ToolTipService.ToolTip="The format to convert to"
-                              HorizontalAlignment="Stretch" SelectionChanged="OutputComboBox_OnSelectionChanged"/>
-                    <TextBlock x:Name="SubsettingHeader" Style="{ThemeResource CaptionTextBlockStyle}" Visibility="Collapsed"
-                               Foreground="{ThemeResource TextFillColorSecondary}" Margin="0,8,0,4" />
-                    <ComboBox x:Name="SubsettingComboBox" Visibility="Collapsed"
-                              Margin="0, 0, 0,0" 
-                              HorizontalAlignment="Stretch" />
+                    <StackPanel>
+                        <TextBlock Text="Output Format" Style="{ThemeResource CaptionTextBlockStyle}"
+                                    Foreground="{ThemeResource TextFillColorSecondary}" Margin="0,0,0,4" />
+                        <ComboBox x:Name="OutputComboBox" PlaceholderText="Select output format"
+                                    Margin="0, 0, 0,0" ToolTipService.ToolTip="The format to convert to"
+                                    HorizontalAlignment="Stretch" SelectionChanged="OutputComboBox_OnSelectionChanged"/>
+                        <TextBlock x:Name="SubsettingHeader" Style="{ThemeResource CaptionTextBlockStyle}" Visibility="Collapsed"
+                                    Foreground="{ThemeResource TextFillColorSecondary}" Margin="0,8,0,4" />
+                        <ComboBox x:Name="SubsettingComboBox" Visibility="Collapsed"
+                                    Margin="0, 0, 0,0" 
+                                    HorizontalAlignment="Stretch" />
+                    </StackPanel>
                 </StackPanel>
+                
+                <StackPanel>
+                    <TextBlock Text="Conversion Results" Style="{ThemeResource CaptionTextBlockStyle}"
+                               Foreground="{ThemeResource TextFillColorSecondary}" Margin="0,0,0,4" />
+                    <Border x:Name="ConversionListCard"
+                            Background="{ThemeResource CardBackgroundFillColorSecondaryBrush}"
+                            BorderBrush="{ThemeResource ControlStrongStrokeColorDefaultBrush}"
+                            CornerRadius="4" Padding="4,8,4,8">
                     <Grid>
-                            <ListView x:Name="ConversionListView"
-                                      CornerRadius="4"
-                                      BorderThickness="0"
-                                      Background="Transparent" BorderBrush="Transparent"
-                                      Margin="0,0,0,0"
-                                      Padding="2,0, 12,0"
-                                      VerticalAlignment="Center"
-                                      Height="400">
-                                <ListView.ItemTemplate>
-                                    <DataTemplate x:DataType="views:LocalConversionResult">
-                     <Grid Margin="0,12,0,12" AutomationProperties.Name="{x:Bind Song.Title}" Height="76">
-                         <Grid.RowDefinitions>
-                             <RowDefinition Height="Auto"></RowDefinition>
-                             <RowDefinition Height="Auto"></RowDefinition>
-                             <RowDefinition Height="*"></RowDefinition>
-                         </Grid.RowDefinitions>
+                    <ListView x:Name="ConversionListView"
+                              CornerRadius="4"
+                              BorderThickness="0"
+                              Background="Transparent" BorderBrush="Transparent"
+                              Margin="0,0,0,0"
+                              Padding="2,0, 12,0"
+                              VerticalAlignment="Center"
+                              Height="300">
+                        <ListView.ItemTemplate>
+                            <DataTemplate x:DataType="views:LocalConversionResult">
+                                <Grid Margin="0,12,0,12" AutomationProperties.Name="{x:Bind Song.Title}" Height="76">
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto"></RowDefinition>
+                                        <RowDefinition Height="Auto"></RowDefinition>
+                                        <RowDefinition Height="*"></RowDefinition>
+                                    </Grid.RowDefinitions>
 
-                         <Grid.ColumnDefinitions>
-                             <ColumnDefinition Width="76" />
-                             <ColumnDefinition Width="*" />
-                             <ColumnDefinition Width="Auto"/>
-                         </Grid.ColumnDefinitions>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="76" />
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
 
-                         <Border Grid.Row="0" Grid.RowSpan="3" Grid.Column="0" CornerRadius="4" Height="76">
-                             <Border.Background>
-                                 <ImageBrush Stretch="UniformToFill" ImageSource="{x:Bind Song.LocalBitmapImage}" />
-                             </Border.Background>
-                         </Border>
+                                    <Border Grid.Row="0" Grid.RowSpan="3" Grid.Column="0" CornerRadius="4" Height="76">
+                                        <Border.Background>
+                                            <ImageBrush Stretch="UniformToFill" ImageSource="{x:Bind Song.LocalBitmapImage}" />
+                                        </Border.Background>
+                                    </Border>
 
-                         <marqueeTextRns:MarqueeText Grid.Row="0" Grid.Column="1" Margin="12, 0,0,0" Text="{x:Bind Song.Title}"  
+                                    <marqueeTextRns:MarqueeText Grid.Row="0" Grid.Column="1" Margin="12, 0,0,0" Text="{x:Bind Song.Title}"  
                                                      FontFamily="Segoe UI Variable Display" FontWeight="Semibold"
                                                      Behavior="Looping" Direction="Left" RepeatBehavior="Forever" VerticalAlignment="Center"/>
 
-                         <marqueeTextRns:MarqueeText Grid.Row="1" Grid.Column="1" Margin="12, 0, 0, 0" 
+                                    <marqueeTextRns:MarqueeText Grid.Row="1" Grid.Column="1" Margin="12, 0, 0, 0" 
                                                      Text="{x:Bind Song.Artists}" FontFamily="Segoe UI Variable Display" 
                                                      Behavior="Looping" Direction="Left" RepeatBehavior="Forever" VerticalAlignment="Center"/>
 
-                         <StackPanel Grid.Row="2" Grid.Column="1" Margin="12,0,0,0" Orientation="Horizontal" VerticalAlignment="Bottom">
-                             <TextBlock Text="{x:Bind Song.ReleaseDate, Converter={StaticResource DateToYearConverter}}"
+                                    <StackPanel Grid.Row="2" Grid.Column="1" Margin="12,0,0,0" Orientation="Horizontal" VerticalAlignment="Bottom">
+                                        <TextBlock Text="{x:Bind Song.ReleaseDate, Converter={StaticResource DateToYearConverter}}"
                                         HorizontalAlignment="Left"
                                         Style="{ThemeResource BodyTextBlockStyle}" Margin="0,0,0,0"
                                         FontFamily="Segoe UI Variable Display" />
-                             <TextBlock Text="&#x2022;" Style="{ThemeResource BodyTextBlockStyle}"
+                                        <TextBlock Text="&#x2022;" Style="{ThemeResource BodyTextBlockStyle}"
                                         HorizontalAlignment="Left" Margin="5,0,0,0" />
-                             <TextBlock Text="{x:Bind Song.Duration, Converter={StaticResource DurationConverter}}"
+                                        <TextBlock Text="{x:Bind Song.Duration, Converter={StaticResource DurationConverter}}"
                                         HorizontalAlignment="Left"
                                         Style="{ThemeResource BodyTextBlockStyle}" Margin="5,0,0,0"
                                         FontFamily="Segoe UI Variable Display" />
-                         </StackPanel>
+                                    </StackPanel>
 
-                         <StackPanel Grid.Row="0" Grid.Column="2" Orientation="Horizontal" Spacing="12" Margin="12,0,0,0" HorizontalAlignment="Right">
-                             <Border Background="DarkGray" CornerRadius="2" Padding="4, 0" VerticalAlignment="Center" HorizontalAlignment="Right" Margin="0, -2, 0, 0" Visibility="{x:Bind Song.Explicit, Converter={StaticResource VisibilityConverter}}">
-                                 <TextBlock x:Name="ExplicitBadge" Text="E"
+                                    <StackPanel Grid.Row="0" Grid.Column="2" Orientation="Horizontal" Spacing="12" Margin="12,0,0,0" HorizontalAlignment="Right">
+                                        <Border Background="DarkGray" CornerRadius="2" Padding="4, 0" VerticalAlignment="Center" HorizontalAlignment="Right" Margin="0, -2, 0, 0" Visibility="{x:Bind Song.Explicit, Converter={StaticResource VisibilityConverter}}">
+                                            <TextBlock x:Name="ExplicitBadge" Text="E"
                                             Style="{ThemeResource CaptionTextBlockStyle}"
                                             Foreground="Black"/>
-                             </Border>
-                             <Border Background="{ThemeResource LayerOnMicaBaseAltFillColorSecondaryBrush}" CornerRadius="2" Padding="6, 2" HorizontalAlignment="Right" VerticalAlignment="Top">
-                                 <TextBlock x:Name="AudioFormatBadge" Text="{x:Bind Song.AudioFormat}" Style="{ThemeResource CaptionTextBlockStyle}" VerticalAlignment="Center" Margin="0, -2, 0, 0"/>
-                             </Border>
-                         </StackPanel>
+                                        </Border>
+                                        <Border Background="{ThemeResource LayerOnMicaBaseAltFillColorSecondaryBrush}" CornerRadius="2" Padding="6, 2" HorizontalAlignment="Right" VerticalAlignment="Top">
+                                            <TextBlock x:Name="AudioFormatBadge" Text="{x:Bind Song.AudioFormat}" Style="{ThemeResource CaptionTextBlockStyle}" VerticalAlignment="Center" Margin="0, -2, 0, 0"/>
+                                        </Border>
+                                    </StackPanel>
 
-                         <StackPanel Grid.Row="2" Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Bottom" HorizontalAlignment="Right" Spacing="4">
-                             <Button x:Name="OpenConversionButton" VerticalAlignment="Bottom" HorizontalAlignment="Right" ToolTipService.ToolTip="Open in explorer" Tag="{Binding}">
-                                     Open
-                             </Button>
-                         </StackPanel>
+                                    <StackPanel Grid.Row="2" Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Bottom" HorizontalAlignment="Right" Spacing="4">
+                                        <Button x:Name="OpenConversionButton" VerticalAlignment="Bottom" HorizontalAlignment="Right" ToolTipService.ToolTip="Open in explorer" Tag="{Binding}">
+                                            Open
+                                        </Button>
+                                    </StackPanel>
 
-                     </Grid>
-                                    </DataTemplate>
-                                </ListView.ItemTemplate>
-                            </ListView>
-                            <TextBlock x:Name="NoConversionText" VerticalAlignment="Center"
-                                       HorizontalAlignment="Center" Margin="0,-8,0,0" Visibility="Collapsed">
-                                No tracks.
-                            </TextBlock>
-                        </Grid>
-
+                                </Grid>
+                            </DataTemplate>
+                        </ListView.ItemTemplate>
+                    </ListView>
+                    <TextBlock x:Name="NoConversionText" VerticalAlignment="Center"
+                                       HorizontalAlignment="Center" Margin="0,-8,0,0" Visibility="Visible">
+                                No conversions.
+                    </TextBlock>
+                </Grid>
+                </Border>
+                </StackPanel>
             </StackPanel>
         </ContentDialog>
     </Grid>
