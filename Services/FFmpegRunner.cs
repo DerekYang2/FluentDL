@@ -385,7 +385,6 @@ internal class FFmpegRunner
             await FFMpegArguments.FromFileInput(initialPath)
                 .OutputToFile(outputPath, true, options => options
                     .WithCustomArgument("-c:a libvorbis")
-                    .WithCustomArgument("-c:v copy")
                     .WithCustomArgument("-map_metadata 0")
                     .WithCustomArgument($"-b:a {bitRate}k")).ProcessAsynchronously();
         }
@@ -413,9 +412,10 @@ internal class FFmpegRunner
         try
         {
             await FFMpegArguments.FromFileInput(initialPath)
-                .OutputToFile(outputPath, true, options => options.WithCustomArgument("-c:v copy")
-                    .WithCustomArgument("-map_metadata 0")
+                .OutputToFile(outputPath, true, options => options
                     .WithCustomArgument("-c:a libopus")
+                    .WithCustomArgument("-vbr on")
+                    .WithCustomArgument("-frame_duration 60")
                     .WithCustomArgument($"-b:a {bitRate}k")).ProcessAsynchronously();
         }
         catch (Exception e)

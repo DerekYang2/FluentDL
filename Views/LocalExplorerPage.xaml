@@ -297,9 +297,9 @@
         </InfoBar>
 
         <!-- Convert Dialog -->
-        <ContentDialog x:Name="ConversionDialog" PrimaryButtonText="Convert" CloseButtonText="Close"
+        <ContentDialog x:Name="ConversionDialog" PrimaryButtonText="Convert" CloseButtonText="Close" 
                        Title="Convert Audio Format" IsPrimaryButtonEnabled="True"
-                       PrimaryButtonClick="ConversionDialog_OnPrimaryButtonClick"
+                       PrimaryButtonClick="ConversionDialog_OnPrimaryButtonClick" CloseButtonClick="ConversionDialog_OnCloseButtonClick" Closing="ConversionDialog_OnClosing"
                        PrimaryButtonStyle="{ThemeResource AccentButtonStyle}">
             <StackPanel>
                 <InfoBar
@@ -340,7 +340,84 @@
                               Margin="0, 0, 0,0" 
                               HorizontalAlignment="Stretch" />
                 </StackPanel>
-                
+                    <Grid>
+                            <ListView x:Name="ConversionListView"
+                                      CornerRadius="4"
+                                      BorderThickness="0"
+                                      Background="Transparent" BorderBrush="Transparent"
+                                      Margin="0,0,0,0"
+                                      Padding="2,0, 12,0"
+                                      VerticalAlignment="Center"
+                                      Height="400">
+                                <ListView.ItemTemplate>
+                                    <DataTemplate x:DataType="views:LocalConversionResult">
+                     <Grid Margin="0,12,0,12" AutomationProperties.Name="{x:Bind Song.Title}" Height="76">
+                         <Grid.RowDefinitions>
+                             <RowDefinition Height="Auto"></RowDefinition>
+                             <RowDefinition Height="Auto"></RowDefinition>
+                             <RowDefinition Height="*"></RowDefinition>
+                         </Grid.RowDefinitions>
+
+                         <Grid.ColumnDefinitions>
+                             <ColumnDefinition Width="76" />
+                             <ColumnDefinition Width="*" />
+                             <ColumnDefinition Width="Auto"/>
+                         </Grid.ColumnDefinitions>
+
+                         <Border Grid.Row="0" Grid.RowSpan="3" Grid.Column="0" CornerRadius="4" Height="76">
+                             <Border.Background>
+                                 <ImageBrush Stretch="UniformToFill" ImageSource="{x:Bind Song.LocalBitmapImage}" />
+                             </Border.Background>
+                         </Border>
+
+                         <marqueeTextRns:MarqueeText Grid.Row="0" Grid.Column="1" Margin="12, 0,0,0" Text="{x:Bind Song.Title}"  
+                                                     FontFamily="Segoe UI Variable Display" FontWeight="Semibold"
+                                                     Behavior="Looping" Direction="Left" RepeatBehavior="Forever" VerticalAlignment="Center"/>
+
+                         <marqueeTextRns:MarqueeText Grid.Row="1" Grid.Column="1" Margin="12, 0, 0, 0" 
+                                                     Text="{x:Bind Song.Artists}" FontFamily="Segoe UI Variable Display" 
+                                                     Behavior="Looping" Direction="Left" RepeatBehavior="Forever" VerticalAlignment="Center"/>
+
+                         <StackPanel Grid.Row="2" Grid.Column="1" Margin="12,0,0,0" Orientation="Horizontal" VerticalAlignment="Bottom">
+                             <TextBlock Text="{x:Bind Song.ReleaseDate, Converter={StaticResource DateToYearConverter}}"
+                                        HorizontalAlignment="Left"
+                                        Style="{ThemeResource BodyTextBlockStyle}" Margin="0,0,0,0"
+                                        FontFamily="Segoe UI Variable Display" />
+                             <TextBlock Text="&#x2022;" Style="{ThemeResource BodyTextBlockStyle}"
+                                        HorizontalAlignment="Left" Margin="5,0,0,0" />
+                             <TextBlock Text="{x:Bind Song.Duration, Converter={StaticResource DurationConverter}}"
+                                        HorizontalAlignment="Left"
+                                        Style="{ThemeResource BodyTextBlockStyle}" Margin="5,0,0,0"
+                                        FontFamily="Segoe UI Variable Display" />
+                         </StackPanel>
+
+                         <StackPanel Grid.Row="0" Grid.Column="2" Orientation="Horizontal" Spacing="12" Margin="12,0,0,0" HorizontalAlignment="Right">
+                             <Border Background="DarkGray" CornerRadius="2" Padding="4, 0" VerticalAlignment="Center" HorizontalAlignment="Right" Margin="0, -2, 0, 0" Visibility="{x:Bind Song.Explicit, Converter={StaticResource VisibilityConverter}}">
+                                 <TextBlock x:Name="ExplicitBadge" Text="E"
+                                            Style="{ThemeResource CaptionTextBlockStyle}"
+                                            Foreground="Black"/>
+                             </Border>
+                             <Border Background="{ThemeResource LayerOnMicaBaseAltFillColorSecondaryBrush}" CornerRadius="2" Padding="6, 2" HorizontalAlignment="Right" VerticalAlignment="Top">
+                                 <TextBlock x:Name="AudioFormatBadge" Text="{x:Bind Song.AudioFormat}" Style="{ThemeResource CaptionTextBlockStyle}" VerticalAlignment="Center" Margin="0, -2, 0, 0"/>
+                             </Border>
+                         </StackPanel>
+
+                         <StackPanel Grid.Row="2" Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Bottom" HorizontalAlignment="Right" Spacing="4">
+                             <Button x:Name="OpenConversionButton" VerticalAlignment="Bottom" HorizontalAlignment="Right" ToolTipService.ToolTip="Open in explorer" Tag="{Binding}">
+                                     Open
+                             </Button>
+                         </StackPanel>
+
+                     </Grid>
+                                    </DataTemplate>
+                                </ListView.ItemTemplate>
+                            </ListView>
+                            <TextBlock x:Name="NoConversionText" VerticalAlignment="Center"
+                                       HorizontalAlignment="Center" Margin="0,-8,0,0" Visibility="Collapsed">
+                                No tracks.
+                            </TextBlock>
+                        </Grid>
+
             </StackPanel>
         </ContentDialog>
     </Grid>

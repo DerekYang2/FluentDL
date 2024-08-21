@@ -25,6 +25,18 @@ namespace FluentDL.Views;
 
 // TODO: notification after clear is a bit broken
 
+public class LocalConversionResult
+{
+    public SongSearchObject Song;
+    public string NewPath;
+
+    public LocalConversionResult(SongSearchObject song, string newPath)
+    {
+        this.Song = song;
+        this.NewPath = newPath;
+    }
+}
+
 public sealed partial class LocalExplorerPage : Page
 {
     private ObservableCollection<SongSearchObject> originalList;
@@ -98,6 +110,13 @@ public sealed partial class LocalExplorerPage : Page
     {
         get;
     }
+
+    public ObservableCollection<LocalConversionResult> ConversionResults
+    {
+        get;
+        set;
+    } = new ObservableCollection<LocalConversionResult>();
+
 
     public LocalExplorerPage()
     {
@@ -759,8 +778,11 @@ public sealed partial class LocalExplorerPage : Page
         await ConversionDialog.ShowAsync();
     }
 
+    public bool shouldClose;
+
     private async void ConversionDialog_OnPrimaryButtonClick(ContentDialog sender, ContentDialogButtonClickEventArgs args)
     {
+        shouldClose = false;
         var selectedIndex = OutputComboBox.SelectedIndex;
         var outputFormat = OutputComboBox.SelectedItem as string;
         var outputDirectory = OutputTextBox.Text;
@@ -783,6 +805,8 @@ public sealed partial class LocalExplorerPage : Page
         ShowInfoBarPermanent(InfoBarSeverity.Informational, "Converting tracks to " + outputFormat);
         InfobarProgress.Visibility = Visibility.Visible;
 
+        ConversionListView.ItemsSource = ConversionResults;
+        ConversionResults.Clear();
         foreach (var song in originalList)
         {
             switch (selectedIndex)
@@ -806,10 +830,22 @@ public sealed partial class LocalExplorerPage : Page
                     await CreateOpusHelper(song, outputDirectory);
                     break;
             }
+
+            ConversionResults.Add(new LocalConversionResult(song, outputDirectory));
         }
 
         ShowInfoBar(InfoBarSeverity.Success, "Conversion complete");
         InfobarProgress.Visibility = Visibility.Collapsed;
+    }
+
+    private void ConversionDialog_OnCloseButtonClick(ContentDialog sender, ContentDialogButtonClickEventArgs args)
+    {
+        shouldClose = true;
+    }
+
+    private void ConversionDialog_OnClosing(ContentDialog sender, ContentDialogClosingEventArgs args)
+    {
+        args.Cancel = !shouldClose;
     }
 
     private void OutputComboBox_OnSelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -825,7 +861,8 @@ public sealed partial class LocalExplorerPage : Page
 
         var AacSubsettings = new List<string> { "128 kbps", "192 kbps", "256 kbps" };
 
-        var OggSubsettings = new List<string> { "128 kbps", "192 kbps", "256 kbps" };
+        var VorbisSubsettings = new List<string> { "128 kbps", "192 kbps", "256 kbps" };
+        var OpusSubsettings = new List<string> { "96 kbps", "128 kbps" };
 
         var selectedIndex = OutputComboBox.SelectedIndex;
 
@@ -833,8 +870,8 @@ public sealed partial class LocalExplorerPage : Page
         {
             1 => MP3Subsettings,
             2 => AacSubsettings,
-            4 => OggSubsettings,
-            5 => OggSubsettings,
+            4 => VorbisSubsettings,
+            5 => OpusSubsettings,
             _ => new List<string>(),
         };
 
@@ -843,7 +880,7 @@ public sealed partial class LocalExplorerPage : Page
             1 => "Bitrate",
             2 => "Bitrate (CBR)",
             4 => "Bitrate (CBR)",
-            5 => "Bitrate (CBR)",
+            5 => "Bitrate (VBR)",
             _ => "",
         };
 
@@ -924,13 +961,10 @@ public sealed partial class LocalExplorerPage : Page
         switch (subIndex)
         {
             case 0:
-                await FFmpegRunner.CreateOpusAsync(song.Id, 128, outputDirectory);
+                await FFmpegRunner.CreateOpusAsync(song.Id, 96, outputDirectory);
                 break;
             case 1:
-                await FFmpegRunner.CreateOpusAsync(song.Id, 192, outputDirectory);
-                break;
-            case 2:
-                await FFmpegRunner.CreateOpusAsync(song.Id, 256, outputDirectory);
+                await FFmpegRunner.CreateOpusAsync(song.Id, 128, outputDirectory);
                 break;
         }
     }
