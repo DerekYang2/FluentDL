@@ -943,7 +943,7 @@ public sealed partial class QueuePage : Page
             await ShowConversionDialog();
         };
 
-        var downloadThreads = await SettingsViewModel.GetSetting<int?>(SettingsViewModel.DownloadThreads) ?? 1;
+        var downloadThreads = await SettingsViewModel.GetSetting<int?>(SettingsViewModel.ConversionThreads) ?? 1;
 
         for (int threadNum = 0; threadNum < downloadThreads; threadNum++)
         {

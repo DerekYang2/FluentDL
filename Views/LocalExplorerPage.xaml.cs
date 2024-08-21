@@ -855,10 +855,13 @@ public sealed partial class LocalExplorerPage : Page
         ConversionListView.ItemsSource = ConversionResults;
         ConversionResults.Clear();
 
+
+        var threadCount = await SettingsViewModel.GetSetting<int?>(SettingsViewModel.ConversionThreads) ?? 1;
+
         int index = 0;
         int completedCount = 0;
 
-        for (int threadNum = 0; threadNum < 1; threadNum++)
+        for (int threadNum = 0; threadNum < threadCount; threadNum++)
         {
             Thread t = new Thread(() =>
             {
@@ -901,23 +904,6 @@ public sealed partial class LocalExplorerPage : Page
             t.Priority = ThreadPriority.AboveNormal;
             t.Start();
         }
-
-        //foreach (var song in originalList)
-        //{
-        //    var resultPath = selectedIndex switch
-        //    {
-        //        0 => await FFmpegRunner.CreateFlacAsync(song.Id, outputDirectory),
-        //        1 => await CreateMp3Helper(song, outputDirectory),
-        //        2 => await CreateAacHelper(song, outputDirectory),
-        //        3 => await FFmpegRunner.CreateAlacAsync(song.Id, outputDirectory),
-        //        4 => await CreateVorbisHelper(song, outputDirectory),
-        //        5 => await CreateOpusHelper(song, outputDirectory),
-        //        _ => null,
-        //    };
-        //    ConversionResults.Add(new LocalConversionResult(song, resultPath));
-        //    // Update infobar converting message
-        //    UrlParser.ParseTextBlock(ConversionInfobarText, $"Converting <b>{ConversionResults.Count} of {originalList.Count}</b> tracks to {outputFormat}");
-        //}
     }
 
     private void OpenConversionButton_OnClick(object sender, RoutedEventArgs e)
@@ -954,8 +940,16 @@ public sealed partial class LocalExplorerPage : Page
 
         var AacSubsettings = new List<string> { "128 kbps", "192 kbps", "256 kbps" };
 
-        var VorbisSubsettings = new List<string> { "128 kbps", "192 kbps", "256 kbps" };
-        var OpusSubsettings = new List<string> { "96 kbps", "128 kbps" };
+        var VorbisSubsettings = new List<string>
+        {
+            "VBR Medium Quality",
+            "VBR High Quality",
+            "VBR Max Quality",
+            "128 kbps",
+            "192 kbps",
+            "256 kbps"
+        };
+        var OpusSubsettings = new List<string> { "96 kbps", "128 kbps", "192 kbps" };
 
         var selectedIndex = OutputComboBox.SelectedIndex;
 
@@ -972,7 +966,7 @@ public sealed partial class LocalExplorerPage : Page
         {
             1 => "Bitrate",
             2 => "Bitrate (CBR)",
-            4 => "Bitrate (CBR)",
+            4 => "Bitrate",
             5 => "Bitrate (VBR)",
             _ => "",
         };
@@ -1019,9 +1013,12 @@ public sealed partial class LocalExplorerPage : Page
     {
         return subsettingIndex switch
         {
-            0 => FFmpegRunner.CreateVorbis(song.Id, 128, outputDirectory),
-            1 => FFmpegRunner.CreateVorbis(song.Id, 192, outputDirectory),
-            2 => FFmpegRunner.CreateVorbis(song.Id, 256, outputDirectory),
+            0 => FFmpegRunner.CreateVorbisVBR(song.Id, 5, outputDirectory),
+            1 => FFmpegRunner.CreateVorbisVBR(song.Id, 8, outputDirectory),
+            2 => FFmpegRunner.CreateVorbisVBR(song.Id, 10, outputDirectory),
+            3 => FFmpegRunner.CreateVorbis(song.Id, 128, outputDirectory),
+            4 => FFmpegRunner.CreateVorbis(song.Id, 192, outputDirectory),
+            5 => FFmpegRunner.CreateVorbis(song.Id, 256, outputDirectory),
             _ => string.Empty,
         };
     }
@@ -1032,6 +1029,7 @@ public sealed partial class LocalExplorerPage : Page
         {
             0 => FFmpegRunner.CreateOpus(song.Id, 96, outputDirectory),
             1 => FFmpegRunner.CreateOpus(song.Id, 128, outputDirectory),
+            2 => FFmpegRunner.CreateOpus(song.Id, 192, outputDirectory),
             _ => string.Empty,
         };
     }
