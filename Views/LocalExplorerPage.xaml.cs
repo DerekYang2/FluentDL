@@ -115,7 +115,7 @@ public sealed partial class LocalExplorerPage : Page
     {
         get;
         set;
-    } = new ObservableCollection<LocalConversionResult>();
+    }
 
 
     public LocalExplorerPage()
@@ -142,6 +142,7 @@ public sealed partial class LocalExplorerPage : Page
 
         FileListView.ItemsSource = new ObservableCollection<SongSearchObject>();
         originalList = new ObservableCollection<SongSearchObject>();
+        ConversionResults = new ObservableCollection<LocalConversionResult>();
         fileSet = new HashSet<string>();
         InitPreviewPanelButtons();
         InitializeAnimations();
@@ -152,6 +153,18 @@ public sealed partial class LocalExplorerPage : Page
             SetResultsAmount(originalList.Count);
             NoItemsText.Visibility = originalList.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
             ClearButton.IsEnabled = originalList.Count > 0;
+        };
+
+        ConversionResults.CollectionChanged += (sender, e) =>
+        {
+            if (ConversionResults.Count == 0)
+            {
+                NoConversionText.Visibility = Visibility.Visible;
+            }
+            else
+            {
+                NoConversionText.Visibility = Visibility.Collapsed;
+            }
         };
 
         // Set first
@@ -775,10 +788,17 @@ public sealed partial class LocalExplorerPage : Page
     private async void ConvertDialogOpenButton_OnClick(object sender, RoutedEventArgs e)
     {
         ConversionDialog.XamlRoot = this.XamlRoot;
+        if (ConversionInfobarProgress.Visibility == Visibility.Collapsed) // If no conversion is in progress
+        {
+            // Set to default message
+            ConversionInfobar.Severity = InfoBarSeverity.Informational;
+            UrlParser.ParseTextBlock(ConversionInfobarText, "Convert tracks in Local Explorer to new audio formats");
+        }
+
         await ConversionDialog.ShowAsync();
     }
 
-    public bool shouldClose;
+    private bool shouldClose;
 
     private async void ConversionDialog_OnPrimaryButtonClick(ContentDialog sender, ContentDialogButtonClickEventArgs args)
     {
@@ -790,21 +810,29 @@ public sealed partial class LocalExplorerPage : Page
         // Handle input issues
         if (outputFormat == null)
         {
-            ShowInfoBar(InfoBarSeverity.Warning, "No output format selected");
+            ConversionInfobar.Severity = InfoBarSeverity.Warning;
+            UrlParser.ParseTextBlock(ConversionInfobarText, "No output format selected");
             return;
         }
 
-        if (!Directory.Exists(outputDirectory))
+
+        if (!(await Task.Run(() => Directory.Exists(outputDirectory))))
         {
-            ShowInfoBar(InfoBarSeverity.Warning, "Output directory does not exist");
+            ConversionInfobar.Severity = InfoBarSeverity.Warning;
+            UrlParser.ParseTextBlock(ConversionInfobarText, "Output directory does not exist");
             return;
         }
 
-        Debug.WriteLine("Selected index: " + selectedIndex);
+        // Set infobar message to running
+        ConversionInfobar.Severity = InfoBarSeverity.Informational;
+        UrlParser.ParseTextBlock(ConversionInfobarText, "Converting tracks to " + outputFormat);
+        ConversionInfobarProgress.Visibility = Visibility.Visible;
 
-        ShowInfoBarPermanent(InfoBarSeverity.Informational, "Converting tracks to " + outputFormat);
-        InfobarProgress.Visibility = Visibility.Visible;
+        // Disable conversion button and hide conversion settings
+        ConversionDialog.IsPrimaryButtonEnabled = false;
+        ConversionSettingStackPanel.Visibility = Visibility.Collapsed;
 
+        // Start the conversion
         ConversionListView.ItemsSource = ConversionResults;
         ConversionResults.Clear();
         foreach (var song in originalList)
@@ -834,8 +862,25 @@ public sealed partial class LocalExplorerPage : Page
             ConversionResults.Add(new LocalConversionResult(song, outputDirectory));
         }
 
-        ShowInfoBar(InfoBarSeverity.Success, "Conversion complete");
-        InfobarProgress.Visibility = Visibility.Collapsed;
+        // Unset infobar message
+        ConversionInfobarProgress.Visibility = Visibility.Collapsed;
+        ConversionInfobar.Severity = InfoBarSeverity.Success;
+        UrlParser.ParseTextBlock(ConversionInfobarText, "Conversion complete");
+
+        // Enable conversion button and show conversion settings
+        ConversionDialog.IsPrimaryButtonEnabled = true;
+        ConversionSettingStackPanel.Visibility = Visibility.Visible;
+    }
+
+    private void OpenConversionButton_OnClick(object sender, RoutedEventArgs e)
+    {
+        var button = sender as Button;
+        var result = button?.Tag as LocalConversionResult;
+        if (result != null) // Open download result in explorer
+        {
+            var argument = $"/select, \"{result.NewPath}\"";
+            System.Diagnostics.Process.Start("explorer.exe", argument);
+        }
     }
 
     private void ConversionDialog_OnCloseButtonClick(ContentDialog sender, ContentDialogButtonClickEventArgs args)
