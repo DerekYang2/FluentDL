@@ -28,9 +28,9 @@ namespace FluentDL.Views;
 public class LocalConversionResult
 {
     public SongSearchObject Song;
-    public string NewPath;
+    public string? NewPath;
 
-    public LocalConversionResult(SongSearchObject song, string newPath)
+    public LocalConversionResult(SongSearchObject song, string? newPath)
     {
         this.Song = song;
         this.NewPath = newPath;
@@ -188,6 +188,7 @@ public sealed partial class LocalExplorerPage : Page
         AnimationHelper.AttachScaleAnimation(ClearButton, ClearButtonIcon);
         AnimationHelper.AttachScaleAnimation(AddToQueueButton, ResultsIcon);
         AnimationHelper.AttachSpringRightAnimation(ConvertDialogOpenButton, ConvertDialogOpenIcon);
+        AnimationHelper.AttachScaleAnimation(SelectOutputButton, SelectOutputIcon);
     }
 
     protected async override void OnNavigatedTo(NavigationEventArgs e) // Navigated to page
@@ -230,7 +231,7 @@ public sealed partial class LocalExplorerPage : Page
         var editButton = new AppBarButton { Icon = new SymbolIcon(Symbol.Edit), Label = "Edit" };
         editButton.Click += (sender, e) => OpenMetadataDialog(PreviewPanel.GetSong());
 
-        var openButton = new AppBarButton { Icon = new FontIcon { Glyph = "\uE8A7" }, Label = "Open" };
+        var openButton = new AppBarButton { Icon = new FontIcon { Glyph = "\uE8DA" }, Label = "Open" };
         openButton.Click += (sender, e) => OpenSongInExplorer(PreviewPanel.GetSong());
 
         // Initialize animations
@@ -793,6 +794,9 @@ public sealed partial class LocalExplorerPage : Page
             // Set to default message
             ConversionInfobar.Severity = InfoBarSeverity.Informational;
             UrlParser.ParseTextBlock(ConversionInfobarText, "Convert tracks in Local Explorer to new audio formats");
+            OutputTextBox.Text = ""; // Reset folder text box
+            OutputComboBox.SelectedIndex = -1; // Reset combobox
+            // Conversion list is not cleared as user may refer to conversions later even after closing dialog
         }
 
         await ConversionDialog.ShowAsync();
@@ -815,7 +819,6 @@ public sealed partial class LocalExplorerPage : Page
             return;
         }
 
-
         if (!(await Task.Run(() => Directory.Exists(outputDirectory))))
         {
             ConversionInfobar.Severity = InfoBarSeverity.Warning;
@@ -825,7 +828,7 @@ public sealed partial class LocalExplorerPage : Page
 
         // Set infobar message to running
         ConversionInfobar.Severity = InfoBarSeverity.Informational;
-        UrlParser.ParseTextBlock(ConversionInfobarText, "Converting tracks to " + outputFormat);
+        UrlParser.ParseTextBlock(ConversionInfobarText, $"Converting <b>0 of {originalList.Count}</b> tracks to {outputFormat}");
         ConversionInfobarProgress.Visibility = Visibility.Visible;
 
         // Disable conversion button and hide conversion settings
@@ -835,31 +838,22 @@ public sealed partial class LocalExplorerPage : Page
         // Start the conversion
         ConversionListView.ItemsSource = ConversionResults;
         ConversionResults.Clear();
+
         foreach (var song in originalList)
         {
-            switch (selectedIndex)
+            var resultPath = selectedIndex switch
             {
-                case 0:
-                    await FFmpegRunner.CreateFlacAsync(song.Id, outputDirectory);
-                    break;
-                case 1:
-                    await CreateMp3Helper(song, outputDirectory);
-                    break;
-                case 2:
-                    await CreateAacHelper(song, outputDirectory);
-                    break;
-                case 3:
-                    await FFmpegRunner.CreateAlacAsync(song.Id, outputDirectory);
-                    break;
-                case 4:
-                    await CreateVorbisHelper(song, outputDirectory);
-                    break;
-                case 5:
-                    await CreateOpusHelper(song, outputDirectory);
-                    break;
-            }
-
-            ConversionResults.Add(new LocalConversionResult(song, outputDirectory));
+                0 => await FFmpegRunner.CreateFlacAsync(song.Id, outputDirectory),
+                1 => await CreateMp3Helper(song, outputDirectory),
+                2 => await CreateAacHelper(song, outputDirectory),
+                3 => await FFmpegRunner.CreateAlacAsync(song.Id, outputDirectory),
+                4 => await CreateVorbisHelper(song, outputDirectory),
+                5 => await CreateOpusHelper(song, outputDirectory),
+                _ => string.Empty,
+            };
+            ConversionResults.Add(new LocalConversionResult(song, resultPath));
+            // Update infobar converting message
+            UrlParser.ParseTextBlock(ConversionInfobarText, $"Converting <b>{ConversionResults.Count} of {originalList.Count}</b> tracks to {outputFormat}");
         }
 
         // Unset infobar message
@@ -876,7 +870,7 @@ public sealed partial class LocalExplorerPage : Page
     {
         var button = sender as Button;
         var result = button?.Tag as LocalConversionResult;
-        if (result != null) // Open download result in explorer
+        if (File.Exists(result?.NewPath)) // Open the file if it exists
         {
             var argument = $"/select, \"{result.NewPath}\"";
             System.Diagnostics.Process.Start("explorer.exe", argument);
@@ -943,75 +937,49 @@ public sealed partial class LocalExplorerPage : Page
         }
     }
 
-    private async Task CreateMp3Helper(SongSearchObject song, string? outputDirectory)
+    private async Task<string?> CreateMp3Helper(SongSearchObject song, string? outputDirectory)
     {
-        var subIndex = SubsettingComboBox.SelectedIndex;
-        switch (subIndex)
+        return SubsettingComboBox.SelectedIndex switch
         {
-            case 0:
-                await FFmpegRunner.CreateMp3Async(song.Id, outputDirectory);
-                break;
-            case 1:
-                await FFmpegRunner.CreateMp3Async(song.Id, 128, outputDirectory);
-                break;
-            case 2:
-                await FFmpegRunner.CreateMp3Async(song.Id, 192, outputDirectory);
-                break;
-            case 3:
-                await FFmpegRunner.CreateMp3Async(song.Id, 256, outputDirectory);
-                break;
-            case 4:
-                await FFmpegRunner.CreateMp3Async(song.Id, 320, outputDirectory);
-                break;
-        }
+            0 => await FFmpegRunner.CreateMp3Async(song.Id, outputDirectory),
+            1 => await FFmpegRunner.CreateMp3Async(song.Id, 128, outputDirectory),
+            2 => await FFmpegRunner.CreateMp3Async(song.Id, 192, outputDirectory),
+            3 => await FFmpegRunner.CreateMp3Async(song.Id, 256, outputDirectory),
+            4 => await FFmpegRunner.CreateMp3Async(song.Id, 320, outputDirectory),
+            _ => string.Empty,
+        };
     }
 
-    private async Task CreateAacHelper(SongSearchObject song, string? outputDirectory)
+    private async Task<string?> CreateAacHelper(SongSearchObject song, string? outputDirectory)
     {
-        var subIndex = SubsettingComboBox.SelectedIndex;
-        switch (subIndex)
+        return SubsettingComboBox.SelectedIndex switch
         {
-            case 0:
-                await FFmpegRunner.CreateAacAsync(song.Id, 128, outputDirectory);
-                break;
-            case 1:
-                await FFmpegRunner.CreateAacAsync(song.Id, 192, outputDirectory);
-                break;
-            case 2:
-                await FFmpegRunner.CreateAacAsync(song.Id, 256, outputDirectory);
-                break;
-        }
+            0 => await FFmpegRunner.CreateAacAsync(song.Id, 128, outputDirectory),
+            1 => await FFmpegRunner.CreateAacAsync(song.Id, 192, outputDirectory),
+            2 => await FFmpegRunner.CreateAacAsync(song.Id, 256, outputDirectory),
+            _ => string.Empty,
+        };
     }
 
-    private async Task CreateVorbisHelper(SongSearchObject song, string? outputDirectory)
+    private async Task<string?> CreateVorbisHelper(SongSearchObject song, string? outputDirectory)
     {
-        var subIndex = SubsettingComboBox.SelectedIndex;
-        switch (subIndex)
+        return SubsettingComboBox.SelectedIndex switch
         {
-            case 0:
-                await FFmpegRunner.CreateVorbisAsync(song.Id, 128, outputDirectory);
-                break;
-            case 1:
-                await FFmpegRunner.CreateVorbisAsync(song.Id, 192, outputDirectory);
-                break;
-            case 2:
-                await FFmpegRunner.CreateVorbisAsync(song.Id, 256, outputDirectory);
-                break;
-        }
+            0 => await FFmpegRunner.CreateVorbisAsync(song.Id, 128, outputDirectory),
+            1 => await FFmpegRunner.CreateVorbisAsync(song.Id, 192, outputDirectory),
+            2 => await FFmpegRunner.CreateVorbisAsync(song.Id, 256, outputDirectory),
+            _ => string.Empty,
+        };
     }
 
-    private async Task CreateOpusHelper(SongSearchObject song, string? outputDirectory)
+    private async Task<string?> CreateOpusHelper(SongSearchObject song, string? outputDirectory)
     {
-        var subIndex = SubsettingComboBox.SelectedIndex;
-        switch (subIndex)
+        return SubsettingComboBox.SelectedIndex switch
         {
-            case 0:
-                await FFmpegRunner.CreateOpusAsync(song.Id, 96, outputDirectory);
-                break;
-            case 1:
-                await FFmpegRunner.CreateOpusAsync(song.Id, 128, outputDirectory);
-                break;
-        }
+            0 => await FFmpegRunner.CreateOpusAsync(song.Id, 96, outputDirectory),
+            1 => await FFmpegRunner.CreateOpusAsync(song.Id, 128, outputDirectory),
+            _ => string.Empty,
+        };
     }
 
     private async void SelectOutputButton_OnClick(object sender, RoutedEventArgs e)

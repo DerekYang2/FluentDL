@@ -96,7 +96,7 @@ internal class FFmpegRunner
         File.Delete(initialPath);
     }
 
-    public static async Task<string> CreateFlacAsync(string initialPath, string? outputDirectory = null)
+    public static async Task<string?> CreateFlacAsync(string initialPath, string? outputDirectory = null)
     {
         var directory = outputDirectory ?? Path.GetDirectoryName(initialPath);
         var fileName = Path.GetFileNameWithoutExtension(initialPath);
@@ -122,7 +122,7 @@ internal class FFmpegRunner
         catch (Exception e)
         {
             Debug.WriteLine("CONVERSION TO FLAC FAILED: " + e.Message);
-            return string.Empty;
+            return null;
         }
     }
 
@@ -165,7 +165,7 @@ internal class FFmpegRunner
     }
 
     // Does not delete the original file, converts to mp3 (variable bit rate)
-    public static async Task<string> CreateMp3Async(string initialPath, string? outputDirectory = null)
+    public static async Task<string?> CreateMp3Async(string initialPath, string? outputDirectory = null)
     {
         var directory = outputDirectory ?? Path.GetDirectoryName(initialPath);
         var fileName = Path.GetFileNameWithoutExtension(initialPath);
@@ -194,12 +194,12 @@ internal class FFmpegRunner
         catch (Exception e)
         {
             Debug.WriteLine("CONVERSION TO MP3 FAILED: " + e.Message);
-            return string.Empty;
+            return null;
         }
     }
 
     // Convert to mp3 with cbr (constant bit rate)
-    public static async Task<string> CreateMp3Async(string initialPath, int bitRate, string? outputDirectory = null)
+    public static async Task<string?> CreateMp3Async(string initialPath, int bitRate, string? outputDirectory = null)
     {
         var directory = outputDirectory ?? Path.GetDirectoryName(initialPath);
         var fileName = Path.GetFileNameWithoutExtension(initialPath);
@@ -228,7 +228,7 @@ internal class FFmpegRunner
         catch (Exception e)
         {
             Debug.WriteLine("CONVERSION TO MP3 FAILED: " + e.Message);
-            return string.Empty;
+            return null;
         }
     }
 
@@ -271,7 +271,7 @@ internal class FFmpegRunner
         }
     }
 
-    public static async Task<string> CreateAacAsync(string initialPath, int bitRate, string? outputDirectory = null)
+    public static async Task<string?> CreateAacAsync(string initialPath, int bitRate, string? outputDirectory = null)
     {
         var directory = outputDirectory ?? Path.GetDirectoryName(initialPath);
         var fileName = Path.GetFileNameWithoutExtension(initialPath);
@@ -315,7 +315,7 @@ internal class FFmpegRunner
             catch (Exception ex)
             {
                 Debug.WriteLine("CONVERSION TO AAC FAILED: " + ex.Message);
-                return string.Empty;
+                return null;
             }
         }
     }
@@ -383,7 +383,7 @@ internal class FFmpegRunner
         }
     }
 
-    public static async Task<string> CreateAlacAsync(string initialPath, string? outputDirectory = null)
+    public static async Task<string?> CreateAlacAsync(string initialPath, string? outputDirectory = null)
     {
         var directory = outputDirectory ?? Path.GetDirectoryName(initialPath);
         var fileName = Path.GetFileNameWithoutExtension(initialPath);
@@ -408,11 +408,11 @@ internal class FFmpegRunner
         catch (Exception e)
         {
             Debug.WriteLine("CONVERSION TO ALAC FAILED: " + e.Message);
-            return string.Empty;
+            return null;
         }
     }
 
-    public static async Task<string> CreateVorbisAsync(string initialPath, int bitRate, string? outputDirectory = null)
+    public static async Task<string?> CreateVorbisAsync(string initialPath, int bitRate, string? outputDirectory = null)
     {
         var directory = outputDirectory ?? Path.GetDirectoryName(initialPath);
         var fileName = Path.GetFileNameWithoutExtension(initialPath);
@@ -439,11 +439,11 @@ internal class FFmpegRunner
         catch (Exception e)
         {
             Debug.WriteLine("CONVERSION TO VORBIS FAILED: " + e.Message);
-            return string.Empty;
+            return null;
         }
     }
 
-    public static async Task<string> CreateOpusAsync(string initialPath, int bitRate, string? outputDirectory = null)
+    public static async Task<string?> CreateOpusAsync(string initialPath, int bitRate, string? outputDirectory = null)
     {
         var directory = outputDirectory ?? Path.GetDirectoryName(initialPath);
         var fileName = Path.GetFileNameWithoutExtension(initialPath);
@@ -471,7 +471,7 @@ internal class FFmpegRunner
         catch (Exception e)
         {
             Debug.WriteLine("CONVERSION TO OPUS FAILED: " + e.Message);
-            return string.Empty;
+            return null;
         }
     }
 }
