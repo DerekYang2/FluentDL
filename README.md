@@ -37,14 +37,19 @@ A pre-built FFmpeg executable can be found in [/Assets/ffmpeg/bin](https://githu
 This project is deployed using MSIX, which installs the application on Windows. 
 To install this application, download the folder from releases and open the `FluentDL_{VERSION}_x64_MSIX.msix` file. This will open a prompt that installs the application and all its dependencies (including the FFmpeg executable). 
 
-However, currently the certificate is self-signed and must be trusted by the user in order to install from the `.msix` prompt. 
+Currently, the installation process is a bit complex because the certificate is self-signed and must be trusted by the user for the MSIX to work.
 
 #### How do I trust the certificate?
-In order to trust the certificate, click and open the `FluentDL_Certificate.cer` certificate file in the folder. You will see a security warning prompt ("Do you want to open this file?") and press open. Next, the certificate pop-up will explain how to add the certificate to "Trusted Root Certification Authorities". In order to this, follow these steps:
+In order to trust the certificate, click and open the `FluentDL_Certificate.cer` certificate file in the folder. 
+
+You will see a security warning prompt ("Do you want to open this file?") and press open. 
+
+Next, the certificate pop-up will explain how to add the certificate to "Trusted Root Certification Authorities". In order to this, follow these steps:
 
 - Press `Install Certificate...`, which should open "Certificate Import Wizard"
-- Select Current User or Local Machine, either should work
-- Select `Place all certificates in the following store`
-- Press browse and select the second option, `Trusted Root Certification Authorities`
+- Choose  `Local Machine` then select `Next`
+- Choose `Place all certificates in the following store` then press `Browse...`, which should open a new dialog
+- In the new "Select Certificate Store" dialog, select the second option `Trusted Root Certification Authorities` and press `OK`
+- Select `Next` and then `Finish`. You should see a dialog that says: The import was successful.
 
 After adding the certificate to this storage, opening the `FluentDL_Certificate.cer` certificate file should show that it is now trusted and the MSIX install button should not be greyed out anymore.
