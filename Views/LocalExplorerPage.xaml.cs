@@ -794,7 +794,6 @@ public sealed partial class LocalExplorerPage : Page
             // Set to default message
             ConversionInfobar.Severity = InfoBarSeverity.Informational;
             UrlParser.ParseTextBlock(ConversionInfobarText, "Convert tracks in Local Explorer to new audio formats");
-            OutputTextBox.Text = ""; // Reset folder text box
             OutputComboBox.SelectedIndex = -1; // Reset combobox
             // Conversion list is not cleared as user may refer to conversions later even after closing dialog
         }
