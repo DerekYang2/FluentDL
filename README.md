@@ -17,6 +17,8 @@ Convert between any of the sources, run custom commands, and more.
 ![image](https://github.com/user-attachments/assets/984e29a1-c29f-4896-868c-552e3e3960b9)
 
 
+## Build and Run
 
+This project uses [WinUI 3](https://github.com/microsoft/microsoft-ui-xaml) and [Template Studio](https://github.com/microsoft/TemplateStudio)
 
 
