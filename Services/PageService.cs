@@ -16,7 +16,6 @@ public class PageService : IPageService
         Configure<QueueViewModel, QueuePage>();
         Configure<LocalExplorerViewModel, LocalExplorerPage>();
         Configure<ContentGridDetailViewModel, ContentGridDetailPage>();
-        Configure<DataGridViewModel, DataGridPage>();
         Configure<SettingsViewModel, SettingsPage>();
     }
 

@@ -132,9 +132,6 @@
   <data name="Shell_LocalExplorer.Content" xml:space="preserve">
     <value>Local Explorer</value>
   </data>
-  <data name="Shell_DataGrid.Content" xml:space="preserve">
-    <value>DataGrid</value>
-  </data>
   <data name="Settings_Personalization.Text" xml:space="preserve">
     <value>Personalization</value>
   </data>
@@ -154,13 +151,10 @@
     <value>About this application</value>
   </data>
   <data name="Settings_AboutDescription.Text" xml:space="preserve">
-    <value>TODO: Replace with your app description.</value>
+    <value>Fluent UI metadata searcher and editor, command line runner, music downloader</value>
   </data>
   <data name="SettingsPage_PrivacyTermsLink.Content" xml:space="preserve">
     <value>Privacy Statement</value>
-  </data>
-  <data name="SettingsPage_PrivacyTermsLink.NavigateUri" xml:space="preserve">
-    <value>https://YourPrivacyUrlGoesHere/</value>
   </data>
   <data name="AppNotificationSamplePayload" xml:space="preserve">
     <value>&lt;toast launch="action=ToastClick"&gt;

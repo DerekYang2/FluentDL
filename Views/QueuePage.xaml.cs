@@ -1388,13 +1388,15 @@ public sealed partial class QueuePage : Page
         ViewModel.WarningCount = warningSource.Count;
         ViewModel.ErrorCount = errorSource.Count;
 
-        ConversionTabView.SelectedItem = SuccessTab; // Default to success tab
-        // If no results in success tab, default to warning tab
-        if (ViewModel.SuccessCount == 0)
+        if (ViewModel.SuccessCount > 0)
+        {
+            ConversionTabView.SelectedItem = SuccessTab;
+        }
+        else if (ViewModel.WarningCount > 0)
         {
             ConversionTabView.SelectedItem = WarningTab;
-        } // If no results in warning tab, default to error tab
-        else if (ViewModel.WarningCount == 0)
+        }
+        else if (ViewModel.ErrorCount > 0)
         {
             ConversionTabView.SelectedItem = ErrorTab;
         }

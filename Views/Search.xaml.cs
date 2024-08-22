@@ -672,7 +672,7 @@ public sealed partial class Search : Page
     {
         App.MainWindow.DispatcherQueue.TryEnqueue(() =>
         {
-            App.MainWindow.ShowMessageDialogAsync("Help message\ntest");
+            App.MainWindow.ShowMessageDialogAsync("\u2022 The only source that requires authentication for searches is Spotify (downloading differs).\n\n\u2022 The search page allows you to look up tracks from various sources.\n\n\u2022 You may use the drop down on the search bar to change the source or do so in settings.\n\n\u2022 The search bar performs a general search while the advanced search button performs a filtered search.\n\n\u2022 You may also directly paste links for tracks, albums, and playlists into the search bar (only Qobuz playlist links unsupported).\n\n\u2022 Add songs to queue to perform more tasks on them.", "Help");
         });
     }
 

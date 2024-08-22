@@ -27,7 +27,7 @@
                     <!-- GENERAL SETTINGS ______________________________________________________________________________________________ -->
                     <TextBlock Text="General" Style="{StaticResource TextBlockSectionStyle}" />
                     <local:SettingsCard x:Name="GeneralSearchSource"
-                                       Description="Set the source for general searches (any query that is not a defined URL)"
+                                       Description="Set the source for general searches (applies to queries that are not URLs)."
                                        Header="Search Source"
                                        HeaderIcon="{ui:FontIcon Glyph=&#xF6FA;}">
                         <ComboBox x:Name="SearchSourceComboBox" SelectionChanged="SearchSourceComboBox_OnSelectionChanged">
@@ -37,7 +37,7 @@
                             <ComboBoxItem x:Name="YouTube" Content="YouTube"/>
                         </ComboBox>
                     </local:SettingsCard>
-                    <local:SettingsCard x:Name="NotificationsCard" Description="Enable or disable app notifications for queue conversion/command running completion" Header="Notifications">
+                    <local:SettingsCard x:Name="NotificationsCard" Description="Enable or disable app notifications for queue conversion/command running completion." Header="Notifications">
                         <local:SettingsCard.HeaderIcon>
                             <FontIcon Glyph="&#xE7E7;" />
                         </local:SettingsCard.HeaderIcon>
@@ -93,7 +93,7 @@
                     </local:SettingsExpander>
 
                     <local:SettingsExpander x:Name="ThreadsExpander" 
-                                        Description="Set the number of threads to use for different tasks"
+                                        Description="Set the number of threads to use for different tasks. Tasks are not guaranteed to run in order with multiple threads."
                                         Header="Threads" HorizontalContentAlignment="Stretch">
                         <local:SettingsExpander.HeaderIcon>
                             <FontIcon Glyph="&#xE964;" />
@@ -141,7 +141,7 @@
                     <TextBlock Text="Downloads" Style="{StaticResource TextBlockSectionStyle}" />
 
                     <local:SettingsExpander x:Name="DownloadFolder"
-                                        Description="Configure settings regarding download location behavior"
+                                        Description="Configure settings regarding download location behavior."
                                         Header="Download Location"
                                         HorizontalContentAlignment="Stretch">
                         <local:SettingsExpander.HeaderIcon>
@@ -162,7 +162,7 @@
                         </local:SettingsExpander.Items>
 
                     </local:SettingsExpander>
-                    <local:SettingsExpander x:Name = "DownloadOptions" Description="Set download options for different streaming sources" Header="Download Quality">
+                    <local:SettingsExpander x:Name = "DownloadOptions" Description="Set download options for different streaming sources." Header="Download Quality">
                         <local:SettingsExpander.HeaderIcon>
                             <FontIcon Glyph="&#xE93C;" />
                         </local:SettingsExpander.HeaderIcon>
@@ -204,7 +204,7 @@
 
                     <local:SettingsExpander x:Name="DeezerExpander"
                                         VerticalAlignment="Top"
-                                        Description="Set authentication tokens for Deezer"
+                                        Description="Set authentication tokens for Deezer."
                                         Header="Deezer"
                                         HorizontalContentAlignment="Stretch">
                         <local:SettingsExpander.HeaderIcon>
@@ -220,7 +220,7 @@
 
                     <local:SettingsExpander x:Name="QobuzExpander"
                                         VerticalAlignment="Top"
-                                        Description="Set authentication tokens for Qobuz"
+                                        Description="Set authentication tokens for Qobuz."
                                         Header="Qobuz"
                                         HorizontalContentAlignment="Stretch">
                         <local:SettingsExpander.HeaderIcon>
@@ -255,11 +255,8 @@
                     <local:SettingsExpander x:Name="SpotifyExpander"
                                         VerticalAlignment="Top"
                                         Header="Spotify"
+                                        Description="Set authentication tokens for Spotify."
                                         HorizontalContentAlignment="Stretch">
-                        <local:SettingsExpander.Description>
-                            <TextBlock>Get a client ID and secret at <Hyperlink NavigateUri="https://developer.spotify.com/dashboard">https://developer.spotify.com/dashboard</Hyperlink>.</TextBlock>
-                        </local:SettingsExpander.Description>
-
                         <local:SettingsExpander.HeaderIcon>
                             <FontIcon Glyph="&#xE72E;" />
                         </local:SettingsExpander.HeaderIcon>
@@ -339,7 +336,7 @@
                     <TextBlock Text="About" Style="{StaticResource TextBlockSectionStyle}" />
 
                     <local:SettingsExpander Header="FluentDL" Description="{x:Bind ViewModel.VersionDescription, Mode=OneWay}"
-                                        HeaderIcon="{ui:BitmapIcon Source=ms-appx:///Assets/Square150x150Logo.scale-200.png}">
+                                        HeaderIcon="{ui:BitmapIcon Source=ms-appx:///Assets/StoreLogo.scale-400.png}">
                         <local:SettingsExpander.Items>
                             <local:SettingsCard HorizontalContentAlignment="Left" VerticalAlignment="Top"
                                             ContentAlignment="Left">

@@ -78,7 +78,7 @@ namespace FluentDL.Views
 
             var trackDetailsList = new ObservableCollection<TrackDetail>
             {
-                new TrackDetail { Label = "Contributing Artists", Value = selectedSong.Artists }, new TrackDetail { Label = "Release Date", Value = new DateVerboseConverter().Convert(selectedSong.ReleaseDate, null, null, null).ToString() }, new TrackDetail { Label = "Length", Value = new DurationConverter().Convert(selectedSong.Duration, null, null, null).ToString() }, new TrackDetail { Label = "Album", Value = selectedSong.AlbumName },
+                new TrackDetail { Label = "Artists", Value = selectedSong.Artists }, new TrackDetail { Label = "Release Date", Value = new DateVerboseConverter().Convert(selectedSong.ReleaseDate, null, null, null).ToString() }, new TrackDetail { Label = "Length", Value = new DurationConverter().Convert(selectedSong.Duration, null, null, null).ToString() }, new TrackDetail { Label = "Album", Value = selectedSong.AlbumName },
             };
 
 

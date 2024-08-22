@@ -57,7 +57,7 @@
                                LineHeight="22" />
 
                     <controls:DockPanel>
-                        <Border Margin="0,0,8,0">
+                        <Border Margin="0,0,12,0">
                             <ItemsControl x:Name="PreviewInfoControl">
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate x:DataType="views:TrackDetail">
