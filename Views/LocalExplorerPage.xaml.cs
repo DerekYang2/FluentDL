@@ -856,7 +856,7 @@ public sealed partial class LocalExplorerPage : Page
         ConversionResults.Clear();
 
 
-        var threadCount = await SettingsViewModel.GetSetting<int?>(SettingsViewModel.ConversionThreads) ?? 1;
+        var threadCount = await SettingsViewModel.GetSetting<int?>(SettingsViewModel.AudioConversionThreads) ?? 1;
 
         int index = 0;
         int completedCount = 0;

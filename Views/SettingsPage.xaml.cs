@@ -38,8 +38,22 @@ public sealed partial class SettingsPage : Page
     private async void SettingsPage_Loaded(object sender, RoutedEventArgs e)
     {
         // Set sliders
-        DownloadThreadsSlider.Value = await localSettings.ReadSettingAsync<int?>(SettingsViewModel.DownloadThreads) ?? 1;
+        ConversionThreadsSlider.ValueChanged += (s, e) =>
+        {
+            ConversionThreadsCard.Description = $"{(int)Math.Round(ConversionThreadsSlider.Value)} threads";
+        };
+        CommandThreadsSlider.ValueChanged += (s, e) =>
+        {
+            CommandThreadsCard.Description = $"{(int)Math.Round(CommandThreadsSlider.Value)} threads";
+        };
+        AudioConversionThreadsSlider.ValueChanged += (s, e) =>
+        {
+            AudioConversionThreadsCard.Description = $"{(int)Math.Round(AudioConversionThreadsSlider.Value)} threads";
+        };
+
+        ConversionThreadsSlider.Value = await localSettings.ReadSettingAsync<int?>(SettingsViewModel.ConversionThreads) ?? 1;
         CommandThreadsSlider.Value = await localSettings.ReadSettingAsync<int?>(SettingsViewModel.CommandThreads) ?? 1;
+        AudioConversionThreadsSlider.Value = await localSettings.ReadSettingAsync<int?>(SettingsViewModel.AudioConversionThreads) ?? 1;
 
         // Set quality combo boxes
         DeezerQualityComboBox.SelectedIndex = await localSettings.ReadSettingAsync<int?>(SettingsViewModel.DeezerQuality) ?? 0;
@@ -295,7 +309,7 @@ public sealed partial class SettingsPage : Page
         await localSettings.SaveSettingAsync(SettingsViewModel.CommandThreads, value);
     }
 
-    private async void DownloadThreadsSlider_OnLostFocus(object sender, RoutedEventArgs e)
+    private async void ConversionThreadsSlider_OnLostFocus(object sender, RoutedEventArgs e)
     {
         var slider = sender as Slider;
         if (slider == null)
@@ -304,7 +318,19 @@ public sealed partial class SettingsPage : Page
         }
 
         var value = (int)slider.Value;
-        await localSettings.SaveSettingAsync(SettingsViewModel.DownloadThreads, value);
+        await localSettings.SaveSettingAsync(SettingsViewModel.ConversionThreads, value);
+    }
+
+    private void AudioConversionThreadsSlider_OnLostFocus(object sender, RoutedEventArgs e)
+    {
+        var slider = sender as Slider;
+        if (slider == null)
+        {
+            return;
+        }
+
+        var value = (int)slider.Value;
+        localSettings.SaveSettingAsync(SettingsViewModel.AudioConversionThreads, value);
     }
 
     private async void Search_OnChecked(object sender, RoutedEventArgs e)

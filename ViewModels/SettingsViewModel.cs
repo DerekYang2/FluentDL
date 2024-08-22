@@ -12,22 +12,24 @@ namespace FluentDL.ViewModels;
 
 public partial class SettingsViewModel : ObservableRecipient
 {
-    public static readonly string SpotifyClientId = "spotify_client_Id";
-    public static readonly string SpotifyClientSecret = "spotify_client_secret";
-    public static readonly string DeezerARL = "deezer_arl";
-    public static readonly string QobuzId = "qobuz_id";
-    public static readonly string QobuzToken = "qobuz_token";
-    public static readonly string SearchSource = "search_source";
-    public static readonly string DownloadDirectory = "download_directory";
-    public static readonly string AskBeforeDownload = "ask_before_download";
-    public static readonly string DeezerQuality = "deezer_quality";
-    public static readonly string QobuzQuality = "qobuz_quality";
-    public static readonly string SpotifyQuality = "spotify_quality";
-    public static readonly string YoutubeQuality = "youtube_quality";
-    public static readonly string Overwrite = "overwrite";
-    public static readonly string CommandThreads = "command_threads";
-    public static readonly string DownloadThreads = "download_threads";
-    public static readonly string Notifications = "notifications";
+    public static readonly string
+        SpotifyClientId = "spotify_client_Id",
+        SpotifyClientSecret = "spotify_client_secret",
+        DeezerARL = "deezer_arl",
+        QobuzId = "qobuz_id",
+        QobuzToken = "qobuz_token",
+        SearchSource = "search_source",
+        DownloadDirectory = "download_directory",
+        AskBeforeDownload = "ask_before_download",
+        DeezerQuality = "deezer_quality",
+        QobuzQuality = "qobuz_quality",
+        SpotifyQuality = "spotify_quality",
+        YoutubeQuality = "youtube_quality",
+        Overwrite = "overwrite",
+        CommandThreads = "command_threads",
+        ConversionThreads = "conversion_threads",
+        AudioConversionThreads = "audio_conversion_threads",
+        Notifications = "notifications";
 
     // Shortcut button checkboxes
     public static readonly string SearchAddChecked = "search_add_checked",

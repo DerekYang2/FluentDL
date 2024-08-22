@@ -91,14 +91,40 @@
 
                     </local:SettingsExpander.Items>
                 </local:SettingsExpander>
-                <local:SettingsCard x:Name="CommandThreadsCard" 
-                                    Description="The number of threads to use for custom command running" 
-                                    Header="Command Runner Threads">
-                    <local:SettingsCard.HeaderIcon>
+
+                <local:SettingsExpander x:Name="ThreadsExpander" 
+                                        Description="Set the number of threads to use for different tasks"
+                                        Header="Threads" HorizontalContentAlignment="Stretch">
+                    <local:SettingsExpander.HeaderIcon>
                         <FontIcon Glyph="&#xE964;" />
-                    </local:SettingsCard.HeaderIcon>
-                    <Slider x:Name="CommandThreadsSlider" Minimum="1" Maximum="5" StepFrequency="1" TickFrequency="1" SnapsTo="Ticks" TickPlacement="Outside" LostFocus="CommandThreadsSlider_OnLostFocus"/>
-                </local:SettingsCard>
+                    </local:SettingsExpander.HeaderIcon>
+                    <FontIcon Glyph="&#xE946;" HorizontalAlignment="Right" FontSize="16" 
+                              ToolTipService.ToolTip="Tasks are not guaranteed to run in order with multiple threads"/>
+                    <local:SettingsExpander.Items>
+                        <local:SettingsCard x:Name="CommandThreadsCard" 
+                                            Header="Command Runner">
+                            <local:SettingsCard.HeaderIcon>
+                                <FontIcon Glyph="&#xE756;" />
+                            </local:SettingsCard.HeaderIcon>
+                            <Slider x:Name="CommandThreadsSlider" Minimum="1" Maximum="10" StepFrequency="1" TickFrequency="1" SnapsTo="Ticks" TickPlacement="Outside" LostFocus="CommandThreadsSlider_OnLostFocus" Width="500"/>
+                        </local:SettingsCard>
+                        <local:SettingsCard x:Name="ConversionThreadsCard" 
+                                            Header="Queue Conversion">
+                            <local:SettingsCard.HeaderIcon>
+                                <FontIcon Glyph="&#xE9D5;" />
+                            </local:SettingsCard.HeaderIcon>
+                            <Slider x:Name="ConversionThreadsSlider" Minimum="1" Maximum="5" StepFrequency="1" TickFrequency="1" SnapsTo="Ticks" TickPlacement="Outside" LostFocus="ConversionThreadsSlider_OnLostFocus" Width="500"/>
+                        </local:SettingsCard>
+                        <local:SettingsCard x:Name="AudioConversionThreadsCard" 
+                                            Header="Audio Format Conversion">
+                            <local:SettingsCard.HeaderIcon>
+                                <FontIcon Glyph="&#xF623;" />
+                            </local:SettingsCard.HeaderIcon>
+                            <Slider x:Name="AudioConversionThreadsSlider" Minimum="1" Maximum="10" StepFrequency="1" TickFrequency="1" SnapsTo="Ticks" TickPlacement="Outside" LostFocus="AudioConversionThreadsSlider_OnLostFocus" Width="500"/>
+                        </local:SettingsCard>
+                    </local:SettingsExpander.Items>
+                </local:SettingsExpander>
+
                 <local:SettingsExpander x:Name="FFmpegExpander" 
                                         Description="Set the path to a folder which should contain ffmpeg.exe. If not set, the app will use the built-in FFmpeg version."
                                         Header="FFmpeg" HorizontalContentAlignment="Stretch">
@@ -112,7 +138,7 @@
                     </local:SettingsExpander.Items>
                 </local:SettingsExpander>
 
-                    <!-- DOWNLOAD SETTINGS ______________________________________________________________________________________________ -->
+                <!-- DOWNLOAD SETTINGS ______________________________________________________________________________________________ -->
                 <TextBlock Text="Downloads" Style="{StaticResource TextBlockSectionStyle}" />
 
                 <local:SettingsExpander x:Name="DownloadFolder"
@@ -125,8 +151,8 @@
                     <local:SettingsExpander.Items>
                         <local:SettingsCard x:Name="LocationCard"  Header="Location" Description="The default folder where downloads are saved"
                                             HorizontalContentAlignment="Stretch">
-                                <Button Grid.Column="1" x:Name="SelectFolderButton" Click="SelectFolderButton_OnClick" Content="Change">
-                                </Button>
+                            <Button Grid.Column="1" x:Name="SelectFolderButton" Click="SelectFolderButton_OnClick" Content="Change">
+                            </Button>
                         </local:SettingsCard>
                         <local:SettingsCard Header="Ask what to do with each download" Description="Always ask where to save each download rather than using the default folder">
                             <ToggleSwitch x:Name="AskToggle" IsOn="False" OnContent="" OffContent="" Toggled="AskToggle_OnToggled"/>
@@ -173,16 +199,6 @@
                     </local:SettingsExpander.Items>
 
                 </local:SettingsExpander>
-
-                <local:SettingsCard x:Name="DownloadThreadsCard" 
-                                    Description="The number of threads for queue conversions." 
-                                    Header="Conversion Threads">
-                    <local:SettingsCard.HeaderIcon>
-                        <FontIcon Glyph="&#xE964;" />
-                    </local:SettingsCard.HeaderIcon>
-                    <Slider x:Name="DownloadThreadsSlider" Minimum="1" Maximum="5" StepFrequency="1" TickFrequency="1" SnapsTo="Ticks" TickPlacement="Outside" LostFocus="DownloadThreadsSlider_OnLostFocus"/>
-                </local:SettingsCard>
-
 
                 <!-- Auth SETTINGS __________________________________________________________________________________________________ -->
                 <TextBlock Text="Authentication" Style="{StaticResource TextBlockSectionStyle}" />
@@ -286,7 +302,7 @@
                     </local:SettingsExpander.HeaderIcon>
 
                     <local:SettingsExpander.Items>
-                            <local:SettingsCard HorizontalContentAlignment="Left" ContentAlignment="Vertical">
+                        <local:SettingsCard HorizontalContentAlignment="Left" ContentAlignment="Vertical">
                             <StackPanel>
                                 <RadioButton
                                     x:Uid="Settings_Theme_Light"
