@@ -35,7 +35,7 @@ A pre-built FFmpeg executable can be found in [/Assets/ffmpeg/bin](https://githu
 ## Running
 
 This project is deployed using MSIX, which installs the application on Windows. 
-To install this application, download the folder from releases and open the `FluentDL_{VERSION}_x64_MSIX.msix` file. This will open a prompt that installs the application and all its dependencies (including the FFmpeg executable). 
+To install this application, download the folder from [Releases](https://github.com/DerekYang2/FluentDL/releases) and open the `FluentDL_{VERSION}_x64_MSIX.msix` file. This will open a prompt that installs the application and all its dependencies (including the FFmpeg executable). 
 
 Currently, the installation process is a bit complex because the certificate is self-signed and must be trusted by the user for the MSIX to work.
 
