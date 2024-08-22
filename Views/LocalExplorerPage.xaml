@@ -113,11 +113,7 @@
                     <Button x:Name="ConvertDialogOpenButton" VerticalAlignment="Center" Click="ConvertDialogOpenButton_OnClick"
                             ToolTipService.ToolTip="Convert tracks to other sources">
                         <StackPanel Orientation="Horizontal">
-                            <FontIcon x:Name="ConvertDialogOpenIcon" Glyph="&#xEA3C;" FontSize="16" Margin="0, 0, 8, 0" RenderTransformOrigin="0.5,0.5">
-                                <FontIcon.RenderTransform>
-                                    <RotateTransform Angle="90" />
-                                </FontIcon.RenderTransform>
-                            </FontIcon>
+                            <FontIcon x:Name="ConvertDialogOpenIcon" Glyph="&#xF623;" FontSize="16" Margin="0, 0, 8, 0"/>
                             <TextBlock Text="Convert" />
                         </StackPanel>
                     </Button>

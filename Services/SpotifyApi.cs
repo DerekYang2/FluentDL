@@ -23,7 +23,7 @@ namespace FluentDL.Services
     {
         private static SpotifyClientConfig config = SpotifyClientConfig.CreateDefault();
         private static SpotifyClient spotify;
-        private static bool IsInitialized = false;
+        public static bool IsInitialized = false;
 
         public SpotifyApi()
         {
@@ -31,7 +31,7 @@ namespace FluentDL.Services
 
         public static async Task Initialize(string? clientId, string? clientSecret)
         {
-            // TODO: if do not exist, message should be shown
+            IsInitialized = false;
             if (!string.IsNullOrWhiteSpace(clientId) && !string.IsNullOrWhiteSpace(clientSecret))
             {
                 var request = new ClientCredentialsRequest(clientId, clientSecret);

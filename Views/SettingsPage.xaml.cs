@@ -4,6 +4,7 @@ using Windows.Storage.AccessCache;
 using Windows.Storage.Pickers;
 using CommunityToolkit.WinUI;
 using FluentDL.Contracts.Services;
+using FluentDL.Helpers;
 using FluentDL.Services;
 using FluentDL.ViewModels;
 using Microsoft.UI.Dispatching;
@@ -18,6 +19,7 @@ namespace FluentDL.Views;
 public sealed partial class SettingsPage : Page
 {
     private DispatcherQueue dispatcher;
+    private DispatcherTimer dispatcherTimer;
     private ILocalSettingsService localSettings;
 
     public SettingsViewModel ViewModel
@@ -32,7 +34,10 @@ public sealed partial class SettingsPage : Page
         ViewModel = App.GetService<SettingsViewModel>();
         InitializeComponent();
         this.Loaded += SettingsPage_Loaded;
+
         dispatcher = DispatcherQueue.GetForCurrentThread();
+        dispatcherTimer = new DispatcherTimer();
+        dispatcherTimer.Tick += dispatcherTimer_Tick;
     }
 
     private async void SettingsPage_Loaded(object sender, RoutedEventArgs e)
@@ -120,6 +125,15 @@ public sealed partial class SettingsPage : Page
         await localSettings.SaveSettingAsync(SettingsViewModel.SpotifyClientId, ClientIdInput.Text.Trim());
         // Recreate spotify api object
         await SpotifyApi.Initialize(await localSettings.ReadSettingAsync<string>(SettingsViewModel.SpotifyClientId), await localSettings.ReadSettingAsync<string>(SettingsViewModel.SpotifyClientSecret));
+
+        if (SpotifyApi.IsInitialized)
+        {
+            ShowInfoBar(InfoBarSeverity.Success, "Authentication successful", 3, "Spotify");
+        }
+        else
+        {
+            ShowInfoBar(InfoBarSeverity.Error, "Authentication failed", 3, "Spotify");
+        }
     }
 
     private async void SpotifySecretInput_OnLostFocus(object sender, RoutedEventArgs e)
@@ -127,26 +141,60 @@ public sealed partial class SettingsPage : Page
         // TODO: encryption?
         await localSettings.SaveSettingAsync(SettingsViewModel.SpotifyClientSecret, SpotifySecretInput.Password.Trim());
         await SpotifyApi.Initialize(await localSettings.ReadSettingAsync<string>(SettingsViewModel.SpotifyClientId), await localSettings.ReadSettingAsync<string>(SettingsViewModel.SpotifyClientSecret));
+
+        if (SpotifyApi.IsInitialized)
+        {
+            ShowInfoBar(InfoBarSeverity.Success, "Authentication successful", 3, "Spotify");
+        }
+        else
+        {
+            ShowInfoBar(InfoBarSeverity.Error, "Authentication failed", 3, "Spotify");
+        }
     }
 
     private async void DeezerARLInput_OnLostFocus(object sender, RoutedEventArgs e)
     {
         await localSettings.SaveSettingAsync(SettingsViewModel.DeezerARL, DeezerARLInput.Password.Trim());
         await DeezerApi.InitDeezerClient(DeezerARLInput.Password.Trim());
+
+        if (DeezerApi.IsInitialized)
+        {
+            ShowInfoBar(InfoBarSeverity.Success, "Authentication successful", 3, "Deezer");
+        }
+        else
+        {
+            ShowInfoBar(InfoBarSeverity.Error, "Authentication failed", 3, "Deezer");
+        }
     }
 
     private async void QobuzIDInput_OnLostFocus(object sender, RoutedEventArgs e)
     {
         await localSettings.SaveSettingAsync(SettingsViewModel.QobuzId, QobuzIDInput.Text.Trim());
         await QobuzApi.Initialize(await localSettings.ReadSettingAsync<string>(SettingsViewModel.QobuzId), await localSettings.ReadSettingAsync<string>(SettingsViewModel.QobuzToken));
+
+        if (QobuzApi.IsInitialized)
+        {
+            ShowInfoBar(InfoBarSeverity.Success, "Authentication successful", 3, "Qobuz");
+        }
+        else
+        {
+            ShowInfoBar(InfoBarSeverity.Error, "Authentication failed", 3, "Qobuz");
+        }
     }
 
     private async void QobuzTokenInput_OnLostFocus(object sender, RoutedEventArgs e)
     {
         await localSettings.SaveSettingAsync(SettingsViewModel.QobuzToken, QobuzTokenInput.Password.Trim());
-        var id = QobuzIDInput.Text.Trim();
-        var token = QobuzTokenInput.Password.Trim();
-        await QobuzApi.Initialize(id, token);
+        await QobuzApi.Initialize(await localSettings.ReadSettingAsync<string>(SettingsViewModel.QobuzId), await localSettings.ReadSettingAsync<string>(SettingsViewModel.QobuzToken));
+
+        if (QobuzApi.IsInitialized)
+        {
+            ShowInfoBar(InfoBarSeverity.Success, "Authentication successful", 3, "Qobuz");
+        }
+        else
+        {
+            ShowInfoBar(InfoBarSeverity.Error, "Authentication failed", 3, "Qobuz");
+        }
     }
 
     private async void SearchSourceComboBox_OnSelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -184,12 +232,11 @@ public sealed partial class SettingsPage : Page
                 LocationCard.Description = folder.Path;
                 // Save to settings
                 await localSettings.SaveSettingAsync(SettingsViewModel.DownloadDirectory, folder.Path);
-                Debug.WriteLine("Saved download directory: " + folder.Path);
+                ShowInfoBar(InfoBarSeverity.Success, $"Set download directory to <a href='{folder.Path}'>{folder.Path}</a>");
             }
             else
             {
-                LocationCard.Description = "Invalid folder path";
-                Debug.WriteLine("Invalid folder path: " + folder.Path); // TODO: replace with infobar or dialog
+                ShowInfoBar(InfoBarSeverity.Error, "Invalid folder path");
             }
         }
     }
@@ -219,15 +266,16 @@ public sealed partial class SettingsPage : Page
                 // Set the folder path in the text box
                 FFmpegPathCard.Description = folder.Path;
                 await localSettings.SaveSettingAsync(SettingsViewModel.FFmpegPath, folder.Path);
-                Debug.WriteLine("Saved download directory: " + folder.Path);
-
                 // Update ffmpeg runner
                 await FFmpegRunner.Initialize();
+
+                ShowInfoBar(InfoBarSeverity.Success, $"Set FFmpeg path to <a href='{folder.Path}'>{folder.Path}</a>");
             }
             else
             {
                 FFmpegPathCard.Description = "Invalid folder path";
-                Debug.WriteLine("Invalid folder path: " + folder.Path);
+
+                ShowInfoBar(InfoBarSeverity.Error, "Invalid folder path");
             }
         }
     }
@@ -464,5 +512,53 @@ public sealed partial class SettingsPage : Page
         await localSettings.SaveSettingAsync(SettingsViewModel.FFmpegPath, "");
         // Update ffmpeg runner
         await FFmpegRunner.Initialize();
+
+        ShowInfoBar(InfoBarSeverity.Informational, "Reset to using built-in Ffmpeg");
+    }
+
+    // Infobar helper methods ---------------------------------------------------
+    private void PageInfoBar_OnCloseButtonClick(InfoBar sender, object args)
+    {
+        PageInfoBar.Opacity = 0;
+    }
+
+    // Event handler to close the info bar and stop the timer (only ticks once)
+    private void dispatcherTimer_Tick(object sender, object e)
+    {
+        PageInfoBar.Opacity = 0;
+        (sender as DispatcherTimer).Stop();
+        // Set IsOpen to false after 0.25 seconds
+        Task.Factory.StartNew(() =>
+        {
+            System.Threading.Thread.Sleep(250);
+            dispatcher.TryEnqueue(() =>
+            {
+                PageInfoBar.IsOpen = false;
+            });
+        });
+    }
+
+    private void ShowInfoBar(InfoBarSeverity severity, string message, int seconds = 2, string title = "")
+    {
+        title = title.Trim();
+        message = message.Trim();
+        dispatcher.TryEnqueue(() =>
+        {
+            PageInfoBar.IsOpen = true;
+            PageInfoBar.Opacity = 1;
+            PageInfoBar.Severity = severity;
+            //PageInfoBar.Title = title;
+
+            if (!string.IsNullOrWhiteSpace(title))
+            {
+                UrlParser.ParseTextBlock(InfoBarTextBlock, $"<b>{title}</b>   {message}");
+            }
+            else
+            {
+                UrlParser.ParseTextBlock(InfoBarTextBlock, message);
+            }
+        });
+        dispatcherTimer.Interval = TimeSpan.FromSeconds(seconds);
+        dispatcherTimer.Start();
     }
 }

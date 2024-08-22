@@ -187,7 +187,7 @@ public sealed partial class LocalExplorerPage : Page
         AnimationHelper.AttachSpringUpAnimation(UploadFileButton, UploadFileButtonIcon);
         AnimationHelper.AttachScaleAnimation(ClearButton, ClearButtonIcon);
         AnimationHelper.AttachScaleAnimation(AddToQueueButton, ResultsIcon);
-        AnimationHelper.AttachSpringRightAnimation(ConvertDialogOpenButton, ConvertDialogOpenIcon);
+        AnimationHelper.AttachScaleAnimation(ConvertDialogOpenButton, ConvertDialogOpenIcon);
         AnimationHelper.AttachScaleAnimation(SelectOutputButton, SelectOutputIcon);
     }
 

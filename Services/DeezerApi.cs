@@ -22,12 +22,22 @@ internal class DeezerApi
     public static readonly string baseURL = "https://api.deezer.com";
     private static readonly RestClient client = new RestClient(new RestClientOptions(baseURL) { Timeout = new TimeSpan(0, 0, 5) });
     private static DeezerClient deezerClient = new DeezerClient();
+    public static bool IsInitialized = false;
 
     public static async Task InitDeezerClient(string? ARL)
     {
+        IsInitialized = false;
         if (!string.IsNullOrWhiteSpace(ARL))
         {
-            await deezerClient.SetARL(ARL);
+            try
+            {
+                await deezerClient.SetARL(ARL);
+                IsInitialized = true;
+            }
+            catch (Exception e)
+            {
+                Debug.WriteLine(e);
+            }
         }
     }
 
