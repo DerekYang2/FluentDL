@@ -617,6 +617,12 @@ internal class DeezerApi
         }
 
         var trackBytes = await deezerClient.Downloader.GetRawTrackBytes(id, (Bitrate)bitrateEnum);
+
+        if (trackBytes == null || trackBytes.Length == 0)
+        {
+            throw new Exception("Failed to download track");
+        }
+
         //trackBytes = await deezerClient.Downloader.ApplyMetadataToTrackBytes(id, trackBytes);
         await File.WriteAllBytesAsync(filePath, trackBytes);
         return filePath;

@@ -131,6 +131,7 @@
                     <local:SettingsExpander.HeaderIcon>
                         <FontIcon Glyph="&#xE8B7;" />
                     </local:SettingsExpander.HeaderIcon>
+                    <Button x:Name="ResetFFmpegButton" Click="ResetFFmpegButton_OnClick" Content="Reset" ToolTipService.ToolTip="Reset to built-in FFmpeg"/>
                     <local:SettingsExpander.Items>
                         <local:SettingsCard x:Name="FFmpegPathCard" Header="Path" Description="No folder selected" HorizontalContentAlignment="Stretch">
                             <Button x:Name="SelectFFmpegButton" Click="SelectFFmpegButton_OnClick" Content="Change"/>

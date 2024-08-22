@@ -138,7 +138,7 @@ public sealed partial class SettingsPage : Page
     private async void QobuzIDInput_OnLostFocus(object sender, RoutedEventArgs e)
     {
         await localSettings.SaveSettingAsync(SettingsViewModel.QobuzId, QobuzIDInput.Text.Trim());
-        QobuzApi.Initialize(await localSettings.ReadSettingAsync<string>(SettingsViewModel.QobuzId), await localSettings.ReadSettingAsync<string>(SettingsViewModel.QobuzToken));
+        await QobuzApi.Initialize(await localSettings.ReadSettingAsync<string>(SettingsViewModel.QobuzId), await localSettings.ReadSettingAsync<string>(SettingsViewModel.QobuzToken));
     }
 
     private async void QobuzTokenInput_OnLostFocus(object sender, RoutedEventArgs e)
@@ -146,11 +146,7 @@ public sealed partial class SettingsPage : Page
         await localSettings.SaveSettingAsync(SettingsViewModel.QobuzToken, QobuzTokenInput.Password.Trim());
         var id = QobuzIDInput.Text.Trim();
         var token = QobuzTokenInput.Password.Trim();
-        Thread t = new Thread(() =>
-        {
-            QobuzApi.Initialize(id, token);
-        });
-        t.Start();
+        await QobuzApi.Initialize(id, token);
     }
 
     private async void SearchSourceComboBox_OnSelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -224,6 +220,9 @@ public sealed partial class SettingsPage : Page
                 FFmpegPathCard.Description = folder.Path;
                 await localSettings.SaveSettingAsync(SettingsViewModel.FFmpegPath, folder.Path);
                 Debug.WriteLine("Saved download directory: " + folder.Path);
+
+                // Update ffmpeg runner
+                await FFmpegRunner.Initialize();
             }
             else
             {
@@ -457,5 +456,13 @@ public sealed partial class SettingsPage : Page
     {
         var isToggled = (sender as ToggleSwitch).IsOn;
         await localSettings.SaveSettingAsync(SettingsViewModel.Notifications, isToggled);
+    }
+
+    private async void ResetFFmpegButton_OnClick(object sender, RoutedEventArgs e)
+    {
+        FFmpegPathCard.Description = "No folder selected";
+        await localSettings.SaveSettingAsync(SettingsViewModel.FFmpegPath, "");
+        // Update ffmpeg runner
+        await FFmpegRunner.Initialize();
     }
 }

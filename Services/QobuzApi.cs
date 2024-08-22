@@ -24,13 +24,16 @@ internal class QobuzApi
     private static QobuzApiService apiService = new QobuzApiService();
     private static bool loggedIn = false;
 
-    public static void Initialize(string? userId, string? AuthToken)
+    public static async Task Initialize(string? userId, string? AuthToken)
     {
-        if (!string.IsNullOrWhiteSpace(userId) && !string.IsNullOrWhiteSpace(AuthToken))
+        await Task.Run(() =>
         {
-            apiService.LoginWithToken(userId, AuthToken);
-            loggedIn = true;
-        }
+            if (!string.IsNullOrWhiteSpace(userId) && !string.IsNullOrWhiteSpace(AuthToken))
+            {
+                apiService.LoginWithToken(userId, AuthToken);
+                loggedIn = true;
+            }
+        });
     }
 
     public static async Task GeneralSearch(ObservableCollection<SongSearchObject> itemSource, string query, CancellationToken token, int limit = 25)
@@ -583,6 +586,11 @@ internal class QobuzApi
 
     public static async Task<string> DownloadTrack(string filePath, SongSearchObject song, string? format = null)
     {
+        if (!loggedIn)
+        {
+            throw new Exception("Not logged in");
+        }
+
         // Remove extension if it exists
         filePath = ApiHelper.RemoveExtension(filePath);
 

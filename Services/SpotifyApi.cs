@@ -23,6 +23,7 @@ namespace FluentDL.Services
     {
         private static SpotifyClientConfig config = SpotifyClientConfig.CreateDefault();
         private static SpotifyClient spotify;
+        private static bool IsInitialized = false;
 
         public SpotifyApi()
         {
@@ -38,6 +39,7 @@ namespace FluentDL.Services
                 {
                     var response = await new OAuthClient(config).RequestToken(request);
                     spotify = new SpotifyClient(config.WithToken(response.AccessToken));
+                    IsInitialized = true;
                 }
                 catch (Exception e)
                 {
@@ -60,7 +62,7 @@ namespace FluentDL.Services
             artistName = artistName.Trim();
             trackName = trackName.Trim();
             albumName = albumName.Trim();
-            if (artistName.Length == 0 && trackName.Length == 0 && albumName.Length == 0) // If no search query
+            if (!IsInitialized || (artistName.Length == 0 && trackName.Length == 0 && albumName.Length == 0)) // If no search query
             {
                 return;
             }
@@ -124,7 +126,7 @@ namespace FluentDL.Services
         public static async Task GeneralSearch(ObservableCollection<SongSearchObject> itemSource, string query, CancellationToken token, int limit = 25)
         {
             query = query.Trim(); // Trim the query
-            if (string.IsNullOrWhiteSpace(query))
+            if (!IsInitialized || string.IsNullOrWhiteSpace(query))
             {
                 return;
             }
@@ -234,6 +236,12 @@ namespace FluentDL.Services
 
         public static async Task AddTracksFromLink(ObservableCollection<SongSearchObject> itemSource, string url, CancellationToken token, Search.UrlStatusUpdateCallback? statusUpdate)
         {
+            if (!IsInitialized)
+            {
+                statusUpdate?.Invoke(InfoBarSeverity.Error, "Spotify API not initialized. Go to settings to authenticate.");
+                return;
+            }
+
             var id = url.Split("/").Last();
             // Remove any query parameters
             if (id.Contains("?"))
@@ -316,6 +324,12 @@ namespace FluentDL.Services
 
         public static async Task<SongSearchObject?> GetSpotifyTrack(SongSearchObject song, CancellationToken token = default, ConversionUpdateCallback? callback = null)
         {
+            if (!IsInitialized)
+            {
+                callback?.Invoke(InfoBarSeverity.Error, song);
+                return null;
+            }
+
             // Try to find by ISRC first
             if (song.Isrc != null)
             {
@@ -485,6 +499,11 @@ namespace FluentDL.Services
 
         public static async Task<string?> DownloadEquivalentTrack(string filePath, SongSearchObject song, bool strict = true, ConversionUpdateCallback? callback = default)
         {
+            if (!IsInitialized)
+            {
+                return null;
+            }
+
             // Remove extension if it exists
             filePath = ApiHelper.RemoveExtension(filePath);
 

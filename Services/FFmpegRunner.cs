@@ -274,7 +274,7 @@ internal class FFmpegRunner
         }
         catch (Exception e)
         {
-            Debug.WriteLine("CONVERSION TO AAC FAILED: " + e.Message);
+            Debug.WriteLine("CONVERSION USING FDK-AAC FAILED: " + e.Message);
             // Try again with AudioCodec.Aac
             try
             {
