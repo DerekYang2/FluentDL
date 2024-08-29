@@ -1051,7 +1051,10 @@ public sealed partial class QueuePage : Page
                             {
                                 if (successSource.ContainsKey(newSongObj)) queueObj.ConvertBadgeColor = new SolidColorBrush(Windows.UI.Color.FromArgb(255, 108, 203, 95));
                                 else if (warningSource.ContainsKey(newSongObj)) queueObj.ConvertBadgeColor = new SolidColorBrush(Windows.UI.Color.FromArgb(255, 252, 225, 0));
-                                else throw new Exception("Unspecified severity for setbadge");
+                                else // Assume failure
+                                {
+                                    queueObj.ConvertBadgeColor = new SolidColorBrush(Windows.UI.Color.FromArgb(255, 255, 153, 164));
+                                }
 
                                 queueObj.IsRunning = false; // Set song to not running
                                 QueueViewModel.Replace(i, queueObj);
