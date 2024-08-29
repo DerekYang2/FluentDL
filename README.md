@@ -1,26 +1,64 @@
+<h1 align="center">
+  FluentDL
+</h1>
+<p align="center">
+  <a href="#about">About</a> •
+  <a href="#setup">Setup</a> •
+  <a href="#running">Running</a> 
+</p>
+<p align="center">
+  <img src="./SampleGifs/FluentDL_demo.webp" alt="Sample Webp" />
+</p>
+
 ## About
 A Fluent UI desktop application that helps you manage your local music files, perform audio format conversions, download songs, match songs between different online sources, and more. This project was made with [WinUI 3](https://github.com/microsoft/microsoft-ui-xaml) and [TemplateStudio](https://github.com/microsoft/TemplateStudio). Under the hood, the app uses FFmpeg and APIs from Deezer, Qobuz, Spotify, and Youtube.
 
 FluentDL is organized into three sections: Search, Local Explorer, and Queue.
 
-TODO: Add images or gifs below
-#### Search Tab
-- Lookup songs from any of the four online sources
-- Search using natural language or strict search by title/artist/album
-- Parse all tracks from a online link, with track/album/playlist links supported
-- Open songs in preview sidebar that can view large cover art, preview audio, show full metadata
-
-### Local Explorer Tab
-- Upload files from your computer or scan all audio files in a folder
-- View file metadata and technical audio specs in-depth
-- Edit file metadata live, including option to change cover art!
-- Convert between any of these formats: flac, mp3, aac, alac, vorbis, opus
-
-### Queue Tab
-- Add files from Search or Local Explorer into the queue
-- Run custom terminal tools on tracks (with wildcards)
-- Match between any of the online sources (eg. convert Spotify and YouTube to Deezer equivalents) 
-- Download tracks from online sources
+<table>
+  <tr>
+    <td valign="top">
+      <h4>Search</h4>
+      <ul>
+        <li>Lookup songs from any of the four online sources</li>
+        <li>Search using natural language or strict search by title/artist/album</li>
+        <li>Parse all tracks from an online link, with track/album/playlist links supported</li>
+        <li>Open songs in preview sidebar that can view large cover art, preview audio, show full metadata</li>
+      </ul>
+    </td>
+    <td>
+      <p align="center"><img src="./SampleGifs/search_page.webp" alt="Search Webp"/></p>
+    </td>
+  </tr>
+  <tr>
+    <td valign="top">
+      <h4>Local Explorer</h4>
+      <ul>
+        <li>Upload files from your computer or scan all audio files in a folder</li>
+        <li>View file metadata and technical audio specs in-depth</li>
+        <li>Edit file metadata live, including option to change cover art!</li>
+        <li>Convert between any of these formats: flac, mp3, aac, alac, vorbis, opus</li>
+      </ul>
+    </td>
+    <td>
+      <p align="center"><img src="./SampleGifs/local_page.webp" alt="Local Webp"/></p>
+    </td>
+  </tr>
+  <tr>
+    <td valign="top">
+      <h4>Queue</h4>
+      <ul>
+        <li>Add files from Search or Local Explorer into the queue</li>
+        <li>Run custom terminal tools on tracks (with wildcards)</li>
+        <li>Match between any of the online sources (e.g., convert Spotify and YouTube to Deezer equivalents)</li>
+        <li>Download tracks from online sources</li>
+      </ul>
+    </td>
+    <td>
+      <p align="center"><img src="./SampleGifs/queue_page.webp" alt="Queue Webp"/></p>
+    </td>
+  </tr>
+</table>
 
 ## Setup
 
@@ -37,7 +75,7 @@ A pre-built FFmpeg executable can be found in [/Assets/ffmpeg/bin](https://githu
 This project is deployed using MSIX, which installs the application on Windows. 
 To install this application, download the folder from [Releases](https://github.com/DerekYang2/FluentDL/releases) and open the `FluentDL_{VERSION}_x64_MSIX.msix` file. This will open a prompt that installs the application and all its dependencies (including the FFmpeg executable). 
 
-Currently, the installation process is a bit complex because the certificate is self-signed and must be trusted by the user for the MSIX to work.
+The installation process currently requires an extra step because the certificate is self-signed. It must be trusted by the user before running the MSIX installer.
 
 #### How do I trust the certificate?
 In order to trust the certificate, click and open the `FluentDL_Certificate.cer` certificate file in the folder. 
@@ -52,4 +90,4 @@ Next, the certificate pop-up will explain how to add the certificate to "Trusted
 - In the new "Select Certificate Store" dialog, select the second option `Trusted Root Certification Authorities` and press `OK`
 - Select `Next` and then `Finish`. You should see a dialog that says: The import was successful.
 
-After adding the certificate to this storage, opening the `FluentDL_Certificate.cer` certificate file should show that it is now trusted and the MSIX install button should not be greyed out anymore.
+After adding the certificate to this storage, `FluentDL_Certificate.cer` should be trusted and the MSIX install button should not be greyed out anymore.
