@@ -4,7 +4,9 @@
 <p align="center">
   <a href="#about">About</a> •
   <a href="#setup">Setup</a> •
-  <a href="#running">Running</a> 
+  <a href="#running">Running</a> •
+  <a href="#how-do-i-trust-the-certificate">Certificate Setup</a> •
+   <a href="#authentication">Authentication</a>
 </p>
 <p align="center">
   <img src="./SampleGifs/FluentDL_demo.webp" alt="Sample Webp" />
@@ -18,7 +20,7 @@ FluentDL is organized into three sections: Search, Local Explorer, and Queue.
 <table>
   <tr>
     <td valign="top">
-      <h4>Search</h4>
+      <strong>Search</strong>
       <ul>
         <li>Lookup songs from any of the four online sources</li>
         <li>Search using natural language or strict search by title/artist/album</li>
@@ -32,7 +34,7 @@ FluentDL is organized into three sections: Search, Local Explorer, and Queue.
   </tr>
   <tr>
     <td valign="top">
-      <h4>Local Explorer</h4>
+      <strong>Local Explorer</strong>
       <ul>
         <li>Upload files from your computer or scan all audio files in a folder</li>
         <li>View file metadata and technical audio specs in-depth</li>
@@ -46,7 +48,7 @@ FluentDL is organized into three sections: Search, Local Explorer, and Queue.
   </tr>
   <tr>
     <td valign="top">
-      <h4>Queue</h4>
+      <strong>Queue</h4>
       <ul>
         <li>Add files from Search or Local Explorer into the queue</li>
         <li>Run custom terminal tools on tracks (with wildcards)</li>
@@ -68,7 +70,7 @@ WinUI 3 can be automatically configured using the Visual Studio Installer or man
 
 All dependencies should be automatically handled by Visual Studio and can be found on NuGet. There is one package [MarqueeText](https://dev.azure.com/dotnet/CommunityToolkit/_artifacts/feed/CommunityToolkit-Labs/NuGet/CommunityToolkit.Labs.WinUI.MarqueeText) that has to be installed manually.
 
-A pre-built FFmpeg executable can be found in [/Assets/ffmpeg/bin](https://github.com/DerekYang2/FluentDL/tree/master/Assets/ffmpeg/bin) and contains many additional codecs, such as libopus and libvorbis. You may use your own FFmpeg binaries, but note that libopus is required for proper Youtube downloading. 
+A pre-built FFmpeg executable can be found in [./Assets/ffmpeg/bin](https://github.com/DerekYang2/FluentDL/tree/master/Assets/ffmpeg/bin) and contains many additional codecs, such as libopus and libvorbis. You may use your own FFmpeg binaries, but note that libopus is required for proper Youtube downloading. 
 
 ## Running
 
@@ -77,7 +79,7 @@ To install this application, download the folder from [Releases](https://github.
 
 The installation process currently requires an extra step because the certificate is self-signed. It must be trusted by the user before running the MSIX installer.
 
-#### How do I trust the certificate?
+### How do I trust the certificate?
 In order to trust the certificate, click and open the `FluentDL_Certificate.cer` certificate file in the folder. 
 
 You will see a security warning prompt ("Do you want to open this file?") and press open. 
@@ -91,3 +93,11 @@ Next, the certificate pop-up will explain how to add the certificate to "Trusted
 - Select `Next` and then `Finish`. You should see a dialog that says: The import was successful.
 
 After adding the certificate to this storage, `FluentDL_Certificate.cer` should be trusted and the MSIX install button should not be greyed out anymore.
+
+### Authentication
+
+Before using the application, head over to the settings page through the sidebar. 
+
+For the sources Deezer, Qobuz, and Youtube, no authentication is required for searches (each have public APIs). 
+
+Spotify will require API tokens (a client ID and client secret) which can be entered in the settings page. For more details on obtaining these tokens, visit the [official documentation](https://developer.spotify.com/documentation/web-api/tutorials/getting-started).
