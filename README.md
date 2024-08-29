@@ -48,7 +48,7 @@ FluentDL is organized into three sections: Search, Local Explorer, and Queue.
   </tr>
   <tr>
     <td valign="top">
-      <strong>Queue</h4>
+      <strong>Queue</strong>
       <ul>
         <li>Add files from Search or Local Explorer into the queue</li>
         <li>Run custom terminal tools on tracks (with wildcards)</li>
