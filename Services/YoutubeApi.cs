@@ -48,7 +48,7 @@ namespace FluentDL.Services
 
             try
             {
-                searchResults = await ytm.SearchAsync<Song>(query, token);
+                searchResults = await ytm.SearchAsync<Song>(query, limit, token);
             }
             catch (Exception e)
             {
@@ -111,7 +111,7 @@ namespace FluentDL.Services
 
             if (!string.IsNullOrWhiteSpace(albumName)) // Album was specified
             {
-                var searchResults = await ytm.SearchAsync<Album>(albumName, token); // Search for album first
+                var searchResults = await ytm.SearchAsync<Album>(albumName, 15, token); // Search for album first
 
                 if (token.IsCancellationRequested) return; // If cancelled
 
@@ -246,7 +246,7 @@ namespace FluentDL.Services
                 if (isTrackSpecified) // If artist and track are specified
                 {
                     var query = artistName + " " + trackName;
-                    var searchResults = await ytm.SearchAsync<Song>(query, token);
+                    var searchResults = await ytm.SearchAsync<Song>(query, 2 * limit, token);
                     if (token.IsCancellationRequested) return; // If cancelled
 
                     foreach (var song in searchResults)
@@ -275,7 +275,7 @@ namespace FluentDL.Services
                 }
                 else // If only artist is specified
                 {
-                    var artistResults = await ytm.SearchAsync<Artist>(artistName, token);
+                    var artistResults = await ytm.SearchAsync<Artist>(artistName, 15, token);
                     if (token.IsCancellationRequested) return; // If cancelled
 
                     foreach (var artistResult in artistResults)
@@ -550,7 +550,7 @@ namespace FluentDL.Services
             IEnumerable<Album>? searchResults = null;
             try
             {
-                searchResults = await ytm.SearchAsync<Album>(albumName, token); // Search for album first
+                searchResults = await ytm.SearchAsync<Album>(albumName, 15, token); // Search for album first
             }
             catch (Exception e)
             {
@@ -627,7 +627,7 @@ namespace FluentDL.Services
 
             // Try searching without album
             var query = artistName + " " + trackName;
-            var searchResults2 = await ytm.SearchAsync<Song>(query, token);
+            var searchResults2 = await ytm.SearchAsync<Song>(query, 20, token);
 
             if (token.IsCancellationRequested) return null; // If cancelled
 

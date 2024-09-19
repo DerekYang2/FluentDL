@@ -31,10 +31,17 @@ internal class QobuzApi
         {
             await Task.Run(() =>
             {
-                if (!string.IsNullOrWhiteSpace(userId) && !string.IsNullOrWhiteSpace(AuthToken))
+                try
                 {
-                    apiService.LoginWithToken(userId, AuthToken);
-                    IsInitialized = true;
+                    if (!string.IsNullOrWhiteSpace(userId) && !string.IsNullOrWhiteSpace(AuthToken))
+                    {
+                        apiService.LoginWithToken(userId, AuthToken);
+                        IsInitialized = true;
+                    }
+                }
+                catch (Exception e)
+                {
+                    Debug.WriteLine("Failed to init Qobuz: " + e.Message);
                 }
             });
         }
