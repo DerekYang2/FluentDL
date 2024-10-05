@@ -59,7 +59,7 @@ internal class QobuzApi
             return;
         }
 
-        var results = await Task.Run(() => apiService.SearchTracks(query, limit), token);
+        var results = await Task.Run(() => apiService.SearchTracks(query, limit, withAuth: true), token);
 
         if (results == null || results.Tracks == null)
         {
@@ -100,7 +100,7 @@ internal class QobuzApi
 
         if (!string.IsNullOrWhiteSpace(albumName))
         {
-            var albumResults = await Task.Run(() => apiService.SearchAlbums(albumName, 5), token);
+            var albumResults = await Task.Run(() => apiService.SearchAlbums(albumName, 5, withAuth: true), token);
 
             if (token.IsCancellationRequested) return; // Check if task is cancelled
 
@@ -129,7 +129,7 @@ internal class QobuzApi
 
                 if (oneArtistMatch && CloseMatch(albumName, album.Title))
                 {
-                    var fullAlbumObj = await Task.Run(() => apiService.GetAlbum(album.Id), token);
+                    var fullAlbumObj = await Task.Run(() => apiService.GetAlbum(album.Id, withAuth: true), token);
 
                     if (fullAlbumObj == null || fullAlbumObj.Tracks == null || fullAlbumObj.Tracks.Items.Count == 0) continue;
 
@@ -179,7 +179,7 @@ internal class QobuzApi
 
                 do // Iterate through all tracks of the artist
                 {
-                    var result = await Task.Run(() => apiService.SearchTracks(artistName + " " + trackName, 10, offset), token);
+                    var result = await Task.Run(() => apiService.SearchTracks(artistName + " " + trackName, 10, offset, withAuth: true), token);
 
                     if (token.IsCancellationRequested) return; // Check if task is cancelled
 
@@ -221,7 +221,7 @@ internal class QobuzApi
 
                 do
                 {
-                    var result = await Task.Run(() => apiService.SearchTracks(artistName, 10, offset), token);
+                    var result = await Task.Run(() => apiService.SearchTracks(artistName, 10, offset, withAuth: true), token);
                     if (token.IsCancellationRequested) return; // Check if task is cancelled
 
                     if (result.Tracks != null && result.Tracks.Items.Count > 0)
@@ -269,14 +269,14 @@ internal class QobuzApi
 
         if (isTrack)
         {
-            var track = apiService.GetTrack(id);
+            var track = apiService.GetTrack(id, withAuth: true);
             itemSource.Add(ConvertSongSearchObject(track));
 
             statusUpdate?.Invoke(InfoBarSeverity.Success, $"<b>Qobuz</b>   Loaded track <a href=\"{url}\">{track.Title}</a>"); // Show a success message
         }
         else if (isAlbum)
         {
-            var album = await Task.Run(() => apiService.GetAlbum(id), token);
+            var album = await Task.Run(() => apiService.GetAlbum(id, withAuth: true), token);
 
             if (album.Tracks != null && album.Tracks.Items.Count > 0)
             {
@@ -298,7 +298,7 @@ internal class QobuzApi
         }
         else if (isPlaylist)
         {
-            var playlist = await Task.Run(() => apiService.GetPlaylist(id, withAuth: IsInitialized), token);
+            var playlist = await Task.Run(() => apiService.GetPlaylist(id, withAuth: true), token);
 
             if (playlist.Tracks != null && playlist.Tracks.Items.Count > 0)
             {
@@ -312,7 +312,7 @@ internal class QobuzApi
                         return;
                     }
 
-                    itemSource.Add(await Task.Run(() => ConvertSongSearchObject(apiService.GetTrack(track.Id.ToString())), token));
+                    itemSource.Add(await Task.Run(() => ConvertSongSearchObject(apiService.GetTrack(track.Id.ToString(), withAuth: true)), token));
                 }
 
                 statusUpdate?.Invoke(InfoBarSeverity.Success, $"<b>Qobuz</b>   Loaded playlist <a href='{url}'>{playlist.Name}</a>"); // Show a success message
@@ -380,7 +380,7 @@ internal class QobuzApi
 
     public static async Task<Track> GetInternalTrack(string id)
     {
-        return await Task.Run(() => apiService.GetTrack(id));
+        return await Task.Run(() => apiService.GetTrack(id, withAuth: true));
     }
 
     public static async Task<SongSearchObject?> GetTrackAsync(int? id, CancellationToken token = default)
@@ -391,7 +391,7 @@ internal class QobuzApi
 
     public static async Task<SongSearchObject?> GetTrackAsync(string id, CancellationToken token = default)
     {
-        var track = await Task.Run(() => apiService.GetTrack(id), token);
+        var track = await Task.Run(() => apiService.GetTrack(id, withAuth: true), token);
         if (track == null)
         {
             return null;
@@ -408,7 +408,7 @@ internal class QobuzApi
 
     public static SongSearchObject? GetTrack(string id)
     {
-        var track = apiService.GetTrack(id);
+        var track = apiService.GetTrack(id, withAuth: true);
         if (track == null)
         {
             return null;
@@ -429,7 +429,7 @@ internal class QobuzApi
 
             do
             {
-                var result = await Task.Run(() => apiService.SearchTracks(query, 5, offset), token); // Search through chunks of 5 tracks
+                var result = await Task.Run(() => apiService.SearchTracks(query, 5, offset, withAuth: true), token); // Search through chunks of 5 tracks
                 if (token.IsCancellationRequested) return null;
 
                 if (result.Tracks == null || result.Tracks.Items.Count == 0)
@@ -470,7 +470,7 @@ internal class QobuzApi
         var trackName = songObj.Title;
 
         // Search by album
-        var albumResults = await Task.Run(() => apiService.SearchAlbums(albumName, 5), token);
+        var albumResults = await Task.Run(() => apiService.SearchAlbums(albumName, 5, withAuth: true), token);
 
         if (token.IsCancellationRequested) return null; // Check if task is cancelled
 
@@ -494,7 +494,7 @@ internal class QobuzApi
 
             if (oneArtistMatch && CloseMatch(albumName, album.Title)) // Album close match
             {
-                var fullAlbumObj = await Task.Run(() => apiService.GetAlbum(album.Id), token);
+                var fullAlbumObj = await Task.Run(() => apiService.GetAlbum(album.Id, withAuth: true), token);
 
                 if (fullAlbumObj == null || fullAlbumObj.Tracks == null || fullAlbumObj.Tracks.Items.Count == 0) continue;
 
@@ -525,7 +525,7 @@ internal class QobuzApi
         }
 
         // Try searching without album, same as above
-        var searchResult = await Task.Run(() => apiService.SearchTracks(query, 10), token);
+        var searchResult = await Task.Run(() => apiService.SearchTracks(query, 10, withAuth: true), token);
 
         if (token.IsCancellationRequested) return null; // Check if task is cancelled
 

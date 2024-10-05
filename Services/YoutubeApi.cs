@@ -311,7 +311,7 @@ namespace FluentDL.Services
 
         public static async Task AddTracksFromLink(ObservableCollection<SongSearchObject> itemSource, string url, CancellationToken token, Search.UrlStatusUpdateCallback? statusUpdate)
         {
-            if (url.StartsWith("https://www.youtube.com/watch?"))
+            if (url.StartsWith("https://www.youtube.com/watch?") || url.StartsWith("https://youtube.com/watch?")) // Youtube video
             {
                 var video = await youtube.Videos.GetAsync(url);
                 var songObj = await ConvertSongSearchObject(video);
@@ -343,12 +343,17 @@ namespace FluentDL.Services
                 }
             }
 
-            if (url.StartsWith("https://www.youtube.com/playlist?") || url.StartsWith("https://music.youtube.com/playlist?"))
+            if (url.StartsWith("https://www.youtube.com/playlist?") || url.StartsWith("https://youtube.com/playlist?") || url.StartsWith("https://music.youtube.com/playlist?"))
             {
+                // remove &si= and everything after in the url if it exists
+                url = url.Split("&si=")[0];
+
                 var playlistName = (await youtube.Playlists.GetAsync(url)).Title;
 
                 // Show a permanent, loading message
                 statusUpdate?.Invoke(InfoBarSeverity.Informational, $"<b>YouTube</b>   Loading playlist <a href='{url}'>{playlistName}</a>", -1);
+
+                itemSource.Clear(); // Clear the item source
 
                 try
                 {

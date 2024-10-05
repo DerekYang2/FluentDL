@@ -411,6 +411,7 @@ public sealed partial class Search : Page
             }
         };
 
+
         if (generalQuery.StartsWith("https://open.spotify.com/"))
         {
             await SpotifyApi.AddTracksFromLink((ObservableCollection<SongSearchObject>)CustomListView.ItemsSource, generalQuery, cancellationTokenSource.Token, statusUpdate);
@@ -429,7 +430,7 @@ public sealed partial class Search : Page
         {
             await QobuzApi.AddTracksFromLink((ObservableCollection<SongSearchObject>)CustomListView.ItemsSource, generalQuery, cancellationTokenSource.Token, statusUpdate);
         }
-        else if (generalQuery.StartsWith("https://www.youtube.com/") || generalQuery.StartsWith("https://music.youtube.com/"))
+        else if (generalQuery.StartsWith("https://www.youtube.com/") || generalQuery.StartsWith("https://youtube.com/") || generalQuery.StartsWith("https://music.youtube.com/"))
         {
             await YoutubeApi.AddTracksFromLink((ObservableCollection<SongSearchObject>)CustomListView.ItemsSource, generalQuery, cancellationTokenSource.Token, statusUpdate);
         }

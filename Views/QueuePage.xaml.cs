@@ -448,7 +448,7 @@ public sealed partial class QueuePage : Page
             }
         }
 
-        ShowInfoBarPermanent(InfoBarSeverity.Informational, $"Saving <a href='{ApiHelper.GetUrl(songObj)}'>{songObj.Title}</a> to <a href='{directory}'>{Path.GetDirectoryName(directory)}</a>", title: "Download in Progress");
+        ShowInfoBarPermanent(InfoBarSeverity.Informational, $"Saving <a href='{ApiHelper.GetUrl(songObj)}'>{songObj.Title}</a> to <a href='{directory}'>{directory}</a>", title: "Download in Progress");
 
         InfobarProgress.Visibility = Visibility.Visible; // Show the infobar's progress bar
 

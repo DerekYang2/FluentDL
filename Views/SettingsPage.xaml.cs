@@ -92,7 +92,7 @@ public sealed partial class SettingsPage : Page
         QobuzTokenInput.LostFocus += QobuzTokenInput_OnLostFocus;
 
         // Set source combo box
-        var searchSource = await localSettings.ReadSettingAsync<string>(SettingsViewModel.SearchSource);
+        var searchSource = await localSettings.ReadSettingAsync<string>(SettingsViewModel.SearchSource) ?? "Deezer";
         foreach (ComboBoxItem cbi in SearchSourceComboBox.Items)
         {
             if (cbi.Content as string == searchSource)
