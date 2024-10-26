@@ -106,7 +106,7 @@ For the sources Deezer, Qobuz, and Youtube, no authentication is required for se
 
 Spotify will require API tokens (a client ID and client secret) which can be entered in the settings page. For more details on obtaining these tokens, visit the [official documentation](https://developer.spotify.com/documentation/web-api/tutorials/getting-started).
 
-Deezer and Qobuz are authenticated through ARLs and Tokens respectively. Support for username/email and password logins for Qobuz may be supported in the future. 
+Deezer and Qobuz are authenticated through ARLs and Tokens respectively. Support for username/email and password logins for Qobuz may be supported in the future. You do not have to login each time, but may need to occasionally re-enter new tokens after expiry or web-player changes.
 
 ### Retrieving Tokens
 
