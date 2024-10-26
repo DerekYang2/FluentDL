@@ -8,9 +8,6 @@
   <a href="#manual-installation">Manual Installation</a> •
    <a href="#authentication">Authentication</a>
 </p>
-<p align="center">
-  <img src="./SampleGifs/FluentDL_demo.webp" alt="Sample Webp" />
-</p>
 
 ## About
 A Fluent UI desktop application that helps you manage your local music files, perform audio format conversions, download songs, match songs between different online sources, and more. This project was made with [WinUI 3](https://github.com/microsoft/microsoft-ui-xaml) and [TemplateStudio](https://github.com/microsoft/TemplateStudio). Under the hood, the app uses FFmpeg and APIs from Deezer, Qobuz, Spotify, and Youtube.
@@ -101,7 +98,7 @@ Next, the certificate pop-up will explain how to add the certificate to "Trusted
 
 After adding the certificate to this storage, `FluentDL_Certificate.cer` should be trusted and you may now run `FluentDL_{VERSION}_x64_MSIX.msix`.
 
-### Authentication
+## Authentication
 
 Before using the application, head over to the settings page through the sidebar. 
 
@@ -110,3 +107,9 @@ For the sources Deezer, Qobuz, and Youtube, no authentication is required for se
 Spotify will require API tokens (a client ID and client secret) which can be entered in the settings page. For more details on obtaining these tokens, visit the [official documentation](https://developer.spotify.com/documentation/web-api/tutorials/getting-started).
 
 Deezer and Qobuz are authenticated through ARLs and Tokens respectively. Support for username/email and password logins for Qobuz may be supported in the future. 
+
+### Retrieving Tokens
+
+In order to obtain your Deezer ARL, log into [https://www.deezer.com/](https://www.deezer.com/). Then open Developer Tools, and head to the `Application` tab. In the sidebar, open the dropdown list for `Cookies` and there should be an subitem `https://www.deezer.com/`. Click on the subitem and to find the the `arl` value, which should be 192 characters long. Note that you should open the _dropdown_ for the `Cookies` section, not click on it.
+
+Similarly, to obtain a Qobuz id and token, log into [https://play.qobuz.com/](https://play.qobuz.com/) and open Developer Tools. Head over the `Application` tab, open the dropdown list for `Local Storage` and click on the subitem `https://play.qobuz.com`. You should then click on the `localuser` JSON object in the viewing window, where you can find the fields `id` (7 digits) and `token` (86 characters). 
