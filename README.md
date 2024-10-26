@@ -9,6 +9,10 @@
    <a href="#authentication">Authentication</a>
 </p>
 
+<p align="center">
+  <img src="./SampleGifs/FluentDL_demo.webp" alt="Sample Webp" />
+</p>
+
 ## About
 A Fluent UI desktop application that helps you manage your local music files, perform audio format conversions, download songs, match songs between different online sources, and more. This project was made with [WinUI 3](https://github.com/microsoft/microsoft-ui-xaml) and [TemplateStudio](https://github.com/microsoft/TemplateStudio). Under the hood, the app uses FFmpeg and APIs from Deezer, Qobuz, Spotify, and Youtube.
 
