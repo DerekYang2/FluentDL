@@ -460,7 +460,7 @@ public sealed partial class QueuePage : Page
                 InfobarProgress.Visibility = Visibility.Collapsed; // Hide the infobar's progress bar
                 if (severity == InfoBarSeverity.Error)
                 {
-                    ShowInfoBar(severity, $"Failed to download <a href='{ApiHelper.GetUrl(songObj)}'>{songObj.Title}</a>", 5);
+                    ShowInfoBar(severity, $"Error: {location ?? "unknown"}", 5);
                 }
                 else if (severity == InfoBarSeverity.Success)
                 {

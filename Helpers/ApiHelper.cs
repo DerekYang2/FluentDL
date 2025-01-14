@@ -229,7 +229,7 @@ internal class ApiHelper
             }
             catch (Exception e)
             {
-                callback?.Invoke(InfoBarSeverity.Error, song);
+                callback?.Invoke(InfoBarSeverity.Error, song, e.Message);
                 Debug.WriteLine("Failed to download song: " + e.Message);
             }
         }
@@ -245,7 +245,7 @@ internal class ApiHelper
             }
             catch (Exception e)
             {
-                callback?.Invoke(InfoBarSeverity.Error, song);
+                callback?.Invoke(InfoBarSeverity.Error, song, e.Message);
                 Debug.WriteLine("Failed to download song: " + e.Message);
             }
         }
@@ -261,7 +261,7 @@ internal class ApiHelper
             }
             catch (Exception e)
             {
-                callback?.Invoke(InfoBarSeverity.Error, song);
+                callback?.Invoke(InfoBarSeverity.Error, song, e.Message);
                 Debug.WriteLine("Failed to download song: " + e.Message);
             }
         }
