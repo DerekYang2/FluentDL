@@ -1,4 +1,4 @@
-﻿using System.Collections.ObjectModel;
+using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -322,7 +322,7 @@ internal class QobuzApi
 
     public static SongSearchObject ConvertSongSearchObject(Track track)
     {
-        var listedArtist = track.Performer.Name;
+        var listedArtist = track.Performer == null ? "unlisted" : track.Performer.Name;
         var contribList = GetAllContributorsList(track.Performers);
 
         if (contribList.Contains(listedArtist)) // Move listed artist to the front
