@@ -40,7 +40,7 @@ FluentDL is organized into three sections: Search, Local Explorer, and Queue.
         <li>Upload files from your computer or scan all audio files in a folder</li>
         <li>View file metadata and technical audio specs in-depth</li>
         <li>Edit file metadata live, including option to change cover art!</li>
-        <li>Convert between any of these formats: flac, mp3, aac, alac, vorbis, opus</li>
+        <li>Convert between flac, mp3, aac, alac, vorbis, opus with control over bitrate</li>
       </ul>
     </td>
     <td>
@@ -54,7 +54,8 @@ FluentDL is organized into three sections: Search, Local Explorer, and Queue.
         <li>Add files from Search or Local Explorer into the queue</li>
         <li>Run custom terminal tools on tracks (with wildcards)</li>
         <li>Match between any of the online sources (e.g., convert Spotify and YouTube to Deezer equivalents)</li>
-        <li>Download tracks from online sources</li>
+        <li>Download tracks from Deezer, Qobuz, or Youtube</li>
+        <li>Download entire queue using Convert: select Local as output</li>
       </ul>
     </td>
     <td>
@@ -63,15 +64,17 @@ FluentDL is organized into three sections: Search, Local Explorer, and Queue.
   </tr>
 </table>
 
+TIP: change the number of threads in settings for significantly faster conversions, matching, and downloading.
+
 ## Setup
 
 In order to run these project in Visual Studio, you must have WinUI 3 setup (Template Studio is not required).
 
 WinUI 3 can be automatically configured using the Visual Studio Installer or manual installation. See the [official documentation](https://learn.microsoft.com/en-us/windows/apps/winui/winui3/create-your-first-winui3-app) for full details.
 
-All dependencies should be automatically handled by Visual Studio and can be found on NuGet. There is one package [MarqueeText](https://dev.azure.com/dotnet/CommunityToolkit/_artifacts/feed/CommunityToolkit-Labs/NuGet/CommunityToolkit.Labs.WinUI.MarqueeText) that has to be installed manually.
+All dependencies should be automatically handled by Visual Studio and can be found on NuGet. There is one package [MarqueeText](https://dev.azure.com/dotnet/CommunityToolkit/_artifacts/feed/CommunityToolkit-Labs/NuGet/CommunityToolkit.Labs.WinUI.MarqueeText) that was installed manually.
 
-A pre-built FFmpeg executable can be found in [./Assets/ffmpeg/bin](https://github.com/DerekYang2/FluentDL/tree/master/Assets/ffmpeg/bin) and contains many additional codecs, such as libopus and libvorbis. You may use your own FFmpeg binaries, but note that libopus is required for proper Youtube downloading. 
+A pre-built FFmpeg executable can be found in [./Assets/ffmpeg/bin](https://github.com/DerekYang2/FluentDL/tree/master/Assets/ffmpeg/bin) and contains many additional codecs, such as libopus and libvorbis. You may use your own FFmpeg binaries, but note that libopus is required for Youtube's highest quality source.
 
 ## Installation and Running
 This project is deployed using MSIX, which installs the application on Windows. To install this application, download the first zip from [Releases](https://github.com/DerekYang2/FluentDL/releases).
@@ -82,8 +85,6 @@ The application may be installed directly using a powershell script located in t
 ```powershell.exe -executionpolicy unrestricted .\Install.ps1```
 
 The application is now installed, and you should be able to find "FluentDL" with Search or in your Apps list.
-
-Running powershell scripts must be enabled by the user, but `-executionpolicy unrestricted` overrides these rules just for the single command.
 
 ### Manual Installation
 Running the `FluentDL_{VERSION}_x64_MSIX.msix` file will open the Microsoft Store installer prompt that handles the installation and all dependencies (including the FFmpeg executable). This installation process requires an extra step because the certificate is currently self-signed. It must be trusted by the user before running the MSIX installer, otherwise the install button is greyed-out.
@@ -106,13 +107,16 @@ After adding the certificate to this storage, `FluentDL_Certificate.cer` should 
 
 Before using the application, head over to the settings page through the sidebar. 
 
-For the sources Deezer, Qobuz, and Youtube, no authentication is required for searches (each have public APIs). 
+Searching songs does not require authentication, however Spotify is the only exception. Spotify will require API tokens (a client ID and client secret) which can be entered in the settings page. For more details on obtaining these tokens, visit the [official documentation](https://developer.spotify.com/documentation/web-api/tutorials/getting-started).
 
-Spotify will require API tokens (a client ID and client secret) which can be entered in the settings page. For more details on obtaining these tokens, visit the [official documentation](https://developer.spotify.com/documentation/web-api/tutorials/getting-started).
+Downloading from Youtube does not require authentication.
+Downloading from Deezer and Qobuz require authenticated through ARLs and Tokens respectively. 
+You do not have re-enter credentials each time because they are stored locally. Note that tokens expire or may break due to occasional web-player changes. 
 
-Deezer and Qobuz are authenticated through ARLs and Tokens respectively. Support for username/email and password logins for Qobuz may be supported in the future. You do not have to login each time, but may need to occasionally re-enter new tokens after expiry or web-player changes.
+Deezer and Qobuz FLAC sources are only accessible with premium accounts. [Here](https://erikstechcorner.com/2020/09/how-to-check-if-your-flac-files-are-really-lossless/) is a guide on using Spek to verify your file quality.
 
 ### Retrieving Tokens
+If you already have them, enter them in settings. Otherwise:
 
 In order to obtain your Deezer ARL, log into [https://www.deezer.com/](https://www.deezer.com/). Then open Developer Tools, and head to the `Application` tab. In the sidebar, open the dropdown list for `Cookies` and there should be an subitem `https://www.deezer.com/`. Click on the subitem and to find the the `arl` value, which should be 192 characters long. Note that you should open the _dropdown_ for the `Cookies` section, not click on it.
 
