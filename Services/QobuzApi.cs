@@ -1,4 +1,4 @@
-﻿using System.Collections.ObjectModel;
+using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -332,7 +332,7 @@ internal class QobuzApi
 
     public static SongSearchObject ConvertSongSearchObject(Track track)
     {
-        var listedArtist = track.Performer == null ? "unlisted" : track.Performer.Name;
+        var listedArtist = track.Performer?.Name ?? "unlisted";
         var contribList = GetAllContributorsList(track.Performers);
 
         if (contribList.Contains(listedArtist)) // Move listed artist to the front
@@ -361,7 +361,7 @@ internal class QobuzApi
 
     public static SongSearchObject CreateSongSearchObject(Track track, Album album)
     {
-        var listedArtist = track.Performer.Name;
+        var listedArtist = track.Performer?.Name ?? "unlisted";
         var contribList = GetAllContributorsList(track.Performers);
 
         if (contribList.Contains(listedArtist)) // Move listed artist to the front
@@ -516,7 +516,7 @@ internal class QobuzApi
                     foreach (var artist in artists) // For every artist in SongObject
                     {
                         var a1 = ApiHelper.PrunePunctuation(artist.ToLower());
-                        var performerPrune = ApiHelper.PrunePunctuation(track.Performers.ToLower());
+                        var performerPrune = ApiHelper.PrunePunctuation(track.Performers?.ToLower() ?? "");
                         if (performerPrune.Contains(a1)) // Check if artist is in performers
                         {
                             oneArtistMatch = true;
@@ -572,6 +572,11 @@ internal class QobuzApi
 
     public static List<string> GetAllContributorsList(string performerStr)
     {
+        if (string.IsNullOrWhiteSpace(performerStr))  // Issue with QobuzAPI, should be nullable but is not
+        {
+            return new List<string>();
+        }
+
         var performers = performerStr
             .Split(new string[] { " - " }, StringSplitOptions.None)
             .Select(performer => performer.Split(',')) // Split name & roles in best effort by ',', first part is name, next parts roles
@@ -602,12 +607,6 @@ internal class QobuzApi
 
         return artistList.ToList();
     }
-
-    public static string GetAllContributors(string performerStr)
-    {
-        return string.Join(", ", GetAllContributorsList(performerStr));
-    }
-
 
     public static async Task<string> DownloadTrack(string filePath, SongSearchObject song, string? format = null)
     {
@@ -669,7 +668,7 @@ internal class QobuzApi
     {
         var track = await GetInternalTrack(trackId);
 
-        var listedArtist = track.Performer.Name;
+        var listedArtist = track.Performer?.Name ?? "unlisted";
         var contribList = GetAllContributorsList(track.Performers);
 
         if (contribList.Contains(listedArtist)) // Move listed artist to the front
