@@ -13,7 +13,7 @@
 </p>
 
 ## About
-A Fluent UI desktop application that helps you manage your local music files, perform audio format conversions, download songs, match songs between different online sources, and more. This project was made with [WinUI 3](https://github.com/microsoft/microsoft-ui-xaml) and [TemplateStudio](https://github.com/microsoft/TemplateStudio). Under the hood, the app uses FFmpeg and APIs from Deezer, Qobuz, Spotify, and Youtube.
+A Fluent UI desktop application that helps you download lossless songs as FLACs, convert between audio formats, match songs between different online sources, edit song metadata, and more. This project was made with [WinUI 3](https://github.com/microsoft/microsoft-ui-xaml) and [TemplateStudio](https://github.com/microsoft/TemplateStudio). Under the hood, the app uses FFmpeg and APIs from Deezer, Qobuz, Spotify, and Youtube.
 
 FluentDL is organized into three sections: Search, Local Explorer, and Queue.
 
@@ -53,7 +53,7 @@ FluentDL is organized into three sections: Search, Local Explorer, and Queue.
         <li>Add files from Search or Local Explorer into the queue</li>
         <li>Run custom terminal tools on tracks (with wildcards)</li>
         <li>Match between any of the online sources (e.g., convert Spotify and YouTube to Deezer equivalents)</li>
-        <li>Download tracks from Deezer, Qobuz, or Youtube</li>
+        <li>Download tracks from Deezer, Qobuz, or Youtube with maximum quality</li>
         <li>Download entire queue using Convert: select Local as output</li>
       </ul>
     </td>
@@ -81,7 +81,7 @@ Right click on `Install.ps1` and press `Run with PowerShell`.
 
 ### Option 2
 
-If that option is not available, open Powershell or CMD into this directory and run the command:
+If that option is not available, open Powershell or CMD into the root directory and run the command:
 
 ```powershell.exe -executionpolicy unrestricted .\Install.ps1```
 
