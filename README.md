@@ -3,7 +3,7 @@
 </h1>
 <p align="center">
   <a href="#about">About</a> •
-  <a href="#setup">Setup</a> •
+  <a href="#build">Build</a> •
   <a href="#easy-installation">Installation and Running</a> •
   <a href="#manual-installation">Manual Installation</a> •
    <a href="#authentication">Authentication</a>
@@ -66,15 +66,9 @@ FluentDL is organized into three sections: Search, Local Explorer, and Queue.
 
 TIP: change the number of threads in settings for significantly faster conversions, matching, and downloading.
 
-## Setup
+## Build
 
-NOTE: Currently broken, the Core is missing.
-
-In order to run these project in Visual Studio, you must have WinUI 3 setup (Template Studio is not required).
-
-WinUI 3 can be automatically configured using the Visual Studio Installer or manual installation. See the [official documentation](https://learn.microsoft.com/en-us/windows/apps/winui/winui3/create-your-first-winui3-app) for full details.
-
-All dependencies should be automatically handled by Visual Studio and can be found on NuGet. There is one package [MarqueeText](https://dev.azure.com/dotnet/CommunityToolkit/_artifacts/feed/CommunityToolkit-Labs/NuGet/CommunityToolkit.Labs.WinUI.MarqueeText) that was installed manually.
+NOTE: Currently not working, Core is missing.
 
 A pre-built FFmpeg executable can be found in [./Assets/ffmpeg/bin](https://github.com/DerekYang2/FluentDL/tree/master/Assets/ffmpeg/bin) and contains many additional codecs, such as libopus and libvorbis. You may use your own FFmpeg binaries, but note that libopus is required for Youtube's highest quality source.
 
