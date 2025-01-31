@@ -55,6 +55,7 @@ internal class QobuzApi
             catch (Exception e)
             {
                 Debug.WriteLine("Failed to init Qobuz: " + e.Message);
+                authCallback?.Invoke(false);
             }
         }
     }
