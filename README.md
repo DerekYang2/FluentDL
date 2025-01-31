@@ -74,9 +74,12 @@ A pre-built FFmpeg executable can be found in [./Assets/ffmpeg/bin](https://gith
 ## Installation 
 This project is deployed using MSIX, which installs the application on Windows. To install this application, download the first zip from [Releases](https://github.com/DerekYang2/FluentDL/releases).
 
+### Option 1
 The application may be installed directly using a powershell script located in the zip folder. In the root folder inside of the zip, you should see an `Install.ps1` file and other files such as `FluentDL_{VERSION}_x64_MSIX.msix`. 
 
 Right click on `Install.ps1` and press `Run with PowerShell`.
+
+### Option 2
 
 If that option is not available, open Powershell or CMD into this directory and run the command:
 
