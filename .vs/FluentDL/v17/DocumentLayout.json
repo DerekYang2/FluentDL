@@ -1,0 +1,310 @@
+{
+  "Version": 1,
+  "WorkspaceRootPath": "D:\\projects\\FluentDL\\",
+  "Documents": [
+    {
+      "AbsoluteMoniker": "D:0:0:{0B1B85AE-57F6-472A-AF61-C017BE8E153B}|FluentDL.csproj|d:\\projects\\fluentdl\\fluentdl.csproj||{04B8AB82-A572-4FEF-95CE-5222444B6B64}|",
+      "RelativeMoniker": "D:0:0:{0B1B85AE-57F6-472A-AF61-C017BE8E153B}|FluentDL.csproj|solutionrelative:fluentdl.csproj||{04B8AB82-A572-4FEF-95CE-5222444B6B64}|"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{0B1B85AE-57F6-472A-AF61-C017BE8E153B}|FluentDL.csproj|d:\\projects\\fluentdl\\services\\activationservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{0B1B85AE-57F6-472A-AF61-C017BE8E153B}|FluentDL.csproj|solutionrelative:services\\activationservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{0B1B85AE-57F6-472A-AF61-C017BE8E153B}|FluentDL.csproj|d:\\projects\\fluentdl\\services\\youtubeapi.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{0B1B85AE-57F6-472A-AF61-C017BE8E153B}|FluentDL.csproj|solutionrelative:services\\youtubeapi.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{0B1B85AE-57F6-472A-AF61-C017BE8E153B}|FluentDL.csproj|d:\\projects\\fluentdl\\services\\qobuzapi.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{0B1B85AE-57F6-472A-AF61-C017BE8E153B}|FluentDL.csproj|solutionrelative:services\\qobuzapi.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{0B1B85AE-57F6-472A-AF61-C017BE8E153B}|FluentDL.csproj|d:\\projects\\fluentdl\\views\\search.xaml.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{0B1B85AE-57F6-472A-AF61-C017BE8E153B}|FluentDL.csproj|solutionrelative:views\\search.xaml.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{0B1B85AE-57F6-472A-AF61-C017BE8E153B}|FluentDL.csproj|d:\\projects\\fluentdl\\views\\settingspage.xaml.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{0B1B85AE-57F6-472A-AF61-C017BE8E153B}|FluentDL.csproj|solutionrelative:views\\settingspage.xaml.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{0B1B85AE-57F6-472A-AF61-C017BE8E153B}|FluentDL.csproj|d:\\projects\\fluentdl\\app.xaml.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{0B1B85AE-57F6-472A-AF61-C017BE8E153B}|FluentDL.csproj|solutionrelative:app.xaml.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{0B1B85AE-57F6-472A-AF61-C017BE8E153B}|FluentDL.csproj|d:\\projects\\fluentdl\\mainwindow.xaml.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{0B1B85AE-57F6-472A-AF61-C017BE8E153B}|FluentDL.csproj|solutionrelative:mainwindow.xaml.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{0B1B85AE-57F6-472A-AF61-C017BE8E153B}|FluentDL.csproj|d:\\projects\\fluentdl\\views\\queuepage.xaml.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{0B1B85AE-57F6-472A-AF61-C017BE8E153B}|FluentDL.csproj|solutionrelative:views\\queuepage.xaml.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{0B1B85AE-57F6-472A-AF61-C017BE8E153B}|FluentDL.csproj|d:\\projects\\fluentdl\\helpers\\apihelper.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{0B1B85AE-57F6-472A-AF61-C017BE8E153B}|FluentDL.csproj|solutionrelative:helpers\\apihelper.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{0B1B85AE-57F6-472A-AF61-C017BE8E153B}|FluentDL.csproj|d:\\projects\\fluentdl\\views\\settingspage.xaml||{F11ACC28-31D1-4C80-A34B-F4E09D3D753C}",
+      "RelativeMoniker": "D:0:0:{0B1B85AE-57F6-472A-AF61-C017BE8E153B}|FluentDL.csproj|solutionrelative:views\\settingspage.xaml||{F11ACC28-31D1-4C80-A34B-F4E09D3D753C}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{0B1B85AE-57F6-472A-AF61-C017BE8E153B}|FluentDL.csproj|d:\\projects\\fluentdl\\viewmodels\\settingsviewmodel.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{0B1B85AE-57F6-472A-AF61-C017BE8E153B}|FluentDL.csproj|solutionrelative:viewmodels\\settingsviewmodel.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{0B1B85AE-57F6-472A-AF61-C017BE8E153B}|FluentDL.csproj|d:\\projects\\fluentdl\\viewmodels\\searchviewmodel.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{0B1B85AE-57F6-472A-AF61-C017BE8E153B}|FluentDL.csproj|solutionrelative:viewmodels\\searchviewmodel.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{0B1B85AE-57F6-472A-AF61-C017BE8E153B}|FluentDL.csproj|d:\\projects\\fluentdl\\services\\pageservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{0B1B85AE-57F6-472A-AF61-C017BE8E153B}|FluentDL.csproj|solutionrelative:services\\pageservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{0B1B85AE-57F6-472A-AF61-C017BE8E153B}|FluentDL.csproj|d:\\projects\\fluentdl\\helpers\\metadataobject.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{0B1B85AE-57F6-472A-AF61-C017BE8E153B}|FluentDL.csproj|solutionrelative:helpers\\metadataobject.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{0B1B85AE-57F6-472A-AF61-C017BE8E153B}|FluentDL.csproj|d:\\projects\\fluentdl\\helpers\\converters.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{0B1B85AE-57F6-472A-AF61-C017BE8E153B}|FluentDL.csproj|solutionrelative:helpers\\converters.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{0B1B85AE-57F6-472A-AF61-C017BE8E153B}|FluentDL.csproj|d:\\projects\\fluentdl\\helpers\\storagepickerhelper.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{0B1B85AE-57F6-472A-AF61-C017BE8E153B}|FluentDL.csproj|solutionrelative:helpers\\storagepickerhelper.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    }
+  ],
+  "DocumentGroupContainers": [
+    {
+      "Orientation": 0,
+      "VerticalTabListWidth": 256,
+      "DocumentGroups": [
+        {
+          "DockedWidth": 190,
+          "SelectedChildIndex": 6,
+          "Children": [
+            {
+              "$type": "Document",
+              "DocumentIndex": 2,
+              "Title": "YoutubeApi.cs",
+              "DocumentMoniker": "D:\\projects\\FluentDL\\Services\\YoutubeApi.cs",
+              "RelativeDocumentMoniker": "Services\\YoutubeApi.cs",
+              "ToolTip": "D:\\projects\\FluentDL\\Services\\YoutubeApi.cs",
+              "RelativeToolTip": "Services\\YoutubeApi.cs",
+              "ViewState": "AgIAAAcEAAAAAAAAAAArwBUEAAANAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2024-09-19T15:31:13.109Z",
+              "IsPinned": true
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
+              "Title": "ActivationService.cs",
+              "DocumentMoniker": "D:\\projects\\FluentDL\\Services\\ActivationService.cs",
+              "RelativeDocumentMoniker": "Services\\ActivationService.cs",
+              "ToolTip": "D:\\projects\\FluentDL\\Services\\ActivationService.cs",
+              "RelativeToolTip": "Services\\ActivationService.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAsAAAABAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-01-30T17:35:17.169Z",
+              "IsPinned": true
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:0:0:{3ae79031-e1bc-11d0-8f78-00a0c9110057}"
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:128:0:{116d2292-e37d-41cd-a077-ebacac4c8cc4}"
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:0:0:{1c4feeaa-4718-4aa9-859d-94ce25d182ba}"
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:0:0:{aa2115a1-9712-457b-9047-dbb71ca2cdd2}"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 0,
+              "Title": "FluentDL",
+              "DocumentMoniker": "D:\\projects\\FluentDL\\FluentDL.csproj",
+              "RelativeDocumentMoniker": "FluentDL.csproj",
+              "ToolTip": "D:\\projects\\FluentDL\\FluentDL.csproj",
+              "RelativeToolTip": "FluentDL.csproj",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000758|",
+              "WhenOpened": "2025-01-31T15:52:04.381Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 4,
+              "Title": "Search.xaml.cs",
+              "DocumentMoniker": "D:\\projects\\FluentDL\\Views\\Search.xaml.cs",
+              "RelativeDocumentMoniker": "Views\\Search.xaml.cs",
+              "ToolTip": "D:\\projects\\FluentDL\\Views\\Search.xaml.cs",
+              "RelativeToolTip": "Views\\Search.xaml.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAPgCAAAhAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-01-30T16:23:17.731Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 5,
+              "Title": "SettingsPage.xaml.cs",
+              "DocumentMoniker": "D:\\projects\\FluentDL\\Views\\SettingsPage.xaml.cs",
+              "RelativeDocumentMoniker": "Views\\SettingsPage.xaml.cs",
+              "ToolTip": "D:\\projects\\FluentDL\\Views\\SettingsPage.xaml.cs",
+              "RelativeToolTip": "Views\\SettingsPage.xaml.cs",
+              "ViewState": "AgIAALwAAAAAAAAAAAAuwNoAAAARAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-01-26T02:19:33.222Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 3,
+              "Title": "QobuzApi.cs",
+              "DocumentMoniker": "D:\\projects\\FluentDL\\Services\\QobuzApi.cs",
+              "RelativeDocumentMoniker": "Services\\QobuzApi.cs",
+              "ToolTip": "D:\\projects\\FluentDL\\Services\\QobuzApi.cs",
+              "RelativeToolTip": "Services\\QobuzApi.cs",
+              "ViewState": "AgIAAAkAAAAAAAAAAAAAACgAAAARAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2024-08-13T22:52:10.051Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 7,
+              "Title": "MainWindow.xaml.cs",
+              "DocumentMoniker": "D:\\projects\\FluentDL\\MainWindow.xaml.cs",
+              "RelativeDocumentMoniker": "MainWindow.xaml.cs",
+              "ToolTip": "D:\\projects\\FluentDL\\MainWindow.xaml.cs",
+              "RelativeToolTip": "MainWindow.xaml.cs",
+              "ViewState": "AgIAABYAAAAAAAAAAAASwCEAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-01-30T17:42:20.796Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 9,
+              "Title": "ApiHelper.cs",
+              "DocumentMoniker": "D:\\projects\\FluentDL\\Helpers\\ApiHelper.cs",
+              "RelativeDocumentMoniker": "Helpers\\ApiHelper.cs",
+              "ToolTip": "D:\\projects\\FluentDL\\Helpers\\ApiHelper.cs",
+              "RelativeToolTip": "Helpers\\ApiHelper.cs",
+              "ViewState": "AgIAACkBAAAAAAAAAAAqwOkAAAANAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2024-08-22T00:49:46.095Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 6,
+              "Title": "App.xaml.cs",
+              "DocumentMoniker": "D:\\projects\\FluentDL\\App.xaml.cs",
+              "RelativeDocumentMoniker": "App.xaml.cs",
+              "ToolTip": "D:\\projects\\FluentDL\\App.xaml.cs",
+              "RelativeToolTip": "App.xaml.cs",
+              "ViewState": "AgIAAB8AAAAAAAAAAAAgwC4AAAAoAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-01-14T21:54:30.164Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 8,
+              "Title": "QueuePage.xaml.cs",
+              "DocumentMoniker": "D:\\projects\\FluentDL\\Views\\QueuePage.xaml.cs",
+              "RelativeDocumentMoniker": "Views\\QueuePage.xaml.cs",
+              "ToolTip": "D:\\projects\\FluentDL\\Views\\QueuePage.xaml.cs",
+              "RelativeToolTip": "Views\\QueuePage.xaml.cs",
+              "ViewState": "AgIAAG4DAAAAAAAAAAAAwD8AAAAtAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-01-30T16:59:11.154Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 10,
+              "Title": "SettingsPage.xaml",
+              "DocumentMoniker": "D:\\projects\\FluentDL\\Views\\SettingsPage.xaml",
+              "RelativeDocumentMoniker": "Views\\SettingsPage.xaml",
+              "ToolTip": "D:\\projects\\FluentDL\\Views\\SettingsPage.xaml",
+              "RelativeToolTip": "Views\\SettingsPage.xaml",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003549|",
+              "WhenOpened": "2025-01-26T02:19:28.771Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 12,
+              "Title": "SearchViewModel.cs",
+              "DocumentMoniker": "D:\\projects\\FluentDL\\ViewModels\\SearchViewModel.cs",
+              "RelativeDocumentMoniker": "ViewModels\\SearchViewModel.cs",
+              "ToolTip": "D:\\projects\\FluentDL\\ViewModels\\SearchViewModel.cs",
+              "RelativeToolTip": "ViewModels\\SearchViewModel.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-01-25T21:09:17.557Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 11,
+              "Title": "SettingsViewModel.cs",
+              "DocumentMoniker": "D:\\projects\\FluentDL\\ViewModels\\SettingsViewModel.cs",
+              "RelativeDocumentMoniker": "ViewModels\\SettingsViewModel.cs",
+              "ToolTip": "D:\\projects\\FluentDL\\ViewModels\\SettingsViewModel.cs",
+              "RelativeToolTip": "ViewModels\\SettingsViewModel.cs",
+              "ViewState": "AgIAAFYAAAAAAAAAAAAIwGQAAABVAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2024-08-21T22:29:26.613Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 13,
+              "Title": "PageService.cs",
+              "DocumentMoniker": "D:\\projects\\FluentDL\\Services\\PageService.cs",
+              "RelativeDocumentMoniker": "Services\\PageService.cs",
+              "ToolTip": "D:\\projects\\FluentDL\\Services\\PageService.cs",
+              "RelativeToolTip": "Services\\PageService.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAABEAAABHAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2024-08-22T14:35:16.956Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 16,
+              "Title": "StoragePickerHelper.cs",
+              "DocumentMoniker": "D:\\projects\\FluentDL\\Helpers\\StoragePickerHelper.cs",
+              "RelativeDocumentMoniker": "Helpers\\StoragePickerHelper.cs",
+              "ToolTip": "D:\\projects\\FluentDL\\Helpers\\StoragePickerHelper.cs",
+              "RelativeToolTip": "Helpers\\StoragePickerHelper.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAABUAAAAJAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2024-08-11T23:24:10.155Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 14,
+              "Title": "MetadataObject.cs",
+              "DocumentMoniker": "D:\\projects\\FluentDL\\Helpers\\MetadataObject.cs",
+              "RelativeDocumentMoniker": "Helpers\\MetadataObject.cs",
+              "ToolTip": "D:\\projects\\FluentDL\\Helpers\\MetadataObject.cs",
+              "RelativeToolTip": "Helpers\\MetadataObject.cs",
+              "ViewState": "AgIAAOoAAAAAAAAAAAAgwPkAAAANAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2024-08-20T17:55:36.172Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 15,
+              "Title": "Converters.cs",
+              "DocumentMoniker": "D:\\projects\\FluentDL\\Helpers\\Converters.cs",
+              "RelativeDocumentMoniker": "Helpers\\Converters.cs",
+              "ToolTip": "D:\\projects\\FluentDL\\Helpers\\Converters.cs",
+              "RelativeToolTip": "Helpers\\Converters.cs",
+              "ViewState": "AgIAAFIAAAAAAAAAAAAYwG0AAAAdAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2024-08-18T21:51:40.663Z"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
