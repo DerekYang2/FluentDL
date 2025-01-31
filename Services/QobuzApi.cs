@@ -1,4 +1,4 @@
-using System.Collections.ObjectModel;
+﻿using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -6,6 +6,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using ABI.Windows.Media.Core;
 using AngleSharp.Text;
+using FluentDL.Contracts.Services;
 using FluentDL.Helpers;
 using FluentDL.Models;
 using FluentDL.ViewModels;
@@ -23,33 +24,41 @@ internal class QobuzApi
 {
     private static QobuzApiService apiService = new QobuzApiService();
     public static bool IsInitialized = false;
+    public static bool customAppId = false;
+    // Add older or custom app id/secrets
+    public static string AppId = "";
+    public static string AppSecret = "";
 
-    public static async Task Initialize(string? userId, string? AuthToken)
+    public static void Initialize(string? userId, string? AuthToken, AuthenticationCallback? authCallback = null)
     {
         IsInitialized = false;
-        try
+
+        if (!string.IsNullOrWhiteSpace(userId) && !string.IsNullOrWhiteSpace(AuthToken))
         {
-            await Task.Run(() =>
+            try
             {
-                try
+                if (customAppId)
                 {
-                    if (!string.IsNullOrWhiteSpace(userId) && !string.IsNullOrWhiteSpace(AuthToken))
-                    {
-                        apiService.LoginWithToken(userId, AuthToken);
-                        IsInitialized = true;
-                    }
+                    apiService = new QobuzApiService(AppId, AppSecret);
                 }
-                catch (Exception e)
+                else
                 {
-                    Debug.WriteLine("Failed to init Qobuz: " + e.Message);
+                    apiService = new QobuzApiService();
                 }
-            });
-        }
-        catch (Exception e)
-        {
-            Debug.WriteLine(e.Message);
+
+                apiService.LoginWithToken(userId, AuthToken);
+                IsInitialized = true;
+                Debug.WriteLine("Qobuz initialized");
+                authCallback?.Invoke(IsInitialized);
+
+            }
+            catch (Exception e)
+            {
+                Debug.WriteLine("Failed to init Qobuz: " + e.Message);
+            }
         }
     }
+
 
     public static async Task GeneralSearch(ObservableCollection<SongSearchObject> itemSource, string query, CancellationToken token, int limit = 25)
     {

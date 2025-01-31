@@ -1,4 +1,4 @@
-﻿using System.Diagnostics;
+using System.Diagnostics;
 using FluentDL.Activation;
 using FluentDL.Contracts.Services;
 using FluentDL.Core.Contracts.Services;
@@ -114,11 +114,9 @@ public partial class App : Application
     {
         await Task.Delay(500);
         base.OnLaunched(args);
-
         // App.GetService<IAppNotificationService>().Show(string.Format("AppNotificationSamplePayload".GetLocalized(), AppContext.BaseDirectory));
 
         await App.GetService<IActivationService>().ActivateAsync(args);
-
         try
         {
             // Fetch previous command list
@@ -129,9 +127,20 @@ public partial class App : Application
 
             // Initialize api objects
             var localSettings = App.GetService<ILocalSettingsService>();
+
+            // Run seperate thread for synchronous Qobuz initialization
+            Thread thread = new Thread(() =>
+            {
+                var qobuzId = localSettings.ReadSettingAsync<string>(SettingsViewModel.QobuzId).GetAwaiter().GetResult();
+                var qobuzToken = localSettings.ReadSettingAsync<string>(SettingsViewModel.QobuzToken).GetAwaiter().GetResult();
+                QobuzApi.Initialize(qobuzId, qobuzToken);
+            });
+            thread.Priority = ThreadPriority.Highest;
+            thread.Start();
+
+
             await SpotifyApi.Initialize(await localSettings.ReadSettingAsync<string>(SettingsViewModel.SpotifyClientId), await localSettings.ReadSettingAsync<string>(SettingsViewModel.SpotifyClientSecret));
             await DeezerApi.InitDeezerClient(await localSettings.ReadSettingAsync<string>(SettingsViewModel.DeezerARL));
-            await QobuzApi.Initialize(await localSettings.ReadSettingAsync<string>(SettingsViewModel.QobuzId), await localSettings.ReadSettingAsync<string>(SettingsViewModel.QobuzToken));
         }
         catch (Exception e)
         {

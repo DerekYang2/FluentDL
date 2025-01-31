@@ -12,8 +12,11 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Controls.Primitives;
 using Microsoft.UI.Xaml.Input;
+using FluentDL.Models;
 
 namespace FluentDL.Views;
+
+public delegate void AuthenticationCallback(bool success); // Callback for conversion updates
 
 // TODO: Set the URL for your privacy policy by updating SettingsPage_PrivacyTermsLink.NavigateUri in Resources.resw.
 public sealed partial class SettingsPage : Page
@@ -170,31 +173,61 @@ public sealed partial class SettingsPage : Page
     private async void QobuzIDInput_OnLostFocus(object sender, RoutedEventArgs e)
     {
         await localSettings.SaveSettingAsync(SettingsViewModel.QobuzId, QobuzIDInput.Text.Trim());
-        await QobuzApi.Initialize(await localSettings.ReadSettingAsync<string>(SettingsViewModel.QobuzId), await localSettings.ReadSettingAsync<string>(SettingsViewModel.QobuzToken));
+        
+        AuthenticationCallback authCallback = (bool success) =>
+        {
+            dispatcher.TryEnqueue(() =>
+            {
+                if (success)
+                {
+                    ShowInfoBar(InfoBarSeverity.Success, "Authentication successful", 3, "Qobuz");
+                }
+                else
+                {
+                    ShowInfoBar(InfoBarSeverity.Error, "Authentication failed", 3, "Qobuz");
+                }
+            });
+        };
 
-        if (QobuzApi.IsInitialized)
+        // Run seperate thread for synchronous Qobuz initialization
+        Thread thread = new Thread(() =>
         {
-            ShowInfoBar(InfoBarSeverity.Success, "Authentication successful", 3, "Qobuz");
-        }
-        else
-        {
-            ShowInfoBar(InfoBarSeverity.Error, "Authentication failed", 3, "Qobuz");
-        }
+            var qobuzId = localSettings.ReadSettingAsync<string>(SettingsViewModel.QobuzId).GetAwaiter().GetResult();
+            var qobuzToken = localSettings.ReadSettingAsync<string>(SettingsViewModel.QobuzToken).GetAwaiter().GetResult();
+            QobuzApi.Initialize(qobuzId, qobuzToken, authCallback);
+        });
+        thread.Priority = ThreadPriority.Highest;
+        thread.Start();
+
     }
 
     private async void QobuzTokenInput_OnLostFocus(object sender, RoutedEventArgs e)
     {
         await localSettings.SaveSettingAsync(SettingsViewModel.QobuzToken, QobuzTokenInput.Password.Trim());
-        await QobuzApi.Initialize(await localSettings.ReadSettingAsync<string>(SettingsViewModel.QobuzId), await localSettings.ReadSettingAsync<string>(SettingsViewModel.QobuzToken));
+        
+        AuthenticationCallback authCallback = (bool success) =>
+        {
+            dispatcher.TryEnqueue(() =>
+            {
+                if (success)
+                {
+                    ShowInfoBar(InfoBarSeverity.Success, "Authentication successful", 3, "Qobuz");
+                }
+                else
+                {
+                    ShowInfoBar(InfoBarSeverity.Error, "Authentication failed", 3, "Qobuz");
+                }
+            });
+        };
 
-        if (QobuzApi.IsInitialized)
+        Thread thread = new Thread(() =>
         {
-            ShowInfoBar(InfoBarSeverity.Success, "Authentication successful", 3, "Qobuz");
-        }
-        else
-        {
-            ShowInfoBar(InfoBarSeverity.Error, "Authentication failed", 3, "Qobuz");
-        }
+            var qobuzId = localSettings.ReadSettingAsync<string>(SettingsViewModel.QobuzId).GetAwaiter().GetResult();
+            var qobuzToken = localSettings.ReadSettingAsync<string>(SettingsViewModel.QobuzToken).GetAwaiter().GetResult();
+            QobuzApi.Initialize(qobuzId, qobuzToken, authCallback);
+        });
+        thread.Priority = ThreadPriority.Highest;
+        thread.Start();
     }
 
     private async void SearchSourceComboBox_OnSelectionChanged(object sender, SelectionChangedEventArgs e)

@@ -4,6 +4,7 @@ using FluentDL.Views;
 
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using System.Diagnostics;
 
 namespace FluentDL.Services;
 

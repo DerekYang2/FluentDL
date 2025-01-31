@@ -638,7 +638,11 @@ public sealed partial class Search : Page
     private async void ShowDialog_OnClick_Click(object sender, RoutedEventArgs e)
     {
         SearchDialog.XamlRoot = this.XamlRoot;
-        var result = await SearchDialog.ShowAsync();
+        try {
+            var result = await SearchDialog.ShowAsync();
+        } catch (Exception err) {
+            Debug.WriteLine(err.Message);
+        }
     }
 
     private async void FailedResultsButton_OnClick(object sender, RoutedEventArgs e)
