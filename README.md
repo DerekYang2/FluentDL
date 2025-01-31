@@ -67,9 +67,14 @@ TIP: change the number of threads in settings for significantly faster conversio
 
 ## Build
 
-NOTE: Currently not working, Core is missing.
+Your machine should have the ability to develop WinUI 3 applications. See the official installation and setup guides, [Install tools for the Windows App SDK
+](https://learn.microsoft.com/en-us/windows/apps/windows-app-sdk/set-up-your-development-environment?tabs=cs-vs-community%2Ccpp-vs-community%2Cvs-2022-17-1-a%2Cvs-2022-17-1-b) and [Create your first WinUI 3 project](https://learn.microsoft.com/en-us/windows/apps/winui/winui3/create-your-first-winui3-app).
 
-A pre-built FFmpeg executable can be found in [./Assets/ffmpeg/bin](https://github.com/DerekYang2/FluentDL/tree/master/Assets/ffmpeg/bin) and contains many additional codecs, such as libopus and libvorbis. You may use your own FFmpeg binaries, but note that libopus is required for Youtube's highest quality source.
+Then, open the Solution file `.\FluentDL\FluentDL.sln` using Visual Studio.
+
+The pre-built FFmpeg executable is found at [./Assets/ffmpeg/bin](https://github.com/DerekYang2/FluentDL/tree/master/Assets/ffmpeg/bin) and contains many additional codecs, such as libopus and libvorbis. 
+ 
+You may use your own FFmpeg binaries, but note that libopus is required for Youtube's highest quality source.
 
 ## Installation 
 This project is deployed using MSIX, which installs the application on Windows. To install this application, download the first zip from [Releases](https://github.com/DerekYang2/FluentDL/releases).
