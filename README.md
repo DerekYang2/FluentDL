@@ -68,6 +68,8 @@ TIP: change the number of threads in settings for significantly faster conversio
 
 ## Setup
 
+NOTE: Currently broken, the Core is missing.
+
 In order to run these project in Visual Studio, you must have WinUI 3 setup (Template Studio is not required).
 
 WinUI 3 can be automatically configured using the Visual Studio Installer or manual installation. See the [official documentation](https://learn.microsoft.com/en-us/windows/apps/winui/winui3/create-your-first-winui3-app) for full details.
