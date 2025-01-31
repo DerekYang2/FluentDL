@@ -86,23 +86,6 @@ If that option is not available, open Powershell or CMD into this directory and 
 
 The application is now installed, and you should be able to find "FluentDL" with Search or in your Apps list.
 
-### Manual Installation
-Running the `FluentDL_{VERSION}_x64_MSIX.msix` file will open the Microsoft Store installer prompt that handles the installation and all dependencies (including the FFmpeg executable). This installation process requires an extra step because the certificate is currently self-signed. It must be trusted by the user before running the MSIX installer, otherwise the install button is greyed-out.
-
-In order to trust the certificate, click and open the `FluentDL_Certificate.cer` certificate file in the folder. 
-
-You will see a security warning prompt ("Do you want to open this file?") and press open. 
-
-Next, the certificate pop-up will explain how to add the certificate to "Trusted Root Certification Authorities". In order to this, follow these steps:
-
-- Press `Install Certificate...`, which should open "Certificate Import Wizard"
-- Choose  `Local Machine` then select `Next`
-- Choose `Place all certificates in the following store` then press `Browse...`, which should open a new dialog
-- In the new "Select Certificate Store" dialog, select the second option `Trusted Root Certification Authorities` and press `OK`
-- Select `Next` and then `Finish`. You should see a dialog that says: The import was successful.
-
-After adding the certificate to this storage, `FluentDL_Certificate.cer` should be trusted and you may now run `FluentDL_{VERSION}_x64_MSIX.msix`.
-
 ## Authentication
 
 Before using the application, head over to the settings page through the sidebar. 
