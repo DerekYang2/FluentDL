@@ -4,8 +4,7 @@
 <p align="center">
   <a href="#about">About</a> •
   <a href="#build">Build</a> •
-  <a href="#easy-installation">Installation and Running</a> •
-  <a href="#manual-installation">Manual Installation</a> •
+  <a href="#installation">Installation</a> •
    <a href="#authentication">Authentication</a>
 </p>
 
@@ -72,10 +71,9 @@ NOTE: Currently not working, Core is missing.
 
 A pre-built FFmpeg executable can be found in [./Assets/ffmpeg/bin](https://github.com/DerekYang2/FluentDL/tree/master/Assets/ffmpeg/bin) and contains many additional codecs, such as libopus and libvorbis. You may use your own FFmpeg binaries, but note that libopus is required for Youtube's highest quality source.
 
-## Installation and Running
+## Installation 
 This project is deployed using MSIX, which installs the application on Windows. To install this application, download the first zip from [Releases](https://github.com/DerekYang2/FluentDL/releases).
 
-### Easy Installation
 The application may be installed directly using a powershell script located in the zip folder. In the root folder inside of the zip, you should see an `Install.ps1` file and other files such as `FluentDL_{VERSION}_x64_MSIX.msix`. 
 
 Right click on `Install.ps1` and press `Run with PowerShell`.
