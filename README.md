@@ -72,6 +72,8 @@ Your machine should have the ability to develop WinUI 3 applications. See the of
 
 Then, open the Solution file `.\FluentDL\FluentDL.sln` using Visual Studio.
 
+An [experimental package](https://github.com/CommunityToolkit/Labs-Windows/issues/426) must be installed seperately, but latest assemblies are not compatible with .NET 7. Due to the hassle of manual nupkg installation and conflicts, marquee text may be removed in the future. A migration to .NET 8 is also in progress. 
+
 The pre-built FFmpeg executable is found at [./Assets/ffmpeg/bin](https://github.com/DerekYang2/FluentDL/tree/master/Assets/ffmpeg/bin) and contains many additional codecs, such as libopus and libvorbis. 
  
 You may use your own FFmpeg binaries, but note that libopus is required for Youtube's highest quality source.
