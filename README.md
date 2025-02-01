@@ -3,16 +3,14 @@
 </h1>
 
 <p align="center">
-  <a href="https://github.com/derekyang2/fluentdl/releases/latest">
-    <img alt="GitHub Downloads (all assets, latest release)" src="https://img.shields.io/github/downloads/derekyang2/fluentdl/total?logo=github&logoColor=white&style=for-the-badge">
-  </a>
+  <a href="https://github.com/derekyang2/fluentdl/releases/latest"><img src="https://img.shields.io/github/v/release/derekyang2/fluentdl"></a>
+  <a href="https://github.com/derekyang2/fluentdl/releases"><img src="https://img.shields.io/github/downloads/derekyang2/fluentdl/total?logo=github">
 </p>
-
 
 <p align="center">
   <a href="#about">About</a> •
-  <a href="#build">Build</a> •
   <a href="#installation">Installation</a> •
+  <a href="#build">Build</a> •
    <a href="#authentication">Authentication</a>
 </p>
 
