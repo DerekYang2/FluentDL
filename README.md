@@ -1,6 +1,14 @@
 <h1 align="center">
   FluentDL
 </h1>
+
+<p align="center">
+  <a href="https://github.com/derekyang2/fluentdl/releases/latest">
+    <img alt="GitHub Downloads (all assets, latest release)" src="https://img.shields.io/github/downloads/derekyang2/fluentdl/total?logo=github&logoColor=white&style=for-the-badge">
+  </a>
+</p>
+
+
 <p align="center">
   <a href="#about">About</a> •
   <a href="#build">Build</a> •
@@ -65,19 +73,6 @@ FluentDL is organized into three sections: Search, Local Explorer, and Queue.
 
 TIP: change the number of threads in settings for significantly faster conversions, matching, and downloading.
 
-## Build
-
-Your machine should have the ability to develop WinUI 3 applications. See the official installation and setup guides, [Install tools for the Windows App SDK
-](https://learn.microsoft.com/en-us/windows/apps/windows-app-sdk/set-up-your-development-environment?tabs=cs-vs-community%2Ccpp-vs-community%2Cvs-2022-17-1-a%2Cvs-2022-17-1-b) and [Create your first WinUI 3 project](https://learn.microsoft.com/en-us/windows/apps/winui/winui3/create-your-first-winui3-app).
-
-Then, open the Solution file `.\FluentDL\FluentDL.sln` using Visual Studio.
-
-An [experimental package](https://github.com/CommunityToolkit/Labs-Windows/issues/426) must be installed seperately, but latest assemblies are not compatible with .NET 7. Due to the hassle of manual nupkg installation and conflicts, marquee text may be removed in the future. A migration to .NET 8 is also in progress. 
-
-The pre-built FFmpeg executable is found at [./Assets/ffmpeg/bin](https://github.com/DerekYang2/FluentDL/tree/master/Assets/ffmpeg/bin) and contains many additional codecs, such as libopus and libvorbis. 
- 
-You may use your own FFmpeg binaries, but note that libopus is required for Youtube's highest quality source.
-
 ## Installation 
 This project is deployed using MSIX, which installs the application on Windows. To install this application, download the first zip from [Releases](https://github.com/DerekYang2/FluentDL/releases).
 
@@ -93,6 +88,19 @@ If that option is not available, open Powershell or CMD into the root directory 
 ```powershell.exe -executionpolicy unrestricted .\Install.ps1```
 
 The application is now installed, and you should be able to find "FluentDL" with Search or in your Apps list.
+
+## Build
+
+Your machine should have the ability to develop WinUI 3 applications. See the official installation and setup guides, [Install tools for the Windows App SDK
+](https://learn.microsoft.com/en-us/windows/apps/windows-app-sdk/set-up-your-development-environment?tabs=cs-vs-community%2Ccpp-vs-community%2Cvs-2022-17-1-a%2Cvs-2022-17-1-b) and [Create your first WinUI 3 project](https://learn.microsoft.com/en-us/windows/apps/winui/winui3/create-your-first-winui3-app).
+
+Then, open the Solution file `.\FluentDL\FluentDL.sln` using Visual Studio.
+
+An [experimental package](https://github.com/CommunityToolkit/Labs-Windows/issues/426) must be installed seperately, but latest assemblies are not compatible with .NET 7. A migration to .NET 8 is in progress, which fixes the build errors caused by marquee text. Read more about the issue [here](https://github.com/DerekYang2/FluentDL/issues/3). TDLR; building is sort of broken right now, temporary fix hopefully coming soon. 
+
+The pre-built FFmpeg executable is found at [./Assets/ffmpeg/bin](https://github.com/DerekYang2/FluentDL/tree/master/Assets/ffmpeg/bin) and contains many additional codecs, such as libopus and libvorbis. 
+ 
+You may use your own FFmpeg binaries, but note that libopus is required for Youtube's highest quality source.
 
 ## Authentication
 
