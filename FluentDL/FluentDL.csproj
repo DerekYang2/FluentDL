@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
     <TargetFramework>net8.0-windows10.0.22621.0</TargetFramework>
@@ -24,6 +24,7 @@
     <WindowsPackageType>MSIX</WindowsPackageType>
     <AppxBundlePlatforms>x86|x64</AppxBundlePlatforms>
     <WindowsSdkPackageVersion>10.0.22621.38</WindowsSdkPackageVersion>
+    <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
   </PropertyGroup>
   <ItemGroup>
     <None Remove="Helpers\CustomPasswordBox.xaml" />
