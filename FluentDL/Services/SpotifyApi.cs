@@ -6,6 +6,7 @@ using System.Diagnostics.Eventing.Reader;
 using System.Linq;
 using System.Net;
 using System.Text;
+using System.Text.Json;
 using System.Threading.Tasks;
 using DeezNET.Data;
 using FluentDL.Helpers;
@@ -14,8 +15,13 @@ using FluentDL.ViewModels;
 using FluentDL.Views;
 using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml.Controls;
+using Newtonsoft.Json.Linq;
+using Org.BouncyCastle.Bcpg.OpenPgp;
+using Org.BouncyCastle.Ocsp;
 using QobuzApiSharp.Models.Content;
+using RestSharp;
 using SpotifyAPI.Web;
+using SpotifyAPI.Web.Http;
 
 namespace FluentDL.Services
 {
@@ -27,13 +33,16 @@ namespace FluentDL.Services
 
         public SpotifyApi()
         {
+
         }
 
         public static async Task Initialize(string? clientId, string? clientSecret)
         {
             IsInitialized = false;
+
             if (!string.IsNullOrWhiteSpace(clientId) && !string.IsNullOrWhiteSpace(clientSecret))
             {
+
                 var request = new ClientCredentialsRequest(clientId, clientSecret);
                 try
                 {
@@ -46,6 +55,39 @@ namespace FluentDL.Services
                     Debug.WriteLine("Failed to initialize Spotify API: " + e.Message);
                 }
             }
+
+            // If still not initialized, either invalid or no developer app credentials
+            if (!IsInitialized)
+            {
+                var accessToken = await GetAccessToken();  // Get Spotify access token from local cookies
+
+                try {
+                    if (string.IsNullOrWhiteSpace(accessToken))  
+                    {
+                        throw new Exception("could not get token through cookies");
+                    }
+
+                    spotify = new SpotifyClient(config.WithToken(accessToken));
+                    IsInitialized = true;
+                    Debug.WriteLine("Initialized Spotify API using local cookies");
+                }
+                catch (Exception e)
+                {
+                    Debug.WriteLine("Failed to initialize Spotify API: " + e.Message);
+                }
+            }
+        }
+
+        public static async Task<string?> GetAccessToken() {
+            RestClient client = new RestClient(new RestClientOptions("https://open.spotify.com/") { Timeout = new TimeSpan(0, 0, 5) });
+            var request = new RestRequest("get_access_token?reason=transport&productType=web_player");
+            var response = await client.GetAsync(request);
+            if (response.IsSuccessful && !string.IsNullOrEmpty(response.Content)) {
+                var rootElement = JsonDocument.Parse(response.Content).RootElement;
+                Debug.WriteLine(rootElement.ToString());
+                return rootElement.GetProperty("accessToken").GetString();
+            } 
+            return null;
         }
 
         private static bool CloseMatch(string str1, string str2)
