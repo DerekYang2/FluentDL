@@ -92,9 +92,11 @@ The application is now installed, and you should be able to find "FluentDL" with
 Your machine should have the ability to develop WinUI 3 applications. See the official installation and setup guides, [Install tools for the Windows App SDK
 ](https://learn.microsoft.com/en-us/windows/apps/windows-app-sdk/set-up-your-development-environment?tabs=cs-vs-community%2Ccpp-vs-community%2Cvs-2022-17-1-a%2Cvs-2022-17-1-b) and [Create your first WinUI 3 project](https://learn.microsoft.com/en-us/windows/apps/winui/winui3/create-your-first-winui3-app).
 
-Then, open the Solution file `.\FluentDL\FluentDL.sln` using Visual Studio.
+Then, open the Solution file `.\FluentDL\FluentDL.sln` using Visual Studio. It should prompt you to install the correct .NET SDK. If not, install the latest .NET 8 SDK.  
 
-An [experimental package](https://github.com/CommunityToolkit/Labs-Windows/issues/426) must be installed seperately, but latest assemblies are not compatible with .NET 7. A migration to .NET 8 is in progress, which fixes the build errors caused by marquee text. Read more about the issue [here](https://github.com/DerekYang2/FluentDL/issues/3). TDLR; building is sort of broken right now, temporary fix hopefully coming soon. 
+An [experimental package](https://github.com/CommunityToolkit/Labs-Windows/issues/426) must be installed seperately. The package can be found [here](https://dev.azure.com/dotnet/CommunityToolkit/_artifacts/feed/CommunityToolkit-Labs/NuGet/CommunityToolkit.Labs.WinUI.MarqueeText/overview/0.1.250103-build.1988) and if you are unfamiliar with installing external packages, follow [these instructions](https://dev.azure.com/dotnet/CommunityToolkit/_artifacts/feed/CommunityToolkit-Labs/connect). 
+
+In order to deploy the application, follow `Project > Publish > Create App Packages` and sign it with a certificate. 
 
 The pre-built FFmpeg executable is found at [./Assets/ffmpeg/bin](https://github.com/DerekYang2/FluentDL/tree/master/Assets/ffmpeg/bin) and contains many additional codecs, such as libopus and libvorbis. 
  
