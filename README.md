@@ -94,7 +94,7 @@ Your machine should have the ability to develop WinUI 3 applications. See the of
 
 Then, open the Solution file `.\FluentDL\FluentDL.sln` using Visual Studio. It should prompt you to install the correct .NET SDK. If not, install the latest .NET 8 SDK.  
 
-An [experimental package](https://github.com/CommunityToolkit/Labs-Windows/issues/426) must be installed seperately. The package can be found [here](https://dev.azure.com/dotnet/CommunityToolkit/_artifacts/feed/CommunityToolkit-Labs/NuGet/CommunityToolkit.Labs.WinUI.MarqueeText/overview/0.1.250103-build.1988) and if you are unfamiliar with installing external packages, follow [these instructions](https://dev.azure.com/dotnet/CommunityToolkit/_artifacts/feed/CommunityToolkit-Labs/connect). 
+An [experimental package](https://github.com/CommunityToolkit/Labs-Windows/issues/426) must be installed seperately. The package can be found [here](https://dev.azure.com/dotnet/CommunityToolkit/_artifacts/feed/CommunityToolkit-Labs/NuGet/CommunityToolkit.Labs.WinUI.MarqueeText/overview/0.1.250103-build.1988). Installation instructions for these packages can be found [here](https://dev.azure.com/dotnet/CommunityToolkit/_artifacts/feed/CommunityToolkit-Labs/connect) under the Visual Studio tab. 
 
 In order to deploy the application, follow `Project > Publish > Create App Packages` and sign it with a certificate. 
 
