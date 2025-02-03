@@ -110,13 +110,13 @@ Searching/conversions between Deezer, Qobuz, and Youtube do not require authenti
 Spotify requires API tokens (client ID and secret), but through the Spotify Developer Dashboard. For more details on obtaining these tokens, visit the [official documentation](https://developer.spotify.com/documentation/web-api/tutorials/getting-started). 
 
 ### Downloading
-- Downloading from Youtube does not require authentication.
+- Downloading from Youtube does not require authentication. As verified through spectrogram, highest quality sources use the very efficient OPUS codec. However, OPUS containers such as OGG have poor metadata support and compatability. FluentDL wraps them with FLAC to maintain original quality, while having better support. But they are NOT lossless.   
 - Downloading from Deezer and Qobuz require authentication through ARLs and Tokens respectively. These must be from premium accounts.
 - Downloading directly from Spotify is not currently supported, and they do not use lossless sources. Use the convert tool to get equivalent Deezer/Qobuz/Youtube tracks, then download.
  
 You do not have re-enter credentials each time because they are stored locally. Note that tokens expire or may break due to occasional web-player changes. 
 
-[Here](https://erikstechcorner.com/2020/09/how-to-check-if-your-flac-files-are-really-lossless/) is a guide on using Spek to verify your file quality.
+[Here](https://erikstechcorner.com/2020/09/how-to-check-if-your-flac-files-are-really-lossless/) is a guide on using Spek (spectrogram software) to verify your file quality.
 
 ### Retrieving Tokens
 If you already have them, enter them in settings. Otherwise:
