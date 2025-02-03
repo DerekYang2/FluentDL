@@ -105,13 +105,18 @@ You may use your own FFmpeg binaries, but note that libopus is required for Yout
 
 Before using the application, head over to the settings page through the sidebar. 
 
-Searching songs does not require authentication, however Spotify is the only exception. Spotify will require API tokens (a client ID and client secret) which can be entered in the settings page. For more details on obtaining these tokens, visit the [official documentation](https://developer.spotify.com/documentation/web-api/tutorials/getting-started).
+### Searches
+Searching/conversions between Deezer, Qobuz, and Youtube do not require authentication.
+Spotify requires API tokens (client ID and secret), but through the Spotify Developer Dashboard. For more details on obtaining these tokens, visit the [official documentation](https://developer.spotify.com/documentation/web-api/tutorials/getting-started). 
 
-Downloading from Youtube does not require authentication.
-Downloading from Deezer and Qobuz require authenticated through ARLs and Tokens respectively. 
+### Downloading
+- Downloading from Youtube does not require authentication.
+- Downloading from Deezer and Qobuz require authentication through ARLs and Tokens respectively. These must be from premium accounts.
+- Downloading directly from Spotify is not currently supported, and they do not use lossless sources. Use the convert tool to get equivalent Deezer/Qobuz/Youtube tracks, then download.
+ 
 You do not have re-enter credentials each time because they are stored locally. Note that tokens expire or may break due to occasional web-player changes. 
 
-Deezer and Qobuz FLAC sources are only accessible with premium accounts. [Here](https://erikstechcorner.com/2020/09/how-to-check-if-your-flac-files-are-really-lossless/) is a guide on using Spek to verify your file quality.
+[Here](https://erikstechcorner.com/2020/09/how-to-check-if-your-flac-files-are-really-lossless/) is a guide on using Spek to verify your file quality.
 
 ### Retrieving Tokens
 If you already have them, enter them in settings. Otherwise:
