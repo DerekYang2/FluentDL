@@ -89,8 +89,7 @@ The application is now installed, and you should be able to find "FluentDL" with
 
 ## Build
 
-Your machine should have the ability to develop WinUI 3 applications. See the official installation and setup guides, [Install tools for the Windows App SDK
-](https://learn.microsoft.com/en-us/windows/apps/windows-app-sdk/set-up-your-development-environment?tabs=cs-vs-community%2Ccpp-vs-community%2Cvs-2022-17-1-a%2Cvs-2022-17-1-b) and [Create your first WinUI 3 project](https://learn.microsoft.com/en-us/windows/apps/winui/winui3/create-your-first-winui3-app).
+Your machine should have the ability to develop WinUI 3 applications. The simplest setup method is using the Visual Studio Installer and selecting [Windows application development](https://devblogs.microsoft.com/visualstudio/dive-into-native-windows-development-with-new-winui-workload-and-template-improvements/).
 
 Then, open the Solution file `.\FluentDL\FluentDL.sln` using Visual Studio. It should prompt you to install the correct .NET SDK. If not, install the latest .NET 8 SDK.  
 
