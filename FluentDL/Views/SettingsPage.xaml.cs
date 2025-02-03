@@ -13,6 +13,8 @@ using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Controls.Primitives;
 using Microsoft.UI.Xaml.Input;
 using FluentDL.Models;
+using CommunityToolkit.WinUI.Controls;
+using Microsoft.UI.Xaml.Media;
 
 namespace FluentDL.Views;
 
@@ -594,4 +596,5 @@ public sealed partial class SettingsPage : Page
         dispatcherTimer.Interval = TimeSpan.FromSeconds(seconds);
         dispatcherTimer.Start();
     }
+
 }

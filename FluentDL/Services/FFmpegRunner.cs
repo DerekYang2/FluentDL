@@ -22,7 +22,7 @@ internal class FFmpegRunner
             var ffmpegPath = await SettingsViewModel.GetSetting<string?>(SettingsViewModel.FFmpegPath) ?? string.Empty;
             if (!Directory.Exists(ffmpegPath))
             {
-                ffmpegPath = Path.Combine(AppContext.BaseDirectory, "Assets/ffmpeg/bin");
+                ffmpegPath = Path.Combine(AppContext.BaseDirectory, "Assets\\ffmpeg\\bin");
             }
 
             Debug.WriteLine("FFMPEG PATH: " + ffmpegPath);
