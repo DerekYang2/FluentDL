@@ -84,7 +84,6 @@ namespace FluentDL.Services
             var response = await client.GetAsync(request);
             if (response.IsSuccessful && !string.IsNullOrEmpty(response.Content)) {
                 var rootElement = JsonDocument.Parse(response.Content).RootElement;
-                Debug.WriteLine(rootElement.ToString());
                 return rootElement.GetProperty("accessToken").GetString();
             } 
             return null;
