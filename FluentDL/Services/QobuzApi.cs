@@ -24,11 +24,8 @@ internal class QobuzApi
 {
     private static QobuzApiService apiService = new QobuzApiService();
     public static bool IsInitialized = false;
-    public static bool customAppId = false;
-    // Add older or custom app id/secrets
-    public static string AppId = "";
-    public static string AppSecret = "";
-
+    private static string oldId = "OTUwMDk2OTYz";
+    private static string oldSecret = "OTc5NTQ5NDM3ZmNjNGEzZmFhZDQ4NjdiNWNkMjVkY2I=";
     public static void Initialize(string? userId, string? AuthToken, AuthenticationCallback? authCallback = null)
     {
         IsInitialized = false;
@@ -37,15 +34,7 @@ internal class QobuzApi
         {
             try
             {
-                if (customAppId)
-                {
-                    apiService = new QobuzApiService(AppId, AppSecret);
-                }
-                else
-                {
-                    apiService = new QobuzApiService();
-                }
-
+                apiService = new QobuzApiService();
                 apiService.LoginWithToken(userId, AuthToken);
                 IsInitialized = true;
                 Debug.WriteLine("Qobuz initialized");
@@ -54,12 +43,25 @@ internal class QobuzApi
             }
             catch (Exception e)
             {
-                Debug.WriteLine("Failed to init Qobuz: " + e.Message);
-                authCallback?.Invoke(false);
+                Debug.WriteLine("Qobuz initialization failed: " + e.Message);
+
+                // Try intialize using old app credentials
+                try
+                {
+                    apiService = new QobuzApiService(Encoding.UTF8.GetString(Convert.FromBase64String(oldId)), Encoding.UTF8.GetString(Convert.FromBase64String(oldSecret)));
+                    apiService.LoginWithToken(userId, AuthToken);
+                    IsInitialized = true;
+                    Debug.WriteLine("Qobuz initialized (old)");
+                    authCallback?.Invoke(IsInitialized);
+                }
+                catch (Exception e2)
+                {
+                    Debug.WriteLine("Qobuz (old) initialization failed: " + e.Message);
+                    authCallback?.Invoke(false);
+                }
             }
         }
     }
-
 
     public static async Task GeneralSearch(ObservableCollection<SongSearchObject> itemSource, string query, CancellationToken token, int limit = 25)
     {
