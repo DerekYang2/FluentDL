@@ -517,7 +517,7 @@
                             x:Name="TabInfoBar"
                             Margin="4, 0, 4, 8"
                             IsOpen="True"
-                            IsClosable="True" />
+                            IsClosable="False" />
                         <Grid>
                             <ListView x:Name="ConversionListView"
                                       CornerRadius="4"

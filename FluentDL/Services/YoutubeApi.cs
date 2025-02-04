@@ -20,8 +20,8 @@ using YouTubeMusicAPI.Client;
 using YouTubeMusicAPI.Models;
 using YouTubeMusicAPI.Models.Info;
 using static System.Net.WebRequestMethods;
-using Video = YouTubeMusicAPI.Models.Video;
 using AngleSharp.Text;
+using YouTubeMusicAPI.Models.Search;
 
 namespace FluentDL.Services
 {
@@ -44,11 +44,11 @@ namespace FluentDL.Services
 
             itemSource.Clear();
 
-            IEnumerable<Song> searchResults;
+            IEnumerable<SongSearchResult> searchResults;
 
             try
             {
-                searchResults = await ytm.SearchAsync<Song>(query, limit, token);
+                searchResults = await ytm.SearchAsync<SongSearchResult>(query, limit, token);
             }
             catch (Exception e)
             {
@@ -111,7 +111,7 @@ namespace FluentDL.Services
 
             if (!string.IsNullOrWhiteSpace(albumName)) // Album was specified
             {
-                var searchResults = await ytm.SearchAsync<Album>(albumName, 15, token); // Search for album first
+                var searchResults = await ytm.SearchAsync<AlbumSearchResult>(albumName, 15, token); // Search for album first
 
                 if (token.IsCancellationRequested) return; // If cancelled
 
@@ -246,7 +246,7 @@ namespace FluentDL.Services
                 if (isTrackSpecified) // If artist and track are specified
                 {
                     var query = artistName + " " + trackName;
-                    var searchResults = await ytm.SearchAsync<Song>(query, 2 * limit, token);
+                    var searchResults = await ytm.SearchAsync<SongSearchResult>(query, 2 * limit, token);
                     if (token.IsCancellationRequested) return; // If cancelled
 
                     foreach (var song in searchResults)
@@ -275,7 +275,8 @@ namespace FluentDL.Services
                 }
                 else // If only artist is specified
                 {
-                    var artistResults = await ytm.SearchAsync<Artist>(artistName, 15, token);
+                    // This seems to be broken for now... 
+                    var artistResults = await ytm.SearchAsync<ArtistSearchResult>(artistName, 20, token);
                     if (token.IsCancellationRequested) return; // If cancelled
 
                     foreach (var artistResult in artistResults)
@@ -388,7 +389,7 @@ namespace FluentDL.Services
         }
 
 
-        public static async Task<VideoSearchResult> GetSearchResult(SongSearchObject song)
+        public static async Task<YoutubeExplode.Search.VideoSearchResult> GetSearchResult(SongSearchObject song)
         {
             // Convert artists csv to array
             var artists = song.Artists.Split(", ");
@@ -400,7 +401,7 @@ namespace FluentDL.Services
             var query = artists[0] + " " + song.Title; // TODO: maybe try other artists or even all if fail?
             var ct = 0;
 
-            var results = new List<VideoSearchResult>();
+            var results = new List<YoutubeExplode.Search.VideoSearchResult>();
 
             await foreach (var result in youtube.Search.GetVideosAsync(query))
             {
@@ -552,10 +553,10 @@ namespace FluentDL.Services
             var trackName = songObj.Title;
             var albumName = songObj.AlbumName;
 
-            IEnumerable<Album>? searchResults = null;
+            IEnumerable<AlbumSearchResult>? searchResults = null;
             try
             {
-                searchResults = await ytm.SearchAsync<Album>(albumName, 15, token); // Search for album first
+                searchResults = await ytm.SearchAsync<AlbumSearchResult>(albumName, 15, token); // Search for album first
             }
             catch (Exception e)
             {
@@ -632,7 +633,7 @@ namespace FluentDL.Services
 
             // Try searching without album
             var query = artistName + " " + trackName;
-            var searchResults2 = await ytm.SearchAsync<Song>(query, 20, token);
+            var searchResults2 = await ytm.SearchAsync<SongSearchResult>(query, 20, token);
 
             if (token.IsCancellationRequested) return null; // If cancelled
 
@@ -742,7 +743,7 @@ namespace FluentDL.Services
             return video.Thumbnails[idx].Url;
         }
 
-        public static async Task<SongSearchObject> GetTrack(Song ytmSong)
+        public static async Task<SongSearchObject> GetTrack(SongSearchResult ytmSong)
         {
             var artistCSV = new StringBuilder();
             foreach (var artist in ytmSong.Artists)

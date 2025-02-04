@@ -842,15 +842,19 @@ public sealed partial class QueuePage : Page
         }
 
         var outputSource = GetOutputSource().ToLower();
+
+        // Create a queue with the indexes of sources to process
+        ConcurrentQueue<int> indexQueue = new ConcurrentQueue<int>();
+
         // Loop through and find the total number of queries to process
-        int totalCount = 0;
-        foreach (var song in QueueViewModel.Source)
-        {
+        for (int i = 0; i < QueueViewModel.Source.Count; i++) {
+            var song = QueueViewModel.Source[i];
             if (selectedSources.Contains(song.Source) && outputSource != song.Source) // If source is selected as input and isn't the same as output
             {
-                totalCount++;
+                indexQueue.Enqueue(i);
             }
         }
+        int totalCount = indexQueue.Count;
 
         if (totalCount == 0)
         {
@@ -918,7 +922,7 @@ public sealed partial class QueuePage : Page
         var ogVal = QueueProgress.Value; // Save the original value of the progress bar
         QueueProgress.Value = 0; // Set to 0
 
-        int index = 0, processedCount = 0;
+        int processedCount = 0;
         var token = cancellationTokenSource.Token;
         IsConverting = true;
 
@@ -958,33 +962,19 @@ public sealed partial class QueuePage : Page
                         return;
                     }
 
-                    var i = Interlocked.Increment(ref index) - 1;
-
-                    if (i >= totalCount)
+                    if (indexQueue.IsEmpty) // If the queue is already empty, end this thread
                     {
                         return;
                     }
 
-                    var song = QueueViewModel.Source[i];
-                    if (!selectedSources.Contains(song.Source) || outputSource == song.Source) // If the source is not selected as input or no conversion needed
+                    int i = indexQueue.TryDequeue(out var iVal) ? iVal : -1; // Get the index from the queue
+
+                    if (i == -1) // If the index is invalid, skip
                     {
-                        var processCountCaptured = Interlocked.Increment(ref processedCount); // Increment the processed count
-
-                        dispatcherQueue.TryEnqueue(() =>
-                        {
-                            QueueProgress.Value = 100.0 * processCountCaptured / totalCount; // Update the progress bar
-                        });
-
-
-                        if (processCountCaptured == totalCount) // If all tracks are processed
-                        {
-                            IsConverting = false;
-                            dispatcherQueue.TryEnqueue(async () => await EndConversionLambda());
-                            return;
-                        }
-
                         continue;
                     }
+                    
+                    var song = QueueViewModel.Source[i];
 
                     // Set song to running (progress ring will appear)
                     dispatcherQueue.TryEnqueue(() =>
