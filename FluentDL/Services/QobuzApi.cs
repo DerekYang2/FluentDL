@@ -24,8 +24,9 @@ internal class QobuzApi
 {
     private static QobuzApiService apiService = new QobuzApiService();
     public static bool IsInitialized = false;
-    private static string oldId = "OTUwMDk2OTYz";
-    private static string oldSecret = "OTc5NTQ5NDM3ZmNjNGEzZmFhZDQ4NjdiNWNkMjVkY2I=";
+    public static string oldI = "VuCHDsuyiFjcl994xa1eyg==";
+    public static string oldS = "5mLYFjeXUrtSoZvPIYn7ymMz6QQY65+XBg2OBH9cxLJlT9hMiDIrRB8Yj4OfOikn";
+
     public static void Initialize(string? email, string? password, string? userId, string? AuthToken, AuthenticationCallback? authCallback = null)
     {
         IsInitialized = false;
@@ -48,7 +49,7 @@ internal class QobuzApi
                 // Try intialize using old app credentials
                 try
                 {
-                    apiService = new QobuzApiService(Encoding.UTF8.GetString(Convert.FromBase64String(oldId)), Encoding.UTF8.GetString(Convert.FromBase64String(oldSecret)));
+                    apiService = new QobuzApiService(AesHelper.Decrypt(oldI), AesHelper.Decrypt(oldS));
                     apiService.LoginWithToken(userId, AuthToken);
                     IsInitialized = true;
                     Debug.WriteLine("Qobuz initialized (old)");

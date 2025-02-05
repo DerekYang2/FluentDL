@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Text;
 using FluentDL.Activation;
 using FluentDL.Contracts.Services;
 using FluentDL.Core.Contracts.Services;
@@ -126,8 +127,8 @@ public partial class App : Application
             // Run seperate thread for synchronous Qobuz initialization
             Thread thread = new Thread(() =>
             {
-                var qobuzEmail = localSettings.ReadSettingAsync<string>(SettingsViewModel.QobuzEmail).GetAwaiter().GetResult();
-                var qobuzPassword = localSettings.ReadSettingAsync<string>(SettingsViewModel.QobuzPassword).GetAwaiter().GetResult();
+                var qobuzEmail = AesHelper.Decrypt(localSettings.ReadSettingAsync<string>(SettingsViewModel.QobuzEmail).GetAwaiter().GetResult() ?? "");
+                var qobuzPassword = AesHelper.Decrypt(localSettings.ReadSettingAsync<string>(SettingsViewModel.QobuzPassword).GetAwaiter().GetResult() ?? "");
                 var qobuzId = localSettings.ReadSettingAsync<string>(SettingsViewModel.QobuzId).GetAwaiter().GetResult();
                 var qobuzToken = localSettings.ReadSettingAsync<string>(SettingsViewModel.QobuzToken).GetAwaiter().GetResult();
                 QobuzApi.Initialize(qobuzEmail, qobuzPassword, qobuzId, qobuzToken);

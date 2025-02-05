@@ -90,8 +90,8 @@ public sealed partial class SettingsPage : Page
         DeezerARLInput.Password = await localSettings.ReadSettingAsync<string>(SettingsViewModel.DeezerARL) ?? "";
         QobuzIDInput.Text = await localSettings.ReadSettingAsync<string>(SettingsViewModel.QobuzId) ?? "";
         QobuzTokenInput.Password = await localSettings.ReadSettingAsync<string>(SettingsViewModel.QobuzToken) ?? "";
-        QobuzEmailInput.Text = await localSettings.ReadSettingAsync<string>(SettingsViewModel.QobuzEmail) ?? "";
-        QobuzPasswordInput.Password = await localSettings.ReadSettingAsync<string>(SettingsViewModel.QobuzPassword) ?? "";
+        QobuzEmailInput.Text = AesHelper.Decrypt(await localSettings.ReadSettingAsync<string>(SettingsViewModel.QobuzEmail) ?? "");
+        QobuzPasswordInput.Password = AesHelper.Decrypt(await localSettings.ReadSettingAsync<string>(SettingsViewModel.QobuzPassword) ?? "");
 
         // Set source combo box
         var searchSource = await localSettings.ReadSettingAsync<string>(SettingsViewModel.SearchSource) ?? "Deezer";
@@ -153,8 +153,8 @@ public sealed partial class SettingsPage : Page
     }
 
     private async void QobuzUpdateButton_Click(object sender, RoutedEventArgs e) {
-        await localSettings.SaveSettingAsync(SettingsViewModel.QobuzEmail, QobuzEmailInput.Text.Trim());
-        await localSettings.SaveSettingAsync(SettingsViewModel.QobuzPassword, QobuzPasswordInput.Password.Trim());
+        await localSettings.SaveSettingAsync(SettingsViewModel.QobuzEmail, AesHelper.Encrypt(QobuzEmailInput.Text.Trim()));
+        await localSettings.SaveSettingAsync(SettingsViewModel.QobuzPassword, AesHelper.Encrypt(QobuzPasswordInput.Password.Trim()));
         await localSettings.SaveSettingAsync(SettingsViewModel.QobuzId, QobuzIDInput.Text.Trim());
         await localSettings.SaveSettingAsync(SettingsViewModel.QobuzToken, QobuzTokenInput.Password.Trim());
 
@@ -175,8 +175,8 @@ public sealed partial class SettingsPage : Page
 
         Thread thread = new Thread(() =>
         {
-            var qobuzEmail = localSettings.ReadSettingAsync<string>(SettingsViewModel.QobuzEmail).GetAwaiter().GetResult();
-            var qobuzPassword = localSettings.ReadSettingAsync<string>(SettingsViewModel.QobuzPassword).GetAwaiter().GetResult();
+            var qobuzEmail = AesHelper.Decrypt(localSettings.ReadSettingAsync<string>(SettingsViewModel.QobuzEmail).GetAwaiter().GetResult() ?? "");
+            var qobuzPassword = AesHelper.Decrypt(localSettings.ReadSettingAsync<string>(SettingsViewModel.QobuzPassword).GetAwaiter().GetResult() ?? "");
             var qobuzId = localSettings.ReadSettingAsync<string>(SettingsViewModel.QobuzId).GetAwaiter().GetResult();
             var qobuzToken = localSettings.ReadSettingAsync<string>(SettingsViewModel.QobuzToken).GetAwaiter().GetResult();
             QobuzApi.Initialize(qobuzEmail, qobuzPassword, qobuzId, qobuzToken, authCallback);
