@@ -1,4 +1,4 @@
-﻿using System.Collections.ObjectModel;
+using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -26,11 +26,11 @@ internal class QobuzApi
     public static bool IsInitialized = false;
     private static string oldId = "OTUwMDk2OTYz";
     private static string oldSecret = "OTc5NTQ5NDM3ZmNjNGEzZmFhZDQ4NjdiNWNkMjVkY2I=";
-    public static void Initialize(string? userId, string? AuthToken, AuthenticationCallback? authCallback = null)
+    public static void Initialize(string? email, string? password, string? userId, string? AuthToken, AuthenticationCallback? authCallback = null)
     {
         IsInitialized = false;
 
-        if (!string.IsNullOrWhiteSpace(userId) && !string.IsNullOrWhiteSpace(AuthToken))
+        if (!string.IsNullOrWhiteSpace(userId) && !string.IsNullOrWhiteSpace(AuthToken))  // Token route
         {
             try
             {
@@ -59,6 +59,23 @@ internal class QobuzApi
                     Debug.WriteLine("Qobuz (old) initialization failed: " + e.Message);
                     authCallback?.Invoke(false);
                 }
+            }
+        }
+
+        if (!IsInitialized && !string.IsNullOrWhiteSpace(email) && !string.IsNullOrWhiteSpace(password))  // Email route
+        {
+            try
+            {
+                apiService = new QobuzApiService();
+                apiService.LoginWithEmail(email, password);
+                IsInitialized = true;
+                Debug.WriteLine("Qobuz initialized email");
+                authCallback?.Invoke(IsInitialized);
+            }
+            catch (Exception e)
+            {
+                Debug.WriteLine("Qobuz initialization failed (email): " + e.Message);
+                authCallback?.Invoke(false);
             }
         }
     }

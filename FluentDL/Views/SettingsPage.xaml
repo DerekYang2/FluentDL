@@ -204,7 +204,7 @@
 
                     <local:SettingsExpander x:Name="DeezerExpander"
                                         VerticalAlignment="Top"
-                                        Description="Set authentication tokens for Deezer."
+                                        Description="Set ARL for Deezer."
                                         Header="Deezer"
                                         HorizontalContentAlignment="Stretch">
                         <local:SettingsExpander.HeaderIcon>
@@ -223,14 +223,34 @@
 
                     <local:SettingsExpander x:Name="QobuzExpander"
                                         VerticalAlignment="Top"
-                                        Description="Set authentication tokens for Qobuz."
+                                        Description="Set either email/password or id/token for Qobuz. Only one of authentication methods is needed."
                                         Header="Qobuz"
                                         HorizontalContentAlignment="Stretch">
                         <local:SettingsExpander.HeaderIcon>
                             <FontIcon Glyph="&#xE72E;" />
                         </local:SettingsExpander.HeaderIcon>
                         <local:SettingsExpander.Items>
-                            <local:SettingsCard Header="User ID" Description="Enter your user ID"
+                            <local:SettingsCard Header="Email" Description="Option 1: enter your Qobuz email"
+                                            HorizontalContentAlignment="Stretch">
+                                <TextBox x:Name="QobuzEmailInput"
+                                     Width="500"
+                                     Margin="0,0,0,4"
+                                     ToolTipService.ToolTip="Email"
+                                     Header="Email">
+                                    <TextBox.HeaderTemplate>
+                                        <DataTemplate>
+                                            <TextBlock Text="{Binding}" Style="{ThemeResource CaptionTextBlockStyle}"
+                                                   Foreground="{ThemeResource TextFillColorSecondary}"
+                                                   Margin="0,2,0,-2" />
+                                        </DataTemplate>
+                                    </TextBox.HeaderTemplate>
+                                </TextBox>
+                            </local:SettingsCard>
+                            <local:SettingsCard x:Name="QobuzPassword" Header="Password" Description="Option 1: enter your Qobuz password"
+                                            HorizontalContentAlignment="Stretch">
+                                <helpers:CustomPasswordBox x:Name="QobuzPasswordInput" VerticalAlignment="Center" Width="500" Tooltip="Qobuz password" Header="Password"/>
+                            </local:SettingsCard>
+                            <local:SettingsCard Header="User ID" Description="Option 2: enter your user ID"
                                             HorizontalContentAlignment="Stretch">
                                 <TextBox x:Name="QobuzIDInput"
                                      Width="500"
@@ -247,7 +267,7 @@
                                 </TextBox>
                             </local:SettingsCard>
                             <local:SettingsCard x:Name="QobuzAuthToken" Header="Authentication Token"
-                                            Description="Enter your authentication token"
+                                            Description="Option 2: enter your authentication token"
                                             HorizontalContentAlignment="Stretch">
                                 <helpers:CustomPasswordBox x:Name="QobuzTokenInput" VerticalAlignment="Center" Width="500" Tooltip="Qobuz authentication token" Header="Authentication token"/>
                             </local:SettingsCard>
@@ -260,7 +280,7 @@
                     <local:SettingsExpander x:Name="SpotifyExpander"
                                         VerticalAlignment="Top"
                                         Header="Spotify"
-                                        Description="Set authentication tokens for Spotify."
+                                        Description="Set developer app credentials for Spotify."
                                         HorizontalContentAlignment="Stretch">
                         <local:SettingsExpander.HeaderIcon>
                             <FontIcon Glyph="&#xE72E;" />

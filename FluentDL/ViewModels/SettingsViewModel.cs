@@ -18,6 +18,8 @@ public partial class SettingsViewModel : ObservableRecipient
         DeezerARL = "deezer_arl",
         QobuzId = "qobuz_id",
         QobuzToken = "qobuz_token",
+        QobuzEmail = "qobuz_email",
+        QobuzPassword = "qobuz_password",
         SearchSource = "search_source",
         DownloadDirectory = "download_directory",
         AskBeforeDownload = "ask_before_download",
