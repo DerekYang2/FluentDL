@@ -215,6 +215,9 @@
                                             HorizontalContentAlignment="Stretch">
                                 <helpers:CustomPasswordBox x:Name="DeezerARLInput" VerticalAlignment="Center" Width="500" Tooltip="Deezer ARL" Header="Deezer ARL"/>
                             </local:SettingsCard>
+                            <local:SettingsCard x:Name="DeezerUpdateCard" Header="Save Changes" HorizontalContentAlignment="Stretch">
+                                <Button x:Name="DeezerUpdateButton" Click="DeezerUpdateButton_Click" Content="Save"/>
+                            </local:SettingsCard>
                         </local:SettingsExpander.Items>
                     </local:SettingsExpander>
 
@@ -233,8 +236,7 @@
                                      Width="500"
                                      Margin="0,0,0,4"
                                      ToolTipService.ToolTip="User ID"
-                                     Header="User ID"
-                                     LostFocus="QobuzIDInput_OnLostFocus">
+                                     Header="User ID">
                                     <TextBox.HeaderTemplate>
                                         <DataTemplate>
                                             <TextBlock Text="{Binding}" Style="{ThemeResource CaptionTextBlockStyle}"
@@ -248,6 +250,9 @@
                                             Description="Enter your authentication token"
                                             HorizontalContentAlignment="Stretch">
                                 <helpers:CustomPasswordBox x:Name="QobuzTokenInput" VerticalAlignment="Center" Width="500" Tooltip="Qobuz authentication token" Header="Authentication token"/>
+                            </local:SettingsCard>
+                             <local:SettingsCard x:Name="QobuzUpdateCard" Header="Save Changes" HorizontalContentAlignment="Stretch">
+                                <Button x:Name="QobuzUpdateButton" Click="QobuzUpdateButton_Click" Content="Save"/>
                             </local:SettingsCard>
                         </local:SettingsExpander.Items>
                     </local:SettingsExpander>
@@ -267,8 +272,7 @@
                                      Width="500"
                                      Margin="0,0,0,4"
                                      ToolTipService.ToolTip="Client ID"
-                                     Header="Client ID"
-                                     LostFocus="ClientIdInput_OnLostFocus">
+                                     Header="Client ID">
                                     <TextBox.HeaderTemplate>
                                         <DataTemplate>
                                             <TextBlock Text="{Binding}" Style="{ThemeResource CaptionTextBlockStyle}"
@@ -282,6 +286,9 @@
                                             Description="Enter your client secret string"
                                             HorizontalContentAlignment="Stretch">
                                 <helpers:CustomPasswordBox x:Name="SpotifySecretInput" VerticalAlignment="Center" Width="500" Tooltip="Spotify client secret" Header="Client secret"/>
+                            </local:SettingsCard>
+                            <local:SettingsCard x:Name="SpotifyUpdateCard" Header="Save Changes" HorizontalContentAlignment="Stretch">
+                                <Button x:Name="SpotifyUpdateButton" Click="SpotifyUpdateButton_Click" Content="Save"/>
                             </local:SettingsCard>
                         </local:SettingsExpander.Items>
                     </local:SettingsExpander>

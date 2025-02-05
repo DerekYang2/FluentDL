@@ -91,11 +91,6 @@ public sealed partial class SettingsPage : Page
         QobuzIDInput.Text = await localSettings.ReadSettingAsync<string>(SettingsViewModel.QobuzId) ?? "";
         QobuzTokenInput.Password = await localSettings.ReadSettingAsync<string>(SettingsViewModel.QobuzToken) ?? "";
 
-        // Set lost input focus events
-        DeezerARLInput.LostFocus += DeezerARLInput_OnLostFocus;
-        SpotifySecretInput.LostFocus += SpotifySecretInput_OnLostFocus;
-        QobuzTokenInput.LostFocus += QobuzTokenInput_OnLostFocus;
-
         // Set source combo box
         var searchSource = await localSettings.ReadSettingAsync<string>(SettingsViewModel.SearchSource) ?? "Deezer";
         foreach (ComboBoxItem cbi in SearchSourceComboBox.Items)
@@ -124,26 +119,9 @@ public sealed partial class SettingsPage : Page
         QueueRemoveCheckbox.IsChecked = await localSettings.ReadSettingAsync<bool>(SettingsViewModel.QueueRemoveChecked);
     }
 
-    private async void ClientIdInput_OnLostFocus(object sender, RoutedEventArgs e)
+    private async void SpotifyUpdateButton_Click(object sender, RoutedEventArgs e)
     {
-        // Save client id
         await localSettings.SaveSettingAsync(SettingsViewModel.SpotifyClientId, ClientIdInput.Text.Trim());
-        // Recreate spotify api object
-        await SpotifyApi.Initialize(await localSettings.ReadSettingAsync<string>(SettingsViewModel.SpotifyClientId), await localSettings.ReadSettingAsync<string>(SettingsViewModel.SpotifyClientSecret));
-
-        if (SpotifyApi.IsInitialized)
-        {
-            ShowInfoBar(InfoBarSeverity.Success, "Authentication successful", 3, "Spotify");
-        }
-        else
-        {
-            ShowInfoBar(InfoBarSeverity.Error, "Authentication failed", 3, "Spotify");
-        }
-    }
-
-    private async void SpotifySecretInput_OnLostFocus(object sender, RoutedEventArgs e)
-    {
-        // TODO: encryption?
         await localSettings.SaveSettingAsync(SettingsViewModel.SpotifyClientSecret, SpotifySecretInput.Password.Trim());
         await SpotifyApi.Initialize(await localSettings.ReadSettingAsync<string>(SettingsViewModel.SpotifyClientId), await localSettings.ReadSettingAsync<string>(SettingsViewModel.SpotifyClientSecret));
 
@@ -157,7 +135,7 @@ public sealed partial class SettingsPage : Page
         }
     }
 
-    private async void DeezerARLInput_OnLostFocus(object sender, RoutedEventArgs e)
+    private async void DeezerUpdateButton_Click(object sender, RoutedEventArgs e)
     {
         await localSettings.SaveSettingAsync(SettingsViewModel.DeezerARL, DeezerARLInput.Password.Trim());
         await DeezerApi.InitDeezerClient(DeezerARLInput.Password.Trim());
@@ -172,41 +150,10 @@ public sealed partial class SettingsPage : Page
         }
     }
 
-    private async void QobuzIDInput_OnLostFocus(object sender, RoutedEventArgs e)
-    {
+    private async void QobuzUpdateButton_Click(object sender, RoutedEventArgs e) {
         await localSettings.SaveSettingAsync(SettingsViewModel.QobuzId, QobuzIDInput.Text.Trim());
-        
-        AuthenticationCallback authCallback = (bool success) =>
-        {
-            dispatcher.TryEnqueue(() =>
-            {
-                if (success)
-                {
-                    ShowInfoBar(InfoBarSeverity.Success, "Authentication successful", 3, "Qobuz");
-                }
-                else
-                {
-                    ShowInfoBar(InfoBarSeverity.Error, "Authentication failed", 3, "Qobuz");
-                }
-            });
-        };
-
-        // Run seperate thread for synchronous Qobuz initialization
-        Thread thread = new Thread(() =>
-        {
-            var qobuzId = localSettings.ReadSettingAsync<string>(SettingsViewModel.QobuzId).GetAwaiter().GetResult();
-            var qobuzToken = localSettings.ReadSettingAsync<string>(SettingsViewModel.QobuzToken).GetAwaiter().GetResult();
-            QobuzApi.Initialize(qobuzId, qobuzToken, authCallback);
-        });
-        thread.Priority = ThreadPriority.Highest;
-        thread.Start();
-
-    }
-
-    private async void QobuzTokenInput_OnLostFocus(object sender, RoutedEventArgs e)
-    {
         await localSettings.SaveSettingAsync(SettingsViewModel.QobuzToken, QobuzTokenInput.Password.Trim());
-        
+
         AuthenticationCallback authCallback = (bool success) =>
         {
             dispatcher.TryEnqueue(() =>
@@ -596,5 +543,4 @@ public sealed partial class SettingsPage : Page
         dispatcherTimer.Interval = TimeSpan.FromSeconds(seconds);
         dispatcherTimer.Start();
     }
-
 }
