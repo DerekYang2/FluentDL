@@ -61,9 +61,9 @@ public sealed partial class SettingsPage : Page
             AudioConversionThreadsCard.Description = $"{(int)Math.Round(AudioConversionThreadsSlider.Value)} threads";
         };
 
-        ConversionThreadsSlider.Value = await localSettings.ReadSettingAsync<int?>(SettingsViewModel.ConversionThreads) ?? 1;
         CommandThreadsSlider.Value = await localSettings.ReadSettingAsync<int?>(SettingsViewModel.CommandThreads) ?? 1;
-        AudioConversionThreadsSlider.Value = await localSettings.ReadSettingAsync<int?>(SettingsViewModel.AudioConversionThreads) ?? 1;
+        ConversionThreadsSlider.Value = await localSettings.ReadSettingAsync<int?>(SettingsViewModel.ConversionThreads) ?? 3;
+        AudioConversionThreadsSlider.Value = await localSettings.ReadSettingAsync<int?>(SettingsViewModel.AudioConversionThreads) ?? 6; 
 
         // Set quality combo boxes (default flac)
         DeezerQualityComboBox.SelectedIndex = await localSettings.ReadSettingAsync<int?>(SettingsViewModel.DeezerQuality) ?? 2;

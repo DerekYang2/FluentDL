@@ -223,7 +223,7 @@
 
                     <local:SettingsExpander x:Name="QobuzExpander"
                                         VerticalAlignment="Top"
-                                        Description="Set either email/password or id/token for Qobuz. Only one of authentication methods is needed."
+                                        Description="Set either email/password or id/token for Qobuz. Only one of these authentication methods is needed."
                                         Header="Qobuz"
                                         HorizontalContentAlignment="Stretch">
                         <local:SettingsExpander.HeaderIcon>
@@ -280,8 +280,13 @@
                     <local:SettingsExpander x:Name="SpotifyExpander"
                                         VerticalAlignment="Top"
                                         Header="Spotify"
-                                        Description="Set developer app credentials for Spotify."
                                         HorizontalContentAlignment="Stretch">
+                        <local:SettingsExpander.Description>
+                            <TextBlock>
+                            Set <Hyperlink NavigateUri="https://developer.spotify.com/documentation/web-api/concepts/apps">developer app credentials</Hyperlink> for Spotify. Alternatively, ensure you are logged into the <Hyperlink NavigateUri="https://open.spotify.com/">web player</Hyperlink> for automatic authentication.
+                            </TextBlock>
+                        </local:SettingsExpander.Description>
+                        
                         <local:SettingsExpander.HeaderIcon>
                             <FontIcon Glyph="&#xE72E;" />
                         </local:SettingsExpander.HeaderIcon>
