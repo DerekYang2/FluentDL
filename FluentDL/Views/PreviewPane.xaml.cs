@@ -91,8 +91,11 @@ namespace FluentDL.Views
 
                 trackDetailsList.Add(new TrackDetail { Label = "Track", Value = jsonObject.GetProperty("track_position").ToString() });
                 trackDetailsList.Add(new TrackDetail { Label = "Genre", Value = await DeezerApi.GetGenreStr(albumObj.GetProperty("id").GetInt32()) });
+                trackDetailsList.Add(new TrackDetail { Label = "Max Quality", Value = $"16-Bit/44.1 kHz"});
+
                 trackDetailsList.Add(new TrackDetail { Label = "Popularity", Value = "" });
                 SetPopularityIcon(ApiHelper.GetRank(selectedSong));
+
 
                 // Load the audio stream
                 var previewUri = jsonObject.GetProperty("preview").ToString();
@@ -112,6 +115,7 @@ namespace FluentDL.Views
                 PreviewInfoControl2.ItemsSource = PreviewInfoControl.ItemsSource = trackDetailsList;
                 trackDetailsList.Add(new TrackDetail() { Label = "Track", Value = selectedSong.TrackPosition });
                 trackDetailsList.Add(new TrackDetail { Label = "Genre", Value = string.Join(", ", QobuzApi.PruneGenreList(track.Album.GenresList)) });
+                trackDetailsList.Add(new TrackDetail { Label = "Max Quality", Value = $"{track.MaximumBitDepth}-Bit/{track.MaximumSamplingRate} kHz"});
                 PopularityIcon.Visibility = Visibility.Collapsed;
 
                 // Load the audio stream
