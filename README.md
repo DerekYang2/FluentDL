@@ -69,7 +69,9 @@ FluentDL is organized into three sections: Search, Local Explorer, and Queue.
   </tr>
 </table>
 
-TIP: change the number of threads in settings for significantly faster conversions, matching, and downloading.
+> [!NOTE]  
+> TIP: change the number of threads in settings for significantly faster conversions, matching, and downloading.
+
 
 ## Installation 
 This project is deployed using MSIX, which installs the application on Windows. To install this application, download the first zip from [Releases](https://github.com/DerekYang2/FluentDL/releases).
@@ -110,17 +112,40 @@ Searching/conversions between Deezer, Qobuz, and Youtube do not require authenti
 
 If you are logged into the Spotify web player, you will not need to authenticate. Authentication tokens will automatically be grabbed from cookies. 
 
-If you are not logged into the web player or there are issues with this authentication method, you may also use developer API tokens. These tokens (client ID and client secret) can be created for free through the Spotify Developer Dashboard. For more details on obtaining these tokens, visit the [official documentation](https://developer.spotify.com/documentation/web-api/tutorials/getting-started). 
+However, if you are not logged into the web player or there are auth issues, you may resort to developer API tokens. This method is guaranteed to work. These tokens (client ID and client secret) can be created for free through the Spotify Developer Dashboard. For more details on obtaining these tokens, visit the [official documentation](https://developer.spotify.com/documentation/web-api/tutorials/getting-started). 
 
 ### Downloading
-- Downloading from Youtube does not require authentication. As verified through spectrogram, highest quality sources use the very efficient OPUS codec. However, OPUS containers such as OGG have poor metadata support and compatability. FluentDL wraps them with FLAC to maintain original quality, while having better support. But they are NOT lossless.   
-- Downloading high quality sources from Deezer requires an ARL for a premium account. If the ARL is for a regular account, you may only download 128 kbps MP3s.
-- Downloading from Qobuz requires authentication for a premium account. Otherwise, you will only be able to download 30 second previews. You may log in with email/password or tokens, only one method is required.
-- Downloading directly from Spotify is not currently supported, and they do not use lossless sources. Use the convert tool to get equivalent Deezer/Qobuz/Youtube tracks, then download.
- 
-You do not have re-enter credentials each time because they are stored locally. Note that tokens expire or may break due to occasional web-player changes. 
+Authentication requirements for downloading varies for the sources. The type of account (free vs subscription) may also affect the audio quality available. You do not have re-enter credentials each time because they are stored locally. Note that tokens expire or may occasionally become invalid due to web-player changes. 
 
-[Here](https://erikstechcorner.com/2020/09/how-to-check-if-your-flac-files-are-really-lossless/) is a guide on using Spek (spectrogram software) to verify your file quality.
+<table>
+  <tr>
+    <td><strong>Service</strong></td>
+    <td><strong>Downloads</strong></td>
+  </tr>
+  <tr>
+    <td>Youtube</td>
+    <td>No Authentication Required (128 kbps OPUS, which is similar to 256kbps MP3)</td>
+  </tr>
+  <tr>
+    <td>Deezer</td>
+    <td>Free Account (128 kbps MP3), Premium Account (320 kbps MP3 and 16bit/44.1kHZ FLAC)</td>
+  </tr>
+  <tr>
+    <td>Qobuz</td>
+    <td>Free Account (30 second preview), Premium Account (up to 24bit/192khz FLAC)</td>
+  </tr>
+  <tr>
+    <td>Spotify</td>
+    <td>Not Available</td>
+  </tr>
+</table>
+
+You cannot determine the quality of a file by checking its bitrate. Files can be transcoded (converted), meaning a FLAC or high-bitrate file may have originated from a low-quality source. [Here](https://erikstechcorner.com/2020/09/how-to-check-if-your-flac-files-are-really-lossless/) is a guide on using Spek, a spectrogram tool, to verify audio file quality. 
+
+#### Additional Notes:
+- Downloading from Youtube does not require authentication. As verified through spectrogram, highest quality sources use the very efficient OPUS codec. The issue is OPUS containers, such as `.ogg` or `.webm`, have poor metadata support and compatability. FluentDL transcodes them into a FLAC in order to maintain original quality and solve the mentioned issues. 
+- Downloading directly from Spotify is not currently supported. Most tools out there download low quality MP3s. However, there are a few Python tools that get the true sources (320 kbps vorbis, 256 kbps AAC). Unfortunately, I could not find .NET equivalents. For FluentDL, use the convert tool to get equivalent Deezer/Qobuz/Youtube tracks, then set output to Local (download).
+
 
 ### Retrieving Tokens
 If you already have them, enter them in settings. Otherwise:
