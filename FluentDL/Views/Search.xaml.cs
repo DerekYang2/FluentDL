@@ -18,6 +18,7 @@ using AngleSharp.Dom;
 using Microsoft.UI.Xaml.Hosting;
 using Microsoft.UI.Xaml.Input;
 using Visibility = Microsoft.UI.Xaml.Visibility;
+using static System.Net.WebRequestMethods;
 
 namespace FluentDL.Views;
 // TODO: loading for search
@@ -147,6 +148,20 @@ public sealed partial class Search : Page
     {
         await ViewModel.InitializeAsync(); // Initialize settings
         //ResultsIcon.Loaded += (s, e) => InitAnimation();
+
+        // Infobar message for possible new version
+        try 
+        {
+            var latestRelease = await GithubAPI.GetLatestRelease() ?? "";
+            var currentVersion = SettingsViewModel.GetVersionDescription();
+            if (!latestRelease.Contains(currentVersion)) {
+                ShowInfoBar(InfoBarSeverity.Informational, $"New version available: <a href='https://github.com/derekyang2/fluentdl/releases/latest'>FluentDL {latestRelease}</a>", 5);
+            }
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine("Failed to fetch latest release version: " + ex);
+        }
     }
 
     protected async override void OnNavigatedTo(NavigationEventArgs e) // Navigated to page

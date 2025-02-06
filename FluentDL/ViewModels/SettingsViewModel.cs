@@ -85,7 +85,7 @@ public partial class SettingsViewModel : ObservableRecipient
     }
 
 
-    private static string GetVersionDescription()
+    public static string GetVersionDescription()
     {
         Version version;
 
