@@ -107,11 +107,15 @@ Before using the application, head over to the settings page through the sidebar
 
 ### Searches
 Searching/conversions between Deezer, Qobuz, and Youtube do not require authentication.
-Spotify requires API tokens (client ID and secret), but through the Spotify Developer Dashboard. For more details on obtaining these tokens, visit the [official documentation](https://developer.spotify.com/documentation/web-api/tutorials/getting-started). 
+
+If you are logged into the Spotify web player, you will not need to authenticate. Authentication tokens will automatically be grabbed from cookies. 
+
+If you are not logged into the web player or there are issues with this authentication method, you may also use developer API tokens. These tokens (client ID and client secret) can be created for free through the Spotify Developer Dashboard. For more details on obtaining these tokens, visit the [official documentation](https://developer.spotify.com/documentation/web-api/tutorials/getting-started). 
 
 ### Downloading
 - Downloading from Youtube does not require authentication. As verified through spectrogram, highest quality sources use the very efficient OPUS codec. However, OPUS containers such as OGG have poor metadata support and compatability. FluentDL wraps them with FLAC to maintain original quality, while having better support. But they are NOT lossless.   
-- Downloading from Deezer and Qobuz require authentication through ARLs and Tokens respectively. These must be from premium accounts.
+- Downloading high quality sources from Deezer requires an ARL for a premium account. If the ARL is for a regular account, you may only download 128 kbps MP3s.
+- Downloading from Qobuz requires authentication for a premium account. Otherwise, you will only be able to download 30 second previews. You may log in with email/password or tokens, only one method is required.
 - Downloading directly from Spotify is not currently supported, and they do not use lossless sources. Use the convert tool to get equivalent Deezer/Qobuz/Youtube tracks, then download.
  
 You do not have re-enter credentials each time because they are stored locally. Note that tokens expire or may break due to occasional web-player changes. 
