@@ -70,7 +70,7 @@ FluentDL is organized into three sections: Search, Local Explorer, and Queue.
 </table>
 
 > [!NOTE]  
-> TIP: change the number of threads in settings for significantly faster conversions, matching, and downloading.
+> Tip: change the number of threads in settings for significantly faster conversions, matching, and downloading.
 
 
 ## Installation 
@@ -110,7 +110,7 @@ Before using the application, head over to the settings page through the sidebar
 ### Searches
 Searching/conversions between Deezer, Qobuz, and Youtube do not require authentication.
 
-If you are logged into the Spotify web player, you will not need to authenticate. Authentication tokens will automatically be grabbed from cookies. 
+If you are logged into the Spotify web player, you will not need to authenticate. Authentication tokens are automatically grabbed from cookies. 
 
 However, if you are not logged into the web player or there are auth issues, you may resort to developer API tokens. This method is guaranteed to work. These tokens (client ID and client secret) can be created for free through the Spotify Developer Dashboard. For more details on obtaining these tokens, visit the [official documentation](https://developer.spotify.com/documentation/web-api/tutorials/getting-started). 
 
@@ -143,8 +143,8 @@ Authentication requirements for downloading varies for the sources. The type of 
 You cannot determine the quality of a file by checking its bitrate. Files can be transcoded (converted), meaning a FLAC or high-bitrate file may have originated from a low-quality source. [Here](https://erikstechcorner.com/2020/09/how-to-check-if-your-flac-files-are-really-lossless/) is a guide on using Spek, a spectrogram tool, to verify audio file quality. 
 
 #### Additional Notes:
-- Downloading from Youtube does not require authentication. As verified through spectrogram, highest quality sources use the very efficient OPUS codec. The issue is OPUS containers, such as `.ogg` or `.webm`, have poor metadata support and compatability. FluentDL transcodes them into a FLAC in order to maintain original quality and solve the mentioned issues. 
-- Downloading directly from Spotify is not currently supported. Most tools out there download low quality MP3s. However, there are a few Python tools that get the true sources (320 kbps vorbis, 256 kbps AAC). Unfortunately, I could not find .NET equivalents. For FluentDL, use the convert tool to get equivalent Deezer/Qobuz/Youtube tracks, then set output to Local (download).
+- As verified through spectrogram, highest quality Youtube sources use the very efficient OPUS codec. The issue is OPUS containers, such as `.ogg` or `.webm`, have poor metadata support and compatability. FluentDL transcodes them into a FLAC in order to maintain original quality and support metadata. However, they are NOT lossless; this is an example of the transcoding mentioned above.
+- Downloading directly from Spotify is not supported. Most tools out there download low quality MP3s. However, there are a few Python tools that get the true sources (320 kbps vorbis, 256 kbps AAC). Unfortunately, I could not find .NET equivalents. For FluentDL, use the convert tool to get equivalent Deezer/Qobuz/Youtube tracks, then set output to Local (download).
 
 
 ### Retrieving Tokens
