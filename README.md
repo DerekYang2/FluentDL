@@ -105,7 +105,7 @@ An [experimental package](https://github.com/CommunityToolkit/Labs-Windows/issue
 
 In order to deploy the application, follow `Project > Publish > Create App Packages` and sign it with a certificate. 
 
-The pre-built FFmpeg executable is found at [./Assets/ffmpeg/bin](https://github.com/DerekYang2/FluentDL/tree/master/Assets/ffmpeg/bin) and contains many additional codecs, such as libopus and libvorbis. 
+The pre-built FFmpeg executable is found at [./FluentDL/Assets/ffmpeg/bin](https://github.com/DerekYang2/FluentDL/blob/master/FluentDL/Assets/ffmpeg/bin/ffmpeg.exe) and contains many additional codecs, such as libopus and libvorbis. 
  
 You may use your own FFmpeg binaries, but note that libopus is required for Youtube's highest quality source.
 
