@@ -27,6 +27,7 @@
         <helpers:NullVisibilityConverter x:Key="NullVisibilityConverter" />
         <helpers:InverseNullVisibilityConverter x:Key="InverseNullVisibilityConverter" />
         <helpers:SourceToColorConverter x:Key="SourceToColorConverter" />
+        <helpers:LocalSourceToVisibilityConverter x:Key="LocalSourceToVisibilityConverter" />
     </Page.Resources>
 
     <Grid>
@@ -187,6 +188,10 @@
                                 <Button x:Name="RemoveButton" VerticalAlignment="Bottom" HorizontalAlignment="Right" Padding="4, 4, 3, 3" ToolTipService.ToolTip="Remove from queue" Click="RemoveButton_OnClick" Tag="{Binding}" 
                                         Visibility="{Binding ElementName=RootPage, Path=ViewModel.RemoveVisibility, Mode=OneWay}">
                                     <FontIcon Glyph="&#xE74D;" FontSize="20" />
+                                </Button>
+                                <Button x:Name="OpenLocalButton" VerticalAlignment="Bottom" HorizontalAlignment="Right" Padding="4, 4, 3, 3" ToolTipService.ToolTip="Open in File Explorer" Click="OpenLocalButton_Click" Tag="{Binding}"
+                                        Visibility="{x:Bind Source, Converter={StaticResource LocalSourceToVisibilityConverter}}">
+                                    <FontIcon Glyph="&#xE8DA;" FontSize="20" />
                                 </Button>
                             </StackPanel>
 

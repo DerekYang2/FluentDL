@@ -321,6 +321,19 @@ public sealed partial class QueuePage : Page
         RemoveSongFromQueue(song);
     }
 
+    private void OpenLocalButton_Click(object sender, RoutedEventArgs e)
+    {
+        var button = sender as Button;
+        var song = button?.Tag as SongSearchObject;
+
+        if (song != null)
+        {
+            var argument = $"/select, \"{song.Id}\"";
+            System.Diagnostics.Process.Start("explorer.exe", argument);
+        }
+    }
+
+
     private void CopySongLink(SongSearchObject? song)
     {
         if (song == null)

@@ -157,3 +157,23 @@ internal class SourceToColorConverter : IValueConverter
         throw new NotImplementedException();
     }
 }
+
+internal class LocalSourceToVisibilityConverter : IValueConverter 
+{
+    // Converts source to Visibility
+    public object Convert(object? value, Type targetType, object parameter, string language)
+    {
+        if (value == null) throw new ArgumentNullException(nameof(value));
+
+        return ((string)value) switch
+        {
+            "local" => Microsoft.UI.Xaml.Visibility.Visible,
+            _ => Microsoft.UI.Xaml.Visibility.Collapsed,
+        };
+    }
+
+    public object ConvertBack(object value, Type targetType, object parameter, string language)
+    {
+        throw new NotImplementedException();
+    }
+}
