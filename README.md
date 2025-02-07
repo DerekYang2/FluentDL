@@ -1,5 +1,7 @@
 <h1 align="center">
-  FluentDL
+    <a href="https://github.com/DerekYang2/FluentDL">
+    <img alt="FluentDL" src="https://github.com/user-attachments/assets/54f71675-9400-44eb-bc75-0e0e5084eaa0" align="center" height="44"/>
+    </a>
 </h1>
 
 <p align="center">
