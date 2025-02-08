@@ -72,11 +72,11 @@ public sealed partial class SettingsPage : Page
         YoutubeQualityComboBox.SelectedIndex = await localSettings.ReadSettingAsync<int?>(SettingsViewModel.YoutubeQuality) ?? 1;
 
         // Set download directory
-        LocationCard.Description = await localSettings.ReadSettingAsync<string>(SettingsViewModel.DownloadDirectory) ?? "No folder selected";
+        LocationCard.Description = await localSettings.ReadSettingAsync<string?>(SettingsViewModel.DownloadDirectory) ?? "No folder selected";
         if (string.IsNullOrWhiteSpace(LocationCard.Description.ToString())) LocationCard.Description = "No folder selected";
 
         // Set FFmpeg path
-        FFmpegPathCard.Description = await localSettings.ReadSettingAsync<string>(SettingsViewModel.FFmpegPath) ?? "No folder selected";
+        FFmpegPathCard.Description = await localSettings.ReadSettingAsync<string?>(SettingsViewModel.FFmpegPath) ?? "No folder selected";
         if (string.IsNullOrWhiteSpace(FFmpegPathCard.Description.ToString())) FFmpegPathCard.Description = "No folder selected";
 
         // Set ToggleSwitches
@@ -85,16 +85,16 @@ public sealed partial class SettingsPage : Page
         NotificationsToggle.IsOn = await localSettings.ReadSettingAsync<bool>(SettingsViewModel.Notifications);
 
         // Set Ids/Secrets
-        ClientIdInput.Text = (await localSettings.ReadSettingAsync<string>(SettingsViewModel.SpotifyClientId)) ?? "";
-        SpotifySecretInput.Password = (await localSettings.ReadSettingAsync<string>(SettingsViewModel.SpotifyClientSecret)) ?? "";
-        DeezerARLInput.Password = await localSettings.ReadSettingAsync<string>(SettingsViewModel.DeezerARL) ?? "";
-        QobuzIDInput.Text = await localSettings.ReadSettingAsync<string>(SettingsViewModel.QobuzId) ?? "";
-        QobuzTokenInput.Password = await localSettings.ReadSettingAsync<string>(SettingsViewModel.QobuzToken) ?? "";
-        QobuzEmailInput.Text = AesHelper.Decrypt(await localSettings.ReadSettingAsync<string>(SettingsViewModel.QobuzEmail) ?? "");
-        QobuzPasswordInput.Password = AesHelper.Decrypt(await localSettings.ReadSettingAsync<string>(SettingsViewModel.QobuzPassword) ?? "");
+        ClientIdInput.Text = (await localSettings.ReadSettingAsync<string?>(SettingsViewModel.SpotifyClientId)) ?? "";
+        SpotifySecretInput.Password = (await localSettings.ReadSettingAsync<string?>(SettingsViewModel.SpotifyClientSecret)) ?? "";
+        DeezerARLInput.Password = await localSettings.ReadSettingAsync<string?>(SettingsViewModel.DeezerARL) ?? "";
+        QobuzIDInput.Text = await localSettings.ReadSettingAsync<string?>(SettingsViewModel.QobuzId) ?? "";
+        QobuzTokenInput.Password = await localSettings.ReadSettingAsync<string?>(SettingsViewModel.QobuzToken) ?? "";
+        QobuzEmailInput.Text = AesHelper.Decrypt(await localSettings.ReadSettingAsync<string?>(SettingsViewModel.QobuzEmail) ?? "");
+        QobuzPasswordInput.Password = AesHelper.Decrypt(await localSettings.ReadSettingAsync<string?>(SettingsViewModel.QobuzPassword) ?? "");
 
         // Set source combo box
-        var searchSource = await localSettings.ReadSettingAsync<string>(SettingsViewModel.SearchSource) ?? "Deezer";
+        var searchSource = await localSettings.ReadSettingAsync<string?>(SettingsViewModel.SearchSource) ?? "Deezer";
         foreach (ComboBoxItem cbi in SearchSourceComboBox.Items)
         {
             if (cbi.Content as string == searchSource)
@@ -219,7 +219,7 @@ public sealed partial class SettingsPage : Page
                 // Set the folder path in the text box
                 LocationCard.Description = folder.Path;
                 // Save to settings
-                await localSettings.SaveSettingAsync(SettingsViewModel.DownloadDirectory, folder.Path);
+                await localSettings.SaveSettingAsync<string?>(SettingsViewModel.DownloadDirectory, folder.Path);
                 ShowInfoBar(InfoBarSeverity.Success, $"Set download directory to <a href='{folder.Path}'>{folder.Path}</a>");
             }
             else

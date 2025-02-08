@@ -76,7 +76,7 @@ public partial class App : Application
 
                 // Core Services
                 services.AddSingleton<ISampleDataService, SampleDataService>();
-                services.AddSingleton<IFileService, FileService>();
+                services.AddSingleton<IFileService, FileService>(); 
 
                 // Views and ViewModels
                 services.AddTransient<SettingsViewModel>();
@@ -114,6 +114,9 @@ public partial class App : Application
         // App.GetService<IAppNotificationService>().Show(string.Format("AppNotificationSamplePayload".GetLocalized(), AppContext.BaseDirectory));
 
         await App.GetService<IActivationService>().ActivateAsync(args);
+
+        await SettingsViewModel.SetMissingDefaults();
+
         try
         {
             // Fetch previous command list

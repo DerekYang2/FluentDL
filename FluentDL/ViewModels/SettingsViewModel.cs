@@ -7,12 +7,14 @@ using FluentDL.Helpers;
 using Microsoft.UI.Xaml;
 using Windows.ApplicationModel;
 using Microsoft.UI.Xaml.Controls;
+using System.Diagnostics;
 
 namespace FluentDL.ViewModels;
 
 public partial class SettingsViewModel : ObservableRecipient
 {
     public static readonly string
+        FirstRun = "first_run",
         SpotifyClientId = "spotify_client_Id",
         SpotifyClientSecret = "spotify_client_secret",
         DeezerARL = "deezer_arl",
@@ -77,6 +79,80 @@ public partial class SettingsViewModel : ObservableRecipient
                     await _themeSelectorService.SetThemeAsync(param);
                 }
             });
+    }
+    
+    public static async Task SetDefaults(bool overwrite = false) {
+        if (overwrite || (await localSettings.ReadSettingAsync<bool?>(FirstRun) ?? true)) {  // If there are no settings yet
+
+            await localSettings.SaveSettingAsync(CommandThreads, 1);
+            await localSettings.SaveSettingAsync(ConversionThreads, 3);
+            await localSettings.SaveSettingAsync(AudioConversionThreads, 6);
+            await localSettings.SaveSettingAsync(DeezerQuality, 2);
+            await localSettings.SaveSettingAsync(QobuzQuality, 3);
+            await localSettings.SaveSettingAsync(SpotifyQuality, 1);
+            await localSettings.SaveSettingAsync(YoutubeQuality, 1);
+            await localSettings.SaveSettingAsync(AskBeforeDownload, true);
+            await localSettings.SaveSettingAsync(Overwrite, false);
+            await localSettings.SaveSettingAsync(Notifications, false);
+
+            await localSettings.SaveSettingAsync<string?>(DownloadDirectory, null);
+
+            await localSettings.SaveSettingAsync<string?>(FFmpegPath, null);
+            await localSettings.SaveSettingAsync<string?>(SearchSource, "Deezer");
+
+            // All checkboxes unchecked by default
+            await localSettings.SaveSettingAsync(SearchAddChecked, false);
+            await localSettings.SaveSettingAsync(SearchShareChecked, false);
+            await localSettings.SaveSettingAsync(SearchOpenChecked, false);
+            await localSettings.SaveSettingAsync(LocalExplorerAddChecked, false);
+            await localSettings.SaveSettingAsync(LocalExplorerEditChecked, false);
+            await localSettings.SaveSettingAsync(LocalExplorerOpenChecked, false);
+            await localSettings.SaveSettingAsync(QueueShareChecked, false);
+            await localSettings.SaveSettingAsync(QueueDownloadChecked, false);
+            await localSettings.SaveSettingAsync(QueueDownloadCoverChecked, false);
+            await localSettings.SaveSettingAsync(QueueRemoveChecked, false);
+
+           await localSettings.SaveSettingAsync(FirstRun, false);  // Set no_settings to false
+        }
+    }
+
+    private static async Task SaveSettingsAsyncIfNull<T>(string key, T value)
+    {
+        if (await localSettings.ReadSettingAsync<T>(key) == null) {
+            await localSettings.SaveSettingAsync(key, value);
+        }
+    }
+
+    public static async Task SetMissingDefaults() // Similar to SetDefaults, but safer by only setting missing settings
+    {  
+        if (await localSettings.ReadSettingAsync<bool?>(FirstRun) ?? true)
+        {  
+            Debug.WriteLine("Setting missing defaults");
+            await SaveSettingsAsyncIfNull<int?>(CommandThreads, 1);
+            await SaveSettingsAsyncIfNull<int?>(ConversionThreads, 3);
+            await SaveSettingsAsyncIfNull<int?>(AudioConversionThreads, 6);
+            await SaveSettingsAsyncIfNull<int?>(DeezerQuality, 2);
+            await SaveSettingsAsyncIfNull<int?>(QobuzQuality, 3);
+            await SaveSettingsAsyncIfNull<int?>(SpotifyQuality, 1);
+            await SaveSettingsAsyncIfNull<int?>(YoutubeQuality, 1);
+            await SaveSettingsAsyncIfNull<bool?>(AskBeforeDownload, true);
+            await SaveSettingsAsyncIfNull<bool?>(Overwrite, false);
+            await SaveSettingsAsyncIfNull<bool?>(Notifications, false);
+            await SaveSettingsAsyncIfNull<string?>(DownloadDirectory, null);
+            await SaveSettingsAsyncIfNull<string?>(FFmpegPath, null);
+            await SaveSettingsAsyncIfNull<string?>(SearchSource, "Deezer");
+            await SaveSettingsAsyncIfNull<bool?>(SearchAddChecked, false);
+            await SaveSettingsAsyncIfNull<bool?>(SearchShareChecked, false);
+            await SaveSettingsAsyncIfNull<bool?>(SearchOpenChecked, false);
+            await SaveSettingsAsyncIfNull<bool?>(LocalExplorerAddChecked, false);
+            await SaveSettingsAsyncIfNull<bool?>(LocalExplorerEditChecked, false);
+            await SaveSettingsAsyncIfNull<bool?>(LocalExplorerOpenChecked, false);
+            await SaveSettingsAsyncIfNull<bool?>(QueueShareChecked, false);
+            await SaveSettingsAsyncIfNull<bool?>(QueueDownloadChecked, false);
+            await SaveSettingsAsyncIfNull<bool?>(QueueDownloadCoverChecked, false);
+            await SaveSettingsAsyncIfNull<bool?>(QueueRemoveChecked, false);
+            await localSettings.SaveSettingAsync(FirstRun, false);  // Set no_settings to 
+        }
     }
 
     public static async Task<T?> GetSetting<T>(string key)
