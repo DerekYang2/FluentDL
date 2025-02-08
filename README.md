@@ -87,6 +87,17 @@ The application may be installed directly using a powershell script located in t
 
 Right click on `Install.ps1` and press `Run with PowerShell`.
 
+If you have already installed FluentDL before, you can directly double click to run `FluentDL_{VERSION}_x64_MSIX.msix`. The release will note when this does not work (the occasion that the certificate is updated/changed). 
+
+<details>
+  <summary><b>What does the Powershell script do?</b></summary>
+    
+Ideally, you would only need to run `FluentDL_{VERSION}_x64_MSIX.msix`, which opens the official Microsoft Store installer interface. However, certificate is self-signed because ones from certificate authorities can cost hundreds of dollars per year. The powershell script trusts the self-signed certificate on your machine and then runs the MSIX. The <a href="https://superuser.com/questions/463081/adding-self-signed-certificate-to-trusted-root-certificate-store-using-command-l">manual way</a> of trusting a certificate is more work. This is also why if you have already ran the script (trusted the certificate), you can directly run the MSIX in the future. 
+
+A future solution could be deploying to the Microsoft Store directly for a smaller, one-time free. 
+
+</details>
+
 ### Option 2
 
 If that option is not available, open Powershell or CMD into the root directory and run the command:
@@ -111,15 +122,17 @@ You may use your own FFmpeg binaries, but note that libopus is required for Yout
 
 ## Authentication
 
-Whether you need authentication or not depends on the sources you use and the features you need.
+The authentication required depends on the sources and features you use. 
 
-### Searches
-Searching/conversions between Deezer, Qobuz, and Youtube do not require authentication.
+### Searching and Converting
+Searches/conversions for Deezer, Qobuz, and Youtube do not require authentication.
 
-If you are logged into the Spotify web player, you will not need to authenticate. Authentication tokens are automatically grabbed from cookies. However, if this method fails for whatever reason, you can resort to the more reliable Spotify authentication method described [in the Wiki](https://github.com/DerekYang2/FluentDL/wiki/Authentication#spotify).
+If you are logged into the Spotify web player, you will not need to authenticate. Authentication tokens are automatically grabbed from cookies. 
+
+However, if this method fails for whatever reason, use the more reliable Spotify authentication method described in the [authentication wiki](https://github.com/DerekYang2/FluentDL/wiki/Authentication#spotify).
 
 ### Downloading
-Authentication requirements for downloading varies for the sources. The type of account (free vs subscription) may also affect the audio quality available. You do not have re-enter credentials each time because they are stored locally. Note that tokens expire or may occasionally become invalid due to web-player changes. 
+Authentication requirements for downloading varies for the sources. The type of account (free vs subscription) may also affect the audio quality available. You do not have re-enter credentials each time because they are stored locally. They can be left alone for months or even longer, but may eventually expire or invalidate due to occasional web-player changes. 
 
 <table>
   <tr>
@@ -146,16 +159,18 @@ Authentication requirements for downloading varies for the sources. The type of 
 
 <details>
   <summary><b>Click to learn more about file sound quality</b></summary>
-You cannot determine the quality of a file by checking its bitrate. Files can be transcoded (converted), meaning a FLAC or high-bitrate file may have originated from a low-quality source. [Here](https://erikstechcorner.com/2020/09/how-to-check-if-your-flac-files-are-really-lossless/) is a guide on using Spek, a spectrogram tool, to verify audio file quality. 
+  
+  You cannot determine the quality of a file by checking its bitrate. Files can be transcoded (converted), meaning a FLAC or high-bitrate file may have originated from a low-quality source. <a href="https://erikstechcorner.com/2020/09/how-to-check-if-your-flac-files-are-really-lossless/">Here</a> is a guide on using Spek, a spectrogram tool, to verify audio file quality. 
 
-#### Additional Notes:
-- As verified through spectrogram, highest quality Youtube sources use the very efficient OPUS codec. The issue is OPUS containers, such as `.ogg` or `.webm`, have poor metadata support and compatability. FluentDL transcodes them into a FLAC in order to maintain original quality and support metadata. However, they are NOT lossless; this is an example of the transcoding mentioned above.
-- There may not be a significant difference between 128 kbps and higher depending on your audio hardware. Example: you have been content with music on Spotify Web or Youtube without subscriptions, which are both low-bitrate. Youtube OPUS is surprisingly high-quality and likely sufficient, unless you have audiophile headphones, IEMs, etc. 
-- Downloading directly from Spotify is not supported. Most tools out there download low quality MP3s. However, there are a few Python tools that get the true sources (320 kbps vorbis, 256 kbps AAC). Unfortunately, I could not find .NET equivalents. For FluentDL, use the convert tool to get equivalent Deezer/Qobuz/Youtube tracks, then set output to Local (download).
+  #### Additional Notes:
+  - As verified through spectrogram, the highest quality YouTube sources use the very efficient OPUS codec. The issue is OPUS containers, such as `.ogg` or `.webm`, have poor metadata support and compatibility. FluentDL transcodes them into a FLAC in order to maintain original quality and support metadata. However, they are NOT actually lossless and is an example of transcoding.
+  - There may not be a significant difference between 128 kbps and higher depending on your audio hardware and ear. For example, you may be content with music on Spotify Web or YouTube without subscriptions, which are both low-bitrate. <a href="https://abx.digitalfeed.net/list.lame.html">ABX tests</a> are a good way to test your limits!
+  - Downloading directly from Spotify is not supported. Most tools out there download low bitrate MP3s. However, there are a few Python tools that get the true sources (320 kbps Vorbis, 256 kbps AAC). Unfortunately, I could not find .NET equivalents. For FluentDL, use the convert tool to get equivalent Deezer/Qobuz/YouTube tracks, then set the output to Local (download).
 </details>
 
 
-### Retrieving Tokens
-Qobuz email and password is self explanatory. Some authentication methods, such as Deezer ARL, Qobuz id/tokens alternative, or Spotify developer app tokens, are harder to obtain. 
 
-See [https://github.com/DerekYang2/FluentDL/wiki/Authentication](https://github.com/DerekYang2/FluentDL/wiki/Authentication) for a detailed guide on these authentication methods. 
+### Retrieving Tokens
+Qobuz email and password is self explanatory. Some authentication methods, such as Deezer ARL, Qobuz id/tokens alternative, or Spotify developer app tokens, are not obvious. 
+
+However, tokens are not difficult to obtain: see the [authentication wiki](https://github.com/DerekYang2/FluentDL/wiki/Authentication) for a detailed guide. 
