@@ -25,7 +25,7 @@
 </p>
 
 ## About
-A Fluent UI desktop application that helps you download lossless songs as FLACs, convert between audio formats, match songs between different online sources, edit song metadata, and more. This project was made with [WinUI 3](https://github.com/microsoft/microsoft-ui-xaml) and [TemplateStudio](https://github.com/microsoft/TemplateStudio). Under the hood, the app uses FFmpeg and APIs from Deezer, Qobuz, Spotify, and Youtube.
+A Fluent UI desktop application that helps you download lossless songs as FLACs, convert between audio formats, match songs between different online sources, edit song metadata, and more. This project was made with [WinUI 3](https://github.com/microsoft/microsoft-ui-xaml) and [TemplateStudio](https://github.com/microsoft/TemplateStudio). Under the hood, the app uses FFmpeg and APIs for Deezer, Qobuz, Spotify, and Youtube.
 
 FluentDL is organized into three sections: Search, Local Explorer, and Queue.
 
@@ -89,15 +89,6 @@ Right click on `Install.ps1` and press `Run with PowerShell`.
 
 If you have already installed FluentDL before, you can directly double click to run `FluentDL_{VERSION}_x64_MSIX.msix`. The release will note when this does not work (the occasion that the certificate is updated/changed). 
 
-<details>
-  <summary><b>What does the Powershell script do?</b></summary>
-    
-Ideally, you would only need to run `FluentDL_{VERSION}_x64_MSIX.msix`, which opens the official Microsoft Store installer interface. However, certificate is self-signed because ones from certificate authorities can cost hundreds of dollars per year. The powershell script trusts the self-signed certificate on your machine and then runs the MSIX. The <a href="https://superuser.com/questions/463081/adding-self-signed-certificate-to-trusted-root-certificate-store-using-command-l">manual way</a> of trusting a certificate is more work. This is also why if you have already ran the script (trusted the certificate), you can directly run the MSIX in the future. 
-
-A future solution could be deploying to the Microsoft Store directly for a smaller, one-time free. 
-
-</details>
-
 ### Option 2
 
 If that option is not available, open Powershell or CMD into the root directory and run the command:
@@ -105,6 +96,15 @@ If that option is not available, open Powershell or CMD into the root directory 
 ```powershell.exe -executionpolicy unrestricted .\Install.ps1```
 
 The application is now installed, and you should be able to find "FluentDL" with Search or in your Apps list.
+
+<details>
+  <summary><b>What does the Powershell script do?</b></summary>
+    
+Ideally, you would only need to run `FluentDL_{VERSION}_x64_MSIX.msix`, which opens the official Microsoft Store installer interface. However, the certificate is self-signed because ones from certificate authorities can cost hundreds of dollars per year. The powershell script trusts the self-signed certificate on your machine and then runs the MSIX. The <a href="https://superuser.com/questions/463081/adding-self-signed-certificate-to-trusted-root-certificate-store-using-command-l">manual way</a> of trusting a certificate is more work. This is also why if you have already ran the script (trusted the certificate), you can directly run the MSIX in the future. 
+
+A future solution could be deploying to the Microsoft Store directly for a smaller, one-time free. 
+
+</details>
 
 ## Build
 
