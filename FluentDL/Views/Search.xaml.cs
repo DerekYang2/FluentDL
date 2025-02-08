@@ -80,7 +80,7 @@ public sealed partial class Search : Page
     private SpotifyApi spotifyApi;
     private ObservableCollection<SongSearchObject> failedSpotifySongs;
     private List<VideoSearchResult> youtubeAlternateList;
-    private bool failDialogOpen = false;
+    private bool failDialogOpen = false, updateNotificationGiven = false;
     private CancellationTokenSource cancellationTokenSource;
     private DispatcherQueue dispatcher;
     private DispatcherTimer dispatcherTimer;
@@ -148,19 +148,21 @@ public sealed partial class Search : Page
     {
         await ViewModel.InitializeAsync(); // Initialize settings
         //ResultsIcon.Loaded += (s, e) => InitAnimation();
-
-        // Infobar message for possible new version
-        try 
-        {
-            var latestRelease = await GithubAPI.GetLatestRelease() ?? "";
-            var currentVersion = SettingsViewModel.GetVersionDescription();
-            if (!latestRelease.Contains(currentVersion)) {
-                ShowInfoBar(InfoBarSeverity.Informational, $"New version available: <a href='https://github.com/derekyang2/fluentdl/releases/latest'>FluentDL {latestRelease}</a>", 5);
+                // Infobar message for possible new version
+        if (!updateNotificationGiven) {
+            try 
+            {
+                var latestRelease = await GithubAPI.GetLatestRelease() ?? "";
+                var currentVersion = SettingsViewModel.GetVersionDescription();
+                if (!latestRelease.Contains(currentVersion)) {
+                    ShowInfoBar(InfoBarSeverity.Informational, $"New version available: <a href='https://github.com/derekyang2/fluentdl/releases/latest'>FluentDL {latestRelease}</a>", 5);
+                }
+                updateNotificationGiven = true;
             }
-        }
-        catch (Exception ex)
-        {
-            Debug.WriteLine("Failed to fetch latest release version: " + ex);
+            catch (Exception ex)
+            {
+                Debug.WriteLine("Failed to fetch latest release version: " + ex);
+            }
         }
     }
 
