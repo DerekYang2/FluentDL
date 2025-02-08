@@ -111,14 +111,12 @@ You may use your own FFmpeg binaries, but note that libopus is required for Yout
 
 ## Authentication
 
-Before using the application, head over to the settings page through the sidebar. 
+Whether you need authentication or not depends on the sources you use and the features you need.
 
 ### Searches
 Searching/conversions between Deezer, Qobuz, and Youtube do not require authentication.
 
-If you are logged into the Spotify web player, you will not need to authenticate. Authentication tokens are automatically grabbed from cookies. 
-
-However, if you are not logged into the web player or there are auth issues, you may resort to developer API tokens. This method is guaranteed to work. These tokens (client ID and client secret) can be created for free through the Spotify Developer Dashboard. For more details on obtaining these tokens, visit the [official documentation](https://developer.spotify.com/documentation/web-api/tutorials/getting-started). 
+If you are logged into the Spotify web player, you will not need to authenticate. Authentication tokens are automatically grabbed from cookies. However, if this method fails for whatever reason, you can resort to the more reliable Spotify authentication method described [in the Wiki](https://github.com/DerekYang2/FluentDL/wiki/Authentication#spotify).
 
 ### Downloading
 Authentication requirements for downloading varies for the sources. The type of account (free vs subscription) may also affect the audio quality available. You do not have re-enter credentials each time because they are stored locally. Note that tokens expire or may occasionally become invalid due to web-player changes. 
@@ -130,7 +128,7 @@ Authentication requirements for downloading varies for the sources. The type of 
   </tr>
   <tr>
     <td>Youtube</td>
-    <td>No Authentication Required (128 kbps OPUS, which is similar to 256kbps MP3)</td>
+    <td>No Authentication Required (128 kbps OPUS, similar to 256kbps MP3)</td>
   </tr>
   <tr>
     <td>Deezer</td>
@@ -146,16 +144,18 @@ Authentication requirements for downloading varies for the sources. The type of 
   </tr>
 </table>
 
+<details>
+  <summary><b>Click to learn more about file sound quality</b></summary>
 You cannot determine the quality of a file by checking its bitrate. Files can be transcoded (converted), meaning a FLAC or high-bitrate file may have originated from a low-quality source. [Here](https://erikstechcorner.com/2020/09/how-to-check-if-your-flac-files-are-really-lossless/) is a guide on using Spek, a spectrogram tool, to verify audio file quality. 
 
 #### Additional Notes:
 - As verified through spectrogram, highest quality Youtube sources use the very efficient OPUS codec. The issue is OPUS containers, such as `.ogg` or `.webm`, have poor metadata support and compatability. FluentDL transcodes them into a FLAC in order to maintain original quality and support metadata. However, they are NOT lossless; this is an example of the transcoding mentioned above.
+- There may not be a significant difference between 128 kbps and higher depending on your audio hardware. Example: you have been content with music on Spotify Web or Youtube without subscriptions, which are both low-bitrate. Youtube OPUS is surprisingly high-quality and likely sufficient, unless you have audiophile headphones, IEMs, etc. 
 - Downloading directly from Spotify is not supported. Most tools out there download low quality MP3s. However, there are a few Python tools that get the true sources (320 kbps vorbis, 256 kbps AAC). Unfortunately, I could not find .NET equivalents. For FluentDL, use the convert tool to get equivalent Deezer/Qobuz/Youtube tracks, then set output to Local (download).
+</details>
 
 
 ### Retrieving Tokens
-If you already have them, enter them in settings. Otherwise:
+Qobuz email and password is self explanatory. Some authentication methods, such as Deezer ARL, Qobuz id/tokens alternative, or Spotify developer app tokens, are harder to obtain. 
 
-In order to obtain your Deezer ARL, log into [https://www.deezer.com/](https://www.deezer.com/). Then open Developer Tools, and head to the `Application` tab. In the sidebar, open the dropdown list for `Cookies` and there should be an subitem `https://www.deezer.com/`. Click on the subitem and to find the the `arl` value, which should be 192 characters long. Note that you should open the _dropdown_ for the `Cookies` section, not click on it.
-
-Similarly, to obtain a Qobuz id and token, log into [https://play.qobuz.com/](https://play.qobuz.com/) and open Developer Tools. Head over the `Application` tab, open the dropdown list for `Local Storage` and click on the subitem `https://play.qobuz.com`. You should then click on the `localuser` JSON object in the viewing window, where you can find the fields `id` (7 digits) and `token` (86 characters). 
+See [https://github.com/DerekYang2/FluentDL/wiki/Authentication](https://github.com/DerekYang2/FluentDL/wiki/Authentication) for a detailed guide on these authentication methods. 
