@@ -114,19 +114,17 @@ Your machine should have the ability to develop WinUI 3 applications. The simple
 
 Then, open the Solution file `.\FluentDL\FluentDL.sln` using Visual Studio. You must actually open the solution file, not just the project folder. It should prompt you to install the correct .NET SDK. If not, install the latest .NET 8 SDK.  
 
-An [experimental package](https://github.com/CommunityToolkit/Labs-Windows/issues/426) was installed seperately. If it is not automatically handled by the nuget.config, follow the steps below:
+An [experimental package](https://github.com/CommunityToolkit/Labs-Windows/issues/426) was installed seperately. If it is not automatically handled by the nuget.config, install the package manually. 
 
-To install the package manually, you should go to the Tools menu, select Options > NuGet Package Manager > Package Sources. Select the green plus in the upper-right corner and add `https://pkgs.dev.azure.com/dotnet/CommunityToolkit/_packaging/CommunityToolkit-Labs/nuget/v3/index.json` as a source.
-
-Next use the package manager to install `0.1.250103-build.1988` (ensure pre-release checkbox is selected). Alternatively, enter `Install-Package CommunityToolkit.Labs.WinUI.MarqueeText -version 0.1.250103-build.1988` in the VS Package Manager Console.
-
+To install manually:
+- Open the Tools menu, select Options > NuGet Package Manager > Package Sources.
+- Select the green plus in the upper-right corner and add `https://pkgs.dev.azure.com/dotnet/CommunityToolkit/_packaging/CommunityToolkit-Labs/nuget/v3/index.json` as a source.
+- Now install the Nuget package as you normally would. Use the GUI to install MarqueeText `0.1.250103-build.1988` (ensure pre-release checkbox is selected). Alternatively, enter `Install-Package CommunityToolkit.Labs.WinUI.MarqueeText -version 0.1.250103-build.1988` in the VS Package Manager Console.
 Read more about the package and installation instructions [here](https://dev.azure.com/dotnet/CommunityToolkit/_artifacts/feed/CommunityToolkit-Labs/NuGet/CommunityToolkit.Labs.WinUI.MarqueeText/overview/0.1.250103-build.1988).
 
-In order to deploy the application, follow `Project > Publish > Create App Packages` and sign it with a certificate. 
+To run the application, hit the `FluentDL (Package)` play button. To deploy the application, follow `Project > Publish > Create App Packages` and sign it with a certificate. 
 
 Cloning the repo may take a while because it is bundled with FFmpeg and Spek. The pre-built FFmpeg executable is found at [./FluentDL/Assets/ffmpeg/bin](https://github.com/DerekYang2/FluentDL/blob/master/FluentDL/Assets/ffmpeg/bin/ffmpeg.exe) and contains many additional codecs, such as libopus and libvorbis. 
- 
-You may use your own FFmpeg binaries, but libopus is required for Youtube's highest quality source.
 
 ## Authentication
 
