@@ -185,7 +185,7 @@ public sealed partial class Search : Page
     {
         // Initialize preview panel command bar
         var addButton = new AppBarButton { Icon = new SymbolIcon(Symbol.Add), Label = "Add to queue" };
-        addButton.Click += async (sender, e) => AddSongToQueue(PreviewPanel.GetSong());
+        addButton.Click += (sender, e) => AddSongToQueue(PreviewPanel.GetSong());
 
         var shareButton = new AppBarButton() { Icon = new SymbolIcon(Symbol.Link), Label = "Share link" };
         shareButton.Click += (sender, e) => CopySongLink(PreviewPanel.GetSong());

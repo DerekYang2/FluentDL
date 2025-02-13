@@ -269,7 +269,7 @@ public sealed partial class QueuePage : Page
 
     private void InitPreviewPanelButtons()
     {
-        var shareLinkButton = new AppBarButton() { Icon = new SymbolIcon(Symbol.Link), Label = "Share Link" };
+        var shareLinkButton = new AppBarButton() { Icon = new SymbolIcon(Symbol.Link), Label = "Link" };
         shareLinkButton.Click += (sender, e) => CopySongLink(PreviewPanel.GetSong());
 
         var downloadButton = new AppBarButton() { Icon = new SymbolIcon(Symbol.Download), Label = "Download" };
@@ -278,7 +278,7 @@ public sealed partial class QueuePage : Page
         var downloadCoverButton = new AppBarButton() { Icon = new FontIcon { Glyph = "\uEE71" }, Label = "Save Cover" };
         downloadCoverButton.Click += async (sender, e) => await DownloadSongCover(PreviewPanel.GetSong());
 
-        var removeButton = new AppBarButton() { Icon = new SymbolIcon(Symbol.Delete), Label = "Remove" };
+        var removeButton = new AppBarButton() { Icon = new FontIcon { Glyph = "\uECC9"}, Label = "Remove" };
         removeButton.Click += (sender, e) => RemoveSongFromQueue(PreviewPanel.GetSong());
 
         AnimationHelper.AttachScaleAnimation(shareLinkButton);
@@ -286,7 +286,7 @@ public sealed partial class QueuePage : Page
         AnimationHelper.AttachSpringUpAnimation(downloadCoverButton);
         AnimationHelper.AttachScaleAnimation(removeButton);
 
-        PreviewPanel.SetAppBarButtons(new List<AppBarButton> { downloadButton, downloadCoverButton, removeButton, shareLinkButton });
+        PreviewPanel.SetAppBarButtons(new List<AppBarButton> { downloadButton, downloadCoverButton, shareLinkButton, removeButton });
     }
 
     private void ShareLinkButton_OnClick(object sender, RoutedEventArgs e)
@@ -333,6 +333,18 @@ public sealed partial class QueuePage : Page
         }
     }
 
+    private void OpenSpekButton_Click(object sender, RoutedEventArgs e)
+    {
+        var button = sender as Button;
+        var song = button?.Tag as SongSearchObject;
+        if (song == null || song.Source != "local" || !File.Exists(song.Id))  // SongSearchObject.id for local tracks is the file path
+        {
+            ShowInfoBar(InfoBarSeverity.Warning, "Track does not exist locally", 3);
+            return;
+        }
+
+        SpekRunner.RunSpek(song.Id);
+    }
 
     private void CopySongLink(SongSearchObject? song)
     {

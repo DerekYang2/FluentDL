@@ -20,6 +20,7 @@ using System.Text.RegularExpressions;
 using FluentDL.Helpers;
 using TagLib.Id3v2;
 using DispatcherQueue = Microsoft.UI.Dispatching.DispatcherQueue;
+using WinUIEx;
 
 namespace FluentDL.Views;
 
@@ -214,33 +215,22 @@ public sealed partial class LocalExplorerPage : Page
         var addButton = new AppBarButton { Icon = new SymbolIcon(Symbol.Add), Label = "Add to queue" };
         addButton.Click += (sender, e) => AddSongToQueue(PreviewPanel.GetSong());
 
-        var removeButton = new AppBarButton() { Icon = new SymbolIcon(Symbol.Delete), Label = "Remove" };
-        removeButton.Click += (sender, e) =>
-        {
-            var selectedSong = PreviewPanel.GetSong();
-            if (selectedSong != null)
-            {
-                ((ObservableCollection<SongSearchObject>)FileListView.ItemsSource).Remove(selectedSong);
-                originalList.Remove(selectedSong);
-                fileSet.Remove(selectedSong.Id);
-                ShowInfoBar(InfoBarSeverity.Success, $"{selectedSong.Title} removed from local explorer");
-                PreviewPanel.Clear();
-            }
-        };
-
         var editButton = new AppBarButton { Icon = new SymbolIcon(Symbol.Edit), Label = "Edit" };
         editButton.Click += (sender, e) => OpenMetadataDialog(PreviewPanel.GetSong());
+
+        var openSpekButton = new AppBarButton { Icon = new FontIcon { Glyph = "\uE9D2" }, Label = "Analyze" };
+        openSpekButton.Click += (sender, e) => { SpekRunner.RunSpek(PreviewPanel.GetSong()?.Id); };
 
         var openButton = new AppBarButton { Icon = new FontIcon { Glyph = "\uE8DA" }, Label = "Open" };
         openButton.Click += (sender, e) => OpenSongInExplorer(PreviewPanel.GetSong());
 
         // Initialize animations
         AnimationHelper.AttachScaleAnimation(addButton);
-        AnimationHelper.AttachScaleAnimation(removeButton);
         AnimationHelper.AttachScaleAnimation(editButton);
+        AnimationHelper.AttachSpringUpAnimation(openSpekButton);
         AnimationHelper.AttachSpringUpAnimation(openButton);
 
-        PreviewPanel.SetAppBarButtons(new List<AppBarButton> { addButton, removeButton, editButton, openButton });
+        PreviewPanel.SetAppBarButtons(new List<AppBarButton> { addButton, editButton, openSpekButton, openButton });
     }
 
     private void AddToQueueShortcutButton_OnClick(object sender, RoutedEventArgs e)
