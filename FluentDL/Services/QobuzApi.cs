@@ -57,7 +57,7 @@ internal class QobuzApi
                 }
                 catch (Exception e2)
                 {
-                    Debug.WriteLine("Qobuz (old) initialization failed: " + e.Message);
+                    Debug.WriteLine("Qobuz (old) initialization failed: " + e2.Message);
                     authCallback?.Invoke(false);
                 }
             }
