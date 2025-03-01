@@ -242,7 +242,7 @@ public sealed partial class QueuePage : Page
 
             if (QueueViewModel.Source.Count == 0)
             {
-                ProgressText.Text = "No tracks in queue";
+                CountText.Text = "No tracks in queue";
                 QueueProgress.Value = 0;
                 StartStopButton.Visibility = Visibility.Collapsed;
             }
@@ -250,22 +250,20 @@ public sealed partial class QueuePage : Page
             {
                 var completedCount = QueueViewModel.GetCompletedCount();
                 QueueProgress.Value = 100.0 * completedCount / QueueViewModel.Source.Count;
-                if (completedCount > 0)
-                {
-                    ProgressText.Text = $"Running {QueueViewModel.GetCompletedCount()} of {QueueViewModel.Source.Count}";
-                }
+                ProgressText.Text = $"Completed {QueueViewModel.GetCompletedCount()} of {QueueViewModel.Source.Count}";
 
                 if (completedCount == QueueViewModel.Source.Count) // If all tracks are completed
                 {
                     // Reset UI to normal
-                    StartStopButton.Visibility = Visibility.Collapsed; // Hide the start/stop button
+                    ProgressTextButton.Visibility = StartStopButton.Visibility = Visibility.Collapsed; // Hide the start/stop button
+                    CountTextButton.Visibility = Visibility.Visible;
                     EnableButtons();
                     QueueProgress.Value = 0;
                 }
             }
 
             NoItemsText.Visibility = QueueViewModel.Source.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
-            ClearButton.IsEnabled = QueueViewModel.Source.Count > 0;
+            ClearButton.IsEnabled = QueueViewModel.Source.Count > 0 && !QueueViewModel.IsRunning;
         });
     }
 
@@ -549,7 +547,6 @@ public sealed partial class QueuePage : Page
         {
             return;
         }
-
         StartStopButton.Visibility = Visibility.Visible; // Display start stop
         QueueViewModel.SetCommand(commandInputText);
         QueueViewModel.Reset(); // Reset the queue object result strings and index
@@ -597,16 +594,22 @@ public sealed partial class QueuePage : Page
 
     private void SetContinueUI()
     {
+        // UI states when queue is paused
         StartStopIcon.Glyph = "\uE768"; // Change the icon to a start icon
         StartStopText.Text = "Continue";
         EnableButtons();
+        ProgressTextButton.Visibility = Visibility.Collapsed;
+        CountTextButton.Visibility = Visibility.Visible;
     }
 
     private void SetPauseUI()
     {
+        // UI states when the queue is running
         StartStopIcon.Glyph = "\uE769"; // Change the icon to a pause icon
         StartStopText.Text = "Pause";
         DisableButtons();
+        ProgressTextButton.Visibility = Visibility.Visible;
+        CountTextButton.Visibility = Visibility.Collapsed;
     }
 
     private void EnableButtons()

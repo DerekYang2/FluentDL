@@ -148,7 +148,7 @@ public partial class QueueViewModel : ObservableRecipient, INotifyPropertyChange
 
     public static DispatcherQueue dispatcher = DispatcherQueue.GetForCurrentThread();
     private static HashSet<string> trackSet = new HashSet<string>();
-    private static int index;
+    private static int index, completedCount;
 
     private static readonly object _lock = new object();
     private static bool _isRunning = false;
@@ -176,6 +176,7 @@ public partial class QueueViewModel : ObservableRecipient, INotifyPropertyChange
         localSettings = App.GetService<ILocalSettingsService>();
         dispatcher = DispatcherQueue.GetForCurrentThread();
         index = 0;
+        completedCount = 0;
     }
 
     public async Task InitializeAsync()
@@ -292,11 +293,14 @@ public partial class QueueViewModel : ObservableRecipient, INotifyPropertyChange
         trackSet.Clear();
         IsRunning = false;
         index = 0;
+        completedCount = 0;
     }
 
     public static void Reset()
     {
         index = 0; // Reset the index
+        completedCount = 0;
+
         for (int i = 0; i < Source.Count; i++) // Remove all result str, set new obj to refresh ui
         {
             var cleanObj = Source[i];
@@ -335,7 +339,6 @@ public partial class QueueViewModel : ObservableRecipient, INotifyPropertyChange
         IsRunning = true; // Start running 
 
         int threadCount = await SettingsViewModel.GetSetting<int?>(SettingsViewModel.CommandThreads) ?? 1;
-        int completedCount = 0;
 
         for (int t = 0; t < threadCount; t++) // Edit this to change the number of threads
         {
@@ -386,10 +389,14 @@ public partial class QueueViewModel : ObservableRecipient, INotifyPropertyChange
                     // Update the actual object
                     dispatcher.TryEnqueue(() =>
                     {
-                        var newObj = Source[i];
-                        newObj.ResultString = resultStr;
-                        newObj.IsRunning = false;
-                        Source[i] = newObj; // This actually refreshes the UI of ObservableCollection
+                        try {
+                            var newObj = Source[i];
+                            newObj.ResultString = resultStr;
+                            newObj.IsRunning = false;
+                            Source[i] = newObj; // This actually refreshes the UI of ObservableCollection
+                        } catch (Exception e) {
+                            Debug.WriteLine("error updating UI for command runner");  
+                        }
                     });
 
                     var capturedCount = Interlocked.Increment(ref completedCount);
