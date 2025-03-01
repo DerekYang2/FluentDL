@@ -48,7 +48,7 @@
             </Button>
 
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8">
-                <Button x:Name="ConvertDialogOpenButton" VerticalAlignment="Center"
+                <Button x:Name="ConvertDialogOpenButton" VerticalAlignment="Center" 
                         ToolTipService.ToolTip="Convert tracks to other sources"
                         Click="ConvertDialogOpenButton_OnClick">
                     <StackPanel Orientation="Horizontal">
@@ -60,7 +60,16 @@
                         <TextBlock Text="Convert" />
                     </StackPanel>
                 </Button>
-
+                
+                <Button x:Name="DownloadAllButton" VerticalAlignment="Center" 
+                        ToolTipService.ToolTip="Download all tracks in queue"
+                        Click="DownloadAllButton_Click">
+                    <StackPanel Orientation="Horizontal">
+                        <FontIcon x:Name="DownloadAllButtonIcon" Glyph="&#xE896;" FontSize="16" Margin="0, 0, 8, 0"/>
+                        <TextBlock Text="Download" />
+                    </StackPanel>
+                </Button>
+                
                 <Button x:Name="CommandButton" VerticalAlignment="Center" Click="CommandButton_OnClick"
                         ToolTipService.ToolTip="Run a command in Command Prompt">
                     <StackPanel Orientation="Horizontal">

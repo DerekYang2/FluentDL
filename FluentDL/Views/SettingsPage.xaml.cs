@@ -511,8 +511,9 @@ public sealed partial class SettingsPage : Page
     }
 
     // Event handler to close the info bar and stop the timer (only ticks once)
-    private void dispatcherTimer_Tick(object sender, object e)
+    private void dispatcherTimer_Tick(object? sender, object e)
     {
+        if (sender == null) return;
         PageInfoBar.Opacity = 0;
         (sender as DispatcherTimer).Stop();
         // Set IsOpen to false after 0.25 seconds
