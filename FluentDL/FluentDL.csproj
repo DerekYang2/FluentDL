@@ -55,7 +55,7 @@
     <PackageReference Include="TagLibSharp" Version="2.3.0" />
     <PackageReference Include="WinUIEx" Version="2.5.1" />
     <PackageReference Include="YoutubeExplode" Version="6.5.3" />
-    <PackageReference Include="YouTubeMusicAPI" Version="2.2.0" />
+    <PackageReference Include="YouTubeMusicAPI" Version="2.2.5" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\FluentDL.Core\FluentDL.Core.csproj" />

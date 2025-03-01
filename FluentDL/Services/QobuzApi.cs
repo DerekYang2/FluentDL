@@ -419,8 +419,9 @@ internal class QobuzApi
         return await GetTrackAsync(id.ToString(), token);
     }
 
-    public static async Task<SongSearchObject?> GetTrackAsync(string id, CancellationToken token = default)
+    public static async Task<SongSearchObject?> GetTrackAsync(string? id, CancellationToken token = default)
     {
+        if (id == null) return null;
         var track = await Task.Run(() => apiService.GetTrack(id, withAuth: true), token);
         if (track == null)
         {
