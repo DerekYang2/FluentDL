@@ -28,6 +28,7 @@
     <RestoreAdditionalProjectSources>
       https://pkgs.dev.azure.com/dotnet/CommunityToolkit/_packaging/CommunityToolkit-Labs/nuget/v3/index.json
     </RestoreAdditionalProjectSources>
+    <AppxPackageSigningTimestampServerUrl>http://timestamp.digicert.com</AppxPackageSigningTimestampServerUrl>
   </PropertyGroup>
   <ItemGroup>
     <None Remove="Helpers\CustomPasswordBox.xaml" />

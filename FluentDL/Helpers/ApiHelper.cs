@@ -168,7 +168,6 @@ internal class ApiHelper
 
         // Create file path
         var locationNoExt = Path.Combine(directory, fileName);
-        Debug.WriteLine("LOCATION: " + locationNoExt);
 
         if (song.Source == "youtube")
         {

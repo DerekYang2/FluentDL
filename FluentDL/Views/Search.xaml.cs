@@ -842,9 +842,4 @@ public sealed partial class Search : Page
             });
         });
     }
-
-    private void AddQueueButton_OnPointerPressed(object sender, PointerRoutedEventArgs e)
-    {
-        Debug.WriteLine("HERE!!");
-    }
 }
