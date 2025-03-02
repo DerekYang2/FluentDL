@@ -38,6 +38,7 @@ FluentDL is organized into three sections: Search, Local Explorer, and Queue.
         <li>Search using natural language or strict search by title/artist/album</li>
         <li>Parse all tracks from an online link, with track/album/playlist links supported</li>
         <li>Open songs in preview sidebar that can view large cover art, preview audio, show full metadata</li>
+        <li>Add songs to Queue (see below)</li>
       </ul>
     </td>
     <td>
@@ -51,7 +52,9 @@ FluentDL is organized into three sections: Search, Local Explorer, and Queue.
         <li>Upload files from your computer or scan all audio files in a folder</li>
         <li>View file metadata and technical audio specs in-depth</li>
         <li>Edit file metadata live, including option to change cover art!</li>
+        <li>View file spectrogram using Spek</li>
         <li>Convert between flac, mp3, aac, alac, vorbis, opus with control over bitrate</li>
+        <li>Add songs to Queue (see below)</li>
       </ul>
     </td>
     <td>
@@ -62,11 +65,10 @@ FluentDL is organized into three sections: Search, Local Explorer, and Queue.
     <td valign="top">
       <strong>Queue</strong>
       <ul>
-        <li>Add files from Search or Local Explorer into the queue</li>
-        <li>Run custom terminal tools on tracks (with wildcards)</li>
-        <li>Match between any of the online sources (e.g., convert Spotify and YouTube to Deezer equivalents)</li>
+        <li>Matching between all possible combinations of online sources (e.g., convert Spotify and YouTube to Deezer equivalents)</li>
         <li>Download tracks from Deezer, Qobuz, or Youtube with maximum quality</li>
-        <li>Download entire queue using Convert: select Local as output</li>
+        <li>Inspect downloaded tracks using Spek, a spectrogram tool</li>
+        <li>Run custom terminal tools on tracks using wildcards</li>
       </ul>
     </td>
     <td>
@@ -74,10 +76,6 @@ FluentDL is organized into three sections: Search, Local Explorer, and Queue.
     </td>
   </tr>
 </table>
-
-> [!NOTE]  
-> Tip: change the number of threads in settings for significantly faster conversions, matching, and downloading.
-
 
 ## Installation 
 This project is deployed using MSIX, which installs the application on Windows. To install this application, download the first zip from [Releases](https://github.com/DerekYang2/FluentDL/releases).
@@ -166,7 +164,7 @@ Authentication requirements for downloading varies for the sources. The type of 
 <details>
   <summary><b>Click to learn more about file sound quality</b></summary>
   
-  You cannot determine the quality of a file by checking its bitrate. Files can be transcoded (converted), meaning a FLAC or high-bitrate file may have originated from a low-quality source. <a href="https://erikstechcorner.com/2020/09/how-to-check-if-your-flac-files-are-really-lossless/">Here</a> is a guide on using Spek, a spectrogram tool, to verify audio file quality. 
+  You cannot determine the quality of a file by checking its bitrate. Files can be transcoded (converted), meaning a FLAC or high-bitrate file may have originated from a low-quality source. <a href="https://erikstechcorner.com/2020/09/how-to-check-if-your-flac-files-are-really-lossless/">Here</a> is a guide on using Spek, a spectrogram tool, to verify audio file quality. Spek is bundled with FluentDL.
 
   #### Additional Notes:
   - As verified through spectrogram, the highest quality YouTube sources use the very efficient OPUS codec. The issue is OPUS containers, such as `.ogg` or `.webm`, have poor metadata support and compatibility. FluentDL transcodes them into a FLAC in order to maintain original quality and support metadata. However, they are NOT actually lossless and is an example of transcoding.

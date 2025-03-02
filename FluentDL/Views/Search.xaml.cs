@@ -154,7 +154,8 @@ public sealed partial class Search : Page
             {
                 var latestRelease = await GithubAPI.GetLatestRelease() ?? "";
                 var currentVersion = SettingsViewModel.GetVersionDescription();
-                if (!latestRelease.Contains(currentVersion)) {
+                if (latestRelease.CompareTo(currentVersion) > 0)  // Latest version is lexicographically greater
+                {  
                     ShowInfoBar(InfoBarSeverity.Informational, $"New version available: <a href='https://github.com/derekyang2/fluentdl/releases/latest'>FluentDL {latestRelease}</a>", 5);
                 }
                 updateNotificationGiven = true;
