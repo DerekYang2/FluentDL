@@ -44,7 +44,32 @@ public class QueueObject : SongSearchObject
         set;
     } = new SolidColorBrush(Windows.UI.Color.FromArgb(0, 0, 0, 0));
 
-    public QueueObject(SongSearchObject song)
+    // Shortcut Visibilities
+    public Visibility ShareVisibility
+    {
+        get;
+        set;
+    } = Visibility.Collapsed;
+
+    public Visibility DownloadVisibility
+    {
+        get;
+        set;
+    } = Visibility.Collapsed;
+
+    public Visibility DownloadCoverVisibility
+    {
+        get;
+        set;
+    } = Visibility.Collapsed;
+
+    public Visibility RemoveVisibility
+    {
+        get;
+        set;
+    } = Visibility.Collapsed;
+
+    public QueueObject(SongSearchObject song, Visibility ShareVisibility, Visibility DownloadVisibility, Visibility DownloadCoverVisibility, Visibility RemoveVisibility) 
     {
         Title = song.Title;
         ImageLocation = song.ImageLocation;
@@ -61,6 +86,11 @@ public class QueueObject : SongSearchObject
         IsRunning = false;
         LocalBitmapImage = song.LocalBitmapImage;
         Isrc = song.Isrc;
+
+        this.ShareVisibility = ShareVisibility;
+        this.DownloadVisibility = DownloadVisibility;
+        this.DownloadCoverVisibility = DownloadCoverVisibility;
+        this.RemoveVisibility = RemoveVisibility;
     }
 }
 
@@ -119,31 +149,7 @@ public partial class QueueViewModel : ObservableRecipient, INotifyPropertyChange
         set;
     } = string.Empty;
 
-    public Visibility ShareVisibility
-    {
-        get;
-        set;
-    }
-
-    public Visibility DownloadVisibility
-    {
-        get;
-        set;
-    }
-
-    public Visibility DownloadCoverVisibility
-    {
-        get;
-        set;
-    }
-
-    public Visibility RemoveVisibility
-    {
-        get;
-        set;
-    }
-
-    private ILocalSettingsService localSettings;
+    private static ILocalSettingsService localSettings = App.GetService<ILocalSettingsService>();
 
 
     public static DispatcherQueue dispatcher = DispatcherQueue.GetForCurrentThread();
@@ -171,6 +177,12 @@ public partial class QueueViewModel : ObservableRecipient, INotifyPropertyChange
         }
     }
 
+    public static Visibility ShareVisibility = Visibility.Collapsed;
+    public static Visibility DownloadVisibility = Visibility.Collapsed;
+    public static Visibility DownloadCoverVisibility = Visibility.Collapsed;
+    public static Visibility RemoveVisibility = Visibility.Collapsed;
+
+
     public QueueViewModel()
     {
         localSettings = App.GetService<ILocalSettingsService>();
@@ -179,17 +191,15 @@ public partial class QueueViewModel : ObservableRecipient, INotifyPropertyChange
         completedCount = 0;
     }
 
-    public async Task InitializeAsync()
-    {
+    public async Task InitializeAsync() {
+        await UpdateShortCutVisibility();  // Update the shortcut visibility 
+    }
+
+    public static async Task UpdateShortCutVisibility() {
         ShareVisibility = await localSettings.ReadSettingAsync<bool?>(SettingsViewModel.QueueShareChecked) == true ? Visibility.Visible : Visibility.Collapsed;
         DownloadVisibility = await localSettings.ReadSettingAsync<bool?>(SettingsViewModel.QueueDownloadChecked) == true ? Visibility.Visible : Visibility.Collapsed;
         DownloadCoverVisibility = await localSettings.ReadSettingAsync<bool?>(SettingsViewModel.QueueDownloadCoverChecked) == true ? Visibility.Visible : Visibility.Collapsed;
         RemoveVisibility = await localSettings.ReadSettingAsync<bool?>(SettingsViewModel.QueueRemoveChecked) == true ? Visibility.Visible : Visibility.Collapsed;
-
-        //Debug.WriteLine("ShareVisibility: " + (await localSettings.ReadSettingAsync<bool?>(SettingsViewModel.QueueShareChecked) == true ? "Visible" : "Collapsed"));
-        //Debug.WriteLine("DownloadVisibility: " + (await localSettings.ReadSettingAsync<bool?>(SettingsViewModel.QueueDownloadChecked) == true ? "Visible" : "Collapsed"));
-        //Debug.WriteLine("DownloadCoverVisibility: " + (await localSettings.ReadSettingAsync<bool?>(SettingsViewModel.QueueDownloadCoverChecked) == true ? "Visible" : "Collapsed"));
-        //Debug.WriteLine("RemoveVisibility: " + (await localSettings.ReadSettingAsync<bool?>(SettingsViewModel.QueueRemoveChecked) == true ? "Visible" : "Collapsed"));
     }
 
     public static async Task<IRandomAccessStream?> GetRandomAccessStreamFromUrl(string uri)
@@ -211,7 +221,8 @@ public partial class QueueViewModel : ObservableRecipient, INotifyPropertyChange
 
     public static async Task<QueueObject?> CreateQueueObject(SongSearchObject song)
     {
-        var queueObj = new QueueObject(song);
+        var queueObj = new QueueObject(song, ShareVisibility, DownloadVisibility, DownloadCoverVisibility, RemoveVisibility);   
+
         if (queueObj.LocalBitmapImage == null) // Create a local bitmap image for queue objects to prevent disappearing listview images
         {
             using var memoryStream = await GetRandomAccessStreamFromUrl(queueObj.ImageLocation); // Get the memory stream from the url
@@ -237,7 +248,7 @@ public partial class QueueViewModel : ObservableRecipient, INotifyPropertyChange
             return;
         }
 
-        var queueObj = new QueueObject(song);
+        var queueObj = new QueueObject(song, ShareVisibility, DownloadVisibility, DownloadCoverVisibility, RemoveVisibility);
         Source.Add(queueObj);
         trackSet.Add(GetHash(song));
 

@@ -186,29 +186,30 @@
                         <StackPanel Grid.Row="2" Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Bottom" HorizontalAlignment="Right" Spacing="4" >
                             <StackPanel Orientation="Horizontal" VerticalAlignment="Bottom" HorizontalAlignment="Right" Spacing="4" Visibility="{x:Bind IsRunning, Converter={StaticResource CollapsedConverter}}">
                                 <Button x:Name="ShareLinkButton" VerticalAlignment="Bottom" HorizontalAlignment="Right" Padding="4, 4, 3, 3" ToolTipService.ToolTip="Copy track link" Click="ShareLinkButton_OnClick" Tag="{Binding}"
-                                        Visibility="{Binding ElementName=RootPage, Path=ViewModel.ShareVisibility, Mode=OneTime}">
+                                        Visibility="{x:Bind ShareVisibility}">
                                     <FontIcon Glyph="&#xE71B;" FontSize="20" />
                                 </Button>
                                 <Button x:Name="ShortcutDownloadButton" VerticalAlignment="Bottom" HorizontalAlignment="Right" Padding="4, 4, 3, 3" ToolTipService.ToolTip="Download track" Click="ShortcutDownloadButton_OnClick" Tag="{Binding}" 
-                                        Visibility="{Binding ElementName=RootPage, Path=ViewModel.DownloadVisibility, Mode=OneTime}">
+                                        Visibility="{x:Bind DownloadVisibility}">
                                     <FontIcon Glyph="&#xE896;" FontSize="20" />
                                 </Button>
                                 <Button x:Name="DownloadCoverButton" VerticalAlignment="Bottom" HorizontalAlignment="Right" Padding="4, 4, 3, 3" ToolTipService.ToolTip="Download cover" Click="DownloadCoverButton_OnClick" Tag="{Binding}" 
-                                        Visibility="{Binding ElementName=RootPage, Path=ViewModel.DownloadCoverVisibility, Mode=OneTime}">
+                                        Visibility="{x:Bind DownloadCoverVisibility}">
                                     <FontIcon Glyph="&#xEE71;" FontSize="20" />
                                 </Button>
                                 <Button x:Name="RemoveButton" VerticalAlignment="Bottom" HorizontalAlignment="Right" Padding="4, 4, 3, 3" ToolTipService.ToolTip="Remove from queue" Click="RemoveButton_OnClick" Tag="{Binding}" 
-                                        Visibility="{Binding ElementName=RootPage, Path=ViewModel.RemoveVisibility, Mode=OneTime}">
-                                    <FontIcon Glyph="&#xE74D;" FontSize="20" />
+                                        Visibility="{x:Bind RemoveVisibility}">
+                                    <FontIcon Glyph="&#xECC9;" FontSize="20" />
                                 </Button>
-                                <Button x:Name="OpenSpekButton" VerticalAlignment="Bottom" HorizontalAlignment="Right" Padding="4, 4, 3, 3" ToolTipService.ToolTip="Open with Spek" Click="OpenSpekButton_Click" Tag="{Binding}"
-                                        Visibility="{x:Bind Source, Converter={StaticResource LocalSourceToVisibilityConverter}, Mode=OneWay}">
-                                    <FontIcon Glyph="&#xE9D2;" FontSize="20" />
-                                </Button>
-                                <Button x:Name="OpenLocalButton" VerticalAlignment="Bottom" HorizontalAlignment="Right" Padding="4, 4, 3, 3" ToolTipService.ToolTip="Open in File Explorer" Click="OpenLocalButton_Click" Tag="{Binding}"
-                                        Visibility="{x:Bind Source, Converter={StaticResource LocalSourceToVisibilityConverter}, Mode=OneWay}">
-                                    <FontIcon Glyph="&#xE8DA;" FontSize="20" />
-                                </Button>
+
+                                <StackPanel Orientation="Horizontal" VerticalAlignment="Bottom" HorizontalAlignment="Right" Padding="0" Spacing="0" Visibility="{x:Bind Source, Converter={StaticResource LocalSourceToVisibilityConverter}, Mode=OneWay}">
+                                    <Button x:Name="OpenSpekButton" VerticalAlignment="Bottom" HorizontalAlignment="Right" Padding="4, 4, 3, 3" ToolTipService.ToolTip="Open with Spek" Click="OpenSpekButton_Click" Tag="{Binding}">
+                                        <FontIcon Glyph="&#xE9D2;" FontSize="20" />
+                                    </Button>
+                                    <Button x:Name="OpenLocalButton" VerticalAlignment="Bottom" HorizontalAlignment="Right" Padding="4, 4, 3, 3" ToolTipService.ToolTip="Open in File Explorer" Click="OpenLocalButton_Click" Tag="{Binding}">
+                                        <FontIcon Glyph="&#xE8DA;" FontSize="20" />
+                                    </Button>
+                                </StackPanel>
                             </StackPanel>
 
                             <Button x:Name="OutputButton" VerticalAlignment="Bottom" HorizontalAlignment="Right" Padding="4, 4, 3, 3" ToolTipService.ToolTip="View command output" Click="OutputButton_OnClick" Tag="{Binding}" 
