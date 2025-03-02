@@ -1394,7 +1394,11 @@ public sealed partial class QueuePage : Page
             ConversionTabView.SelectedItem = ErrorTab;
         }
 
-        // Show the dialog
-        await ConversionResultsDialog.ShowAsync();
+        try {
+            // Show the dialog
+            await ConversionResultsDialog.ShowAsync();
+        } catch (Exception e) {
+            Debug.WriteLine("Queue conversion dialog fail: " + e.Message);
+        }
     }
 }

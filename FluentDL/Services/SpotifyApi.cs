@@ -8,11 +8,13 @@ using System.Net;
 using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
+using AngleSharp.Text;
 using DeezNET.Data;
 using FluentDL.Helpers;
 using FluentDL.Models;
 using FluentDL.ViewModels;
 using FluentDL.Views;
+using Jint.Runtime.Debugger;
 using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml.Controls;
 using Newtonsoft.Json.Linq;
@@ -130,7 +132,7 @@ namespace FluentDL.Services
             SearchResponse? response;
             try
             {
-                response = await spotify.Search.Item(new SearchRequest(SearchRequest.Types.Track, reqStr) { Limit = limit }, token);
+                response = await spotify.Search.Item(new SearchRequest(SearchRequest.Types.Track, reqStr), token);
             }
             catch (Exception e)
             {
@@ -140,7 +142,7 @@ namespace FluentDL.Services
                 if (albumIdx != -1)
                 {
                     reqStr = reqStr.Substring(0, albumIdx);
-                    response = await spotify.Search.Item(new SearchRequest(SearchRequest.Types.Track, reqStr) { Limit = 20 }, token);
+                    response = await spotify.Search.Item(new SearchRequest(SearchRequest.Types.Track, reqStr), token);
                 }
                 else
                 {
@@ -148,20 +150,23 @@ namespace FluentDL.Services
                 }
             }
 
-            if (response.Tracks.Items == null)
+            if (response.Tracks == null || response.Tracks.Items == null)
             {
                 return;
             }
-
-            itemSource.Clear(); // Clear the item source
-            foreach (FullTrack track in response.Tracks.Items)
-            {
-                if (token.IsCancellationRequested) return;
+            
+            
+            int count = 0;
+            int totalCount = 0;
+            await foreach (FullTrack track in spotify.Paginate(response.Tracks, (s) => s.Tracks)) {
+                if (token.IsCancellationRequested || count >= limit || totalCount >= 100) return;
                 var song = await Task.Run(() => ConvertSongSearchObject(track), token);
                 if (song != null)
                 {
                     itemSource.Add(song);
+                    count++;  // Keep track of valid iterations
                 }
+                totalCount++;  // On every iteration
             }
         }
 
@@ -173,8 +178,9 @@ namespace FluentDL.Services
                 return;
             }
 
+
             limit = Math.Min(limit, 50); // Limit to 50 (maximum for this api)
-            var response = await spotify.Search.Item(new SearchRequest(SearchRequest.Types.Track, query) { Limit = limit }, token);
+            var response = await spotify.Search.Item(new SearchRequest(SearchRequest.Types.Track, query), token);
 
             if (response.Tracks.Items == null)
             {
@@ -182,14 +188,18 @@ namespace FluentDL.Services
             }
 
             itemSource.Clear(); // Clear the item source
-            foreach (FullTrack track in response.Tracks.Items)
-            {
-                if (token.IsCancellationRequested) return;
+
+            int notNullCount = 0;
+            int totalCount = 0;
+            await foreach (FullTrack track in spotify.Paginate(response.Tracks, (s) => s.Tracks)) {
+                if (token.IsCancellationRequested || notNullCount >= limit || totalCount >= 100) return;
                 var song = await Task.Run(() => ConvertSongSearchObject(track), token);
                 if (song != null)
                 {
                     itemSource.Add(song);
+                    notNullCount++;  // Keep track of valid iterations
                 }
+                totalCount++;  // On every iteration
             }
         }
 
@@ -364,6 +374,7 @@ namespace FluentDL.Services
             }
         }
 
+        // TODO: if 20 was not hit/searches are very low, then do not do a spotify filter search, instead append artist and track name as general query
         public static async Task<SongSearchObject?> GetSpotifyTrack(SongSearchObject song, CancellationToken token = default, ConversionUpdateCallback? callback = null)
         {
             if (!IsInitialized)
@@ -411,13 +422,14 @@ namespace FluentDL.Services
             }
 
             reqStr = reqStr.Trim(); // Trim the query
+
             var songObjList = new List<SongSearchObject>(); // List of SongSearchObject results
             HashSet<string> idSet = new HashSet<string>(); // Set of track ids
 
             SearchResponse? response;
             try
             {
-                response = await spotify.Search.Item(new SearchRequest(SearchRequest.Types.Track, reqStr) { Limit = 20 }, token);
+                response = await spotify.Search.Item(new SearchRequest(SearchRequest.Types.Track, reqStr) {Limit=20 }, token);
             }
             catch (Exception e)
             {
@@ -427,23 +439,30 @@ namespace FluentDL.Services
                 if (albumIdx != -1)
                 {
                     reqStr = reqStr.Substring(0, albumIdx);
-                    response = await spotify.Search.Item(new SearchRequest(SearchRequest.Types.Track, reqStr) { Limit = 20 }, token);
+                    response = await spotify.Search.Item(new SearchRequest(SearchRequest.Types.Track, reqStr) {Limit=20 }, token);
                 }
                 else
                 {
                     return null;
                 }
             }
+            
+            int notNullCount = 0, totalCount = 0;
+            int LIMIT = 20;
 
-            if (response.Tracks.Items != null)
+            if (response.Tracks != null)
             {
-                foreach (FullTrack track in response.Tracks.Items) // Add to songObjList if 
-                {
+
+                await foreach (FullTrack track in spotify.Paginate(response.Tracks, (s) => s.Tracks)) {
                     if (token.IsCancellationRequested) return null;
 
-                    var songObject = ConvertSongSearchObject(track);
+                    if (notNullCount >= LIMIT || totalCount >= 1.5*LIMIT) break;
+                    totalCount++;  // Increment total count
 
-                    if (songObject == null) continue;
+                    var songObject = ConvertSongSearchObject(track);
+                    
+                    if (songObject == null) continue;   
+                    notNullCount++;  // Increment count of non-null tracks found
 
                     if (!idSet.Contains(songObject.Id))
                     {
