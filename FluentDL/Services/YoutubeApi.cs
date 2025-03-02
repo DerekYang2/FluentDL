@@ -393,7 +393,7 @@ namespace FluentDL.Services
         }
 
 
-        public static async Task<YoutubeExplode.Search.VideoSearchResult> GetSearchResult(SongSearchObject song)
+        public static async Task<YoutubeExplode.Search.VideoSearchResult?> GetSearchResult(SongSearchObject song)
         {
             // Convert artists csv to array
             var artists = song.Artists.Split(", ");
@@ -661,7 +661,14 @@ namespace FluentDL.Services
             }
 
             // Fall back to searching for videos
-            var ret = await GetTrack((await GetSearchResult(songObj)).Id);
+            var searchResult = await GetSearchResult(songObj);
+            if (searchResult == null)
+            {
+                callback?.Invoke(InfoBarSeverity.Error, songObj);  // Show error badge with original object
+                return null;
+            }
+
+            var ret = await GetTrack(searchResult.Id);
             callback?.Invoke(InfoBarSeverity.Warning, ret); // Not found by ISRC
             return ret;
         }
@@ -779,7 +786,7 @@ namespace FluentDL.Services
             };
         }
 
-        public static async Task<SongSearchObject> GetTrack(string id)
+        public static async Task<SongSearchObject> GetTrack(string? id)
         {
             var video = await youtube.Videos.GetAsync(id);
             return await ConvertSongSearchObject(video);

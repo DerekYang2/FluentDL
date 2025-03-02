@@ -18,6 +18,7 @@ using Microsoft.UI.Xaml.Controls;
 using Newtonsoft.Json.Linq;
 using Org.BouncyCastle.Bcpg.OpenPgp;
 using Org.BouncyCastle.Ocsp;
+using Org.BouncyCastle.Tls.Crypto.Impl.BC;
 using QobuzApiSharp.Models.Content;
 using RestSharp;
 using SpotifyAPI.Web;
@@ -501,7 +502,8 @@ namespace FluentDL.Services
         public static SongSearchObject? ConvertSongSearchObject(FullTrack track)
         {
             var artistCsv = track.Artists.Select(a => a.Name).Aggregate((a, b) => a + ", " + b);
-            if (artistCsv.Length == 0 || track.Album.Name.Length == 0)
+
+            if (artistCsv.Length == 0 || string.IsNullOrEmpty(track.Album.Name))
             {
                 return null;
             }
