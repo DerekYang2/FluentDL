@@ -116,7 +116,7 @@ public partial class App : Application
         await App.GetService<IActivationService>().ActivateAsync(args);
 
         await SettingsViewModel.SetMissingDefaults();
-
+        await QueueViewModel.UpdateShortcutVisibility();
         try
         {
             // Fetch previous command list

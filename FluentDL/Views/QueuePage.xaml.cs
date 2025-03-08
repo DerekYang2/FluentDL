@@ -109,7 +109,6 @@ public sealed partial class QueuePage : Page
     {
         ViewModel = App.GetService<QueueViewModel>();
         InitializeComponent();
-
         dispatcherQueue = DispatcherQueue.GetForCurrentThread();
         dispatcherTimer = new DispatcherTimer();
         dispatcherTimer.Tick += dispatcherTimer_Tick;
@@ -160,14 +159,6 @@ public sealed partial class QueuePage : Page
                 });
             });
         };
-
-        // Set on load
-        this.Loaded += QueuePage_Loaded;
-    }
-
-    private async void QueuePage_Loaded(object sender, RoutedEventArgs e)
-    {
-        await ViewModel.InitializeAsync(); // Initialize the settings for shortcut buttons
     }
 
     private void InitializeAnimations()
@@ -196,7 +187,7 @@ public sealed partial class QueuePage : Page
             }
         }
 
-        await ViewModel.InitializeAsync(); // Initialize the settings for shortcut buttons
+        await QueueViewModel.UpdateShortcutVisibility(); // Initialize the settings for shortcut buttons
     }
 
     protected override void OnNavigatedFrom(NavigationEventArgs e)

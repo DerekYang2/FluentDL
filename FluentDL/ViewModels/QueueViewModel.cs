@@ -191,11 +191,7 @@ public partial class QueueViewModel : ObservableRecipient, INotifyPropertyChange
         completedCount = 0;
     }
 
-    public async Task InitializeAsync() {
-        await UpdateShortCutVisibility();  // Update the shortcut visibility 
-    }
-
-    public static async Task UpdateShortCutVisibility() {
+    public static async Task UpdateShortcutVisibility() {
         ShareVisibility = await localSettings.ReadSettingAsync<bool?>(SettingsViewModel.QueueShareChecked) == true ? Visibility.Visible : Visibility.Collapsed;
         DownloadVisibility = await localSettings.ReadSettingAsync<bool?>(SettingsViewModel.QueueDownloadChecked) == true ? Visibility.Visible : Visibility.Collapsed;
         DownloadCoverVisibility = await localSettings.ReadSettingAsync<bool?>(SettingsViewModel.QueueDownloadCoverChecked) == true ? Visibility.Visible : Visibility.Collapsed;

@@ -202,7 +202,7 @@
                                     <FontIcon Glyph="&#xECC9;" FontSize="20" />
                                 </Button>
 
-                                <StackPanel Orientation="Horizontal" VerticalAlignment="Bottom" HorizontalAlignment="Right" Padding="0" Spacing="0" Visibility="{x:Bind Source, Converter={StaticResource LocalSourceToVisibilityConverter}, Mode=OneWay}">
+                                <StackPanel Orientation="Horizontal" VerticalAlignment="Bottom" HorizontalAlignment="Right" Padding="0" Spacing="4" Visibility="{x:Bind Source, Converter={StaticResource LocalSourceToVisibilityConverter}, Mode=OneWay}">
                                     <Button x:Name="OpenSpekButton" VerticalAlignment="Bottom" HorizontalAlignment="Right" Padding="4, 4, 3, 3" ToolTipService.ToolTip="Open with Spek" Click="OpenSpekButton_Click" Tag="{Binding}">
                                         <FontIcon Glyph="&#xE9D2;" FontSize="20" />
                                     </Button>
