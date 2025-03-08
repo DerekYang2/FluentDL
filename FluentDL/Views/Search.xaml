@@ -195,21 +195,28 @@
                     <ColumnDefinition Width="Auto" />
                     <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
-                <SplitButton Grid.Column="0" x:Name="OverrideSplitButton" 
-                             Padding="0" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" 
-                             ToolTipService.ToolTip="Override search source">
-                    <AutoSuggestBox 
-                                    x:Name="SearchBox"
-                                    PlaceholderText="Find a track or paste a link"
-                                    QueryIcon="Find"
-                                    QuerySubmitted="SearchBox_OnQuerySubmitted"
-                                    ToolTipService.ToolTip="Search" 
-                                    BorderThickness="0"
-                                    CornerRadius="4,0,0,4"
-                                    Background="Transparent"
-                                    />
 
-                    <SplitButton.Flyout>
+                <AutoSuggestBox Grid.Column="0" Padding="0" HorizontalAlignment="Stretch"
+                                x:Name="SearchBox"
+                                PlaceholderText="Find a track or paste a link"
+                                QueryIcon="Find"
+                                QuerySubmitted="SearchBox_OnQuerySubmitted"
+                                ToolTipService.ToolTip="Search" 
+                                />
+
+                <Button Grid.Column="1" x:Name="ShowDialogButton" Click="ShowDialog_OnClick_Click" ToolTipService.ToolTip="Open advanced search">
+                    <StackPanel Orientation="Horizontal">
+                        <FontIcon x:Name="ShowDialogIcon" Glyph="&#xE71C;" FontSize="16" Margin="0, 0, 8, 0" />
+                        <TextBlock Text="Advanced" />
+                    </StackPanel>
+                </Button>
+
+                <DropDownButton Grid.Column="2" x:Name="SourceButton" ToolTipService.ToolTip="Configure search sources">
+                    <StackPanel Orientation="Horizontal">
+                        <Ellipse x:Name="SourceButtonEllipse" StrokeThickness="0" VerticalAlignment="Center" Width="10" Height="10" Margin="0, 0, 6, 0" Fill="White"/>
+                        <TextBlock Text="Source" />
+                    </StackPanel>
+                    <DropDownButton.Flyout>
                         <Flyout Placement="Bottom" Closed="FlyoutBase_OnClosed">
                             <StackPanel Spacing="12">
                                 <NumberBox Value="{x:Bind Path=ViewModel.ResultsLimit, Mode=TwoWay}"
@@ -236,7 +243,7 @@
                                                        Foreground="{ThemeResource TextFillColorSecondary}" />
                                         </DataTemplate>
                                     </RadioButtons.HeaderTemplate>
-                                    <RadioButton Content="Use Setting" ToolTipService.ToolTip="Get search results from selected source in settings"/>
+                                    <RadioButton Content="Default Setting" ToolTipService.ToolTip="Get search results from selected source in settings"/>
                                     <RadioButton Content="Deezer" ToolTipService.ToolTip="Get search results from Deezer"/>
                                     <RadioButton Content="Qobuz" ToolTipService.ToolTip="Get search results from Qobuz"/>
                                     <RadioButton Content="Spotify" ToolTipService.ToolTip="Get search results from Spotify"/>
@@ -244,23 +251,8 @@
                                 </RadioButtons>
                             </StackPanel>
                         </Flyout>
-                    </SplitButton.Flyout>
-                </SplitButton>
-
-                <Button Grid.Column="1" x:Name="ShowDialogButton" Click="ShowDialog_OnClick_Click" ToolTipService.ToolTip="Open advanced search">
-                    <StackPanel Orientation="Horizontal">
-                        <FontIcon x:Name="ShowDialogIcon" Glyph="&#xE71C;" FontSize="16" Margin="0, 0, 8, 0" />
-                        <TextBlock Text="Advanced" />
-                    </StackPanel>
-                </Button>
-
-                <Button Grid.Column="2" x:Name="HelpButton" ToolTipService.ToolTip="Open help" Click="Help_OnClick">
-                    <StackPanel Orientation="Horizontal">
-                        <FontIcon x:Name="HelpIcon" Glyph="&#xE897;" FontSize="16" Margin="0, 0, 8, 0" />
-                        <TextBlock Text="Help" />
-                    </StackPanel>
-                </Button>
-
+                    </DropDownButton.Flyout>
+                </DropDownButton>
             </Grid>
 
             <!-- Second row of buttons -->

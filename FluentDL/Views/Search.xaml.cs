@@ -19,6 +19,8 @@ using Microsoft.UI.Xaml.Hosting;
 using Microsoft.UI.Xaml.Input;
 using Visibility = Microsoft.UI.Xaml.Visibility;
 using static System.Net.WebRequestMethods;
+using System.Drawing;
+using Microsoft.UI.Xaml.Media;
 
 namespace FluentDL.Views;
 // TODO: loading for search
@@ -141,14 +143,16 @@ public sealed partial class Search : Page
         AnimationHelper.AttachScaleAnimation(ShowDialogButton, ShowDialogIcon);
 
         // Animation for help button
-        AnimationHelper.AttachScaleAnimation(HelpButton, HelpIcon);
+        //AnimationHelper.AttachScaleAnimation(HelpButton, HelpIcon);
     }
 
     private async void SearchPage_Loaded(object sender, RoutedEventArgs e)
     {
         await ViewModel.InitializeAsync(); // Initialize settings
+        await UpdateSourceButtonColor();  // Update source button color
+
         //ResultsIcon.Loaded += (s, e) => InitAnimation();
-                // Infobar message for possible new version
+        // Infobar message for possible new version
         if (!updateNotificationGiven) {
             try 
             {
@@ -180,6 +184,7 @@ public sealed partial class Search : Page
 
         // Refresh all list view items
         SortCustomListView();
+        await UpdateSourceButtonColor();
     }
 
     private void InitPreviewPanelButtons()
@@ -722,6 +727,26 @@ public sealed partial class Search : Page
     private async void FlyoutBase_OnClosed(object? sender, object e)
     {
         await ViewModel.SaveResultsLimit();
+        await UpdateSourceButtonColor();
+    }
+
+    private async Task UpdateSourceButtonColor() {
+        var generalSource = await App.GetService<ILocalSettingsService>().ReadSettingAsync<string>(SettingsViewModel.SearchSource) ?? "Deezer";
+
+        if (SourceRadioButtons.SelectedIndex != 0) // If not default
+        {
+            generalSource = (SourceRadioButtons.SelectedItem as RadioButton).Content.ToString(); // Override
+        }
+        generalSource = generalSource.ToLower();
+
+        SourceButtonEllipse.Fill = (generalSource) switch
+        {
+            "spotify" => new SolidColorBrush(Windows.UI.Color.FromArgb(255, 15, 213, 101)),
+            "deezer" => new SolidColorBrush(Windows.UI.Color.FromArgb(255, 160, 55, 250)),
+            "qobuz" => new SolidColorBrush(Windows.UI.Color.FromArgb(255, 0, 0, 0)),
+            "youtube" => new SolidColorBrush(Windows.UI.Color.FromArgb(255, 255, 0, 0)),
+            _ => new SolidColorBrush(Windows.UI.Color.FromArgb(255, 255, 255, 255)), // Local source or anything else
+        };
     }
 
     // HELPER FUNCTIONS ----------------------------------------------------------------------------------------------------
