@@ -126,6 +126,9 @@ Cloning the repo may take a while because it is bundled with FFmpeg and Spek. Th
 
 ## Authentication
 
+> [!NOTE]  
+> Streaming services occasionally make changes to APIs, which may result in authentication issues. Double check the [Issues](https://github.com/DerekYang2/FluentDL/issues) page for ongoing problems. 
+
 The authentication required depends on the sources and features you use. 
 
 ### Searching and Converting
