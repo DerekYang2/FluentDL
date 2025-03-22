@@ -33,7 +33,8 @@ public partial class SettingsViewModel : ObservableRecipient
         CommandThreads = "command_threads",
         ConversionThreads = "conversion_threads",
         AudioConversionThreads = "audio_conversion_threads",
-        Notifications = "notifications";
+        Notifications = "notifications",
+        AutoPlay = "auto_play";
 
     // Shortcut button checkboxes
     public static readonly string SearchAddChecked = "search_add_checked",
@@ -94,6 +95,7 @@ public partial class SettingsViewModel : ObservableRecipient
             await localSettings.SaveSettingAsync(AskBeforeDownload, true);
             await localSettings.SaveSettingAsync(Overwrite, false);
             await localSettings.SaveSettingAsync(Notifications, false);
+            await localSettings.SaveSettingAsync(AutoPlay, true);
 
             await localSettings.SaveSettingAsync<string?>(DownloadDirectory, null);
 
@@ -112,7 +114,7 @@ public partial class SettingsViewModel : ObservableRecipient
             await localSettings.SaveSettingAsync(QueueDownloadCoverChecked, false);
             await localSettings.SaveSettingAsync(QueueRemoveChecked, false);
 
-           await localSettings.SaveSettingAsync(FirstRun, false);  // Set no_settings to false
+            await localSettings.SaveSettingAsync(FirstRun, false);  // Set no_settings to false
         }
     }
 
@@ -138,6 +140,7 @@ public partial class SettingsViewModel : ObservableRecipient
             await SaveSettingsAsyncIfNull<bool?>(AskBeforeDownload, true);
             await SaveSettingsAsyncIfNull<bool?>(Overwrite, false);
             await SaveSettingsAsyncIfNull<bool?>(Notifications, false);
+            await localSettings.SaveSettingAsync(AutoPlay, true);
             await SaveSettingsAsyncIfNull<string?>(DownloadDirectory, null);
             await SaveSettingsAsyncIfNull<string?>(FFmpegPath, null);
             await SaveSettingsAsyncIfNull<string?>(SearchSource, "Deezer");

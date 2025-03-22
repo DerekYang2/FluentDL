@@ -10,6 +10,7 @@ using FluentDL.Models;
 using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml.Input;
 using CommunityToolkit.Labs.WinUI.MarqueeTextRns;
+using FluentDL.ViewModels;
 
 
 // To learn more about WinUI, the WinUI project structure,
@@ -18,7 +19,7 @@ using CommunityToolkit.Labs.WinUI.MarqueeTextRns;
 namespace FluentDL.Views
 {
     public sealed partial class PreviewPane : UserControl
-    {
+    { 
         SongSearchObject? song = null;
         DispatcherQueue dispatcher;
 
@@ -28,6 +29,7 @@ namespace FluentDL.Views
             RelativePreviewPanel.Width = Math.Min(App.MainWindow.Width * 0.4, App.MainWindow.Height * 0.5);
             dispatcher = DispatcherQueue.GetForCurrentThread();
             Clear();
+            SongPreviewPlayer.AutoPlay = Task.Run(() => SettingsViewModel.GetSetting<bool>(SettingsViewModel.AutoPlay)).GetAwaiter().GetResult(); 
         }
 
         public void SetAppBarButtons(List<AppBarButton> appBarButtons)
@@ -62,6 +64,8 @@ namespace FluentDL.Views
 
         public async Task Update(SongSearchObject selectedSong, object? trackInfoObj = null)
         {
+            SongPreviewPlayer.AutoPlay = Task.Run(() => SettingsViewModel.GetSetting<bool>(SettingsViewModel.AutoPlay)).GetAwaiter().GetResult(); 
+
             ClearMediaPlayerSource();
             PreviewImage.Source = null; // Clear previous source
             PreviewImage.UpdateLayout();

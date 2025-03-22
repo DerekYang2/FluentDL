@@ -26,6 +26,7 @@
                     </StackPanel.ChildrenTransitions>
                     <!-- GENERAL SETTINGS ______________________________________________________________________________________________ -->
                     <TextBlock Text="General" Style="{StaticResource TextBlockSectionStyle}" />
+
                     <local:SettingsCard x:Name="GeneralSearchSource"
                                        Description="Set the source for general searches (applies to queries that are not URLs)."
                                        Header="Search Source"
@@ -37,60 +38,22 @@
                             <ComboBoxItem x:Name="YouTube" Content="YouTube"/>
                         </ComboBox>
                     </local:SettingsCard>
+
+                    <local:SettingsCard x:Name="AutoPlayCard"
+                                        Description="Automatically play track when selected."
+                                        Header="Auto Play">
+                        <local:SettingsCard.HeaderIcon>
+                            <FontIcon Glyph="&#xEC57;" />
+                        </local:SettingsCard.HeaderIcon>
+                        <ToggleSwitch x:Name="AutoPlayToggle" OnContent="" OffContent="" Toggled="AutoPlayToggle_OnToggled"/>
+                    </local:SettingsCard>
+
                     <local:SettingsCard x:Name="NotificationsCard" Description="Enable or disable app notifications for queue conversion/command running completion." Header="Notifications">
                         <local:SettingsCard.HeaderIcon>
                             <FontIcon Glyph="&#xE7E7;" />
                         </local:SettingsCard.HeaderIcon>
                         <ToggleSwitch x:Name="NotificationsToggle" OnContent="" OffContent="" Toggled="NotificationsToggle_OnToggled"/>
                     </local:SettingsCard>
-                    <local:SettingsExpander x:Name="ShortcutButtonExpander"
-                                        Description="Add or remove shortcut buttons for each page's track list. These buttons may always be found in the sidebar."
-                                        Header="Shortcut Buttons"
-                                        HorizontalContentAlignment="Stretch">
-                        <local:SettingsExpander.HeaderIcon>
-                            <FontIcon Glyph="&#xE945;" />
-                        </local:SettingsExpander.HeaderIcon>
-                        <local:SettingsExpander.Items>
-                            <local:SettingsCard x:Name="SearchPageShortcuts" Header="Search Page" Description="Select the shortcut buttons that should be shown in Search"
-                                            HorizontalContentAlignment="Left" ContentAlignment="Vertical">
-                                <local:SettingsCard.HeaderIcon>
-                                    <FontIcon Glyph="&#xE721;" />
-                                </local:SettingsCard.HeaderIcon>
-                                <StackPanel>
-                                    <CheckBox x:Name="SearchAddCheckbox" Content="Add to queue" Checked="Search_OnChecked" Unchecked="Search_OnUnchecked" Tag="0"/>
-                                    <CheckBox x:Name="SearchShareCheckbox" Content="Share link" Checked="Search_OnChecked" Unchecked="Search_OnUnchecked" Tag="1"/>
-                                    <CheckBox x:Name="SearchOpenCheckbox" Content="Open" Checked="Search_OnChecked" Unchecked="Search_OnUnchecked" Tag="2"/>
-                                </StackPanel>
-                            </local:SettingsCard>
-
-                            <local:SettingsCard x:Name="LocalExplorerPageShortcuts" Header="Local Explorer Page" Description="Select the shortcut buttons that should be shown in Local Explorer"
-                                            HorizontalContentAlignment="Left" ContentAlignment="Vertical">
-                                <local:SettingsCard.HeaderIcon>
-                                    <FontIcon Glyph="&#xEC50;" />
-                                </local:SettingsCard.HeaderIcon>
-                                <StackPanel>
-                                    <CheckBox x:Name="LocalExplorerAddCheckbox" Content="Add to queue" Checked="LocalExplorer_OnChecked" Unchecked="LocalExplorer_OnUnchecked" Tag="0"/>
-                                    <CheckBox x:Name="LocalExplorerEditCheckbox" Content="Edit song metadata" Checked="LocalExplorer_OnChecked" Unchecked="LocalExplorer_OnUnchecked" Tag="1"/>
-                                    <CheckBox x:Name="LocalExplorerOpenCheckbox" Content="Open in File Explorer" Checked="LocalExplorer_OnChecked" Unchecked="LocalExplorer_OnUnchecked" Tag="2"/>
-                                </StackPanel>
-                            </local:SettingsCard>
-
-                            <!-- New settings card for Queue Page -->
-                            <local:SettingsCard x:Name="QueuePageShortcuts" Header="Queue Page" Description="Select the shortcut buttons that should be shown in Queue"
-                                            HorizontalContentAlignment="Left" ContentAlignment="Vertical">
-                                <local:SettingsCard.HeaderIcon>
-                                    <FontIcon Glyph="&#xE9D5;" />
-                                </local:SettingsCard.HeaderIcon>
-                                <StackPanel>
-                                    <CheckBox x:Name="QueueShareCheckbox" Content="Share link" Checked="Queue_OnChecked" Unchecked="Queue_OnUnchecked" Tag="0"/>
-                                    <CheckBox x:Name="QueueDownloadCheckbox" Content="Download track" Checked="Queue_OnChecked" Unchecked="Queue_OnUnchecked" Tag="1"/>
-                                    <CheckBox x:Name="QueueDownloadCoverCheckbox" Content="Download cover" Checked="Queue_OnChecked" Unchecked="Queue_OnUnchecked" Tag="2"/>
-                                    <CheckBox x:Name="QueueRemoveCheckbox" Content="Remove from queue" Checked="Queue_OnChecked" Unchecked="Queue_OnUnchecked" Tag="3"/>
-                                </StackPanel>
-                            </local:SettingsCard>
-
-                        </local:SettingsExpander.Items>
-                    </local:SettingsExpander>
 
                     <local:SettingsExpander x:Name="ThreadsExpander" 
                                         Description="Set the number of threads to use for different tasks. Tasks are not guaranteed to run in order with multiple threads."
@@ -134,6 +97,55 @@
                             <local:SettingsCard x:Name="FFmpegPathCard" Header="Path" Description="No folder selected" HorizontalContentAlignment="Stretch">
                                 <Button x:Name="SelectFFmpegButton" Click="SelectFFmpegButton_OnClick" Content="Change"/>
                             </local:SettingsCard>
+                        </local:SettingsExpander.Items>
+                    </local:SettingsExpander>
+
+                    <local:SettingsExpander x:Name="ShortcutButtonExpander"
+                    Description="Add or remove shortcut buttons for each page's track list. These buttons may always be found in the sidebar."
+                    Header="Shortcut Buttons"
+                    HorizontalContentAlignment="Stretch">
+                        <local:SettingsExpander.HeaderIcon>
+                            <FontIcon Glyph="&#xE945;" />
+                        </local:SettingsExpander.HeaderIcon>
+                        <local:SettingsExpander.Items>
+                            <local:SettingsCard x:Name="SearchPageShortcuts" Header="Search Page" Description="Select the shortcut buttons that should be shown in Search"
+                        HorizontalContentAlignment="Left" ContentAlignment="Vertical">
+                                <local:SettingsCard.HeaderIcon>
+                                    <FontIcon Glyph="&#xE721;" />
+                                </local:SettingsCard.HeaderIcon>
+                                <StackPanel>
+                                    <CheckBox x:Name="SearchAddCheckbox" Content="Add to queue" Checked="Search_OnChecked" Unchecked="Search_OnUnchecked" Tag="0"/>
+                                    <CheckBox x:Name="SearchShareCheckbox" Content="Share link" Checked="Search_OnChecked" Unchecked="Search_OnUnchecked" Tag="1"/>
+                                    <CheckBox x:Name="SearchOpenCheckbox" Content="Open" Checked="Search_OnChecked" Unchecked="Search_OnUnchecked" Tag="2"/>
+                                </StackPanel>
+                            </local:SettingsCard>
+
+                            <local:SettingsCard x:Name="LocalExplorerPageShortcuts" Header="Local Explorer Page" Description="Select the shortcut buttons that should be shown in Local Explorer"
+                        HorizontalContentAlignment="Left" ContentAlignment="Vertical">
+                                <local:SettingsCard.HeaderIcon>
+                                    <FontIcon Glyph="&#xEC50;" />
+                                </local:SettingsCard.HeaderIcon>
+                                <StackPanel>
+                                    <CheckBox x:Name="LocalExplorerAddCheckbox" Content="Add to queue" Checked="LocalExplorer_OnChecked" Unchecked="LocalExplorer_OnUnchecked" Tag="0"/>
+                                    <CheckBox x:Name="LocalExplorerEditCheckbox" Content="Edit song metadata" Checked="LocalExplorer_OnChecked" Unchecked="LocalExplorer_OnUnchecked" Tag="1"/>
+                                    <CheckBox x:Name="LocalExplorerOpenCheckbox" Content="Open in File Explorer" Checked="LocalExplorer_OnChecked" Unchecked="LocalExplorer_OnUnchecked" Tag="2"/>
+                                </StackPanel>
+                            </local:SettingsCard>
+
+                            <!-- New settings card for Queue Page -->
+                            <local:SettingsCard x:Name="QueuePageShortcuts" Header="Queue Page" Description="Select the shortcut buttons that should be shown in Queue"
+                        HorizontalContentAlignment="Left" ContentAlignment="Vertical">
+                                <local:SettingsCard.HeaderIcon>
+                                    <FontIcon Glyph="&#xE9D5;" />
+                                </local:SettingsCard.HeaderIcon>
+                                <StackPanel>
+                                    <CheckBox x:Name="QueueShareCheckbox" Content="Share link" Checked="Queue_OnChecked" Unchecked="Queue_OnUnchecked" Tag="0"/>
+                                    <CheckBox x:Name="QueueDownloadCheckbox" Content="Download track" Checked="Queue_OnChecked" Unchecked="Queue_OnUnchecked" Tag="1"/>
+                                    <CheckBox x:Name="QueueDownloadCoverCheckbox" Content="Download cover" Checked="Queue_OnChecked" Unchecked="Queue_OnUnchecked" Tag="2"/>
+                                    <CheckBox x:Name="QueueRemoveCheckbox" Content="Remove from queue" Checked="Queue_OnChecked" Unchecked="Queue_OnUnchecked" Tag="3"/>
+                                </StackPanel>
+                            </local:SettingsCard>
+
                         </local:SettingsExpander.Items>
                     </local:SettingsExpander>
 
@@ -271,7 +283,7 @@
                                             HorizontalContentAlignment="Stretch">
                                 <helpers:CustomPasswordBox x:Name="QobuzTokenInput" VerticalAlignment="Center" Width="500" Tooltip="Qobuz authentication token" Header="Authentication token"/>
                             </local:SettingsCard>
-                             <local:SettingsCard x:Name="QobuzUpdateCard" Header="Save Changes" HorizontalContentAlignment="Stretch">
+                            <local:SettingsCard x:Name="QobuzUpdateCard" Header="Save Changes" HorizontalContentAlignment="Stretch">
                                 <Button x:Name="QobuzUpdateButton" Click="QobuzUpdateButton_Click" Content="Save"/>
                             </local:SettingsCard>
                         </local:SettingsExpander.Items>
@@ -286,7 +298,7 @@
                             Set <Hyperlink NavigateUri="https://developer.spotify.com/documentation/web-api/concepts/apps">developer app credentials</Hyperlink> for Spotify. Alternatively, ensure you are logged into the <Hyperlink NavigateUri="https://open.spotify.com/">web player</Hyperlink> for automatic authentication.
                             </TextBlock>
                         </local:SettingsExpander.Description>
-                        
+
                         <local:SettingsExpander.HeaderIcon>
                             <FontIcon Glyph="&#xE72E;" />
                         </local:SettingsExpander.HeaderIcon>

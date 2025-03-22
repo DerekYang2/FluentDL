@@ -213,7 +213,7 @@
 
                 <DropDownButton Grid.Column="2" x:Name="SourceButton" ToolTipService.ToolTip="Configure search sources">
                     <StackPanel Orientation="Horizontal">
-                        <Ellipse x:Name="SourceButtonEllipse" StrokeThickness="0" VerticalAlignment="Center" Width="10" Height="10" Margin="0, 0, 6, 0" Fill="White"/>
+                        <Ellipse x:Name="SourceButtonEllipse" StrokeThickness="0" VerticalAlignment="Center" Width="10" Height="10" Margin="0, 0, 10, 0" Fill="White"/>
                         <TextBlock Text="Source" />
                     </StackPanel>
                     <DropDownButton.Flyout>
