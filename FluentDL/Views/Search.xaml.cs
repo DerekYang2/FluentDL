@@ -153,7 +153,7 @@ public sealed partial class Search : Page
 
         //ResultsIcon.Loaded += (s, e) => InitAnimation();
         // Infobar message for possible new version
-        if (!updateNotificationGiven) {
+        if (!updateNotificationGiven && await ViewModel.GetNotifyUpdate()) {
             try 
             {
                 var latestRelease = await GithubAPI.GetLatestRelease() ?? "";

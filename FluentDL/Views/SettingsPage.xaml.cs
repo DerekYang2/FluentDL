@@ -84,6 +84,7 @@ public sealed partial class SettingsPage : Page
         OverwriteToggle.IsOn = await localSettings.ReadSettingAsync<bool>(SettingsViewModel.Overwrite);
         NotificationsToggle.IsOn = await localSettings.ReadSettingAsync<bool>(SettingsViewModel.Notifications);
         AutoPlayToggle.IsOn = await localSettings.ReadSettingAsync<bool>(SettingsViewModel.AutoPlay);
+        NotifyUpdateToggle.IsOn = await localSettings.ReadSettingAsync<bool>(SettingsViewModel.NotifyUpdate);
 
         // Set Ids/Secrets
         ClientIdInput.Text = (await localSettings.ReadSettingAsync<string?>(SettingsViewModel.SpotifyClientId)) ?? "";
@@ -478,7 +479,11 @@ public sealed partial class SettingsPage : Page
         var isToggled = (sender as ToggleSwitch).IsOn;
         await localSettings.SaveSettingAsync(SettingsViewModel.AutoPlay, isToggled);
     }
-
+    private async void NotifyUpdateToggle_Toggled(object sender, RoutedEventArgs e)
+    {
+        var isToggled = (sender as ToggleSwitch).IsOn;
+        await localSettings.SaveSettingAsync(SettingsViewModel.NotifyUpdate, isToggled);
+    }
     private async void ResetFFmpegButton_OnClick(object sender, RoutedEventArgs e)
     {
         FFmpegPathCard.Description = "No folder selected";

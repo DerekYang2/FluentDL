@@ -282,8 +282,9 @@
                                         Header="Spotify"
                                         HorizontalContentAlignment="Stretch">
                         <local:SettingsExpander.Description>
+                            <!--Removed text for now: Alternatively, ensure you are logged into the <Hyperlink NavigateUri="https://open.spotify.com/">web player</Hyperlink> for automatic authentication.-->
                             <TextBlock>
-                            Set <Hyperlink NavigateUri="https://developer.spotify.com/documentation/web-api/concepts/apps">developer app credentials</Hyperlink> for Spotify. Alternatively, ensure you are logged into the <Hyperlink NavigateUri="https://open.spotify.com/">web player</Hyperlink> for automatic authentication.
+                            Set <Hyperlink NavigateUri="https://developer.spotify.com/documentation/web-api/concepts/apps">developer app credentials</Hyperlink> for Spotify. 
                             </TextBlock>
                         </local:SettingsExpander.Description>
 
@@ -370,6 +371,16 @@
                     <local:SettingsExpander Header="FluentDL" Description="{x:Bind ViewModel.VersionDescription, Mode=OneWay}"
                                         HeaderIcon="{ui:BitmapIcon Source=ms-appx:///Assets/StoreLogo.scale-400.png}">
                         <local:SettingsExpander.Items>
+
+                            <local:SettingsCard x:Name="NotifyUpdateCard" 
+                                                Header="Update Notifications" 
+                                                Description="Receive notification on app startup when a new version is available.">
+                                <local:SettingsCard.HeaderIcon>
+                                    <FontIcon Glyph="&#xE789;" />
+                                </local:SettingsCard.HeaderIcon>
+                                <ToggleSwitch x:Name="NotifyUpdateToggle" OnContent="" OffContent="" Toggled="NotifyUpdateToggle_Toggled"/>
+                            </local:SettingsCard>
+
                             <local:SettingsCard HorizontalContentAlignment="Left" VerticalAlignment="Top"
                                             ContentAlignment="Left">
                                 <StackPanel Margin="0,0,0,12"
