@@ -27,18 +27,6 @@
                     <!-- GENERAL SETTINGS ______________________________________________________________________________________________ -->
                     <TextBlock Text="General" Style="{StaticResource TextBlockSectionStyle}" />
 
-                    <local:SettingsCard x:Name="GeneralSearchSource"
-                                       Description="Set the source for general searches (applies to queries that are not URLs)."
-                                       Header="Search Source"
-                                       HeaderIcon="{ui:FontIcon Glyph=&#xF6FA;}">
-                        <ComboBox x:Name="SearchSourceComboBox" SelectionChanged="SearchSourceComboBox_OnSelectionChanged">
-                            <ComboBoxItem x:Name="Deezer" Content="Deezer"/>
-                            <ComboBoxItem x:Name="Qobuz" Content="Qobuz"/>
-                            <ComboBoxItem x:Name="Spotify" Content="Spotify"/>
-                            <ComboBoxItem x:Name="YouTube" Content="YouTube"/>
-                        </ComboBox>
-                    </local:SettingsCard>
-
                     <local:SettingsCard x:Name="AutoPlayCard"
                                         Description="Automatically play track when selected."
                                         Header="Auto Play">

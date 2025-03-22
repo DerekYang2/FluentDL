@@ -243,7 +243,6 @@
                                                        Foreground="{ThemeResource TextFillColorSecondary}" />
                                         </DataTemplate>
                                     </RadioButtons.HeaderTemplate>
-                                    <RadioButton Content="Default Setting" ToolTipService.ToolTip="Get search results from selected source in settings"/>
                                     <RadioButton Content="Deezer" ToolTipService.ToolTip="Get search results from Deezer"/>
                                     <RadioButton Content="Qobuz" ToolTipService.ToolTip="Get search results from Qobuz"/>
                                     <RadioButton Content="Spotify" ToolTipService.ToolTip="Get search results from Spotify"/>

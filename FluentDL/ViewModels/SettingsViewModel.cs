@@ -100,7 +100,7 @@ public partial class SettingsViewModel : ObservableRecipient
             await localSettings.SaveSettingAsync<string?>(DownloadDirectory, null);
 
             await localSettings.SaveSettingAsync<string?>(FFmpegPath, null);
-            await localSettings.SaveSettingAsync<string?>(SearchSource, "Deezer");
+            await localSettings.SaveSettingAsync<string?>(SearchSource, "deezer");
 
             // All checkboxes unchecked by default
             await localSettings.SaveSettingAsync(SearchAddChecked, false);
@@ -143,7 +143,7 @@ public partial class SettingsViewModel : ObservableRecipient
             await localSettings.SaveSettingAsync(AutoPlay, true);
             await SaveSettingsAsyncIfNull<string?>(DownloadDirectory, null);
             await SaveSettingsAsyncIfNull<string?>(FFmpegPath, null);
-            await SaveSettingsAsyncIfNull<string?>(SearchSource, "Deezer");
+            await SaveSettingsAsyncIfNull<string?>(SearchSource, "deezer");
             await SaveSettingsAsyncIfNull<bool?>(SearchAddChecked, false);
             await SaveSettingsAsyncIfNull<bool?>(SearchShareChecked, false);
             await SaveSettingsAsyncIfNull<bool?>(SearchOpenChecked, false);

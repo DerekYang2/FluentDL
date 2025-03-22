@@ -94,17 +94,6 @@ public sealed partial class SettingsPage : Page
         QobuzEmailInput.Text = AesHelper.Decrypt(await localSettings.ReadSettingAsync<string?>(SettingsViewModel.QobuzEmail) ?? "");
         QobuzPasswordInput.Password = AesHelper.Decrypt(await localSettings.ReadSettingAsync<string?>(SettingsViewModel.QobuzPassword) ?? "");
 
-        // Set source combo box
-        var searchSource = await localSettings.ReadSettingAsync<string?>(SettingsViewModel.SearchSource) ?? "Deezer";
-        foreach (ComboBoxItem cbi in SearchSourceComboBox.Items)
-        {
-            if (cbi.Content as string == searchSource)
-            {
-                SearchSourceComboBox.SelectedItem = cbi;
-                break;
-            }
-        }
-
         // Set search checkboxes
         SearchAddCheckbox.IsChecked = await localSettings.ReadSettingAsync<bool>(SettingsViewModel.SearchAddChecked);
         SearchShareCheckbox.IsChecked = await localSettings.ReadSettingAsync<bool>(SettingsViewModel.SearchShareChecked);
@@ -184,16 +173,6 @@ public sealed partial class SettingsPage : Page
         });
         thread.Priority = ThreadPriority.Highest;
         thread.Start();
-    }
-
-    private async void SearchSourceComboBox_OnSelectionChanged(object sender, SelectionChangedEventArgs e)
-    {
-        if (SearchSourceComboBox.SelectedItem == null)
-        {
-            return;
-        }
-
-        await localSettings.SaveSettingAsync(SettingsViewModel.SearchSource, (SearchSourceComboBox.SelectedItem as ComboBoxItem).Content.ToString());
     }
 
     private async void SelectFolderButton_OnClick(object sender, RoutedEventArgs e)

@@ -149,7 +149,7 @@ public sealed partial class Search : Page
     private async void SearchPage_Loaded(object sender, RoutedEventArgs e)
     {
         await ViewModel.InitializeAsync(); // Initialize settings
-        await UpdateSourceButtonColor();  // Update source button color
+        await InitializeSource();  // Update source button color
 
         //ResultsIcon.Loaded += (s, e) => InitAnimation();
         // Infobar message for possible new version
@@ -184,7 +184,6 @@ public sealed partial class Search : Page
 
         // Refresh all list view items
         SortCustomListView();
-        await UpdateSourceButtonColor();
     }
 
     private void InitPreviewPanelButtons()
@@ -369,14 +368,9 @@ public sealed partial class Search : Page
         cancellationTokenSource = new CancellationTokenSource(); // Reset the cancel token
 
         // Set the collection as the ItemsSource for the ListView
-        var generalSource = await App.GetService<ILocalSettingsService>().ReadSettingAsync<string>(SettingsViewModel.SearchSource) ?? "Deezer";
+        var generalSource = (SourceRadioButtons.SelectedItem as RadioButton).Content.ToString().ToLower(); 
 
-        if (SourceRadioButtons.SelectedIndex != 0) // If not default
-        {
-            generalSource = (SourceRadioButtons.SelectedItem as RadioButton).Content.ToString(); // Override
-        }
-
-        switch (generalSource.ToLower())
+        switch (generalSource)
         {
             case "spotify":
                 await FluentDL.Services.SpotifyApi.AdvancedSearch((ObservableCollection<SongSearchObject>)CustomListView.ItemsSource, artistName, trackName, albumName, cancellationTokenSource.Token, ViewModel.ResultsLimit);
@@ -459,14 +453,9 @@ public sealed partial class Search : Page
         }
         else
         {
-            var generalSource = await App.GetService<ILocalSettingsService>().ReadSettingAsync<string>(SettingsViewModel.SearchSource) ?? "Deezer";
+            var generalSource = (SourceRadioButtons.SelectedItem as RadioButton).Content.ToString().ToLower();
 
-            if (SourceRadioButtons.SelectedIndex != 0) // If not default
-            {
-                generalSource = (SourceRadioButtons.SelectedItem as RadioButton).Content.ToString(); // Override
-            }
-
-            switch (generalSource.ToLower())
+            switch (generalSource)
             {
                 case "qobuz":
                     await QobuzApi.GeneralSearch((ObservableCollection<SongSearchObject>)CustomListView.ItemsSource, generalQuery, cancellationTokenSource.Token, ViewModel.ResultsLimit);
@@ -726,20 +715,41 @@ public sealed partial class Search : Page
     // Save search results limit
     private async void FlyoutBase_OnClosed(object? sender, object e)
     {
+        // Get selected item in radio buttons
+        var selectedSource = (SourceRadioButtons.SelectedItem as RadioButton).Content.ToString().ToLower(); 
+
+        // Update source button color
+        SourceButtonEllipse.Fill = (selectedSource) switch
+        {
+            "spotify" => new SolidColorBrush(Windows.UI.Color.FromArgb(255, 15, 213, 101)),
+            "deezer" => new SolidColorBrush(Windows.UI.Color.FromArgb(255, 160, 55, 250)),
+            "qobuz" => new SolidColorBrush(Windows.UI.Color.FromArgb(255, 0, 0, 0)),
+            "youtube" => new SolidColorBrush(Windows.UI.Color.FromArgb(255, 255, 0, 0)),
+            _ => new SolidColorBrush(Windows.UI.Color.FromArgb(255, 255, 255, 255)), // Local source or anything else
+        };
+
+        // Save settings
+        await ViewModel.SaveSearchSource(selectedSource);
         await ViewModel.SaveResultsLimit();
-        await UpdateSourceButtonColor();
+
     }
 
-    private async Task UpdateSourceButtonColor() {
-        var generalSource = await App.GetService<ILocalSettingsService>().ReadSettingAsync<string>(SettingsViewModel.SearchSource) ?? "Deezer";
+    private async Task InitializeSource() {
+        var source = await ViewModel.GetSearchSource();
+        source = source.ToLower();
 
-        if (SourceRadioButtons.SelectedIndex != 0) // If not default
+        SourceRadioButtons.SelectedIndex = (source) switch
         {
-            generalSource = (SourceRadioButtons.SelectedItem as RadioButton).Content.ToString(); // Override
-        }
-        generalSource = generalSource.ToLower();
+            "deezer" => 0,
+            "qobuz" => 1,
+            "spotify" => 2,
+            "youtube" => 3,
+            _ => -1,
+        };
+        SourceRadioButtons.SelectedItem = SourceRadioButtons.Items.ElementAt(SourceRadioButtons.SelectedIndex);
 
-        SourceButtonEllipse.Fill = (generalSource) switch
+        // Update source button color
+        SourceButtonEllipse.Fill = (source) switch
         {
             "spotify" => new SolidColorBrush(Windows.UI.Color.FromArgb(255, 15, 213, 101)),
             "deezer" => new SolidColorBrush(Windows.UI.Color.FromArgb(255, 160, 55, 250)),
@@ -748,6 +758,7 @@ public sealed partial class Search : Page
             _ => new SolidColorBrush(Windows.UI.Color.FromArgb(255, 255, 255, 255)), // Local source or anything else
         };
     }
+
 
     // HELPER FUNCTIONS ----------------------------------------------------------------------------------------------------
     private void AddSongToQueue(SongSearchObject? song)

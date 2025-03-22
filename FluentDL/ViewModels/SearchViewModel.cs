@@ -47,12 +47,12 @@ public partial class SearchViewModel : ObservableRecipient
         OpenVisibility = await localSettings.ReadSettingAsync<bool?>(SettingsViewModel.SearchOpenChecked) == true ? Visibility.Visible : Visibility.Collapsed;
     }
 
-    public async Task<string?> GetSearchSource()
+    public async Task<string> GetSearchSource()
     {
-        return await localSettings.ReadSettingAsync<string>(SettingsViewModel.SearchSource);
+        return await localSettings.ReadSettingAsync<string>(SettingsViewModel.SearchSource) ?? "deezer";
     }
 
-    public async Task SetSearchSource(string searchSource)
+    public async Task SaveSearchSource(string searchSource)
     {
         await localSettings.SaveSettingAsync(SettingsViewModel.SearchSource, searchSource);
     }
