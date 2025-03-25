@@ -79,6 +79,9 @@ internal class QobuzApi
                 authCallback?.Invoke(false);
             }
         }
+
+        // If still not initialized
+        authCallback?.Invoke(false);
     }
 
     public static async Task GeneralSearch(ObservableCollection<SongSearchObject> itemSource, string query, CancellationToken token, int limit = 25)

@@ -438,7 +438,7 @@ internal class ApiHelper
 
             if (!firstBufferRead || stopwatch.ElapsedMilliseconds >= 500)
             {
-                Debug.WriteLine($"Downloading... {speed:F3} MB/s");
+                //Debug.WriteLine($"Downloading... {speed:F3} MB/s");
             }
 
             firstBufferRead = true;

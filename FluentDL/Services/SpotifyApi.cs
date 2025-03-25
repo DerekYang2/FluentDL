@@ -45,10 +45,9 @@ namespace FluentDL.Services
 
             if (!string.IsNullOrWhiteSpace(clientId) && !string.IsNullOrWhiteSpace(clientSecret))
             {
-
-                var request = new ClientCredentialsRequest(clientId, clientSecret);
                 try
                 {
+                    var request = new ClientCredentialsRequest(clientId, clientSecret);
                     var response = await new OAuthClient(config).RequestToken(request);
                     spotify = new SpotifyClient(config.WithToken(response.AccessToken));
                     IsInitialized = true;
@@ -62,9 +61,9 @@ namespace FluentDL.Services
             // If still not initialized, either invalid or no developer app credentials
             if (!IsInitialized)
             {
-                var accessToken = await GetAccessToken();  // Get Spotify access token from local cookies
-
                 try {
+                    var accessToken = await GetAccessToken();  // Get Spotify access token from local cookies
+
                     if (string.IsNullOrWhiteSpace(accessToken))  
                     {
                         throw new Exception("could not get token through cookies");
@@ -78,6 +77,22 @@ namespace FluentDL.Services
                 {
                     Debug.WriteLine("Failed to initialize Spotify API: " + e.Message);
                 }
+            }
+
+            // If still not initialized, use bundled
+            try {
+                var id = KeyReader.GetValue("spot_id");
+                var secret = KeyReader.GetValue("spot_secret");
+                if (!string.IsNullOrWhiteSpace(id) && !string.IsNullOrWhiteSpace(secret))
+                {
+                    var request = new ClientCredentialsRequest(id, secret);
+                    var response = await new OAuthClient(config).RequestToken(request);
+                    spotify = new SpotifyClient(config.WithToken(response.AccessToken));
+                    IsInitialized = true;
+                    Debug.WriteLine("Initialized Spotify API using bundled keys");
+                }
+            } catch (Exception e) {
+                Debug.WriteLine("Failed to initialize Spotify API: " + e.Message);
             }
         }
 
@@ -219,7 +234,6 @@ namespace FluentDL.Services
                 return null;
             }
 
-            Debug.WriteLine(response.Tracks.Items.Count);
             if (response.Tracks.Items == null)
             {
                 return null;

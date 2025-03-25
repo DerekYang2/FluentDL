@@ -48,7 +48,6 @@ internal class DeezerApi
             url = (await ApiHelper.GetRedirectedUrlAsync(new Uri(url))).AbsoluteUri;
         }
 
-        Debug.WriteLine(url);
         if (Regex.IsMatch(url, @"https://www\.deezer\.com(/[^/]+)?/track/.*"))
         {
             var firstQuestion = url.IndexOf('?');

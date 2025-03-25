@@ -125,6 +125,9 @@ public partial class App : Application
             // Initialize FFMpeg 
             await FFmpegRunner.Initialize();
 
+            // Initialize environment variables
+            await KeyReader.Initialize();
+
             // Initialize api objects
             var localSettings = App.GetService<ILocalSettingsService>();
 
