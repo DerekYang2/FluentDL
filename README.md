@@ -16,8 +16,8 @@
 <p align="center">
   <a href="#about">About</a> •
   <a href="#installation">Installation</a> •
-  <a href="#build">Build</a> •
-   <a href="#authentication">Authentication</a>
+<a href="#authentication">Authentication</a> •
+  <a href="#build">Build</a>
 </p>
 
 <p align="center">
@@ -78,7 +78,7 @@ FluentDL is organized into three sections: Search, Local Explorer, and Queue.
 </table>
 
 ## Installation 
-This project is deployed using MSIX, which installs the application on Windows. To install this application, download the first zip from [Releases](https://github.com/DerekYang2/FluentDL/releases).
+To install the app, download the first zip from [Releases](https://github.com/DerekYang2/FluentDL/releases).
 
 ### Option 1
 The application may be installed directly using a powershell script located in the zip folder. In the root folder inside of the zip, you should see an `Install.ps1` file and other files such as `FluentDL_{VERSION}_x64_MSIX.msix`. 
@@ -103,26 +103,6 @@ Ideally, you would only need to run `FluentDL_{VERSION}_x64_MSIX.msix`, which op
 A future solution could be deploying to the Microsoft Store directly for a smaller, one-time free. 
 
 </details>
-
-## Build
-
-The steps below are only relevant for developers who wish to modify source code. 
-
-Your machine should have the ability to develop WinUI 3 applications. The simplest setup method is using the Visual Studio Installer and selecting [Windows application development](https://devblogs.microsoft.com/visualstudio/dive-into-native-windows-development-with-new-winui-workload-and-template-improvements/).
-
-Then, open the Solution file `.\FluentDL\FluentDL.sln` using Visual Studio. You must actually open the solution file, not just the project folder. It should prompt you to install the correct .NET SDK. If not, install the latest .NET 8 SDK.  
-
-An [experimental package](https://github.com/CommunityToolkit/Labs-Windows/issues/426) was installed seperately. If it is not automatically handled by the nuget.config, install the package manually. 
-
-To install manually:
-- Open the Tools menu, select Options > NuGet Package Manager > Package Sources.
-- Select the green plus in the upper-right corner and add `https://pkgs.dev.azure.com/dotnet/CommunityToolkit/_packaging/CommunityToolkit-Labs/nuget/v3/index.json` as a source.
-- Now install the Nuget package as you normally would. Use the GUI to install MarqueeText `0.1.250103-build.1988` (ensure pre-release checkbox is selected). Alternatively, enter `Install-Package CommunityToolkit.Labs.WinUI.MarqueeText -version 0.1.250103-build.1988` in the VS Package Manager Console.
-Read more about the package and installation instructions [here](https://dev.azure.com/dotnet/CommunityToolkit/_artifacts/feed/CommunityToolkit-Labs/NuGet/CommunityToolkit.Labs.WinUI.MarqueeText/overview/0.1.250103-build.1988).
-
-To run the application, hit the `FluentDL (Package)` play button. To deploy the application, follow `Project > Publish > Create App Packages` and sign it with a certificate. 
-
-Cloning the repo may take a while because it is bundled with FFmpeg and Spek. The pre-built FFmpeg executable is found at [./FluentDL/Assets/ffmpeg/bin](https://github.com/DerekYang2/FluentDL/blob/master/FluentDL/Assets/ffmpeg/bin/ffmpeg.exe) and contains many additional codecs, such as libopus and libvorbis. 
 
 ## Authentication
 
@@ -175,9 +155,13 @@ Authentication requirements for downloading varies for the sources. The type of 
   - Downloading directly from Spotify is not supported. Most tools out there download low bitrate MP3s. However, there are a few Python tools that get the true sources (320 kbps Vorbis, 256 kbps AAC). Unfortunately, I could not find .NET equivalents. For FluentDL, use the convert tool to get equivalent Deezer/Qobuz/YouTube tracks, then set the output to Local (download).
 </details>
 
-
-
 ### Retrieving Tokens
 Qobuz email and password is self explanatory. Some authentication methods, such as Deezer ARL, Qobuz id/tokens alternative, or Spotify developer app tokens, are not obvious. 
 
 However, tokens are not difficult to obtain: see the [authentication wiki](https://github.com/DerekYang2/FluentDL/wiki/Authentication) for a detailed guide. 
+
+## Build
+
+Only relevant for developers who wish to customize source code.
+
+To build and run the project on Visual Studio, see [development wiki](https://github.com/DerekYang2/FluentDL/wiki/Development).
