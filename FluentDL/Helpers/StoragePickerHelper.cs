@@ -1,4 +1,5 @@
 ﻿using Windows.Storage;
+using Windows.Storage.AccessCache;
 using Windows.Storage.Pickers;
 
 namespace FluentDL.Helpers
@@ -19,6 +20,22 @@ namespace FluentDL.Helpers
             openPicker.FileTypeFilter.Add("*");
 
             return await openPicker.PickSingleFolderAsync();
+        }
+
+        public static async Task<string?> GetDirectory()
+        {
+
+            // Open the picker for the user to pick a folder
+            var folder = await StoragePickerHelper.PickFolderAsync(PickerLocationId.Downloads);
+            if (folder != null)
+            {
+                StorageApplicationPermissions.FutureAccessList.AddOrReplace("PickedFolderToken", folder); // Save the folder for future access
+                return folder.Path;
+            }
+            else // Selected "cancel"
+            {
+                return null;
+            }
         }
     }
 }

@@ -192,18 +192,22 @@ public sealed partial class Search : Page
         var addButton = new AppBarButton { Icon = new SymbolIcon(Symbol.Add), Label = "Add to queue" };
         addButton.Click += (sender, e) => AddSongToQueue(PreviewPanel.GetSong());
 
-        var shareButton = new AppBarButton() { Icon = new SymbolIcon(Symbol.Link), Label = "Share link" };
-        shareButton.Click += (sender, e) => CopySongLink(PreviewPanel.GetSong());
+        var downloadButton = new AppBarButton() { Icon = new SymbolIcon(Symbol.Download), Label = "Download" };
+        downloadButton.Click += async (sender, e) => await DownloadSong(PreviewPanel.GetSong());
 
         var openButton = new AppBarButton { Icon = new FontIcon { Glyph = "\uE8A7" }, Label = "Open" };
         openButton.Click += (sender, e) => OpenSongInBrowser(PreviewPanel.GetSong());
+        
+        var shareButton = new AppBarButton() { Icon = new SymbolIcon(Symbol.Link), Label = "Share link" };
+        shareButton.Click += (sender, e) => CopySongLink(PreviewPanel.GetSong());
 
         // Init animations
         AnimationHelper.AttachScaleAnimation(addButton);
+        AnimationHelper.AttachSpringDownAnimation(downloadButton);
         AnimationHelper.AttachScaleAnimation(shareButton);
         AnimationHelper.AttachSpringUpAnimation(openButton);
 
-        PreviewPanel.SetAppBarButtons(new List<AppBarButton> { addButton, shareButton, openButton });
+        PreviewPanel.SetAppBarButtons(new List<AppBarButton> { addButton, downloadButton, shareButton, openButton });
     }
 
     private void AddQueueButton_OnClick(object sender, RoutedEventArgs e)
@@ -804,7 +808,57 @@ public sealed partial class Search : Page
             Windows.System.Launcher.LaunchUriAsync(uri); // Open link in browser
         }
     }
+    async Task DownloadSong(SongSearchObject? songObj)
+    {
+        if (songObj == null)
+        {
+            ShowInfoBar(InfoBarSeverity.Error, "Failed to download track");
+            return;
+        }
 
+        if (songObj.Source == "local")
+        {
+            ShowInfoBar(InfoBarSeverity.Warning, "Track is already local");
+            return;
+        }
+
+        // Create a folder picker (for download directory)
+        var directory = await SettingsViewModel.GetSetting<string>(SettingsViewModel.DownloadDirectory);
+
+        // If user needs to select a directory
+        if (await SettingsViewModel.GetSetting<bool>(SettingsViewModel.AskBeforeDownload) || string.IsNullOrWhiteSpace(directory))
+        {
+            directory = await StoragePickerHelper.GetDirectory();
+            if (directory == null)
+            {
+                ShowInfoBar(InfoBarSeverity.Warning, "No download directory selected", 3);
+                return;
+            }
+        }
+
+        ShowInfoBarPermanent(InfoBarSeverity.Informational, $"Saving <a href='{ApiHelper.GetUrl(songObj)}'>{songObj.Title}</a> to <a href='{directory}'>{directory}</a>", title: "Download in Progress");
+
+        InfobarProgress.Visibility = Visibility.Visible; // Show the infobar's progress bar
+
+        await ApiHelper.DownloadObject(songObj, directory, (severity, song, location) => {
+            dispatcher.TryEnqueue(()=>{
+                                InfobarProgress.Visibility = Visibility.Collapsed; // Hide the infobar's progress bar
+                if (severity == InfoBarSeverity.Error)
+                {
+                    ShowInfoBar(severity, $"Error: {location ?? "unknown"}", 5);
+                }
+                else if (severity == InfoBarSeverity.Success)
+                {
+                    ShowInfoBar(severity, $"Successfully downloaded <a href='{location}'>{songObj.Title}</a>", 5);
+                }
+                else if (severity == InfoBarSeverity.Warning)
+                {
+                    ShowInfoBar(severity, $"Downloaded a possible equivalent of <a href='{location}'>{songObj.Title}</a>", 5);
+                }
+            });
+        });
+
+    }
     private void ShowInfoBar(InfoBarSeverity severity, string message, int seconds = 2, string title = "")
     {
         title = title.Trim();

@@ -263,21 +263,17 @@ public sealed partial class QueuePage : Page
         var shareLinkButton = new AppBarButton() { Icon = new SymbolIcon(Symbol.Link), Label = "Link" };
         shareLinkButton.Click += (sender, e) => CopySongLink(PreviewPanel.GetSong());
 
-        var downloadButton = new AppBarButton() { Icon = new SymbolIcon(Symbol.Download), Label = "Download" };
-        downloadButton.Click += async (sender, e) => await DownloadSong(PreviewPanel.GetSong());
-
         var downloadCoverButton = new AppBarButton() { Icon = new FontIcon { Glyph = "\uEE71" }, Label = "Save Cover" };
         downloadCoverButton.Click += async (sender, e) => await DownloadSongCover(PreviewPanel.GetSong());
 
-        var removeButton = new AppBarButton() { Icon = new FontIcon { Glyph = "\uECC9"}, Label = "Remove" };
+        var removeButton = new AppBarButton() { Icon = new FontIcon { Glyph = "\uECC9" }, Label = "Remove" };
         removeButton.Click += (sender, e) => RemoveSongFromQueue(PreviewPanel.GetSong());
 
         AnimationHelper.AttachScaleAnimation(shareLinkButton);
-        AnimationHelper.AttachSpringDownAnimation(downloadButton);
         AnimationHelper.AttachSpringUpAnimation(downloadCoverButton);
         AnimationHelper.AttachScaleAnimation(removeButton);
 
-        PreviewPanel.SetAppBarButtons(new List<AppBarButton> { downloadButton, downloadCoverButton, shareLinkButton, removeButton });
+        PreviewPanel.SetAppBarButtons(new List<AppBarButton> { downloadCoverButton, shareLinkButton, removeButton });
     }
 
     private void ShareLinkButton_OnClick(object sender, RoutedEventArgs e)
@@ -450,14 +446,8 @@ public sealed partial class QueuePage : Page
         // If user needs to select a directory
         if (await SettingsViewModel.GetSetting<bool>(SettingsViewModel.AskBeforeDownload) || string.IsNullOrWhiteSpace(directory))
         {
-            // Open the picker for the user to pick a folder
-            var folder = await StoragePickerHelper.PickFolderAsync(PickerLocationId.Downloads);
-            if (folder != null)
-            {
-                StorageApplicationPermissions.FutureAccessList.AddOrReplace("PickedFolderToken", folder); // Save the folder for future access
-                directory = folder.Path;
-            }
-            else // Selected "cancel"
+            directory = await StoragePickerHelper.GetDirectory();
+            if (directory == null)
             {
                 ShowInfoBar(InfoBarSeverity.Warning, "No download directory selected", 3);
                 return;
@@ -855,7 +845,8 @@ public sealed partial class QueuePage : Page
         ConcurrentQueue<int> indexQueue = new ConcurrentQueue<int>();
 
         // Loop through and find the total number of queries to process
-        for (int i = 0; i < QueueViewModel.Source.Count; i++) {
+        for (int i = 0; i < QueueViewModel.Source.Count; i++)
+        {
             var song = QueueViewModel.Source[i];
             if (song.Source != "local") // If source is not already local
             {
@@ -874,14 +865,8 @@ public sealed partial class QueuePage : Page
 
         if (await SettingsViewModel.GetSetting<bool>(SettingsViewModel.AskBeforeDownload) || string.IsNullOrWhiteSpace(directory))
         {
-            // Open the picker for the user to pick a folder
-            var folder = await StoragePickerHelper.PickFolderAsync(PickerLocationId.Downloads);
-            if (folder != null)
-            {
-                StorageApplicationPermissions.FutureAccessList.AddOrReplace("PickedFolderToken", folder); // Save the folder for future access
-                directory = folder.Path;
-            }
-            else // No folder selected (cancel)
+            directory = await StoragePickerHelper.GetDirectory();
+            if (directory == null)
             {
                 ShowInfoBar(InfoBarSeverity.Warning, "No download directory selected", 3);
                 return;
@@ -904,7 +889,7 @@ public sealed partial class QueuePage : Page
         errorSource.Clear();
         QueueViewModel.ResetConversionResults(); // Clear all badges and results on queue objects
         ViewModel.SuccessCount = ViewModel.WarningCount = ViewModel.ErrorCount = 0; // Reset the counts
-        
+
         ConversionUpdateCallback conversionUpdateCallback = (severity, song, location) =>
         {
             switch (severity)
@@ -978,7 +963,7 @@ public sealed partial class QueuePage : Page
                     {
                         continue;
                     }
-                    
+
                     var song = QueueViewModel.Source[i];
 
                     // Set song to running (progress ring will appear)
@@ -1090,7 +1075,8 @@ public sealed partial class QueuePage : Page
         ConcurrentQueue<int> indexQueue = new ConcurrentQueue<int>();
 
         // Loop through and find the total number of queries to process
-        for (int i = 0; i < QueueViewModel.Source.Count; i++) {
+        for (int i = 0; i < QueueViewModel.Source.Count; i++)
+        {
             var song = QueueViewModel.Source[i];
             if (selectedSources.Contains(song.Source) && outputSource != song.Source) // If source is selected as input and isn't the same as output
             {
@@ -1107,17 +1093,10 @@ public sealed partial class QueuePage : Page
 
         // Set download location if output is local and ask before download is enabled or download directory is not set
         var directory = await SettingsViewModel.GetSetting<string>(SettingsViewModel.DownloadDirectory);
-
-        if (outputSource == "local" && (await SettingsViewModel.GetSetting<bool>(SettingsViewModel.AskBeforeDownload) || string.IsNullOrWhiteSpace(directory)))
+        if (outputSource == "local" && await SettingsViewModel.GetSetting<bool>(SettingsViewModel.AskBeforeDownload) || string.IsNullOrWhiteSpace(directory))
         {
-            // Open the picker for the user to pick a folder
-            var folder = await StoragePickerHelper.PickFolderAsync(PickerLocationId.Downloads);
-            if (folder != null)
-            {
-                StorageApplicationPermissions.FutureAccessList.AddOrReplace("PickedFolderToken", folder); // Save the folder for future access
-                directory = folder.Path;
-            }
-            else // No folder selected (cancel)
+            directory = await StoragePickerHelper.GetDirectory();
+            if (directory == null)
             {
                 ShowInfoBar(InfoBarSeverity.Warning, "No download directory selected", 3);
                 return;
@@ -1216,7 +1195,7 @@ public sealed partial class QueuePage : Page
                     {
                         continue;
                     }
-                    
+
                     var song = QueueViewModel.Source[i];
 
                     // Set song to running (progress ring will appear)
@@ -1385,10 +1364,13 @@ public sealed partial class QueuePage : Page
             ConversionTabView.SelectedItem = ErrorTab;
         }
 
-        try {
+        try
+        {
             // Show the dialog
             await ConversionResultsDialog.ShowAsync();
-        } catch (Exception e) {
+        }
+        catch (Exception e)
+        {
             Debug.WriteLine("Queue conversion dialog fail: " + e.Message);
         }
     }
