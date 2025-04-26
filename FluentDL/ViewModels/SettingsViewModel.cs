@@ -39,6 +39,7 @@ public partial class SettingsViewModel : ObservableRecipient
 
     // Shortcut button checkboxes
     public static readonly string SearchAddChecked = "search_add_checked",
+        SearchDownloadChecked = "queue_download_checked",
         SearchShareChecked = "search_share_checked",
         SearchOpenChecked = "search_open_checked";
 
@@ -47,7 +48,6 @@ public partial class SettingsViewModel : ObservableRecipient
         LocalExplorerOpenChecked = "local_explorer_open_checked";
 
     public static readonly string QueueShareChecked = "queue_share_checked",
-        QueueDownloadChecked = "queue_download_checked",
         QueueDownloadCoverChecked = "queue_download_cover_checked",
         QueueRemoveChecked = "queue_remove_checked";
 
@@ -81,43 +81,6 @@ public partial class SettingsViewModel : ObservableRecipient
                     await _themeSelectorService.SetThemeAsync(param);
                 }
             });
-    }
-    
-    public static async Task SetDefaults(bool overwrite = false) {
-        if (overwrite || (await localSettings.ReadSettingAsync<bool?>(FirstRun) ?? true)) {  // If there are no settings yet
-
-            await localSettings.SaveSettingAsync(CommandThreads, 1);
-            await localSettings.SaveSettingAsync(ConversionThreads, 3);
-            await localSettings.SaveSettingAsync(AudioConversionThreads, 6);
-            await localSettings.SaveSettingAsync(DeezerQuality, 2);
-            await localSettings.SaveSettingAsync(QobuzQuality, 3);
-            await localSettings.SaveSettingAsync(SpotifyQuality, 1);
-            await localSettings.SaveSettingAsync(YoutubeQuality, 1);
-            await localSettings.SaveSettingAsync(AskBeforeDownload, true);
-            await localSettings.SaveSettingAsync(Overwrite, false);
-            await localSettings.SaveSettingAsync(Notifications, false);
-            await localSettings.SaveSettingAsync(AutoPlay, true);
-            await localSettings.SaveSettingAsync(NotifyUpdate, true);
-
-            await localSettings.SaveSettingAsync<string?>(DownloadDirectory, null);
-
-            await localSettings.SaveSettingAsync<string?>(FFmpegPath, null);
-            await localSettings.SaveSettingAsync<string?>(SearchSource, "deezer");
-
-            // All checkboxes unchecked by default
-            await localSettings.SaveSettingAsync(SearchAddChecked, false);
-            await localSettings.SaveSettingAsync(SearchShareChecked, false);
-            await localSettings.SaveSettingAsync(SearchOpenChecked, false);
-            await localSettings.SaveSettingAsync(LocalExplorerAddChecked, false);
-            await localSettings.SaveSettingAsync(LocalExplorerEditChecked, false);
-            await localSettings.SaveSettingAsync(LocalExplorerOpenChecked, false);
-            await localSettings.SaveSettingAsync(QueueShareChecked, false);
-            await localSettings.SaveSettingAsync(QueueDownloadChecked, false);
-            await localSettings.SaveSettingAsync(QueueDownloadCoverChecked, false);
-            await localSettings.SaveSettingAsync(QueueRemoveChecked, false);
-
-            await localSettings.SaveSettingAsync(FirstRun, false);  // Set no_settings to false
-        }
     }
 
     private static async Task SaveSettingsAsyncIfNull<T>(string key, T value)
@@ -154,7 +117,7 @@ public partial class SettingsViewModel : ObservableRecipient
             await SaveSettingsAsyncIfNull<bool?>(LocalExplorerEditChecked, false);
             await SaveSettingsAsyncIfNull<bool?>(LocalExplorerOpenChecked, false);
             await SaveSettingsAsyncIfNull<bool?>(QueueShareChecked, false);
-            await SaveSettingsAsyncIfNull<bool?>(QueueDownloadChecked, false);
+            await SaveSettingsAsyncIfNull<bool?>(SearchDownloadChecked, false);
             await SaveSettingsAsyncIfNull<bool?>(QueueDownloadCoverChecked, false);
             await SaveSettingsAsyncIfNull<bool?>(QueueRemoveChecked, false);
             await localSettings.SaveSettingAsync(FirstRun, false);  // Set no_settings to 

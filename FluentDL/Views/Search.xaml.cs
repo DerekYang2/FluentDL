@@ -220,6 +220,15 @@ public sealed partial class Search : Page
 
         AddSongToQueue(song);
     }
+    private async void DownloadButton_Click(object sender, RoutedEventArgs e)
+    {
+        var button = sender as Button;
+
+        // Retrieve the item from the tag property
+        var song = button?.Tag as SongSearchObject;
+
+        await DownloadSong(song);
+    }
 
     private void ShareLinkButton_OnClick(object sender, RoutedEventArgs e)
     {

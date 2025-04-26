@@ -97,6 +97,7 @@ public sealed partial class SettingsPage : Page
 
         // Set search checkboxes
         SearchAddCheckbox.IsChecked = await localSettings.ReadSettingAsync<bool>(SettingsViewModel.SearchAddChecked);
+        SearchDownloadCheckbox.IsChecked = await localSettings.ReadSettingAsync<bool>(SettingsViewModel.SearchDownloadChecked);
         SearchShareCheckbox.IsChecked = await localSettings.ReadSettingAsync<bool>(SettingsViewModel.SearchShareChecked);
         SearchOpenCheckbox.IsChecked = await localSettings.ReadSettingAsync<bool>(SettingsViewModel.SearchOpenChecked);
 
@@ -107,7 +108,6 @@ public sealed partial class SettingsPage : Page
 
         // Set queue checkboxes
         QueueShareCheckbox.IsChecked = await localSettings.ReadSettingAsync<bool>(SettingsViewModel.QueueShareChecked);
-        QueueDownloadCheckbox.IsChecked = await localSettings.ReadSettingAsync<bool>(SettingsViewModel.QueueDownloadChecked);
         QueueDownloadCoverCheckbox.IsChecked = await localSettings.ReadSettingAsync<bool>(SettingsViewModel.QueueDownloadCoverChecked);
         QueueRemoveCheckbox.IsChecked = await localSettings.ReadSettingAsync<bool>(SettingsViewModel.QueueRemoveChecked);
     }
@@ -360,9 +360,12 @@ public sealed partial class SettingsPage : Page
                 await localSettings.SaveSettingAsync(SettingsViewModel.SearchAddChecked, true);
                 break;
             case "1":
-                await localSettings.SaveSettingAsync(SettingsViewModel.SearchShareChecked, true);
+                await localSettings.SaveSettingAsync(SettingsViewModel.SearchDownloadChecked, true);
                 break;
             case "2":
+                await localSettings.SaveSettingAsync(SettingsViewModel.SearchShareChecked, true);
+                break;
+            case "3":
                 await localSettings.SaveSettingAsync(SettingsViewModel.SearchOpenChecked, true);
                 break;
         }
@@ -379,9 +382,12 @@ public sealed partial class SettingsPage : Page
                 await localSettings.SaveSettingAsync(SettingsViewModel.SearchAddChecked, false);
                 break;
             case "1":
-                await localSettings.SaveSettingAsync(SettingsViewModel.SearchShareChecked, false);
+                await localSettings.SaveSettingAsync(SettingsViewModel.SearchDownloadChecked, false);
                 break;
             case "2":
+                await localSettings.SaveSettingAsync(SettingsViewModel.SearchShareChecked, false);
+                break;
+            case "3":
                 await localSettings.SaveSettingAsync(SettingsViewModel.SearchOpenChecked, false);
                 break;
         }
@@ -436,12 +442,9 @@ public sealed partial class SettingsPage : Page
                 await localSettings.SaveSettingAsync(SettingsViewModel.QueueShareChecked, true);
                 break;
             case "1":
-                await localSettings.SaveSettingAsync(SettingsViewModel.QueueDownloadChecked, true);
-                break;
-            case "2":
                 await localSettings.SaveSettingAsync(SettingsViewModel.QueueDownloadCoverChecked, true);
                 break;
-            case "3":
+            case "2":
                 await localSettings.SaveSettingAsync(SettingsViewModel.QueueRemoveChecked, true);
                 break;
         }
@@ -458,12 +461,9 @@ public sealed partial class SettingsPage : Page
                 await localSettings.SaveSettingAsync(SettingsViewModel.QueueShareChecked, false);
                 break;
             case "1":
-                await localSettings.SaveSettingAsync(SettingsViewModel.QueueDownloadChecked, false);
-                break;
-            case "2":
                 await localSettings.SaveSettingAsync(SettingsViewModel.QueueDownloadCoverChecked, false);
                 break;
-            case "3":
+            case "2":
                 await localSettings.SaveSettingAsync(SettingsViewModel.QueueRemoveChecked, false);
                 break;
         }

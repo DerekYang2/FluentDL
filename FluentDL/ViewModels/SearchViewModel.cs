@@ -22,6 +22,12 @@ public partial class SearchViewModel : ObservableRecipient
         set;
     }
 
+    public Visibility DownloadVisibility
+    {
+        get;
+        set;
+    }
+
     public Visibility ShareVisibility
     {
         get;
@@ -43,6 +49,7 @@ public partial class SearchViewModel : ObservableRecipient
     {
         ResultsLimit = await localSettings.ReadSettingAsync<int?>(ResultsLimitKey) ?? 25;
         AddQueueVisibility = await localSettings.ReadSettingAsync<bool?>(SettingsViewModel.SearchAddChecked) == true ? Visibility.Visible : Visibility.Collapsed;
+        DownloadVisibility = await localSettings.ReadSettingAsync<bool?>(SettingsViewModel.SearchDownloadChecked) == true ? Visibility.Visible : Visibility.Collapsed;
         ShareVisibility = await localSettings.ReadSettingAsync<bool?>(SettingsViewModel.SearchShareChecked) == true ? Visibility.Visible : Visibility.Collapsed;
         OpenVisibility = await localSettings.ReadSettingAsync<bool?>(SettingsViewModel.SearchOpenChecked) == true ? Visibility.Visible : Visibility.Collapsed;
     }

@@ -103,8 +103,9 @@
                                 </local:SettingsCard.HeaderIcon>
                                 <StackPanel>
                                     <CheckBox x:Name="SearchAddCheckbox" Content="Add to queue" Checked="Search_OnChecked" Unchecked="Search_OnUnchecked" Tag="0"/>
-                                    <CheckBox x:Name="SearchShareCheckbox" Content="Share link" Checked="Search_OnChecked" Unchecked="Search_OnUnchecked" Tag="1"/>
-                                    <CheckBox x:Name="SearchOpenCheckbox" Content="Open" Checked="Search_OnChecked" Unchecked="Search_OnUnchecked" Tag="2"/>
+                                    <CheckBox x:Name="SearchDownloadCheckbox" Content="Download" Checked="Search_OnChecked" Unchecked="Search_OnUnchecked" Tag="1"/>
+                                    <CheckBox x:Name="SearchShareCheckbox" Content="Share link" Checked="Search_OnChecked" Unchecked="Search_OnUnchecked" Tag="2"/>
+                                    <CheckBox x:Name="SearchOpenCheckbox" Content="Open" Checked="Search_OnChecked" Unchecked="Search_OnUnchecked" Tag="3"/>
                                 </StackPanel>
                             </local:SettingsCard>
 
@@ -128,9 +129,8 @@
                                 </local:SettingsCard.HeaderIcon>
                                 <StackPanel>
                                     <CheckBox x:Name="QueueShareCheckbox" Content="Share link" Checked="Queue_OnChecked" Unchecked="Queue_OnUnchecked" Tag="0"/>
-                                    <CheckBox x:Name="QueueDownloadCheckbox" Content="Download track" Checked="Queue_OnChecked" Unchecked="Queue_OnUnchecked" Tag="1"/>
-                                    <CheckBox x:Name="QueueDownloadCoverCheckbox" Content="Download cover" Checked="Queue_OnChecked" Unchecked="Queue_OnUnchecked" Tag="2"/>
-                                    <CheckBox x:Name="QueueRemoveCheckbox" Content="Remove from queue" Checked="Queue_OnChecked" Unchecked="Queue_OnUnchecked" Tag="3"/>
+                                    <CheckBox x:Name="QueueDownloadCoverCheckbox" Content="Download cover" Checked="Queue_OnChecked" Unchecked="Queue_OnUnchecked" Tag="1"/>
+                                    <CheckBox x:Name="QueueRemoveCheckbox" Content="Remove from queue" Checked="Queue_OnChecked" Unchecked="Queue_OnUnchecked" Tag="2"/>
                                 </StackPanel>
                             </local:SettingsCard>
 

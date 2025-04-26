@@ -284,14 +284,6 @@ public sealed partial class QueuePage : Page
         CopySongLink(song);
     }
 
-    private async void ShortcutDownloadButton_OnClick(object sender, RoutedEventArgs e)
-    {
-        var button = sender as Button;
-        var song = button?.Tag as SongSearchObject;
-
-        await DownloadSong(song);
-    }
-
     private async void DownloadCoverButton_OnClick(object sender, RoutedEventArgs e)
     {
         var button = sender as Button;
@@ -424,60 +416,6 @@ public sealed partial class QueuePage : Page
         }
 
         //await DeezerApi.DownloadTrack(await DeezerApi.GetTrack(PreviewPanel.GetSong().Id), "E:\\Other Downloads\\test");
-    }
-
-    private async Task DownloadSong(SongSearchObject? songObj)
-    {
-        if (songObj == null)
-        {
-            ShowInfoBar(InfoBarSeverity.Error, "Failed to download track");
-            return;
-        }
-
-        if (songObj.Source == "local")
-        {
-            ShowInfoBar(InfoBarSeverity.Warning, "Track is already local");
-            return;
-        }
-
-        // Create a folder picker (for download directory)
-        var directory = await SettingsViewModel.GetSetting<string>(SettingsViewModel.DownloadDirectory);
-
-        // If user needs to select a directory
-        if (await SettingsViewModel.GetSetting<bool>(SettingsViewModel.AskBeforeDownload) || string.IsNullOrWhiteSpace(directory))
-        {
-            directory = await StoragePickerHelper.GetDirectory();
-            if (directory == null)
-            {
-                ShowInfoBar(InfoBarSeverity.Warning, "No download directory selected", 3);
-                return;
-            }
-        }
-
-        ShowInfoBarPermanent(InfoBarSeverity.Informational, $"Saving <a href='{ApiHelper.GetUrl(songObj)}'>{songObj.Title}</a> to <a href='{directory}'>{directory}</a>", title: "Download in Progress");
-
-        InfobarProgress.Visibility = Visibility.Visible; // Show the infobar's progress bar
-
-        // Download the track
-        await ApiHelper.DownloadObject(songObj, directory, (severity, song, location) =>
-        {
-            dispatcherQueue.TryEnqueue(() =>
-            {
-                InfobarProgress.Visibility = Visibility.Collapsed; // Hide the infobar's progress bar
-                if (severity == InfoBarSeverity.Error)
-                {
-                    ShowInfoBar(severity, $"Error: {location ?? "unknown"}", 5);
-                }
-                else if (severity == InfoBarSeverity.Success)
-                {
-                    ShowInfoBar(severity, $"Successfully downloaded <a href='{location}'>{songObj.Title}</a>", 5);
-                }
-                else if (severity == InfoBarSeverity.Warning)
-                {
-                    ShowInfoBar(severity, $"Downloaded a possible equivalent of <a href='{location}'>{songObj.Title}</a>", 5);
-                }
-            });
-        });
     }
 
     private async void CustomListView_OnSelectionChanged(object sender, SelectionChangedEventArgs e)
