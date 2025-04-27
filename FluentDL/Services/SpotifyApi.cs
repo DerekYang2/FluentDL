@@ -32,7 +32,9 @@ namespace FluentDL.Services
     {
         private static SpotifyClientConfig config = SpotifyClientConfig.CreateDefault();
         private static SpotifyClient spotify;
+        private static Random rand = new Random();
         public static bool IsInitialized = false;
+
 
         public SpotifyApi()
         {
@@ -81,10 +83,21 @@ namespace FluentDL.Services
 
             // If still not initialized, use bundled
             try {
-                var id = KeyReader.GetValue("spot_id");
-                var secret = KeyReader.GetValue("spot_secret");
-                if (!string.IsNullOrWhiteSpace(id) && !string.IsNullOrWhiteSpace(secret))
+                var idList = KeyReader.GetValues("spot_id");
+                var secretList = KeyReader.GetValues("spot_secret");
+
+
+                if (!idList.IsEmpty && !secretList.IsEmpty && idList.Length == secretList.Length)  // If lists have content and same length
                 {
+                    var randIdx = rand.Next(0, idList.Length);
+                    var id = idList[randIdx];
+                    var secret = secretList[randIdx];
+
+                    if (string.IsNullOrWhiteSpace(id) || string.IsNullOrWhiteSpace(secret))  
+                    {
+                        throw new Exception("invalid/empty bundled key in list");
+                    }
+
                     var request = new ClientCredentialsRequest(id, secret);
                     var response = await new OAuthClient(config).RequestToken(request);
                     spotify = new SpotifyClient(config.WithToken(response.AccessToken));
