@@ -86,7 +86,6 @@ namespace FluentDL.Services
                 var idList = KeyReader.GetValues("spot_id");
                 var secretList = KeyReader.GetValues("spot_secret");
 
-
                 if (!idList.IsEmpty && !secretList.IsEmpty && idList.Length == secretList.Length)  // If lists have content and same length
                 {
                     var randIdx = rand.Next(0, idList.Length);

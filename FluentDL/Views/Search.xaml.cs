@@ -189,7 +189,7 @@ public sealed partial class Search : Page
     private void InitPreviewPanelButtons()
     {
         // Initialize preview panel command bar
-        var addButton = new AppBarButton { Icon = new SymbolIcon(Symbol.Add), Label = "Add to queue" };
+        var addButton = new AppBarButton { Icon = new SymbolIcon(Symbol.Add), Label = "Add to Queue" };
         addButton.Click += (sender, e) => AddSongToQueue(PreviewPanel.GetSong());
 
         var downloadButton = new AppBarButton() { Icon = new SymbolIcon(Symbol.Download), Label = "Download" };
@@ -198,7 +198,7 @@ public sealed partial class Search : Page
         var openButton = new AppBarButton { Icon = new FontIcon { Glyph = "\uE8A7" }, Label = "Open" };
         openButton.Click += (sender, e) => OpenSongInBrowser(PreviewPanel.GetSong());
         
-        var shareButton = new AppBarButton() { Icon = new SymbolIcon(Symbol.Link), Label = "Share link" };
+        var shareButton = new AppBarButton() { Icon = new SymbolIcon(Symbol.Link), Label = "Link" };
         shareButton.Click += (sender, e) => CopySongLink(PreviewPanel.GetSong());
 
         // Init animations
