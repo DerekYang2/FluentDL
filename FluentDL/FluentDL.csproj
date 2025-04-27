@@ -20,7 +20,7 @@
     <AppxAutoIncrementPackageRevision>False</AppxAutoIncrementPackageRevision>
     <AppxSymbolPackageEnabled>False</AppxSymbolPackageEnabled>
     <GenerateTestArtifacts>True</GenerateTestArtifacts>
-    <AppxBundle>Auto</AppxBundle>
+    <AppxBundle>Always</AppxBundle>
     <WindowsPackageType>MSIX</WindowsPackageType>
     <AppxBundlePlatforms>x86|x64</AppxBundlePlatforms>
     <WindowsSdkPackageVersion>10.0.22621.38</WindowsSdkPackageVersion>

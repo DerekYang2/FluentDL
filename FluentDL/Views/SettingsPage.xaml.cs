@@ -48,6 +48,11 @@ public sealed partial class SettingsPage : Page
     private async void SettingsPage_Loaded(object sender, RoutedEventArgs e)
     {
         // Set sliders
+        // Initial values
+        ConversionThreadsCard.Description = $"{(int)Math.Round(ConversionThreadsSlider.Value)} threads";
+        CommandThreadsCard.Description = $"{(int)Math.Round(CommandThreadsSlider.Value)} threads";
+        AudioConversionThreadsCard.Description = $"{(int)Math.Round(AudioConversionThreadsSlider.Value)} threads";
+        // Change event
         ConversionThreadsSlider.ValueChanged += (s, e) =>
         {
             ConversionThreadsCard.Description = $"{(int)Math.Round(ConversionThreadsSlider.Value)} threads";

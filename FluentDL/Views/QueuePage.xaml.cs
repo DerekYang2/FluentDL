@@ -1031,7 +1031,7 @@ public sealed partial class QueuePage : Page
 
         // Set download location if output is local and ask before download is enabled or download directory is not set
         var directory = await SettingsViewModel.GetSetting<string>(SettingsViewModel.DownloadDirectory);
-        if (outputSource == "local" && await SettingsViewModel.GetSetting<bool>(SettingsViewModel.AskBeforeDownload) || string.IsNullOrWhiteSpace(directory))
+        if (outputSource == "local" && (await SettingsViewModel.GetSetting<bool>(SettingsViewModel.AskBeforeDownload) || string.IsNullOrWhiteSpace(directory)))
         {
             directory = await StoragePickerHelper.GetDirectory();
             if (directory == null)
