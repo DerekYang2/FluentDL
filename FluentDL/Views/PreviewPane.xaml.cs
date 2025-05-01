@@ -24,7 +24,8 @@ namespace FluentDL.Views
     { 
         SongSearchObject? song = null;
         DispatcherQueue dispatcher;
-        
+        private static HttpClient httpClient = new HttpClient();
+
         public event PropertyChangedEventHandler? PropertyChanged;
 
         private double rankValue = 0;
@@ -165,8 +166,6 @@ namespace FluentDL.Views
                 {
                     SongPreviewPlayer.Source = MediaSource.CreateFromUri(new Uri(previewURL));
                 }
-
-                
             }
 
             if (selectedSong.Source.Equals("youtube"))
@@ -343,6 +342,22 @@ namespace FluentDL.Views
             }
 
             MarqueeControl.StopMarquee(); // Initialize marquee as stopped
+        }
+
+        private async Task<string?> GetSpotifyPreviewUrl(string trackId) {
+            try {
+                string htmlStr = await httpClient.GetStringAsync($"https://open.spotify.com/embed/track/{trackId}");
+                // Find occurrence of audio preview
+                var previewStr = "\"audioPreview\":{\"url\":\"";
+                var startIdx = htmlStr.IndexOf(previewStr);
+                var endIdx = htmlStr.IndexOf("\"}", startIdx + previewStr.Length);
+                var url = htmlStr.Substring(startIdx + previewStr.Length, endIdx - (startIdx + previewStr.Length));
+                Debug.WriteLine(url);
+                return url;
+            } catch (Exception e) {
+                Debug.WriteLine("Failed to get spotify preview url: " + e.Message);
+            }
+            return null;
         }
     }
 }
