@@ -20,8 +20,8 @@ namespace FluentDL.Services;
 internal class DeezerApi
 {
     public static readonly string baseURL = "https://api.deezer.com";
-    private static readonly RestClient client = new RestClient(new RestClientOptions(baseURL) { Timeout = new TimeSpan(0, 0, 5) });
     private static DeezerClient deezerClient = new DeezerClient();
+    public static RestHelper restClient = new RestHelper(baseURL, 5); // 5 seconds timeout
     public static bool IsInitialized = false;
 
     public static async Task InitDeezerClient(string? ARL)
@@ -103,49 +103,6 @@ internal class DeezerApi
         }
     }
 
-    public static async Task<JsonElement> FetchJsonElement(string req, CancellationToken token = default)
-    {
-        try
-        {
-            var request = new RestRequest(req);
-            var response = await client.GetAsync(request, token);
-            var rootElement = JsonDocument.Parse(response.Content).RootElement;
-            if (rootElement.ToString().Contains("Quota limit exceeded")) // If the request is rate limited
-            {
-                // wait 5 seconds and try again
-                await Task.Delay(5000);
-                return await FetchJsonElement(req, token);
-            }
-
-            return rootElement;
-        }
-        catch (Exception e)
-        {
-            try
-            {
-                Debug.WriteLine("Failed: " + req);
-                req = req.Replace("%28", "").Replace("%29", ""); // Remove brackets, causes issues occasionally for some reason
-                var request = new RestRequest(req);
-                var response = await client.GetAsync(request, token);
-                var rootElement = JsonDocument.Parse(response.Content).RootElement;
-
-                if (rootElement.ToString().Contains("Quota limit exceeded")) // If the request is rate limited
-                {
-                    // wait 5 seconds and try again
-                    await Task.Delay(5000);
-                    return await FetchJsonElement(req, token);
-                }
-
-                return rootElement;
-            }
-            catch (Exception e2)
-            {
-                Debug.WriteLine("Failed again: " + req);
-                Debug.WriteLine(e2);
-                return new JsonElement();
-            }
-        }
-    }
 
     private static bool CloseMatch(string str1, string str2)
     {
@@ -229,7 +186,7 @@ internal class DeezerApi
         var req = "search?q=" + WebUtility.UrlEncode(query);
         req += $"%20&limit={limit}"; // Added limit to the query 
         req = req.Replace("%28", "").Replace("%29", ""); // Remove brackets, causes issues occasionally for some reason
-        var jsonObject = await FetchJsonElement(req);
+        var jsonObject = await restClient.FetchJsonElement(req);
 
         foreach (var trackJson in jsonObject.GetProperty("data").EnumerateArray())
         {
@@ -253,7 +210,7 @@ internal class DeezerApi
         var artists = song.Artists.Split(", ").ToList();
         var req = "search?q=" + WebUtility.UrlEncode(artists[0] + " " + title); // Search for the first artist and title
 
-        var jsonObject = await FetchJsonElement(req);
+        var jsonObject = await restClient.FetchJsonElement(req);
 
         // Create list of SongSearchObject results
         var searchResults = new List<SongSearchObject>();
@@ -336,7 +293,7 @@ internal class DeezerApi
 
         // With album
         var req = "search?q=" + WebUtility.UrlEncode(("artist:%22" + song.Artists + "%22 ") + (trackName.Length > 0 ? "track:%22" + trackName + "%22 " : "") + (albumName.Length > 0 ? "album:%22" + albumName + "%22" : ""));
-        var jsonObject = await FetchJsonElement(req); // Create json object from the response
+        var jsonObject = await restClient.FetchJsonElement(req); // Create json object from the response
 
         if (jsonObject.TryGetProperty("data", out var dataElement))
         {
@@ -368,7 +325,7 @@ internal class DeezerApi
 
         // Without album
         req = "search?q=" + WebUtility.UrlEncode(("artist:%22" + song.Artists + "%22 ") + (trackName.Length > 0 ? "track:%22" + trackName + "%22 " : "")) + "?strict=on"; // Strict search
-        jsonObject = await FetchJsonElement(req); // Create json object from the response
+        jsonObject = await restClient.FetchJsonElement(req); // Create json object from the response
 
         if (jsonObject.TryGetProperty("data", out var dataElement2))
         {
@@ -486,7 +443,7 @@ internal class DeezerApi
 
         var req = "search?q=" + WebUtility.UrlEncode((artistName.Length > 0 ? "artist:%22" + artistName + "%22 " : "") + (trackName.Length > 0 ? "track:%22" + trackName + "%22 " : "") + (albumName.Length > 0 ? "album:%22" + albumName + "%22" : "")) + "?strict=on"; // Strict search
         req += $"%20&limit={limit}"; // Add limit to the query
-        var jsonObject = await FetchJsonElement(req); // Create json object from the response
+        var jsonObject = await restClient.FetchJsonElement(req); // Create json object from the response
 
         foreach (var track in jsonObject.GetProperty("data").EnumerateArray())
         {
@@ -569,13 +526,13 @@ internal class DeezerApi
 
     public static async Task<SongSearchObject?> GetTrack(string trackId)
     {
-        var jsonObject = await FetchJsonElement("track/" + trackId);
+        var jsonObject = await restClient.FetchJsonElement("track/" + trackId);
         return GetTrackFromJsonElement(jsonObject);
     }
 
     public static async Task<SongSearchObject?> GetTrackFromISRC(string ISRC)
     {
-        var jsonObject = await FetchJsonElement("track/isrc:" + ISRC);
+        var jsonObject = await restClient.FetchJsonElement("track/isrc:" + ISRC);
         if (jsonObject.TryGetProperty("error", out var errorObj)) // Has an error field
         {
             Debug.WriteLine($"Error getting track {ISRC}: {errorObj}");
@@ -639,7 +596,7 @@ internal class DeezerApi
 
     public static async Task<string> GetGenreStr(int albumId)
     {
-        var albumJson = await FetchJsonElement("album/" + albumId);
+        var albumJson = await restClient.FetchJsonElement("album/" + albumId);
         // Get Genres
         var genreList = new List<string>();
         foreach (var genreData in albumJson.GetProperty("genres").GetProperty("data").EnumerateArray())
@@ -652,8 +609,8 @@ internal class DeezerApi
 
     public static async Task UpdateMetadata(string filePath, string trackId)
     {
-        var jsonObject = await FetchJsonElement("track/" + trackId);
-        var albumJson = await FetchJsonElement("album/" + jsonObject.GetProperty("album").GetProperty("id"));
+        var jsonObject = await restClient.FetchJsonElement("track/" + trackId);
+        var albumJson = await restClient.FetchJsonElement("album/" + jsonObject.GetProperty("album").GetProperty("id"));
         if (string.IsNullOrWhiteSpace(jsonObject.ToString()))
         {
             return;

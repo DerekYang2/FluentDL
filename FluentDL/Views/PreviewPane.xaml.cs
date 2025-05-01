@@ -11,6 +11,8 @@ using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml.Input;
 using CommunityToolkit.Labs.WinUI.MarqueeTextRns;
 using FluentDL.ViewModels;
+using Org.BouncyCastle.Bcpg.OpenPgp;
+using System.ComponentModel;
 
 
 // To learn more about WinUI, the WinUI project structure,
@@ -18,11 +20,23 @@ using FluentDL.ViewModels;
 
 namespace FluentDL.Views
 {
-    public sealed partial class PreviewPane : UserControl
+    public sealed partial class PreviewPane : UserControl, INotifyPropertyChanged
     { 
         SongSearchObject? song = null;
         DispatcherQueue dispatcher;
+        
+        public event PropertyChangedEventHandler? PropertyChanged;
 
+        private double rankValue = 0;
+
+        public double RankValue {
+            get { return rankValue; }
+            set {
+                rankValue = value;
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(RankValue)));
+            }
+        }
+  
         public PreviewPane()
         {
             this.InitializeComponent();
@@ -31,6 +45,8 @@ namespace FluentDL.Views
             Clear();
             SongPreviewPlayer.AutoPlay = Task.Run(() => SettingsViewModel.GetSetting<bool>(SettingsViewModel.AutoPlay)).GetAwaiter().GetResult(); 
         }
+
+
 
         public void SetAppBarButtons(List<AppBarButton> appBarButtons)
         {
@@ -88,7 +104,7 @@ namespace FluentDL.Views
 
             if (selectedSong.Source.Equals("deezer"))
             {
-                var jsonObject = await FluentDL.Services.DeezerApi.FetchJsonElement("track/" + selectedSong.Id);
+                var jsonObject = await FluentDL.Services.DeezerApi.restClient.FetchJsonElement("track/" + selectedSong.Id);
                 var albumObj = jsonObject.GetProperty("album");
                 PreviewInfoControl2.ItemsSource = PreviewInfoControl.ItemsSource = trackDetailsList; // First set the details list
                 PreviewImage.Source = new BitmapImage(new Uri(albumObj.GetProperty("cover_big").ToString()));
@@ -97,8 +113,10 @@ namespace FluentDL.Views
                 trackDetailsList.Add(new TrackDetail { Label = "Genre", Value = await DeezerApi.GetGenreStr(albumObj.GetProperty("id").GetInt32()) });
                 trackDetailsList.Add(new TrackDetail { Label = "Max Quality", Value = $"16-Bit/44.1 kHz"});
 
+                // Configure popularity field
                 trackDetailsList.Add(new TrackDetail { Label = "Popularity", Value = "" });
-                SetPopularityIcon(ApiHelper.GetRank(selectedSong));
+                RankRatingControl.Visibility = Visibility.Visible;
+                SetRatingPercentage(GetPercentage(selectedSong));
 
 
                 // Load the audio stream
@@ -120,7 +138,7 @@ namespace FluentDL.Views
                 trackDetailsList.Add(new TrackDetail() { Label = "Track", Value = selectedSong.TrackPosition });
                 trackDetailsList.Add(new TrackDetail { Label = "Genre", Value = string.Join(", ", QobuzApi.PruneGenreList(track.Album.GenresList)) });
                 trackDetailsList.Add(new TrackDetail { Label = "Max Quality", Value = $"{track.MaximumBitDepth}-Bit/{track.MaximumSamplingRate} kHz"});
-                PopularityIcon.Visibility = Visibility.Collapsed;
+                RankRatingControl.Visibility = Visibility.Collapsed;
 
                 // Load the audio stream
                 SongPreviewPlayer.Source = MediaSource.CreateFromUri(QobuzApi.GetPreviewUri(selectedSong.Id));
@@ -135,15 +153,20 @@ namespace FluentDL.Views
                 trackDetailsList.Add(new TrackDetail { Label = "Track", Value = selectedSong.TrackPosition });
                 var genreStr = string.Join(", ", await SpotifyApi.GetGenres(track.Artists));
                 trackDetailsList.Add(new TrackDetail { Label = "Genre", Value = genreStr });
+
+                // Configure popularity field
                 trackDetailsList.Add(new TrackDetail { Label = "Popularity", Value = "" });
-                SetPopularityIcon(ApiHelper.GetRank(selectedSong));
+                RankRatingControl.Visibility = Visibility.Visible;
+                SetRatingPercentage(GetPercentage(selectedSong));
 
                 // Load the audio stream
-                var previewURL = track.PreviewUrl;
+                var previewURL = await GetSpotifyPreviewUrl(selectedSong.Id);
                 if (!string.IsNullOrWhiteSpace(previewURL))
                 {
                     SongPreviewPlayer.Source = MediaSource.CreateFromUri(new Uri(previewURL));
                 }
+
+                
             }
 
             if (selectedSong.Source.Equals("youtube"))
@@ -152,7 +175,7 @@ namespace FluentDL.Views
 
                 PreviewImage.Source = new BitmapImage(new Uri(await YoutubeApi.GetMaxResThumbnail(selectedSong))); // Get max res thumbnail
                 PreviewInfoControl2.ItemsSource = PreviewInfoControl.ItemsSource = trackDetailsList; // First set details list
-                PopularityIcon.Visibility = Visibility.Collapsed;
+                RankRatingControl.Visibility = Visibility.Collapsed;
 
                 // Load the audio stream
                 var opusStreamUrl = await YoutubeApi.AudioStreamWorstUrl("https://www.youtube.com/watch?v=" + selectedSong.Id);
@@ -163,7 +186,7 @@ namespace FluentDL.Views
             {
                 if (trackInfoObj is MetadataObject metadata)
                 {
-                    PopularityIcon.Visibility = Visibility.Collapsed;
+                    RankRatingControl.Visibility = Visibility.Collapsed;
                     PreviewInfoControl2.ItemsSource = PreviewInfoControl.ItemsSource = new ObservableCollection<TrackDetail> // Set the details list
                     {
                         new() { Label = "Contributing Artists", Value = selectedSong.Artists },
@@ -269,25 +292,21 @@ namespace FluentDL.Views
             }
         }
 
-        // popVal is between 1 and 5
-        private void SetPopularityIcon(int popVal)
-        {
-            if (popVal == 0)
-            {
-                PopularityIcon.Visibility = Visibility.Collapsed;
-                return;
-            }
-
-            PopularityIcon.Visibility = Visibility.Visible;
-            PopularityIcon.Glyph = popVal switch
-            {
-                1 => "\uE904",
-                2 => "\uE905",
-                3 => "\uE906",
-                4 => "\uE907",
-                5 => "\uE908",
-                _ => "\uE904"
+        // Deezer - 0 to 1M
+        // Spotify - 0 to 100
+        // Qobuz - not available
+        private double GetPercentage(SongSearchObject song) {
+            return song.Source switch {
+                 "deezer" => double.Parse(song.Rank) / 1E6,
+                 "spotify" => double.Parse(song.Rank) / 100,
+                 _ => -1 // Not available
             };
+        }
+
+        // percentage between 0 and 1
+        private void SetRatingPercentage(double percentage)
+        {
+            RankValue = percentage * 5;
         }
 
         private void PreviewMarquee_OnPointerEntered(object sender, PointerRoutedEventArgs e)

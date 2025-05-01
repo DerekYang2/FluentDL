@@ -111,54 +111,6 @@ internal class ApiHelper
         };
     }
 
-
-    // Rank is out of 5, 0 means no rank (unsupported)
-    // Deezer - 0 to 1M
-    // Spotify - 0 to 100
-    // Qobuz - not working
-    // Youtube - views? 0, 100k, 1M, 10M, 100M?
-    public static int GetRank(SongSearchObject song)
-    {
-        if (song.Source == "deezer")
-        {
-            // If 1M, return 5 instead of 6
-            return Math.Min(5, (int)(double.Parse(song.Rank) / 200000) + 1); // 1 to 5
-        }
-
-        if (song.Source == "spotify")
-        {
-            return Math.Min(5, (int)(double.Parse(song.Rank) / 20) + 1); // 1 to 5
-        }
-
-        if (song.Source == "youtube")
-        {
-            int views = int.Parse(song.Rank);
-            if (views >= 100000000)
-            {
-                return 5;
-            }
-
-            if (views >= 10000000)
-            {
-                return 4;
-            }
-
-            if (views >= 1000000)
-            {
-                return 3;
-            }
-
-            if (views >= 100000)
-            {
-                return 2;
-            }
-
-            return 1;
-        }
-
-        return 0;
-    }
-
     public static async Task<string> DownloadObject(SongSearchObject song, string directory, ConversionUpdateCallback? callback = default)
     {
         // Create file name
