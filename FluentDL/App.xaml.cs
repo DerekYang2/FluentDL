@@ -13,6 +13,7 @@ using FluentDL.Views;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.UI.Xaml;
+using Windows.Graphics.Display;
 
 namespace FluentDL;
 
@@ -98,8 +99,13 @@ public partial class App : Application
             }).Build();
         App.GetService<IAppNotificationService>().Initialize();
         UnhandledException += App_UnhandledException;
+        MainWindow.Closed += MainWindow_Closed;
     }
 
+    private void MainWindow_Closed(object sender, WindowEventArgs args)
+    {
+        QueueSaver.Close();
+    }
 
     private void App_UnhandledException(object sender, Microsoft.UI.Xaml.UnhandledExceptionEventArgs e)
     {
@@ -146,6 +152,9 @@ public partial class App : Application
 
             await SpotifyApi.Initialize(await localSettings.ReadSettingAsync<string>(SettingsViewModel.SpotifyClientId), await localSettings.ReadSettingAsync<string>(SettingsViewModel.SpotifyClientSecret));
             await DeezerApi.InitDeezerClient(await localSettings.ReadSettingAsync<string>(SettingsViewModel.DeezerARL));
+            await QueueViewModel.LoadSaveQueue();
+
+            QueueSaver.Init();
         }
         catch (Exception e)
         {

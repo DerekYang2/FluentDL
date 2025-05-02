@@ -1,49 +1,59 @@
-﻿using System.Collections.ObjectModel;
-using System.Diagnostics;
-using System.IO;
-using System.Net;
-using Windows.Storage.Streams;
-using ABI.Microsoft.UI.Dispatching;
+﻿using ABI.Microsoft.UI.Dispatching;
+using Acornima.Ast;
 using CommunityToolkit.Mvvm.ComponentModel;
+using FluentDL.Contracts.Services;
 using FluentDL.Contracts.ViewModels;
 using FluentDL.Core.Contracts.Services;
+using FluentDL.Core.Helpers;
 using FluentDL.Core.Models;
 using FluentDL.Helpers;
 using FluentDL.Models;
 using FluentDL.Services;
-using Microsoft.UI.Xaml.Media;
-using Microsoft.UI.Xaml.Media.Imaging;
-using static System.Net.WebRequestMethods;
-using DispatcherQueue = Microsoft.UI.Dispatching.DispatcherQueue;
-using System.ComponentModel;
-using System.Runtime.CompilerServices;
-using FluentDL.Contracts.Services;
 using FluentDL.Views;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Media;
+using Microsoft.UI.Xaml.Media.Imaging;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
+using System.Collections.ObjectModel;
+using System.ComponentModel;
+using System.Diagnostics;
+using System.IO;
+using System.Net;
+using System.Runtime.CompilerServices;
+using System.Xml.Linq;
+using Windows.Storage;
+using Windows.Storage.Streams;
+using static System.Net.WebRequestMethods;
+using DispatcherQueue = Microsoft.UI.Dispatching.DispatcherQueue;
 
 namespace FluentDL.ViewModels;
 
 public class QueueObject : SongSearchObject
-{
+{    
+    [JsonIgnore]
     public string? ResultString
     {
         get;
         set;
     }
 
+    [JsonIgnore]
     public bool IsRunning
     {
         get;
         set;
     }
 
+    [JsonIgnore]
     public SolidColorBrush ConvertBadgeColor
     {
         get;
         set;
     } = new SolidColorBrush(Windows.UI.Color.FromArgb(0, 0, 0, 0));
 
+    [JsonIgnore]
     // Shortcut Visibilities
     public Visibility ShareVisibility
     {
@@ -51,12 +61,14 @@ public class QueueObject : SongSearchObject
         set;
     } = Visibility.Collapsed;
 
+    [JsonIgnore]
     public Visibility DownloadCoverVisibility
     {
         get;
         set;
     } = Visibility.Collapsed;
 
+    [JsonIgnore]
     public Visibility RemoveVisibility
     {
         get;
@@ -421,5 +433,58 @@ public partial class QueueViewModel : ObservableRecipient, INotifyPropertyChange
         }
 
         return completed;
+    }
+
+    public override string ToString() {
+        return JsonConvert.SerializeObject(Source.Select(x => x.ToString()).ToList()); // Convert to json string
+    }
+
+    public static void SaveQueue() {
+        Thread t = new Thread(() =>
+        {
+            Debug.WriteLine("Saving queue...");
+            var saveString = JsonConvert.SerializeObject(Source.Select(x => x.ToString()).ToList()); // Convert to json string
+            QueueSaver.SaveString(saveString); // Save the string to the 
+            Debug.WriteLine("Queue saved"); // Log the path of the file
+        });
+        t.Start();
+    }
+
+    public static async Task LoadSaveQueue() {
+        string path = QueueSaver.GetPath(); // Get the path of the file
+        if (System.IO.File.Exists(path)) {
+            var saveString = await System.IO.File.ReadAllTextAsync(path); // Read the file
+            await LoadSaveQueue(saveString); // Load the queue from the file
+        } else {
+            // Create the file if it does not exist
+            using (var fileStream = System.IO.File.Create(path)) {
+                // File created
+            }
+        }
+    }
+
+    private static async Task LoadSaveQueue(string saveString) {
+        if (string.IsNullOrEmpty(saveString)) return; // Check if the string is empty
+        var listJsonStr = await Json.ToObjectAsync<List<string>>(saveString); // Deserialize the json string to a list of strings
+        if (listJsonStr == null) return;
+        foreach (var songStr in listJsonStr) {
+            var song = await Json.ToObjectAsync<SongSearchObject>(songStr); // Deserialize the string to a SongSearchObject
+            if (song == null) continue;
+            // If local, set the local bitmap image
+            if (song.Source == "local") {
+                using var memoryStream = await Task.Run(() => LocalExplorerViewModel.GetAlbumArtMemoryStream(song.Id));
+
+                if (memoryStream != null) // Set album art if available
+                {
+                    var bitmapImage = new BitmapImage
+                    {
+                        DecodePixelHeight = 76, // No need to set height, aspect ratio is automatically handled
+                    };
+                    await bitmapImage.SetSourceAsync(memoryStream.AsRandomAccessStream());
+                    song.LocalBitmapImage = bitmapImage;
+                }
+            }
+            Add(song);
+        }
     }
 }

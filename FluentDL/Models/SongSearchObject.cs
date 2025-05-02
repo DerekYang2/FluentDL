@@ -1,4 +1,6 @@
-﻿using Microsoft.UI.Xaml.Media.Imaging;
+﻿
+using Microsoft.UI.Xaml.Media.Imaging;
+using Newtonsoft.Json;
 
 namespace FluentDL.Models;
 
@@ -76,6 +78,7 @@ public class SongSearchObject
         set;
     }
 
+    [JsonIgnore]
     public BitmapImage? LocalBitmapImage
     {
         get;
@@ -94,7 +97,12 @@ public class SongSearchObject
 
     public override string ToString()
     {
-        return Source + " | Title: " + Title + ", Artists: " + Artists + ", Duration: " + Duration + ", Rank: " + Rank + ", Release Date: " + ReleaseDate + ", Image Location: " + ImageLocation + ", Id: " + Id + ", Album Name: " + AlbumName;
+        var settings = new JsonSerializerSettings
+        {
+            ReferenceLoopHandling = ReferenceLoopHandling.Ignore,
+            Error = (sender, args) => args.ErrorContext.Handled = true
+        };
+        return JsonConvert.SerializeObject(this, settings);
     }
 
     public override int GetHashCode()
