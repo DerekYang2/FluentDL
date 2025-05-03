@@ -14,17 +14,8 @@ using FluentDL.Helpers;
 using FluentDL.Models;
 using FluentDL.ViewModels;
 using FluentDL.Views;
-using Jint.Runtime.Debugger;
-using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml.Controls;
-using Newtonsoft.Json.Linq;
-using Org.BouncyCastle.Bcpg.OpenPgp;
-using Org.BouncyCastle.Ocsp;
-using Org.BouncyCastle.Tls.Crypto.Impl.BC;
-using QobuzApiSharp.Models.Content;
-using RestSharp;
 using SpotifyAPI.Web;
-using SpotifyAPI.Web.Http;
 
 namespace FluentDL.Services
 {
@@ -60,27 +51,6 @@ namespace FluentDL.Services
                 }
             }
 
-            // If still not initialized, either invalid or no developer app credentials
-            if (!IsInitialized)
-            {
-                try {
-                    var accessToken = await GetAccessToken();  // Get Spotify access token from local cookies
-
-                    if (string.IsNullOrWhiteSpace(accessToken))  
-                    {
-                        throw new Exception("could not get token through cookies");
-                    }
-
-                    spotify = new SpotifyClient(config.WithToken(accessToken));
-                    IsInitialized = true;
-                    Debug.WriteLine("Initialized Spotify API using local cookies");
-                }
-                catch (Exception e)
-                {
-                    Debug.WriteLine("Failed to initialize Spotify API: " + e.Message);
-                }
-            }
-
             // If still not initialized, use bundled
             try {
                 var idList = KeyReader.GetValues("spot_id");
@@ -106,17 +76,6 @@ namespace FluentDL.Services
             } catch (Exception e) {
                 Debug.WriteLine("Failed to initialize Spotify API: " + e.Message);
             }
-        }
-
-        public static async Task<string?> GetAccessToken() {
-            RestClient client = new RestClient(new RestClientOptions("https://open.spotify.com/") { Timeout = new TimeSpan(0, 0, 5) });
-            var request = new RestRequest("get_access_token?reason=transport&productType=web_player");
-            var response = await client.GetAsync(request);
-            if (response.IsSuccessful && !string.IsNullOrEmpty(response.Content)) {
-                var rootElement = JsonDocument.Parse(response.Content).RootElement;
-                return rootElement.GetProperty("accessToken").GetString();
-            } 
-            return null;
         }
 
         private static bool CloseMatch(string str1, string str2)

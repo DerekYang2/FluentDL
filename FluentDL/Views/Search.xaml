@@ -80,100 +80,6 @@
             </StackPanel>
         </ContentDialog>
 
-        <!-- Failed dialog -->
-        <ContentDialog x:Name="FailedDialog" CloseButtonText="Close" Title="Tracks Not Found"
-                       PrimaryButtonText="Open in Browser" SecondaryButtonText="Add to queue"
-                       IsPrimaryButtonEnabled="True" IsSecondaryButtonEnabled="True"
-                       PrimaryButtonClick="FailedDialog_OnPrimaryButtonClick"
-                       SecondaryButtonClick="FailedDialog_OnSecondaryButtonClick"
-                       CloseButtonClick="FailedDialog_OnCloseButtonClick" Closing="FailDialog_Closing"
-                       PrimaryButtonStyle="{ThemeResource AccentButtonStyle}"
-                       HorizontalAlignment="Center" VerticalAlignment="Center">
-            <ContentDialog.Resources>
-                <x:Double x:Key="ContentDialogMaxWidth">1000</x:Double>
-            </ContentDialog.Resources>
-            <Grid>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="Auto" />
-                    <ColumnDefinition Width="*" />
-                </Grid.ColumnDefinitions>
-                <ListView Grid.Column="0" x:Name="FailedListView"
-                          CornerRadius="4"
-                          BorderThickness="0"
-                          Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
-                          BorderBrush="{ThemeResource ControlStrongStrokeColorDefaultBrush}"
-                          Margin="0,0,0,10"
-                          VerticalAlignment="Center"
-                          SelectionChanged="FailedListView_OnSelectionChanged"
-                          Height="400">
-                    <ListView.ItemTemplate>
-                        <DataTemplate x:DataType="models:SongSearchObject">
-                            <Grid Margin="0,12,0,12" AutomationProperties.Name="{x:Bind Title}">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="76" />
-                                    <ColumnDefinition Width="*" />
-                                </Grid.ColumnDefinitions>
-                                <Border CornerRadius="4" Height="76">
-                                    <Border.Background>
-                                        <ImageBrush Stretch="UniformToFill" ImageSource="{x:Bind ImageLocation}" />
-                                    </Border.Background>
-                                </Border>
-
-                                <StackPanel Margin="12,0,0,0" Grid.Column="1">
-                                    <StackPanel Orientation="Horizontal">
-                                        <TextBlock Text="{x:Bind Title}" FontFamily="Segoe UI Variable Display"
-                                                   Style="{ThemeResource BodyStrongTextBlockStyle}"
-                                                   HorizontalAlignment="Left"
-                                                   TextTrimming="CharacterEllipsis" MaxLines="1" Margin="0, 0, 8, 0" />
-                                        <Border Background="DarkGray" CornerRadius="2" Padding="4, 0"
-                                                VerticalAlignment="Center">
-                                            <TextBlock x:Name="ExplicitBadgeFailed" Text="E"
-                                                       Style="{ThemeResource CaptionTextBlockStyle}"
-                                                       Foreground="Black"
-                                                       Visibility="{x:Bind Explicit, Converter={StaticResource VisibilityConverter}}" />
-                                        </Border>
-                                    </StackPanel>
-                                    <TextBlock Text="{x:Bind Artists}" FontFamily="Segoe UI Variable Display"
-                                               Style="{ThemeResource BodyTextBlockStyle}"
-                                               TextTrimming="CharacterEllipsis"
-                                               MaxLines="1" />
-                                </StackPanel>
-
-                                <StackPanel Margin="12,0,0,0" Orientation="Horizontal" VerticalAlignment="Bottom"
-                                            Grid.Column="1">
-                                    <TextBlock
-                                        Text="{x:Bind ReleaseDate, Converter={StaticResource DateToYearConverter}}"
-                                        HorizontalAlignment="Left"
-                                        Style="{ThemeResource BodyTextBlockStyle}" Margin="0,0,0,0"
-                                        FontFamily="Segoe UI Variable Display" />
-                                    <TextBlock Text="&#x2022;" Style="{ThemeResource BodyTextBlockStyle}"
-                                               HorizontalAlignment="Left" Margin="5,0,0,0" />
-                                    <TextBlock
-                                        Text="{x:Bind Duration, Converter={StaticResource DurationConverter}}"
-                                        HorizontalAlignment="Left"
-                                        Style="{ThemeResource BodyTextBlockStyle}" Margin="5,0,0,0"
-                                        FontFamily="Segoe UI Variable Display" />
-                                </StackPanel>
-                            </Grid>
-                        </DataTemplate>
-                    </ListView.ItemTemplate>
-                </ListView>
-                <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="10,0,0,12">
-                    <InfoBar
-                        IsOpen="True"
-                        IsClosable="False"
-                        Severity="Error"
-                        Message="The following spotify tracks could not be found on Deezer. Automatically attempted to find equivalent tracks from YouTube."
-                        Margin="0,0,0,8" />
-                    <Border CornerRadius="8" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
-                            BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1">
-                        <controls2:WebView2 x:Name="YoutubeWebView" Height="320" />
-                    </Border>
-
-                </StackPanel>
-            </Grid>
-        </ContentDialog>
-
         <!-- Search page -->
         <Grid>
             <Grid.ColumnDefinitions>
@@ -263,15 +169,6 @@
                         <FontIcon x:Name="ResultsIcon" Glyph="&#xE710;" FontSize="16" Margin="0, 0, 8, 0"
                                   Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}" />
                         <TextBlock x:Name="ResultsText" Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}" />
-                    </StackPanel>
-                </Button>
-                <Button x:Name="FailedResultsButton" VerticalAlignment="Center" Margin="0, 0, 0, 0"
-                        Background="Transparent" BorderBrush="Transparent" Click="FailedResultsButton_OnClick" ToolTipService.ToolTip="Manage failed results">
-                    <StackPanel Orientation="Horizontal">
-                        <FontIcon x:Name="FailedResultsIcon" Glyph="&#xE7BA;" FontSize="16" Margin="0, 0, 8, 0"
-                                  Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}" />
-                        <TextBlock x:Name="FailedResultsText"
-                                   Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}" />
                     </StackPanel>
                 </Button>
 

@@ -77,12 +77,8 @@ public sealed partial class Search : Page
 {
     public delegate void UrlStatusUpdateCallback(InfoBarSeverity severity, string message, int duration = 2); // Callback for url status update (for infobars)
 
-    private TerminalSubprocess _terminalSubprocess;
     private ObservableCollection<SongSearchObject> originalList;
-    private SpotifyApi spotifyApi;
-    private ObservableCollection<SongSearchObject> failedSpotifySongs;
-    private List<VideoSearchResult> youtubeAlternateList;
-    private bool failDialogOpen = false, updateNotificationGiven = false;
+    private bool updateNotificationGiven = false;
     private CancellationTokenSource cancellationTokenSource;
     private DispatcherQueue dispatcher;
     private DispatcherTimer dispatcherTimer;
@@ -104,30 +100,13 @@ public sealed partial class Search : Page
         AttachCollectionChangedEvent((ObservableCollection<SongSearchObject>)CustomListView.ItemsSource);
         originalList = new ObservableCollection<SongSearchObject>();
         SetResultsAmount(0);
-        _terminalSubprocess = new TerminalSubprocess();
         SortComboBox.SelectedIndex = 0;
         SortOrderComboBox.SelectedIndex = 0;
         InitPreviewPanelButtons();
 
-        youtubeAlternateList = new List<VideoSearchResult>();
 
         StopSearchButton.Visibility = Visibility.Collapsed;
 
-        // Initialize spotify failed results collection
-        failedSpotifySongs = new ObservableCollection<SongSearchObject>();
-        FailedResultsButton.Visibility = Visibility.Collapsed;
-        failedSpotifySongs.CollectionChanged += (sender, e) =>
-        {
-            if (failedSpotifySongs.Count > 0)
-            {
-                FailedResultsButton.Visibility = Visibility.Visible;
-                FailedResultsText.Text = failedSpotifySongs.Count + " failed";
-            }
-            else
-            {
-                FailedResultsButton.Visibility = Visibility.Collapsed;
-            }
-        };
         cancellationTokenSource = new CancellationTokenSource();
 
         this.Loaded += SearchPage_Loaded;
@@ -542,90 +521,6 @@ public sealed partial class Search : Page
         NoSearchResults.Visibility = CustomListView.Items.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
     }
 
-    private void FailedDialog_OnPrimaryButtonClick(ContentDialog sender, ContentDialogButtonClickEventArgs args)
-    {
-        failDialogOpen = true;
-        var selectedIndex = FailedListView.SelectedIndex;
-        if (0 <= selectedIndex && selectedIndex < youtubeAlternateList.Count)
-        {
-            var youtubeResult = youtubeAlternateList[selectedIndex];
-            if (youtubeResult != null)
-            {
-                var url = youtubeResult.Url;
-                // Open the url
-                var uri = new Uri(url);
-                var success = Windows.System.Launcher.LaunchUriAsync(uri);
-            }
-        }
-    }
-
-    // TODO: youtube queue preview is broken
-    private void FailedDialog_OnSecondaryButtonClick(ContentDialog sender, ContentDialogButtonClickEventArgs args)
-    {
-        /*
-        var selectedIndex = FailedListView.SelectedIndex;
-        if (0 <= selectedIndex && selectedIndex < youtubeAlternateList.Count)
-        {
-            var youtubeResult = youtubeAlternateList[selectedIndex];
-            if (youtubeResult != null)
-            {
-                var url = youtubeResult.Url;
-                // Test thread
-                Thread thread = new Thread(async () =>
-                {
-                    await YoutubeApi.DownloadAudio(url, "download path", youtubeResult.Title);
-                    Debug.WriteLine("Finished downloading");
-                });
-                thread.Start();
-            }
-        }
-        */
-        var selectedIndex = FailedListView.SelectedIndex;
-
-        var youtubeObj = (SongSearchObject)FailedListView.SelectedItem;
-        if (youtubeObj == null)
-        {
-            return;
-        }
-
-        youtubeObj.Source = "youtube";
-        youtubeObj.Id = youtubeAlternateList[selectedIndex].Id;
-        QueueViewModel.Add(youtubeObj);
-        ShowInfoBar(InfoBarSeverity.Success, $"{youtubeObj.Title} added to queue");
-    }
-
-    private void FailedListView_OnSelectionChanged(object sender, SelectionChangedEventArgs e)
-    {
-        var selectedIndex = FailedListView.SelectedIndex;
-        if (0 <= selectedIndex && selectedIndex < youtubeAlternateList.Count)
-        {
-            var youtubeResult = youtubeAlternateList[selectedIndex];
-            if (youtubeResult != null)
-            {
-                var url = "https://www.youtube.com/embed/" + youtubeResult.Id.Value;
-                url = youtubeResult.Url;
-                YoutubeWebView.Source = new Uri(url); // Set web view source
-            }
-        }
-        else
-        {
-            YoutubeWebView.Source = null; // Clear web view source
-        }
-    }
-
-    private void FailedDialog_OnCloseButtonClick(ContentDialog sender, ContentDialogButtonClickEventArgs args)
-    {
-        failDialogOpen = false;
-    }
-
-    private void FailDialog_Closing(ContentDialog sender, ContentDialogClosingEventArgs args)
-    {
-        if (failDialogOpen)
-        {
-            args.Cancel = true;
-        }
-    }
-
     private void StopSearchButton_OnClick(object sender, RoutedEventArgs e)
     {
         cancellationTokenSource.Cancel();
@@ -668,12 +563,6 @@ public sealed partial class Search : Page
         } catch (Exception err) {
             Debug.WriteLine(err.Message);
         }
-    }
-
-    private async void FailedResultsButton_OnClick(object sender, RoutedEventArgs e)
-    {
-        FailedDialog.XamlRoot = this.XamlRoot;
-        var result = await FailedDialog.ShowAsync();
     }
 
     // Required for animation to work
