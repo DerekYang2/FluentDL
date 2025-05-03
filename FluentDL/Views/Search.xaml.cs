@@ -169,7 +169,7 @@ public sealed partial class Search : Page
     {
         // Initialize preview panel command bar
         var addButton = new AppBarButton { Icon = new SymbolIcon(Symbol.Add), Label = "Add to Queue" };
-        addButton.Click += (sender, e) => AddSongToQueue(PreviewPanel.GetSong());
+        addButton.Click += async (sender, e) => await AddSongToQueue(PreviewPanel.GetSong());
 
         var downloadButton = new AppBarButton() { Icon = new SymbolIcon(Symbol.Download), Label = "Download" };
         downloadButton.Click += async (sender, e) => await DownloadSong(PreviewPanel.GetSong());
@@ -189,7 +189,7 @@ public sealed partial class Search : Page
         PreviewPanel.SetAppBarButtons(new List<AppBarButton> { addButton, downloadButton, shareButton, openButton });
     }
 
-    private void AddQueueButton_OnClick(object sender, RoutedEventArgs e)
+    private async void AddQueueButton_OnClick(object sender, RoutedEventArgs e)
     {
         // Get the button that was clicked
         var button = sender as Button;
@@ -197,7 +197,7 @@ public sealed partial class Search : Page
         // Retrieve the item from the tag property
         var song = button?.Tag as SongSearchObject;
 
-        AddSongToQueue(song);
+        await AddSongToQueue(song);
     }
     private async void DownloadButton_Click(object sender, RoutedEventArgs e)
     {
@@ -526,7 +526,7 @@ public sealed partial class Search : Page
         cancellationTokenSource.Cancel();
     }
 
-    private void AddToQueueButton_OnClick(object sender, RoutedEventArgs e)
+    private async void AddToQueueButton_OnClick(object sender, RoutedEventArgs e)
     {
         var listViewCount = (CustomListView.ItemsSource as ObservableCollection<SongSearchObject>).Count;
 
@@ -552,6 +552,8 @@ public sealed partial class Search : Page
         {
             ShowInfoBar(InfoBarSeverity.Success, $"Added {addedCount} tracks to queue");
         }
+
+        await QueueViewModel.SaveQueue();
     }
 
     // Functions that open dialogs
@@ -663,7 +665,7 @@ public sealed partial class Search : Page
 
 
     // HELPER FUNCTIONS ----------------------------------------------------------------------------------------------------
-    private void AddSongToQueue(SongSearchObject? song)
+    private async Task AddSongToQueue(SongSearchObject? song)
     {
         if (song == null)
         {
@@ -682,6 +684,7 @@ public sealed partial class Search : Page
         {
             ShowInfoBar(InfoBarSeverity.Success, $"<a href='{ApiHelper.GetUrl(song)}'>{song.Title}</a> added to queue");
         }
+        await QueueViewModel.SaveQueue();
     }
 
     private void CopySongLink(SongSearchObject? song)

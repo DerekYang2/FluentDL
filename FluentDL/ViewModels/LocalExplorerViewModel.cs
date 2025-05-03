@@ -189,16 +189,24 @@ public partial class LocalExplorerViewModel : ObservableRecipient
 
     public static async Task<BitmapImage?> GetBitmapImageAsync(string filePath)
     {
-        var memoryStream = GetAlbumArtMemoryStream(filePath);
-        if (memoryStream == null)
-        {
-            return null;
+        try {
+            using var memoryStream = await Task.Run(() => GetAlbumArtMemoryStream(filePath));
+        
+            if (memoryStream != null) // Set album art if available
+            {
+                var bitmapImage = new BitmapImage
+                {
+                    DecodePixelHeight = 76, // No need to set height, aspect ratio is automatically handled
+                };
+                await bitmapImage.SetSourceAsync(memoryStream.AsRandomAccessStream());
+                return bitmapImage;
+            }
+        } catch (Exception e) {
+            Debug.WriteLine("Could not get bitmap image: " + e.Message);
         }
-
-        var bitmapImage = new BitmapImage();
-        await bitmapImage.SetSourceAsync(memoryStream.AsRandomAccessStream());
-        return bitmapImage;
+        return null;
     }
+
 
     public static byte[]? GetAlbumArtBytes(string filePath)
     {

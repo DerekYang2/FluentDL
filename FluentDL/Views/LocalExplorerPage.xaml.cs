@@ -630,7 +630,7 @@ public sealed partial class LocalExplorerPage : Page
         });
     }
 
-    private void AddToQueueButton_OnClick(object sender, RoutedEventArgs e)
+    private async void AddToQueueButton_OnClick(object sender, RoutedEventArgs e)
     {
         if (originalList.Count == 0)
         {
@@ -655,6 +655,8 @@ public sealed partial class LocalExplorerPage : Page
         {
             ShowInfoBar(InfoBarSeverity.Success, $"Added {addedCount} tracks to queue");
         }
+
+        await QueueViewModel.SaveQueue();
     }
 
     private async void MetadataDialog_OnPrimaryButtonClick(ContentDialog sender, ContentDialogButtonClickEventArgs args)
@@ -679,18 +681,8 @@ public sealed partial class LocalExplorerPage : Page
         if (song == null) return; // Skip if song is null
 
         // Set song art
-        using var memoryStream = await Task.Run(() => LocalExplorerViewModel.GetAlbumArtMemoryStream(song.Id));
-
-        if (memoryStream != null) // Set album art if available
-        {
-            var bitmapImage = new BitmapImage
-            {
-                DecodePixelHeight = 76, // No need to set height, aspect ratio is automatically handled
-            };
-            await bitmapImage.SetSourceAsync(memoryStream.AsRandomAccessStream());
-            song.LocalBitmapImage = bitmapImage;
-        }
-
+        song.LocalBitmapImage = await LocalExplorerViewModel.GetBitmapImageAsync(song.Id);
+        
         // Update the song in the listview
         var index = originalList.IndexOf(originalList.First(s => s.Id == song.Id));
         originalList[index] = song;
@@ -744,7 +736,7 @@ public sealed partial class LocalExplorerPage : Page
         }
     }
 
-    private void AddSongToQueue(SongSearchObject? song)
+    private async void AddSongToQueue(SongSearchObject? song)
     {
         if (song == null)
         {
@@ -763,6 +755,8 @@ public sealed partial class LocalExplorerPage : Page
         {
             ShowInfoBar(InfoBarSeverity.Success, $"<a href='{ApiHelper.GetUrl(song)}'>{song.Title}</a> added to queue");
         }
+
+        await QueueViewModel.SaveQueue();
     }
 
     private static void OpenSongInExplorer(SongSearchObject? song)

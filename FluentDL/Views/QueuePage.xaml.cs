@@ -32,6 +32,7 @@ using ABI.Microsoft.UI.Text;
 using Microsoft.UI.Xaml.Documents;
 using FolderPicker = ABI.Windows.Storage.Pickers.FolderPicker;
 using FontWeights = Microsoft.UI.Text.FontWeights;
+using Newtonsoft.Json;
 
 namespace FluentDL.Views;
 
@@ -186,7 +187,7 @@ public sealed partial class QueuePage : Page
                 await PreviewPanel.Update(selectedSong);
             }
         }
-
+        
         await QueueViewModel.UpdateShortcutVisibility(); // Initialize the settings for shortcut buttons
     }
 
@@ -267,7 +268,7 @@ public sealed partial class QueuePage : Page
         downloadCoverButton.Click += async (sender, e) => await DownloadSongCover(PreviewPanel.GetSong());
 
         var removeButton = new AppBarButton() { Icon = new FontIcon { Glyph = "\uECC9" }, Label = "Remove" };
-        removeButton.Click += (sender, e) => RemoveSongFromQueue(PreviewPanel.GetSong());
+        removeButton.Click += async (sender, e) => await RemoveSongFromQueue(PreviewPanel.GetSong());
 
         AnimationHelper.AttachScaleAnimation(shareLinkButton);
         AnimationHelper.AttachSpringUpAnimation(downloadCoverButton);
@@ -292,12 +293,12 @@ public sealed partial class QueuePage : Page
         await DownloadSongCover(song);
     }
 
-    private void RemoveButton_OnClick(object sender, RoutedEventArgs e)
+    private async void RemoveButton_OnClick(object sender, RoutedEventArgs e)
     {
         var button = sender as Button;
         var song = button?.Tag as SongSearchObject;
 
-        RemoveSongFromQueue(song);
+        await RemoveSongFromQueue(song);
     }
 
     private void OpenLocalButton_Click(object sender, RoutedEventArgs e)
@@ -339,7 +340,7 @@ public sealed partial class QueuePage : Page
         ShowInfoBar(InfoBarSeverity.Success, "Copied link to clipboard");
     }
 
-    private void RemoveSongFromQueue(SongSearchObject? selectedSong)
+    private async Task RemoveSongFromQueue(SongSearchObject? selectedSong)
     {
         if (selectedSong == null)
         {
@@ -355,6 +356,7 @@ public sealed partial class QueuePage : Page
 
         QueueViewModel.Remove(selectedSong);
         PreviewPanel.Clear();
+        await QueueViewModel.SaveQueue(); // Save the queue to file
     }
 
     private async Task DownloadSongCover(SongSearchObject? songObj)
@@ -483,14 +485,15 @@ public sealed partial class QueuePage : Page
         await LocalCommands.SavePaths();
     }
 
-    private void ClearButton_OnClick(object sender, RoutedEventArgs e)
+    private async void ClearButton_OnClick(object sender, RoutedEventArgs e)
     {
         QueueViewModel.Clear();
         StartStopButton.Visibility = Visibility.Collapsed;
         ShowInfoBar(InfoBarSeverity.Informational, "Queue cleared");
+        await QueueViewModel.SaveQueue();
     }
 
-    private void StartStopButton_OnClick(object sender, RoutedEventArgs e)
+    private async void StartStopButton_OnClick(object sender, RoutedEventArgs e)
     {
         const string pauseText = "Pausing ...";
         if (StartStopText.Text.Equals(pauseText)) // If already attempted a pause
@@ -507,7 +510,7 @@ public sealed partial class QueuePage : Page
         {
             cancellationTokenSource = new CancellationTokenSource();
             SetPauseUI();
-            QueueViewModel.RunCommand(DirectoryInput.Text, cancellationTokenSource.Token, queueRunCallback);
+            await QueueViewModel.RunCommand(DirectoryInput.Text, cancellationTokenSource.Token, queueRunCallback);
         }
     }
 
@@ -701,7 +704,7 @@ public sealed partial class QueuePage : Page
     private void dispatcherTimer_Tick(object sender, object e)
     {
         var timer = sender as DispatcherTimer;
-        if (!timer.IsEnabled) return; // Already closed
+        if (timer == null || !timer.IsEnabled) return; // Already closed
 
         PageInfoBar.Opacity = 0;
         timer.Stop();
@@ -774,7 +777,7 @@ public sealed partial class QueuePage : Page
 
         // Show conversion dialog
         ConversionDialog.XamlRoot = this.XamlRoot;
-        ConversionDialog.ShowAsync();
+        await ConversionDialog.ShowAsync();
     }
 
     private async void DownloadAllButton_Click(object sender, RoutedEventArgs e)
@@ -862,17 +865,14 @@ public sealed partial class QueuePage : Page
             ConvertStopText.Text = "Stop"; // Reset stop button text
             ConvertStopButton.Visibility = Visibility.Collapsed; // Hide stop button
             QueueProgress.Value = ogVal; // Reset the progress bar
-
-            SettingsViewModel.GetSetting<bool?>(SettingsViewModel.Notifications).ContinueWith((task) =>
+            if (await SettingsViewModel.GetSetting<bool?>(SettingsViewModel.Notifications) ?? false)
             {
-                var showNotif = task.Result ?? false;
-                if (showNotif)
-                {
-                    App.GetService<IAppNotificationService>().Show(string.Format("QueueCompletePayload".GetLocalized(), AppContext.BaseDirectory));
-                }
-            });
+                App.GetService<IAppNotificationService>().Show(string.Format("QueueCompletePayload".GetLocalized(), AppContext.BaseDirectory));
+            }
 
             ForceHideInfoBar();
+
+            await QueueViewModel.SaveQueue();
         };
 
         var downloadThreads = await SettingsViewModel.GetSetting<int?>(SettingsViewModel.ConversionThreads) ?? 1;
@@ -925,18 +925,7 @@ public sealed partial class QueuePage : Page
 
                             if (localSong != null)
                             {
-                                using var memoryStream = await Task.Run(() => LocalExplorerViewModel.GetAlbumArtMemoryStream(localSong.Id));
-
-                                if (memoryStream != null) // Set album art if available
-                                {
-                                    var bitmapImage = new BitmapImage
-                                    {
-                                        DecodePixelHeight = 76, // No need to set height, aspect ratio is automatically handled
-                                    };
-                                    await bitmapImage.SetSourceAsync(memoryStream.AsRandomAccessStream());
-                                    localSong.LocalBitmapImage = bitmapImage;
-                                }
-
+                                localSong.LocalBitmapImage = await LocalExplorerViewModel.GetBitmapImageAsync(fileLocation);
                                 queueObj = await QueueViewModel.CreateQueueObject(localSong);
                             }
                             else // Can happen when trying to parse opus files
@@ -957,6 +946,9 @@ public sealed partial class QueuePage : Page
                                 queueObj.IsRunning = false; // Set song to not running
                                 QueueViewModel.Replace(i, queueObj);
                             }
+
+                            // Save state of the queue in case of crashes?
+                            await QueueViewModel.SaveQueue();
                         }
                         else // Failed conversion, set current object badge to error
                         {
@@ -977,7 +969,6 @@ public sealed partial class QueuePage : Page
                     {
                         QueueProgress.Value = 100.0 * processCaptured / totalCount; // Update the progress bar
                     });
-
 
                     if (processCaptured == totalCount) // If all tracks are processed
                     {
@@ -1093,18 +1084,14 @@ public sealed partial class QueuePage : Page
             ConvertStopButton.Visibility = Visibility.Collapsed; // Hide stop button
             QueueProgress.Value = ogVal; // Reset the progress bar
 
-            SettingsViewModel.GetSetting<bool?>(SettingsViewModel.Notifications).ContinueWith((task) =>
+            if (await SettingsViewModel.GetSetting<bool?>(SettingsViewModel.Notifications) ?? false)
             {
-                var showNotif = task.Result ?? false;
-                if (showNotif)
-                {
-                    App.GetService<IAppNotificationService>().Show(string.Format("QueueCompletePayload".GetLocalized(), AppContext.BaseDirectory));
-                }
-            });
+                App.GetService<IAppNotificationService>().Show(string.Format("QueueCompletePayload".GetLocalized(), AppContext.BaseDirectory));
+            }
 
             ForceHideInfoBar();
-            // Show conversion results dialog
-            await ShowConversionDialog();
+            await ShowConversionDialog();  // Show conversion results dialog
+            await QueueViewModel.SaveQueue(); // Save the queue
         };
 
         var downloadThreads = await SettingsViewModel.GetSetting<int?>(SettingsViewModel.ConversionThreads) ?? 1;
@@ -1173,18 +1160,7 @@ public sealed partial class QueuePage : Page
 
                                 if (localSong != null)
                                 {
-                                    using var memoryStream = await Task.Run(() => LocalExplorerViewModel.GetAlbumArtMemoryStream(localSong.Id));
-
-                                    if (memoryStream != null) // Set album art if available
-                                    {
-                                        var bitmapImage = new BitmapImage
-                                        {
-                                            DecodePixelHeight = 76, // No need to set height, aspect ratio is automatically handled
-                                        };
-                                        await bitmapImage.SetSourceAsync(memoryStream.AsRandomAccessStream());
-                                        localSong.LocalBitmapImage = bitmapImage;
-                                    }
-
+                                    localSong.LocalBitmapImage = await LocalExplorerViewModel.GetBitmapImageAsync(fileLocation);
                                     queueObj = await QueueViewModel.CreateQueueObject(localSong);
                                 }
                                 else // Can happen when trying to parse opus files

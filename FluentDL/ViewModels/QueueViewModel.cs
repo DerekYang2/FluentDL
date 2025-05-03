@@ -10,6 +10,7 @@ using FluentDL.Helpers;
 using FluentDL.Models;
 using FluentDL.Services;
 using FluentDL.Views;
+using Jint.Native;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
@@ -439,52 +440,55 @@ public partial class QueueViewModel : ObservableRecipient, INotifyPropertyChange
         return JsonConvert.SerializeObject(Source.Select(x => x.ToString()).ToList()); // Convert to json string
     }
 
-    public static void SaveQueue() {
-        Thread t = new Thread(() =>
-        {
-            Debug.WriteLine("Saving queue...");
-            var saveString = JsonConvert.SerializeObject(Source.Select(x => x.ToString()).ToList()); // Convert to json string
-            QueueSaver.SaveString(saveString); // Save the string to the 
-            Debug.WriteLine("Queue saved"); // Log the path of the file
+    public static async Task SaveQueue() {
+        await Task.Run(()=>{
+            try {
+                var saveString = JsonConvert.SerializeObject(Source.Select(x => x.ToString()).ToList()); // Convert to json string
+                QueueSaver.SaveString(saveString); // Save the string to the 
+            } catch (Exception e) {
+                Debug.WriteLine("Error saving queue: " + e.Message); // Log the error
+            }
         });
-        t.Start();
     }
 
     public static async Task LoadSaveQueue() {
         string path = QueueSaver.GetPath(); // Get the path of the file
-        if (System.IO.File.Exists(path)) {
-            var saveString = await System.IO.File.ReadAllTextAsync(path); // Read the file
-            await LoadSaveQueue(saveString); // Load the queue from the file
-        } else {
-            // Create the file if it does not exist
-            using (var fileStream = System.IO.File.Create(path)) {
-                // File created
+        try {
+            if (System.IO.File.Exists(path)) {
+                var saveString = await System.IO.File.ReadAllTextAsync(path); // Read the file
+                await LoadSaveQueue(saveString); // Load the queue from the file
+            } else {
+                // Create the file if it does not exist
+                using (var fileStream = System.IO.File.Create(path)) {
+                    // File created
+                }
             }
+        } catch (Exception e) {
+            Debug.WriteLine("Error loading queue: " + e.Message); // Log the error
         }
     }
-
     private static async Task LoadSaveQueue(string saveString) {
         if (string.IsNullOrEmpty(saveString)) return; // Check if the string is empty
-        var listJsonStr = await Json.ToObjectAsync<List<string>>(saveString); // Deserialize the json string to a list of strings
+   
+        var listJsonStr = JsonConvert.DeserializeObject<List<string>>(saveString);
+        
         if (listJsonStr == null) return;
         foreach (var songStr in listJsonStr) {
             var song = await Json.ToObjectAsync<SongSearchObject>(songStr); // Deserialize the string to a SongSearchObject
             if (song == null) continue;
             // If local, set the local bitmap image
             if (song.Source == "local") {
-                using var memoryStream = await Task.Run(() => LocalExplorerViewModel.GetAlbumArtMemoryStream(song.Id));
-
-                if (memoryStream != null) // Set album art if available
+                var localSong = LocalExplorerViewModel.ParseFile(song.Id);  // Re-parse the file
+                if (localSong != null)
                 {
-                    var bitmapImage = new BitmapImage
-                    {
-                        DecodePixelHeight = 76, // No need to set height, aspect ratio is automatically handled
-                    };
-                    await bitmapImage.SetSourceAsync(memoryStream.AsRandomAccessStream());
-                    song.LocalBitmapImage = bitmapImage;
+                    localSong.LocalBitmapImage = await LocalExplorerViewModel.GetBitmapImageAsync(song.Id); // Get the bitmap image from the file
+                    Add(localSong);
                 }
+            } else {
+                Add(song);
             }
-            Add(song);
         }
     }
+
+
 }

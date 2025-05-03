@@ -88,7 +88,6 @@ namespace FluentDL.Views
             PreviewImage.UpdateLayout();
 
             song = selectedSong;
-
             //PreviewArtistText.Text = selectedSong.Artists;
             //PreviewReleaseDate.Text = selectedSong.ReleaseDate; // Todo format date
             //PreviewRank.Text = selectedSong.Rank; // Todo format rank
@@ -352,7 +351,6 @@ namespace FluentDL.Views
                 var startIdx = htmlStr.IndexOf(previewStr);
                 var endIdx = htmlStr.IndexOf("\"}", startIdx + previewStr.Length);
                 var url = htmlStr.Substring(startIdx + previewStr.Length, endIdx - (startIdx + previewStr.Length));
-                Debug.WriteLine(url);
                 return url;
             } catch (Exception e) {
                 Debug.WriteLine("Failed to get spotify preview url: " + e.Message);

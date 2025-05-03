@@ -86,7 +86,7 @@
                                 <!-- final item, deezer rank / spotify popularity index / youtube views -->
                                 <Viewbox Height="23" HorizontalAlignment="Left" Margin="0,-22,0,0">
                                     <RatingControl x:Name="RankRatingControl" PlaceholderValue="{x:Bind RankValue, Mode=OneWay}" IsReadOnly="True" HorizontalAlignment="Left"
-                                                   ToolTipService.ToolTip="{x:Bind sys:String.Format('{0:F2}', RankValue), Mode=OneWay}">
+                                                   ToolTipService.ToolTip="{x:Bind sys:String.Format('{0:F2}', RankValue), Mode=OneWay}" Visibility="Collapsed">
                                         <RatingControl.Resources>
                                             <SolidColorBrush x:Key="RatingControlPlaceholderForeground" Color="{ThemeResource SystemAccentColorLight3}" />
                                             <SolidColorBrush x:Key="RatingControlUnselectedForeground" Color="{ThemeResource SystemAccentColorLight3}" />
