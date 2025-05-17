@@ -1,4 +1,13 @@
-﻿using System;
+﻿using AngleSharp.Text;
+using DeezNET.Data;
+using FluentDL.Helpers;
+using FluentDL.Models;
+using FluentDL.ViewModels;
+using FluentDL.Views;
+using Microsoft.UI.Xaml.Controls;
+using SpotifyAPI.Web;
+using SpotifyAPI.Web.Http;
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
@@ -8,24 +17,16 @@ using System.Net;
 using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
-using AngleSharp.Text;
-using DeezNET.Data;
-using FluentDL.Helpers;
-using FluentDL.Models;
-using FluentDL.ViewModels;
-using FluentDL.Views;
-using Microsoft.UI.Xaml.Controls;
-using SpotifyAPI.Web;
 
 namespace FluentDL.Services
 {
     internal class SpotifyApi
     {
-        private static SpotifyClientConfig config = SpotifyClientConfig.CreateDefault();
+        private static SpotifyClientConfig config = SpotifyClientConfig.CreateDefault().WithRetryHandler(new SimpleRetryHandler() { RetryTimes = 3, TooManyRequestsConsumesARetry = false});
         private static SpotifyClient spotify;
         private static Random rand = new Random();
+        private static HttpClient httpClient = new HttpClient();
         public static bool IsInitialized = false;
-
 
         public SpotifyApi()
         {
@@ -36,6 +37,7 @@ namespace FluentDL.Services
         {
             IsInitialized = false;
 
+            // First try to use clientId and clientSecret from settings
             if (!string.IsNullOrWhiteSpace(clientId) && !string.IsNullOrWhiteSpace(clientSecret))
             {
                 try
@@ -44,6 +46,7 @@ namespace FluentDL.Services
                     var response = await new OAuthClient(config).RequestToken(request);
                     spotify = new SpotifyClient(config.WithToken(response.AccessToken));
                     IsInitialized = true;
+                    return;
                 }
                 catch (Exception e)
                 {
@@ -51,7 +54,21 @@ namespace FluentDL.Services
                 }
             }
 
-            // If still not initialized, use bundled
+            // If clientId and clientSecret are not provided, try to get from browser
+            try
+            {
+                var token = await GetAccessToken();
+                if (token != null) {
+                    spotify = new SpotifyClient(config.WithToken(token));
+                    IsInitialized = true;
+                    Debug.WriteLine("Initialized Spotify API using browser token");
+                    return;
+                }
+            } catch (Exception e) {
+                Debug.WriteLine("Failed to get access token: " + e.Message);
+            }
+
+            // If still not initialized, try to get bundled keys
             try {
                 var idList = KeyReader.GetValues("spot_id");
                 var secretList = KeyReader.GetValues("spot_secret");
@@ -77,6 +94,22 @@ namespace FluentDL.Services
                 Debug.WriteLine("Failed to initialize Spotify API: " + e.Message);
             }
         }
+
+        /// <summary>
+        /// Workaround to get access token from embed
+        /// Chosen URL is most followed playlist, so it hopefully won't change and is available in many regions
+        /// </summary>
+        private static async Task<string?> GetAccessToken() {
+            // Some arbitrary embed, should work unless it is moved 
+            string htmlStr = await httpClient.GetStringAsync("https://open.spotify.com/embed/playlist/37i9dQZF1DXcBWIGoYBM5M");
+            // Find occurrence of audio preview
+            var tokenStr = "\"accessToken\":\"";
+            var startIdx = htmlStr.IndexOf(tokenStr);
+            var endIdx = htmlStr.IndexOf("\",", startIdx + tokenStr.Length);
+            var token = htmlStr.Substring(startIdx + tokenStr.Length, endIdx - (startIdx + tokenStr.Length));
+            return token;
+        }
+
 
         private static bool CloseMatch(string str1, string str2)
         {
@@ -198,27 +231,32 @@ namespace FluentDL.Services
 
         public static async Task<FullTrack?> GetTrackFromISRC(string isrc, CancellationToken token = default)
         {
-            // https://api.spotify.com/v1/search?type=track&q=isrc:{isrc}
-            var response = await spotify.Search.Item(new SearchRequest(SearchRequest.Types.Track, $"isrc:{isrc}"), token);
-            if (token.IsCancellationRequested)
-            {
-                return null;
-            }
+            try {
+                // https://api.spotify.com/v1/search?type=track&q=isrc:{isrc}
+                var response = await spotify.Search.Item(new SearchRequest(SearchRequest.Types.Track, $"isrc:{isrc}"), token);
 
-            if (response.Tracks.Items == null)
-            {
-                return null;
-            }
-
-            // Loop through and check if isrc matches
-            foreach (var track in response.Tracks.Items)
-            {
-                if (track.ExternalIds["isrc"] == isrc)
+                if (token.IsCancellationRequested)
                 {
-                    return track;
+                    return null;
                 }
-            }
 
+                if (response.Tracks.Items == null)
+                {
+                    return null;
+                }
+
+                // Loop through and check if isrc matches
+                foreach (var track in response.Tracks.Items)
+                {
+                    if (track.ExternalIds["isrc"] == isrc)
+                    {
+                        return track;
+                    }
+                }
+            } catch (Exception e)
+            {
+                Debug.WriteLine("Failed to get track from ISRC: " + e.Message);
+            }
             return null;
         }
 
@@ -414,6 +452,10 @@ namespace FluentDL.Services
             SearchResponse? response;
             try
             {
+                if (reqStr.Length >= 250)
+                {  // Maximum query is 250 characters
+                    reqStr = reqStr.Substring(0, 250);
+                }
                 response = await spotify.Search.Item(new SearchRequest(SearchRequest.Types.Track, reqStr) {Limit=20 }, token);
             }
             catch (Exception e)
