@@ -617,8 +617,8 @@
                                 ContentAlignment="Left">
                                 <StackPanel Margin="0,0,0,12" Orientation="Vertical">
                                     <TextBlock Margin="{StaticResource XSmallTopMargin}" Style="{ThemeResource BodyTextBlockStyle}">
-                                        View source code on<Hyperlink NavigateUri="https://github.com/DerekYang2/FluentDL">GitHub</Hyperlink>
-                                        .</TextBlock>
+                                        View source code on&#32;<Hyperlink NavigateUri="https://github.com/DerekYang2/FluentDL">GitHub</Hyperlink>
+                                        </TextBlock>
                                 </StackPanel>
                             </local:SettingsCard>
                         </local:SettingsExpander.Items>
