@@ -3,11 +3,11 @@
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:helpers="using:FluentDL.Helpers"
-    xmlns:xaml="using:Microsoft.UI.Xaml"
     xmlns:local="using:CommunityToolkit.WinUI.Controls"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:ui="using:CommunityToolkit.WinUI.UI"
+    xmlns:xaml="using:Microsoft.UI.Xaml"
     mc:Ignorable="d">
     <Page.Resources>
         <helpers:EnumToBooleanConverter x:Key="EnumToBooleanConverter" />
@@ -17,315 +17,538 @@
         </Style>
     </Page.Resources>
     <Grid>
-        <ScrollViewer Margin="0,0,0,12" Padding="0, 0, 16, 0">
+        <ScrollViewer Margin="0,0,0,12" Padding="0,0,16,0">
             <Grid>
                 <StackPanel HorizontalAlignment="Stretch" Spacing="8">
                     <StackPanel.ChildrenTransitions>
                         <EntranceThemeTransition FromVerticalOffset="50" />
                         <RepositionThemeTransition IsStaggeringEnabled="False" />
                     </StackPanel.ChildrenTransitions>
-                    <!-- GENERAL SETTINGS ______________________________________________________________________________________________ -->
-                    <TextBlock Text="General" Style="{StaticResource TextBlockSectionStyle}" />
+                    <!--  GENERAL SETTINGS ______________________________________________________________________________________________  -->
+                    <TextBlock Style="{StaticResource TextBlockSectionStyle}" Text="General" />
 
-                    <local:SettingsCard x:Name="AutoPlayCard"
-                                        Description="Automatically play track when selected."
-                                        Header="Auto Play">
+                    <local:SettingsCard
+                        x:Name="AutoPlayCard"
+                        Description="Automatically play track when selected"
+                        Header="Auto Play">
                         <local:SettingsCard.HeaderIcon>
                             <FontIcon Glyph="&#xEC57;" />
                         </local:SettingsCard.HeaderIcon>
-                        <ToggleSwitch x:Name="AutoPlayToggle" OnContent="" OffContent="" Toggled="AutoPlayToggle_OnToggled"/>
+                        <ToggleSwitch
+                            x:Name="AutoPlayToggle"
+                            OffContent=""
+                            OnContent=""
+                            Toggled="AutoPlayToggle_OnToggled" />
                     </local:SettingsCard>
 
-                    <local:SettingsCard x:Name="NotificationsCard" Description="Enable or disable app notifications for queue conversion/command running completion." Header="Notifications">
+                    <local:SettingsCard
+                        x:Name="NotificationsCard"
+                        Description="Enable or disable app notifications for queue task completion"
+                        Header="Notifications">
                         <local:SettingsCard.HeaderIcon>
                             <FontIcon Glyph="&#xE7E7;" />
                         </local:SettingsCard.HeaderIcon>
-                        <ToggleSwitch x:Name="NotificationsToggle" OnContent="" OffContent="" Toggled="NotificationsToggle_OnToggled"/>
+                        <ToggleSwitch
+                            x:Name="NotificationsToggle"
+                            OffContent=""
+                            OnContent=""
+                            Toggled="NotificationsToggle_OnToggled" />
                     </local:SettingsCard>
 
-                    <local:SettingsExpander x:Name="ThreadsExpander" 
-                                        Description="Set the number of threads to use for different tasks. Tasks are not guaranteed to run in order with multiple threads."
-                                        Header="Threads" HorizontalContentAlignment="Stretch">
+                    <local:SettingsExpander
+                        x:Name="ThreadsExpander"
+                        HorizontalContentAlignment="Stretch"
+                        Description="Set the number of threads to use for different tasks"
+                        Header="Threads">
                         <local:SettingsExpander.HeaderIcon>
                             <FontIcon Glyph="&#xE964;" />
                         </local:SettingsExpander.HeaderIcon>
                         <local:SettingsExpander.Items>
-                            <local:SettingsCard x:Name="CommandThreadsCard" 
-                                            Header="Command Runner">
+                            <local:SettingsCard x:Name="CommandThreadsCard" Header="Command Runner">
                                 <local:SettingsCard.HeaderIcon>
                                     <FontIcon Glyph="&#xE756;" />
                                 </local:SettingsCard.HeaderIcon>
-                                <Slider x:Name="CommandThreadsSlider" Minimum="1" Maximum="10" StepFrequency="1" TickFrequency="1" SnapsTo="Ticks" TickPlacement="Outside" LostFocus="CommandThreadsSlider_OnLostFocus" Width="500"/>
+                                <Slider
+                                    x:Name="CommandThreadsSlider"
+                                    Width="500"
+                                    LostFocus="CommandThreadsSlider_OnLostFocus"
+                                    Maximum="10"
+                                    Minimum="1"
+                                    SnapsTo="Ticks"
+                                    StepFrequency="1"
+                                    TickFrequency="1"
+                                    TickPlacement="Outside" />
                             </local:SettingsCard>
-                            <local:SettingsCard x:Name="ConversionThreadsCard" 
-                                            Header="Queue Conversion">
+                            <local:SettingsCard x:Name="ConversionThreadsCard" Header="Queue Conversion">
                                 <local:SettingsCard.HeaderIcon>
                                     <FontIcon Glyph="&#xE9D5;" />
                                 </local:SettingsCard.HeaderIcon>
-                                <Slider x:Name="ConversionThreadsSlider" Minimum="1" Maximum="5" StepFrequency="1" TickFrequency="1" SnapsTo="Ticks" TickPlacement="Outside" LostFocus="ConversionThreadsSlider_OnLostFocus" Width="500"/>
+                                <Slider
+                                    x:Name="ConversionThreadsSlider"
+                                    Width="500"
+                                    LostFocus="ConversionThreadsSlider_OnLostFocus"
+                                    Maximum="5"
+                                    Minimum="1"
+                                    SnapsTo="Ticks"
+                                    StepFrequency="1"
+                                    TickFrequency="1"
+                                    TickPlacement="Outside" />
                             </local:SettingsCard>
-                            <local:SettingsCard x:Name="AudioConversionThreadsCard" 
-                                            Header="Audio Format Conversion">
+                            <local:SettingsCard x:Name="AudioConversionThreadsCard" Header="Audio Format Conversion">
                                 <local:SettingsCard.HeaderIcon>
                                     <FontIcon Glyph="&#xF623;" />
                                 </local:SettingsCard.HeaderIcon>
-                                <Slider x:Name="AudioConversionThreadsSlider" Minimum="1" Maximum="10" StepFrequency="1" TickFrequency="1" SnapsTo="Ticks" TickPlacement="Outside" LostFocus="AudioConversionThreadsSlider_OnLostFocus" Width="500"/>
+                                <Slider
+                                    x:Name="AudioConversionThreadsSlider"
+                                    Width="500"
+                                    LostFocus="AudioConversionThreadsSlider_OnLostFocus"
+                                    Maximum="10"
+                                    Minimum="1"
+                                    SnapsTo="Ticks"
+                                    StepFrequency="1"
+                                    TickFrequency="1"
+                                    TickPlacement="Outside" />
                             </local:SettingsCard>
                         </local:SettingsExpander.Items>
                     </local:SettingsExpander>
 
-                    <local:SettingsExpander x:Name="FFmpegExpander" 
-                                        Description="Set the path to a folder which should contain ffmpeg.exe. If not set, the app will use the built-in FFmpeg version."
-                                        Header="FFmpeg" HorizontalContentAlignment="Stretch">
+                    <local:SettingsExpander
+                        x:Name="FFmpegExpander"
+                        HorizontalContentAlignment="Stretch"
+                        Description="Set the binaries directory for a custom FFMpeg (optional)"
+                        Header="FFmpeg Directory">
                         <local:SettingsExpander.HeaderIcon>
                             <FontIcon Glyph="&#xE8B7;" />
                         </local:SettingsExpander.HeaderIcon>
-                        <Button x:Name="ResetFFmpegButton" Click="ResetFFmpegButton_OnClick" Content="Reset" ToolTipService.ToolTip="Reset to built-in FFmpeg"/>
+                        <Button
+                            x:Name="ResetFFmpegButton"
+                            Click="ResetFFmpegButton_OnClick"
+                            Content="Reset"
+                            ToolTipService.ToolTip="Reset to built-in FFmpeg" />
                         <local:SettingsExpander.Items>
-                            <local:SettingsCard x:Name="FFmpegPathCard" Header="Path" Description="No folder selected" HorizontalContentAlignment="Stretch">
-                                <Button x:Name="SelectFFmpegButton" Click="SelectFFmpegButton_OnClick" Content="Change"/>
+                            <local:SettingsCard
+                                x:Name="FFmpegPathCard"
+                                HorizontalContentAlignment="Stretch"
+                                Description="No folder selected"
+                                Header="Path">
+                                <Button
+                                    x:Name="SelectFFmpegButton"
+                                    Click="SelectFFmpegButton_OnClick"
+                                    Content="Browse" />
                             </local:SettingsCard>
                         </local:SettingsExpander.Items>
                     </local:SettingsExpander>
 
-                    <local:SettingsExpander x:Name="ShortcutButtonExpander"
-                    Description="Add or remove shortcut buttons for each page's track list. These buttons may always be found in the sidebar."
-                    Header="Shortcut Buttons"
-                    HorizontalContentAlignment="Stretch">
+                    <local:SettingsExpander
+                        x:Name="ShortcutButtonExpander"
+                        HorizontalContentAlignment="Stretch"
+                        Description="Add or remove shortcut buttons for each page"
+                        Header="Shortcut Buttons">
                         <local:SettingsExpander.HeaderIcon>
                             <FontIcon Glyph="&#xE945;" />
                         </local:SettingsExpander.HeaderIcon>
                         <local:SettingsExpander.Items>
-                            <local:SettingsCard x:Name="SearchPageShortcuts" Header="Search Page" Description="Select the shortcut buttons that should be shown in Search"
-                        HorizontalContentAlignment="Left" ContentAlignment="Vertical">
+                            <local:SettingsCard
+                                x:Name="SearchPageShortcuts"
+                                HorizontalContentAlignment="Left"
+                                ContentAlignment="Vertical"
+                                Description="Enabled shortcut buttons for Search"
+                                Header="Search Page">
                                 <local:SettingsCard.HeaderIcon>
                                     <FontIcon Glyph="&#xE721;" />
                                 </local:SettingsCard.HeaderIcon>
                                 <StackPanel>
-                                    <CheckBox x:Name="SearchAddCheckbox" Content="Add to queue" Checked="Search_OnChecked" Unchecked="Search_OnUnchecked" Tag="0"/>
-                                    <CheckBox x:Name="SearchDownloadCheckbox" Content="Download" Checked="Search_OnChecked" Unchecked="Search_OnUnchecked" Tag="1"/>
-                                    <CheckBox x:Name="SearchShareCheckbox" Content="Share link" Checked="Search_OnChecked" Unchecked="Search_OnUnchecked" Tag="2"/>
-                                    <CheckBox x:Name="SearchOpenCheckbox" Content="Open" Checked="Search_OnChecked" Unchecked="Search_OnUnchecked" Tag="3"/>
+                                    <CheckBox
+                                        x:Name="SearchAddCheckbox"
+                                        Checked="Search_OnChecked"
+                                        Content="Add to queue"
+                                        Tag="0"
+                                        Unchecked="Search_OnUnchecked" />
+                                    <CheckBox
+                                        x:Name="SearchDownloadCheckbox"
+                                        Checked="Search_OnChecked"
+                                        Content="Download"
+                                        Tag="1"
+                                        Unchecked="Search_OnUnchecked" />
+                                    <CheckBox
+                                        x:Name="SearchShareCheckbox"
+                                        Checked="Search_OnChecked"
+                                        Content="Share link"
+                                        Tag="2"
+                                        Unchecked="Search_OnUnchecked" />
+                                    <CheckBox
+                                        x:Name="SearchOpenCheckbox"
+                                        Checked="Search_OnChecked"
+                                        Content="Open"
+                                        Tag="3"
+                                        Unchecked="Search_OnUnchecked" />
                                 </StackPanel>
                             </local:SettingsCard>
 
-                            <local:SettingsCard x:Name="LocalExplorerPageShortcuts" Header="Local Explorer Page" Description="Select the shortcut buttons that should be shown in Local Explorer"
-                        HorizontalContentAlignment="Left" ContentAlignment="Vertical">
+                            <local:SettingsCard
+                                x:Name="LocalExplorerPageShortcuts"
+                                HorizontalContentAlignment="Left"
+                                ContentAlignment="Vertical"
+                                Description="Enabled shortcut buttons for Local Explorer"
+                                Header="Local Explorer Page">
                                 <local:SettingsCard.HeaderIcon>
                                     <FontIcon Glyph="&#xEC50;" />
                                 </local:SettingsCard.HeaderIcon>
                                 <StackPanel>
-                                    <CheckBox x:Name="LocalExplorerAddCheckbox" Content="Add to queue" Checked="LocalExplorer_OnChecked" Unchecked="LocalExplorer_OnUnchecked" Tag="0"/>
-                                    <CheckBox x:Name="LocalExplorerEditCheckbox" Content="Edit song metadata" Checked="LocalExplorer_OnChecked" Unchecked="LocalExplorer_OnUnchecked" Tag="1"/>
-                                    <CheckBox x:Name="LocalExplorerOpenCheckbox" Content="Open in File Explorer" Checked="LocalExplorer_OnChecked" Unchecked="LocalExplorer_OnUnchecked" Tag="2"/>
+                                    <CheckBox
+                                        x:Name="LocalExplorerAddCheckbox"
+                                        Checked="LocalExplorer_OnChecked"
+                                        Content="Add to queue"
+                                        Tag="0"
+                                        Unchecked="LocalExplorer_OnUnchecked" />
+                                    <CheckBox
+                                        x:Name="LocalExplorerEditCheckbox"
+                                        Checked="LocalExplorer_OnChecked"
+                                        Content="Edit song metadata"
+                                        Tag="1"
+                                        Unchecked="LocalExplorer_OnUnchecked" />
+                                    <CheckBox
+                                        x:Name="LocalExplorerOpenCheckbox"
+                                        Checked="LocalExplorer_OnChecked"
+                                        Content="Open in File Explorer"
+                                        Tag="2"
+                                        Unchecked="LocalExplorer_OnUnchecked" />
                                 </StackPanel>
                             </local:SettingsCard>
 
-                            <!-- New settings card for Queue Page -->
-                            <local:SettingsCard x:Name="QueuePageShortcuts" Header="Queue Page" Description="Select the shortcut buttons that should be shown in Queue"
-                        HorizontalContentAlignment="Left" ContentAlignment="Vertical">
+                            <!--  New settings card for Queue Page  -->
+                            <local:SettingsCard
+                                x:Name="QueuePageShortcuts"
+                                HorizontalContentAlignment="Left"
+                                ContentAlignment="Vertical"
+                                Description="Enabled shortcut buttons for Queue"
+                                Header="Queue Page">
                                 <local:SettingsCard.HeaderIcon>
                                     <FontIcon Glyph="&#xE9D5;" />
                                 </local:SettingsCard.HeaderIcon>
                                 <StackPanel>
-                                    <CheckBox x:Name="QueueShareCheckbox" Content="Share link" Checked="Queue_OnChecked" Unchecked="Queue_OnUnchecked" Tag="0"/>
-                                    <CheckBox x:Name="QueueDownloadCoverCheckbox" Content="Download cover" Checked="Queue_OnChecked" Unchecked="Queue_OnUnchecked" Tag="1"/>
-                                    <CheckBox x:Name="QueueRemoveCheckbox" Content="Remove from queue" Checked="Queue_OnChecked" Unchecked="Queue_OnUnchecked" Tag="2"/>
+                                    <CheckBox
+                                        x:Name="QueueShareCheckbox"
+                                        Checked="Queue_OnChecked"
+                                        Content="Share link"
+                                        Tag="0"
+                                        Unchecked="Queue_OnUnchecked" />
+                                    <CheckBox
+                                        x:Name="QueueDownloadCoverCheckbox"
+                                        Checked="Queue_OnChecked"
+                                        Content="Download cover"
+                                        Tag="1"
+                                        Unchecked="Queue_OnUnchecked" />
+                                    <CheckBox
+                                        x:Name="QueueRemoveCheckbox"
+                                        Checked="Queue_OnChecked"
+                                        Content="Remove from queue"
+                                        Tag="2"
+                                        Unchecked="Queue_OnUnchecked" />
                                 </StackPanel>
                             </local:SettingsCard>
 
                         </local:SettingsExpander.Items>
                     </local:SettingsExpander>
 
-                    <!-- DOWNLOAD SETTINGS ______________________________________________________________________________________________ -->
-                    <TextBlock Text="Downloads" Style="{StaticResource TextBlockSectionStyle}" />
+                    <!--  DOWNLOAD SETTINGS ______________________________________________________________________________________________  -->
+                    <TextBlock Style="{StaticResource TextBlockSectionStyle}" Text="Downloads" />
 
-                    <local:SettingsExpander x:Name="DownloadFolder"
-                                        Description="Configure settings regarding download location behavior."
-                                        Header="Download Location"
-                                        HorizontalContentAlignment="Stretch">
+                    <local:SettingsExpander
+                        x:Name="DownloadFolder"
+                        HorizontalContentAlignment="Stretch"
+                        Description="Configure download directory and behavior"
+                        Header="Download Directory">
                         <local:SettingsExpander.HeaderIcon>
                             <FontIcon Glyph="&#xE8B7;" />
                         </local:SettingsExpander.HeaderIcon>
                         <local:SettingsExpander.Items>
-                            <local:SettingsCard x:Name="LocationCard"  Header="Location" Description="The default folder where downloads are saved"
-                                            HorizontalContentAlignment="Stretch">
-                                <Button Grid.Column="1" x:Name="SelectFolderButton" Click="SelectFolderButton_OnClick" Content="Change">
-                                </Button>
+                            <local:SettingsCard
+                                x:Name="LocationCard"
+                                HorizontalContentAlignment="Stretch"
+                                Description="The default folder where downloads are saved"
+                                Header="Location">
+                                <Button
+                                    x:Name="SelectFolderButton"
+                                    Grid.Column="1"
+                                    Click="SelectFolderButton_OnClick"
+                                    Content="Change" />
                             </local:SettingsCard>
-                            <local:SettingsCard Header="Ask what to do with each download" Description="Always ask where to save each download rather than using the default folder">
-                                <ToggleSwitch x:Name="AskToggle" IsOn="False" OnContent="" OffContent="" Toggled="AskToggle_OnToggled"/>
+                            <local:SettingsCard Description="Always ask where to save each download rather than using the default folder" Header="Ask what to do with each download">
+                                <ToggleSwitch
+                                    x:Name="AskToggle"
+                                    IsOn="False"
+                                    OffContent=""
+                                    OnContent=""
+                                    Toggled="AskToggle_OnToggled" />
                             </local:SettingsCard>
-                            <local:SettingsCard Header="Overwrite existing files" Description="Automatically overwrite existing files with the same name">
-                                <ToggleSwitch x:Name="OverwriteToggle" IsOn="False" OnContent="" OffContent="" Toggled="OverwriteToggle_OnToggled"/>
+                            <local:SettingsCard Description="Automatically overwrite existing files with the same name" Header="Overwrite existing files">
+                                <ToggleSwitch
+                                    x:Name="OverwriteToggle"
+                                    IsOn="False"
+                                    OffContent=""
+                                    OnContent=""
+                                    Toggled="OverwriteToggle_OnToggled" />
                             </local:SettingsCard>
                         </local:SettingsExpander.Items>
 
                     </local:SettingsExpander>
-                    <local:SettingsExpander x:Name = "DownloadOptions" Description="Set download options for different streaming sources." Header="Download Quality">
+                    <local:SettingsExpander
+                        x:Name="DownloadOptions"
+                        Description="Configure audio quality for different streaming sources"
+                        Header="Download Quality">
                         <local:SettingsExpander.HeaderIcon>
                             <FontIcon Glyph="&#xE93C;" />
                         </local:SettingsExpander.HeaderIcon>
                         <local:SettingsExpander.Items>
-                            <local:SettingsCard x:Name="DeezerQuality" Header="Deezer" Description="Select the quality of Deezer downloads">
-                                <ComboBox x:Name="DeezerQualityComboBox" SelectionChanged="DeezerQualityComboBox_OnSelectionChanged" DropDownOpened="ComboBox_OnDropDownOpened">
-                                    <ComboBoxItem x:Name="DeezerMP3_128" Content="MP3 (128kbps)"/>
-                                    <ComboBoxItem x:Name="DeezerMP3_320" Content="MP3 (320kbps)"/>
-                                    <ComboBoxItem x:Name="DeezerFLAC" Content="FLAC"/>
+                            <local:SettingsCard
+                                x:Name="DeezerQuality"
+                                Description="Select the quality of Deezer downloads"
+                                Header="Deezer">
+                                <ComboBox
+                                    x:Name="DeezerQualityComboBox"
+                                    DropDownOpened="ComboBox_OnDropDownOpened"
+                                    SelectionChanged="DeezerQualityComboBox_OnSelectionChanged">
+                                    <ComboBoxItem x:Name="DeezerMP3_128" Content="MP3 (128kbps)" />
+                                    <ComboBoxItem x:Name="DeezerMP3_320" Content="MP3 (320kbps)" />
+                                    <ComboBoxItem x:Name="DeezerFLAC" Content="FLAC" />
                                 </ComboBox>
                             </local:SettingsCard>
-                            <local:SettingsCard x:Name="QobuzQuality" Header="Qobuz" Description="Select the quality of Qobuz downloads">
-                                <ComboBox x:Name="QobuzQualityComboBox" SelectionChanged="QobuzQualityComboBox_OnSelectionChanged" DropDownOpened="ComboBox_OnDropDownOpened">
-                                    <ComboBoxItem x:Name="QobuzMP3" Content="MP3 (320kbps)"/>
-                                    <ComboBoxItem x:Name="QobuzFLAC6" Content="FLAC (16bit/44.1kHz)"/>
-                                    <ComboBoxItem x:Name="QobuzFLAC7" Content="FLAC (24bit/96kHz)"/>
-                                    <ComboBoxItem x:Name="QobuzFlAC27" Content="FLAC (24bit/192kHz)"/>
+                            <local:SettingsCard
+                                x:Name="QobuzQuality"
+                                Description="Select the quality of Qobuz downloads"
+                                Header="Qobuz">
+                                <ComboBox
+                                    x:Name="QobuzQualityComboBox"
+                                    DropDownOpened="ComboBox_OnDropDownOpened"
+                                    SelectionChanged="QobuzQualityComboBox_OnSelectionChanged">
+                                    <ComboBoxItem x:Name="QobuzMP3" Content="MP3 (320kbps)" />
+                                    <ComboBoxItem x:Name="QobuzFLAC6" Content="FLAC (16bit/44.1kHz)" />
+                                    <ComboBoxItem x:Name="QobuzFLAC7" Content="FLAC (24bit/96kHz)" />
+                                    <ComboBoxItem x:Name="QobuzFlAC27" Content="FLAC (24bit/192kHz)" />
                                 </ComboBox>
                             </local:SettingsCard>
-                            <local:SettingsCard x:Name="SpotifyQuality" Header="Spotify" Description="Spotify downloads are found from other sources. If fail, will fallback to YouTube.">
-                                <ComboBox x:Name="SpotifyQualityComboBox" SelectionChanged="SpotifyQualityComboBox_OnSelectionChanged" DropDownOpened="ComboBox_OnDropDownOpened">
-                                    <ComboBoxItem x:Name="SpotifyMP3" Content="MP3"/>
-                                    <ComboBoxItem x:Name="SpotifyFLAC" Content="FLAC"/>
+                            <local:SettingsCard
+                                x:Name="SpotifyQuality"
+                                Description="Spotify downloads are auto-converted from other sources (not recommended)"
+                                Header="Spotify">
+                                <ComboBox
+                                    x:Name="SpotifyQualityComboBox"
+                                    DropDownOpened="ComboBox_OnDropDownOpened"
+                                    SelectionChanged="SpotifyQualityComboBox_OnSelectionChanged">
+                                    <ComboBoxItem x:Name="SpotifyMP3" Content="MP3" />
+                                    <ComboBoxItem x:Name="SpotifyFLAC" Content="FLAC" />
                                 </ComboBox>
                             </local:SettingsCard>
-                            <local:SettingsCard x:Name="YoutubeQuality" Header="YouTube" Description="Select the quality of YouTube downloads">
-                                <ComboBox x:Name="YoutubeQualityComboBox" SelectionChanged="YoutubeQualityComboBox_OnSelectionChanged" DropDownOpened="ComboBox_OnDropDownOpened">
-                                    <ComboBoxItem x:Name="YoutubeOpus" Content="Opus (128kbps) - Good quality, best size, bad compatibility"/>
-                                    <ComboBoxItem x:Name="YoutubeFlac" Content="FLAC from Opus - Opus quality, large size, good compatibility"/>
-                                    <ComboBoxItem x:Name="YoutubeAAC" Content="AAC (128kbps) - Medium quality, good size, good compatibility"/>
+                            <local:SettingsCard
+                                x:Name="YoutubeQuality"
+                                Description="Select the quality of YouTube downloads"
+                                Header="YouTube">
+                                <ComboBox
+                                    x:Name="YoutubeQualityComboBox"
+                                    DropDownOpened="ComboBox_OnDropDownOpened"
+                                    SelectionChanged="YoutubeQualityComboBox_OnSelectionChanged">
+                                    <ComboBoxItem x:Name="YoutubeOpus" Content="Opus (128kbps) - Good quality, best size, bad compatibility" />
+                                    <ComboBoxItem x:Name="YoutubeFlac" Content="FLAC from Opus - Opus quality, large size, good compatibility" />
+                                    <ComboBoxItem x:Name="YoutubeAAC" Content="AAC (128kbps) - Medium quality, good size, good compatibility" />
                                 </ComboBox>
                             </local:SettingsCard>
                         </local:SettingsExpander.Items>
 
                     </local:SettingsExpander>
 
-                    <!-- Auth SETTINGS __________________________________________________________________________________________________ -->
-                    <TextBlock Text="Authentication" Style="{StaticResource TextBlockSectionStyle}" />
+                    <!--  Auth SETTINGS __________________________________________________________________________________________________  -->
+                    <TextBlock Style="{StaticResource TextBlockSectionStyle}" Text="Authentication" />
 
-                    <local:SettingsExpander x:Name="DeezerExpander"
-                                        VerticalAlignment="Top"
-                                        Description="Set ARL for Deezer."
-                                        Header="Deezer"
-                                        HorizontalContentAlignment="Stretch">
+                    <local:SettingsExpander
+                        x:Name="DeezerExpander"
+                        VerticalAlignment="Top"
+                        HorizontalContentAlignment="Stretch"
+                        Description="Set ARL for Deezer"
+                        Header="Deezer">
                         <local:SettingsExpander.HeaderIcon>
                             <FontIcon Glyph="&#xE72E;" />
                         </local:SettingsExpander.HeaderIcon>
                         <local:SettingsExpander.Items>
-                            <local:SettingsCard Header="Deezer ARL" Description="Enter your Deezer ARL"
-                                            HorizontalContentAlignment="Stretch">
-                                <helpers:CustomPasswordBox x:Name="DeezerARLInput" VerticalAlignment="Center" Width="500" Tooltip="Deezer ARL" Header="Deezer ARL"/>
+                            <local:SettingsCard
+                                HorizontalContentAlignment="Stretch"
+                                Description="Enter your Deezer ARL"
+                                Header="Deezer ARL">
+                                <helpers:CustomPasswordBox
+                                    x:Name="DeezerARLInput"
+                                    Width="500"
+                                    VerticalAlignment="Center"
+                                    Header="Deezer ARL"
+                                    Tooltip="Deezer ARL" />
                             </local:SettingsCard>
-                            <local:SettingsCard x:Name="DeezerUpdateCard" Header="Save Changes" HorizontalContentAlignment="Stretch">
-                                <Button x:Name="DeezerUpdateButton" Click="DeezerUpdateButton_Click" Content="Save"/>
+                            <local:SettingsCard
+                                x:Name="DeezerUpdateCard"
+                                HorizontalContentAlignment="Stretch"
+                                Header="Save Changes">
+                                <Button
+                                    x:Name="DeezerUpdateButton"
+                                    Click="DeezerUpdateButton_Click"
+                                    Content="Save" />
                             </local:SettingsCard>
                         </local:SettingsExpander.Items>
                     </local:SettingsExpander>
 
-                    <local:SettingsExpander x:Name="QobuzExpander"
-                                        VerticalAlignment="Top"
-                                        Description="Set either email/password or id/token for Qobuz. Only one of these authentication methods is needed."
-                                        Header="Qobuz"
-                                        HorizontalContentAlignment="Stretch">
+                    <local:SettingsExpander
+                        x:Name="QobuzExpander"
+                        VerticalAlignment="Top"
+                        HorizontalContentAlignment="Stretch"
+                        Description="Set either email/password or id/token for Qobuz (only one method required)"
+                        Header="Qobuz">
                         <local:SettingsExpander.HeaderIcon>
                             <FontIcon Glyph="&#xE72E;" />
                         </local:SettingsExpander.HeaderIcon>
                         <local:SettingsExpander.Items>
-                            <local:SettingsCard Header="Email" Description="Option 1: enter your Qobuz email"
-                                            HorizontalContentAlignment="Stretch">
-                                <TextBox x:Name="QobuzEmailInput"
-                                     Width="500"
-                                     Margin="0,0,0,4"
-                                     ToolTipService.ToolTip="Email"
-                                     Header="Email">
+                            <local:SettingsCard
+                                HorizontalContentAlignment="Stretch"
+                                Description="Option 1: enter your Qobuz email"
+                                Header="Email">
+                                <TextBox
+                                    x:Name="QobuzEmailInput"
+                                    Width="500"
+                                    Margin="0,0,0,4"
+                                    Header="Email"
+                                    ToolTipService.ToolTip="Email">
                                     <TextBox.HeaderTemplate>
                                         <DataTemplate>
-                                            <TextBlock Text="{Binding}" Style="{ThemeResource CaptionTextBlockStyle}"
-                                                   Foreground="{ThemeResource TextFillColorSecondary}"
-                                                   Margin="0,2,0,-2" />
+                                            <TextBlock
+                                                Margin="0,2,0,-2"
+                                                Foreground="{ThemeResource TextFillColorSecondary}"
+                                                Style="{ThemeResource CaptionTextBlockStyle}"
+                                                Text="{Binding}" />
                                         </DataTemplate>
                                     </TextBox.HeaderTemplate>
                                 </TextBox>
                             </local:SettingsCard>
-                            <local:SettingsCard x:Name="QobuzPassword" Header="Password" Description="Option 1: enter your Qobuz password"
-                                            HorizontalContentAlignment="Stretch">
-                                <helpers:CustomPasswordBox x:Name="QobuzPasswordInput" VerticalAlignment="Center" Width="500" Tooltip="Qobuz password" Header="Password"/>
+                            <local:SettingsCard
+                                x:Name="QobuzPassword"
+                                HorizontalContentAlignment="Stretch"
+                                Description="Option 1: enter your Qobuz password"
+                                Header="Password">
+                                <helpers:CustomPasswordBox
+                                    x:Name="QobuzPasswordInput"
+                                    Width="500"
+                                    VerticalAlignment="Center"
+                                    Header="Password"
+                                    Tooltip="Qobuz password" />
                             </local:SettingsCard>
-                            <local:SettingsCard Header="User ID" Description="Option 2: enter your user ID"
-                                            HorizontalContentAlignment="Stretch">
-                                <TextBox x:Name="QobuzIDInput"
-                                     Width="500"
-                                     Margin="0,0,0,4"
-                                     ToolTipService.ToolTip="User ID"
-                                     Header="User ID">
+                            <local:SettingsCard
+                                HorizontalContentAlignment="Stretch"
+                                Description="Option 2: enter your user ID"
+                                Header="User ID">
+                                <TextBox
+                                    x:Name="QobuzIDInput"
+                                    Width="500"
+                                    Margin="0,0,0,4"
+                                    Header="User ID"
+                                    ToolTipService.ToolTip="User ID">
                                     <TextBox.HeaderTemplate>
                                         <DataTemplate>
-                                            <TextBlock Text="{Binding}" Style="{ThemeResource CaptionTextBlockStyle}"
-                                                   Foreground="{ThemeResource TextFillColorSecondary}"
-                                                   Margin="0,2,0,-2" />
+                                            <TextBlock
+                                                Margin="0,2,0,-2"
+                                                Foreground="{ThemeResource TextFillColorSecondary}"
+                                                Style="{ThemeResource CaptionTextBlockStyle}"
+                                                Text="{Binding}" />
                                         </DataTemplate>
                                     </TextBox.HeaderTemplate>
                                 </TextBox>
                             </local:SettingsCard>
-                            <local:SettingsCard x:Name="QobuzAuthToken" Header="Authentication Token"
-                                            Description="Option 2: enter your authentication token"
-                                            HorizontalContentAlignment="Stretch">
-                                <helpers:CustomPasswordBox x:Name="QobuzTokenInput" VerticalAlignment="Center" Width="500" Tooltip="Qobuz authentication token" Header="Authentication token"/>
+                            <local:SettingsCard
+                                x:Name="QobuzAuthToken"
+                                HorizontalContentAlignment="Stretch"
+                                Description="Option 2: enter your authentication token"
+                                Header="Authentication Token">
+                                <helpers:CustomPasswordBox
+                                    x:Name="QobuzTokenInput"
+                                    Width="500"
+                                    VerticalAlignment="Center"
+                                    Header="Authentication token"
+                                    Tooltip="Qobuz authentication token" />
                             </local:SettingsCard>
-                            <local:SettingsCard x:Name="QobuzUpdateCard" Header="Save Changes" HorizontalContentAlignment="Stretch">
-                                <Button x:Name="QobuzUpdateButton" Click="QobuzUpdateButton_Click" Content="Save"/>
+                            <local:SettingsCard
+                                x:Name="QobuzUpdateCard"
+                                HorizontalContentAlignment="Stretch"
+                                Header="Save Changes">
+                                <Button
+                                    x:Name="QobuzUpdateButton"
+                                    Click="QobuzUpdateButton_Click"
+                                    Content="Save" />
                             </local:SettingsCard>
                         </local:SettingsExpander.Items>
                     </local:SettingsExpander>
 
-                    <local:SettingsExpander x:Name="SpotifyExpander"
-                                        VerticalAlignment="Top"
-                                        Header="Spotify"
-                                        HorizontalContentAlignment="Stretch">
+                    <local:SettingsExpander
+                        x:Name="SpotifyExpander"
+                        VerticalAlignment="Top"
+                        HorizontalContentAlignment="Stretch"
+                        Header="Spotify">
                         <local:SettingsExpander.Description>
                             <!--Removed text for now: Alternatively, ensure you are logged into the <Hyperlink NavigateUri="https://open.spotify.com/">web player</Hyperlink> for automatic authentication.-->
                             <TextBlock>
-                            Set <Hyperlink NavigateUri="https://developer.spotify.com/documentation/web-api/concepts/apps">developer app credentials</Hyperlink> for Spotify. 
-                            </TextBlock>
+                                Set custom <Hyperlink NavigateUri="https://developer.spotify.com/documentation/web-api/concepts/apps">developer app credentials</Hyperlink> for Spotify</TextBlock>
                         </local:SettingsExpander.Description>
 
                         <local:SettingsExpander.HeaderIcon>
                             <FontIcon Glyph="&#xE72E;" />
                         </local:SettingsExpander.HeaderIcon>
                         <local:SettingsExpander.Items>
-                            <local:SettingsCard Header="Client ID" Description="Enter your client ID string"
-                                            HorizontalContentAlignment="Stretch">
-                                <TextBox x:Name="ClientIdInput"
-                                     Width="500"
-                                     Margin="0,0,0,4"
-                                     ToolTipService.ToolTip="Client ID"
-                                     Header="Client ID">
+                            <local:SettingsCard
+                                HorizontalContentAlignment="Stretch"
+                                Description="Enter your client ID string"
+                                Header="Client ID">
+                                <TextBox
+                                    x:Name="ClientIdInput"
+                                    Width="500"
+                                    Margin="0,0,0,4"
+                                    Header="Client ID"
+                                    ToolTipService.ToolTip="Client ID">
                                     <TextBox.HeaderTemplate>
                                         <DataTemplate>
-                                            <TextBlock Text="{Binding}" Style="{ThemeResource CaptionTextBlockStyle}"
-                                                   Foreground="{ThemeResource TextFillColorSecondary}"
-                                                   Margin="0,2,0,-2" />
+                                            <TextBlock
+                                                Margin="0,2,0,-2"
+                                                Foreground="{ThemeResource TextFillColorSecondary}"
+                                                Style="{ThemeResource CaptionTextBlockStyle}"
+                                                Text="{Binding}" />
                                         </DataTemplate>
                                     </TextBox.HeaderTemplate>
                                 </TextBox>
                             </local:SettingsCard>
-                            <local:SettingsCard x:Name="ClientSecretCard" Header="Client Secret"
-                                            Description="Enter your client secret string"
-                                            HorizontalContentAlignment="Stretch">
-                                <helpers:CustomPasswordBox x:Name="SpotifySecretInput" VerticalAlignment="Center" Width="500" Tooltip="Spotify client secret" Header="Client secret"/>
+                            <local:SettingsCard
+                                x:Name="ClientSecretCard"
+                                HorizontalContentAlignment="Stretch"
+                                Description="Enter your client secret string"
+                                Header="Client Secret">
+                                <helpers:CustomPasswordBox
+                                    x:Name="SpotifySecretInput"
+                                    Width="500"
+                                    VerticalAlignment="Center"
+                                    Header="Client secret"
+                                    Tooltip="Spotify client secret" />
                             </local:SettingsCard>
-                            <local:SettingsCard x:Name="SpotifyUpdateCard" Header="Save Changes" HorizontalContentAlignment="Stretch">
-                                <Button x:Name="SpotifyUpdateButton" Click="SpotifyUpdateButton_Click" Content="Save"/>
+                            <local:SettingsCard
+                                x:Name="SpotifyUpdateCard"
+                                HorizontalContentAlignment="Stretch"
+                                Header="Save Changes">
+                                <Button
+                                    x:Name="SpotifyUpdateButton"
+                                    Click="SpotifyUpdateButton_Click"
+                                    Content="Save" />
                             </local:SettingsCard>
                         </local:SettingsExpander.Items>
                     </local:SettingsExpander>
 
-                    <!-- PERSONALIZATION SETTINGS _______________________________________________________________________________________________ -->
-                    <TextBlock Text="Personalization" Style="{StaticResource TextBlockSectionStyle}" />
+                    <!--  PERSONALIZATION SETTINGS _______________________________________________________________________________________________  -->
+                    <TextBlock Style="{StaticResource TextBlockSectionStyle}" Text="Personalization" />
 
-                    <local:SettingsExpander x:Name="ThemeExpander"
-                                        VerticalAlignment="Top"
-                                        Description="Select app theme"
-                                        Header="Theme">
+                    <local:SettingsExpander
+                        x:Name="ThemeExpander"
+                        VerticalAlignment="Top"
+                        Description="Select app theme"
+                        Header="Theme">
                         <local:SettingsExpander.HeaderIcon>
                             <FontIcon Glyph="&#xE790;" />
                         </local:SettingsExpander.HeaderIcon>
@@ -334,28 +557,28 @@
                             <local:SettingsCard HorizontalContentAlignment="Left" ContentAlignment="Vertical">
                                 <StackPanel>
                                     <RadioButton
-                                    x:Uid="Settings_Theme_Light"
-                                    Command="{x:Bind ViewModel.SwitchThemeCommand}"
-                                    IsChecked="{x:Bind ViewModel.ElementTheme, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=Light, Mode=OneWay}"
-                                    GroupName="AppTheme">
+                                        x:Uid="Settings_Theme_Light"
+                                        Command="{x:Bind ViewModel.SwitchThemeCommand}"
+                                        GroupName="AppTheme"
+                                        IsChecked="{x:Bind ViewModel.ElementTheme, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=Light, Mode=OneWay}">
                                         <RadioButton.CommandParameter>
                                             <xaml:ElementTheme>Light</xaml:ElementTheme>
                                         </RadioButton.CommandParameter>
                                     </RadioButton>
                                     <RadioButton
-                                    x:Uid="Settings_Theme_Dark"
-                                    Command="{x:Bind ViewModel.SwitchThemeCommand}"
-                                    IsChecked="{x:Bind ViewModel.ElementTheme, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=Dark, Mode=OneWay}"
-                                    GroupName="AppTheme">
+                                        x:Uid="Settings_Theme_Dark"
+                                        Command="{x:Bind ViewModel.SwitchThemeCommand}"
+                                        GroupName="AppTheme"
+                                        IsChecked="{x:Bind ViewModel.ElementTheme, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=Dark, Mode=OneWay}">
                                         <RadioButton.CommandParameter>
                                             <xaml:ElementTheme>Dark</xaml:ElementTheme>
                                         </RadioButton.CommandParameter>
                                     </RadioButton>
                                     <RadioButton
-                                    x:Uid="Settings_Theme_Default"
-                                    Command="{x:Bind ViewModel.SwitchThemeCommand}"
-                                    IsChecked="{x:Bind ViewModel.ElementTheme, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=Default, Mode=OneWay}"
-                                    GroupName="AppTheme">
+                                        x:Uid="Settings_Theme_Default"
+                                        Command="{x:Bind ViewModel.SwitchThemeCommand}"
+                                        GroupName="AppTheme"
+                                        IsChecked="{x:Bind ViewModel.ElementTheme, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=Default, Mode=OneWay}">
                                         <RadioButton.CommandParameter>
                                             <xaml:ElementTheme>Default</xaml:ElementTheme>
                                         </RadioButton.CommandParameter>
@@ -365,31 +588,37 @@
                         </local:SettingsExpander.Items>
                     </local:SettingsExpander>
 
-                    <!-- ABOUT __________________________________________________________________________________________________ -->
-                    <TextBlock Text="About" Style="{StaticResource TextBlockSectionStyle}" />
+                    <!--  ABOUT __________________________________________________________________________________________________  -->
+                    <TextBlock Style="{StaticResource TextBlockSectionStyle}" Text="About" />
 
-                    <local:SettingsExpander Header="FluentDL" Description="{x:Bind ViewModel.VersionDescription, Mode=OneWay}"
-                                        HeaderIcon="{ui:BitmapIcon Source=ms-appx:///Assets/StoreLogo.scale-400.png}">
+                    <local:SettingsExpander
+                        Description="{x:Bind ViewModel.VersionDescription, Mode=OneWay}"
+                        Header="FluentDL"
+                        HeaderIcon="{ui:BitmapIcon Source=ms-appx:///Assets/StoreLogo.scale-400.png}">
                         <local:SettingsExpander.Items>
 
-                            <local:SettingsCard x:Name="NotifyUpdateCard" 
-                                                Header="Update Notifications" 
-                                                Description="Receive notification on app startup when a new version is available.">
+                            <local:SettingsCard
+                                x:Name="NotifyUpdateCard"
+                                Description="Receive notification on app startup when a new version is available"
+                                Header="Update Notifications">
                                 <local:SettingsCard.HeaderIcon>
                                     <FontIcon Glyph="&#xE789;" />
                                 </local:SettingsCard.HeaderIcon>
-                                <ToggleSwitch x:Name="NotifyUpdateToggle" OnContent="" OffContent="" Toggled="NotifyUpdateToggle_Toggled"/>
+                                <ToggleSwitch
+                                    x:Name="NotifyUpdateToggle"
+                                    OffContent=""
+                                    OnContent=""
+                                    Toggled="NotifyUpdateToggle_Toggled" />
                             </local:SettingsCard>
 
-                            <local:SettingsCard HorizontalContentAlignment="Left" VerticalAlignment="Top"
-                                            ContentAlignment="Left">
-                                <StackPanel Margin="0,0,0,12"
-                                        Orientation="Vertical">
-                                    <TextBlock
-                                    Margin="{StaticResource XSmallTopMargin}"
-                                    Style="{ThemeResource BodyTextBlockStyle}">
-                                        View source code on <Hyperlink NavigateUri="https://github.com/DerekYang2/FluentDL">GitHub</Hyperlink>.
-                                    </TextBlock>
+                            <local:SettingsCard
+                                VerticalAlignment="Top"
+                                HorizontalContentAlignment="Left"
+                                ContentAlignment="Left">
+                                <StackPanel Margin="0,0,0,12" Orientation="Vertical">
+                                    <TextBlock Margin="{StaticResource XSmallTopMargin}" Style="{ThemeResource BodyTextBlockStyle}">
+                                        View source code on<Hyperlink NavigateUri="https://github.com/DerekYang2/FluentDL">GitHub</Hyperlink>
+                                        .</TextBlock>
                                 </StackPanel>
                             </local:SettingsCard>
                         </local:SettingsExpander.Items>
@@ -397,17 +626,37 @@
                 </StackPanel>
             </Grid>
         </ScrollViewer>
-        <InfoBar x:Name="PageInfoBar" Canvas.ZIndex="1" VerticalAlignment="Bottom" HorizontalAlignment="Center" IsOpen="False" Opacity="0"
-             Margin="12" Background="{ThemeResource AcrylicBackgroundFillColorDefaultBrush}"
-             CloseButtonClick="PageInfoBar_OnCloseButtonClick"
-             HorizontalContentAlignment="Stretch">
+        <InfoBar
+            x:Name="PageInfoBar"
+            Margin="12"
+            HorizontalAlignment="Center"
+            VerticalAlignment="Bottom"
+            HorizontalContentAlignment="Stretch"
+            Background="{ThemeResource AcrylicBackgroundFillColorDefaultBrush}"
+            Canvas.ZIndex="1"
+            CloseButtonClick="PageInfoBar_OnCloseButtonClick"
+            IsOpen="False"
+            Opacity="0">
             <InfoBar.OpacityTransition>
                 <ScalarTransition Duration="0:0:0.25" />
             </InfoBar.OpacityTransition>
             <InfoBar.Content>
-                <Grid x:Name="InfobarContent" Margin="0, 0, 0, 0" Padding="0, 0, 0, 0" VerticalAlignment="Center">
-                    <TextBlock x:Name="InfoBarTextBlock" Margin="0, 0, 0, 0" VerticalAlignment="Center"/>
-                    <ProgressBar x:Name="InfobarProgress" IsIndeterminate="True" Margin="0,0,0,-8" HorizontalAlignment="Stretch" Visibility="Collapsed" VerticalAlignment="Bottom"/>
+                <Grid
+                    x:Name="InfobarContent"
+                    Margin="0,0,0,0"
+                    Padding="0,0,0,0"
+                    VerticalAlignment="Center">
+                    <TextBlock
+                        x:Name="InfoBarTextBlock"
+                        Margin="0,0,0,0"
+                        VerticalAlignment="Center" />
+                    <ProgressBar
+                        x:Name="InfobarProgress"
+                        Margin="0,0,0,-8"
+                        HorizontalAlignment="Stretch"
+                        VerticalAlignment="Bottom"
+                        IsIndeterminate="True"
+                        Visibility="Collapsed" />
                 </Grid>
             </InfoBar.Content>
         </InfoBar>
