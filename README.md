@@ -80,16 +80,18 @@ FluentDL is organized into three sections: Search, Local Explorer, and Queue.
 ## Installation 
 To install the app, download the first zip from [Releases](https://github.com/DerekYang2/FluentDL/releases).
 
+If you are updating FluentDL, directly run `FluentDL_{VERSION}_x64_MSIX.msix` **or** follow one of the options below.
+
+If this is your first installation, you **must** follow one of the options below.  
+
 ### Option 1
 The application may be installed directly using a PowerShell script located in the zip folder. In the root folder inside of the zip, you should see an `Install.ps1` file and other files such as `FluentDL_{VERSION}_x64_MSIX.msix`. 
 
-Right click on `Install.ps1` and press `Run with PowerShell`.
-
-If you have already installed FluentDL before, you can directly double click to run `FluentDL_{VERSION}_x64_MSIX.msix`. The release will note when this does not work (the occasion that the certificate is updated/changed). 
+Right click on `Install.ps1` (in File Explorer) and press `Run with PowerShell`.
 
 ### Option 2
 
-If that option is not available, open PowerShell or CMD into the root directory. The root directory should contain the MSIX and Install PowerShell Script.
+If option 1 is not available, open PowerShell or CMD into the root directory. The root directory should contain the MSIX and Install PowerShell Script.
 
 Next, run the command:
 
