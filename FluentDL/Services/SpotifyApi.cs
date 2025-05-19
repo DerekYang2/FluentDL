@@ -14,6 +14,7 @@ using System.Diagnostics;
 using System.Diagnostics.Eventing.Reader;
 using System.Linq;
 using System.Net;
+using System.Net.Sockets;
 using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
@@ -42,9 +43,7 @@ namespace FluentDL.Services
             {
                 try
                 {
-                    var request = new ClientCredentialsRequest(clientId, clientSecret);
-                    var response = await new OAuthClient(config).RequestToken(request);
-                    spotify = new SpotifyClient(config.WithToken(response.AccessToken));
+                    spotify = new SpotifyClient(config.WithAuthenticator(new ClientCredentialsAuthenticator(clientId, clientSecret)));
                     IsInitialized = true;
                     return;
                 }
@@ -53,21 +52,17 @@ namespace FluentDL.Services
                     Debug.WriteLine("Failed to initialize Spotify API: " + e.Message);
                 }
             }
-
+            
             // If clientId and clientSecret are not provided, try to get from browser
             try
             {
-                var token = await GetAccessToken();
-                if (token != null) {
-                    spotify = new SpotifyClient(config.WithToken(token));
-                    IsInitialized = true;
-                    Debug.WriteLine("Initialized Spotify API using browser token");
-                    return;
-                }
+                spotify = new SpotifyClient(config.WithAuthenticator(new EmbedAuthenticator()));
+                IsInitialized = true;
+                return;
             } catch (Exception e) {
                 Debug.WriteLine("Failed to get access token: " + e.Message);
             }
-
+            
             // If still not initialized, try to get bundled keys
             try {
                 var idList = KeyReader.GetValues("spot_id");
@@ -84,32 +79,13 @@ namespace FluentDL.Services
                         throw new Exception("invalid/empty bundled key in list");
                     }
 
-                    var request = new ClientCredentialsRequest(id, secret);
-                    var response = await new OAuthClient(config).RequestToken(request);
-                    spotify = new SpotifyClient(config.WithToken(response.AccessToken));
+                    spotify = new SpotifyClient(config.WithAuthenticator(new ClientCredentialsAuthenticator(id, secret)));
                     IsInitialized = true;
-                    Debug.WriteLine("Initialized Spotify API using bundled keys");
                 }
             } catch (Exception e) {
                 Debug.WriteLine("Failed to initialize Spotify API: " + e.Message);
             }
         }
-
-        /// <summary>
-        /// Workaround to get access token from embed
-        /// Chosen URL is most followed playlist, so it hopefully won't change and is available in many regions
-        /// </summary>
-        private static async Task<string?> GetAccessToken() {
-            // Some arbitrary embed, should work unless it is moved 
-            string htmlStr = await httpClient.GetStringAsync("https://open.spotify.com/embed/playlist/37i9dQZF1DXcBWIGoYBM5M");
-            // Find occurrence of audio preview
-            var tokenStr = "\"accessToken\":\"";
-            var startIdx = htmlStr.IndexOf(tokenStr);
-            var endIdx = htmlStr.IndexOf("\",", startIdx + tokenStr.Length);
-            var token = htmlStr.Substring(startIdx + tokenStr.Length, endIdx - (startIdx + tokenStr.Length));
-            return token;
-        }
-
 
         private static bool CloseMatch(string str1, string str2)
         {
@@ -118,7 +94,6 @@ namespace FluentDL.Services
 
         // For whatever reason, a request like below throws bad request error
         // REQUEST: artist:"The Beep Test" track:"The Beep Test: 20 Metre (Complete Test)" album:"The Beep Test: The Best 20 Metre and 15 Metre Bleep Test for Personal Fitness & Recruitment Practice to the Police, RAF, Army, Fire Brigade, Royal Air Force, Royal Navy and the Emergency Services"
-
         public static async Task AdvancedSearch(ObservableCollection<SongSearchObject> itemSource, string artistName, string trackName, string albumName, CancellationToken token, int limit = 25)
         {
             // Trim
