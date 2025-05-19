@@ -25,7 +25,7 @@
 </p>
 
 ## About
-A Fluent UI desktop application that helps you download lossless songs as FLACs, convert between audio formats, match songs between different online sources, edit song metadata, and more. This project was made with [WinUI 3](https://github.com/microsoft/microsoft-ui-xaml) and [TemplateStudio](https://github.com/microsoft/TemplateStudio). Under the hood, the app uses FFmpeg and APIs for Deezer, Qobuz, Spotify, and Youtube.
+A Fluent UI desktop application that helps you download lossless songs as FLACs, convert between audio formats, match songs between different online sources, edit song metadata, and more. Under the hood, the app uses FFmpeg and APIs for Deezer, Qobuz, Spotify, and YouTube.
 
 FluentDL is organized into three sections: Search, Local Explorer, and Queue.
 
@@ -81,7 +81,7 @@ FluentDL is organized into three sections: Search, Local Explorer, and Queue.
 To install the app, download the first zip from [Releases](https://github.com/DerekYang2/FluentDL/releases).
 
 ### Option 1
-The application may be installed directly using a powershell script located in the zip folder. In the root folder inside of the zip, you should see an `Install.ps1` file and other files such as `FluentDL_{VERSION}_x64_MSIX.msix`. 
+The application may be installed directly using a PowerShell script located in the zip folder. In the root folder inside of the zip, you should see an `Install.ps1` file and other files such as `FluentDL_{VERSION}_x64_MSIX.msix`. 
 
 Right click on `Install.ps1` and press `Run with PowerShell`.
 
@@ -89,19 +89,18 @@ If you have already installed FluentDL before, you can directly double click to 
 
 ### Option 2
 
-If that option is not available, open Powershell or CMD into the root directory and run the command:
+If that option is not available, open PowerShell or CMD into the root directory. The root directory should contain the MSIX and Install PowerShell Script.
+
+Next, run the command:
 
 ```powershell.exe -executionpolicy unrestricted .\Install.ps1```
 
 The application is now installed, and you should be able to find "FluentDL" with Search or in your Apps list.
 
 <details>
-  <summary><b>What does the Powershell script do?</b></summary>
+  <summary><b>What does the PowerShell script do?</b></summary>
     
-Ideally, you would only need to run `FluentDL_{VERSION}_x64_MSIX.msix`, which opens the official Microsoft Store installer interface. However, the certificate is self-signed because ones from certificate authorities can cost hundreds of dollars per year. The powershell script trusts the self-signed certificate on your machine and then runs the MSIX. The <a href="https://superuser.com/questions/463081/adding-self-signed-certificate-to-trusted-root-certificate-store-using-command-l">manual way</a> of trusting a certificate is more work. This is also why if you have already ran the script (trusted the certificate), you can directly run the MSIX in the future. 
-
-A future solution could be deploying to the Microsoft Store directly for a smaller, one-time free. 
-
+Ideally, you would only need to run `FluentDL_{VERSION}_x64_MSIX.msix`, which opens the official Microsoft Store installer interface. However, the certificate is self-signed because ones from certificate authorities can cost hundreds of dollars per year. The PowerShell script trusts the self-signed certificate on your machine and then runs the MSIX. The <a href="https://superuser.com/questions/463081/adding-self-signed-certificate-to-trusted-root-certificate-store-using-command-l">manual way</a> of trusting a certificate is more work. This is also why if you have already run the script (trusted the certificate), you can directly run the MSIX in the future. 
 </details>
 
 ## Authentication
@@ -114,7 +113,11 @@ The authentication required depends on the sources and features you use.
 ### Searching and Converting
 Searches and conversions do not require authentication.
 
-Spotify is authenticated using bundled API keys. If the bundled keys are rate limited, configure your own as described in the [authentication wiki](https://github.com/DerekYang2/FluentDL/wiki/Authentication#spotify).
+If logged into the Spotify Web Player in your default browser, FluentDL will automatically authenticate from cookies.
+
+Otherwise, the bundled API keys will be used. 
+
+If the bundled keys are rate limited, generate your own as described in the [authentication wiki](https://github.com/DerekYang2/FluentDL/wiki/Authentication#spotify).
 
 ### Downloading
 Authentication requirements for downloading varies for the sources. The type of account (free vs subscription) may also affect the audio quality available. You do not have re-enter credentials each time because they are stored locally. They can be left alone for months or even longer, but may eventually expire or invalidate due to occasional web-player changes. 
@@ -141,17 +144,6 @@ Authentication requirements for downloading varies for the sources. The type of 
     <td>Not Available</td>
   </tr>
 </table>
-
-<details>
-  <summary><b>Click to learn more about file sound quality</b></summary>
-  
-  You cannot determine the quality of a file from its bitrate. Files can be transcoded (converted), meaning a FLAC or high-bitrate file may have originated from a low-quality source. <a href="https://erikstechcorner.com/2020/09/how-to-check-if-your-flac-files-are-really-lossless/">Here</a> is a guide on using Spek, a spectrogram tool, to verify audio file quality. Spek is bundled with FluentDL.
-
-  #### Additional Notes:
-  - The highest quality YouTube sources use the efficient OPUS codec. The issue is OPUS containers, such as `.ogg` or `.webm`, have poor metadata support and compatibility. FluentDL transcodes them into a FLAC in order to maintain original quality and support metadata. However, they are NOT actually lossless and is an example of transcoding.
-  - There may not be a significant difference between 128 kbps and higher depending on your audio hardware and ear. For example, you may be content with music on Spotify Web or YouTube without subscriptions, which are both low-bitrate. <a href="https://abx.digitalfeed.net/list.lame.html">ABX tests</a> are a good way to test your limits!
-  - Downloading directly from Spotify is not supported. Most tools out there download low bitrate MP3s. However, there are a few Python tools that get the true sources (320 kbps Vorbis, 256 kbps AAC). Unfortunately, I could not find .NET equivalents. For FluentDL, use the convert tool to get equivalent Deezer/Qobuz/YouTube tracks, then set the output to Local (download).
-</details>
 
 ### Retrieving Tokens
 Qobuz email and password is self explanatory. Some authentication methods, such as Deezer ARL, Qobuz id/tokens alternative, or Spotify developer app tokens, are not obvious. 

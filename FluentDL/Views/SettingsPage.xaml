@@ -29,7 +29,7 @@
 
                     <local:SettingsCard
                         x:Name="AutoPlayCard"
-                        Description="Automatically play track when selected"
+                        Description="Play tracks automatically when selected"
                         Header="Auto Play">
                         <local:SettingsCard.HeaderIcon>
                             <FontIcon Glyph="&#xEC57;" />
@@ -43,7 +43,7 @@
 
                     <local:SettingsCard
                         x:Name="NotificationsCard"
-                        Description="Enable or disable app notifications for queue task completion"
+                        Description="Show notifications when queue tasks complete"
                         Header="Notifications">
                         <local:SettingsCard.HeaderIcon>
                             <FontIcon Glyph="&#xE7E7;" />
@@ -58,7 +58,7 @@
                     <local:SettingsExpander
                         x:Name="ThreadsExpander"
                         HorizontalContentAlignment="Stretch"
-                        Description="Set the number of threads to use for different tasks"
+                        Description="Set the number of threads for different tasks"
                         Header="Threads">
                         <local:SettingsExpander.HeaderIcon>
                             <FontIcon Glyph="&#xE964;" />
@@ -115,7 +115,7 @@
                     <local:SettingsExpander
                         x:Name="FFmpegExpander"
                         HorizontalContentAlignment="Stretch"
-                        Description="Set the binaries directory for a custom FFMpeg (optional)"
+                        Description="Specify custom FFmpeg binaries location (optional)"
                         Header="FFmpeg Directory">
                         <local:SettingsExpander.HeaderIcon>
                             <FontIcon Glyph="&#xE8B7;" />
@@ -142,7 +142,7 @@
                     <local:SettingsExpander
                         x:Name="ShortcutButtonExpander"
                         HorizontalContentAlignment="Stretch"
-                        Description="Add or remove shortcut buttons for each page"
+                        Description="Customize shortcut buttons for each page"
                         Header="Shortcut Buttons">
                         <local:SettingsExpander.HeaderIcon>
                             <FontIcon Glyph="&#xE945;" />
@@ -274,7 +274,7 @@
                                     Click="SelectFolderButton_OnClick"
                                     Content="Change" />
                             </local:SettingsCard>
-                            <local:SettingsCard Description="Always ask where to save each download rather than using the default folder" Header="Ask what to do with each download">
+                            <local:SettingsCard Description="Always ask where to save each download" Header="Ask what to do with each download">
                                 <ToggleSwitch
                                     x:Name="AskToggle"
                                     IsOn="False"
@@ -282,7 +282,7 @@
                                     OnContent=""
                                     Toggled="AskToggle_OnToggled" />
                             </local:SettingsCard>
-                            <local:SettingsCard Description="Automatically overwrite existing files with the same name" Header="Overwrite existing files">
+                            <local:SettingsCard Description="Overwrite existing files with the same name" Header="Overwrite existing files">
                                 <ToggleSwitch
                                     x:Name="OverwriteToggle"
                                     IsOn="False"
@@ -295,7 +295,7 @@
                     </local:SettingsExpander>
                     <local:SettingsExpander
                         x:Name="DownloadOptions"
-                        Description="Configure audio quality for different streaming sources"
+                        Description="Select preferred audio quality for each streaming service"
                         Header="Download Quality">
                         <local:SettingsExpander.HeaderIcon>
                             <FontIcon Glyph="&#xE93C;" />
@@ -364,7 +364,7 @@
                         x:Name="DeezerExpander"
                         VerticalAlignment="Top"
                         HorizontalContentAlignment="Stretch"
-                        Description="Set ARL for Deezer"
+                        Description="Sign into Deezer"
                         Header="Deezer">
                         <local:SettingsExpander.HeaderIcon>
                             <FontIcon Glyph="&#xE72E;" />
@@ -397,7 +397,7 @@
                         x:Name="QobuzExpander"
                         VerticalAlignment="Top"
                         HorizontalContentAlignment="Stretch"
-                        Description="Set either email/password or id/token for Qobuz (only one method required)"
+                        Description="Sign into Qobuz (only one method required)"
                         Header="Qobuz">
                         <local:SettingsExpander.HeaderIcon>
                             <FontIcon Glyph="&#xE72E;" />
@@ -489,9 +489,9 @@
                         <local:SettingsExpander.Description>
                             <!--Removed text for now: Alternatively, ensure you are logged into the <Hyperlink NavigateUri="https://open.spotify.com/">web player</Hyperlink> for automatic authentication.-->
                             <TextBlock>
-                                Set custom <Hyperlink NavigateUri="https://developer.spotify.com/documentation/web-api/concepts/apps">developer app credentials</Hyperlink> for Spotify</TextBlock>
+                                Sign in to Spotify using custom&#32;<Hyperlink NavigateUri="https://developer.spotify.com/documentation/web-api/concepts/apps">developer app credentials</Hyperlink>
+                            </TextBlock>
                         </local:SettingsExpander.Description>
-
                         <local:SettingsExpander.HeaderIcon>
                             <FontIcon Glyph="&#xE72E;" />
                         </local:SettingsExpander.HeaderIcon>
@@ -599,7 +599,7 @@
 
                             <local:SettingsCard
                                 x:Name="NotifyUpdateCard"
-                                Description="Receive notification on app startup when a new version is available"
+                                Description="Notify me when new versions are available"
                                 Header="Update Notifications">
                                 <local:SettingsCard.HeaderIcon>
                                     <FontIcon Glyph="&#xE789;" />
