@@ -22,6 +22,7 @@ using YouTubeMusicAPI.Models.Info;
 using static System.Net.WebRequestMethods;
 using AngleSharp.Text;
 using YouTubeMusicAPI.Models.Search;
+using Acornima.Ast;
 
 namespace FluentDL.Services
 {
@@ -301,8 +302,12 @@ namespace FluentDL.Services
 
                                 if (oneArtistMatch && !trackIdList.Contains(song.Id)) // If not already added
                                 {
-                                    itemSource.Add(await GetTrack(song.Id));
-                                    trackIdList.Add(song.Id);
+                                    var songObj = await GetTrack(song.Id);
+                                    if (songObj != null)
+                                    {
+                                        itemSource.Add(songObj);
+                                        trackIdList.Add(song.Id);
+                                    }
                                 }
                             }
                         }
@@ -320,6 +325,12 @@ namespace FluentDL.Services
             {
                 var video = await youtube.Videos.GetAsync(url);
                 var songObj = await ConvertSongSearchObject(video);
+                if (songObj == null)  // Some error occurred
+                {
+                    statusUpdate?.Invoke(InfoBarSeverity.Error, $"<b>YouTube</b>   Error loading track from <a href='{url}'>{url}</a>");
+                    return;
+                }
+
                 itemSource.Add(songObj);
 
                 if (video.Description.StartsWith("Provided to YouTube by") && video.Description.Contains("\u2117")) // Song
@@ -336,6 +347,12 @@ namespace FluentDL.Services
             {
                 var video = await youtube.Videos.GetAsync(url);
                 var songObj = await ConvertSongSearchObject(video);
+                if (songObj == null)  // Some error occurred
+                {
+                    statusUpdate?.Invoke(InfoBarSeverity.Error, $"<b>YouTube Music</b>   Error loading track from <a href='{url}'>{url}</a>");
+                    return;
+                }
+
                 itemSource.Add(songObj);
 
                 if (video.Description.StartsWith("Provided to YouTube by") && video.Description.Contains("\u2117")) // Song
@@ -360,6 +377,7 @@ namespace FluentDL.Services
 
                 itemSource.Clear(); // Clear the item source
 
+                var failCount = 0;
                 try
                 {
                     await foreach (var playlistVideo in youtube.Playlists.GetVideosAsync(url, token))
@@ -371,7 +389,15 @@ namespace FluentDL.Services
                         }
 
                         var video = await youtube.Videos.GetAsync(playlistVideo.Id); // Get the full video object
-                        itemSource.Add(await ConvertSongSearchObject(video));
+                        var song = await ConvertSongSearchObject(video); // Convert to song object
+                        if (song != null) // If not null
+                        {
+                            itemSource.Add(song); // Add to the item source
+                        }
+                        else
+                        {
+                            failCount++;
+                        }
                     }
                 }
                 catch (Exception e)
@@ -388,7 +414,14 @@ namespace FluentDL.Services
                 }
 
                 // Replace the loading message with a result message
-                statusUpdate?.Invoke(InfoBarSeverity.Success, $"<b>YouTube</b>   Loaded playlist <a href='{url}'>{playlistName}</a>");
+                if (failCount > 0) // If some failed
+                {
+                    statusUpdate?.Invoke(InfoBarSeverity.Warning, $"<b>YouTube</b>   Loaded playlist <a href='{url}'>{playlistName}</a> with {failCount} failed {(failCount == 1 ? "track" : "tracks")}");
+                }
+                else // All loaded successfully
+                {
+                    statusUpdate?.Invoke(InfoBarSeverity.Success, $"<b>YouTube</b>   Loaded playlist <a href='{url}'>{playlistName}</a>");
+                }
             }
         }
 
@@ -620,8 +653,11 @@ namespace FluentDL.Services
                                 if (oneArtistMatch && CloseMatch(song.Name, trackName))
                                 {
                                     var retObj = await ConvertSongSearchObject(song);
-                                    callback?.Invoke(InfoBarSeverity.Warning, retObj); // Not found by ISRC
-                                    return retObj;
+                                    if (retObj != null)
+                                    {
+                                        callback?.Invoke(InfoBarSeverity.Warning, retObj); // Not found by ISRC
+                                        return retObj;
+                                    }
                                 }
                             }
                         }
@@ -669,6 +705,11 @@ namespace FluentDL.Services
             }
 
             var ret = await GetTrack(searchResult.Id);
+            if (ret == null) // If not found
+            {
+                callback?.Invoke(InfoBarSeverity.Error, songObj);  // Show error badge with original object
+                return null;
+            }
             callback?.Invoke(InfoBarSeverity.Warning, ret); // Not found by ISRC
             return ret;
         }
@@ -786,7 +827,7 @@ namespace FluentDL.Services
             };
         }
 
-        public static async Task<SongSearchObject> GetTrack(string? id)
+        public static async Task<SongSearchObject?> GetTrack(string? id)
         {
             var video = await youtube.Videos.GetAsync(id);
             return await ConvertSongSearchObject(video);
@@ -854,10 +895,18 @@ namespace FluentDL.Services
             };
         }
 
-        public static async Task<SongSearchObject> ConvertSongSearchObject(YoutubeExplode.Videos.Video video)
+        public static async Task<SongSearchObject?> ConvertSongSearchObject(YoutubeExplode.Videos.Video video)
         {
-            var song = await ytm.GetSongVideoInfoAsync(video.Id);
-            return await GetTrack(song, video);
+            try
+            {
+                var song = await ytm.GetSongVideoInfoAsync(video.Id);
+                return await GetTrack(song, video);
+            }
+            catch (Exception e)
+            {
+                Debug.WriteLine("Error converting song search object: " + e.Message);
+                return null; // Return null on error instead of empty object
+            }
         }
 
         public static async Task<SongSearchObject> ConvertSongSearchObject(SongVideoInfo ytmSong)
