@@ -82,20 +82,28 @@ To install the app, download the first zip from [Releases](https://github.com/De
 
 If you are updating FluentDL, directly run `FluentDL_{VERSION}_x64_MSIX.msix` **or** follow one of the options below.
 
-If this is your first installation, you **must** follow one of the options below.  
+If this is your **first** installation, you **must** follow one of the options below.
+
+Before starting, open the Windows Settings app and enable developer mode: `Settings > For developers > Developer Mode`.
 
 ### Option 1
-The application may be installed directly using a PowerShell script located in the zip folder. In the root folder inside of the zip, you should see an `Install.ps1` file and other files such as `FluentDL_{VERSION}_x64_MSIX.msix`. 
+This method works if running scripts is enabled: `Settings > For developers > PowerShell`. 
+
+In the root folder inside of the zip, you should see an `Install.ps1` file and other files such as `FluentDL_{VERSION}_x64_MSIX.msix`. 
 
 Right click on `Install.ps1` (in File Explorer) and press `Run with PowerShell`.
 
 ### Option 2
 
-If option 1 is not available, open PowerShell or CMD into the root directory. The root directory should contain the MSIX and Install PowerShell Script.
+This method works regardless if scripts is enabled. 
 
-Next, run the command:
+If you open PowerShell into the root directory, run the command:
 
 ```powershell.exe -executionpolicy unrestricted .\Install.ps1```
+
+Otherwise, run the command replacing `PATH` with the full path to the install script:
+
+```powershell.exe -executionpolicy unrestricted PATH```
 
 The application is now installed, and you should be able to find "FluentDL" with Search or in your Apps list.
 
