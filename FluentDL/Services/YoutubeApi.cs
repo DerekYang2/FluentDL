@@ -762,9 +762,10 @@ namespace FluentDL.Services
             return video.Thumbnails[idx].Url;
         }
 
-        public static string GetMaxResThumbnail(SongVideoInfo ytmSong, YoutubeExplode.Videos.Video video)
+        public static string GetMaxResThumbnail(SongVideoInfo? ytmSong, YoutubeExplode.Videos.Video video)
         {
-            if (video.Description.StartsWith("Provided to YouTube by") && video.Description.Contains("\u2117")) // Song
+            if (ytmSong !=null && ytmSong.Thumbnails.Length > 0 && 
+                video.Description.StartsWith("Provided to YouTube by") && video.Description.Contains("\u2117")) // Song
             {
                 var imageUrl = ytmSong.Thumbnails.Last().Url; // Use second youtube music image (larger, 120px)
                 if (imageUrl.StartsWith("https://lh3.googleusercontent.com"))
@@ -833,17 +834,27 @@ namespace FluentDL.Services
             return await ConvertSongSearchObject(video);
         }
 
-        public static async Task<SongSearchObject> GetTrack(SongVideoInfo ytmSong, YoutubeExplode.Videos.Video video)
+        public static SongSearchObject GetTrack(SongVideoInfo? ytmSong, YoutubeExplode.Videos.Video video)
         {
             // Get artist csv
-            var artistCSV = new StringBuilder();
-            foreach (var artist in ytmSong.Artists)
+            string artistString;
+
+            if (ytmSong == null)
             {
-                artistCSV.Append(artist.Name);
-                if (artist != ytmSong.Artists.Last())
+                artistString = video.Author.ChannelTitle; // Use video author as artist if ytmSong is null
+            }
+            else
+            {
+                var artistCSV = new StringBuilder();
+                foreach (var artist in ytmSong.Artists)
                 {
-                    artistCSV.Append(", ");
+                    artistCSV.Append(artist.Name);
+                    if (artist != ytmSong.Artists.Last())
+                    {
+                        artistCSV.Append(", ");
+                    }
                 }
+                artistString = artistCSV.ToString();
             }
 
             // These values vary between song or video
@@ -854,12 +865,19 @@ namespace FluentDL.Services
             {
                 var lines = video.Description.Split("\n");
                 albumName = lines[4].Trim(); // Fourth line of ytm description contains album name
-                imageLocation = ytmSong.Thumbnails.Last().Url; // Use second youtube music image (larger, 120px)
             }
             else // Normal video
             {
                 albumName = video.Title; // Use video title as album name
+            }
 
+            // Prefer ytm album image
+            if (ytmSong != null && ytmSong.Thumbnails.Length > 0)
+            {
+                imageLocation = ytmSong.Thumbnails.Last().Url; // Use second youtube music image (larger, 120px)
+            }
+            else 
+            {
                 var idx = video.Thumbnails.ToList().FindIndex(x =>
                 {
                     var url = x.Url;
@@ -880,39 +898,39 @@ namespace FluentDL.Services
             return new SongSearchObject()
             {
                 AlbumName = albumName,
-                Artists = artistCSV.ToString(),
-                Duration = ytmSong.Duration.TotalSeconds.ToString(),
+                Artists = artistString,
+                Duration = ytmSong?.Duration.TotalSeconds.ToString() ?? video.Duration?.TotalSeconds.ToString() ?? "0",
                 Source = "youtube",
-                Explicit = !ytmSong.IsFamiliyFriendly,
-                Id = ytmSong.Id,
+                Explicit = !ytmSong?.IsFamiliyFriendly ?? false,
+                Id = ytmSong?.Id ?? video.Id,
                 ImageLocation = imageLocation,
                 Isrc = null,
                 LocalBitmapImage = null,
                 Rank = FormatLargeValue(video.Engagement.ViewCount),
                 TrackPosition = "1",
                 ReleaseDate = ApiHelper.FormatDateTimeOffset(video.UploadDate),
-                Title = ytmSong.Name,
+                Title = ytmSong?.Name ?? video.Title,
             };
         }
 
-        public static async Task<SongSearchObject?> ConvertSongSearchObject(YoutubeExplode.Videos.Video video)
+        public static async Task<SongSearchObject> ConvertSongSearchObject(YoutubeExplode.Videos.Video video)
         {
+            SongVideoInfo? ytmInfo = null;
             try
             {
-                var song = await ytm.GetSongVideoInfoAsync(video.Id);
-                return await GetTrack(song, video);
+                ytmInfo = await ytm.GetSongVideoInfoAsync(video.Id);
             }
             catch (Exception e)
             {
                 Debug.WriteLine("Error converting song search object: " + e.Message);
-                return null; // Return null on error instead of empty object
             }
+            return GetTrack(ytmInfo, video);
         }
 
         public static async Task<SongSearchObject> ConvertSongSearchObject(SongVideoInfo ytmSong)
         {
             var video = await youtube.Videos.GetAsync(ytmSong.Id); // Get youtube explode video object, has more technical info like release date + views
-            return await GetTrack(ytmSong, video);
+            return GetTrack(ytmSong, video);
         }
 
         /*

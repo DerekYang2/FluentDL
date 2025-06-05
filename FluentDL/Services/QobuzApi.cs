@@ -304,16 +304,44 @@ internal class QobuzApi
 
         if (isTrack)
         {
-            var track = apiService.GetTrack(id, withAuth: true);
-            itemSource.Add(ConvertSongSearchObject(track));
+            var track = await Task.Run(() =>
+            {
+                try
+                {
+                    return apiService.GetTrack(id, withAuth: true);
+                }
+                catch (Exception e)
+                {
+                    Debug.WriteLine("Failed to get qobuz track: " + e.Message);
+                    return null;
+                }
+            }, token);
 
-            statusUpdate?.Invoke(InfoBarSeverity.Success, $"<b>Qobuz</b>   Loaded track <a href=\"{url}\">{track.Title}</a>"); // Show a success message
+            if (track != null) {
+                itemSource.Add(await Task.Run(() => ConvertSongSearchObject(track)));
+                statusUpdate?.Invoke(InfoBarSeverity.Success, $"<b>Qobuz</b>   Loaded track <a href='{url}'>{track.Title}</a>"); 
+            }
+            else
+            {
+                statusUpdate?.Invoke(InfoBarSeverity.Error, $"<b>Qobuz</b>   Track may not exist or is private.");
+            }
         }
         else if (isAlbum)
         {
-            var album = await Task.Run(() => apiService.GetAlbum(id, withAuth: true), token);
+            var album = await Task.Run(() =>
+            {
+                try
+                {
+                    return apiService.GetAlbum(id, withAuth: true);
+                }
+                catch (Exception e)
+                {
+                    Debug.WriteLine("Failed to get qobuz album: " + e.Message);
+                    return null;
+                }
+            }, token);
 
-            if (album.Tracks != null && album.Tracks.Items.Count > 0)
+            if (album != null && album.Tracks != null && album.Tracks.Items.Count > 0)
             {
                 statusUpdate?.Invoke(InfoBarSeverity.Informational, $"<b>Qobuz</b>   Loading album <a href='{url}'>{album.Title}</a>", -1); // Show an informational message
                 itemSource.Clear(); // Clear the item source
@@ -330,12 +358,26 @@ internal class QobuzApi
 
                 statusUpdate?.Invoke(InfoBarSeverity.Success, $"<b>Qobuz</b>   Loaded album <a href='{url}'>{album.Title}</a>"); // Show a success message
             }
+            else
+            {
+                statusUpdate?.Invoke(InfoBarSeverity.Error, $"<b>Qobuz</b>   Album may not exist or is private.");
+            }
         }
         else if (isPlaylist)
         {
-            var playlist = await Task.Run(() => apiService.GetPlaylist(id, withAuth: true), token);
-
-            if (playlist.Tracks != null && playlist.Tracks.Items.Count > 0)
+            var playlist = await Task.Run(() =>
+            {   try
+                {
+                    return apiService.GetPlaylist(id, withAuth: true, limit: 500);
+                }
+                catch (Exception e)
+                {
+                    Debug.WriteLine("Failed to get qobuz playlist: " + e.Message);
+                    return null;
+                }
+            }, token);
+            
+            if (playlist != null && playlist.Tracks != null && playlist.Tracks.Items.Count > 0)
             {
                 statusUpdate?.Invoke(InfoBarSeverity.Informational, $"<b>Qobuz</b>   Loading playlist <a href='{url}'>{playlist.Name}</a>", -1); // Show an informational message
                 itemSource.Clear(); // Clear the item source
@@ -352,6 +394,10 @@ internal class QobuzApi
 
                 statusUpdate?.Invoke(InfoBarSeverity.Success, $"<b>Qobuz</b>   Loaded playlist <a href='{url}'>{playlist.Name}</a>"); // Show a success message
             }
+            else
+            {
+                statusUpdate?.Invoke(InfoBarSeverity.Error, $"<b>Qobuz</b>   Playlist may not exist or is private.");
+            }
         }
     }
 
@@ -360,7 +406,7 @@ internal class QobuzApi
         var listedArtist = track.Performer?.Name ?? "unlisted";
         var contribList = GetAllContributorsList(track.Performers);
 
-        if (contribList.Contains(listedArtist)) // Move listed artist to the front
+        if (contribList != null && contribList.Contains(listedArtist)) // Move listed artist to the front
         {
             contribList.Remove(listedArtist);
             contribList.Insert(0, listedArtist);
@@ -369,8 +415,8 @@ internal class QobuzApi
         return new SongSearchObject()
         {
             AlbumName = track.Album.Title,
-            Artists = string.Join(", ", contribList),
-            Duration = track.Duration.ToString(),
+            Artists = string.Join(", ", contribList ?? []),
+            Duration = track.Duration?.ToString() ?? "0",
             Explicit = track.ParentalWarning ?? false,
             Source = "qobuz",
             Id = track.Id.ToString(),

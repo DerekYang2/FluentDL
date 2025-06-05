@@ -599,9 +599,12 @@ internal class DeezerApi
         var albumJson = await restClient.FetchJsonElement("album/" + albumId);
         // Get Genres
         var genreList = new List<string>();
-        foreach (var genreData in albumJson.GetProperty("genres").GetProperty("data").EnumerateArray())
+        if (albumJson.TryGetProperty("genres", out var genresProperty) && genresProperty.TryGetProperty("data", out var dataProperty))
         {
-            genreList.Add(genreData.GetProperty("name").GetString());
+            foreach (var genreData in dataProperty.EnumerateArray())
+            {
+                genreList.Add(genreData.TryGetProperty("name", out var nameProperty) ? nameProperty.GetString() : "Unknown Genre");
+            }
         }
 
         return string.Join(", ", genreList);
