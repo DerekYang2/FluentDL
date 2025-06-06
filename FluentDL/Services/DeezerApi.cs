@@ -1,9 +1,4 @@
-﻿using System.Collections.ObjectModel;
-using System.Diagnostics;
-using System.Globalization;
-using System.Net;
-using System.Text.Json;
-using System.Text.RegularExpressions;
+﻿using CommunityToolkit.WinUI.UI.Animations;
 using DeezNET;
 using DeezNET.Data;
 using FluentDL.Helpers;
@@ -12,6 +7,12 @@ using FluentDL.ViewModels;
 using FluentDL.Views;
 using Microsoft.UI.Xaml.Controls;
 using RestSharp;
+using System.Collections.ObjectModel;
+using System.Diagnostics;
+using System.Globalization;
+using System.Net;
+using System.Text.Json;
+using System.Text.RegularExpressions;
 
 namespace FluentDL.Services;
 
@@ -204,7 +205,7 @@ internal class DeezerApi
         }
     }
 
-    public static async Task<SongSearchObject> GeneralSearch(SongSearchObject song)
+    public static async Task<SongSearchObject?> GeneralSearch(SongSearchObject song)
     {
         var title = PruneTitleSearch(song.Title);
         var artists = song.Artists.Split(", ").ToList();
@@ -219,6 +220,9 @@ internal class DeezerApi
         {
             var trackId = track.GetProperty("id").ToString();
             var songObj = await GetTrack(trackId); // Return the first result
+
+            if (songObj == null)
+                continue;
 
             List<string> songObjArtists = songObj.Artists.Split(", ").ToList();
 
@@ -372,8 +376,11 @@ internal class DeezerApi
                 if (albumName.ToLower().Replace(" ", "").Equals(songObj.AlbumName.ToLower().Replace(" ", ""))) // If the album name is exact match
                 {
                     var fullTrack = await GetTrack(songObj.Id);
-                    callback?.Invoke(InfoBarSeverity.Warning, fullTrack);
-                    return fullTrack;
+                    if (fullTrack != null)
+                    {
+                        callback?.Invoke(InfoBarSeverity.Warning, fullTrack);
+                        return fullTrack;
+                    }
                 }
 
                 var dist = ApiHelper.CalcLevenshteinDistance(PruneTitle(albumName), PruneTitle(songObj.AlbumName));
@@ -388,8 +395,11 @@ internal class DeezerApi
         if (closeMatchObj != null)
         {
             var fullTrack = await GetTrack(closeMatchObj.Id);
-            callback?.Invoke(InfoBarSeverity.Warning, fullTrack);
-            return fullTrack;
+            if (fullTrack != null) // If the track was found
+            {
+                callback?.Invoke(InfoBarSeverity.Warning, fullTrack);
+                return fullTrack;
+            }
         }
 
         // pass 2: if exact album match, find least edit distance title name
@@ -419,8 +429,11 @@ internal class DeezerApi
         if (closeMatchObj != null)
         {
             var fullTrack = await GetTrack(closeMatchObj.Id);
-            callback?.Invoke(InfoBarSeverity.Warning, fullTrack);
-            return fullTrack;
+            if (fullTrack != null) // If the track was found
+            {
+                callback?.Invoke(InfoBarSeverity.Warning, fullTrack);
+                return fullTrack;
+            }
         }
 
         callback?.Invoke(InfoBarSeverity.Error, song); // No match found
@@ -454,7 +467,10 @@ internal class DeezerApi
 
             var trackId = track.GetProperty("id").ToString();
             var songObj = await GetTrack(trackId);
-            itemSource.Add(songObj);
+            if (songObj != null)
+            {
+                itemSource.Add(songObj);
+            }
         }
     }
 
@@ -462,15 +478,15 @@ internal class DeezerApi
     {
         return new SongSearchObject()
         {
-            AlbumName = jsonObj.GetProperty("album").GetProperty("title").GetString(),
-            Artists = jsonObj.GetProperty("artist").GetProperty("name").GetString(),
-            Duration = jsonObj.GetProperty("duration").ToString(),
-            Explicit = jsonObj.GetProperty("explicit_lyrics").GetBoolean(),
-            Id = jsonObj.GetProperty("id").ToString(),
-            ImageLocation = jsonObj.GetProperty("album").GetProperty("cover").GetString(),
-            Rank = jsonObj.GetProperty("rank").ToString(),
+            AlbumName = jsonObj.SafeGetString("album", "title") ?? "Unknown",
+            Artists = jsonObj.SafeGetString("artist", "name") ?? "Unknown",
+            Duration = jsonObj.SafeGetString("duration") ?? "0",
+            Explicit = jsonObj.SafeGetBool("explicit_lyrics"),
+            Id = jsonObj.SafeGetString("id") ?? "",
+            ImageLocation = jsonObj.SafeGetString("album", "cover"),
+            Rank = jsonObj.SafeGetString("rank") ?? "0",
             Source = "deezer",
-            Title = jsonObj.GetProperty("title").GetString(),
+            Title = jsonObj.SafeGetString("title") ?? "Unknown",
         };
     }
 
@@ -487,22 +503,21 @@ internal class DeezerApi
         {
             foreach (var contribObject in contribElement.EnumerateArray())
             {
-                var name = contribObject.GetProperty("name").GetString();
-                if (name.Contains(','))
+                var name = contribObject.SafeGetString("name");
+                if (!string.IsNullOrWhiteSpace(name))
                 {
-                    // Split
-                    var names = name.Split(", ");
-                    foreach (var n in names)
+                    if (name.Contains(','))
                     {
-                        if (!contributors.Contains(n))
+                        foreach (var n in name.Split(", "))
                         {
-                            contributors.Add(n);
+                            if (!contributors.Contains(n))
+                                contributors.Add(n);
                         }
                     }
-                }
-                else
-                {
-                    contributors.Add(name);
+                    else
+                    {
+                        contributors.Add(name);
+                    }
                 }
             }
         }
@@ -510,17 +525,17 @@ internal class DeezerApi
         return new SongSearchObject
         {
             Source = "deezer",
-            Title = jsonObject.GetProperty("title").GetString(),
-            ImageLocation = jsonObject.GetProperty("album").GetProperty("cover").GetString(),
-            Id = jsonObject.GetProperty("id").ToString(),
-            ReleaseDate = jsonObject.GetProperty("release_date").ToString(),
+            Title = jsonObject.SafeGetString("title") ?? "Unknown",
+            ImageLocation = jsonObject.SafeGetString("album", "cover"),
+            Id = jsonObject.SafeGetString("id") ?? "",
+            ReleaseDate = jsonObject.SafeGetString("release_date") ?? "",
             Artists = string.Join(", ", contributors),
-            Duration = jsonObject.GetProperty("duration").ToString(),
-            Rank = jsonObject.GetProperty("rank").ToString(),
-            AlbumName = jsonObject.GetProperty("album").GetProperty("title").GetString(),
-            Explicit = jsonObject.GetProperty("explicit_lyrics").GetBoolean(),
-            TrackPosition = jsonObject.GetProperty("track_position").ToString(),
-            Isrc = jsonObject.GetProperty("isrc").GetString(),
+            Duration = jsonObject.SafeGetString("duration") ?? "0",
+            Rank = jsonObject.SafeGetString("rank") ?? "0",
+            AlbumName = jsonObject.SafeGetString("album", "title") ?? "Unknown",
+            Explicit = jsonObject.SafeGetBool("explicit_lyrics"),
+            TrackPosition = jsonObject.SafeGetString("track_position") ?? "",
+            Isrc = jsonObject.SafeGetString("isrc")
         };
     }
 
@@ -603,7 +618,7 @@ internal class DeezerApi
         {
             foreach (var genreData in dataProperty.EnumerateArray())
             {
-                genreList.Add(genreData.TryGetProperty("name", out var nameProperty) ? nameProperty.GetString() : "Unknown Genre");
+                genreList.Add(genreData.SafeGetString("name") ?? "Unknown Genre");
             }
         }
 
@@ -613,7 +628,7 @@ internal class DeezerApi
     public static async Task UpdateMetadata(string filePath, string trackId)
     {
         var jsonObject = await restClient.FetchJsonElement("track/" + trackId);
-        var albumJson = await restClient.FetchJsonElement("album/" + jsonObject.GetProperty("album").GetProperty("id"));
+        var albumJson = await restClient.FetchJsonElement("album/" + jsonObject.SafeGetString("album", "id"));
         if (string.IsNullOrWhiteSpace(jsonObject.ToString()))
         {
             return;
@@ -621,70 +636,54 @@ internal class DeezerApi
 
         // Get the contributors of the track
         var contributors = new HashSet<string>();
-        foreach (var contribObject in jsonObject.GetProperty("contributors").EnumerateArray())
+        if (jsonObject.TryGetProperty("contributors", out var contribElement))
         {
-            var name = contribObject.GetProperty("name").GetString();
-            contributors.Add(name);
+            foreach (var contribObject in contribElement.EnumerateArray())
+            {
+                var name = contribObject.SafeGetString("name");
+                if (!string.IsNullOrWhiteSpace(name))
+                    contributors.Add(name);
+            }
         }
 
         var albumContribs = new HashSet<string>();
-        foreach (var contribObject in albumJson.GetProperty("contributors").EnumerateArray())
+        if (albumJson.TryGetProperty("contributors", out var albumContribElement))
         {
-            var name = contribObject.GetProperty("name").GetString();
-            albumContribs.Add(name);
+            foreach (var contribObject in albumContribElement.EnumerateArray())
+            {
+                var name = contribObject.SafeGetString("name");
+                if (!string.IsNullOrWhiteSpace(name))
+                    albumContribs.Add(name);
+            }
         }
 
         // Get Genres
         var genreList = new List<string>();
-        foreach (var genreData in albumJson.GetProperty("genres").GetProperty("data").EnumerateArray())
+        if (albumJson.TryGetProperty("genres", out var genresElement) &&
+            genresElement.TryGetProperty("data", out var dataElement))
         {
-            genreList.Add(genreData.GetProperty("name").GetString());
+            foreach (var genreData in dataElement.EnumerateArray())
+            {
+                genreList.Add(genreData.SafeGetString("name") ?? "Unknown Genre");
+            }
         }
 
         var metadata = new MetadataObject(filePath)
         {
-            Title = jsonObject.GetProperty("title").GetString(),
+            Title = jsonObject.SafeGetString("title"),
             Artists = contributors.ToArray(),
-            AlbumName = albumJson.GetProperty("title").GetString(),
+            AlbumName = albumJson.SafeGetString("title"),
             AlbumArtists = albumContribs.ToArray(),
-            Isrc = jsonObject.GetProperty("isrc").GetString(),
-            ReleaseDate = DateTime.ParseExact(jsonObject.GetProperty("release_date").GetString(), "yyyy-MM-dd", CultureInfo.InvariantCulture),
-            TrackNumber = jsonObject.GetProperty("track_position").GetInt32(),
-            AlbumArtPath = albumJson.GetProperty("cover_big").GetString(),
+            Isrc = jsonObject.SafeGetString("isrc"),
+            ReleaseDate = DateTime.TryParseExact(jsonObject.SafeGetString("release_date"), "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var dt) ? dt : null,
+            TrackNumber = jsonObject.SafeGetInt32("track_position"),
+            AlbumArtPath = albumJson.SafeGetString("cover_big"),
             Genres = genreList.ToArray(),
-            TrackTotal = albumJson.GetProperty("nb_tracks").GetInt32(),
-            Upc = albumJson.GetProperty("upc").GetString(),
-            Url = jsonObject.GetProperty("link").GetString(),
+            TrackTotal = albumJson.SafeGetInt32("nb_tracks"),
+            Upc = albumJson.SafeGetString("upc"),
+            Url = jsonObject.SafeGetString("link"),
         };
 
         await metadata.SaveAsync();
-
-        //track.Title = jsonObject.GetProperty("title").GetString();
-        //track.Album = albumJson.GetProperty("title").GetString();
-        //track.AlbumArtist = albumJson.GetProperty("artist").GetProperty("name").GetString();
-        //track.Artist = contribStr;
-        //track.AudioSourceUrl = jsonObject.GetProperty("link").GetString();
-        //track.BPM = jsonObject.GetProperty("bpm").TryGetInt32(out var bpm
-        //)
-        //    ? bpm
-        //    : 0;
-        //track.AdditionalFields["YEAR"] = jsonObject.GetProperty("release_date").GetString().Substring(0, 4);
-        //track.Date = DateTime.Parse(jsonObject.GetProperty("release_date").GetString());
-        //track.TrackNumber = jsonObject.GetProperty("track_position").GetInt32();
-        //track.TrackTotal = albumJson.GetProperty("nb_tracks").GetInt32();
-        //track.Genre = genreStr;
-        //track.ISRC = jsonObject.GetProperty("isrc").GetString();
-        //track.Popularity = jsonObject.GetProperty("rank").GetInt32();
-        //// Append to front if pictures already exist
-        //if (track.EmbeddedPictures.Count > 0)
-        //{
-        //    track.EmbeddedPictures.Insert(0, newPicture);
-        //}
-        //else
-        //{
-        //    track.EmbeddedPictures.Add(newPicture);
-        //}
-
-        //await track.SaveAsync();
     }
 }

@@ -20,9 +20,7 @@ using YouTubeMusicAPI.Client;
 using YouTubeMusicAPI.Models;
 using YouTubeMusicAPI.Models.Info;
 using static System.Net.WebRequestMethods;
-using AngleSharp.Text;
 using YouTubeMusicAPI.Models.Search;
-using Acornima.Ast;
 
 namespace FluentDL.Services
 {
@@ -446,7 +444,7 @@ namespace FluentDL.Services
                 var author = result.Author;
                 var title = result.Title;
                 var duration = result.Duration;
-                double totalSeconds = TimeSpan.Parse(duration.ToString()).TotalSeconds;
+                double totalSeconds = TimeSpan.Parse(duration?.ToString() ?? "0").TotalSeconds;
 
                 if (Math.Abs(totalSeconds - double.Parse(song.Duration)) <= 1)
                 {
@@ -732,8 +730,11 @@ namespace FluentDL.Services
             https://lh3.googleusercontent.com/{string}=w120-h120-l90-rj
             https://lh3.googleusercontent.com/{string}=w544-h544-l90-rj (not returned by youtube music api, manually get)
          */
-        public static async Task<string> GetMaxResThumbnail(SongSearchObject song)
+        public static async Task<string?> GetMaxResThumbnail(SongSearchObject song)
         {
+            if (song.ImageLocation == null)
+                return null;
+
             if (song.ImageLocation.StartsWith("https://lh3.googleusercontent.com")) // If youtube music image
             {
                 string imageUrl = song.ImageLocation;
@@ -745,6 +746,9 @@ namespace FluentDL.Services
             }
 
             var video = await youtube.Videos.GetAsync(song.Id);
+            if (video.Thumbnails.Count == 0) 
+                return null;
+
             var idx = video.Thumbnails.ToList().FindIndex(x =>
             {
                 var url = x.Url;
@@ -828,7 +832,7 @@ namespace FluentDL.Services
             };
         }
 
-        public static async Task<SongSearchObject?> GetTrack(string? id)
+        public static async Task<SongSearchObject?> GetTrack(string id)
         {
             var video = await youtube.Videos.GetAsync(id);
             return await ConvertSongSearchObject(video);

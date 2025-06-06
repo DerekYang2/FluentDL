@@ -105,7 +105,9 @@ internal class QobuzApi
         foreach (var track in results.Tracks.Items)
         {
             if (token.IsCancellationRequested) return;
-            itemSource.Add(await GetTrackAsync(track.Id, token));
+            var trackObj = await GetTrackAsync(track.Id, token);
+            if (trackObj != null)
+                itemSource.Add(trackObj);
         }
     }
 
@@ -196,9 +198,13 @@ internal class QobuzApi
 
                         if (valid && !trackIdList.Contains(id)) // Check if track is already added
                         {
-                            itemSource.Add(await GetTrackAsync(id));
+                            var trackObj = await GetTrackAsync(id);
+                            if (trackObj == null) 
+                                continue; 
+                            itemSource.Add(trackObj);
                             trackIdList.Add(id);
-                            if (trackIdList.Count >= limit) break;
+                            if (trackIdList.Count >= limit) 
+                                break;
                         }
                     }
                 }
@@ -235,9 +241,13 @@ internal class QobuzApi
                                 var id = track.Id.GetValueOrDefault();
                                 if (!trackIdList.Contains(id)) // Add this track to the item source
                                 {
-                                    itemSource.Add(await GetTrackAsync(id));
+                                    var trackObj = await GetTrackAsync(id);
+                                    if (trackObj == null) 
+                                        continue;
+                                    itemSource.Add(trackObj);
                                     trackIdList.Add(id);
-                                    if (trackIdList.Count >= limit) break;
+                                    if (trackIdList.Count >= limit) 
+                                        break;
                                 }
                             }
                         }
@@ -275,9 +285,15 @@ internal class QobuzApi
 
                                 if (!trackIdList.Contains(id)) // Add this track to the item source
                                 {
-                                    itemSource.Add(await GetTrackAsync(id));
+                                    var trackObj = await GetTrackAsync(id);
+                                   if (trackObj == null) 
+                                        continue; // Skip if track is null
+
+                                    itemSource.Add(trackObj);
                                     trackIdList.Add(id);
-                                    if (trackIdList.Count >= limit) break;
+
+                                    if (trackIdList.Count >= limit) 
+                                        break;
                                 }
 
                                 trackIdList.Add(track.Id.GetValueOrDefault());
@@ -445,7 +461,7 @@ internal class QobuzApi
         {
             AlbumName = album.Title,
             Artists = string.Join(", ", contribList),
-            Duration = track.Duration.ToString(),
+            Duration = track.Duration?.ToString() ?? "0",
             Explicit = track.ParentalWarning ?? false,
             Source = "qobuz",
             Id = track.Id.GetValueOrDefault().ToString(),
@@ -474,23 +490,6 @@ internal class QobuzApi
     {
         if (id == null) return null;
         var track = await Task.Run(() => apiService.GetTrack(id, withAuth: true), token);
-        if (track == null)
-        {
-            return null;
-        }
-
-        return ConvertSongSearchObject(track);
-    }
-
-    public static SongSearchObject? GetTrack(int? id)
-    {
-        if (id == null) return null;
-        return GetTrack(id.ToString());
-    }
-
-    public static SongSearchObject? GetTrack(string id)
-    {
-        var track = apiService.GetTrack(id, withAuth: true);
         if (track == null)
         {
             return null;
@@ -599,8 +598,11 @@ internal class QobuzApi
                     if (oneArtistMatch && CloseMatch(trackName, track.Title)) // Album close match, artist match, title close match
                     {
                         var retObj = await GetTrackAsync(track.Id);
-                        callback?.Invoke(InfoBarSeverity.Warning, retObj); // Not found by ISRC
-                        return retObj;
+                        if (retObj != null)
+                        {
+                            callback?.Invoke(InfoBarSeverity.Warning, retObj); // Not found by ISRC
+                            return retObj;
+                        }
                     }
                 }
             }

@@ -171,7 +171,7 @@ namespace FluentDL.Views
             {
                 trackDetailsList.Add(new TrackDetail { Label = "Views", Value = selectedSong.Rank });
 
-                PreviewImage.Source = new BitmapImage(new Uri(await YoutubeApi.GetMaxResThumbnail(selectedSong))); // Get max res thumbnail
+                PreviewImage.Source = new BitmapImage(new Uri(await YoutubeApi.GetMaxResThumbnail(selectedSong) ?? "")); // Get max res thumbnail
                 PreviewInfoControl2.ItemsSource = PreviewInfoControl.ItemsSource = trackDetailsList; // First set details list
                 RankRatingControl.Visibility = Visibility.Collapsed;
 
