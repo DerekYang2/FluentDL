@@ -43,7 +43,7 @@ namespace FluentDL.Services
             {
                 try
                 {
-                    spotify = new SpotifyClient(config.WithAuthenticator(new ClientCredentialsAuthenticator(clientId, clientSecret)));
+                    spotify = await Task.Run(() => new SpotifyClient(config.WithAuthenticator(new ClientCredentialsAuthenticator(clientId, clientSecret))));
                     IsInitialized = true;
                     return;
                 }
@@ -56,7 +56,7 @@ namespace FluentDL.Services
             // If clientId and clientSecret are not provided, try to get from browser
             try
             {
-                spotify = new SpotifyClient(config.WithAuthenticator(new EmbedAuthenticator()));
+                spotify = await Task.Run(() => new SpotifyClient(config.WithAuthenticator(new EmbedAuthenticator())));
                 IsInitialized = true;
                 return;
             } catch (Exception e) {
@@ -79,7 +79,7 @@ namespace FluentDL.Services
                         throw new Exception("invalid/empty bundled key in list");
                     }
 
-                    spotify = new SpotifyClient(config.WithAuthenticator(new ClientCredentialsAuthenticator(id, secret)));
+                    spotify = await Task.Run(() => new SpotifyClient(config.WithAuthenticator(new ClientCredentialsAuthenticator(id, secret))));
                     IsInitialized = true;
                 }
             } catch (Exception e) {
@@ -628,6 +628,7 @@ namespace FluentDL.Services
             {
                 var directory = Path.GetDirectoryName(filePath);
                 var fileName = Path.GetFileNameWithoutExtension(filePath);
+                if (directory == null) return null;
                 var opusLocation = Path.Combine(directory, fileName + ".opus");
 
                 if (File.Exists(opusLocation) && await SettingsViewModel.GetSetting<bool>(SettingsViewModel.Overwrite) == false) // If file exists and overwrite is false
