@@ -311,12 +311,20 @@ internal class ApiHelper
         return distances[lengthA, lengthB];
     }
 
-    public static async Task<Uri> GetRedirectedUrlAsync(Uri uri, CancellationToken cancellationToken = default)
+    public static async Task<Uri?> GetRedirectedUrlAsync(Uri uri, CancellationToken cancellationToken = default)
     {
-        using var client = new HttpClient(new HttpClientHandler { AllowAutoRedirect = false, }, true);
-        using var response = await client.GetAsync(uri, cancellationToken);
+        try
+        {
+            using var client = new HttpClient(new HttpClientHandler { AllowAutoRedirect = false, }, true);
+            using var response = await client.GetAsync(uri, cancellationToken);
 
-        return new Uri(response.Headers.GetValues("Location").First());
+            return new Uri(response.Headers.GetValues("Location").First());
+        }
+        catch (Exception e)
+        {
+            Debug.WriteLine("Error getting redirected URL: " + e.Message);
+            return null;
+        }
     }
 
     public static string RemoveDiacritics(string text)

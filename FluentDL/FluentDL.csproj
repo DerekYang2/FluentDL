@@ -22,7 +22,7 @@
     <GenerateTestArtifacts>True</GenerateTestArtifacts>
     <AppxBundle>Always</AppxBundle>
     <WindowsPackageType>MSIX</WindowsPackageType>
-    <AppxBundlePlatforms>x86|x64</AppxBundlePlatforms>
+    <AppxBundlePlatforms>x86|x64|arm64</AppxBundlePlatforms>
     <WindowsSdkPackageVersion>10.0.22621.38</WindowsSdkPackageVersion>
     <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
     <RestoreAdditionalProjectSources>
