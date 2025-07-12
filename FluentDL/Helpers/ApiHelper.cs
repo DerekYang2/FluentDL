@@ -315,10 +315,31 @@ internal class ApiHelper
     {
         try
         {
-            using var client = new HttpClient(new HttpClientHandler { AllowAutoRedirect = false, }, true);
-            using var response = await client.GetAsync(uri, cancellationToken);
+            Uri prevUri;
+            Uri curUri = uri;
 
-            return new Uri(response.Headers.GetValues("Location").First());
+            do
+            {
+                using var client = new HttpClient(new HttpClientHandler { AllowAutoRedirect = false, }, true);
+                using var response = await client.GetAsync(curUri, cancellationToken);
+
+                if (!response.Headers.Contains("Location"))
+                {
+                    if (response.StatusCode == System.Net.HttpStatusCode.OK && response.ReasonPhrase == "OK")
+                    {
+                        return curUri;  // No redirection, return the current URI
+                    } 
+                    else
+                    {
+                        return null;
+                    }
+                }
+
+                prevUri = curUri;
+                curUri = new Uri(response.Headers.GetValues("Location").First());
+            } while (curUri.AbsoluteUri != prevUri.AbsoluteUri);
+
+            return curUri;
         }
         catch (Exception e)
         {

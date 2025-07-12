@@ -431,7 +431,7 @@ public sealed partial class Search : Page
             await LoadSpotifyPlaylist(playlistId, cancellationTokenSource.Token);
             */
         }
-        else if (generalQuery.StartsWith("https://deezer.page.link/") || generalQuery.StartsWith("https://dzr.page.link/") || System.Text.RegularExpressions.Regex.IsMatch(generalQuery, @"https://www\.deezer\.com(/[^/]+)?/(track|album|playlist)/.*"))
+        else if (generalQuery.StartsWith("https://deezer.page.link/") || generalQuery.StartsWith("https://dzr.page.link/") || generalQuery.StartsWith("https://link.deezer.com/") || System.Text.RegularExpressions.Regex.IsMatch(generalQuery, @"https://www\.deezer\.com(/[^/]+)?/(track|album|playlist)/.*"))
         {
             await DeezerApi.AddTracksFromLink((ObservableCollection<SongSearchObject>)CustomListView.ItemsSource, generalQuery, cancellationTokenSource.Token, statusUpdate);
         }

@@ -44,15 +44,14 @@ internal class DeezerApi
 
     public static async Task AddTracksFromLink(ObservableCollection<SongSearchObject> list, string url, CancellationToken token, Search.UrlStatusUpdateCallback? statusUpdate)
     {
-        if (url.StartsWith("https://deezer.page.link/") || url.StartsWith("https://dzr.page.link/"))
+        if (url.StartsWith("https://deezer.page.link/") || url.StartsWith("https://dzr.page.link/") || url.StartsWith("https://link.deezer.com/"))
         {
-            var directedUri = await ApiHelper.GetRedirectedUrlAsync(new Uri(url));
-            if (directedUri == null) 
+            url = (await ApiHelper.GetRedirectedUrlAsync(new Uri(url)))?.AbsoluteUri ?? "";
+            if (string.IsNullOrEmpty(url))
             {
                 statusUpdate?.Invoke(InfoBarSeverity.Error, "Invalid Deezer URL");
                 return;
             }
-            url = directedUri.AbsoluteUri;
         }
 
         if (Regex.IsMatch(url, @"https://www\.deezer\.com(/[^/]+)?/track/.*"))

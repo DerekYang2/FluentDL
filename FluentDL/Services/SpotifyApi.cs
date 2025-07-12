@@ -174,9 +174,18 @@ namespace FluentDL.Services
 
 
             limit = Math.Min(limit, 50); // Limit to 50 (maximum for this api)
-            var response = await spotify.Search.Item(new SearchRequest(SearchRequest.Types.Track, query), token);
+            SearchResponse? response = null;
+            try
+            {
+                response = await spotify.Search.Item(new SearchRequest(SearchRequest.Types.Track, query), token);
+            }
+            catch (Exception e)
+            {
+                Debug.WriteLine("Failed to general search: " + e.Message);
+                return; // If failed, return
+            }
 
-            if (response.Tracks.Items == null)
+            if (response?.Tracks?.Items == null)
             {
                 return;
             }
@@ -199,9 +208,17 @@ namespace FluentDL.Services
 
         public static async Task<string?> GetPlaylistName(string playlistId)
         {
-            var playlist = await spotify.Playlists.Get(playlistId);
-            var playlistName = playlist.Name;
-            return playlistName;
+            try
+            {
+                var playlist = await spotify.Playlists.Get(playlistId);
+                var playlistName = playlist.Name;
+                return playlistName;
+            }
+            catch (Exception e)
+            {
+                Debug.WriteLine("Failed to get playlist name: " + e.Message);
+                return null;
+            }
         }
 
         public static async Task<FullTrack?> GetTrackFromISRC(string isrc, CancellationToken token = default)
@@ -302,6 +319,12 @@ namespace FluentDL.Services
             if (url.StartsWith("https://open.spotify.com/playlist/"))
             {
                 var playlistName = await GetPlaylistName(id);
+                if (playlistName == null)
+                {
+                    statusUpdate?.Invoke(InfoBarSeverity.Error, $"<b>Spotify</b>   Failed to load playlist <a href='{url}'>{url}</a>");
+                    return;
+                }
+
                 statusUpdate?.Invoke(InfoBarSeverity.Informational, $"<b>Spotify</b>   Loading playlist <a href='{url}'>{playlistName}</a>", -1);
 
                 var pages = await spotify.Playlists.GetItems(id, cancel: token);
