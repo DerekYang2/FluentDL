@@ -295,9 +295,11 @@
         </InfoBar>
 
         <!-- Convert Dialog -->
-        <ContentDialog x:Name="ConversionDialog" PrimaryButtonText="Convert" CloseButtonText="Close" 
-                       Title="Convert Audio Format" IsPrimaryButtonEnabled="True"
-                       PrimaryButtonClick="ConversionDialog_OnPrimaryButtonClick" CloseButtonClick="ConversionDialog_OnCloseButtonClick" Closing="ConversionDialog_OnClosing"
+        <ContentDialog x:Name="ConversionDialog" PrimaryButtonText="Convert" CloseButtonText="Close" SecondaryButtonText="Cancel"
+                       Title="Convert Audio Format" IsPrimaryButtonEnabled="True" IsSecondaryButtonEnabled="True"
+                       PrimaryButtonClick="ConversionDialog_OnPrimaryButtonClick" 
+                       SecondaryButtonClick="ConversionDialog_SecondaryButtonClick"
+                       CloseButtonClick="ConversionDialog_OnCloseButtonClick" Closing="ConversionDialog_OnClosing"
                        PrimaryButtonStyle="{ThemeResource AccentButtonStyle}">
             <ContentDialog.Resources>
                 <x:Double x:Key="ContentDialogMaxWidth">1000</x:Double>

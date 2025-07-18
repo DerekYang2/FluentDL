@@ -1,4 +1,4 @@
-using System.Collections.ObjectModel;
+﻿using System.Collections.ObjectModel;
 using System.Diagnostics;
 using FluentDL.Helpers;
 using FluentDL.Services;
@@ -98,7 +98,10 @@ namespace FluentDL.Views
 
             var trackDetailsList = new ObservableCollection<TrackDetail>
             {
-                new TrackDetail { Label = "Artists", Value = selectedSong.Artists }, new TrackDetail { Label = "Release Date", Value = new DateVerboseConverter().Convert(selectedSong.ReleaseDate, null, null, null).ToString() }, new TrackDetail { Label = "Length", Value = new DurationConverter().Convert(selectedSong.Duration, null, null, null).ToString() }, new TrackDetail { Label = "Album", Value = selectedSong.AlbumName },
+                new() { Label = "Artists", Value = selectedSong.Artists }, 
+                new() { Label = "Release Date", Value = new DateVerboseConverter().Convert(selectedSong.ReleaseDate, null, null, null).ToString() }, 
+                new() { Label = "Length", Value = new DurationConverter().Convert(selectedSong.Duration, null, null, null).ToString() },
+                new() { Label = "Album", Value = selectedSong.AlbumName },
             };
 
 
@@ -222,7 +225,7 @@ namespace FluentDL.Views
         }
 
         public void ClearMediaPlayerSource()
-        {
+        {   
             var mediaPlayer = SongPreviewPlayer.MediaPlayer;
             var source = SongPreviewPlayer.Source;
             if (mediaPlayer == null || source == null) // Already cleared

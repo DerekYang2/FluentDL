@@ -74,7 +74,7 @@
                                 <ItemsControl x:Name="PreviewInfoControl2">
                                     <ItemsControl.ItemTemplate>
                                         <DataTemplate x:DataType="views:TrackDetail">
-                                            <marqueeTextRns:MarqueeText Text="{x:Bind Value}"  controls1:ToolTipService.ToolTip="{x:Bind Value}"
+                                            <marqueeTextRns:MarqueeText Text="{x:Bind Value, Mode=OneWay}"  controls1:ToolTipService.ToolTip="{x:Bind Value, Mode=OneWay}"
                                                                         FontFamily="Segoe UI Variable Display" 
                                                                         Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}" 
                                                                         Speed="50"

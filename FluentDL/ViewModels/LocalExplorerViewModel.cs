@@ -28,6 +28,11 @@ public partial class LocalExplorerViewModel : ObservableRecipient
     private string currentEditPath = ""; // Path of the file currently being edited
     private static Dictionary<string, MetadataObject> tmpUpdates = new Dictionary<string, MetadataObject>();
 
+    // Source for page
+    public static ObservableCollection<SongSearchObject> Source { get; set; } = [];
+    public static ObservableCollection<SongSearchObject> OriginalList { get; set; } = [];
+    private static readonly HashSet<string> _fileSet = [];
+
     public ObservableCollection<MetadataPair> CurrentMetadataList
     {
         get;
@@ -166,6 +171,64 @@ public partial class LocalExplorerViewModel : ObservableRecipient
             Isrc = metadataObj.Isrc,
             AudioFormat = metadataObj.Codec ?? Path.GetExtension(path)
         };
+    }
+
+    public static void AddSong(SongSearchObject song)
+    {
+        OriginalList.Add(song);
+        Source.Add(song);
+        _fileSet.Add(song.Id);
+    }
+
+    public static void RemoveSong(SongSearchObject song)
+    {
+        var ogListDelete = OriginalList.FirstOrDefault(s => s.Id == song.Id);
+        var sourceDelete = Source.FirstOrDefault(s => s.Id == song.Id);
+        var setDelete = _fileSet.FirstOrDefault(path => path == song.Id);
+
+        if (ogListDelete != null && sourceDelete != null && setDelete != null)
+        {
+            OriginalList.Remove(ogListDelete);
+            Source.Remove(sourceDelete);
+            _fileSet.Remove(setDelete);
+        }
+    }
+
+    public static void ClearSongs()
+    {
+        OriginalList.Clear();
+        Source.Clear();
+        _fileSet.Clear();
+    }
+
+    public static async Task AddSongFromFile(string path)
+    {
+        var song = ParseFile(path);
+
+        if (song == null) return; // Skip if song is null
+
+        var bitmapImage = new BitmapImage
+        {
+            // No need to set height, aspect ratio is automatically handled
+            DecodePixelHeight = 76,
+        };
+
+        song.LocalBitmapImage = bitmapImage;
+
+        var memoryStream = await Task.Run(() => GetAlbumArtMemoryStream(song.Id));
+
+        await bitmapImage.SetSourceAsync(memoryStream.AsRandomAccessStream());
+
+        OriginalList.Add(song);
+        Source.Add(song);
+        _fileSet.Add(song.Id);
+
+        memoryStream?.Dispose();
+    }
+
+    public static bool ContainsFile(string filePath)
+    {
+        return _fileSet.Contains(filePath);
     }
 
     //public static BitmapImage? GetBitmapImage(Track track)

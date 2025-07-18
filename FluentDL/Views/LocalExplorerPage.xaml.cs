@@ -40,10 +40,9 @@ public class LocalConversionResult
 
 public sealed partial class LocalExplorerPage : Page
 {
-    private ObservableCollection<SongSearchObject> originalList;
     private DispatcherQueue dispatcher;
     private DispatcherTimer dispatcherTimer;
-    private HashSet<string> fileSet;
+    private CancellationTokenSource? cancellationTokenSource = null;
 
     private static HashSet<string> supportedExtensions = new()
     {
@@ -141,19 +140,17 @@ public sealed partial class LocalExplorerPage : Page
             ".ogg (Opus)",
         };
 
-        FileListView.ItemsSource = new ObservableCollection<SongSearchObject>();
-        originalList = new ObservableCollection<SongSearchObject>();
+        FileListView.ItemsSource = LocalExplorerViewModel.Source;
         ConversionResults = new ObservableCollection<LocalConversionResult>();
-        fileSet = new HashSet<string>();
         InitPreviewPanelButtons();
         InitializeAnimations();
 
         // Attach changed event for originalList (when any songs are added or removed from the local explorer)
-        originalList.CollectionChanged += (sender, e) =>
+        LocalExplorerViewModel.OriginalList.CollectionChanged += (sender, e) =>
         {
-            SetResultsAmount(originalList.Count);
-            NoItemsText.Visibility = originalList.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
-            ClearButton.IsEnabled = originalList.Count > 0;
+            SetResultsAmount(LocalExplorerViewModel.OriginalList.Count);
+            NoItemsText.Visibility = LocalExplorerViewModel.OriginalList.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
+            ClearButton.IsEnabled = LocalExplorerViewModel.OriginalList.Count > 0;
         };
 
         ConversionResults.CollectionChanged += (sender, e) =>
@@ -170,7 +167,7 @@ public sealed partial class LocalExplorerPage : Page
 
         // Set first
         SetResultsAmount(0);
-        ClearButton.IsEnabled = originalList.Count > 0;
+        ClearButton.IsEnabled = LocalExplorerViewModel.OriginalList.Count > 0;
 
         // Set on load
         this.Loaded += LocalExplorerPage_Loaded;
@@ -426,7 +423,7 @@ public sealed partial class LocalExplorerPage : Page
             int addedCount = 0;
             foreach (var file in files)
             {
-                if (fileSet.Contains(file.Path) || !supportedExtensions.Contains(file.FileType.ToLower())) // file.Path is the Id of a song
+                if (LocalExplorerViewModel.ContainsFile(file.Path) || !supportedExtensions.Contains(file.FileType.ToLower())) // file.Path is the Id of a song
                 {
                     continue;
                 }
@@ -438,9 +435,7 @@ public sealed partial class LocalExplorerPage : Page
                 dispatcher.TryEnqueue(() =>
                 {
                     // Add song to both the original list and the listview
-                    originalList.Add(song);
-                    ((ObservableCollection<SongSearchObject>)FileListView.ItemsSource).Add(song);
-                    fileSet.Add(song.Id);
+                    LocalExplorerViewModel.AddSong(song);
                     addedCount++;
                 });
 
@@ -508,17 +503,17 @@ public sealed partial class LocalExplorerPage : Page
         var selectedIndex = SortComboBox.SelectedIndex;
         var isAscending = SortOrderComboBox.SelectedIndex == 0;
 
-        if (FileListView.ItemsSource == null)
+        if (LocalExplorerViewModel.Source == null)
         {
             return;
         }
 
-        var songList = ((ObservableCollection<SongSearchObject>)FileListView.ItemsSource).ToList();
+        var songList = LocalExplorerViewModel.Source.ToList();
 
         switch (selectedIndex)
         {
             case 0:
-                songList = originalList.ToList(); // Default order
+                songList = LocalExplorerViewModel.OriginalList.ToList(); // Default order
                 break;
             case 1:
                 songList = songList.OrderBy(song => song.Title).ToList();
@@ -544,7 +539,9 @@ public sealed partial class LocalExplorerPage : Page
             songList.Reverse();
         }
 
-        FileListView.ItemsSource = new ObservableCollection<SongSearchObject>(songList);
+        LocalExplorerViewModel.Source = new ObservableCollection<SongSearchObject>(songList);
+        // Refresh list view
+        FileListView.ItemsSource = LocalExplorerViewModel.Source;
     }
 
     // Infobar related methods
@@ -624,15 +621,13 @@ public sealed partial class LocalExplorerPage : Page
         dispatcher.TryEnqueue(() =>
         {
             PreviewPanel.Clear();
-            originalList.Clear();
-            ((ObservableCollection<SongSearchObject>)FileListView.ItemsSource).Clear();
-            fileSet.Clear();
+            LocalExplorerViewModel.ClearSongs();
         });
     }
 
     private async void AddToQueueButton_OnClick(object sender, RoutedEventArgs e)
     {
-        if (originalList.Count == 0)
+        if (LocalExplorerViewModel.OriginalList.Count == 0)
         {
             ShowInfoBar(InfoBarSeverity.Warning, "No tracks to add");
             return;
@@ -640,14 +635,14 @@ public sealed partial class LocalExplorerPage : Page
 
         var beforeCount = QueueViewModel.Source.Count;
 
-        foreach (var song in originalList)
+        foreach (var song in LocalExplorerViewModel.OriginalList)
         {
             QueueViewModel.Add(song);
         }
 
         var addedCount = QueueViewModel.Source.Count - beforeCount;
 
-        if (addedCount < originalList.Count)
+        if (addedCount < LocalExplorerViewModel.OriginalList.Count)
         {
             ShowInfoBar(InfoBarSeverity.Informational, $"Added {addedCount} tracks to queue (duplicates ignored)");
         }
@@ -670,7 +665,7 @@ public sealed partial class LocalExplorerPage : Page
         var path = ViewModel.GetCurrentEditPath();
 
         // Check that path is in fileSet
-        if (!fileSet.Contains(path))
+        if (!LocalExplorerViewModel.ContainsFile(path))
         {
             return;
         }
@@ -684,8 +679,8 @@ public sealed partial class LocalExplorerPage : Page
         song.LocalBitmapImage = await LocalExplorerViewModel.GetBitmapImageAsync(song.Id);
         
         // Update the song in the listview
-        var index = originalList.IndexOf(originalList.First(s => s.Id == song.Id));
-        originalList[index] = song;
+        var index = LocalExplorerViewModel.OriginalList.IndexOf(LocalExplorerViewModel.OriginalList.First(s => s.Id == song.Id));
+        LocalExplorerViewModel.OriginalList[index] = song;
 
         var listViewSource = (ObservableCollection<SongSearchObject>)FileListView.ItemsSource;
         index = listViewSource.IndexOf(listViewSource.First(s => s.Id == song.Id));
@@ -814,7 +809,7 @@ public sealed partial class LocalExplorerPage : Page
 
         // Set infobar message to running
         ConversionInfobar.Severity = InfoBarSeverity.Informational;
-        UrlParser.ParseTextBlock(ConversionInfobarText, $"Converting <b>0 of {originalList.Count}</b> tracks to {outputFormat}");
+        UrlParser.ParseTextBlock(ConversionInfobarText, $"Converting <b>0 of {LocalExplorerViewModel.OriginalList.Count}</b> tracks to {outputFormat}");
         ConversionInfobarProgress.Visibility = Visibility.Visible;
 
         // Disable conversion button and hide conversion settings
@@ -834,6 +829,11 @@ public sealed partial class LocalExplorerPage : Page
             ConversionSettingStackPanel.Visibility = Visibility.Visible;
         }));
 
+        // Cancellation token
+        cancellationTokenSource?.Dispose();
+        cancellationTokenSource = new CancellationTokenSource();
+        var token = cancellationTokenSource.Token;
+
         // Start the conversion
         ConversionListView.ItemsSource = ConversionResults;
         ConversionResults.Clear();
@@ -852,12 +852,10 @@ public sealed partial class LocalExplorerPage : Page
                 do
                 {
                     i = Interlocked.Increment(ref index) - 1;
-                    if (i >= originalList.Count)
-                    {
+                    if (i >= LocalExplorerViewModel.OriginalList.Count || token.IsCancellationRequested)
                         break;
-                    }
 
-                    var song = originalList[i];
+                    var song = LocalExplorerViewModel.OriginalList[i];
                     var resultPath = selectedIndex switch
                     {
                         0 => FFmpegRunner.CreateFlac(song.Id, outputDirectory),
@@ -869,24 +867,45 @@ public sealed partial class LocalExplorerPage : Page
                         _ => null,
                     };
 
+                    if (token.IsCancellationRequested)
+                        break;
+
                     dispatcher.TryEnqueue(() =>
                     {
                         ConversionResults.Add(new LocalConversionResult(song, resultPath));
                         // Update infobar converting message
-                        UrlParser.ParseTextBlock(ConversionInfobarText, $"Converting <b>{ConversionResults.Count} of {originalList.Count}</b> tracks to {outputFormat}");
+                        UrlParser.ParseTextBlock(ConversionInfobarText, $"Converting <b>{ConversionResults.Count} of {LocalExplorerViewModel.OriginalList.Count}</b> tracks to {outputFormat}");
                     });
 
                     var countCatpured = Interlocked.Increment(ref completedCount);
-                    if (countCatpured == originalList.Count)
+                    if (countCatpured == LocalExplorerViewModel.OriginalList.Count && !token.IsCancellationRequested)
                     {
                         EndConversionLambda();
                         break;
                     }
-                } while (i + 1 < originalList.Count);
+                } while (i + 1 < LocalExplorerViewModel.OriginalList.Count);
             });
             t.Priority = ThreadPriority.AboveNormal;
             t.Start();
         }
+    }
+
+    private void ConversionDialog_SecondaryButtonClick(ContentDialog sender, ContentDialogButtonClickEventArgs args)
+    {
+        shouldClose = false;
+        cancellationTokenSource?.Cancel();
+        // Display end conversion
+        dispatcher.TryEnqueue(() =>
+        {
+            // Unset infobar message
+            ConversionInfobarProgress.Visibility = Visibility.Collapsed;
+            ConversionInfobar.Severity = InfoBarSeverity.Informational;
+            UrlParser.ParseTextBlock(ConversionInfobarText, "Conversion cancelled");
+
+            // Enable conversion button and show conversion settings
+            ConversionDialog.IsPrimaryButtonEnabled = true;
+            ConversionSettingStackPanel.Visibility = Visibility.Visible;
+        });
     }
 
     private void OpenConversionButton_OnClick(object sender, RoutedEventArgs e)
