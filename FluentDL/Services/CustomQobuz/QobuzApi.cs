@@ -1,0 +1,125 @@
+﻿using Newtonsoft.Json;
+using QobuzApiSharp.Models.Content;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Runtime.CompilerServices;
+using System.Text;
+using System.Threading.Tasks;
+using TagLib.Id3v2;
+
+namespace FluentDL.Services
+{
+    internal partial class QobuzApi
+    {
+        public const string BaseUrl = "https://www.qobuz.com/api.json/0.2";
+        public enum EnumQobuzSearchType
+        {
+            None,
+            ByReleaseName,
+            ByMainArtist,
+            ByLabel,
+        }
+
+        public static void InitializeQobuzHttpClient(string appId, string? userAuthToken = "")
+        {
+            QobuzHttpClient = new HttpClient();
+            QobuzHttpClient.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/110.0");
+            QobuzHttpClient.DefaultRequestHeaders.Add("X-App-Id", appId);
+            if (!string.IsNullOrWhiteSpace(userAuthToken))
+            {
+                QobuzHttpClient.DefaultRequestHeaders.Add("X-User-Auth-Token", userAuthToken);
+            }
+        }
+
+        public static async Task<Playlist?> GetPlaylistAsync(string playlistId, CancellationToken cancellationToken = default)
+        {
+            // /playlist/get?playlist_id=2049430&extra=track_ids
+            var requestUrl = $"{BaseUrl}/playlist/get?playlist_id={playlistId}&extra=track_ids";
+
+            using HttpRequestMessage request = new(HttpMethod.Get, requestUrl);
+            var response = await QobuzHttpClient.SendAsync(request, cancellationToken);
+            if (response?.IsSuccessStatusCode ?? false)
+            {
+                var jsonResultString = await response.Content.ReadAsStringAsync(cancellationToken);
+
+                if (string.IsNullOrWhiteSpace(jsonResultString))
+                    return null;
+
+                return JsonConvert.DeserializeObject<Playlist>(jsonResultString);
+            }
+            return null;
+        }
+
+        public static async IAsyncEnumerable<Track> SearchTracks(string query, int limit = 25, EnumQobuzSearchType searchType = EnumQobuzSearchType.None)
+        {
+            const int searchChunkSize = 28;  //  Used by web player
+            int offset = 0;
+
+            // Example: https://www.qobuz.com/api.json/0.2/track/search?query=test%20%23ByLabel&offset=28&limit=28
+            string searchTypeString = searchType switch
+            {
+                EnumQobuzSearchType.ByReleaseName => "ByReleaseName",
+                EnumQobuzSearchType.ByMainArtist => "ByMainArtist",
+                EnumQobuzSearchType.ByLabel => "ByLabel",
+                _ => string.Empty
+            };
+
+            if (!string.IsNullOrEmpty(searchTypeString))
+            {
+                searchTypeString = "%20%23" + searchTypeString;
+            }
+
+            while (offset < limit)
+            {
+                int currentLimit = Math.Min(searchChunkSize, limit - offset);
+                var requestUrl = $"{BaseUrl}/track/search?query={Uri.EscapeDataString(query)}{searchTypeString}&offset={offset}&limit={currentLimit}";
+
+                using HttpRequestMessage request = new(HttpMethod.Get, requestUrl);
+                var response = await QobuzHttpClient.SendAsync(request);
+
+                if (response?.IsSuccessStatusCode ?? false)
+                {
+                    var jsonResultString = await response.Content.ReadAsStringAsync();
+                    if (string.IsNullOrWhiteSpace(jsonResultString))
+                        yield break;
+
+                    // Create JSON object from the response
+                    Newtonsoft.Json.Linq.JObject jsonObject = await Task.Run(() =>
+                    {
+                        try
+                        {
+                            return Newtonsoft.Json.Linq.JObject.Parse(jsonResultString);
+                        }
+                        catch (JsonReaderException)
+                        {
+                            // Handle JSON parsing error
+                            return [];
+                        }
+                    });
+
+                    var tracksArray = jsonObject["tracks"]?["items"];
+
+                    if (tracksArray != null)
+                    {
+                        foreach (var item in tracksArray)
+                        {
+                            // Deserialize each item to Track object
+                            Track? track = item.ToObject<Track>();
+                            if (track != null)
+                            {
+                                yield return track;
+                            }
+                        }
+                    }
+                }
+                else
+                {
+                    yield break;
+                }
+
+                offset += currentLimit;
+            }
+        }
+    }
+}

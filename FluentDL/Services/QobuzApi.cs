@@ -1,9 +1,3 @@
-using System.Collections.ObjectModel;
-using System.Diagnostics;
-using System.IO;
-using System.Linq;
-using System.Text;
-using System.Text.RegularExpressions;
 using ABI.Windows.Media.Core;
 using AngleSharp.Text;
 using FluentDL.Contracts.Services;
@@ -12,17 +6,29 @@ using FluentDL.Models;
 using FluentDL.ViewModels;
 using FluentDL.Views;
 using Microsoft.UI.Xaml.Controls;
+using QobuzApiSharp.Exceptions;
 using QobuzApiSharp.Models.Content;
+using QobuzApiSharp.Models.User;
 using QobuzApiSharp.Service;
+using SpotifyAPI.Web.Http;
+using System.Collections.ObjectModel;
+using System.Diagnostics;
+using System.IO;
+using System.Linq;
+using System.Net;
+using System.Text;
+using System.Text.RegularExpressions;
 using TagLib;
 using File = TagLib.File;
 using Picture = TagLib.Flac.Picture;
 
 namespace FluentDL.Services;
 
-internal class QobuzApi
+internal partial class QobuzApi
 {
     private static QobuzApiService apiService = new QobuzApiService();
+    private static HttpClient QobuzHttpClient = new HttpClient();
+
     public static bool IsInitialized = false;
     public static string oldI = "VuCHDsuyiFjcl994xa1eyg==";
     public static string oldS = "5mLYFjeXUrtSoZvPIYn7ymMz6QQY65+XBg2OBH9cxLJlT9hMiDIrRB8Yj4OfOikn";
@@ -30,6 +36,7 @@ internal class QobuzApi
     public static void Initialize(string? email, string? password, string? userId, string? AuthToken, AuthenticationCallback? authCallback = null)
     {
         IsInitialized = false;
+        bool oldInitialization = false;
 
         if (!string.IsNullOrWhiteSpace(userId) && !string.IsNullOrWhiteSpace(AuthToken))  // Token route
         {
@@ -52,6 +59,7 @@ internal class QobuzApi
                     apiService = new QobuzApiService(AesHelper.Decrypt(oldI), AesHelper.Decrypt(oldS));
                     apiService.LoginWithToken(userId, AuthToken);
                     IsInitialized = true;
+                    oldInitialization = true;
                     Debug.WriteLine("Qobuz initialized (old)");
                     authCallback?.Invoke(IsInitialized);
                 }
@@ -84,6 +92,16 @@ internal class QobuzApi
         if (!IsInitialized) {
             authCallback?.Invoke(false);
         }
+
+        if (oldInitialization)
+        {
+           var defaultService = new QobuzApiService();
+            InitializeQobuzHttpClient(defaultService.AppId, defaultService.UserAuthToken);
+        }
+        else
+        {
+            InitializeQobuzHttpClient(apiService.AppId, apiService.UserAuthToken);
+        }
     }
 
     public static async Task GeneralSearch(ObservableCollection<SongSearchObject> itemSource, string query, CancellationToken token, int limit = 25)
@@ -94,20 +112,23 @@ internal class QobuzApi
             return;
         }
 
-        var results = await Task.Run(() => apiService.SearchTracks(query, limit, withAuth: true), token);
-
-        if (results == null || results.Tracks == null)
-        {
-            return;
-        }
-
         itemSource.Clear(); // Clear the item source
-        foreach (var track in results.Tracks.Items)
+
+        try
         {
-            if (token.IsCancellationRequested) return;
-            var trackObj = await GetTrackAsync(track.Id, token);
-            if (trackObj != null)
-                itemSource.Add(trackObj);
+            await foreach (var track in SearchTracks(query, limit))
+            {
+                if (token.IsCancellationRequested) return;
+                var song = ConvertSongSearchObject(track);
+                if (song != null)
+                {
+                    itemSource.Add(song);
+                }
+            }
+        }
+        catch (Exception e)
+        {
+            Debug.WriteLine("General search failed: " + e.Message);
         }
     }
 
@@ -214,97 +235,43 @@ internal class QobuzApi
         }
         else
         {
-            if (isTrackSpecified) // If artist and track are specified
+            if (isTrackSpecified && isArtistSpecified) // If artist and track are specified
             {
-                var offset = 0;
-
-                do // Iterate through all tracks of the artist
+                await foreach (var track in SearchTracks(artistName + " " + trackName, limit))
                 {
-                    var result = await Task.Run(() => apiService.SearchTracks(artistName + " " + trackName, 10, offset, withAuth: true), token);
-
                     if (token.IsCancellationRequested) return; // Check if task is cancelled
+                    if (track.Id == null) continue;
 
-                    if (result.Tracks != null && result.Tracks.Items.Count > 0)
+                    var trackArtists = GetAllContributorsList(track.Performers);
+
+                    // At least one artist close match
+                    if (trackArtists.Any(x => CloseMatch(artistName, x)))
                     {
-                        foreach (var track in result.Tracks.Items)
+                        var id = track.Id.GetValueOrDefault();
+                        if (!trackIdList.Contains(id)) // Add this track to the item source
                         {
-                            if (token.IsCancellationRequested) return; // Check if task is cancelled
-                            if (track.Id == null) continue;
-                            offset++;
-
-                            var trackArtists = GetAllContributorsList(track.Performers);
-                            var oneArtistMatch = trackArtists.Any(x => CloseMatch(artistName, x));
-
-                            // Check if artist name and track somewhat match
-                            if (oneArtistMatch && CloseMatch(trackName, track.Title))
-                            {
-                                var id = track.Id.GetValueOrDefault();
-                                if (!trackIdList.Contains(id)) // Add this track to the item source
-                                {
-                                    var trackObj = await GetTrackAsync(id);
-                                    if (trackObj == null) 
-                                        continue;
-                                    itemSource.Add(trackObj);
-                                    trackIdList.Add(id);
-                                    if (trackIdList.Count >= limit) 
-                                        break;
-                                }
-                            }
+                            itemSource.Add(ConvertSongSearchObject(track));
+                            trackIdList.Add(id);;
                         }
                     }
-                    else // No more tracks
-                    {
-                        break;
-                    }
-                } while (trackIdList.Count < limit && offset < limit); // Limit the number of iterations
+                }
             }
-            else // Only artist specified, do a general search
+            else
             {
-                var offset = 0;
-                // Give a bit more leeway for general searches
-                var maxTracks = Math.Max(2 * limit, 30); // A minimum of 30 tracks or twice the limit
-
-                do
+                var query = isTrackSpecified ? trackName : artistName; 
+                var searchType = isTrackSpecified ? EnumQobuzSearchType.ByReleaseName : EnumQobuzSearchType.ByMainArtist;
+                await foreach (var track in SearchTracks(query, limit, searchType))
                 {
-                    var result = await Task.Run(() => apiService.SearchTracks(artistName, 10, offset, withAuth: true), token);
                     if (token.IsCancellationRequested) return; // Check if task is cancelled
+                    if (track.Id == null) continue;
 
-                    if (result.Tracks != null && result.Tracks.Items.Count > 0)
+                    var id = track.Id.GetValueOrDefault();
+                    if (!trackIdList.Contains(id)) // Add this track to the item source
                     {
-                        foreach (var track in result.Tracks.Items)
-                        {
-                            if (token.IsCancellationRequested) return; // Check if task is cancelled
-                            if (track.Id == null) continue;
-                            offset++;
-
-                            var trackArtists = GetAllContributorsList(track.Performers); // Get all contributors
-                            // Check if at least one artist name match
-                            if (trackArtists.Any(x => CloseMatch(artistName, x)))
-                            {
-                                var id = track.Id.GetValueOrDefault();
-
-                                if (!trackIdList.Contains(id)) // Add this track to the item source
-                                {
-                                    var trackObj = await GetTrackAsync(id);
-                                   if (trackObj == null) 
-                                        continue; // Skip if track is null
-
-                                    itemSource.Add(trackObj);
-                                    trackIdList.Add(id);
-
-                                    if (trackIdList.Count >= limit) 
-                                        break;
-                                }
-
-                                trackIdList.Add(track.Id.GetValueOrDefault());
-                            }
-                        }
+                        itemSource.Add(ConvertSongSearchObject(track));
+                        trackIdList.Add(id);
                     }
-                    else // No more tracks
-                    {
-                        break;
-                    }
-                } while (trackIdList.Count < limit && offset < maxTracks);
+                }
             }
         }
     }
@@ -381,23 +348,23 @@ internal class QobuzApi
         }
         else if (isPlaylist)
         {
-            var playlist = await Task.Run(() =>
-            {   try
-                {
-                    return apiService.GetPlaylist(id, withAuth: true, limit: 500);
-                }
-                catch (Exception e)
-                {
-                    Debug.WriteLine("Failed to get qobuz playlist: " + e.Message);
-                    return null;
-                }
-            }, token);
-            
-            if (playlist != null && playlist.Tracks != null && playlist.Tracks.Items.Count > 0)
+            Playlist? playlist = null;
+            try
+            {
+                playlist = await GetPlaylistAsync(id, token);
+            }
+            catch (Exception e)
+            {
+                Debug.WriteLine("Failed to get qobuz playlist: " + e.Message);
+            }
+
+            if (playlist?.TrackIds != null && (playlist.TrackIds?.Count ?? 0) > 0)
             {
                 statusUpdate?.Invoke(InfoBarSeverity.Informational, $"<b>Qobuz</b>   Loading playlist <a href='{url}'>{playlist.Name}</a>", -1); // Show an informational message
                 itemSource.Clear(); // Clear the item source
-                foreach (var track in playlist.Tracks.Items) // Need to recreate the tracks so they have album objects
+
+                int failedCount = 0; // Count of failed tracks
+                foreach (var trackId in playlist.TrackIds) // Need to recreate the tracks so they have album objects
                 {
                     if (token.IsCancellationRequested)
                     {
@@ -405,10 +372,34 @@ internal class QobuzApi
                         return;
                     }
 
-                    itemSource.Add(await Task.Run(() => ConvertSongSearchObject(apiService.GetTrack(track.Id.ToString(), withAuth: true)), token));
+                    var track = await Task.Run(() =>
+                    {
+                        try
+                        {
+                            return apiService.GetTrack(trackId.ToString(), withAuth: true);
+                        }
+                        catch (Exception e)
+                        {
+                            Debug.WriteLine($"Failed to get qobuz track: {trackId}");
+                            failedCount++;
+                            return null;
+                        }
+                    });
+
+                    if (track != null)
+                    {
+                        itemSource.Add(ConvertSongSearchObject(track));
+                    }
                 }
 
-                statusUpdate?.Invoke(InfoBarSeverity.Success, $"<b>Qobuz</b>   Loaded playlist <a href='{url}'>{playlist.Name}</a>"); // Show a success message
+                if (failedCount == 0)
+                {
+                    statusUpdate?.Invoke(InfoBarSeverity.Success, $"<b>Qobuz</b>   Loaded playlist <a href='{url}'>{playlist.Name}</a>"); // Show a success message
+                }
+                else
+                {
+                    statusUpdate?.Invoke(InfoBarSeverity.Warning, $"<b>Qobuz</b>   Loaded playlist <a href='{url}'>{playlist.Name}</a>, with {failedCount} track{(failedCount > 1 ? "s" : "")} failing to load."); // Show a warning message
+                }
             }
             else
             {
@@ -430,16 +421,16 @@ internal class QobuzApi
 
         return new SongSearchObject()
         {
-            AlbumName = track.Album.Title,
+            AlbumName = track.Album?.Title ?? "",
             Artists = string.Join(", ", contribList ?? []),
             Duration = track.Duration?.ToString() ?? "0",
             Explicit = track.ParentalWarning ?? false,
             Source = "qobuz",
             Id = track.Id.ToString(),
             TrackPosition = (track.TrackNumber ?? 1).ToString(),
-            ImageLocation = track.Album.Image.Small,
+            ImageLocation = track.Album?.Image?.Small ?? "",
             LocalBitmapImage = null,
-            Rank = (track.Album.Popularity ?? 0).ToString(),
+            Rank = (track.Album?.Popularity ?? 0).ToString(),
             ReleaseDate = track.ReleaseDateOriginal.GetValueOrDefault().ToString("yyyy-MM-dd"),
             Title = track.Title,
             Isrc = track.Isrc
@@ -506,30 +497,17 @@ internal class QobuzApi
 
         if (isrc != null)
         {
-            var offset = 0;
-
-            do
+            await foreach (var track in SearchTracks(query, 50))
             {
-                var result = await Task.Run(() => apiService.SearchTracks(query, 5, offset, withAuth: true), token); // Search through chunks of 5 tracks
                 if (token.IsCancellationRequested) return null;
 
-                if (result.Tracks == null || result.Tracks.Items.Count == 0)
+                if (track.Isrc == isrc)
                 {
-                    break;
+                    var retObj = ConvertSongSearchObject(track);
+                    callback?.Invoke(InfoBarSeverity.Success, retObj); // Show a success message
+                    return retObj;
                 }
-
-                foreach (var track in result.Tracks.Items)
-                {
-                    if (track.Isrc == isrc)
-                    {
-                        var retObj = ConvertSongSearchObject(track);
-                        callback?.Invoke(InfoBarSeverity.Success, retObj); // Show a success message
-                        return retObj;
-                    }
-
-                    offset++;
-                }
-            } while (offset < 50); // Limit the number of iterations
+            }
         }
 
         if (onlyISRC) // If only ISRC is allowed, return null
@@ -609,31 +587,25 @@ internal class QobuzApi
         }
 
         // Try searching without album, same as above
-        var searchResult = await Task.Run(() => apiService.SearchTracks(query, 10, withAuth: true), token);
-
         if (token.IsCancellationRequested) return null; // Check if task is cancelled
 
-        if (searchResult.Tracks != null && searchResult.Tracks.Items.Count > 0)
+        await foreach (var result in SearchTracks(query, 28))
         {
-            foreach (var result in searchResult.Tracks.Items)
-            {
-                if (token.IsCancellationRequested) return null;
+            if (token.IsCancellationRequested) return null;
 
-                // Check if at least one pair of artists match
-                foreach (var artist in artists)
+            // Check if at least one pair of artists match
+            foreach (var artist in artists)
+            {
+                var a1 = ApiHelper.PrunePunctuation(artist.ToLower());
+                var performerPrune = ApiHelper.PrunePunctuation(result.Performers.ToLower());
+                if (performerPrune.Contains(a1) && ApiHelper.PrunePunctuation(trackName.ToLower()).Equals(ApiHelper.PrunePunctuation(result.Title.ToLower())))
                 {
-                    var a1 = ApiHelper.PrunePunctuation(artist.ToLower());
-                    var performerPrune = ApiHelper.PrunePunctuation(result.Performers.ToLower());
-                    if (performerPrune.Contains(a1) && ApiHelper.PrunePunctuation(trackName.ToLower()).Equals(ApiHelper.PrunePunctuation(result.Title.ToLower())))
-                    {
-                        var retObj = ConvertSongSearchObject(result);
-                        callback?.Invoke(InfoBarSeverity.Warning, retObj); // Not found by ISRC
-                        return retObj;
-                    }
+                    var retObj = ConvertSongSearchObject(result);
+                    callback?.Invoke(InfoBarSeverity.Warning, retObj); // Not found by ISRC
+                    return retObj;
                 }
             }
         }
-
 
         callback?.Invoke(InfoBarSeverity.Error, songObj); // Show an error message with original object
         return null;
