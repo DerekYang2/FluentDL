@@ -21,6 +21,7 @@ using Visibility = Microsoft.UI.Xaml.Visibility;
 using static System.Net.WebRequestMethods;
 using System.Drawing;
 using Microsoft.UI.Xaml.Media;
+using System.Runtime.CompilerServices;
 
 namespace FluentDL.Views;
 // TODO: loading for search
@@ -709,6 +710,7 @@ public sealed partial class Search : Page
             Windows.System.Launcher.LaunchUriAsync(uri); // Open link in browser
         }
     }
+
     async Task DownloadSong(SongSearchObject? songObj)
     {
         if (songObj == null)
@@ -741,26 +743,47 @@ public sealed partial class Search : Page
 
         InfobarProgress.Visibility = Visibility.Visible; // Show the infobar's progress bar
 
-        await ApiHelper.DownloadObject(songObj, directory, (severity, song, location) => {
-            dispatcher.TryEnqueue(()=>{
-                                InfobarProgress.Visibility = Visibility.Collapsed; // Hide the infobar's progress bar
+        string path = await ApiHelper.DownloadObject(songObj, directory, (severity, song, location) => {
+            dispatcher.TryEnqueue(()=>
+            {
+                InfobarProgress.Visibility = Visibility.Collapsed; // Hide the infobar's progress bar
+
+                Action navigateLocalExplorer = () =>
+                {
+                    var navService = App.GetService<INavigationViewService>();
+                    navService.NavigateTo(typeof(LocalExplorerViewModel).FullName);
+                };
+
                 if (severity == InfoBarSeverity.Error)
                 {
                     ShowInfoBar(severity, $"Error: {location ?? "unknown"}", 5);
                 }
                 else if (severity == InfoBarSeverity.Success)
                 {
-                    ShowInfoBar(severity, $"Successfully downloaded <a href='{location}'>{songObj.Title}</a>", 5);
+                    ShowInfoBar(severity, $"Successfully downloaded <a href='{location}'>{songObj.Title}</a>", 5, buttonText: "View Download", onButtonClick: navigateLocalExplorer);
                 }
                 else if (severity == InfoBarSeverity.Warning)
                 {
-                    ShowInfoBar(severity, $"Downloaded a possible equivalent of <a href='{location}'>{songObj.Title}</a>", 5);
+                    ShowInfoBar(severity, $"Downloaded a possible equivalent of <a href='{location}'>{songObj.Title}</a>", 5, buttonText: "ViewDownload", onButtonClick: navigateLocalExplorer);
                 }
+
             });
         });
 
+        if (!string.IsNullOrWhiteSpace(path) && System.IO.File.Exists(path))
+        {
+            try
+            {
+                await LocalExplorerViewModel.AddSongFromFile(path);
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Failed to add downloaded song to local explorer: {ex.Message}");
+            }
+        }
     }
-    private void ShowInfoBar(InfoBarSeverity severity, string message, int seconds = 2, string title = "")
+
+    private void ShowInfoBar(InfoBarSeverity severity, string message, int seconds = 2, string title = "", string buttonText = "", Action? onButtonClick = null)
     {
         title = title.Trim();
         message = message.Trim();
@@ -779,12 +802,28 @@ public sealed partial class Search : Page
             {
                 UrlParser.ParseTextBlock(InfoBarTextBlock, message);
             }
+
+            if (onButtonClick != null)
+            {
+                PageInfoBar.ActionButton = new Button
+                {
+                    Content = buttonText,
+                };
+                PageInfoBar.ActionButton.Click += (s, e) =>
+                {
+                    onButtonClick?.Invoke();
+                };
+            }
+            else
+            {
+                PageInfoBar.ActionButton = null; // No action button
+            }
         });
         dispatcherTimer.Interval = TimeSpan.FromSeconds(seconds);
         dispatcherTimer.Start();
     }
 
-    private void ShowInfoBarPermanent(InfoBarSeverity severity, string message, string title = "")
+    private void ShowInfoBarPermanent(InfoBarSeverity severity, string message, string title = "", string buttonText = "", Action? onButtonClick = null)
     {
         title = title.Trim();
         message = message.Trim();
@@ -801,6 +840,22 @@ public sealed partial class Search : Page
             else
             {
                 UrlParser.ParseTextBlock(InfoBarTextBlock, message);
+            }
+
+            if (onButtonClick != null)
+            {
+                PageInfoBar.ActionButton = new Button
+                {
+                    Content = buttonText,
+                };
+                PageInfoBar.ActionButton.Click += (s, e) =>
+                {
+                    onButtonClick?.Invoke();
+                };
+            }
+            else
+            {
+                PageInfoBar.ActionButton = null; // No action button
             }
         });
     }

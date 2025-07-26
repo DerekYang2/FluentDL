@@ -1,26 +1,27 @@
-﻿using System.Collections.ObjectModel;
-using System.Diagnostics;
-using System.Linq.Expressions;
+﻿using FluentDL.Helpers;
+using FluentDL.Models;
+using FluentDL.Services;
 using FluentDL.ViewModels;
+using Microsoft.UI.Dispatching;
+using Microsoft.UI.Text;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Documents;
+using Microsoft.UI.Xaml.Media.Imaging;
+using Microsoft.UI.Xaml.Navigation;
+using System.Collections.ObjectModel;
+using System.Collections.Specialized;
+using System.Diagnostics;
+using System.Linq.Expressions;
+using System.Text.RegularExpressions;
+using TagLib.Id3v2;
 using Windows.Storage;
 using Windows.Storage.AccessCache;
 using Windows.Storage.Pickers;
-using FluentDL.Services;
-using Microsoft.UI.Dispatching;
-using Microsoft.UI.Xaml.Media.Imaging;
-using WinRT.Interop;
-using FluentDL.Models;
-using Microsoft.UI.Xaml.Navigation;
 using Windows.System;
-using Microsoft.UI.Text;
-using Microsoft.UI.Xaml.Documents;
-using System.Text.RegularExpressions;
-using FluentDL.Helpers;
-using TagLib.Id3v2;
-using DispatcherQueue = Microsoft.UI.Dispatching.DispatcherQueue;
+using WinRT.Interop;
 using WinUIEx;
+using DispatcherQueue = Microsoft.UI.Dispatching.DispatcherQueue;
 
 namespace FluentDL.Views;
 
@@ -146,12 +147,8 @@ public sealed partial class LocalExplorerPage : Page
         InitializeAnimations();
 
         // Attach changed event for originalList (when any songs are added or removed from the local explorer)
-        LocalExplorerViewModel.OriginalList.CollectionChanged += (sender, e) =>
-        {
-            SetResultsAmount(LocalExplorerViewModel.OriginalList.Count);
-            NoItemsText.Visibility = LocalExplorerViewModel.OriginalList.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
-            ClearButton.IsEnabled = LocalExplorerViewModel.OriginalList.Count > 0;
-        };
+        LocalExplorerViewModel.OriginalList.CollectionChanged += ListChangeDelegate;
+        ListChangeDelegate(null, new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Reset));  // Call once upon construction
 
         ConversionResults.CollectionChanged += (sender, e) =>
         {
@@ -171,6 +168,13 @@ public sealed partial class LocalExplorerPage : Page
 
         // Set on load
         this.Loaded += LocalExplorerPage_Loaded;
+    }
+
+    private void ListChangeDelegate(object? sender, NotifyCollectionChangedEventArgs e)
+    {
+        SetResultsAmount(LocalExplorerViewModel.OriginalList.Count);
+        NoItemsText.Visibility = LocalExplorerViewModel.OriginalList.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
+        ClearButton.IsEnabled = LocalExplorerViewModel.OriginalList.Count > 0;
     }
 
     private async void LocalExplorerPage_Loaded(object sender, RoutedEventArgs e)

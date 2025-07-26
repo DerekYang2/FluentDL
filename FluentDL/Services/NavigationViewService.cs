@@ -59,7 +59,7 @@ public class NavigationViewService : INavigationViewService
     {
         if (args.IsSettingsInvoked)
         {
-            _navigationService.NavigateTo(typeof(SettingsViewModel).FullName!);
+            NavigateTo(typeof(SettingsViewModel).FullName!);
         }
         else
         {
@@ -67,8 +67,20 @@ public class NavigationViewService : INavigationViewService
 
             if (selectedItem?.GetValue(NavigationHelper.NavigateToProperty) is string pageKey)
             {
-                _navigationService.NavigateTo(pageKey);
+                NavigateTo(pageKey);
             }
+        }
+    }
+
+    /// <summary>
+    /// Navigates to the specified page using its key.
+    /// </summary>
+    /// <param name="pageKey">FluentDL.ViewModels.ViewModelName</param>
+    public void NavigateTo(string? pageKey)
+    {
+        if (!string.IsNullOrEmpty(pageKey))
+        {
+            _navigationService.NavigateTo(pageKey);
         }
     }
 

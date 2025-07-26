@@ -1,5 +1,3 @@
-using System.Diagnostics;
-using System.Text;
 using FluentDL.Activation;
 using FluentDL.Contracts.Services;
 using FluentDL.Core.Contracts.Services;
@@ -13,6 +11,9 @@ using FluentDL.Views;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.UI.Xaml;
+using System.Diagnostics;
+using System.Text;
+using System.Threading;
 using Windows.Graphics.Display;
 
 namespace FluentDL;
