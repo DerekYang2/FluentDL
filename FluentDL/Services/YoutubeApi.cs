@@ -45,43 +45,43 @@ namespace FluentDL.Services
 
             IEnumerable<SongSearchResult> searchResults;
 
+            int ct = 0; // Count of results
             try
             {
                 searchResults = await ytm.SearchAsync<SongSearchResult>(query, limit, token);
+                foreach (var song in searchResults)
+                {
+                    if (token.IsCancellationRequested)
+                        break;
+                    itemSource.Add(await GetTrack(song));
+                    ct++;
+                }
             }
-            catch (Exception e)
+            catch (Exception e1)
             {
-                Debug.WriteLine(e.Message);
+                Debug.WriteLine("Error searching YTM: " + e1.Message);
+
+                // Fall back to regular youtube
+                try
+                {
+                    await foreach (var result in youtube.Search.GetVideosAsync(query, token))
+                    {
+                        if (token.IsCancellationRequested || ct >= limit)
+                            break;
+                        
+                        var songObj = await GetTrack(result.Id);
+
+                        if (songObj != null) {
+                            itemSource.Add(songObj);
+                            ct++;
+                        }
+                    }
+                } catch (Exception e2)
+                {
+                    Debug.WriteLine("Error searching YouTube: " + e2.Message);
+                }
                 return;
-            }
-
-            var ct = 0; // Counter for added results
-
-            foreach (var song in searchResults)
-            {
-                if (token.IsCancellationRequested)
-                {
-                    break;
-                }
-
-                itemSource.Add(await GetTrack(song));
-                ct++;
-                if (ct >= limit) // If limit is reached
-                {
-                    break;
-                }
-            }
-
-            // NORMAL YOUTUBE SEARCH:
-            //await foreach (var result in youtube.Search.GetVideosAsync(query, token))
-            //{
-            //    if (token.IsCancellationRequested)
-            //    {
-            //        break;
-            //    }
-
-            //    itemSource.Add(await GetTrack(result.Id));
-            //}
+            } 
         }
 
         private static bool CloseMatch(string str1, string str2)

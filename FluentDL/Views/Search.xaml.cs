@@ -756,15 +756,15 @@ public sealed partial class Search : Page
 
                 if (severity == InfoBarSeverity.Error)
                 {
-                    ShowInfoBar(severity, $"Error: {location ?? "unknown"}", 5);
+                    ShowInfoBar(severity, $"Error: {location ?? "unspecified"}", 5);
                 }
                 else if (severity == InfoBarSeverity.Success)
                 {
-                    ShowInfoBar(severity, $"Successfully downloaded <a href='{location}'>{songObj.Title}</a>", 5, buttonText: "View Download", onButtonClick: navigateLocalExplorer);
+                    ShowInfoBar(severity, $"Successfully downloaded <a href='{location}'>{songObj.Title}</a>", 10, buttonText: "View Download", onButtonClick: navigateLocalExplorer);
                 }
                 else if (severity == InfoBarSeverity.Warning)
                 {
-                    ShowInfoBar(severity, $"Downloaded a possible equivalent of <a href='{location}'>{songObj.Title}</a>", 5, buttonText: "ViewDownload", onButtonClick: navigateLocalExplorer);
+                    ShowInfoBar(severity, $"Downloaded a possible equivalent of <a href='{location}'>{songObj.Title}</a>", 10, buttonText: "ViewDownload", onButtonClick: navigateLocalExplorer);
                 }
 
             });
@@ -805,18 +805,16 @@ public sealed partial class Search : Page
 
             if (onButtonClick != null)
             {
-                PageInfoBar.ActionButton = new Button
-                {
-                    Content = buttonText,
-                };
-                PageInfoBar.ActionButton.Click += (s, e) =>
+                InfobarButton.Visibility = Visibility.Visible;
+                InfobarButton.Content = buttonText;
+                InfobarButton.Click += (s, e) =>
                 {
                     onButtonClick?.Invoke();
                 };
             }
             else
             {
-                PageInfoBar.ActionButton = null; // No action button
+                InfobarButton.Visibility = Visibility.Collapsed;
             }
         });
         dispatcherTimer.Interval = TimeSpan.FromSeconds(seconds);
@@ -844,18 +842,16 @@ public sealed partial class Search : Page
 
             if (onButtonClick != null)
             {
-                PageInfoBar.ActionButton = new Button
-                {
-                    Content = buttonText,
-                };
-                PageInfoBar.ActionButton.Click += (s, e) =>
+                InfobarButton.Visibility = Visibility.Visible;
+                InfobarButton.Content = buttonText;
+                InfobarButton.Click += (s, e) =>
                 {
                     onButtonClick?.Invoke();
                 };
             }
             else
             {
-                PageInfoBar.ActionButton = null; // No action button
+                InfobarButton.Visibility = Visibility.Collapsed;
             }
         });
     }
