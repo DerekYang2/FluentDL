@@ -53,6 +53,12 @@ public partial class SettingsViewModel : ObservableRecipient
 
     public static readonly string FFmpegPath = "ffmpeg_path";
 
+    // Subfolder settings
+    public static readonly string
+        SubfolderWildcard = "subfolder_wildcard",
+        Subfolders = "subfolders",
+        AlbumSubfolders = "album_subfolders";
+
     private static ILocalSettingsService localSettings = App.GetService<ILocalSettingsService>();
 
     private readonly IThemeSelectorService _themeSelectorService;
@@ -109,6 +115,16 @@ public partial class SettingsViewModel : ObservableRecipient
             await SaveSettingsAsyncIfNull<bool?>(NotifyUpdate, true);
             await SaveSettingsAsyncIfNull<string?>(DownloadDirectory, null);
             await SaveSettingsAsyncIfNull<string?>(FFmpegPath, null);
+            await SaveSettingsAsyncIfNull<string?>(SpotifyClientId, "");
+            await SaveSettingsAsyncIfNull<string?>(SpotifyClientSecret, "");
+            await SaveSettingsAsyncIfNull<string?>(DeezerARL, "");
+            await SaveSettingsAsyncIfNull<string?>(QobuzId, "");
+            await SaveSettingsAsyncIfNull<string?>(QobuzToken, "");
+            await SaveSettingsAsyncIfNull<string?>(QobuzEmail, "");
+            await SaveSettingsAsyncIfNull<string?>(QobuzPassword, "");
+            await SaveSettingsAsyncIfNull<string?>(SubfolderWildcard, "");
+            await SaveSettingsAsyncIfNull<bool?>(Subfolders, false);
+            await SaveSettingsAsyncIfNull<bool?>(AlbumSubfolders, false);
             await SaveSettingsAsyncIfNull<string?>(SearchSource, "deezer");
             await SaveSettingsAsyncIfNull<bool?>(SearchAddChecked, false);
             await SaveSettingsAsyncIfNull<bool?>(SearchShareChecked, false);

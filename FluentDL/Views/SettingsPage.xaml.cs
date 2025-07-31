@@ -15,6 +15,7 @@ using Microsoft.UI.Xaml.Input;
 using FluentDL.Models;
 using CommunityToolkit.WinUI.Controls;
 using Microsoft.UI.Xaml.Media;
+using System.Threading.Tasks;
 
 namespace FluentDL.Views;
 
@@ -79,6 +80,12 @@ public sealed partial class SettingsPage : Page
         // Set download directory
         LocationCard.Description = await localSettings.ReadSettingAsync<string?>(SettingsViewModel.DownloadDirectory) ?? "No folder selected";
         if (string.IsNullOrWhiteSpace(LocationCard.Description.ToString())) LocationCard.Description = "No folder selected";
+
+        // Set subfolder wildcard
+        SubfolderNameInput.Text = await localSettings.ReadSettingAsync<string?>(SettingsViewModel.SubfolderWildcard) ?? "";
+        SubfoldersToggle.IsOn = await localSettings.ReadSettingAsync<bool>(SettingsViewModel.Subfolders);
+        AlbumSubfoldersToggle.IsOn = await localSettings.ReadSettingAsync<bool>(SettingsViewModel.AlbumSubfolders);
+        SubfolderWildcardCard.IsEnabled = SubfoldersToggle.IsOn || AlbumSubfoldersToggle.IsOn;
 
         // Set FFmpeg path
         FFmpegPathCard.Description = await localSettings.ReadSettingAsync<string?>(SettingsViewModel.FFmpegPath) ?? "No folder selected";
@@ -499,10 +506,44 @@ public sealed partial class SettingsPage : Page
         ShowInfoBar(InfoBarSeverity.Informational, "Reset to using built-in Ffmpeg");
     }
 
+    private async void ScrollViewerButton_Click(object sender, RoutedEventArgs e)
+    {
+        var button = sender as Button;
+        var wildcard = button?.Content.ToString();
+
+        if (!string.IsNullOrEmpty(wildcard))
+        {
+            SubfolderNameInput.Text += wildcard;
+        }
+
+        await localSettings.SaveSettingAsync(SettingsViewModel.SubfolderWildcard, SubfolderNameInput.Text.Trim());
+    }
+
+    private async void SubfolderNameInput_OnLostFocus(object sender, RoutedEventArgs e)
+    {
+        var button = sender as TextBox;
+        var wildcard = button?.Text;
+        await localSettings.SaveSettingAsync(SettingsViewModel.SubfolderWildcard, wildcard ?? "");
+    }
+
     // Infobar helper methods ---------------------------------------------------
     private void PageInfoBar_OnCloseButtonClick(InfoBar sender, object args)
     {
         PageInfoBar.Opacity = 0;
+    }
+
+    private async void SubfoldersToggle_OnToggled(object sender, RoutedEventArgs e)
+    {
+        var isToggled = (sender as ToggleSwitch)?.IsOn ?? false;
+        SubfolderWildcardCard.IsEnabled = SubfoldersToggle.IsOn || AlbumSubfoldersToggle.IsOn;
+        await localSettings.SaveSettingAsync(SettingsViewModel.Subfolders, isToggled);
+    }
+
+    private async void AlbumSubfoldersToggle_OnToggled(object sender, RoutedEventArgs e)
+    {
+        var isToggled = (sender as ToggleSwitch)?.IsOn ?? false;
+        SubfolderWildcardCard.IsEnabled = SubfoldersToggle.IsOn || AlbumSubfoldersToggle.IsOn;
+        await localSettings.SaveSettingAsync(SettingsViewModel.AlbumSubfolders, isToggled);
     }
 
     // Event handler to close the info bar and stop the timer (only ticks once)

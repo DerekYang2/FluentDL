@@ -354,6 +354,98 @@
                                 </ComboBox>
                             </local:SettingsCard>
                         </local:SettingsExpander.Items>
+                    </local:SettingsExpander>
+                    <local:SettingsExpander
+                        x:Name="SubfolderOptions"
+                        Description="Configure automatic subfolder creation for downloads"
+                        Header="Subfolder Options">
+                        <local:SettingsExpander.HeaderIcon>
+                            <FontIcon Glyph="&#xE8B7;" />
+                        </local:SettingsExpander.HeaderIcon>
+                        <local:SettingsExpander.Items>
+                            <local:SettingsCard Description="Create a subfolder for each individual track" Header="Track Subfolders">
+                                <ToggleSwitch
+                                    x:Name="SubfoldersToggle"
+                                    IsOn="False"
+                                    Toggled="SubfoldersToggle_OnToggled" />
+                            </local:SettingsCard>
+                            <local:SettingsCard Description="Create a subfolder for each album" Header="Album Subfolders">
+                                <ToggleSwitch
+                                    x:Name="AlbumSubfoldersToggle"
+                                    IsOn="False"
+                                    Toggled="AlbumSubfoldersToggle_OnToggled" />
+                            </local:SettingsCard>
+
+                            <local:SettingsCard
+                                x:Name="SubfolderWildcardCard"
+                                HorizontalContentAlignment="Left"
+                                ContentAlignment="Vertical"
+                                Description="The wildcard for subfolder names. Press buttons below to insert wildcards and/or type manually."
+                                Header="Subfolder Wildcard">
+                                <StackPanel>
+                                    <ScrollViewer
+                                        x:Name="ScrollViewerWildcards"
+                                        Margin="0,8,0,0"
+                                        HorizontalAlignment="Stretch"
+                                        HorizontalScrollBarVisibility="Visible"
+                                        HorizontalScrollMode="Enabled"
+                                        ToolTipService.ToolTip="Available wildcards"
+                                        VerticalScrollMode="Disabled">
+                                        <StackPanel
+                                            Margin="0,0,0,16"
+                                            Orientation="Horizontal"
+                                            Spacing="8">
+                                            <Button
+                                                Click="ScrollViewerButton_Click"
+                                                Content="{}{album}"
+                                                Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"
+                                                ToolTipService.ToolTip="The album name" />
+                                            <Button
+                                                Click="ScrollViewerButton_Click"
+                                                Content="{}{artist}"
+                                                Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"
+                                                ToolTipService.ToolTip="The main artist (if service supports) or first artist" />
+                                            <Button
+                                                Click="ScrollViewerButton_Click"
+                                                Content="{}{artists}"
+                                                Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"
+                                                ToolTipService.ToolTip="The artists of the track, comma separated (e.g. artist1, artist2, artist3)" />
+                                            <Button
+                                                Click="ScrollViewerButton_Click"
+                                                Content="{}{id}"
+                                                Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"
+                                                ToolTipService.ToolTip="The streaming service ID of the track" />
+                                            <Button
+                                                Click="ScrollViewerButton_Click"
+                                                Content="{}{isrc}"
+                                                Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"
+                                                ToolTipService.ToolTip="The ISRC identifier for the track, format CCXXXYYNNNNN" />
+                                            <Button
+                                                Click="ScrollViewerButton_Click"
+                                                Content="{}{position}"
+                                                Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"
+                                                ToolTipService.ToolTip="The track position in the album" />
+                                            <Button
+                                                Click="ScrollViewerButton_Click"
+                                                Content="{}{release_date}"
+                                                Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"
+                                                ToolTipService.ToolTip="The release date of the track in YYYY-MM-DD" />
+                                            <Button
+                                                Click="ScrollViewerButton_Click"
+                                                Content="{}{title}"
+                                                Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"
+                                                ToolTipService.ToolTip="The title of the track" />
+                                        </StackPanel>
+                                    </ScrollViewer>
+                                    <TextBox
+                                        x:Name="SubfolderNameInput"
+                                        Margin="0,0,0,4"
+                                        LostFocus="SubfolderNameInput_OnLostFocus"
+                                        PlaceholderText="{}Example: {position}. {title} by {artist}"
+                                        ToolTipService.ToolTip="Subfolder Name (wildcard string)" />
+                                </StackPanel>
+                            </local:SettingsCard>
+                        </local:SettingsExpander.Items>
 
                     </local:SettingsExpander>
 
@@ -618,7 +710,7 @@
                                 <StackPanel Margin="0,0,0,12" Orientation="Vertical">
                                     <TextBlock Margin="{StaticResource XSmallTopMargin}" Style="{ThemeResource BodyTextBlockStyle}">
                                         View source code on&#32;<Hyperlink NavigateUri="https://github.com/DerekYang2/FluentDL">GitHub</Hyperlink>
-                                        </TextBlock>
+                                    </TextBlock>
                                 </StackPanel>
                             </local:SettingsCard>
                         </local:SettingsExpander.Items>
