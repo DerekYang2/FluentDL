@@ -111,6 +111,20 @@ internal class ApiHelper
         };
     }
 
+    public static string EvaluateWildcard(SongSearchObject song, string wildcard)
+    {
+        // Replace the wildcard with the song's properties
+        return wildcard
+            .Replace("{album}", song.AlbumName)
+            .Replace("{artist}", song.Artists.Split(",")[0].Trim()) // First artist
+            .Replace("{artists}", song.Artists) // All artists
+            .Replace("{id}", song.Id)
+            .Replace("{isrc}", song.Isrc ?? string.Empty) // ISRC, if available
+            .Replace("{position}", song.TrackPosition?.ToString() ?? "1")
+            .Replace("{release_date}", song.ReleaseDate ?? "")
+            .Replace("{title}", song.Title);
+    }
+
     public static async Task<string> DownloadObject(SongSearchObject song, string directory, ConversionUpdateCallback? callback = default)
     {
         // Create file name
@@ -119,6 +133,26 @@ internal class ApiHelper
         var fileName = GetSafeFilename($"{song.TrackPosition}. {firstArtist} - {song.Title}{isrcStr}"); // File name no extension
 
         // Create file path
+        bool createTrackSubfolder = await SettingsViewModel.GetSetting<bool>(SettingsViewModel.Subfolders);
+        if (createTrackSubfolder)
+        {
+            var subfolderName = GetSafeFilename(EvaluateWildcard(song, (await SettingsViewModel.GetSetting<string>(SettingsViewModel.SubfolderWildcard) ??
+                "{position}. {artist} - {title}{isrc}")));
+            try
+            {
+                string newDirectory = Path.Combine(directory, subfolderName);
+                if (!Directory.Exists(newDirectory))
+                {
+                    Directory.CreateDirectory(newDirectory);
+                }
+                directory = newDirectory;
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine("Error creating subfolder: " + ex.Message);
+            }
+        }
+
         var locationNoExt = Path.Combine(directory, fileName);
 
         if (song.Source == "youtube")
