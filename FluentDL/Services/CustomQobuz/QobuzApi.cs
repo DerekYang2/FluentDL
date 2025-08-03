@@ -51,8 +51,11 @@ namespace FluentDL.Services
             return null;
         }
 
-        public static async IAsyncEnumerable<Track> SearchTracks(string query, int limit = 25, EnumQobuzSearchType searchType = EnumQobuzSearchType.None)
+        public static async IAsyncEnumerable<T> ApiSearch<T>(string query, int limit = 25, EnumQobuzSearchType searchType = EnumQobuzSearchType.None)
         {
+            // Check if generic type is Track or Album
+            bool isTrack = typeof(T) == typeof(Track);
+
             const int searchChunkSize = 28;  //  Used by web player
             int offset = 0;
 
@@ -73,7 +76,7 @@ namespace FluentDL.Services
             while (offset < limit)
             {
                 int currentLimit = Math.Min(searchChunkSize, limit - offset);
-                var requestUrl = $"{BaseUrl}/track/search?query={Uri.EscapeDataString(query)}{searchTypeString}&offset={offset}&limit={currentLimit}";
+                var requestUrl = $"{BaseUrl}/{(isTrack ? "track" : "album")}/search?query={Uri.EscapeDataString(query)}{searchTypeString}&offset={offset}&limit={currentLimit}";
 
                 using HttpRequestMessage request = new(HttpMethod.Get, requestUrl);
                 var response = await QobuzHttpClient.SendAsync(request);
@@ -98,17 +101,17 @@ namespace FluentDL.Services
                         }
                     });
 
-                    var tracksArray = jsonObject["tracks"]?["items"];
+                    var jsonArray = jsonObject[isTrack? "tracks" : "albums"]?["items"];
 
-                    if (tracksArray != null)
+                    if (jsonArray != null)
                     {
-                        foreach (var item in tracksArray)
+                        foreach (var item in jsonArray)
                         {
-                            // Deserialize each item to Track object
-                            Track? track = item.ToObject<Track>();
-                            if (track != null)
+                            // Deserialize each item to Track/Album object
+                            T? qobuzObj = item.ToObject<T>();
+                            if (qobuzObj != null)
                             {
-                                yield return track;
+                                yield return qobuzObj;
                             }
                         }
                     }

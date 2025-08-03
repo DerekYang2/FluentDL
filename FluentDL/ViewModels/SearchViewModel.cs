@@ -7,9 +7,14 @@ namespace FluentDL.ViewModels;
 public partial class SearchViewModel : ObservableRecipient
 {
     private ILocalSettingsService localSettings;
-    public static readonly string ResultsLimitKey = "ResultsLimit";
 
     public int ResultsLimit
+    {
+        get;
+        set;
+    }
+
+    public bool AlbumMode
     {
         get;
         set;
@@ -47,7 +52,8 @@ public partial class SearchViewModel : ObservableRecipient
 
     public async Task InitializeAsync()
     {
-        ResultsLimit = await localSettings.ReadSettingAsync<int?>(ResultsLimitKey) ?? 25;
+        ResultsLimit = await localSettings.ReadSettingAsync<int?>(nameof(ResultsLimit)) ?? 25;
+        AlbumMode = await localSettings.ReadSettingAsync<bool?>(nameof(AlbumMode)) ?? false;
         AddQueueVisibility = await localSettings.ReadSettingAsync<bool?>(SettingsViewModel.SearchAddChecked) == true ? Visibility.Visible : Visibility.Collapsed;
         DownloadVisibility = await localSettings.ReadSettingAsync<bool?>(SettingsViewModel.SearchDownloadChecked) == true ? Visibility.Visible : Visibility.Collapsed;
         ShareVisibility = await localSettings.ReadSettingAsync<bool?>(SettingsViewModel.SearchShareChecked) == true ? Visibility.Visible : Visibility.Collapsed;
@@ -70,6 +76,11 @@ public partial class SearchViewModel : ObservableRecipient
 
     public async Task SaveResultsLimit()
     {
-        await localSettings.SaveSettingAsync(ResultsLimitKey, ResultsLimit);
+        await localSettings.SaveSettingAsync(nameof(ResultsLimit), ResultsLimit);
+    }
+
+    public async Task SaveAlbumMode()
+    {
+        await localSettings.SaveSettingAsync(nameof(AlbumMode), AlbumMode);
     }
 }

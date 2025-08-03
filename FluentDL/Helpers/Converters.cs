@@ -67,7 +67,8 @@ internal class DurationConverter : IValueConverter
             int min = (int)(seconds % 60);
             seconds /= 60;
             int hr = (int)seconds;
-            return (hr > 0 ? hr + " hr, " : "") + (min > 0 ? min + " min, " : "") + sec + " sec";
+
+            return (hr > 0 ? $"{hr:D2}h " : "") + (min > 0 ? $"{min:D2}m " : "") + $"{sec:D2}s";
         }
 
         return "";

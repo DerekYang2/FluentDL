@@ -451,7 +451,7 @@ public sealed partial class Search : Page
             switch (generalSource)
             {
                 case "qobuz":
-                    await QobuzApi.GeneralSearch((ObservableCollection<SongSearchObject>)CustomListView.ItemsSource, generalQuery, cancellationTokenSource.Token, ViewModel.ResultsLimit);
+                    await QobuzApi.GeneralSearch((ObservableCollection<SongSearchObject>)CustomListView.ItemsSource, generalQuery, cancellationTokenSource.Token, ViewModel.ResultsLimit, ViewModel.AlbumMode);
                     break;
                 case "spotify":
                     await SpotifyApi.GeneralSearch((ObservableCollection<SongSearchObject>)CustomListView.ItemsSource, generalQuery, cancellationTokenSource.Token, ViewModel.ResultsLimit);
@@ -636,7 +636,7 @@ public sealed partial class Search : Page
         // Save settings
         await ViewModel.SaveSearchSource(selectedSource);
         await ViewModel.SaveResultsLimit();
-
+        await ViewModel.SaveAlbumMode();
     }
 
     private async Task InitializeSource() {

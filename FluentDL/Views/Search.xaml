@@ -125,12 +125,13 @@
                     <DropDownButton.Flyout>
                         <Flyout Placement="Bottom" Closed="FlyoutBase_OnClosed">
                             <StackPanel Spacing="12">
-                                <NumberBox Value="{x:Bind Path=ViewModel.ResultsLimit, Mode=TwoWay}"
-                                       SmallChange="5" LargeChange="10" Minimum="1" Maximum="100"
-                                       SpinButtonPlacementMode="Inline" 
-                                       Header="Results limit"
-                                       Width="160"
-                                       ToolTipService.ToolTip="Limit the number of search results">
+                                <NumberBox 
+                                      Value="{x:Bind Path=ViewModel.ResultsLimit, Mode=TwoWay}"
+                                      SmallChange="5" LargeChange="10" Minimum="1" Maximum="100"
+                                      SpinButtonPlacementMode="Inline" 
+                                      Header="Results limit"
+                                      Width="160"
+                                      ToolTipService.ToolTip="Limit the number of search results">
                                     <NumberBox.HeaderTemplate>
                                         <DataTemplate>
                                             <Grid>
@@ -154,6 +155,18 @@
                                     <RadioButton Content="Spotify" ToolTipService.ToolTip="Get search results from Spotify"/>
                                     <RadioButton Content="YouTube" ToolTipService.ToolTip="Get search results from YouTube"/>
                                 </RadioButtons>
+                                <ToggleSwitch 
+                                    IsOn="{x:Bind Path=ViewModel.AlbumMode, Mode=TwoWay}"
+                                    x:Name="AlbumModeSwitch"
+                                    Header="Album Mode" 
+                                    ToolTipService.ToolTip="Toggle whether search results are albums or singles">
+                                    <ToggleSwitch.HeaderTemplate>
+                                        <DataTemplate>
+                                            <TextBlock Text="{Binding}" Style="{ThemeResource CaptionTextBlockStyle}" 
+                                                       Foreground="{ThemeResource TextFillColorSecondary}" />
+                                        </DataTemplate>
+                                    </ToggleSwitch.HeaderTemplate>
+                                </ToggleSwitch>
                             </StackPanel>
                         </Flyout>
                     </DropDownButton.Flyout>

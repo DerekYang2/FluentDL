@@ -1,26 +1,14 @@
-using ABI.Windows.Media.Core;
-using AngleSharp.Text;
-using FluentDL.Contracts.Services;
 using FluentDL.Helpers;
 using FluentDL.Models;
 using FluentDL.ViewModels;
 using FluentDL.Views;
 using Microsoft.UI.Xaml.Controls;
-using QobuzApiSharp.Exceptions;
 using QobuzApiSharp.Models.Content;
-using QobuzApiSharp.Models.User;
 using QobuzApiSharp.Service;
-using SpotifyAPI.Web.Http;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
-using System.IO;
-using System.Linq;
-using System.Net;
-using System.Text;
 using System.Text.RegularExpressions;
-using TagLib;
-using File = TagLib.File;
-using Picture = TagLib.Flac.Picture;
+
 
 namespace FluentDL.Services;
 
@@ -104,7 +92,7 @@ internal partial class QobuzApi
         }
     }
 
-    public static async Task GeneralSearch(ObservableCollection<SongSearchObject> itemSource, string query, CancellationToken token, int limit = 25)
+    public static async Task GeneralSearch(ObservableCollection<SongSearchObject> itemSource, string query, CancellationToken token, int limit = 25, bool albumMode = false)
     {
         query = query.Trim(); // Trim the query
         if (string.IsNullOrWhiteSpace(query))
@@ -116,13 +104,28 @@ internal partial class QobuzApi
 
         try
         {
-            await foreach (var track in SearchTracks(query, limit))
-            {
-                if (token.IsCancellationRequested) return;
-                var song = ConvertSongSearchObject(track);
-                if (song != null)
+            if (albumMode)
+            {   
+                await foreach (var album in ApiSearch<Album>(query, limit))
                 {
-                    itemSource.Add(song);
+                    if (token.IsCancellationRequested) return;
+                    var albumObj = ConvertAlbumSearchObject(album);
+                    if (albumObj != null)
+                    {
+                        itemSource.Add(albumObj);
+                    }
+                }
+            }
+            else
+            {
+                await foreach (var track in ApiSearch<Track>(query, limit))
+                {
+                    if (token.IsCancellationRequested) return;
+                    var song = ConvertSongSearchObject(track);
+                    if (song != null)
+                    {
+                        itemSource.Add(song);
+                    }
                 }
             }
         }
@@ -237,7 +240,7 @@ internal partial class QobuzApi
         {
             if (isTrackSpecified && isArtistSpecified) // If artist and track are specified
             {
-                await foreach (var track in SearchTracks(artistName + " " + trackName, limit))
+                await foreach (var track in ApiSearch<Track>(artistName + " " + trackName, limit))
                 {
                     if (token.IsCancellationRequested) return; // Check if task is cancelled
                     if (track.Id == null) continue;
@@ -260,7 +263,7 @@ internal partial class QobuzApi
             {
                 var query = isTrackSpecified ? trackName : artistName; 
                 var searchType = isTrackSpecified ? EnumQobuzSearchType.ByReleaseName : EnumQobuzSearchType.ByMainArtist;
-                await foreach (var track in SearchTracks(query, limit, searchType))
+                await foreach (var track in ApiSearch<Track>(query, limit, searchType))
                 {
                     if (token.IsCancellationRequested) return; // Check if task is cancelled
                     if (track.Id == null) continue;
@@ -466,6 +469,43 @@ internal partial class QobuzApi
         };
     }
 
+    public static AlbumSearchObject ConvertAlbumSearchObject(Album album)
+    {
+        var mainArtist = album.Artist.Name;
+        var artists = album.Artists.Select(a => a.Name).ToList();
+
+        if (artists.Count == 0)
+        {
+            artists.Add("unlisted");
+        }
+
+        // Ensure main artist appears first
+        artists.Remove(mainArtist);
+        artists.Insert(0, mainArtist);
+
+        return new AlbumSearchObject()
+        {
+            AlbumName = album.Title,
+            Artists = string.Join(", ", artists),
+            Duration = album.Duration?.ToString() ?? "0",
+            Explicit = album.ParentalWarning ?? false,
+            Source = "qobuz",
+            Id = album.Id.ToString(),
+            TrackPosition = "1", // Not applicable for albums
+            ImageLocation = album.Image?.Small ?? "",
+            LocalBitmapImage = null,
+            Rank = (album.Popularity ?? 0).ToString(),
+            ReleaseDate = album.ReleaseDateOriginal.GetValueOrDefault().ToString("yyyy-MM-dd"),
+            Title = album.Title,
+            Isrc = album.Upc
+        };
+    }
+
+    public static async Task<Album> GetInternalAlbum(string id)
+    {
+        return await Task.Run(() => apiService.GetAlbum(id, withAuth: true));
+    }
+
     public static async Task<Track> GetInternalTrack(string id)
     {
         return await Task.Run(() => apiService.GetTrack(id, withAuth: true));
@@ -497,7 +537,7 @@ internal partial class QobuzApi
 
         if (isrc != null)
         {
-            await foreach (var track in SearchTracks(query, 50))
+            await foreach (var track in ApiSearch<Track>(query, 50))
             {
                 if (token.IsCancellationRequested) return null;
 
@@ -589,7 +629,7 @@ internal partial class QobuzApi
         // Try searching without album, same as above
         if (token.IsCancellationRequested) return null; // Check if task is cancelled
 
-        await foreach (var result in SearchTracks(query, 28))
+        await foreach (var result in ApiSearch<Track>(query, 28))
         {
             if (token.IsCancellationRequested) return null;
 

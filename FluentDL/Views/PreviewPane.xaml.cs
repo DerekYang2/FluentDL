@@ -22,6 +22,13 @@ namespace FluentDL.Views
 {
     public sealed partial class PreviewPane : UserControl, INotifyPropertyChanged
     { 
+        public class AlbumTrackDetail
+        {
+            public string TrackName { get; set; } = string.Empty;
+            public string TrackPosition { get; set; } = string.Empty;
+            public string Duration { get; set; } = string.Empty;
+        }
+
         SongSearchObject? song = null;
         DispatcherQueue dispatcher;
         private static HttpClient httpClient = new HttpClient();
@@ -132,19 +139,35 @@ namespace FluentDL.Views
 
             if (selectedSong.Source.Equals("qobuz"))
             {
-                var track = await QobuzApi.GetInternalTrack(selectedSong.Id);
+                if (selectedSong is AlbumSearchObject selectedAlbum)
+                {
+                    var album = await QobuzApi.GetInternalAlbum(selectedAlbum.Id);
 
-                PreviewImage.Source = new BitmapImage(new Uri(track.Album.Image.Large)); // Get cover art
+                    PreviewImage.Source = new BitmapImage(new Uri(album.Image.Large)); // Get cover art
 
-                // trackDetailsList.RemoveAt(trackDetailsList.ToList().FindIndex(x => x.Label == "Popularity")); // Remove popularity
-                PreviewInfoControl2.ItemsSource = PreviewInfoControl.ItemsSource = trackDetailsList;
-                trackDetailsList.Add(new TrackDetail() { Label = "Track", Value = selectedSong.TrackPosition });
-                trackDetailsList.Add(new TrackDetail { Label = "Genre", Value = string.Join(", ", QobuzApi.PruneGenreList(track.Album.GenresList)) });
-                trackDetailsList.Add(new TrackDetail { Label = "Max Quality", Value = $"{track.MaximumBitDepth}-Bit/{track.MaximumSamplingRate} kHz"});
-                RankRatingControl.Visibility = Visibility.Collapsed;
+                    PreviewInfoControl2.ItemsSource = PreviewInfoControl.ItemsSource = trackDetailsList; // First set the details list
+                    trackDetailsList.Add(new TrackDetail { Label = "Genre", Value = string.Join(", ", QobuzApi.PruneGenreList(album.GenresList)) });
+                    trackDetailsList.Add(new TrackDetail { Label = "Max Quality", Value = $"{album.MaximumBitDepth}-Bit/{album.MaximumSamplingRate} kHz" });
+                    trackDetailsList.RemoveAt(trackDetailsList.ToList().FindIndex(t => t.Label == "Album"));
 
-                // Load the audio stream
-                SongPreviewPlayer.Source = MediaSource.CreateFromUri(QobuzApi.GetPreviewUri(selectedSong.Id));
+                    RankRatingControl.Visibility = Visibility.Collapsed;
+                }
+                else
+                {
+                    var track = await QobuzApi.GetInternalTrack(selectedSong.Id);
+
+                    PreviewImage.Source = new BitmapImage(new Uri(track.Album.Image.Large)); // Get cover art
+
+                    // trackDetailsList.RemoveAt(trackDetailsList.ToList().FindIndex(x => x.Label == "Popularity")); // Remove popularity
+                    PreviewInfoControl2.ItemsSource = PreviewInfoControl.ItemsSource = trackDetailsList;
+                    trackDetailsList.Add(new TrackDetail() { Label = "Track", Value = selectedSong.TrackPosition });
+                    trackDetailsList.Add(new TrackDetail { Label = "Genre", Value = string.Join(", ", QobuzApi.PruneGenreList(track.Album.GenresList)) });
+                    trackDetailsList.Add(new TrackDetail { Label = "Max Quality", Value = $"{track.MaximumBitDepth}-Bit/{track.MaximumSamplingRate} kHz" });
+                    RankRatingControl.Visibility = Visibility.Collapsed;
+
+                    // Load the audio stream
+                    SongPreviewPlayer.Source = MediaSource.CreateFromUri(QobuzApi.GetPreviewUri(selectedSong.Id));
+                }
             }
 
             if (selectedSong.Source.Equals("spotify"))
