@@ -22,13 +22,6 @@ namespace FluentDL.Views
 {
     public sealed partial class PreviewPane : UserControl, INotifyPropertyChanged
     { 
-        public class AlbumTrackDetail
-        {
-            public string TrackName { get; set; } = string.Empty;
-            public string TrackPosition { get; set; } = string.Empty;
-            public string Duration { get; set; } = string.Empty;
-        }
-
         SongSearchObject? song = null;
         DispatcherQueue dispatcher;
         private static HttpClient httpClient = new HttpClient();
@@ -89,10 +82,11 @@ namespace FluentDL.Views
         public async Task Update(SongSearchObject selectedSong, object? trackInfoObj = null)
         {
             SongPreviewPlayer.AutoPlay = Task.Run(() => SettingsViewModel.GetSetting<bool>(SettingsViewModel.AutoPlay)).GetAwaiter().GetResult(); 
-
             ClearMediaPlayerSource();
             PreviewImage.Source = null; // Clear previous source
             PreviewImage.UpdateLayout();
+
+            AlbumTrackListContainer.Visibility = selectedSong.GetType() == typeof(AlbumSearchObject) ? Visibility.Visible : Visibility.Collapsed;
 
             song = selectedSong;
             //PreviewArtistText.Text = selectedSong.Artists;
@@ -151,6 +145,15 @@ namespace FluentDL.Views
                     trackDetailsList.RemoveAt(trackDetailsList.ToList().FindIndex(t => t.Label == "Album"));
 
                     RankRatingControl.Visibility = Visibility.Collapsed;
+
+                    // Tracks list view
+                    TrackListHeader.Text = album.TracksCount switch
+                    {
+                        0 => "No Tracks",
+                        1 => "1 Track",
+                        _ => $"{album.TracksCount} Tracks"
+                    };
+                    AlbumTrackListView.ItemsSource = album.Tracks.Items.Select(QobuzApi.ConvertSongSearchObject).ToList();
                 }
                 else
                 {
@@ -382,6 +385,15 @@ namespace FluentDL.Views
                 Debug.WriteLine("Failed to get spotify preview url: " + e.Message);
             }
             return null;
+        }
+
+        private async void AlbumTrackListView_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            var selectedSong = (SongSearchObject)AlbumTrackListView.SelectedItem;
+            if (selectedSong.Source == "qobuz")
+            {
+                SongPreviewPlayer.Source = await Task.Run(() => MediaSource.CreateFromUri(QobuzApi.GetPreviewUri(selectedSong.Id)));
+            }
         }
     }
 }

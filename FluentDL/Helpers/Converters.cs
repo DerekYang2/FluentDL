@@ -1,10 +1,12 @@
-﻿using System;
-using System.Drawing;
-using System.Globalization;
+﻿using ABI.Microsoft.UI.Xaml;
 using AngleSharp.Dom;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Data;
 using Microsoft.UI.Xaml.Media;
+using Microsoft.WindowsAppSDK.Runtime.Packages;
+using System;
+using System.Drawing;
+using System.Globalization;
 using Color = Windows.UI.Color;
 
 namespace FluentDL.Helpers;
@@ -62,13 +64,46 @@ internal class DurationConverter : IValueConverter
 
         if (seconds != null)
         {
-            int sec = (int)(seconds % 60);
-            seconds /= 60;
-            int min = (int)(seconds % 60);
-            seconds /= 60;
-            int hr = (int)seconds;
+            TimeSpan ts = TimeSpan.FromSeconds((int)seconds);
+            return (ts.Hours > 0 ? ts.Hours + " hr " : "") + (ts.Minutes > 0 ? ts.Minutes + " min " : "") + ts.Seconds + " sec";
+        }
 
-            return (hr > 0 ? $"{hr:D2}h " : "") + (min > 0 ? $"{min:D2}m " : "") + $"{sec:D2}s";
+        return "";
+    }
+
+    public object ConvertBack(object value, Type targetType, object parameter, string language)
+    {
+        throw new NotImplementedException();
+    }
+}
+
+internal class DurationConverterShort : IValueConverter
+{
+    // Converts seconds to H hr, M min, S sec
+    public object Convert(object? value, Type targetType, object parameter, string language)
+    {
+        int? seconds = null;
+        if (value is string valstr)
+        {
+            if (string.IsNullOrWhiteSpace(valstr)) return "";
+
+            if (int.TryParse(valstr, out int result))
+            {
+                seconds = result;
+            }
+        }
+        else if (value is int valint)
+        {
+            seconds = valint;
+        }
+
+        if (seconds != null)
+        {
+            TimeSpan ts = TimeSpan.FromSeconds((int)seconds);
+            if (ts.Hours > 0)
+                return $"{ts.Hours}:{ts.Minutes:D2}:{ts.Seconds:D2}";
+            else if (ts.Minutes > 0)
+                return $"{ts.Minutes}:{ts.Seconds:D2}";
         }
 
         return "";
