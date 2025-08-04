@@ -497,7 +497,8 @@ internal partial class QobuzApi
             Rank = (album.Popularity ?? 0).ToString(),
             ReleaseDate = album.ReleaseDateOriginal.GetValueOrDefault().ToString("yyyy-MM-dd"),
             Title = album.Title,
-            Isrc = album.Upc
+            Isrc = album.Upc,
+            TracksCount = album.TracksCount ?? 0,
         };
     }
 

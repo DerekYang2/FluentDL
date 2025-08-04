@@ -23,6 +23,7 @@
         <helpers:DurationConverter x:Key="DurationConverter" />
         <helpers:VisibilityConverter x:Key="VisibilityConverter" />
         <helpers:SourceToColorConverter x:Key="SourceToColorConverter" />
+        <helpers:AlbumCountConverter x:Key="AlbumCountConverter" />
     </Page.Resources>
 
     <Grid>
@@ -294,12 +295,18 @@
                                            Style="{ThemeResource BodyTextBlockStyle}" Margin="0,0,0,0"
                                            Foreground="{ThemeResource TextFillColorSecondary}"
                                            FontFamily="Segoe UI Variable Display" />
-                                <TextBlock Text="&#x2022;" Style="{ThemeResource BodyTextBlockStyle}"
+                                <TextBlock Text="&#160;&#x2022;&#160;&#xfeff;" Style="{ThemeResource BodyTextBlockStyle}"
                                            Foreground="{ThemeResource TextFillColorSecondary}"
-                                           HorizontalAlignment="Left" Margin="5,0,0,0" />
+                                           HorizontalAlignment="Left" 
+                                           FontFamily="Segoe UI Variable Display"/>
                                 <TextBlock Text="{x:Bind Duration, Converter={StaticResource DurationConverter}}"
                                            HorizontalAlignment="Left"
-                                           Style="{ThemeResource BodyTextBlockStyle}" Margin="5,0,0,0"
+                                           Style="{ThemeResource BodyTextBlockStyle}"
+                                           Foreground="{ThemeResource TextFillColorSecondary}"
+                                           FontFamily="Segoe UI Variable Display" />
+                                <TextBlock Text="{x:Bind Converter={StaticResource AlbumCountConverter}}"
+                                           HorizontalAlignment="Left"
+                                           Style="{ThemeResource BodyTextBlockStyle}"
                                            Foreground="{ThemeResource TextFillColorSecondary}"
                                            FontFamily="Segoe UI Variable Display" />
                             </StackPanel>

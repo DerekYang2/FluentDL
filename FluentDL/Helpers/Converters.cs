@@ -1,5 +1,6 @@
 ﻿using ABI.Microsoft.UI.Xaml;
 using AngleSharp.Dom;
+using FluentDL.Models;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Data;
 using Microsoft.UI.Xaml.Media;
@@ -206,6 +207,28 @@ internal class LocalSourceToVisibilityConverter : IValueConverter
             "local" => Microsoft.UI.Xaml.Visibility.Visible,
             _ => Microsoft.UI.Xaml.Visibility.Collapsed,
         };
+    }
+
+    public object ConvertBack(object value, Type targetType, object parameter, string language)
+    {
+        throw new NotImplementedException();
+    }
+}
+
+internal class AlbumCountConverter : IValueConverter
+{
+    public object Convert(object? value, Type targetType, object parameter, string language)
+    {
+        if (value is AlbumSearchObject album)
+        {
+            string retStr = $"{(char)160}{(char)0x2022}{(char)160}{(char)0xfeff}{album.TracksCount} Track";
+            if (album.TracksCount != 1) retStr += "s";
+            return retStr;
+        }
+        else
+        {
+            return "";
+        }
     }
 
     public object ConvertBack(object value, Type targetType, object parameter, string language)

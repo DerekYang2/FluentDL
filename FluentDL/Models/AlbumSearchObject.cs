@@ -10,6 +10,7 @@ namespace FluentDL.Models
 {
     class AlbumSearchObject : SongSearchObject
     {
+        public int TracksCount { get; set; } = 0;
         public ICollection<string> TrackIds { get; set; } = [];
 
         // Alias, Upc can be stored in ISRC
