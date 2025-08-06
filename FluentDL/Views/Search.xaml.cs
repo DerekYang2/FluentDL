@@ -1,27 +1,29 @@
-using FluentDL.ViewModels;
-using Microsoft.UI.Xaml.Controls;
-using FluentDL.Services;
-using System.Collections.ObjectModel;
-using System.Diagnostics;
-using System.Numerics;
+using AngleSharp.Dom;
 using FluentDL.Contracts.Services;
 using FluentDL.Helpers;
 using FluentDL.Models;
+using FluentDL.Services;
+using FluentDL.ViewModels;
 using Microsoft.UI.Dispatching;
-using YoutubeExplode.Search;
-using Microsoft.UI.Xaml;
-using Microsoft.UI.Xaml.Navigation;
 using Microsoft.UI.Text;
+using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Documents;
-using System.Text.RegularExpressions;
-using AngleSharp.Dom;
 using Microsoft.UI.Xaml.Hosting;
 using Microsoft.UI.Xaml.Input;
-using Visibility = Microsoft.UI.Xaml.Visibility;
-using static System.Net.WebRequestMethods;
-using System.Drawing;
 using Microsoft.UI.Xaml.Media;
+using Microsoft.UI.Xaml.Navigation;
+using System;
+using System.Collections.ObjectModel;
+using System.Diagnostics;
+using System.Drawing;
+using System.Numerics;
 using System.Runtime.CompilerServices;
+using System.Text.RegularExpressions;
+using YoutubeExplode.Search;
+using YouTubeMusicAPI.Models.Info;
+using static System.Net.WebRequestMethods;
+using Visibility = Microsoft.UI.Xaml.Visibility;
 
 namespace FluentDL.Views;
 // TODO: loading for search
@@ -743,42 +745,112 @@ public sealed partial class Search : Page
 
         InfobarProgress.Visibility = Visibility.Visible; // Show the infobar's progress bar
 
-        string path = await ApiHelper.DownloadObject(songObj, directory, (severity, song, location) => {
-            dispatcher.TryEnqueue(()=>
-            {
-                InfobarProgress.Visibility = Visibility.Collapsed; // Hide the infobar's progress bar
+        int downloadCount = 0;
 
-                Action navigateLocalExplorer = () =>
-                {
-                    var navService = App.GetService<INavigationViewService>();
-                    navService.NavigateTo(typeof(LocalExplorerViewModel).FullName);
-                };
-
-                if (severity == InfoBarSeverity.Error)
-                {
-                    ShowInfoBar(severity, $"Error: {location ?? "unspecified"}", 5);
-                }
-                else if (severity == InfoBarSeverity.Success)
-                {
-                    ShowInfoBar(severity, $"Successfully downloaded <a href='{location}'>{songObj.Title}</a>", 10, buttonText: "View Download", onButtonClick: navigateLocalExplorer);
-                }
-                else if (severity == InfoBarSeverity.Warning)
-                {
-                    ShowInfoBar(severity, $"Downloaded a possible equivalent of <a href='{location}'>{songObj.Title}</a>", 10, buttonText: "ViewDownload", onButtonClick: navigateLocalExplorer);
-                }
-
-            });
-        });
-
-        if (!string.IsNullOrWhiteSpace(path) && System.IO.File.Exists(path))
+        if (songObj is AlbumSearchObject albumObj)
         {
-            try
+            InfobarProgress.IsIndeterminate = false;
+            InfobarProgress.Value = 0;
+            List<string> paths = await ApiHelper.DownloadAlbum(albumObj, directory, (severity, song, location) =>
             {
-                await LocalExplorerViewModel.AddSongFromFile(path);
+                dispatcher.TryEnqueue(() =>
+                {
+                    var count = Interlocked.Increment(ref downloadCount);
+                    InfobarProgress.Value = (double)count / albumObj.TracksCount * 100;
+                    if (severity == InfoBarSeverity.Error)
+                    {
+                        ShowInfoBarPermanent(InfoBarSeverity.Informational, $"Error: {location ?? "unspecified"} ({count} of {albumObj.TracksCount})");
+                    }
+                    else if (severity == InfoBarSeverity.Success)
+                    {
+                        ShowInfoBarPermanent(InfoBarSeverity.Informational, $"Successfully downloaded <a href='{location}'>{song.Title}</a> ({count} of {albumObj.TracksCount})");
+                    }
+                    else if (severity == InfoBarSeverity.Warning)
+                    {
+                        ShowInfoBarPermanent(InfoBarSeverity.Informational, $"Downloaded a possible equivalent of <a href='{location}'>{song.Title}</a> ({count} of {albumObj.TracksCount})");
+                    }
+                });
+            });
+
+            foreach (var path in paths)
+            {
+                if (!string.IsNullOrWhiteSpace(path) && System.IO.File.Exists(path))
+                {
+                    try
+                    {
+                        await LocalExplorerViewModel.AddSongFromFile(path);
+                    }
+                    catch (Exception ex)
+                    {
+                        Debug.WriteLine($"Failed to add downloaded song to local explorer: {ex.Message}");
+                    }
+                }
             }
-            catch (Exception ex)
+
+            Action navigateLocalExplorer = () =>
             {
-                Debug.WriteLine($"Failed to add downloaded song to local explorer: {ex.Message}");
+                var navService = App.GetService<INavigationViewService>();
+                navService.NavigateTo(typeof(LocalExplorerViewModel).FullName);
+            };
+
+            var albumDir = paths.Count > 0 ? System.IO.Path.GetDirectoryName(paths[0]) : "";
+
+            InfobarProgress.Visibility = Visibility.Collapsed; // Hide the infobar's progress bar
+            InfobarProgress.IsIndeterminate = true;
+
+            if (paths.Count == 0)
+            {
+                ShowInfoBar(InfoBarSeverity.Error, $"Failed to download album '{albumObj.AlbumName}'", seconds: 10);
+            }
+            else if (paths.Count < albumObj.TracksCount)
+            {
+                ShowInfoBar(InfoBarSeverity.Warning, $"Downloaded {paths.Count} of {albumObj.TracksCount} tracks for album <a href='{albumDir}'>{albumObj.Title}</a>", 10, buttonText: "View Download", onButtonClick: navigateLocalExplorer);
+            }
+            else
+            {
+                ShowInfoBar(InfoBarSeverity.Success, $"Successfully downloaded album <a href='{albumDir}'>{albumObj.Title}</a>.", 10, buttonText: "View Download", onButtonClick: navigateLocalExplorer);
+            }
+        }
+        else
+        {
+            string path = await ApiHelper.DownloadObject(songObj, directory, (severity, song, location) =>
+            {
+                dispatcher.TryEnqueue(() =>
+                {
+                    InfobarProgress.Visibility = Visibility.Collapsed; // Hide the infobar's progress bar
+
+                    Action navigateLocalExplorer = () =>
+                    {
+                        var navService = App.GetService<INavigationViewService>();
+                        navService.NavigateTo(typeof(LocalExplorerViewModel).FullName);
+                    };
+
+                    if (severity == InfoBarSeverity.Error)
+                    {
+                        ShowInfoBar(severity, $"Error: {location ?? "unspecified"}", 5);
+                    }
+                    else if (severity == InfoBarSeverity.Success)
+                    {
+                        ShowInfoBar(severity, $"Successfully downloaded <a href='{location}'>{songObj.Title}</a>", 10, buttonText: "View Download", onButtonClick: navigateLocalExplorer);
+                    }
+                    else if (severity == InfoBarSeverity.Warning)
+                    {
+                        ShowInfoBar(severity, $"Downloaded a possible equivalent of <a href='{location}'>{songObj.Title}</a>", 10, buttonText: "ViewDownload", onButtonClick: navigateLocalExplorer);
+                    }
+
+                });
+            });
+
+            if (!string.IsNullOrWhiteSpace(path) && System.IO.File.Exists(path))
+            {
+                try
+                {
+                    await LocalExplorerViewModel.AddSongFromFile(path);
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine($"Failed to add downloaded song to local explorer: {ex.Message}");
+                }
             }
         }
     }

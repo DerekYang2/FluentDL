@@ -153,7 +153,8 @@ namespace FluentDL.Views
                         1 => "1 Track",
                         _ => $"{album.TracksCount} Tracks"
                     };
-                    AlbumTrackListView.ItemsSource = album.Tracks.Items.Select(QobuzApi.ConvertSongSearchObject).ToList();
+                    List<SongSearchObject> albumTracks = album.Tracks.Items.Select(QobuzApi.ConvertSongSearchObject).ToList();
+                    AlbumTrackListView.ItemsSource = selectedAlbum.TrackList = albumTracks;
                 }
                 else
                 {
@@ -389,7 +390,12 @@ namespace FluentDL.Views
 
         private async void AlbumTrackListView_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            var selectedSong = (SongSearchObject)AlbumTrackListView.SelectedItem;
+            var selectedSong = (SongSearchObject?)AlbumTrackListView.SelectedItem;
+            if (selectedSong == null)
+            {
+                ClearMediaPlayerSource();
+                return; // No song selected
+            }
             if (selectedSong.Source == "qobuz")
             {
                 SongPreviewPlayer.Source = await Task.Run(() => MediaSource.CreateFromUri(QobuzApi.GetPreviewUri(selectedSong.Id)));

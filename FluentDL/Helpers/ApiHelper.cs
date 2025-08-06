@@ -1,4 +1,13 @@
-﻿using System;
+﻿using ABI.Microsoft.UI.Xaml.Media.Imaging;
+using AngleSharp.Dom;
+using AngleSharp.Media.Dom;
+using FluentDL.Models;
+using FluentDL.Services;
+using FluentDL.ViewModels;
+using FluentDL.Views;
+using Microsoft.UI.Xaml.Controls;
+using QobuzApiSharp.Models.Content;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
@@ -6,18 +15,15 @@ using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
-using ABI.Microsoft.UI.Xaml.Media.Imaging;
-using FluentDL.Models;
-using FluentDL.Services;
-using FluentDL.ViewModels;
-using FluentDL.Views;
-using Microsoft.UI.Xaml.Controls;
 using BitmapImage = Microsoft.UI.Xaml.Media.Imaging.BitmapImage;
 
 namespace FluentDL.Helpers;
 
 internal class ApiHelper
 {
+    private static HttpClient client = new HttpClient();
+    private static HttpClient clientNoRedir = new HttpClient(new HttpClientHandler { AllowAutoRedirect = false }, true);
+
     public static bool IsSubstring(string str, string str2)
     {
         str = PrunePunctuation(str).ToLower();
@@ -124,34 +130,13 @@ internal class ApiHelper
             .Replace("{release_date}", song.ReleaseDate ?? "")
             .Replace("{title}", song.Title);
     }
-
-    public static async Task<string> DownloadObject(SongSearchObject song, string directory, ConversionUpdateCallback? callback = default)
+   
+    private static async Task<string> DownloadTrackInternal(SongSearchObject song, string directory, ConversionUpdateCallback? callback = default)
     {
         // Create file name
         var firstArtist = song.Artists.Split(",")[0].Trim();
         var isrcStr = !string.IsNullOrWhiteSpace(song.Isrc) ? $" [{song.Isrc}]" : "";
         var fileName = GetSafeFilename($"{song.TrackPosition}. {firstArtist} - {song.Title}{isrcStr}"); // File name no extension
-
-        // Create file path
-        bool createTrackSubfolder = await SettingsViewModel.GetSetting<bool>(SettingsViewModel.Subfolders);
-        if (createTrackSubfolder)
-        {
-            var subfolderName = GetSafeFilename(EvaluateWildcard(song, (await SettingsViewModel.GetSetting<string>(SettingsViewModel.SubfolderWildcard) ??
-                "{position}. {artist} - {title}{isrc}")));
-            try
-            {
-                string newDirectory = Path.Combine(directory, subfolderName);
-                if (!Directory.Exists(newDirectory))
-                {
-                    Directory.CreateDirectory(newDirectory);
-                }
-                directory = newDirectory;
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine("Error creating subfolder: " + ex.Message);
-            }
-        }
 
         var locationNoExt = Path.Combine(directory, fileName);
 
@@ -267,6 +252,173 @@ internal class ApiHelper
         return string.Empty;
     }
 
+    public static async Task<string> DownloadObject(SongSearchObject song, string directory, ConversionUpdateCallback? callback = default)
+    {
+        // Create file path
+        bool createTrackSubfolder = await SettingsViewModel.GetSetting<bool>(SettingsViewModel.Subfolders);
+        if (createTrackSubfolder)
+        {
+            var wildCardStr = await SettingsViewModel.GetSetting<string>(SettingsViewModel.SubfolderWildcard);
+            if (string.IsNullOrWhiteSpace(wildCardStr))
+            {
+                wildCardStr = string.IsNullOrWhiteSpace(song.Isrc) ? "{position}. {artist} - {title}" : "{position}. {artist} - {title} [{isrc}]";
+            }
+            var subfolderName = GetSafeFilename(EvaluateWildcard(song, wildCardStr));
+
+            try
+            {
+                string newDirectory = Path.Combine(directory, subfolderName);
+                if (!Directory.Exists(newDirectory))
+                {
+                    Directory.CreateDirectory(newDirectory);
+                }
+                directory = newDirectory;
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine("Error creating subfolder: " + ex.Message);
+            }
+        }
+
+        return await DownloadTrackInternal(song, directory, callback);
+    }
+
+    public static async Task<List<string>> DownloadAlbum(AlbumSearchObject album, string directory, ConversionUpdateCallback? callback = default)
+    {
+        bool createAlbumSubfolder = await SettingsViewModel.GetSetting<bool>(SettingsViewModel.AlbumSubfolders);
+        if (createAlbumSubfolder)
+        {
+            var wildCardStr = await SettingsViewModel.GetSetting<string>(SettingsViewModel.SubfolderWildcard);
+            if (string.IsNullOrWhiteSpace(wildCardStr))
+            {
+                wildCardStr = string.IsNullOrWhiteSpace(album.Isrc) ? "{artist} - {title}" : "{artist} - {title} [{isrc}]";
+            }
+            var subfolderName = GetSafeFilename(EvaluateWildcard(album, wildCardStr));
+
+            try
+            {
+                string newDirectory = Path.Combine(directory, subfolderName);
+                if (!Directory.Exists(newDirectory))
+                {
+                    Directory.CreateDirectory(newDirectory);
+                }
+                directory = newDirectory;
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine("Error creating subfolder: " + ex.Message);
+            }
+        }
+
+        if (album.TrackList == null)
+        {
+            switch (album.Source)
+            {
+                case "qobuz":
+                    album.TrackList = (await QobuzApi.GetInternalAlbum(album.Id)).Tracks.Items.Select(QobuzApi.ConvertSongSearchObject).ToList();
+                    break;
+            }
+        }
+        if (album.TrackList == null)
+        {
+            return [];
+        }
+
+        List<string> downloadedFiles = [];
+        bool allSuccess = true;
+        ConversionUpdateCallback conversionCallback = (severity, song, location) =>
+        {
+            if (severity != InfoBarSeverity.Success)
+            {
+                allSuccess = false;
+            }
+            callback?.Invoke(severity, song, location);
+        };
+
+        var allTasks = new List<Task>();
+        var throttler = new SemaphoreSlim(initialCount: await SettingsViewModel.GetSetting<int?>(SettingsViewModel.ConversionThreads) ?? 1);
+        foreach (var track in album.TrackList)
+        {
+            await throttler.WaitAsync();
+
+            allTasks.Add(Task.Run(async () =>
+            {
+                try
+                {
+                    // Download the track
+                    var downloadPath = await DownloadTrackInternal(track, directory, conversionCallback);
+                    if (File.Exists(downloadPath))
+                    {
+                        downloadedFiles.Add(downloadPath);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine("Error downloading track: " + ex.Message);
+                }
+                finally
+                {
+                    // Release the semaphore slot
+                    throttler.Release();
+                }
+            }));
+        }
+        await Task.WhenAll(allTasks);
+
+        // Download cover if subfolder, fire and forget
+#pragma warning disable CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
+        Task.Run(async () =>
+        {
+            if (createAlbumSubfolder)
+            {
+                byte[]? coverBytes = null;
+
+                try
+                {
+                    var albumUrl = await GetAlbumArtLargest(album);
+                    if (!string.IsNullOrWhiteSpace(albumUrl))
+                    {
+                        coverBytes = await client.GetByteArrayAsync(albumUrl);
+                    }
+
+                    if (coverBytes != null)
+                    {
+                        await File.WriteAllBytesAsync(Path.Combine(directory, "cover.jpg"), coverBytes);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine(ex.Message);
+                }
+            }
+        });
+#pragma warning restore CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
+
+        return downloadedFiles;
+    }
+
+    public static async Task<string?> GetAlbumArtLargest(AlbumSearchObject? album)
+    {
+        if (album == null) return null;
+        if (album.Source == "qobuz")
+        {
+            var fullAlbumObj = await QobuzApi.GetInternalAlbum(album.Id);
+            if (!string.IsNullOrWhiteSpace(fullAlbumObj?.Image?.Mega))
+            {
+                return fullAlbumObj.Image.Mega;
+            }
+            if (!string.IsNullOrEmpty(fullAlbumObj?.Image?.Extralarge))
+            {
+                return fullAlbumObj.Image.Extralarge;
+            }
+            if (!string.IsNullOrEmpty(fullAlbumObj?.Image?.Large))
+            {
+                return fullAlbumObj.Image.Large;
+            }
+        }
+        return null;
+    }
+
     public static async Task DownloadObject(SongSearchObject song, Windows.Storage.StorageFile? file)
     {
         if (file == null)
@@ -354,8 +506,7 @@ internal class ApiHelper
 
             do
             {
-                using var client = new HttpClient(new HttpClientHandler { AllowAutoRedirect = false, }, true);
-                using var response = await client.GetAsync(curUri, cancellationToken);
+                using var response = await clientNoRedir.GetAsync(curUri, cancellationToken);
 
                 if (!response.Headers.Contains("Location"))
                 {
@@ -424,7 +575,6 @@ internal class ApiHelper
     // Gets a bitmap image from a URL
     public static async Task<BitmapImage> GetBitmapImageAsync(string uri)
     {
-        using var client = new HttpClient();
         var byteArr = await client.GetByteArrayAsync(uri);
         var bitmapImage = new BitmapImage();
         using var stream = new MemoryStream(byteArr);
@@ -435,28 +585,29 @@ internal class ApiHelper
     // For any file downloading with progress
     public static async Task DownloadFileAsync(string filePath, string downloadUrl)
     {
-        var httpClient = new HttpClient();
-        await using Stream streamRead = await httpClient.GetStreamAsync(downloadUrl);
+        await using Stream streamRead = await client.GetStreamAsync(downloadUrl);
         await using FileStream streamWrite = System.IO.File.Create(filePath);
         var totalBytesRead = 0;
         var buffer = new byte[131072]; // 128KB buffer size
         var firstBufferRead = false;
-        Stopwatch stopwatch = Stopwatch.StartNew();
+        //Stopwatch stopwatch = Stopwatch.StartNew();
 
         int bytesRead;
         while ((bytesRead = await streamRead.ReadAsync(buffer, 0, buffer.Length)) > 0)
         {
-            await streamWrite.WriteAsync(buffer, 0, Math.Min(buffer.Length, bytesRead));
-
+            await streamWrite.WriteAsync(buffer.AsMemory(0, Math.Min(buffer.Length, bytesRead)));
+            /*
             totalBytesRead += bytesRead;
+            
             var speed = totalBytesRead / 1024d / 1024d / stopwatch.Elapsed.TotalSeconds;
 
             if (!firstBufferRead || stopwatch.ElapsedMilliseconds >= 500)
             {
-                //Debug.WriteLine($"Downloading... {speed:F3} MB/s");
+                Debug.WriteLine($"Downloading... {speed:F3} MB/s");
             }
 
             firstBufferRead = true;
+            */
         }
     }
 }
