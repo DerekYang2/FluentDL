@@ -279,7 +279,7 @@ internal partial class QobuzApi
         }
     }
 
-    public static async Task AddTracksFromLink(ObservableCollection<SongSearchObject> itemSource, string url, CancellationToken token, Search.UrlStatusUpdateCallback? statusUpdate)
+    public static async Task AddTracksFromLink(ObservableCollection<SongSearchObject> itemSource, string url, CancellationToken token, Search.UrlStatusUpdateCallback? statusUpdate, bool albumMode = false)
     {
         var isTrack = url.StartsWith("https://play.qobuz.com/track/") || url.StartsWith("https://open.qobuz.com/track/") || Regex.IsMatch(url, @"https://www\.qobuz\.com(/[^/]+)?/track/.*");
         var isAlbum = url.StartsWith("https://play.qobuz.com/album/") || url.StartsWith("https://open.qobuz.com/album/") || Regex.IsMatch(url, @"https://www\.qobuz\.com(/[^/]+)?/album/.*");
@@ -330,16 +330,28 @@ internal partial class QobuzApi
             if (album != null && album.Tracks != null && album.Tracks.Items.Count > 0)
             {
                 statusUpdate?.Invoke(InfoBarSeverity.Informational, $"<b>Qobuz</b>   Loading album <a href='{url}'>{album.Title}</a>", -1); // Show an informational message
-                itemSource.Clear(); // Clear the item source
-                foreach (var track in album.Tracks.Items)
-                {
-                    if (token.IsCancellationRequested)
-                    {
-                        statusUpdate?.Invoke(InfoBarSeverity.Warning, $"<b>Qobuz</b>   Cancelled loading album <a href='{url}'>{album.Title}</a>"); // Show a warning message
-                        return;
-                    }
 
-                    itemSource.Add(await Task.Run(() => CreateSongSearchObject(track, album), token));
+                if (albumMode)
+                {
+                    var albumObj = ConvertAlbumSearchObject(album);
+                    if (albumObj != null)
+                    {
+                        itemSource.Add(albumObj);
+                    }
+                }
+                else
+                {
+                    itemSource.Clear(); // Clear the item source
+                    foreach (var track in album.Tracks.Items)
+                    {
+                        if (token.IsCancellationRequested)
+                        {
+                            statusUpdate?.Invoke(InfoBarSeverity.Warning, $"<b>Qobuz</b>   Cancelled loading album <a href='{url}'>{album.Title}</a>"); // Show a warning message
+                            return;
+                        }
+
+                        itemSource.Add(CreateSongSearchObject(track, album));
+                    }
                 }
 
                 statusUpdate?.Invoke(InfoBarSeverity.Success, $"<b>Qobuz</b>   Loaded album <a href='{url}'>{album.Title}</a>"); // Show a success message
@@ -411,12 +423,18 @@ internal partial class QobuzApi
         }
     }
 
-    public static SongSearchObject ConvertSongSearchObject(Track track)
+    public static SongSearchObject ConvertSongSearchObject(Track track, string? mainArtist = null)
     {
         var listedArtist = track.Performer?.Name ?? "unlisted";
         var contribList = GetAllContributorsList(track.Performers);
 
-        if (contribList != null && contribList.Contains(listedArtist)) // Move listed artist to the front
+        if ((contribList == null || contribList.Count == 0) && !string.IsNullOrWhiteSpace(mainArtist)) // If no contributors, fallback
+        {
+            contribList = [mainArtist];
+        }   
+        contribList ??= [];
+
+        if (contribList.Contains(listedArtist)) // Move listed artist to the front
         {
             contribList.Remove(listedArtist);
             contribList.Insert(0, listedArtist);
@@ -425,7 +443,7 @@ internal partial class QobuzApi
         return new SongSearchObject()
         {
             AlbumName = track.Album?.Title ?? "",
-            Artists = string.Join(", ", contribList ?? []),
+            Artists = string.Join(", ", contribList),
             Duration = track.Duration?.ToString() ?? "0",
             Explicit = track.ParentalWarning ?? false,
             Source = "qobuz",
@@ -445,6 +463,11 @@ internal partial class QobuzApi
         var listedArtist = track.Performer?.Name ?? "unlisted";
         var contribList = GetAllContributorsList(track.Performers);
 
+        if ((contribList == null || contribList.Count == 0) && !string.IsNullOrEmpty(album.Artist?.Name))
+        {
+            contribList = [album.Artist.Name];
+        }
+        contribList ??= [];
         if (contribList.Contains(listedArtist)) // Move listed artist to the front
         {
             contribList.Remove(listedArtist);
@@ -757,6 +780,12 @@ internal partial class QobuzApi
 
         var listedArtist = track.Performer?.Name ?? "unlisted";
         var contribList = GetAllContributorsList(track.Performers);
+        if ((contribList == null || contribList.Count == 0) && !string.IsNullOrWhiteSpace(track.Album?.Artist?.Name))
+        {
+            contribList = [track.Album.Artist.Name];
+        }
+
+        contribList ??= [];
 
         if (contribList.Contains(listedArtist)) // Move listed artist to the front
         {

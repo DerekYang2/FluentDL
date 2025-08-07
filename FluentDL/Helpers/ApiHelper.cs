@@ -312,11 +312,10 @@ internal class ApiHelper
 
         if (album.TrackList == null)
         {
-            switch (album.Source)
-            {
-                case "qobuz":
-                    album.TrackList = (await QobuzApi.GetInternalAlbum(album.Id)).Tracks.Items.Select(QobuzApi.ConvertSongSearchObject).ToList();
-                    break;
+            if (album.Source == "qobuz") 
+            { 
+                var fullAlbumObj = await QobuzApi.GetInternalAlbum(album.Id);
+                album.TrackList = fullAlbumObj.Tracks.Items.Select(t => QobuzApi.ConvertSongSearchObject(t, fullAlbumObj.Artist?.Name)).ToList();
             }
         }
         if (album.TrackList == null)

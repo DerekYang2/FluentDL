@@ -153,7 +153,7 @@ namespace FluentDL.Views
                         1 => "1 Track",
                         _ => $"{album.TracksCount} Tracks"
                     };
-                    List<SongSearchObject> albumTracks = album.Tracks.Items.Select(QobuzApi.ConvertSongSearchObject).ToList();
+                    List<SongSearchObject> albumTracks = album.Tracks.Items.Select(t=>QobuzApi.ConvertSongSearchObject(t, album.Artist?.Name)).ToList();
                     AlbumTrackListView.ItemsSource = selectedAlbum.TrackList = albumTracks;
                 }
                 else

@@ -124,7 +124,7 @@ public partial class SettingsViewModel : ObservableRecipient
             await SaveSettingsAsyncIfNull<string?>(QobuzPassword, "");
             await SaveSettingsAsyncIfNull<string?>(SubfolderWildcard, "");
             await SaveSettingsAsyncIfNull<bool?>(Subfolders, false);
-            await SaveSettingsAsyncIfNull<bool?>(AlbumSubfolders, false);
+            await SaveSettingsAsyncIfNull<bool?>(AlbumSubfolders, true);
             await SaveSettingsAsyncIfNull<string?>(SearchSource, "deezer");
             await SaveSettingsAsyncIfNull<bool?>(SearchAddChecked, false);
             await SaveSettingsAsyncIfNull<bool?>(SearchShareChecked, false);
