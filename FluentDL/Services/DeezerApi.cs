@@ -13,6 +13,8 @@ using System.Globalization;
 using System.Net;
 using System.Text.Json;
 using System.Text.RegularExpressions;
+using Windows.Devices.PointOfService;
+using Windows.Media.Streaming.Adaptive;
 
 namespace FluentDL.Services;
 
@@ -179,7 +181,7 @@ internal class DeezerApi
         return ApiHelper.EnforceAscii(titlePruned).Trim();
     }
 
-    public static async Task GeneralSearch(ObservableCollection<SongSearchObject> itemSource, string query, CancellationToken token, int limit = 25)
+    public static async Task GeneralSearch(ObservableCollection<SongSearchObject> itemSource, string query, CancellationToken token, int limit = 25, bool albumMode = false)
     {
         query = query.Trim(); // Trim the query
         if (string.IsNullOrWhiteSpace(query))
@@ -189,9 +191,10 @@ internal class DeezerApi
 
         itemSource.Clear();
 
-        var req = "search?q=" + WebUtility.UrlEncode(query);
+        var req = (albumMode ? "search/album?q=" : "search?q=") + WebUtility.UrlEncode(query);
         req += $"%20&limit={limit}"; // Added limit to the query 
         req = req.Replace("%28", "").Replace("%29", ""); // Remove brackets, causes issues occasionally for some reason
+
         var jsonObject = await restClient.FetchJsonElement(req);
 
         foreach (var trackJson in jsonObject.GetProperty("data").EnumerateArray())
@@ -202,7 +205,7 @@ internal class DeezerApi
             }
 
             var trackId = trackJson.GetProperty("id").ToString();
-            var songObj = await GetTrack(trackId);
+            var songObj = albumMode ? await GetAlbum(trackId) : await GetTrack(trackId);
             if (songObj != null)
             {
                 itemSource.Add(songObj);
@@ -318,7 +321,7 @@ internal class DeezerApi
                 {
                     idSet.Add(trackId);
                     //var songObj = await GetTrack(trackId);
-                    var songObj = GetTrackQuick(track);
+                    var songObj = GetTrackPreview(track);
 
                     // Check if close artist match to add to list
                     var queryArtists = song.Artists.Split(", ").ToList();
@@ -350,7 +353,7 @@ internal class DeezerApi
                 {
                     idSet.Add(trackId);
                     // var songObj = await GetTrack(trackId);
-                    var songObj = GetTrackQuick(track);
+                    var songObj = GetTrackPreview(track);
 
                     // Check if close artist match to add to list
                     var queryArtists = song.Artists.Split(", ").ToList();
@@ -479,7 +482,7 @@ internal class DeezerApi
         }
     }
 
-    private static SongSearchObject GetTrackQuick(JsonElement jsonObj)
+    private static SongSearchObject GetTrackPreview(JsonElement jsonObj)
     {
         return new SongSearchObject()
         {
@@ -492,6 +495,26 @@ internal class DeezerApi
             Rank = jsonObj.SafeGetString("rank") ?? "0",
             Source = "deezer",
             Title = jsonObj.SafeGetString("title") ?? "Unknown",
+        };
+    }
+
+    // Problem: Deezer search album objects don't have duration
+    private static AlbumSearchObject GetAlbumPreview(JsonElement jsonObj)
+    {
+        
+        return new AlbumSearchObject()
+        {
+            AlbumName = jsonObj.SafeGetString("title") ?? "Unknown",
+            Artists = jsonObj.SafeGetString("artist", "name") ?? "Unknown",
+            Duration = "0",
+            Explicit = jsonObj.SafeGetBool("explicit_lyrics"),
+            Id = jsonObj.SafeGetString("id") ?? "",
+            ImageLocation = jsonObj.SafeGetString("cover"),
+            Rank = jsonObj.SafeGetString("rank") ?? "0",
+            Source = "deezer",
+            Title = jsonObj.SafeGetString("title") ?? "Unknown",
+            Isrc = jsonObj.SafeGetString("upc"),
+            TracksCount = jsonObj.SafeGetInt32("nb_tracks") ?? 0,
         };
     }
 
@@ -544,10 +567,79 @@ internal class DeezerApi
         };
     }
 
+    private static AlbumSearchObject? GetAlbumFromJsonElement(JsonElement jsonObject)
+    {
+        if (string.IsNullOrWhiteSpace(jsonObject.ToString()))
+        {
+            return null;
+        }
+        // Get the contributors of the album
+        var contributors = new HashSet<string>();
+        if (jsonObject.TryGetProperty("contributors", out var contribElement))
+        {
+            foreach (var contribObject in contribElement.EnumerateArray())
+            {
+                var name = contribObject.SafeGetString("name");
+                if (!string.IsNullOrWhiteSpace(name))
+                {
+                    if (name.Contains(','))
+                    {
+                        foreach (var n in name.Split(", "))
+                        {
+                            if (!contributors.Contains(n))
+                                contributors.Add(n);
+                        }
+                    }
+                    else
+                    {
+                        contributors.Add(name);
+                    }
+                }
+            }
+        }
+
+        List<SongSearchObject> trackList = [];
+        if (jsonObject.TryGetProperty("tracks", out var tracksElement) && tracksElement.TryGetProperty("data", out var dataElement))
+        {
+            foreach (JsonElement jsonTrack in dataElement.EnumerateArray())
+            {
+                var trackObj = GetTrackFromJsonElement(jsonTrack);
+                if (trackObj != null)
+                {
+                    trackList.Add(trackObj);
+                }
+            }
+        }
+
+        return new AlbumSearchObject
+        {
+            Source = "deezer",
+            Title = jsonObject.SafeGetString("title") ?? "Unknown",
+            ImageLocation = jsonObject.SafeGetString("cover"),
+            Id = jsonObject.SafeGetString("id") ?? "",
+            ReleaseDate = jsonObject.SafeGetString("release_date") ?? "",
+            Artists = string.Join(", ", contributors),
+            Duration = jsonObject.SafeGetString("duration") ?? "0",
+            Rank = jsonObject.SafeGetString("fans") ?? "0",
+            AlbumName = jsonObject.SafeGetString("title") ?? "Unknown",
+            Explicit = jsonObject.SafeGetBool("explicit_lyrics"),
+            TrackPosition = "1",
+            Isrc = jsonObject.SafeGetString("upc"),
+            TrackList = trackList,
+            TracksCount = jsonObject.SafeGetInt32("nb_tracks") ?? 0,
+        };
+    }
+
     public static async Task<SongSearchObject?> GetTrack(string trackId)
     {
         var jsonObject = await restClient.FetchJsonElement("track/" + trackId);
         return GetTrackFromJsonElement(jsonObject);
+    }
+
+    public static async Task<AlbumSearchObject?> GetAlbum(string albumId)
+    {
+        var jsonObject = await restClient.FetchJsonElement("album/" + albumId);
+        return GetAlbumFromJsonElement(jsonObject);
     }
 
     public static async Task<SongSearchObject?> GetTrackFromISRC(string ISRC)
@@ -562,6 +654,16 @@ internal class DeezerApi
         return GetTrackFromJsonElement(jsonObject);
     }
 
+    public static async Task<AlbumSearchObject?> GetAlbumFromUPC(string UPC)
+    {
+        var jsonObject = await restClient.FetchJsonElement("album/upc:" + UPC);
+        if (jsonObject.TryGetProperty("error", out var errorObj)) // Has an error field
+        {
+            Debug.WriteLine($"Error getting album {UPC}: {errorObj}");
+            return null;
+        }
+        return GetAlbumFromJsonElement(jsonObject);
+    }
 
     public static async Task<string> DownloadTrack(string filePath, SongSearchObject? song, DeezNET.Data.Bitrate? bitrateEnum = null)
     {
@@ -617,16 +719,20 @@ internal class DeezerApi
     public static async Task<string> GetGenreStr(int albumId)
     {
         var albumJson = await restClient.FetchJsonElement("album/" + albumId);
+        return GetGenreStr(albumJson);
+    }
+
+    public static string GetGenreStr(JsonElement jsonElement)
+    {
         // Get Genres
         var genreList = new List<string>();
-        if (albumJson.TryGetProperty("genres", out var genresProperty) && genresProperty.TryGetProperty("data", out var dataProperty))
+        if (jsonElement.TryGetProperty("genres", out var genresProperty) && genresProperty.TryGetProperty("data", out var dataProperty))
         {
             foreach (var genreData in dataProperty.EnumerateArray())
             {
                 genreList.Add(genreData.SafeGetString("name") ?? "Unknown Genre");
             }
         }
-
         return string.Join(", ", genreList);
     }
 
