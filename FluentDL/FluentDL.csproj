@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
     <TargetFramework>net8.0-windows10.0.22621.0</TargetFramework>
@@ -56,7 +56,7 @@
     <PackageReference Include="TagLibSharp" Version="2.3.0" />
     <PackageReference Include="WinUIEx" Version="2.5.1" />
     <PackageReference Include="YoutubeExplode" Version="6.5.4" />
-    <PackageReference Include="YouTubeMusicAPI" Version="2.2.8" />
+    <PackageReference Include="YouTubeMusicAPI" Version="3.0.0" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\FluentDL.Core\FluentDL.Core.csproj" />

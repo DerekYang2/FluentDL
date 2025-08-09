@@ -1,4 +1,9 @@
-﻿using System;
+﻿using CommunityToolkit.WinUI.UI.Animations;
+using FluentDL.Helpers;
+using FluentDL.Models;
+using FluentDL.Views;
+using Microsoft.UI.Xaml.Controls;
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
@@ -6,10 +11,6 @@ using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
-using FluentDL.Helpers;
-using FluentDL.Models;
-using FluentDL.Views;
-using Microsoft.UI.Xaml.Controls;
 using Windows.Media.Protection.PlayReady;
 using YoutubeExplode;
 using YoutubeExplode.Common;
@@ -19,8 +20,8 @@ using YoutubeExplode.Videos.Streams;
 using YouTubeMusicAPI.Client;
 using YouTubeMusicAPI.Models;
 using YouTubeMusicAPI.Models.Info;
-using static System.Net.WebRequestMethods;
 using YouTubeMusicAPI.Models.Search;
+using static System.Net.WebRequestMethods;
 
 namespace FluentDL.Services
 {
@@ -33,55 +34,77 @@ namespace FluentDL.Services
         {
         }
 
-        public static async Task GeneralSearch(ObservableCollection<SongSearchObject> itemSource, string query, CancellationToken token, int limit = 25)
+        public static async Task GeneralSearch(ObservableCollection<SongSearchObject> itemSource, string query, CancellationToken token, int limit = 25, bool albumMode = false)
         {
             query = query.Trim(); // Trim the query
             if (string.IsNullOrWhiteSpace(query))
             {
                 return;
             }
-
+            int ct = 0; // Count of results
             itemSource.Clear();
 
-            IEnumerable<SongSearchResult> searchResults;
-
-            int ct = 0; // Count of results
-            try
+            if (albumMode)
             {
-                searchResults = await ytm.SearchAsync<SongSearchResult>(query, limit, token);
-                foreach (var song in searchResults)
-                {
-                    if (token.IsCancellationRequested)
-                        break;
-                    itemSource.Add(await GetTrack(song));
-                    ct++;
-                }
-            }
-            catch (Exception e1)
-            {
-                Debug.WriteLine("Error searching YTM: " + e1.Message);
-
-                // Fall back to regular youtube
                 try
                 {
-                    await foreach (var result in youtube.Search.GetVideosAsync(query, token))
+                    await foreach (var album in ytm.SearchAsync(query, SearchCategory.Albums))
                     {
                         if (token.IsCancellationRequested || ct >= limit)
                             break;
-                        
-                        var songObj = await GetTrack(result.Id);
-
-                        if (songObj != null) {
-                            itemSource.Add(songObj);
+                        var browseId = await ytm.GetAlbumBrowseIdAsync(album.Id); // Get the browse id
+                        itemSource.Add(ConvertAlbumSearchObject(await ytm.GetAlbumInfoAsync(browseId)));
+                        ct++;
+                    }
+                } catch (Exception e)
+                {
+                    Debug.WriteLine("Failed to search for albums: " + e.ToString());
+                }
+            }
+            else
+            {
+                try
+                {
+                    await foreach (var song in ytm.SearchAsync(query, SearchCategory.Songs))
+                    {
+                        if (token.IsCancellationRequested || ct >= limit)
+                            break;
+                        var track = await GetTrack(song.Id);
+                        if (track != null)
+                        {
+                            itemSource.Add(track);
                             ct++;
                         }
                     }
-                } catch (Exception e2)
-                {
-                    Debug.WriteLine("Error searching YouTube: " + e2.Message);
                 }
-                return;
-            } 
+                catch (Exception e1)
+                {
+                    Debug.WriteLine("Error searching YTM: " + e1.Message);
+
+                    // Fall back to regular youtube
+                    try
+                    {
+                        await foreach (var result in youtube.Search.GetVideosAsync(query, token))
+                        {
+                            if (token.IsCancellationRequested || ct >= limit)
+                                break;
+
+                            var songObj = await GetTrack(result.Id);
+
+                            if (songObj != null)
+                            {
+                                itemSource.Add(songObj);
+                                ct++;
+                            }
+                        }
+                    }
+                    catch (Exception e2)
+                    {
+                        Debug.WriteLine("Error searching YouTube: " + e2.Message);
+                    }
+                    return;
+                }
+            }
         }
 
         private static bool CloseMatch(string str1, string str2)
@@ -110,14 +133,12 @@ namespace FluentDL.Services
 
             if (!string.IsNullOrWhiteSpace(albumName)) // Album was specified
             {
-                var searchResults = await ytm.SearchAsync<AlbumSearchResult>(albumName, 15, token); // Search for album first
-
-                if (token.IsCancellationRequested) return; // If cancelled
-
                 // Add any album matches
-                foreach (var album in searchResults)
+                await foreach (var searchResult in ytm.SearchAsync(albumName, SearchCategory.Albums))
                 {
                     if (token.IsCancellationRequested) return; // Check if task is cancelled
+                    var browseId = await ytm.GetAlbumBrowseIdAsync(searchResult.Id);
+                    var album = await ytm.GetAlbumInfoAsync(browseId);
 
                     // Ensure album artist matches to quickly filter out results
                     var oneArtistMatch = false;
@@ -192,8 +213,7 @@ namespace FluentDL.Services
                         catch (Exception e) // Attempt other (worse) method if playlist method fails
                         {
                             // YTM api method, worse because uses videos rather than songs:
-                            var browseId = await ytm.GetAlbumBrowseIdAsync(album.Id); // Get browse id
-                            var albumInfo = await ytm.GetAlbumInfoAsync(browseId); // Get full album info
+                            var albumInfo = await ytm.GetAlbumInfoAsync(await ytm.GetAlbumBrowseIdAsync(album.Id)); // Get full album info
 
                             foreach (var albumSongInfo in albumInfo.Songs) // Iterate through album tracks
                             {
@@ -245,12 +265,11 @@ namespace FluentDL.Services
                 if (isTrackSpecified) // If artist and track are specified
                 {
                     var query = artistName + " " + trackName;
-                    var searchResults = await ytm.SearchAsync<SongSearchResult>(query, 2 * limit, token);
-                    if (token.IsCancellationRequested) return; // If cancelled
 
-                    foreach (var song in searchResults)
+                    await foreach (var result in ytm.SearchAsync(query, SearchCategory.Songs))
                     {
                         if (token.IsCancellationRequested || trackIdList.Count >= limit) return; // Check if task is cancelled or limit reached
+                        var song = await ytm.GetSongVideoInfoAsync(result.Id);
 
                         bool oneArtistMatch = false;
                         foreach (var artist in song.Artists) // Check if at least one artist matches
@@ -266,7 +285,7 @@ namespace FluentDL.Services
                         {
                             if (!trackIdList.Contains(song.Id)) // If not already added
                             {
-                                itemSource.Add(await GetTrack(song));
+                                itemSource.Add(await ConvertSongSearchObject(song));
                                 trackIdList.Add(song.Id);
                             }
                         }
@@ -274,11 +293,8 @@ namespace FluentDL.Services
                 }
                 else // If only artist is specified
                 { 
-                    try {  // ytm api is a bit broken right now for certain artists
-                        var artistResults = await ytm.SearchAsync<ArtistSearchResult>(artistName, 20, token);
-                        if (token.IsCancellationRequested) return; // If cancelled
-
-                        foreach (var artistResult in artistResults)
+                    try {
+                        await foreach (var artistResult in ytm.SearchAsync(artistName, SearchCategory.Artists))
                         {
                             if (token.IsCancellationRequested || trackIdList.Count >= limit) return; // Check if task is cancelled or limit reached
 
@@ -588,24 +604,17 @@ namespace FluentDL.Services
             var trackName = songObj.Title;
             var albumName = songObj.AlbumName;
 
-            IEnumerable<AlbumSearchResult>? searchResults = null;
+            int ct = 0;
             try
             {
-                searchResults = await ytm.SearchAsync<AlbumSearchResult>(albumName, 15, token); // Search for album first
-            }
-            catch (Exception e)
-            {
-                Debug.WriteLine("Error searching for album: " + e.Message);
-            }
-
-            if (token.IsCancellationRequested) return null; // If cancelled
-
-            if (searchResults != null)
-            {
                 // Start searching through albums
-                foreach (var album in searchResults)
+                await foreach (var result in ytm.SearchAsync(albumName, SearchCategory.Albums))
                 {
                     if (token.IsCancellationRequested) return null; // Check if task is cancelled
+                    if (ct++ >= 15) break;
+
+                    var browseId = await ytm.GetAlbumBrowseIdAsync(result.Id); // Get the browse id
+                    var album = await ytm.GetAlbumInfoAsync(browseId);
 
                     // Ensure album artist matches
                     bool oneArtistMatch = false;
@@ -667,31 +676,39 @@ namespace FluentDL.Services
                     }
                 }
             }
-
+            catch (Exception e)
+            {
+                Debug.WriteLine("Error searching for album: " + e.ToString());
+            }
 
             // Try searching without album
             var query = artistName + " " + trackName;
-            var searchResults2 = await ytm.SearchAsync<SongSearchResult>(query, 20, token);
 
-            if (token.IsCancellationRequested) return null; // If cancelled
-
-            foreach (var result in searchResults2)
+            try
             {
-                if (ApiHelper.PrunePunctuation(songObj.Title.ToLower()).Equals(ApiHelper.PrunePunctuation(result.Name.ToLower())))
+                await foreach (var res in ytm.SearchAsync(query, SearchCategory.Songs))
                 {
-                    foreach (var artist in artists)
+                    if (token.IsCancellationRequested) return null; // Check if task is cancelled
+                    if (ApiHelper.PrunePunctuation(songObj.Title.ToLower()).Equals(ApiHelper.PrunePunctuation(res.Name.ToLower())))
                     {
-                        foreach (var artistResult in result.Artists)
+                        foreach (var artist in artists)
                         {
-                            if (CloseMatch(artistResult.Name, artist))
+                            var fullRes = await ytm.GetSongVideoInfoAsync(res.Id);
+                            foreach (var artistResult in fullRes.Artists)
                             {
-                                var retObj = await GetTrack(result);
-                                callback?.Invoke(InfoBarSeverity.Warning, retObj); // Not found by ISRC
-                                return retObj;
+                                if (CloseMatch(artistResult.Name, artist))
+                                {
+                                    var retObj = await ConvertSongSearchObject(fullRes);
+                                    callback?.Invoke(InfoBarSeverity.Warning, retObj); // Not found by ISRC
+                                    return retObj;
+                                }
                             }
                         }
                     }
                 }
+            } catch (Exception e)
+            {
+                Debug.WriteLine("Error searching without album: " + e.ToString());
             }
 
             // Fall back to searching for videos
@@ -842,7 +859,7 @@ namespace FluentDL.Services
         {
             // Get artist csv
             string artistString;
-
+            
             if (ytmSong == null)
             {
                 artistString = video.Author.ChannelTitle; // Use video author as artist if ytmSong is null
@@ -935,6 +952,43 @@ namespace FluentDL.Services
         {
             var video = await youtube.Videos.GetAsync(ytmSong.Id); // Get youtube explode video object, has more technical info like release date + views
             return GetTrack(ytmSong, video);
+        }
+
+        public static AlbumSearchObject ConvertAlbumSearchObject(AlbumInfo ytmAlbum) {
+            var artistCSV = new StringBuilder();
+            foreach (var artist in ytmAlbum.Artists)
+            {
+                artistCSV.Append(artist.Name);
+                if (artist != ytmAlbum.Artists.Last())
+                {
+                    artistCSV.Append(", ");
+                }
+            }
+            var artistString = artistCSV.ToString();
+
+            string imageLocation = "";
+            if (ytmAlbum.Thumbnails.Length > 0)
+            {
+                imageLocation = ytmAlbum.Thumbnails.Last().Url; // Use second youtube music image (larger, 120px)
+            }
+
+            return new AlbumSearchObject()
+            {
+                AlbumName = ytmAlbum.Name,
+                Artists = artistString,
+                Duration = ytmAlbum.Duration.TotalSeconds.ToString() ?? "0",
+                Source = "youtube",
+                Explicit = false,
+                Id = ytmAlbum.Id,
+                ImageLocation = imageLocation,
+                Isrc = null,
+                LocalBitmapImage = null,
+                Rank = "",
+                TrackPosition = "1",
+                ReleaseDate = $"{ytmAlbum.ReleaseYear}-01-01",
+                Title = ytmAlbum.Name,
+                TracksCount = ytmAlbum.SongCount,
+            };
         }
 
         /*
