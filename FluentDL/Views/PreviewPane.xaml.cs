@@ -1,18 +1,19 @@
-﻿using System.Collections.ObjectModel;
-using System.Diagnostics;
+﻿using CommunityToolkit.Labs.WinUI.MarqueeTextRns;
 using FluentDL.Helpers;
+using FluentDL.Models;
 using FluentDL.Services;
+using FluentDL.ViewModels;
+using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
-using Microsoft.UI.Xaml.Media.Imaging;
-using Windows.Media.Core;
-using FluentDL.Models;
-using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml.Input;
-using CommunityToolkit.Labs.WinUI.MarqueeTextRns;
-using FluentDL.ViewModels;
+using Microsoft.UI.Xaml.Media.Imaging;
 using Org.BouncyCastle.Bcpg.OpenPgp;
+using QobuzApiSharp.Models.Content;
+using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Diagnostics;
+using Windows.Media.Core;
 
 
 // To learn more about WinUI, the WinUI project structure,
@@ -108,26 +109,54 @@ namespace FluentDL.Views
 
             if (selectedSong.Source.Equals("deezer"))
             {
-                var jsonObject = await FluentDL.Services.DeezerApi.restClient.FetchJsonElement("track/" + selectedSong.Id);
-                var albumObj = jsonObject.GetProperty("album");
-                PreviewInfoControl2.ItemsSource = PreviewInfoControl.ItemsSource = trackDetailsList; // First set the details list
-                PreviewImage.Source = new BitmapImage(new Uri(albumObj.GetProperty("cover_big").ToString()));
-
-                trackDetailsList.Add(new TrackDetail { Label = "Track", Value = jsonObject.GetProperty("track_position").ToString() });
-                trackDetailsList.Add(new TrackDetail { Label = "Genre", Value = await DeezerApi.GetGenreStr(albumObj.GetProperty("id").GetInt32()) });
-                trackDetailsList.Add(new TrackDetail { Label = "Max Quality", Value = $"16-Bit/44.1 kHz"});
-
-                // Configure popularity field
-                trackDetailsList.Add(new TrackDetail { Label = "Popularity", Value = "" });
-                RankRatingControl.Visibility = Visibility.Visible;
-                SetRatingPercentage(GetPercentage(selectedSong));
-
-
-                // Load the audio stream
-                var previewUri = jsonObject.GetProperty("preview").ToString();
-                if (!string.IsNullOrWhiteSpace(previewUri)) // Some tracks don't have a preview
+                if (selectedSong is AlbumSearchObject selectedAlbum)
                 {
-                    SongPreviewPlayer.Source = MediaSource.CreateFromUri(new Uri(previewUri));
+                    var jsonObject = await DeezerApi.restClient.FetchJsonElement("album/" + selectedAlbum.Id);
+                    var fullAlbumObject = DeezerApi.GetAlbumFromJsonElement(jsonObject);
+                    PreviewImage.Source = new BitmapImage(new Uri(jsonObject.GetProperty("cover_big").GetString()));
+
+                    PreviewInfoControl2.ItemsSource = PreviewInfoControl.ItemsSource = trackDetailsList; // First set the details list
+                    trackDetailsList.Add(new TrackDetail { Label = "Genre", Value = DeezerApi.GetGenreStr(jsonObject) });
+                    trackDetailsList.Add(new TrackDetail { Label = "Max Quality", Value = $"16-Bit/44.1 kHz" });
+                    trackDetailsList.RemoveAt(trackDetailsList.ToList().FindIndex(t => t.Label == "Album"));
+                    if (jsonObject.TryGetProperty("fans", out var fansProperty))
+                        trackDetailsList.Add(new TrackDetail { Label = "Fans", Value = fansProperty.GetInt32().ToString() });
+                    
+                    RankRatingControl.Visibility = Visibility.Collapsed;
+
+                    // Tracks list view
+                    TrackListHeader.Text = selectedAlbum.TracksCount switch
+                    {
+                        0 => "No Tracks",
+                        1 => "1 Track",
+                        _ => $"{selectedAlbum.TracksCount} Tracks"
+                    };
+                    List<SongSearchObject> albumTracks = fullAlbumObject?.TrackList ?? [];
+                    AlbumTrackListView.ItemsSource = selectedAlbum.TrackList = albumTracks;
+                }
+                else
+                {
+                    var jsonObject = await DeezerApi.restClient.FetchJsonElement("track/" + selectedSong.Id);
+                    var albumObj = jsonObject.GetProperty("album");
+                    PreviewInfoControl2.ItemsSource = PreviewInfoControl.ItemsSource = trackDetailsList; // First set the details list
+                    PreviewImage.Source = new BitmapImage(new Uri(albumObj.GetProperty("cover_big").ToString()));
+
+                    trackDetailsList.Add(new TrackDetail { Label = "Track", Value = jsonObject.GetProperty("track_position").ToString() });
+                    trackDetailsList.Add(new TrackDetail { Label = "Genre", Value = await DeezerApi.GetGenreStr(albumObj.GetProperty("id").GetInt32()) });
+                    trackDetailsList.Add(new TrackDetail { Label = "Max Quality", Value = $"16-Bit/44.1 kHz" });
+
+                    // Configure popularity field
+                    trackDetailsList.Add(new TrackDetail { Label = "Popularity", Value = "" });
+                    RankRatingControl.Visibility = Visibility.Visible;
+                    SetRatingPercentage(GetPercentage(selectedSong));
+
+
+                    // Load the audio stream
+                    var previewUri = jsonObject.GetProperty("preview").ToString();
+                    if (!string.IsNullOrWhiteSpace(previewUri)) // Some tracks don't have a preview
+                    {
+                        SongPreviewPlayer.Source = MediaSource.CreateFromUri(new Uri(previewUri));
+                    }
                 }
             }
 
@@ -285,6 +314,11 @@ namespace FluentDL.Views
             return (BitmapImage)PreviewImage.Source;
         }
 
+        public List<SongSearchObject>? GetAlbumTrackList()
+        {
+            return AlbumTrackListView.ItemsSource as List<SongSearchObject>;
+        }
+
         private string GetFileLength(string filePath)
         {
             try
@@ -399,6 +433,10 @@ namespace FluentDL.Views
             if (selectedSong.Source == "qobuz")
             {
                 SongPreviewPlayer.Source = await Task.Run(() => MediaSource.CreateFromUri(QobuzApi.GetPreviewUri(selectedSong.Id)));
+            }
+            if (selectedSong.Source == "deezer")
+            {
+                SongPreviewPlayer.Source = await Task.Run(() => MediaSource.CreateFromUri(new Uri(selectedSong?.AdditionalFields?["preview"]?.ToString() ?? "")));
             }
         }
     }

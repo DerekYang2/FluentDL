@@ -105,16 +105,32 @@ internal class ApiHelper
     public static string GetUrl(SongSearchObject song)
     {
         var id = song.Id;
-        // Get the url of the current object
-        return song.Source switch
+        if (song is AlbumSearchObject album)
         {
-            "deezer" => "https://www.deezer.com/track/" + id,
-            "youtube" => "https://www.youtube.com/watch?v=" + id,
-            "spotify" => "https://open.spotify.com/track/" + id,
-            "qobuz" => "https://open.qobuz.com/track/" + id,
-            "local" => id,
-            _ => string.Empty
-        };
+            // Get the url of the current object
+            return song.Source switch
+            {
+                "deezer" => "https://www.deezer.com/album/" + id,
+                "youtube" => "https://www.youtube.com/watch?v=" + id,
+                "spotify" => "https://open.spotify.com/album/" + id,
+                "qobuz" => "https://open.qobuz.com/album/" + id,
+                "local" => id,
+                _ => string.Empty
+            };
+        }
+        else
+        {
+            // Get the url of the current object
+            return song.Source switch
+            {
+                "deezer" => "https://www.deezer.com/track/" + id,
+                "youtube" => "https://www.youtube.com/watch?v=" + id,
+                "spotify" => "https://open.spotify.com/track/" + id,
+                "qobuz" => "https://open.qobuz.com/track/" + id,
+                "local" => id,
+                _ => string.Empty
+            };
+        }
     }
 
     public static string EvaluateWildcard(SongSearchObject song, string wildcard)
@@ -310,14 +326,25 @@ internal class ApiHelper
             }
         }
 
-        if (album.TrackList == null)
+        if (album.Source == "qobuz")
         {
-            if (album.Source == "qobuz") 
-            { 
-                var fullAlbumObj = await QobuzApi.GetInternalAlbum(album.Id);
-                album.TrackList = fullAlbumObj.Tracks.Items.Select(t => QobuzApi.ConvertSongSearchObject(t, fullAlbumObj.Artist?.Name)).ToList();
-            }
+            var fullAlbumObj = await QobuzApi.GetInternalAlbum(album.Id);
+            album.TrackList = fullAlbumObj.Tracks.Items.Select(t => QobuzApi.ConvertSongSearchObject(t, fullAlbumObj.Artist?.Name)).ToList();
         }
+        else if (album.Source == "deezer")
+        {
+            var jsonObj = await DeezerApi.restClient.FetchJsonElement("album/" + album.Id);
+            var fullAlbumObj = DeezerApi.GetAlbumFromJsonElement(jsonObj);
+            var trackTasks = fullAlbumObj?.TrackList?.Select(t => DeezerApi.GetTrack(t.Id));
+            var resolvedTasks = await Task.WhenAll(trackTasks ?? []);
+            album.TrackList = [.. resolvedTasks];
+            album.AdditionalFields = new Dictionary<string, object?>
+            {
+                ["cover_big"] = jsonObj.SafeGetString("cover_big"),
+                ["cover_xl"] = jsonObj.SafeGetString("cover_xl")
+            };
+        }
+
         if (album.TrackList == null)
         {
             return [];
@@ -413,6 +440,17 @@ internal class ApiHelper
             if (!string.IsNullOrEmpty(fullAlbumObj?.Image?.Large))
             {
                 return fullAlbumObj.Image.Large;
+            }
+        } 
+        else if (album.Source == "deezer")
+        {
+            if (!string.IsNullOrEmpty(album.AdditionalFields?.GetValueOrDefault("cover_xl") as string))
+            {
+                return album.AdditionalFields["cover_xl"] as string;
+            }
+            if (!string.IsNullOrEmpty(album.AdditionalFields?.GetValueOrDefault("cover_big") as string))
+            {
+                return album.AdditionalFields["cover_big"] as string;
             }
         }
         return null;

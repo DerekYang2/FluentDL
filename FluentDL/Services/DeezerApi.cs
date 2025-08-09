@@ -44,7 +44,7 @@ internal class DeezerApi
         }
     }
 
-    public static async Task AddTracksFromLink(ObservableCollection<SongSearchObject> list, string url, CancellationToken token, Search.UrlStatusUpdateCallback? statusUpdate)
+    public static async Task AddTracksFromLink(ObservableCollection<SongSearchObject> list, string url, CancellationToken token, Search.UrlStatusUpdateCallback? statusUpdate, bool albumMode = false)
     {
         if (url.StartsWith("https://deezer.page.link/") || url.StartsWith("https://dzr.page.link/") || url.StartsWith("https://link.deezer.com/"))
         {
@@ -81,7 +81,27 @@ internal class DeezerApi
 
         if (Regex.IsMatch(url, @"https://www\.deezer\.com(/[^/]+)?/(album|playlist)/.*"))
         {
-            if (DeezerURL.TryParse(url, out var urlData))
+            if (albumMode && url.Contains("/album/"))
+            {
+                var firstQuestion = url.IndexOf('?');
+                if (firstQuestion != -1)
+                {
+                    url = url.Substring(0, firstQuestion);
+                }
+
+                if (url.Last() == '/') // Remove any trailing slash
+                {
+                    url = url.Remove(url.Length - 1);
+                }
+
+                var albumId = url.Split('/').Last(); // Get the last part of the url
+                var albumObj = await GetAlbum(albumId);
+                if (albumObj != null)
+                {
+                    list.Add(albumObj);
+                    statusUpdate?.Invoke(InfoBarSeverity.Success, $"<b>Deezer</b>   Loaded album <a href='{url}'>{albumObj.Title}</a>");
+                }
+            } else if (DeezerURL.TryParse(url, out var urlData))
             {
                 var tracksInAlbum = await urlData.GetAssociatedTracks(deezerClient, 1000, token);
 
@@ -550,6 +570,14 @@ internal class DeezerApi
             }
         }
 
+        if (contributors.Count == 0)
+        {
+            contributors.Add(jsonObject.SafeGetString("artist", "name") ?? "");
+        }
+
+        Dictionary<string, object> additionalFields = [];
+        additionalFields["preview"] = jsonObject.SafeGetString("preview") ?? "";
+
         return new SongSearchObject
         {
             Source = "deezer",
@@ -563,11 +591,12 @@ internal class DeezerApi
             AlbumName = jsonObject.SafeGetString("album", "title") ?? "Unknown",
             Explicit = jsonObject.SafeGetBool("explicit_lyrics"),
             TrackPosition = jsonObject.SafeGetString("track_position") ?? "",
-            Isrc = jsonObject.SafeGetString("isrc")
+            Isrc = jsonObject.SafeGetString("isrc"),
+            AdditionalFields = additionalFields
         };
     }
 
-    private static AlbumSearchObject? GetAlbumFromJsonElement(JsonElement jsonObject)
+    public static AlbumSearchObject? GetAlbumFromJsonElement(JsonElement jsonObject)
     {
         if (string.IsNullOrWhiteSpace(jsonObject.ToString()))
         {
@@ -611,6 +640,9 @@ internal class DeezerApi
             }
         }
 
+        Dictionary<string, object> additionalFields = [];
+        additionalFields["preview"] = jsonObject.SafeGetString("preview") ?? "";
+
         return new AlbumSearchObject
         {
             Source = "deezer",
@@ -627,6 +659,7 @@ internal class DeezerApi
             Isrc = jsonObject.SafeGetString("upc"),
             TrackList = trackList,
             TracksCount = jsonObject.SafeGetInt32("nb_tracks") ?? 0,
+            AdditionalFields = additionalFields
         };
     }
 
@@ -703,12 +736,25 @@ internal class DeezerApi
         {
             throw new Exception("File already exists");
         }
-
-        var trackBytes = await deezerClient.Downloader.GetRawTrackBytes(id, (Bitrate)bitrateEnum);
-
-        if (trackBytes == null || trackBytes.Length == 0)
+        byte[]? trackBytes = null;
+        try
         {
-            throw new Exception("Failed to download track");
+            trackBytes = await deezerClient.Downloader.GetRawTrackBytes(id, (Bitrate)bitrateEnum);
+
+            if (trackBytes == null || trackBytes.Length == 0)
+            {
+                throw new Exception("Failed to download track");
+            }
+        } catch (Exception e)
+        {
+            Debug.WriteLine($"Error downloading track {id}: {e.Message}");
+            // Fallback to 128 kbps
+            filePath = ApiHelper.RemoveExtension(filePath) + ".mp3"; // Fallback to mp3
+            trackBytes = await deezerClient.Downloader.GetRawTrackBytes(id, Bitrate.MP3_128);
+            if (trackBytes == null || trackBytes.Length == 0)
+            {
+                throw new Exception("Failed to download track even with fallback");
+            }
         }
 
         //trackBytes = await deezerClient.Downloader.ApplyMetadataToTrackBytes(id, trackBytes);

@@ -91,6 +91,8 @@ public class SongSearchObject
         set;
     }
 
+    public Dictionary<string, object?>? AdditionalFields { get; set; } = null;
+
     public SongSearchObject()
     {
     }
