@@ -228,15 +228,33 @@ namespace FluentDL.Views
 
             if (selectedSong.Source.Equals("youtube"))
             {
-                trackDetailsList.Add(new TrackDetail { Label = "Views", Value = selectedSong.Rank });
-
                 PreviewImage.Source = new BitmapImage(new Uri(await YoutubeApi.GetMaxResThumbnail(selectedSong) ?? "")); // Get max res thumbnail
-                PreviewInfoControl2.ItemsSource = PreviewInfoControl.ItemsSource = trackDetailsList; // First set details list
-                RankRatingControl.Visibility = Visibility.Collapsed;
 
-                // Load the audio stream
-                var opusStreamUrl = await YoutubeApi.AudioStreamWorstUrl("https://www.youtube.com/watch?v=" + selectedSong.Id);
-                SongPreviewPlayer.Source = MediaSource.CreateFromUri(new Uri(opusStreamUrl));
+                if (selectedSong is AlbumSearchObject selectedAlbum)
+                {
+                    PreviewInfoControl2.ItemsSource = PreviewInfoControl.ItemsSource = trackDetailsList; // First set the details list
+                    RankRatingControl.Visibility = Visibility.Collapsed;
+
+                    // Tracks list view
+                    TrackListHeader.Text = selectedAlbum.TracksCount switch
+                    {
+                        0 => "No Tracks",
+                        1 => "1 Track",
+                        _ => $"{selectedAlbum.TracksCount} Tracks"
+                    };
+                    AlbumTrackListView.ItemsSource = selectedAlbum.TrackList = selectedAlbum.TrackList ?? [];
+                }
+                else
+                {
+                    trackDetailsList.Add(new TrackDetail { Label = "Views", Value = selectedSong.Rank });
+
+                    PreviewInfoControl2.ItemsSource = PreviewInfoControl.ItemsSource = trackDetailsList; // First set details list
+                    RankRatingControl.Visibility = Visibility.Collapsed;
+
+                    // Load the audio stream
+                    var opusStreamUrl = await YoutubeApi.AudioStreamWorstUrl("https://www.youtube.com/watch?v=" + selectedSong.Id);
+                    SongPreviewPlayer.Source = MediaSource.CreateFromUri(new Uri(opusStreamUrl));
+                }
             }
 
             if (selectedSong.Source.Equals("local"))
@@ -437,6 +455,10 @@ namespace FluentDL.Views
             if (selectedSong.Source == "deezer")
             {
                 SongPreviewPlayer.Source = await Task.Run(() => MediaSource.CreateFromUri(new Uri(selectedSong?.AdditionalFields?["preview"]?.ToString() ?? "")));
+            }
+            if (selectedSong.Source == "youtube")
+            {
+                SongPreviewPlayer.Source = MediaSource.CreateFromUri(new Uri(await YoutubeApi.AudioStreamWorstUrl("https://www.youtube.com/watch?v=" + selectedSong.Id)));
             }
         }
     }

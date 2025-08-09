@@ -988,6 +988,45 @@ namespace FluentDL.Services
                 ReleaseDate = $"{ytmAlbum.ReleaseYear}-01-01",
                 Title = ytmAlbum.Name,
                 TracksCount = ytmAlbum.SongCount,
+                TrackList = ytmAlbum.Songs.Select(song => ConvertSongSearchObject(song, ytmAlbum)).ToList()
+            };
+        }
+
+        public static SongSearchObject ConvertSongSearchObject(AlbumSong song, AlbumInfo album)
+        {
+            Debug.WriteLine(song.PlaysInfo);
+            var artistCSV = new StringBuilder();
+            foreach (var artist in album.Artists)
+            {
+                artistCSV.Append(artist.Name);
+                if (artist != album.Artists.Last())
+                {
+                    artistCSV.Append(", ");
+                }
+            }
+            var artistString = artistCSV.ToString();
+
+            string imageLocation = "";
+            if (album.Thumbnails.Length > 0)
+            {
+                imageLocation = album.Thumbnails.Last().Url; // Use second youtube music image (larger, 120px)
+            }
+
+            return new SongSearchObject()
+            {
+                AlbumName = album.Name,
+                Artists = artistString,
+                Duration = song.Duration.TotalSeconds.ToString() ?? "0",
+                Source = "youtube",
+                Explicit = song.IsExplicit,
+                Id = song.Id,
+                ImageLocation = imageLocation,
+                Isrc = null,
+                LocalBitmapImage = null,
+                Rank = song.PlaysInfo ?? "",
+                TrackPosition = song.SongNumber?.ToString() ?? "1",
+                ReleaseDate = $"{album.ReleaseYear}-01-01",
+                Title = song.Name,
             };
         }
 
