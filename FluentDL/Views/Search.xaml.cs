@@ -543,7 +543,33 @@ public sealed partial class Search : Page
         var beforeCount = QueueViewModel.Source.Count;
         foreach (var song in (ObservableCollection<SongSearchObject>)CustomListView.ItemsSource)
         {
-            QueueViewModel.Add(song);
+            if (song is AlbumSearchObject album)
+            {
+                List<SongSearchObject> albumTracks = [];
+
+                if (album.Source == "qobuz") 
+                {
+                    var albumInternal = await QobuzApi.GetInternalAlbum(album.Id);
+                    albumInternal.Tracks.Items.ForEach(t => t.Album = albumInternal);
+                    albumTracks = albumInternal.Tracks.Items.Select(t => QobuzApi.ConvertSongSearchObject(t, albumInternal.Artist?.Name)).ToList();
+                }
+                else if (album.Source == "deezer") 
+                {
+                    var fullAlbumObj = await DeezerApi.GetAlbum(album.Id);
+
+                    if (fullAlbumObj != null)
+                    {
+                        var trackTasks = fullAlbumObj.TrackList?.Select(t => DeezerApi.GetTrack(t.Id)) ?? [];
+                        var resolvedTracks = await Task.WhenAll(trackTasks);
+                        albumTracks = [.. resolvedTracks];
+                    }
+                }
+                albumTracks.ForEach(QueueViewModel.Add);
+            }
+            else
+            {
+                QueueViewModel.Add(song);
+            }
         }
 
         var addedCount = QueueViewModel.Source.Count - beforeCount;
@@ -679,7 +705,33 @@ public sealed partial class Search : Page
 
         var beforeCount = QueueViewModel.Source.Count;
 
-        QueueViewModel.Add(song);
+        if (song is AlbumSearchObject album)
+        {
+            List<SongSearchObject> albumTracks = [];
+
+            if (album.Source == "qobuz")
+            {
+                var albumInternal = await QobuzApi.GetInternalAlbum(album.Id);
+                albumInternal.Tracks.Items.ForEach(t => t.Album = albumInternal);
+                albumTracks = albumInternal.Tracks.Items.Select(t => QobuzApi.ConvertSongSearchObject(t, albumInternal.Artist?.Name)).ToList();
+            }
+            else if (album.Source == "deezer")
+            {
+                var fullAlbumObj = await DeezerApi.GetAlbum(album.Id);
+
+                if (fullAlbumObj != null)
+                {
+                    var trackTasks = fullAlbumObj.TrackList?.Select(t => DeezerApi.GetTrack(t.Id)) ?? [];
+                    var resolvedTracks = await Task.WhenAll(trackTasks);
+                    albumTracks = [.. resolvedTracks];
+                }
+            }
+            albumTracks.ForEach(QueueViewModel.Add);
+        }
+        else
+        {
+            QueueViewModel.Add(song);
+        }
         if (QueueViewModel.Source.Count == beforeCount) // No change
         {
             ShowInfoBar(InfoBarSeverity.Warning, $"<a href='{ApiHelper.GetUrl(song)}'>{song.Title}</a> already in queue");
