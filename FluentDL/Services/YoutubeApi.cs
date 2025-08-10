@@ -3,6 +3,7 @@ using FluentDL.Helpers;
 using FluentDL.Models;
 using FluentDL.Views;
 using Microsoft.UI.Xaml.Controls;
+using QobuzApiSharp.Models.Content;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -333,7 +334,7 @@ namespace FluentDL.Services
             }
         }
 
-        public static async Task AddTracksFromLink(ObservableCollection<SongSearchObject> itemSource, string url, CancellationToken token, Search.UrlStatusUpdateCallback? statusUpdate)
+        public static async Task AddTracksFromLink(ObservableCollection<SongSearchObject> itemSource, string url, CancellationToken token, Search.UrlStatusUpdateCallback? statusUpdate, bool albumMode = false)
         {
             if (url.StartsWith("https://www.youtube.com/watch?") || url.StartsWith("https://youtube.com/watch?")) // Youtube video
             {
@@ -383,8 +384,23 @@ namespace FluentDL.Services
             {
                 // remove &si= and everything after in the url if it exists
                 url = url.Split("&si=")[0];
+                var playlistObj = await youtube.Playlists.GetAsync(url);
+                var playlistName = playlistObj.Title;
 
-                var playlistName = (await youtube.Playlists.GetAsync(url)).Title;
+                // If load album object
+                if (albumMode)
+                {
+                    try
+                    {
+                        var browseId = await ytm.GetAlbumBrowseIdAsync(playlistObj.Id);  // Can throw exception if playlist url instead of album
+                        itemSource.Add(ConvertAlbumSearchObject(await ytm.GetAlbumInfoAsync(browseId)));
+                        return;
+                    }
+                    catch (Exception ex)
+                    {
+                        Debug.WriteLine("Error loading album: " + ex.ToString());
+                    }
+                }
 
                 // Show a permanent, loading message
                 statusUpdate?.Invoke(InfoBarSeverity.Informational, $"<b>YouTube</b>   Loading playlist <a href='{url}'>{playlistName}</a>", -1);
@@ -819,22 +835,14 @@ namespace FluentDL.Services
 
         public static async Task<SongSearchObject> GetTrack(SongSearchResult ytmSong)
         {
-            var artistCSV = new StringBuilder();
-            foreach (var artist in ytmSong.Artists)
-            {
-                artistCSV.Append(artist.Name);
-                if (artist != ytmSong.Artists.Last())
-                {
-                    artistCSV.Append(", ");
-                }
-            }
+            var artistString = string.Join(", ", ytmSong.Artists.Where(a => a.Id != null).Select(a => a.Name).ToList());
 
             var video = await youtube.Videos.GetAsync(ytmSong.Id); // Get youtube explode video object, has more technical info like release date + views
 
             return new SongSearchObject()
             {
                 AlbumName = ytmSong.Album.Name,
-                Artists = artistCSV.ToString(),
+                Artists = artistString,
                 Duration = ytmSong.Duration.TotalSeconds.ToString(),
                 Source = "youtube",
                 Explicit = ytmSong.IsExplicit,
@@ -866,16 +874,7 @@ namespace FluentDL.Services
             }
             else
             {
-                var artistCSV = new StringBuilder();
-                foreach (var artist in ytmSong.Artists)
-                {
-                    artistCSV.Append(artist.Name);
-                    if (artist != ytmSong.Artists.Last())
-                    {
-                        artistCSV.Append(", ");
-                    }
-                }
-                artistString = artistCSV.ToString();
+                artistString = string.Join(", ", ytmSong.Artists.Where(a => a.Id != null).Select(a => a.Name).ToList());
             }
 
             // These values vary between song or video
@@ -955,16 +954,7 @@ namespace FluentDL.Services
         }
 
         public static AlbumSearchObject ConvertAlbumSearchObject(AlbumInfo ytmAlbum) {
-            var artistCSV = new StringBuilder();
-            foreach (var artist in ytmAlbum.Artists)
-            {
-                artistCSV.Append(artist.Name);
-                if (artist != ytmAlbum.Artists.Last())
-                {
-                    artistCSV.Append(", ");
-                }
-            }
-            var artistString = artistCSV.ToString();
+            var artistString = string.Join(',', ytmAlbum.Artists.Where(a => a.Id != null).Select(a => a.Name).ToList());
 
             string imageLocation = "";
             if (ytmAlbum.Thumbnails.Length > 0)
@@ -994,17 +984,7 @@ namespace FluentDL.Services
 
         public static SongSearchObject ConvertSongSearchObject(AlbumSong song, AlbumInfo album)
         {
-            Debug.WriteLine(song.PlaysInfo);
-            var artistCSV = new StringBuilder();
-            foreach (var artist in album.Artists)
-            {
-                artistCSV.Append(artist.Name);
-                if (artist != album.Artists.Last())
-                {
-                    artistCSV.Append(", ");
-                }
-            }
-            var artistString = artistCSV.ToString();
+            var artistString = string.Join(", ", album.Artists.Where(a => a.Id != null).Select(a => a.Name).ToList());
 
             string imageLocation = "";
             if (album.Thumbnails.Length > 0)
@@ -1137,6 +1117,7 @@ namespace FluentDL.Services
             var artists = new List<string>();
             foreach (var artist in ytmSong.Artists)
             {
+                if (artist.Id == null) continue;
                 artists.Add(artist.Name);
             }
 

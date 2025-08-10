@@ -445,7 +445,7 @@ public sealed partial class Search : Page
         }
         else if (generalQuery.StartsWith("https://www.youtube.com/") || generalQuery.StartsWith("https://youtube.com/") || generalQuery.StartsWith("https://music.youtube.com/"))
         {
-            await YoutubeApi.AddTracksFromLink((ObservableCollection<SongSearchObject>)CustomListView.ItemsSource, generalQuery, cancellationTokenSource.Token, statusUpdate);
+            await YoutubeApi.AddTracksFromLink((ObservableCollection<SongSearchObject>)CustomListView.ItemsSource, generalQuery, cancellationTokenSource.Token, statusUpdate, ViewModel.AlbumMode);
         }
         else
         {

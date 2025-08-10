@@ -111,7 +111,7 @@ internal class ApiHelper
             return song.Source switch
             {
                 "deezer" => "https://www.deezer.com/album/" + id,
-                "youtube" => "https://www.youtube.com/watch?v=" + id,
+                "youtube" => "https://music.youtube.com/playlist?list=" + id,
                 "spotify" => "https://open.spotify.com/album/" + id,
                 "qobuz" => "https://open.qobuz.com/album/" + id,
                 "local" => id,
@@ -344,6 +344,10 @@ internal class ApiHelper
                 ["cover_xl"] = jsonObj.SafeGetString("cover_xl")
             };
         }
+        else if (album.Source == "youtube")
+        {
+            // Nothing needed
+        } 
 
         if (album.TrackList == null)
         {
@@ -452,6 +456,10 @@ internal class ApiHelper
             {
                 return album.AdditionalFields["cover_big"] as string;
             }
+        }
+        else if (album.Source == "youtube")
+        {
+            return await YoutubeApi.GetMaxResThumbnail(album);
         }
         return null;
     }
