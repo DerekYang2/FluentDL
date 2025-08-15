@@ -223,19 +223,24 @@
 
                             <marqueeTextRns:MarqueeText Grid.Row="1" Grid.Column="1" Margin="12, 0, 0, 0" 
                                                         Text="{x:Bind Artists}" FontFamily="Segoe UI Variable Display" 
+                                                        Foreground="{ThemeResource TextFillColorSecondary}"
                                                         Behavior="Looping" Direction="Left" RepeatBehavior="Forever" VerticalAlignment="Center"/>
 
                             <StackPanel Grid.Row="2" Grid.Column="1" Margin="12,0,0,0" Orientation="Horizontal" VerticalAlignment="Bottom">
                                 <TextBlock Text="{x:Bind ReleaseDate, Converter={StaticResource DateToYearConverter}}"
                                            HorizontalAlignment="Left"
+                                           Foreground="{ThemeResource TextFillColorSecondary}"
                                            Style="{ThemeResource BodyTextBlockStyle}" Margin="0,0,0,0"
-                                           FontFamily="Segoe UI Variable Display" />
+                                           FontFamily="Segoe UI Variable Display"/>
                                 <TextBlock Text="&#x2022;" Style="{ThemeResource BodyTextBlockStyle}"
-                                           HorizontalAlignment="Left" Margin="5,0,0,0" />
+                                           HorizontalAlignment="Left" Margin="5,0,0,0" 
+                                           Foreground="{ThemeResource TextFillColorSecondary}"
+                                           FontFamily="Segoe UI Variable Display"/>
                                 <TextBlock Text="{x:Bind Duration, Converter={StaticResource DurationConverter}}"
                                            HorizontalAlignment="Left"
                                            Style="{ThemeResource BodyTextBlockStyle}" Margin="5,0,0,0"
-                                           FontFamily="Segoe UI Variable Display" />
+                                           Foreground="{ThemeResource TextFillColorSecondary}"
+                                           FontFamily="Segoe UI Variable Display"/>
                             </StackPanel>
 
                             <StackPanel Grid.Row="0" Grid.Column="2" Orientation="Horizontal" Spacing="12" Margin="12,0,0,0" HorizontalAlignment="Right">

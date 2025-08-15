@@ -563,6 +563,9 @@ public sealed partial class Search : Page
                         var resolvedTracks = await Task.WhenAll(trackTasks);
                         albumTracks = [.. resolvedTracks];
                     }
+                } else if (album.Source == "youtube")
+                {
+                    albumTracks = album.TrackList;
                 }
                 albumTracks.ForEach(QueueViewModel.Add);
             }
@@ -725,7 +728,11 @@ public sealed partial class Search : Page
                     var resolvedTracks = await Task.WhenAll(trackTasks);
                     albumTracks = [.. resolvedTracks];
                 }
+            } else if (album.Source == "youtube")
+            {
+                albumTracks = album?.TrackList ?? [];
             }
+
             albumTracks.ForEach(QueueViewModel.Add);
         }
         else
