@@ -10,6 +10,8 @@ using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media.Imaging;
 using Org.BouncyCastle.Bcpg.OpenPgp;
 using QobuzApiSharp.Models.Content;
+using SpotifyAPI.Web;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
@@ -205,24 +207,45 @@ namespace FluentDL.Views
 
             if (selectedSong.Source.Equals("spotify"))
             {
-                var track = await SpotifyApi.GetTrack(selectedSong.Id);
-
-                PreviewImage.Source = new BitmapImage(new Uri(track.Album.Images[0].Url)); // Get the largest
-                PreviewInfoControl2.ItemsSource = PreviewInfoControl.ItemsSource = trackDetailsList; // First set the details list
-                trackDetailsList.Add(new TrackDetail { Label = "Track", Value = selectedSong.TrackPosition });
-                var genreStr = string.Join(", ", await SpotifyApi.GetGenres(track.Artists));
-                trackDetailsList.Add(new TrackDetail { Label = "Genre", Value = genreStr });
-
-                // Configure popularity field
-                trackDetailsList.Add(new TrackDetail { Label = "Popularity", Value = "" });
-                RankRatingControl.Visibility = Visibility.Visible;
-                SetRatingPercentage(GetPercentage(selectedSong));
-
-                // Load the audio stream
-                var previewURL = await GetSpotifyPreviewUrl(selectedSong.Id);
-                if (!string.IsNullOrWhiteSpace(previewURL))
+                if (selectedSong is AlbumSearchObject selectedAlbum)
                 {
-                    SongPreviewPlayer.Source = MediaSource.CreateFromUri(new Uri(previewURL));
+                    PreviewImage.Source = new BitmapImage(new Uri((string)(selectedAlbum.AdditionalFields["cover_max"] ?? ""))); // Get the largest
+                    PreviewInfoControl2.ItemsSource = PreviewInfoControl.ItemsSource = trackDetailsList; // First set the details list
+                    trackDetailsList.Add(new TrackDetail { Label = "Genre", Value = string.Join(", ", await SpotifyApi.GetGenres((List<SimpleArtist>)selectedAlbum.AdditionalFields["artists"])) });
+                    trackDetailsList.RemoveAt(trackDetailsList.ToList().FindIndex(t => t.Label == "Album"));
+                    trackDetailsList.Add(new TrackDetail { Label = "Popularity", Value = "" });
+                    RankRatingControl.Visibility = Visibility.Visible;
+                    SetRatingPercentage(GetPercentage(selectedSong));
+                    // Tracks list view
+                    TrackListHeader.Text = selectedAlbum.TracksCount switch
+                    {
+                        0 => "No Tracks",
+                        1 => "1 Track",
+                        _ => $"{selectedAlbum.TracksCount} Tracks"
+                    };
+                    AlbumTrackListView.ItemsSource = selectedAlbum.TrackList;
+                }
+                else
+                {
+                    var track = await SpotifyApi.GetTrack(selectedSong.Id);
+                    var album = await SpotifyApi.GetAlbum(track.Album.Id);
+                    PreviewImage.Source = new BitmapImage(new Uri(album.Images.First().Url)); // Get the largest
+                    PreviewInfoControl2.ItemsSource = PreviewInfoControl.ItemsSource = trackDetailsList; // First set the details list
+                    trackDetailsList.Add(new TrackDetail { Label = "Track", Value = selectedSong.TrackPosition });
+                    var genreStr = string.Join(", ", await SpotifyApi.GetGenres(track.Artists));
+                    trackDetailsList.Add(new TrackDetail { Label = "Genre", Value = genreStr });
+
+                    // Configure popularity field
+                    trackDetailsList.Add(new TrackDetail { Label = "Popularity", Value = "" });
+                    RankRatingControl.Visibility = Visibility.Visible;
+                    SetRatingPercentage(GetPercentage(selectedSong));
+
+                    // Load the audio stream
+                    var previewURL = await GetSpotifyPreviewUrl(selectedSong.Id);
+                    if (!string.IsNullOrWhiteSpace(previewURL))
+                    {
+                        SongPreviewPlayer.Source = MediaSource.CreateFromUri(new Uri(previewURL));
+                    }
                 }
             }
 
@@ -454,11 +477,16 @@ namespace FluentDL.Views
             }
             if (selectedSong.Source == "deezer")
             {
-                SongPreviewPlayer.Source = await Task.Run(() => MediaSource.CreateFromUri(new Uri(selectedSong?.AdditionalFields?["preview"]?.ToString() ?? "")));
+                SongPreviewPlayer.Source = MediaSource.CreateFromUri(new Uri(selectedSong?.AdditionalFields?["preview"]?.ToString() ?? ""));
             }
             if (selectedSong.Source == "youtube")
             {
                 SongPreviewPlayer.Source = MediaSource.CreateFromUri(new Uri(await YoutubeApi.AudioStreamWorstUrl("https://www.youtube.com/watch?v=" + selectedSong.Id)));
+            }
+            if (selectedSong.Source == "spotify")
+            {
+                var previewURL = await GetSpotifyPreviewUrl(selectedSong.Id);
+                SongPreviewPlayer.Source = MediaSource.CreateFromUri(new Uri(previewURL ?? ""));
             }
         }
     }

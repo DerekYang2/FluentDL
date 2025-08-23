@@ -427,7 +427,7 @@ public sealed partial class Search : Page
 
         if (generalQuery.StartsWith("https://open.spotify.com/"))
         {
-            await SpotifyApi.AddTracksFromLink((ObservableCollection<SongSearchObject>)CustomListView.ItemsSource, generalQuery, cancellationTokenSource.Token, statusUpdate);
+            await SpotifyApi.AddTracksFromLink((ObservableCollection<SongSearchObject>)CustomListView.ItemsSource, generalQuery, cancellationTokenSource.Token, statusUpdate, ViewModel.AlbumMode);
 
             /*
             var playlistId = generalQuery.Split("/").Last();
@@ -457,7 +457,7 @@ public sealed partial class Search : Page
                     await QobuzApi.GeneralSearch((ObservableCollection<SongSearchObject>)CustomListView.ItemsSource, generalQuery, cancellationTokenSource.Token, ViewModel.ResultsLimit, ViewModel.AlbumMode);
                     break;
                 case "spotify":
-                    await SpotifyApi.GeneralSearch((ObservableCollection<SongSearchObject>)CustomListView.ItemsSource, generalQuery, cancellationTokenSource.Token, ViewModel.ResultsLimit);
+                    await SpotifyApi.GeneralSearch((ObservableCollection<SongSearchObject>)CustomListView.ItemsSource, generalQuery, cancellationTokenSource.Token, ViewModel.ResultsLimit, ViewModel.AlbumMode);
                     break;
                 case "youtube":
                     await YoutubeApi.GeneralSearch((ObservableCollection<SongSearchObject>)CustomListView.ItemsSource, generalQuery, cancellationTokenSource.Token, ViewModel.ResultsLimit, ViewModel.AlbumMode);

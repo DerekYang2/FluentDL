@@ -360,7 +360,7 @@
                         Description="Configure automatic subfolder creation for downloads"
                         Header="Subfolder Options">
                         <local:SettingsExpander.HeaderIcon>
-                            <FontIcon Glyph="&#xE8B7;" />
+                            <FontIcon Glyph="&#xE8F4;" />
                         </local:SettingsExpander.HeaderIcon>
                         <local:SettingsExpander.Items>
                             <local:SettingsCard Description="Create a subfolder for each individual track" Header="Track Subfolders">

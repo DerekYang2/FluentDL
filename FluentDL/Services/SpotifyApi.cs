@@ -1,4 +1,4 @@
-﻿using AngleSharp.Text;
+using AngleSharp.Text;
 using DeezNET.Data;
 using FluentDL.Helpers;
 using FluentDL.Models;
@@ -164,7 +164,7 @@ namespace FluentDL.Services
             }
         }
 
-        public static async Task GeneralSearch(ObservableCollection<SongSearchObject> itemSource, string query, CancellationToken token, int limit = 25)
+        public static async Task GeneralSearch(ObservableCollection<SongSearchObject> itemSource, string query, CancellationToken token, int limit = 25, bool albumMode = false)
         {
             query = query.Trim(); // Trim the query
             if (!IsInitialized || string.IsNullOrWhiteSpace(query))
@@ -177,7 +177,7 @@ namespace FluentDL.Services
             SearchResponse? response = null;
             try
             {
-                response = await spotify.Search.Item(new SearchRequest(SearchRequest.Types.Track, query), token);
+                response = await spotify.Search.Item(new SearchRequest(albumMode ? SearchRequest.Types.Album : SearchRequest.Types.Track, query), token);
             }
             catch (Exception e)
             {
@@ -185,7 +185,7 @@ namespace FluentDL.Services
                 return; // If failed, return
             }
 
-            if (response?.Tracks?.Items == null)
+            if (response?.Tracks?.Items == null && response?.Albums?.Items == null)
             {
                 return;
             }
@@ -194,15 +194,42 @@ namespace FluentDL.Services
 
             int notNullCount = 0;
             int totalCount = 0;
-            await foreach (FullTrack track in spotify.Paginate(response.Tracks, (s) => s.Tracks)) {
-                if (token.IsCancellationRequested || notNullCount >= limit || totalCount >= 100) return;
-                var song = await Task.Run(() => ConvertSongSearchObject(track), token);
-                if (song != null)
+
+            try
+            {
+                if (albumMode)
                 {
-                    itemSource.Add(song);
-                    notNullCount++;  // Keep track of valid iterations
+                    await foreach (var album in spotify.Paginate(response.Albums, s => s.Albums))
+                    {
+                        if (token.IsCancellationRequested || notNullCount >= limit || totalCount >= 100) return;
+                        var albumObj = ConvertAlbumSearchObject(await spotify.Albums.Get(album.Id));
+                        
+                        if (albumObj != null)
+                        {
+                            itemSource.Add(albumObj);
+                            notNullCount++;
+                        }
+                        totalCount++;  // On every iteration
+                    }
                 }
-                totalCount++;  // On every iteration
+                else
+                {
+                    await foreach (FullTrack track in spotify.Paginate(response.Tracks, s => s.Tracks))
+                    {
+                        if (token.IsCancellationRequested || notNullCount >= limit || totalCount >= 100) return;
+                        var song = ConvertSongSearchObject(track);
+                        if (song != null)
+                        {
+                            itemSource.Add(song);
+                            notNullCount++;  // Keep track of valid iterations
+                        }
+                        totalCount++;  // On every iteration
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                Debug.WriteLine("Failed general search: " + e.ToString());
             }
         }
 
@@ -266,6 +293,20 @@ namespace FluentDL.Services
             }
         }
 
+        public static async Task<FullAlbum?> GetAlbum(string id)
+        {
+            try
+            {
+                var album = await spotify.Albums.Get(id);
+                return album;
+            }
+            catch (Exception e)
+            {
+                Debug.WriteLine(e.Message);
+                return null;
+            }
+        }
+
         // TODO: handle invalid playlist ids
         public static async Task<List<SongSearchObject>> GetPlaylist(string playlistId, CancellationToken token)
         {
@@ -301,7 +342,7 @@ namespace FluentDL.Services
             return songs;
         }
 
-        public static async Task AddTracksFromLink(ObservableCollection<SongSearchObject> itemSource, string url, CancellationToken token, Search.UrlStatusUpdateCallback? statusUpdate)
+        public static async Task AddTracksFromLink(ObservableCollection<SongSearchObject> itemSource, string url, CancellationToken token, Search.UrlStatusUpdateCallback? statusUpdate, bool albumMode = false)
         {
             if (!IsInitialized)
             {
@@ -566,6 +607,56 @@ namespace FluentDL.Services
                 Explicit = track.Explicit,
                 TrackPosition = track.TrackNumber.ToString(),
                 Isrc = track.ExternalIds["isrc"],
+            };
+        }
+
+        public static SongSearchObject? ConvertSongSearchObject(SimpleTrack track, FullAlbum album)
+        {
+            var artistCsv = track.Artists.Select(a => a.Name).Aggregate((a, b) => a + ", " + b);
+            if (artistCsv.Length == 0 || string.IsNullOrEmpty(track.Name))
+            {
+                return null;
+            }
+            return new SongSearchObject
+            {
+                Source = "spotify",
+                Title = track.Name,
+                Artists = artistCsv,
+                ImageLocation = album.Images[1].Url, // Medium image, 300 x 300
+                Id = track.Id,
+                Duration = ((int)Math.Round(track.DurationMs / 1000.0)).ToString(),
+                ReleaseDate = "", // No release date available in SimpleTrack
+                AlbumName = album?.Name ?? "",
+                Explicit = track.Explicit,
+                TrackPosition = track.TrackNumber.ToString(),
+            };
+        }
+
+        public static AlbumSearchObject? ConvertAlbumSearchObject(FullAlbum album)
+        {
+            var artistCsv = album.Artists.Select(a => a.Name).Aggregate((a, b) => a + ", " + b);
+            if (artistCsv.Length == 0 || string.IsNullOrEmpty(album.Name))
+            {
+                return null;
+            }
+
+            return new AlbumSearchObject
+            {
+                Source = "spotify",
+                Title = album.Name,
+                Artists = artistCsv,
+                ImageLocation = album.Images[1].Url, // medium image, 300 x 300
+                Id = album.Id,
+                Duration = ((int)Math.Round(album.Tracks.Items?.Sum(t => t.DurationMs / 1000.0) ?? 0)).ToString(),
+                ReleaseDate = album.ReleaseDate,
+                AlbumName = album.Name,
+                Explicit = album.Tracks.Items?.Any(t => t.Explicit) ?? false,
+                TrackPosition = "1",
+                Rank = album.Popularity.ToString(),
+                Isrc = album.ExternalIds.TryGetValue("upc", out var upc) ? upc : null,
+                TracksCount = album.TotalTracks,
+                TrackList = album.Tracks.Items?.Select(t => ConvertSongSearchObject(t, album))?.Where(t => t != null)?.ToList() ?? [],
+                AdditionalFields = new Dictionary<string, object?> { { "artists", album.Artists}, { "cover_max", album.Images.First().Url} }
             };
         }
 
