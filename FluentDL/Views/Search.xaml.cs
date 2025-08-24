@@ -547,13 +547,13 @@ public sealed partial class Search : Page
             {
                 List<SongSearchObject> albumTracks = [];
 
-                if (album.Source == "qobuz") 
+                if (album.Source == "qobuz")
                 {
                     var albumInternal = await QobuzApi.GetInternalAlbum(album.Id);
                     albumInternal.Tracks.Items.ForEach(t => t.Album = albumInternal);
                     albumTracks = albumInternal.Tracks.Items.Select(t => QobuzApi.ConvertSongSearchObject(t, albumInternal.Artist?.Name)).ToList();
                 }
-                else if (album.Source == "deezer") 
+                else if (album.Source == "deezer")
                 {
                     var fullAlbumObj = await DeezerApi.GetAlbum(album.Id);
 
@@ -563,10 +563,18 @@ public sealed partial class Search : Page
                         var resolvedTracks = await Task.WhenAll(trackTasks);
                         albumTracks = [.. resolvedTracks];
                     }
-                } else if (album.Source == "youtube")
+                }
+                else if (album.Source == "spotify")
+                {
+                    var trackTasks = album.TrackList?.Select(t => SpotifyApi.GetTrack(t.Id)) ?? [];
+                    var resolvedTracks = await Task.WhenAll(trackTasks);
+                    albumTracks = [.. resolvedTracks.Select(SpotifyApi.ConvertSongSearchObject)];
+                }
+                else if (album.Source == "youtube")
                 {
                     albumTracks = album.TrackList;
                 }
+
                 albumTracks.ForEach(QueueViewModel.Add);
             }
             else
@@ -728,7 +736,14 @@ public sealed partial class Search : Page
                     var resolvedTracks = await Task.WhenAll(trackTasks);
                     albumTracks = [.. resolvedTracks];
                 }
-            } else if (album.Source == "youtube")
+            }
+            else if (album.Source == "spotify")
+            {
+                var trackTasks = album.TrackList?.Select(t => SpotifyApi.GetTrack(t.Id)) ?? [];
+                var resolvedTracks = await Task.WhenAll(trackTasks);
+                albumTracks = [.. resolvedTracks.Select(SpotifyApi.ConvertSongSearchObject)];
+            }
+            else if (album.Source == "youtube")
             {
                 albumTracks = album?.TrackList ?? [];
             }
@@ -895,7 +910,7 @@ public sealed partial class Search : Page
                     }
                     else if (severity == InfoBarSeverity.Warning)
                     {
-                        ShowInfoBar(severity, $"Downloaded a possible equivalent of <a href='{location}'>{songObj.Title}</a>", 10, buttonText: "ViewDownload", onButtonClick: navigateLocalExplorer);
+                        ShowInfoBar(severity, $"Downloaded a possible equivalent of <a href='{location}'>{songObj.Title}</a>", 10, buttonText: "View Download", onButtonClick: navigateLocalExplorer);
                     }
 
                 });
