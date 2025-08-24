@@ -330,7 +330,7 @@
                             </local:SettingsCard>
                             <local:SettingsCard
                                 x:Name="SpotifyQuality"
-                                Description="Spotify downloads are auto-converted from other sources (not recommended)"
+                                Description="Spotify downloads are auto-converted. FLAC is only true lossless with premium Deezer or Qobuz."
                                 Header="Spotify">
                                 <ComboBox
                                     x:Name="SpotifyQualityComboBox"
@@ -348,9 +348,9 @@
                                     x:Name="YoutubeQualityComboBox"
                                     DropDownOpened="ComboBox_OnDropDownOpened"
                                     SelectionChanged="YoutubeQualityComboBox_OnSelectionChanged">
-                                    <ComboBoxItem x:Name="YoutubeOpus" Content="Opus (128kbps) - Good quality, best size, bad compatibility" />
-                                    <ComboBoxItem x:Name="YoutubeFlac" Content="FLAC from Opus - Opus quality, large size, good compatibility" />
-                                    <ComboBoxItem x:Name="YoutubeAAC" Content="AAC (128kbps) - Medium quality, good size, good compatibility" />
+                                    <ComboBoxItem x:Name="YoutubeOpus" Content="Opus (128kbps) - better quality, poor compatability, small size" />
+                                    <ComboBoxItem x:Name="YoutubeFlac" Content="FLAC (transcoded Opus) - same as opus quality, good compatability, large size" />
+                                    <ComboBoxItem x:Name="YoutubeAAC" Content="AAC (128kbps) - good compatability, small size" />
                                 </ComboBox>
                             </local:SettingsCard>
                         </local:SettingsExpander.Items>

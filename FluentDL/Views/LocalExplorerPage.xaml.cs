@@ -45,68 +45,6 @@ public sealed partial class LocalExplorerPage : Page
     private DispatcherTimer dispatcherTimer;
     private CancellationTokenSource? cancellationTokenSource = null;
 
-    private static HashSet<string> supportedExtensions = new()
-    {
-        ".aac",
-        ".mp4",
-        ".m4a",
-        ".m4b",
-        ".caf",
-        ".aax",
-        ".aa",
-        ".aif",
-        ".aiff",
-        ".aifc",
-        ".dts",
-        ".dsd",
-        ".dsf",
-        ".ac3",
-        ".xm",
-        ".flac",
-        ".gym",
-        ".it",
-        ".mid",
-        ".midi",
-        ".ape",
-        ".mp1",
-        ".mp2",
-        ".mp3",
-        ".mpc",
-        ".mod",
-        ".ogg",
-        ".oga",
-        ".opus",
-        ".ofr",
-        ".ofs",
-        ".psf",
-        ".psf1",
-        ".psf2",
-        ".minipsf",
-        ".minipsf1",
-        ".minipsf2",
-        ".ssf",
-        ".minissf",
-        ".dsf",
-        ".minidsf",
-        ".gsf",
-        ".minigsf",
-        ".qsf",
-        ".miniqsf",
-        ".s3m",
-        ".spc",
-        ".tak",
-        ".tta",
-        ".vqf",
-        ".wav",
-        ".bwav",
-        ".bwf",
-        ".vgm",
-        ".vgz",
-        ".wv",
-        ".wma",
-        ".asf"
-    };
-
     public LocalExplorerViewModel ViewModel
     {
         get;
@@ -427,7 +365,7 @@ public sealed partial class LocalExplorerPage : Page
             int addedCount = 0;
             foreach (var file in files)
             {
-                if (LocalExplorerViewModel.ContainsFile(file.Path) || !supportedExtensions.Contains(file.FileType.ToLower())) // file.Path is the Id of a song
+                if (LocalExplorerViewModel.ContainsFile(file.Path) || !LocalExplorerViewModel.SupportedExtensions.Contains(file.FileType.ToLower())) // file.Path is the Id of a song
                 {
                     continue;
                 }

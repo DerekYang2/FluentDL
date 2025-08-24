@@ -9,6 +9,7 @@ using Microsoft.UI.Xaml.Controls;
 using QobuzApiSharp.Models.Content;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
@@ -90,16 +91,14 @@ internal class ApiHelper
     {
         var idx = filename.LastIndexOf('.');
         if (idx == -1) return filename;
+        var ext = filename[idx..].ToLower();
 
-        var ext = filename.Substring(idx);
-        // Check if ext is a valid extension (only contains letters)
-
-        if (ext.All(char.IsLetter)) // If it is a valid extension
+        if (!LocalExplorerViewModel.SupportedExtensions.Contains(ext))
         {
-            return filename.Substring(0, idx); // Remove the extension
+            return filename; // Not a valid extension
         }
 
-        return filename; // Return the original filename
+        return filename[..idx];
     }
 
     public static string GetUrl(SongSearchObject song)
@@ -254,7 +253,7 @@ internal class ApiHelper
 
         if (song.Source == "spotify")
         {
-            var resultPath = await SpotifyApi.DownloadEquivalentTrack(locationNoExt, song, true, callback);
+            var resultPath = await SpotifyApi.DownloadEquivalentTrack(locationNoExt, song, false, callback);
 
             if (resultPath != null)
             {
@@ -497,7 +496,7 @@ internal class ApiHelper
 
         if (song.Source == "spotify")
         {
-            await SpotifyApi.DownloadEquivalentTrack(flacLocation, song);
+            await SpotifyApi.DownloadEquivalentTrack(flacLocation, song, false);
             await SpotifyApi.UpdateMetadata(flacLocation, song.Id);
         }
     }

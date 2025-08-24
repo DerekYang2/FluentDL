@@ -6,6 +6,7 @@ using System.Text;
 using System.Threading.Tasks;
 using FFMpegCore;
 using FFMpegCore.Enums;
+using FluentDL.Helpers;
 using FluentDL.ViewModels;
 using Org.BouncyCastle.Bcpg.OpenPgp;
 
@@ -47,25 +48,15 @@ internal class FFmpegRunner
             return;
         }
 
-        var directory = Path.GetDirectoryName(initialPath);
-        var fileName = Path.GetFileNameWithoutExtension(initialPath);
-        string outputPath;
-        if (Path.IsPathRooted(initialPath)) // If the path is absolute
-        {
-            outputPath = Path.Combine(directory, fileName + ".flac");
-        }
-        else // If the path is relative
-        {
-            outputPath = fileName + ".flac";
-        }
+        string outputPath = ApiHelper.RemoveExtension(initialPath) + ".flac";
 
         await FFMpegArguments.FromFileInput(initialPath)
             .OutputToFile(outputPath, true, options => options
                 .WithCustomArgument("-sample_fmt s16")
                 .WithAudioSamplingRate(samplingRate)).ProcessAsynchronously();
 
-        // Delete the original opus
-        File.Delete(initialPath);
+        // Delete the original
+        await Task.Run(() => File.Delete(initialPath));
     }
 
     public static void ConvertToFlac(string initialPath, int samplingRate = 48000)
@@ -76,17 +67,7 @@ internal class FFmpegRunner
             return;
         }
 
-        var directory = Path.GetDirectoryName(initialPath);
-        var fileName = Path.GetFileNameWithoutExtension(initialPath);
-        string outputPath;
-        if (Path.IsPathRooted(initialPath)) // If the path is absolute
-        {
-            outputPath = Path.Combine(directory, fileName + ".flac");
-        }
-        else // If the path is relative
-        {
-            outputPath = fileName + ".flac";
-        }
+        string outputPath = ApiHelper.RemoveExtension(initialPath) + ".flac";
 
         FFMpegArguments.FromFileInput(initialPath)
             .OutputToFile(outputPath, true, options => options
@@ -117,6 +98,12 @@ internal class FFmpegRunner
     {
         var directory = outputDirectory ?? Path.GetDirectoryName(initialPath);
         var fileName = Path.GetFileNameWithoutExtension(initialPath);
+        var ext = Path.GetExtension(initialPath);
+
+        if (!LocalExplorerViewModel.SupportedExtensions.Contains(ext.ToLower()))  // Likely no extension (. inside name)
+        {
+            return initialPath; // Return the original path, do not convert
+        }
 
         string outputPath;
         if (Path.IsPathRooted(initialPath)) // If the path is absolute

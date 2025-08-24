@@ -211,7 +211,11 @@ namespace FluentDL.Views
                 {
                     PreviewImage.Source = new BitmapImage(new Uri((string)(selectedAlbum.AdditionalFields["cover_max"] ?? ""))); // Get the largest
                     PreviewInfoControl2.ItemsSource = PreviewInfoControl.ItemsSource = trackDetailsList; // First set the details list
-                    trackDetailsList.Add(new TrackDetail { Label = "Genre", Value = string.Join(", ", await SpotifyApi.GetGenres((List<SimpleArtist>)selectedAlbum.AdditionalFields["artists"])) });
+                    var genreList = await SpotifyApi.GetGenres((List<SimpleArtist>)selectedAlbum.AdditionalFields["artists"]);
+                    if (genreList.Count > 0)
+                    {
+                        trackDetailsList.Add(new TrackDetail { Label = "Genre", Value = string.Join(", ", genreList) });
+                    }
                     trackDetailsList.RemoveAt(trackDetailsList.ToList().FindIndex(t => t.Label == "Album"));
                     trackDetailsList.Add(new TrackDetail { Label = "Popularity", Value = "" });
                     RankRatingControl.Visibility = Visibility.Visible;

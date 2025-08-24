@@ -698,7 +698,7 @@ internal class DeezerApi
         return GetAlbumFromJsonElement(jsonObject);
     }
 
-    public static async Task<string> DownloadTrack(string filePath, SongSearchObject? song, DeezNET.Data.Bitrate? bitrateEnum = null)
+    public static async Task<string> DownloadTrack(string filePath, SongSearchObject? song, DeezNET.Data.Bitrate? bitrateEnum = null, bool use128Fallback = false)
     {
         // Remove extension if it exists
         filePath = ApiHelper.RemoveExtension(filePath);
@@ -747,9 +747,13 @@ internal class DeezerApi
             }
         } catch (Exception e)
         {
+            if (!use128Fallback || (!FFmpegRunner.IsInitialized && bitrateEnum == Bitrate.FLAC))  // Rethrow if not using fallback
+            {
+                throw;
+            }
             Debug.WriteLine($"Error downloading track {id}: {e.Message}");
             // Fallback to 128 kbps
-            filePath = ApiHelper.RemoveExtension(filePath) + ".mp3"; // Fallback to mp3
+            filePath = ApiHelper.RemoveExtension(filePath) + ".mp3";
             trackBytes = await deezerClient.Downloader.GetRawTrackBytes(id, Bitrate.MP3_128);
             if (trackBytes == null || trackBytes.Length == 0)
             {
@@ -759,6 +763,13 @@ internal class DeezerApi
 
         //trackBytes = await deezerClient.Downloader.ApplyMetadataToTrackBytes(id, trackBytes);
         await File.WriteAllBytesAsync(filePath, trackBytes);
+
+        // Convert to flac if needed
+        if (bitrateEnum == Bitrate.FLAC && filePath.EndsWith(".mp3"))
+        {
+            await FFmpegRunner.ConvertToFlacAsync(filePath, 44100);
+            filePath = ApiHelper.RemoveExtension(filePath) + ".flac";
+        }
         return filePath;
     }
 
