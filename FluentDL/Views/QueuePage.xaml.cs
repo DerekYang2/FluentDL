@@ -36,22 +36,6 @@ using Newtonsoft.Json;
 
 namespace FluentDL.Views;
 
-// Converter converts integer (queue list count) to a message
-public class QueueMessageConverter : IValueConverter
-{
-    public object Convert(object value, Type targetType, object parameter, string language)
-    {
-        if ((int)value == 0)
-        {
-            return "No tracks in queue";
-        }
-
-        return value + " tracks in queue";
-    }
-
-    public object ConvertBack(object value, Type targetType, object parameter, string language) => throw new NotImplementedException();
-}
-
 public class PathToVisibilityConverter : IValueConverter
 {
     public object Convert(object value, Type targetType, object parameter, string language)
@@ -173,6 +157,8 @@ public sealed partial class QueuePage : Page
 
     protected async override void OnNavigatedTo(NavigationEventArgs e)
     {
+        SetCountText();
+
         // Get the selected item
         var selectedSong = (SongSearchObject)CustomListView.SelectedItem;
         if (selectedSong != null)
@@ -215,48 +201,65 @@ public sealed partial class QueuePage : Page
             }
         }
     }
+    
+    private void SetCountText()
+    {
+        var count = QueueViewModel.Source.Count;
+        if (count == 0)
+        {
+            CountText.Text = "No tracks in queue";
+        }
+        else if (count == 1)
+        {
+            CountText.Text = "1 track in queue";
+        }
+        else
+        {
+            CountText.Text = $"{count} tracks in queue";
+        }
+    }
 
     private void OnQueueSourceChange()
     {
+        SetCountText();
+
         if (IsConverting) // Ignore the below
         {
-            return;
-        }
-
-        dispatcherQueue.TryEnqueue(() =>
-        {
-            // Check if pause was called
-            if (cancellationTokenSource.Token.IsCancellationRequested)
+            dispatcherQueue.TryEnqueue(() =>
             {
-                SetContinueUI(); // If paused, UI should show continue
-                ShowInfoBar(InfoBarSeverity.Informational, "Queue paused");
-            }
-
-            if (QueueViewModel.Source.Count == 0)
-            {
-                CountText.Text = "No tracks in queue";
-                QueueProgress.Value = 0;
-                StartStopButton.Visibility = Visibility.Collapsed;
-            }
-            else
-            {
-                var completedCount = QueueViewModel.GetCompletedCount();
-                QueueProgress.Value = 100.0 * completedCount / QueueViewModel.Source.Count;
-                ProgressText.Text = $"Completed {QueueViewModel.GetCompletedCount()} of {QueueViewModel.Source.Count}";
-
-                if (completedCount == QueueViewModel.Source.Count) // If all tracks are completed
+                // Check if pause was called
+                if (cancellationTokenSource.Token.IsCancellationRequested)
                 {
-                    // Reset UI to normal
-                    ProgressTextButton.Visibility = StartStopButton.Visibility = Visibility.Collapsed; // Hide the start/stop button
-                    CountTextButton.Visibility = Visibility.Visible;
-                    EnableButtons();
-                    QueueProgress.Value = 0;
+                    SetContinueUI(); // If paused, UI should show continue
+                    ShowInfoBar(InfoBarSeverity.Informational, "Queue paused");
                 }
-            }
 
-            NoItemsText.Visibility = QueueViewModel.Source.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
-            ClearButton.IsEnabled = QueueViewModel.Source.Count > 0 && !QueueViewModel.IsRunning;
-        });
+                if (QueueViewModel.Source.Count == 0)
+                {
+                    CountText.Text = "No tracks in queue";
+                    QueueProgress.Value = 0;
+                    StartStopButton.Visibility = Visibility.Collapsed;
+                }
+                else
+                {
+                    var completedCount = QueueViewModel.GetCompletedCount();
+                    QueueProgress.Value = 100.0 * completedCount / QueueViewModel.Source.Count;
+                    ProgressText.Text = $"Completed {QueueViewModel.GetCompletedCount()} of {QueueViewModel.Source.Count}";
+
+                    if (completedCount == QueueViewModel.Source.Count) // If all tracks are completed
+                    {
+                        // Reset UI to normal
+                        ProgressTextButton.Visibility = StartStopButton.Visibility = Visibility.Collapsed; // Hide the start/stop button
+                        CountTextButton.Visibility = Visibility.Visible;
+                        EnableButtons();
+                        QueueProgress.Value = 0;
+                    }
+                }
+
+                NoItemsText.Visibility = QueueViewModel.Source.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
+                ClearButton.IsEnabled = QueueViewModel.Source.Count > 0 && !QueueViewModel.IsRunning;
+            });
+        }
     }
 
     private void InitPreviewPanelButtons()

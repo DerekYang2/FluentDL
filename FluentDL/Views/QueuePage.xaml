@@ -22,7 +22,6 @@
         <helpers:VisibilityConverter x:Key="VisibilityConverter" />
         <helpers:CollapsedConverter x:Key="CollapsedConverter" />
         <viewModels:QueueViewModel x:Key="QueueViewModel" />
-        <views:QueueMessageConverter x:Key="QueueMessageConverter" />
         <views:PathToVisibilityConverter x:Key="PathToVisibilityConverter" />
         <helpers:NullVisibilityConverter x:Key="NullVisibilityConverter" />
         <helpers:InverseNullVisibilityConverter x:Key="InverseNullVisibilityConverter" />
@@ -43,8 +42,7 @@
         <controls1:DockPanel Grid.Row="0" Grid.Column="0">
             <Button x:Name="CountTextButton" VerticalAlignment="Center" Margin="0, 0, 0, 0" Background="Transparent"
                     BorderBrush="Transparent">
-                <TextBlock x:Name="CountText" Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"
-                           Text="{Binding Source={StaticResource QueueViewModel}, Path=Source.Count, Converter={StaticResource QueueMessageConverter}}" />
+                <TextBlock x:Name="CountText" Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}" Text="No tracks in queue"/>
             </Button>
             <Button x:Name="ProgressTextButton" VerticalAlignment="Center" Margin="0,0,0,0" Background="Transparent" BorderBrush="Transparent" Visibility="Collapsed">
                 <TextBlock x:Name="ProgressText" Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"/>
