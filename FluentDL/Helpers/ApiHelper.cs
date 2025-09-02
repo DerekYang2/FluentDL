@@ -343,6 +343,12 @@ internal class ApiHelper
                 ["cover_xl"] = jsonObj.SafeGetString("cover_xl")
             };
         }
+        else if (album.Source == "spotify")
+        {
+            var trackTasks = album.TrackList?.Select(t => SpotifyApi.GetTrack(t.Id)) ?? [];
+            var resolvedTracks = await Task.WhenAll(trackTasks);
+            album.TrackList = [.. resolvedTracks.Select(SpotifyApi.ConvertSongSearchObject)];
+        }
         else if (album.Source == "youtube")
         {
             // Nothing needed
@@ -456,6 +462,13 @@ internal class ApiHelper
                 return album.AdditionalFields["cover_big"] as string;
             }
         }
+        else if (album.Source == "spotify")
+        {
+            if (!string.IsNullOrWhiteSpace(album.AdditionalFields?.GetValueOrDefault("cover_max") as string))
+            {
+                return album.AdditionalFields["cover_max"] as string;
+            }
+        }
         else if (album.Source == "youtube")
         {
             return await YoutubeApi.GetMaxResThumbnail(album);
@@ -470,10 +483,8 @@ internal class ApiHelper
             return;
         }
 
-        var directory = Path.GetDirectoryName(file.Path);
-        var fileName = Path.GetFileNameWithoutExtension(file.Path);
-        var flacLocation = Path.Combine(directory, fileName + ".flac");
-        var opusLocation = Path.Combine(directory, fileName + ".opus");
+        var flacLocation = ApiHelper.RemoveExtension(file.Path) + ".flac";
+        var opusLocation = ApiHelper.RemoveExtension(file.Path) + ".opus";
 
         if (song.Source == "youtube")
         {
