@@ -342,15 +342,15 @@
                             </local:SettingsCard>
                             <local:SettingsCard
                                 x:Name="YoutubeQuality"
-                                Description="Select the quality of YouTube downloads"
+                                Description="Select the quality of YouTube downloads. FLAC (transcoded opus) is recommended for both audio quality and compatability."
                                 Header="YouTube">
                                 <ComboBox
                                     x:Name="YoutubeQualityComboBox"
                                     DropDownOpened="ComboBox_OnDropDownOpened"
                                     SelectionChanged="YoutubeQualityComboBox_OnSelectionChanged">
-                                    <ComboBoxItem x:Name="YoutubeOpus" Content="Opus (128kbps) - better quality, poor compatability, small size" />
-                                    <ComboBoxItem x:Name="YoutubeFlac" Content="FLAC (transcoded Opus) - same as opus quality, good compatability, large size" />
-                                    <ComboBoxItem x:Name="YoutubeAAC" Content="AAC (128kbps) - good compatability, small size" />
+                                    <ComboBoxItem x:Name="YoutubeOpus" Content="Opus (128kbps)" />
+                                    <ComboBoxItem x:Name="YoutubeFlac" Content="FLAC (transcoded Opus)" />
+                                    <ComboBoxItem x:Name="YoutubeAAC" Content="AAC (128kbps)" />
                                 </ComboBox>
                             </local:SettingsCard>
                         </local:SettingsExpander.Items>
