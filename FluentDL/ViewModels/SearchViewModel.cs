@@ -64,6 +64,10 @@ public partial class SearchViewModel : ObservableRecipient
         return await localSettings.ReadSettingAsync<bool>(SettingsViewModel.NotifyUpdate);
     }
 
+    public async Task SaveNotifyUpdate(bool notifyUpdate) {
+        await localSettings.SaveSettingAsync(SettingsViewModel.NotifyUpdate, notifyUpdate);
+    }
+
     public async Task<string> GetSearchSource()
     {
         return await localSettings.ReadSettingAsync<string>(SettingsViewModel.SearchSource) ?? "deezer";
