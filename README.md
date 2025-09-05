@@ -34,10 +34,10 @@ FluentDL is organized into three sections: Search, Local Explorer, and Queue.
     <td valign="top">
       <strong>Search</strong>
       <ul>
-        <li>Lookup songs from any of the four online sources</li>
+        <li>Lookup songs/albums from any of the four online sources</li>
         <li>Search using natural language or strict search by title/artist/album</li>
         <li>Parse all tracks from an online link, with track/album/playlist links supported</li>
-        <li>Open songs in preview sidebar to listen, download, or view metadata.</li>
+        <li>Open songs/albums in preview sidebar to listen, download, or view metadata.</li>
         <li>Add songs to Queue (see below)</li>
       </ul>
     </td>
@@ -77,41 +77,14 @@ FluentDL is organized into three sections: Search, Local Explorer, and Queue.
   </tr>
 </table>
 
-## Installation 
+## Installation
 To install the app, download the first zip from [Releases](https://github.com/DerekYang2/FluentDL/releases).
 
-If you are updating FluentDL, directly run `FluentDL_{VERSION}_x64_MSIX.msix` **or** follow one of the options below.
+If you are updating FluentDL, directly run `FluentDL_{VERSION}_x64_MSIX.msix` (recommended) or run the install script.
 
-If this is your **first** installation, you **must** follow one of the options below.
+If this is your **first** installation, you must run the install script. The main purpose of the script is to trust the self-signed certificate.
 
-Before starting, open the Windows Settings app and enable developer mode: `Settings > For developers > Developer Mode`.
-
-### Option 1
-This method works if running scripts is enabled: `Settings > For developers > PowerShell`. 
-
-In the root folder inside of the zip, you should see an `Install.ps1` file and other files such as `FluentDL_{VERSION}_x64_MSIX.msix`. 
-
-Right click on `Install.ps1` (in File Explorer) and press `Run with PowerShell`.
-
-### Option 2
-
-This method works regardless if scripts is enabled. 
-
-If you open PowerShell into the root directory, run the command:
-
-```powershell.exe -executionpolicy unrestricted .\Install.ps1```
-
-Otherwise, run the command replacing `PATH` with the full path to the install script:
-
-```powershell.exe -executionpolicy unrestricted PATH```
-
-The application is now installed, and you should be able to find "FluentDL" with Search or in your Apps list.
-
-<details>
-  <summary><b>What does the PowerShell script do?</b></summary>
-    
-Ideally, you would only need to run `FluentDL_{VERSION}_x64_MSIX.msix`, which opens the official Microsoft Store installer interface. However, the certificate is self-signed because ones from certificate authorities can cost hundreds of dollars per year. The PowerShell script trusts the self-signed certificate on your machine and then runs the MSIX. The <a href="https://superuser.com/questions/463081/adding-self-signed-certificate-to-trusted-root-certificate-store-using-command-l">manual way</a> of trusting a certificate is more work. This is also why if you have already run the script (trusted the certificate), you can directly run the MSIX in the future. 
-</details>
+There are two ways to run the script, see the [install wiki](https://github.com/DerekYang2/FluentDL/wiki/Installation).
 
 ## Authentication
 
@@ -151,7 +124,7 @@ Authentication requirements for downloading varies for the sources. The type of 
   </tr>
   <tr>
     <td>Spotify</td>
-    <td>Not Available</td>
+    <td>Not natively available, auto converted from other sources</td>
   </tr>
 </table>
 
