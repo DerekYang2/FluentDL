@@ -223,7 +223,7 @@ public sealed partial class QueuePage : Page
     {
         SetCountText();
 
-        if (IsConverting) // Ignore the below
+        if (!IsConverting) // Ignore the below
         {
             dispatcherQueue.TryEnqueue(() =>
             {
@@ -1206,7 +1206,10 @@ public sealed partial class QueuePage : Page
 
                     dispatcherQueue.TryEnqueue(() =>
                     {
+                        Debug.WriteLine("bef: " + QueueProgress.Value);
+
                         QueueProgress.Value = 100.0 * processCaptured / totalCount; // Update the progress bar
+                        Debug.WriteLine("aft: " + QueueProgress.Value);
                     });
 
 
