@@ -123,11 +123,11 @@
                                         <TextBlock Grid.Column="0" Grid.Row="0" Grid.RowSpan="2" Text="{x:Bind TrackPosition, Mode=OneWay}" Style="{ThemeResource BodyText}"
                                                HorizontalAlignment="Left" VerticalAlignment="Center" Foreground="{ThemeResource TextFillColorSecondary}"/>
                                         <!-- Title and Artists under-->
-                                        <TextBlock Grid.Column="1" Grid.Row="0" Text="{x:Bind Title, Mode=OneWay}" Style="{ThemeResource BodyText}" FontWeight="SemiBold"
-                                                   ToolTipService.ToolTip="{x:Bind Title, Mode=OneWay}" HorizontalAlignment="Left" VerticalAlignment="Center" />
-                                        <TextBlock Grid.Column="1" Grid.Row="1" Text="{x:Bind Artists, Mode=OneWay}"
+                                        <TextBlock Grid.Column="1" Grid.Row="0" Text="{x:Bind Title, Mode=OneWay}" Style="{ThemeResource BodyText}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"
+                                                   ToolTipService.ToolTip="{x:Bind Title, Mode=OneWay}" HorizontalAlignment="Left" VerticalAlignment="Center"/>
+                                        <TextBlock Grid.Column="1" Grid.Row="1" Text="{x:Bind Artists, Mode=OneWay}" TextTrimming="CharacterEllipsis"
                                                        Foreground="{ThemeResource TextFillColorSecondary}"
-                                               HorizontalAlignment="Left" VerticalAlignment="Center" />
+                                                       HorizontalAlignment="Left" VerticalAlignment="Center" />
                                         <!-- Duration -->
                                         <TextBlock Grid.Column="2" Grid.Row="0" Grid.RowSpan="2" Text="{x:Bind Duration, Mode=OneWay, Converter={StaticResource DurationConverterShort}}" Style="{ThemeResource BodyText}"
                                                HorizontalAlignment="Right" VerticalAlignment="Center" Foreground="{ThemeResource TextFillColorSecondary}"/>
