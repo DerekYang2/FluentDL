@@ -17,6 +17,18 @@ internal partial class QobuzApi
     private static QobuzApiService apiService = new QobuzApiService();
     private static HttpClient QobuzHttpClient = new HttpClient();
 
+    private static string GetFullTitle(Track? track)
+    {
+        if (track == null) 
+            return "";
+
+        if (string.IsNullOrWhiteSpace(track.Version))
+            return track.Title;
+
+        return $"{track.Title} ({track.Version})";
+    }
+
+
     public static bool IsInitialized = false;
     public static string oldI = "VuCHDsuyiFjcl994xa1eyg==";
     public static string oldS = "5mLYFjeXUrtSoZvPIYn7ymMz6QQY65+XBg2OBH9cxLJlT9hMiDIrRB8Yj4OfOikn";
@@ -206,7 +218,7 @@ internal partial class QobuzApi
 
                             if (isTrackSpecified) // Album, artist, and track specified
                             {
-                                valid = oneArtistMatch && CloseMatch(trackName, track.Title);
+                                valid = oneArtistMatch && CloseMatch(trackName, GetFullTitle(track));
                             }
                             else // Album and artist specified
                             {
@@ -215,7 +227,7 @@ internal partial class QobuzApi
                         }
                         else if (isTrackSpecified) // Track name and artist specified
                         {
-                            valid = CloseMatch(trackName, track.Title);
+                            valid = CloseMatch(trackName, GetFullTitle(track));
                         }
 
                         var id = track.Id.GetValueOrDefault();
@@ -254,7 +266,7 @@ internal partial class QobuzApi
                         if (!trackIdList.Contains(id)) // Add this track to the item source
                         {
                             itemSource.Add(ConvertSongSearchObject(track));
-                            trackIdList.Add(id);;
+                            trackIdList.Add(id);
                         }
                     }
                 }
@@ -305,7 +317,7 @@ internal partial class QobuzApi
 
             if (track != null) {
                 itemSource.Add(await Task.Run(() => ConvertSongSearchObject(track)));
-                statusUpdate?.Invoke(InfoBarSeverity.Success, $"<b>Qobuz</b>   Loaded track <a href='{url}'>{track.Title}</a>"); 
+                statusUpdate?.Invoke(InfoBarSeverity.Success, $"<b>Qobuz</b>   Loaded track <a href='{url}'>{GetFullTitle(track)}</a>"); 
             }
             else
             {
@@ -453,7 +465,7 @@ internal partial class QobuzApi
             LocalBitmapImage = null,
             Rank = (track.Album?.Popularity ?? 0).ToString(),
             ReleaseDate = track.ReleaseDateOriginal.GetValueOrDefault().ToString("yyyy-MM-dd"),
-            Title = track.Title,
+            Title = GetFullTitle(track),
             Isrc = track.Isrc
         };
     }
@@ -487,7 +499,7 @@ internal partial class QobuzApi
             LocalBitmapImage = null,
             Rank = (album.Popularity ?? 0).ToString(),
             ReleaseDate = track.ReleaseDateOriginal.GetValueOrDefault().ToString("yyyy-MM-dd"),
-            Title = track.Title,
+            Title = GetFullTitle(track),
             Isrc = track.Isrc
         };
     }
@@ -637,7 +649,7 @@ internal partial class QobuzApi
                         }
                     }
 
-                    if (oneArtistMatch && CloseMatch(trackName, track.Title)) // Album close match, artist match, title close match
+                    if (oneArtistMatch && CloseMatch(trackName, GetFullTitle(track))) // Album close match, artist match, title close match
                     {
                         var retObj = await GetTrackAsync(track.Id);
                         if (retObj != null)
@@ -662,7 +674,7 @@ internal partial class QobuzApi
             {
                 var a1 = ApiHelper.PrunePunctuation(artist.ToLower());
                 var performerPrune = ApiHelper.PrunePunctuation(result.Performers.ToLower());
-                if (performerPrune.Contains(a1) && ApiHelper.PrunePunctuation(trackName.ToLower()).Equals(ApiHelper.PrunePunctuation(result.Title.ToLower())))
+                if (performerPrune.Contains(a1) && ApiHelper.PrunePunctuation(trackName.ToLower()).Equals(ApiHelper.PrunePunctuation(GetFullTitle(result).ToLower())))
                 {
                     var retObj = ConvertSongSearchObject(result);
                     callback?.Invoke(InfoBarSeverity.Warning, retObj); // Not found by ISRC
@@ -795,17 +807,17 @@ internal partial class QobuzApi
 
         var metadata = new MetadataObject(filePath)
         {
-            Title = track.Title,
+            Title = GetFullTitle(track),
             Artists = contribList.ToArray(),
-            Genres = PruneGenreList(track.Album.GenresList).ToArray(),
-            AlbumName = track.Album.Title,
-            AlbumArtists = track.Album.Artists.Select(x => x.Name).ToArray(),
+            Genres = PruneGenreList(track?.Album?.GenresList ?? []).ToArray(),
+            AlbumName = track.Album?.Title ?? "",
+            AlbumArtists = track.Album?.Artists?.Select(x => x.Name)?.ToArray() ?? [],
             Isrc = track.Isrc,
             ReleaseDate = track.ReleaseDateOriginal.GetValueOrDefault().Date,
             TrackNumber = track.TrackNumber.GetValueOrDefault(),
-            TrackTotal = track.Album.TracksCount,
-            Upc = track.Album.Upc,
-            AlbumArtPath = track.Album.Image.Large,
+            TrackTotal = track.Album?.TracksCount ?? 0,
+            Upc = track.Album?.Upc ?? "",
+            AlbumArtPath = track.Album?.Image.Large ?? "",
         };
         await metadata.SaveAsync();
 
