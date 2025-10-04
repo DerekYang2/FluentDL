@@ -103,7 +103,7 @@ internal class DurationConverterShort : IValueConverter
             TimeSpan ts = TimeSpan.FromSeconds((int)seconds);
             if (ts.Hours > 0)
                 return $"{ts.Hours}:{ts.Minutes:D2}:{ts.Seconds:D2}";
-            else if (ts.Minutes > 0)
+            else 
                 return $"{ts.Minutes}:{ts.Seconds:D2}";
         }
 
