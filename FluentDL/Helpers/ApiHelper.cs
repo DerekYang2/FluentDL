@@ -142,16 +142,19 @@ internal class ApiHelper
             .Replace("{id}", song.Id)
             .Replace("{isrc}", song.Isrc ?? string.Empty) // ISRC, if available
             .Replace("{position}", song.TrackPosition?.ToString() ?? "1")
-            .Replace("{release_date}", song.ReleaseDate ?? "")
-            .Replace("{title}", song.Title);
+            .Replace("{date}", song.ReleaseDate ?? "")
+            .Replace("{title}", song.Title).Trim();
     }
    
     private static async Task<string> DownloadTrackInternal(SongSearchObject song, string directory, ConversionUpdateCallback? callback = default)
     {
         // Create file name
-        var firstArtist = song.Artists.Split(",")[0].Trim();
-        var isrcStr = !string.IsNullOrWhiteSpace(song.Isrc) ? $" [{song.Isrc}]" : "";
-        var fileName = GetSafeFilename($"{song.TrackPosition}. {firstArtist} - {song.Title}{isrcStr}"); // File name no extension
+        var wildCardStr = await SettingsViewModel.GetSetting<string>(SettingsViewModel.FileWildcard);
+        if (string.IsNullOrWhiteSpace(wildCardStr))
+        {
+            wildCardStr = string.IsNullOrWhiteSpace(song.Isrc) ? "{position}. {artist} - {title}" : "{position}. {artist} - {title} [{isrc}]";
+        }
+        var fileName = GetSafeFilename(EvaluateWildcard(song, wildCardStr));
 
         var locationNoExt = Path.Combine(directory, fileName);
 

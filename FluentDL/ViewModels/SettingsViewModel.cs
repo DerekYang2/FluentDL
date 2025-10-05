@@ -55,9 +55,13 @@ public partial class SettingsViewModel : ObservableRecipient
 
     // Subfolder settings
     public static readonly string
-        SubfolderWildcard = "subfolder_wildcard",
         Subfolders = "subfolders",
         AlbumSubfolders = "album_subfolders";
+
+    // Naming settings
+    public static readonly string
+        SubfolderWildcard = "subfolder_wildcard",
+        FileWildcard = "file_naming_wildcard";
 
     private static ILocalSettingsService localSettings = App.GetService<ILocalSettingsService>();
 
@@ -123,6 +127,7 @@ public partial class SettingsViewModel : ObservableRecipient
             await SaveSettingsAsyncIfNull<string?>(QobuzEmail, "");
             await SaveSettingsAsyncIfNull<string?>(QobuzPassword, "");
             await SaveSettingsAsyncIfNull<string?>(SubfolderWildcard, "");
+            await SaveSettingsAsyncIfNull<string?>(FileWildcard, "");
             await SaveSettingsAsyncIfNull<bool?>(Subfolders, false);
             await SaveSettingsAsyncIfNull<bool?>(AlbumSubfolders, true);
             await SaveSettingsAsyncIfNull<string?>(SearchSource, "deezer");

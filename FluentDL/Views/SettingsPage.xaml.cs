@@ -77,15 +77,16 @@ public sealed partial class SettingsPage : Page
         SpotifyQualityComboBox.SelectedIndex = await localSettings.ReadSettingAsync<int?>(SettingsViewModel.SpotifyQuality) ?? 1;
         YoutubeQualityComboBox.SelectedIndex = await localSettings.ReadSettingAsync<int?>(SettingsViewModel.YoutubeQuality) ?? 1;
 
-        // Set download directory
+        // Set download options
         LocationCard.Description = await localSettings.ReadSettingAsync<string?>(SettingsViewModel.DownloadDirectory) ?? "No folder selected";
         if (string.IsNullOrWhiteSpace(LocationCard.Description.ToString())) LocationCard.Description = "No folder selected";
-
-        // Set subfolder wildcard
-        SubfolderNameInput.Text = await localSettings.ReadSettingAsync<string?>(SettingsViewModel.SubfolderWildcard) ?? "";
         SubfoldersToggle.IsOn = await localSettings.ReadSettingAsync<bool>(SettingsViewModel.Subfolders);
         AlbumSubfoldersToggle.IsOn = await localSettings.ReadSettingAsync<bool>(SettingsViewModel.AlbumSubfolders);
+
+        // Set wildcards
         SubfolderWildcardCard.IsEnabled = SubfoldersToggle.IsOn || AlbumSubfoldersToggle.IsOn;
+        SubfolderNameInput.Text = await localSettings.ReadSettingAsync<string?>(SettingsViewModel.SubfolderWildcard) ?? "";
+        FileNameInput.Text = await localSettings.ReadSettingAsync<string?>(SettingsViewModel.FileWildcard) ?? "";
 
         // Set FFmpeg path
         FFmpegPathCard.Description = await localSettings.ReadSettingAsync<string?>(SettingsViewModel.FFmpegPath) ?? "No folder selected";
@@ -511,12 +512,24 @@ public sealed partial class SettingsPage : Page
         var button = sender as Button;
         var wildcard = button?.Content.ToString();
 
+        var targetTextBox = button?.Tag as TextBox;
+
+        if (targetTextBox == null) 
+            return;
+
         if (!string.IsNullOrEmpty(wildcard))
         {
-            SubfolderNameInput.Text += wildcard;
+            targetTextBox.Text += wildcard;
+            targetTextBox.Focus(FocusState.Programmatic); // Refocus the TextBox
+            targetTextBox.SelectionStart = targetTextBox.Text.Length; // Move cursor to end of text
         }
-
-        await localSettings.SaveSettingAsync(SettingsViewModel.SubfolderWildcard, SubfolderNameInput.Text.Trim());
+    }
+    
+    private async void FileNameInput_OnLostFocus(object sender, RoutedEventArgs e)
+    {
+        var button = sender as TextBox;
+        var wildcard = button?.Text;
+        await localSettings.SaveSettingAsync(SettingsViewModel.FileWildcard, wildcard ?? "");
     }
 
     private async void SubfolderNameInput_OnLostFocus(object sender, RoutedEventArgs e)
