@@ -687,9 +687,9 @@ internal partial class QobuzApi
         return null;
     }
 
-    public static Uri GetPreviewUri(string trackId)
+    public static string? GetPreviewUri(string trackId)
     {
-        return new Uri(apiService.GetTrackFileUrl(trackId, "5").Url);
+        return apiService.GetTrackFileUrl(trackId, "5").Url;
     }
 
     public static List<string> GetAllContributorsList(string performerStr)

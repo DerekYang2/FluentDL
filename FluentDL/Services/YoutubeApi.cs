@@ -1208,20 +1208,28 @@ namespace FluentDL.Services
         // Get stream with minimum bitrate
         public static async Task<string> AudioStreamWorstUrl(string url)
         {
-            var streamManifest = await youtube.Videos.Streams.GetManifestAsync(url);
-            var streamInfo = streamManifest.GetAudioOnlyStreams().GetWithHighestBitrate();
-
-            long minBitRate = long.MaxValue;
-            foreach (var streamObj in streamManifest.GetAudioStreams()) // Get the opus stream with highest bitrate
+            try
             {
-                if (streamObj.AudioCodec.Equals("opus") && streamObj.Bitrate.BitsPerSecond < minBitRate)
-                {
-                    minBitRate = streamObj.Bitrate.BitsPerSecond;
-                    streamInfo = streamObj;
-                }
-            }
+                var streamManifest = await youtube.Videos.Streams.GetManifestAsync(url);
+                var streamInfo = streamManifest.GetAudioOnlyStreams().GetWithHighestBitrate();
 
-            return streamInfo.Url;
+                long minBitRate = long.MaxValue;
+                foreach (var streamObj in streamManifest.GetAudioStreams()) // Get the opus stream with highest bitrate
+                {
+                    if (streamObj.AudioCodec.Equals("opus") && streamObj.Bitrate.BitsPerSecond < minBitRate)
+                    {
+                        minBitRate = streamObj.Bitrate.BitsPerSecond;
+                        streamInfo = streamObj;
+                    }
+                }
+
+                return streamInfo.Url;
+            }
+            catch (Exception e)
+            {
+                Debug.WriteLine("Error getting worst audio stream: " + e.Message);
+                return "";
+            }
         }
     }
 }

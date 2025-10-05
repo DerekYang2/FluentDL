@@ -8,10 +8,7 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media.Imaging;
-using Org.BouncyCastle.Bcpg.OpenPgp;
-using QobuzApiSharp.Models.Content;
 using SpotifyAPI.Web;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
@@ -25,22 +22,24 @@ namespace FluentDL.Views
 {
     public sealed partial class PreviewPane : UserControl, INotifyPropertyChanged
     { 
+
+        private static HttpClient httpClient = new HttpClient();
+        private double rankValue = 0;
         SongSearchObject? song = null;
         DispatcherQueue dispatcher;
-        private static HttpClient httpClient = new HttpClient();
 
         public event PropertyChangedEventHandler? PropertyChanged;
 
-        private double rankValue = 0;
-
-        public double RankValue {
+        public double RankValue
+        {
             get { return rankValue; }
-            set {
+            set
+            {
                 rankValue = value;
                 PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(RankValue)));
             }
         }
-  
+
         public PreviewPane()
         {
             this.InitializeComponent();
@@ -50,7 +49,15 @@ namespace FluentDL.Views
             SongPreviewPlayer.AutoPlay = Task.Run(() => SettingsViewModel.GetSetting<bool>(SettingsViewModel.AutoPlay)).GetAwaiter().GetResult(); 
         }
 
-
+        public void SetPlayerSource(string? uriStr)
+        {
+            if (string.IsNullOrWhiteSpace(uriStr))
+            {
+                ClearMediaPlayerSource();
+                return;
+            }
+            SongPreviewPlayer.Source = MediaSource.CreateFromUri(new Uri(uriStr));
+        }
 
         public void SetAppBarButtons(List<AppBarButton> appBarButtons)
         {
@@ -154,11 +161,7 @@ namespace FluentDL.Views
 
 
                     // Load the audio stream
-                    var previewUri = jsonObject.GetProperty("preview").ToString();
-                    if (!string.IsNullOrWhiteSpace(previewUri)) // Some tracks don't have a preview
-                    {
-                        SongPreviewPlayer.Source = MediaSource.CreateFromUri(new Uri(previewUri));
-                    }
+                    SetPlayerSource(jsonObject.GetProperty("preview").ToString());
                 }
             }
 
@@ -201,7 +204,7 @@ namespace FluentDL.Views
                     RankRatingControl.Visibility = Visibility.Collapsed;
 
                     // Load the audio stream
-                    SongPreviewPlayer.Source = MediaSource.CreateFromUri(QobuzApi.GetPreviewUri(selectedSong.Id));
+                    SetPlayerSource(await Task.Run(() => QobuzApi.GetPreviewUri(selectedSong.Id)));
                 }
             }
 
@@ -245,11 +248,7 @@ namespace FluentDL.Views
                     SetRatingPercentage(GetPercentage(selectedSong));
 
                     // Load the audio stream
-                    var previewURL = await GetSpotifyPreviewUrl(selectedSong.Id);
-                    if (!string.IsNullOrWhiteSpace(previewURL))
-                    {
-                        SongPreviewPlayer.Source = MediaSource.CreateFromUri(new Uri(previewURL));
-                    }
+                    SetPlayerSource(await GetSpotifyPreviewUrl(selectedSong.Id));
                 }
             }
 
@@ -279,8 +278,7 @@ namespace FluentDL.Views
                     RankRatingControl.Visibility = Visibility.Collapsed;
 
                     // Load the audio stream
-                    var opusStreamUrl = await YoutubeApi.AudioStreamWorstUrl("https://www.youtube.com/watch?v=" + selectedSong.Id);
-                    SongPreviewPlayer.Source = MediaSource.CreateFromUri(new Uri(opusStreamUrl));
+                    SetPlayerSource(await YoutubeApi.AudioStreamWorstUrl("https://www.youtube.com/watch?v=" + selectedSong.Id));
                 }
             }
 
@@ -306,8 +304,7 @@ namespace FluentDL.Views
                         new() { Label = "Bit depth", Value = metadata.tfile.Properties.BitsPerSample + " bit" },
                         new() { Label = "Location", Value = selectedSong.Id }
                     };
-
-                    SongPreviewPlayer.Source = MediaSource.CreateFromUri(new Uri(selectedSong.Id));
+                    SetPlayerSource(selectedSong.Id);
                     var byteBuffer = metadata.GetAlbumArt();
 
                     if (byteBuffer is { Length: > 0 })
@@ -477,20 +474,19 @@ namespace FluentDL.Views
             }
             if (selectedSong.Source == "qobuz")
             {
-                SongPreviewPlayer.Source = await Task.Run(() => MediaSource.CreateFromUri(QobuzApi.GetPreviewUri(selectedSong.Id)));
+                SetPlayerSource(await Task.Run(() => QobuzApi.GetPreviewUri(selectedSong.Id)));
             }
             if (selectedSong.Source == "deezer")
             {
-                SongPreviewPlayer.Source = MediaSource.CreateFromUri(new Uri(selectedSong?.AdditionalFields?["preview"]?.ToString() ?? ""));
+                SetPlayerSource(selectedSong?.AdditionalFields?["preview"]?.ToString());
             }
             if (selectedSong.Source == "youtube")
             {
-                SongPreviewPlayer.Source = MediaSource.CreateFromUri(new Uri(await YoutubeApi.AudioStreamWorstUrl("https://www.youtube.com/watch?v=" + selectedSong.Id)));
+                SetPlayerSource(await YoutubeApi.AudioStreamWorstUrl("https://www.youtube.com/watch?v=" + selectedSong.Id));
             }
             if (selectedSong.Source == "spotify")
             {
-                var previewURL = await GetSpotifyPreviewUrl(selectedSong.Id);
-                SongPreviewPlayer.Source = MediaSource.CreateFromUri(new Uri(previewURL ?? ""));
+                SetPlayerSource(await GetSpotifyPreviewUrl(selectedSong.Id));
             }
         }
     }
