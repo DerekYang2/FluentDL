@@ -16,6 +16,7 @@ using FluentDL.Models;
 using CommunityToolkit.WinUI.Controls;
 using Microsoft.UI.Xaml.Media;
 using System.Threading.Tasks;
+using CommunityToolkit.WinUI.Helpers;
 
 namespace FluentDL.Views;
 
@@ -48,6 +49,11 @@ public sealed partial class SettingsPage : Page
 
     private async void SettingsPage_Loaded(object sender, RoutedEventArgs e)
     {
+        await InitializeAsync();
+    }
+
+    private async Task InitializeAsync()
+    {
         // Set sliders
         // Initial values
         ConversionThreadsCard.Description = $"{(int)Math.Round(ConversionThreadsSlider.Value)} threads";
@@ -69,7 +75,7 @@ public sealed partial class SettingsPage : Page
 
         CommandThreadsSlider.Value = await localSettings.ReadSettingAsync<int?>(SettingsViewModel.CommandThreads) ?? 1;
         ConversionThreadsSlider.Value = await localSettings.ReadSettingAsync<int?>(SettingsViewModel.ConversionThreads) ?? 3;
-        AudioConversionThreadsSlider.Value = await localSettings.ReadSettingAsync<int?>(SettingsViewModel.AudioConversionThreads) ?? 6; 
+        AudioConversionThreadsSlider.Value = await localSettings.ReadSettingAsync<int?>(SettingsViewModel.AudioConversionThreads) ?? 6;
 
         // Set quality combo boxes (default flac)
         DeezerQualityComboBox.SelectedIndex = await localSettings.ReadSettingAsync<int?>(SettingsViewModel.DeezerQuality) ?? 2;
@@ -226,7 +232,6 @@ public sealed partial class SettingsPage : Page
     private async void SelectFFmpegButton_OnClick(object sender, RoutedEventArgs e)
     {
         FolderPicker openPicker = new Windows.Storage.Pickers.FolderPicker();
-
 
         // Retrieve the window handle of the current WinUI 3 window.
         var hWnd = WinRT.Interop.WindowNative.GetWindowHandle(App.MainWindow);
@@ -598,5 +603,60 @@ public sealed partial class SettingsPage : Page
         });
         dispatcherTimer.Interval = TimeSpan.FromSeconds(seconds);
         dispatcherTimer.Start();
+    }
+
+    private async void UploadImportFile_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            StorageFile? file = await StoragePickerHelper.PickFileAsync([".json"]);
+            if (file != null)
+            {
+                string content = await FileIO.ReadTextAsync(file);
+                // Check content length to avoid extremely long imports
+                if (content.Length > 1E5)
+                {
+                    throw new Exception("Imported file too large. Double check imported file.");
+                }
+                else
+                {
+                    string? result = await localSettings.ImportSettingsAsync(content);
+                    await SettingsViewModel.SetMissingDefaults();  // Fills in any null/improper values with defaults
+                    await InitializeAsync();
+
+                    if (string.IsNullOrEmpty(result))  // No error message
+                    {
+                        ShowInfoBar(InfoBarSeverity.Success, "You may need to restart the application for all changes to apply.", seconds: 3, title: "Import Successful");
+                    } else
+                    {
+                        ShowInfoBar(InfoBarSeverity.Warning, result, seconds: 5, title: "Import Issue");
+                    }
+                }
+            } else
+            {
+                ShowInfoBar(InfoBarSeverity.Warning, "No import file selected.");
+            }
+        } catch (Exception ex)
+        {
+            ShowInfoBar(InfoBarSeverity.Error, ex.Message, seconds: 5, title: "Import Failed");
+        }
+    }
+
+    private async void UploadExportFile_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            StorageFile? file = await StoragePickerHelper.FileSavePickerAsync([".json"], "FluentDL_Settings");
+            if (file != null)
+            {
+                string content = await localSettings.ExportSettingsAsync();
+                await FileIO.WriteTextAsync(file, content);
+                ShowInfoBar(InfoBarSeverity.Success, $"Settings saved to <a href='{file.Path}'>FluentDL_Settings.json</a>.", seconds: 3, title: "Export Successful");
+            }
+        }
+        catch (Exception ex)
+        {
+            ShowInfoBar(InfoBarSeverity.Error, ex.Message, seconds: 5, title: "Export Failed");
+        }
     }
 }

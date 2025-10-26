@@ -102,47 +102,44 @@ public partial class SettingsViewModel : ObservableRecipient
 
     public static async Task SetMissingDefaults() // Similar to SetDefaults, but safer by only setting missing settings
     {  
-        if (await localSettings.ReadSettingAsync<bool?>(FirstRun) ?? true)
-        {  
-            Debug.WriteLine("Setting missing defaults");
-            await SaveSettingsAsyncIfNull<int?>(CommandThreads, 1);
-            await SaveSettingsAsyncIfNull<int?>(ConversionThreads, 3);
-            await SaveSettingsAsyncIfNull<int?>(AudioConversionThreads, 6);
-            await SaveSettingsAsyncIfNull<int?>(DeezerQuality, 2);
-            await SaveSettingsAsyncIfNull<int?>(QobuzQuality, 3);
-            await SaveSettingsAsyncIfNull<int?>(SpotifyQuality, 1);
-            await SaveSettingsAsyncIfNull<int?>(YoutubeQuality, 1);
-            await SaveSettingsAsyncIfNull<bool?>(AskBeforeDownload, true);
-            await SaveSettingsAsyncIfNull<bool?>(Overwrite, false);
-            await SaveSettingsAsyncIfNull<bool?>(Notifications, false);
-            await SaveSettingsAsyncIfNull<bool?>(AutoPlay, true);
-            await SaveSettingsAsyncIfNull<bool?>(NotifyUpdate, true);
-            await SaveSettingsAsyncIfNull<string?>(DownloadDirectory, null);
-            await SaveSettingsAsyncIfNull<string?>(FFmpegPath, null);
-            await SaveSettingsAsyncIfNull<string?>(SpotifyClientId, "");
-            await SaveSettingsAsyncIfNull<string?>(SpotifyClientSecret, "");
-            await SaveSettingsAsyncIfNull<string?>(DeezerARL, "");
-            await SaveSettingsAsyncIfNull<string?>(QobuzId, "");
-            await SaveSettingsAsyncIfNull<string?>(QobuzToken, "");
-            await SaveSettingsAsyncIfNull<string?>(QobuzEmail, "");
-            await SaveSettingsAsyncIfNull<string?>(QobuzPassword, "");
-            await SaveSettingsAsyncIfNull<string?>(SubfolderWildcard, "");
-            await SaveSettingsAsyncIfNull<string?>(FileWildcard, "");
-            await SaveSettingsAsyncIfNull<bool?>(Subfolders, false);
-            await SaveSettingsAsyncIfNull<bool?>(AlbumSubfolders, true);
-            await SaveSettingsAsyncIfNull<string?>(SearchSource, "deezer");
-            await SaveSettingsAsyncIfNull<bool?>(SearchAddChecked, false);
-            await SaveSettingsAsyncIfNull<bool?>(SearchShareChecked, false);
-            await SaveSettingsAsyncIfNull<bool?>(SearchOpenChecked, false);
-            await SaveSettingsAsyncIfNull<bool?>(LocalExplorerAddChecked, false);
-            await SaveSettingsAsyncIfNull<bool?>(LocalExplorerEditChecked, false);
-            await SaveSettingsAsyncIfNull<bool?>(LocalExplorerOpenChecked, false);
-            await SaveSettingsAsyncIfNull<bool?>(QueueShareChecked, false);
-            await SaveSettingsAsyncIfNull<bool?>(SearchDownloadChecked, false);
-            await SaveSettingsAsyncIfNull<bool?>(QueueDownloadCoverChecked, false);
-            await SaveSettingsAsyncIfNull<bool?>(QueueRemoveChecked, false);
-            await localSettings.SaveSettingAsync(FirstRun, false);  // Set no_settings to 
-        }
+        Debug.WriteLine("Setting missing defaults");
+        await SaveSettingsAsyncIfNull<int?>(CommandThreads, 1);
+        await SaveSettingsAsyncIfNull<int?>(ConversionThreads, 3);
+        await SaveSettingsAsyncIfNull<int?>(AudioConversionThreads, 6);
+        await SaveSettingsAsyncIfNull<int?>(DeezerQuality, 2);
+        await SaveSettingsAsyncIfNull<int?>(QobuzQuality, 3);
+        await SaveSettingsAsyncIfNull<int?>(SpotifyQuality, 1);
+        await SaveSettingsAsyncIfNull<int?>(YoutubeQuality, 1);
+        await SaveSettingsAsyncIfNull<bool?>(AskBeforeDownload, true);
+        await SaveSettingsAsyncIfNull<bool?>(Overwrite, false);
+        await SaveSettingsAsyncIfNull<bool?>(Notifications, false);
+        await SaveSettingsAsyncIfNull<bool?>(AutoPlay, true);
+        await SaveSettingsAsyncIfNull<bool?>(NotifyUpdate, true);
+        await SaveSettingsAsyncIfNull<string?>(DownloadDirectory, null);
+        await SaveSettingsAsyncIfNull<string?>(FFmpegPath, null);
+        await SaveSettingsAsyncIfNull<string?>(SpotifyClientId, "");
+        await SaveSettingsAsyncIfNull<string?>(SpotifyClientSecret, "");
+        await SaveSettingsAsyncIfNull<string?>(DeezerARL, "");
+        await SaveSettingsAsyncIfNull<string?>(QobuzId, "");
+        await SaveSettingsAsyncIfNull<string?>(QobuzToken, "");
+        await SaveSettingsAsyncIfNull<string?>(QobuzEmail, "");
+        await SaveSettingsAsyncIfNull<string?>(QobuzPassword, "");
+        await SaveSettingsAsyncIfNull<string?>(SubfolderWildcard, "");
+        await SaveSettingsAsyncIfNull<string?>(FileWildcard, "");
+        await SaveSettingsAsyncIfNull<bool?>(Subfolders, false);
+        await SaveSettingsAsyncIfNull<bool?>(AlbumSubfolders, true);
+        await SaveSettingsAsyncIfNull<string?>(SearchSource, "deezer");
+        await SaveSettingsAsyncIfNull<bool?>(SearchAddChecked, false);
+        await SaveSettingsAsyncIfNull<bool?>(SearchShareChecked, false);
+        await SaveSettingsAsyncIfNull<bool?>(SearchOpenChecked, false);
+        await SaveSettingsAsyncIfNull<bool?>(LocalExplorerAddChecked, false);
+        await SaveSettingsAsyncIfNull<bool?>(LocalExplorerEditChecked, false);
+        await SaveSettingsAsyncIfNull<bool?>(LocalExplorerOpenChecked, false);
+        await SaveSettingsAsyncIfNull<bool?>(QueueShareChecked, false);
+        await SaveSettingsAsyncIfNull<bool?>(SearchDownloadChecked, false);
+        await SaveSettingsAsyncIfNull<bool?>(QueueDownloadCoverChecked, false);
+        await SaveSettingsAsyncIfNull<bool?>(QueueRemoveChecked, false);
+        await localSettings.SaveSettingAsync(FirstRun, false);  // Set first run to false
     }
 
     public static async Task<T?> GetSetting<T>(string key)
@@ -167,5 +164,10 @@ public partial class SettingsViewModel : ObservableRecipient
         }
 
         return $"{version.Major}.{version.Minor}.{version.Build}.{version.Revision}";
+    }
+
+    public static async Task<string> GetString()
+    {
+        return await localSettings.ExportSettingsAsync();
     }
 }

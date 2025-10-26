@@ -50,21 +50,35 @@ public class LocalSettingsService : ILocalSettingsService
 
     public async Task<T?> ReadSettingAsync<T>(string key)
     {
-        if (RuntimeHelper.IsMSIX)
+        try
         {
-            if (ApplicationData.Current.LocalSettings.Values.TryGetValue(key, out var obj))
+            if (RuntimeHelper.IsMSIX)
             {
-                return await Json.ToObjectAsync<T>((string)obj);
+                if (ApplicationData.Current.LocalSettings.Values.TryGetValue(key, out var obj))
+                {
+                    return await Json.ToObjectAsync<T>((string)obj);
+                }
+            }
+            else
+            {
+                await InitializeAsync();
+
+                if (_settings != null && _settings.TryGetValue(key, out var obj))
+                {
+                    return await Json.ToObjectAsync<T>((string)obj);
+                }
             }
         }
-        else
+        catch (Exception)  // ToObjectAsync might fail on corrupted/incorrect data from import
         {
-            await InitializeAsync();
-
-            if (_settings != null && _settings.TryGetValue(key, out var obj))
+            if (RuntimeHelper.IsMSIX)
             {
-                return await Json.ToObjectAsync<T>((string)obj);
+                if (ApplicationData.Current.LocalSettings.Values.ContainsKey(key))
+                {
+                    ApplicationData.Current.LocalSettings.Values[key] = null;  // Set back to null so it can be reset on next open
+                }
             }
+            return default;
         }
 
         return default;
@@ -83,6 +97,76 @@ public class LocalSettingsService : ILocalSettingsService
             _settings[key] = await Json.StringifyAsync(value);
 
             await Task.Run(() => _fileService.Save(_applicationDataFolder, _localsettingsFile, _settings));
+        }
+    }
+
+    public async Task<string> ExportSettingsAsync()
+    {
+        if (RuntimeHelper.IsMSIX)
+        {
+            // Get local settings container
+            ApplicationDataContainer localSettings = ApplicationData.Current.LocalSettings;
+
+            // Create a dictionary to hold key-value pairs
+            Dictionary<string, object> settingsDict = [];
+
+            foreach (var item in localSettings.Values)
+            {
+                settingsDict[item.Key] = item.Value;
+            }
+
+            // Serialize to JSON
+            string json = await Json.StringifyAsync(settingsDict);
+            return json;
+        }
+        else
+        {
+            await InitializeAsync();
+            return await Json.StringifyAsync(_settings);
+        }
+    }
+
+    public async Task<string?> ImportSettingsAsync(string json)
+    {
+        try
+        {
+            var importedSettings = await Json.ToObjectAsync<Dictionary<string, object>>(json);
+            if (importedSettings == null)
+            {
+                return "Settings Empty";
+            }
+
+            if (RuntimeHelper.IsMSIX)
+            {
+                // Get local settings container
+                ApplicationDataContainer localSettings = ApplicationData.Current.LocalSettings;
+                int added = 0;
+                foreach (var item in importedSettings)
+                {
+                    if (localSettings.Values.ContainsKey(item.Key))
+                    {
+                        localSettings.Values[item.Key] = item.Value;
+                        added++;
+                    }
+                }
+
+                int missed = localSettings.Values.Count - added;
+                if (missed > 0)
+                    return $"{missed} values missing from import file";
+            }
+            else
+            {
+                await InitializeAsync();
+                foreach (var item in importedSettings)
+                {
+                    _settings[item.Key] = item.Value;
+                }
+                await Task.Run(() => _fileService.Save(_applicationDataFolder, _localsettingsFile, _settings));
+            }
+            return null;
+        } catch (Exception ex)
+        {
+            return ex.Message;
         }
     }
 }

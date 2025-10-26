@@ -122,7 +122,9 @@ public partial class App : Application
 
         await App.GetService<IActivationService>().ActivateAsync(args);
 
-        await SettingsViewModel.SetMissingDefaults();
+        if (await SettingsViewModel.GetSetting<bool?>(SettingsViewModel.FirstRun) ?? true)
+            await SettingsViewModel.SetMissingDefaults();
+
         await QueueViewModel.UpdateShortcutVisibility();
         try
         {

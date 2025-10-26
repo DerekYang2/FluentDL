@@ -1,4 +1,6 @@
-﻿using Windows.Storage;
+﻿using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Controls;
+using Windows.Storage;
 using Windows.Storage.AccessCache;
 using Windows.Storage.Pickers;
 
@@ -20,6 +22,50 @@ namespace FluentDL.Helpers
             openPicker.FileTypeFilter.Add("*");
 
             return await openPicker.PickSingleFolderAsync();
+        }
+
+        public static async Task<StorageFile?> PickFileAsync(IEnumerable<string> fileTypeFilter, PickerLocationId startLocationId = PickerLocationId.Downloads)
+        { 
+            // Create a file picker
+            FileOpenPicker openPicker = new()
+            {
+                ViewMode = PickerViewMode.List,
+                SuggestedStartLocation = startLocationId
+            };
+
+            foreach (var filter in fileTypeFilter)
+            {
+                openPicker.FileTypeFilter.Add(filter);
+            }
+
+            // Retrieve the window handle (HWND) of the current WinUI 3 window.
+            var hWnd = WinRT.Interop.WindowNative.GetWindowHandle(App.MainWindow);
+
+            // Initialize the file picker with the window handle (HWND).
+            WinRT.Interop.InitializeWithWindow.Initialize(openPicker, hWnd);
+
+            StorageFile? file = await openPicker.PickSingleFileAsync();
+            return file;
+        }
+
+        public static async Task<StorageFile?> FileSavePickerAsync(IEnumerable<string> fileTypeFilter, string suggestedFileName = "NewFile", PickerLocationId startLocationId = PickerLocationId.Downloads)
+        {
+            // Create a file save picker
+            FileSavePicker savePicker = new()
+            {
+                SuggestedStartLocation = startLocationId,
+                SuggestedFileName = suggestedFileName
+            };
+            foreach (var filter in fileTypeFilter)
+            {
+                savePicker.FileTypeChoices.Add(filter.TrimStart('.').ToUpper(), new List<string>() { filter });
+            }
+            // Retrieve the window handle (HWND) of the current WinUI 3 window.
+            var hWnd = WinRT.Interop.WindowNative.GetWindowHandle(App.MainWindow);
+            // Initialize the file save picker with the window handle (HWND).
+            WinRT.Interop.InitializeWithWindow.Initialize(savePicker, hWnd);
+            StorageFile? file = await savePicker.PickSaveFileAsync();
+            return file;
         }
 
         public static async Task<string?> GetDirectory()
