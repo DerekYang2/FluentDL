@@ -545,61 +545,87 @@ public sealed partial class Search : Page
             return;
         }
 
-        var beforeCount = QueueViewModel.Source.Count;
-        foreach (var song in (ObservableCollection<SongSearchObject>)CustomListView.ItemsSource)
+        AddToQueueButton.IsEnabled = false;
+        try
         {
-            if (song is AlbumSearchObject album)
+            var beforeCount = QueueViewModel.Source.Count;
+            foreach (var song in ((ObservableCollection<SongSearchObject>)CustomListView.ItemsSource).ToList())
             {
-                List<SongSearchObject> albumTracks = [];
-
-                if (album.Source == "qobuz")
+                if (song is AlbumSearchObject album)
                 {
-                    var albumInternal = await QobuzApi.GetInternalAlbum(album.Id);
-                    albumInternal.Tracks.Items.ForEach(t => t.Album = albumInternal);
-                    albumTracks = albumInternal.Tracks.Items.Select(t => QobuzApi.ConvertSongSearchObject(t, albumInternal.Artist?.Name)).ToList();
-                }
-                else if (album.Source == "deezer")
-                {
-                    var fullAlbumObj = await DeezerApi.GetAlbum(album.Id);
+                    List<SongSearchObject> albumTracks = [];
 
-                    if (fullAlbumObj != null)
+                    if (album.Source == "qobuz")
                     {
-                        var trackTasks = fullAlbumObj.TrackList?.Select(t => DeezerApi.GetTrack(t.Id)) ?? [];
-                        var resolvedTracks = await Task.WhenAll(trackTasks);
-                        albumTracks = [.. resolvedTracks];
+                        var albumInternal = await QobuzApi.GetInternalAlbum(album.Id);
+                        albumInternal.Tracks.Items.ForEach(t => t.Album = albumInternal);
+                        albumTracks = albumInternal.Tracks.Items.Select(t => QobuzApi.ConvertSongSearchObject(t, albumInternal.Artist?.Name)).ToList();
                     }
-                }
-                else if (album.Source == "spotify")
-                {
-                    var trackTasks = album.TrackList?.Select(t => SpotifyApi.GetTrack(t.Id)) ?? [];
-                    var resolvedTracks = await Task.WhenAll(trackTasks);
-                    albumTracks = [.. resolvedTracks.Select(SpotifyApi.ConvertSongSearchObject)];
-                }
-                else if (album.Source == "youtube")
-                {
-                    albumTracks = album.TrackList;
-                }
+                    else if (album.Source == "deezer")
+                    {
+                        var fullAlbumObj = await DeezerApi.GetAlbum(album.Id);
 
-                albumTracks.ForEach(QueueViewModel.Add);
+                        if (fullAlbumObj != null)
+                        {
+                            foreach (var t in fullAlbumObj.TrackList ?? [])
+                            {
+                                var track = await DeezerApi.GetTrack(t.Id);
+                                if (track != null)
+                                {
+                                    albumTracks.Add(track);
+                                }
+                            }
+                        }
+                    }
+                    else if (album.Source == "spotify")
+                    {
+                        foreach (var t in album.TrackList ?? [])
+                        {
+                            var track = await SpotifyApi.GetTrack(t.Id);
+                            if (track != null)
+                            {
+                                var songObj = SpotifyApi.ConvertSongSearchObject(track);
+                                if (songObj != null)
+                                {
+                                    albumTracks.Add(songObj);
+                                }
+                            }
+                        }
+                    }
+                    else if (album.Source == "youtube")
+                    {
+                        albumTracks = album.TrackList;
+                    }
+
+                    albumTracks.ForEach(QueueViewModel.Add);
+                }
+                else
+                {
+                    QueueViewModel.Add(song);
+                }
+            }
+
+            var addedCount = QueueViewModel.Source.Count - beforeCount;
+
+            if (addedCount < listViewCount)
+            {
+                ShowInfoBar(InfoBarSeverity.Informational, $"Added {addedCount} tracks to queue (duplicates ignored)");
             }
             else
             {
-                QueueViewModel.Add(song);
+                ShowInfoBar(InfoBarSeverity.Success, $"Added {addedCount} tracks to queue");
             }
+
+            await QueueViewModel.SaveQueue();
         }
-
-        var addedCount = QueueViewModel.Source.Count - beforeCount;
-
-        if (addedCount < listViewCount)
+        catch (Exception ex)
         {
-            ShowInfoBar(InfoBarSeverity.Informational, $"Added {addedCount} tracks to queue (duplicates ignored)");
+            ShowInfoBar(InfoBarSeverity.Error, $"Error adding to queue: {ex.Message}");
         }
-        else
+        finally
         {
-            ShowInfoBar(InfoBarSeverity.Success, $"Added {addedCount} tracks to queue");
+            AddToQueueButton.IsEnabled = true;
         }
-
-        await QueueViewModel.SaveQueue();
     }
 
     // Functions that open dialogs
