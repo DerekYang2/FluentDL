@@ -23,7 +23,6 @@
     <AppxBundle>Auto</AppxBundle>
     <WindowsPackageType>MSIX</WindowsPackageType>
     <AppxBundlePlatforms>x64|arm64</AppxBundlePlatforms>
-    <WindowsSdkPackageVersion>10.0.22621.38</WindowsSdkPackageVersion>
     <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
     <RestoreAdditionalProjectSources>
       https://pkgs.dev.azure.com/dotnet/CommunityToolkit/_packaging/CommunityToolkit-Labs/nuget/v3/index.json
@@ -40,7 +39,7 @@
   <ItemGroup>
     <PackageReference Include="CommunityToolkit.Labs.WinUI.MarqueeText" Version="0.1.250103-build.1988" />
     <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />
-    <PackageReference Include="CommunityToolkit.WinUI.Controls.SettingsControls" Version="8.1.240916" />
+    <PackageReference Include="CommunityToolkit.WinUI.Controls.SettingsControls" Version="8.2.250402" />
     <PackageReference Include="CommunityToolkit.WinUI.Controls.Sizers" Version="8.1.240916" />
     <PackageReference Include="CommunityToolkit.WinUI.UI.Animations" Version="7.1.2" />
     <PackageReference Include="CommunityToolkit.WinUI.UI.Controls" Version="7.1.2" />
@@ -55,7 +54,7 @@
     <PackageReference Include="SpotifyAPI.Web" Version="7.2.1" />
     <PackageReference Include="TagLibSharp" Version="2.3.0" />
     <PackageReference Include="WinUIEx" Version="2.5.1" />
-    <PackageReference Include="YoutubeExplode" Version="6.5.5" />
+    <PackageReference Include="YoutubeExplode" Version="6.5.6" />
     <PackageReference Include="YouTubeMusicAPI" Version="3.0.1" />
   </ItemGroup>
   <ItemGroup>
