@@ -226,7 +226,7 @@ internal class ApiHelper
         {
             try
             {
-                var resultPath = await DeezerApi.DownloadTrack(locationNoExt, song);
+                var resultPath = await DeezerApi.DownloadTrack(locationNoExt, song, use128Fallback: true);
                 await DeezerApi.UpdateMetadata(resultPath, song.Id);
                 callback?.Invoke(InfoBarSeverity.Success, song, resultPath); // Assume success
                 return resultPath;
@@ -337,9 +337,17 @@ internal class ApiHelper
         {
             var jsonObj = await DeezerApi.restClient.FetchJsonElement("album/" + album.Id);
             var fullAlbumObj = DeezerApi.GetAlbumFromJsonElement(jsonObj);
-            var trackTasks = fullAlbumObj?.TrackList?.Select(t => DeezerApi.GetTrack(t.Id));
-            var resolvedTasks = await Task.WhenAll(trackTasks ?? []);
-            album.TrackList = [.. resolvedTasks];
+
+            album.TrackList = [];
+            foreach (var t in fullAlbumObj?.TrackList ?? [])
+            {
+                var track = await DeezerApi.GetTrack(t.Id);
+                if (track != null)
+                {
+                    album.TrackList.Add(track);
+                }
+            }
+
             album.AdditionalFields = new Dictionary<string, object?>
             {
                 ["cover_big"] = jsonObj.SafeGetString("cover_big"),
@@ -348,9 +356,20 @@ internal class ApiHelper
         }
         else if (album.Source == "spotify")
         {
-            var trackTasks = album.TrackList?.Select(t => SpotifyApi.GetTrack(t.Id)) ?? [];
-            var resolvedTracks = await Task.WhenAll(trackTasks);
-            album.TrackList = [.. resolvedTracks.Select(SpotifyApi.ConvertSongSearchObject)];
+            List<SongSearchObject> newList = [];
+            foreach (var t in album.TrackList ?? [])
+            {
+                var track = await SpotifyApi.GetTrack(t.Id);
+                if (track != null)
+                {
+                    var songObj = SpotifyApi.ConvertSongSearchObject(track);
+                    if (songObj != null)
+                    {
+                        newList.Add(songObj);
+                    }
+                }
+            }
+            album.TrackList = newList;
         }
         else if (album.Source == "youtube")
         {
