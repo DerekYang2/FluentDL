@@ -11,6 +11,7 @@
     mc:Ignorable="d">
     <Page.Resources>
         <helpers:EnumToBooleanConverter x:Key="EnumToBooleanConverter" />
+        <helpers:BooleanInverterConverter x:Key="BooleanInverterconverter" />
         <Style x:Key="TextBlockSectionStyle" TargetType="TextBlock">
             <Setter Property="FontSize" Value="16" />
             <Setter Property="FontWeight" Value="SemiBold" />
@@ -308,18 +309,18 @@
 
                     <local:SettingsExpander
                         x:Name="NamingOptions"
-                        Description="Configure naming preferences for files and subfolders created during downloads."
+                        Description="Configure naming preferences for files and subfolders created during downloads. Press to insert wildcards or type manually."
                         Header="Download Naming Options">
                         <local:SettingsExpander.HeaderIcon>
                             <FontIcon Glyph="&#xE8AC;" />
                         </local:SettingsExpander.HeaderIcon>
                         <local:SettingsExpander.Items>
-                                <local:SettingsCard
+                            <local:SettingsCard
                                 x:Name="FileWildcardCard"
                                 HorizontalContentAlignment="Left"
                                 ContentAlignment="Vertical"
-                                Description="Hover over button for details. Press button to insert them or type manually. Leave blank to use default naming."
-                                Header="Custom File Naming">
+                                Description="Customize the filenames for downloads. Leave blank to use default naming."
+                                Header="File Naming">
                                 <StackPanel>
                                     <ScrollViewer
                                         Margin="0,8,0,0"
@@ -333,44 +334,52 @@
                                             Orientation="Horizontal"
                                             Spacing="8">
                                             <Button
-                                                Click="ScrollViewerButton_Click" Tag="{x:Bind FileNameInput}"
+                                                Click="ScrollViewerButton_Click"
                                                 Content="{}{album}"
                                                 Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"
+                                                Tag="{x:Bind FileNameInput}"
                                                 ToolTipService.ToolTip="The track's album title." />
                                             <Button
-                                                Click="ScrollViewerButton_Click" Tag="{x:Bind FileNameInput}"
+                                                Click="ScrollViewerButton_Click"
                                                 Content="{}{artist}"
                                                 Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"
+                                                Tag="{x:Bind FileNameInput}"
                                                 ToolTipService.ToolTip="The main artist (if service supports) or first artist." />
                                             <Button
-                                                Click="ScrollViewerButton_Click" Tag="{x:Bind FileNameInput}"
+                                                Click="ScrollViewerButton_Click"
                                                 Content="{}{artists}"
                                                 Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"
+                                                Tag="{x:Bind FileNameInput}"
                                                 ToolTipService.ToolTip="The artists of the track, comma separated (e.g. artist1, artist2, artist3)." />
                                             <Button
-                                                Click="ScrollViewerButton_Click" Tag="{x:Bind FileNameInput}"
+                                                Click="ScrollViewerButton_Click"
                                                 Content="{}{id}"
                                                 Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"
+                                                Tag="{x:Bind FileNameInput}"
                                                 ToolTipService.ToolTip="The streaming service ID." />
                                             <Button
-                                                Click="ScrollViewerButton_Click" Tag="{x:Bind FileNameInput}"
+                                                Click="ScrollViewerButton_Click"
                                                 Content="{}{isrc}"
                                                 Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"
+                                                Tag="{x:Bind FileNameInput}"
                                                 ToolTipService.ToolTip="The ISRC identifier for the track, format CCXXXYYNNNNN." />
                                             <Button
-                                                Click="ScrollViewerButton_Click" Tag="{x:Bind FileNameInput}"
+                                                Click="ScrollViewerButton_Click"
                                                 Content="{}{position}"
                                                 Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"
+                                                Tag="{x:Bind FileNameInput}"
                                                 ToolTipService.ToolTip="The track position in the album." />
                                             <Button
-                                                Click="ScrollViewerButton_Click" Tag="{x:Bind FileNameInput}"
+                                                Click="ScrollViewerButton_Click"
                                                 Content="{}{date}"
                                                 Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"
+                                                Tag="{x:Bind FileNameInput}"
                                                 ToolTipService.ToolTip="The release date in YYYY-MM-DD." />
                                             <Button
-                                                Click="ScrollViewerButton_Click" Tag="{x:Bind FileNameInput}"
+                                                Click="ScrollViewerButton_Click"
                                                 Content="{}{title}"
                                                 Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"
+                                                Tag="{x:Bind FileNameInput}"
                                                 ToolTipService.ToolTip="The title of the track." />
                                         </StackPanel>
                                     </ScrollViewer>
@@ -386,14 +395,19 @@
                                 x:Name="SubfolderWildcardCard"
                                 HorizontalContentAlignment="Left"
                                 ContentAlignment="Vertical"
-                                Description="Configures the subfolder naming for both track and album subfolders. Leave blank to use default naming."
-                                Header="Custom Subfolder Naming">
+                                Description="Customize the names for subfolders (both track and album). Leave blank to use default naming."
+                                Header="Subfolder Naming">
                                 <StackPanel>
+                                    <InfoBar
+                                        IsClosable="True"
+                                        IsOpen="{Binding IsEnabled, ElementName=SubfolderNameInput, Converter={StaticResource BooleanInverterconverter}}"
+                                        Message="Track and album subfolders are off. Enable them in Download Directory." />
                                     <ScrollViewer
                                         Margin="0,8,0,0"
                                         HorizontalAlignment="Stretch"
                                         HorizontalScrollBarVisibility="Visible"
                                         HorizontalScrollMode="Enabled"
+                                        IsEnabled="{Binding IsEnabled, ElementName=SubfolderNameInput}"
                                         ToolTipService.ToolTip="Available wildcards"
                                         VerticalScrollMode="Disabled">
                                         <StackPanel
@@ -402,44 +416,51 @@
                                             Spacing="8">
                                             <Button
                                                 Click="ScrollViewerButton_Click"
-                                                Tag="{x:Bind SubfolderNameInput}"
                                                 Content="{}{album}"
                                                 Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"
+                                                Tag="{x:Bind SubfolderNameInput}"
                                                 ToolTipService.ToolTip="The track's album title. For albums, uses its own title." />
                                             <Button
-                                                Click="ScrollViewerButton_Click" Tag="{x:Bind SubfolderNameInput}"
+                                                Click="ScrollViewerButton_Click"
                                                 Content="{}{artist}"
                                                 Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"
+                                                Tag="{x:Bind SubfolderNameInput}"
                                                 ToolTipService.ToolTip="The main artist (if service supports) or first artist." />
                                             <Button
-                                                Click="ScrollViewerButton_Click" Tag="{x:Bind SubfolderNameInput}"
+                                                Click="ScrollViewerButton_Click"
                                                 Content="{}{artists}"
                                                 Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"
+                                                Tag="{x:Bind SubfolderNameInput}"
                                                 ToolTipService.ToolTip="The artists comma separated (e.g. artist1, artist2, artist3)." />
                                             <Button
-                                                Click="ScrollViewerButton_Click" Tag="{x:Bind SubfolderNameInput}"
+                                                Click="ScrollViewerButton_Click"
                                                 Content="{}{id}"
                                                 Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"
+                                                Tag="{x:Bind SubfolderNameInput}"
                                                 ToolTipService.ToolTip="The streaming service ID." />
                                             <Button
-                                                Click="ScrollViewerButton_Click" Tag="{x:Bind SubfolderNameInput}"
+                                                Click="ScrollViewerButton_Click"
                                                 Content="{}{isrc}"
                                                 Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"
+                                                Tag="{x:Bind SubfolderNameInput}"
                                                 ToolTipService.ToolTip="The ISRC identifier for the track or UPC for the album." />
                                             <Button
-                                                Click="ScrollViewerButton_Click" Tag="{x:Bind SubfolderNameInput}"
+                                                Click="ScrollViewerButton_Click"
                                                 Content="{}{position}"
                                                 Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"
+                                                Tag="{x:Bind SubfolderNameInput}"
                                                 ToolTipService.ToolTip="The track's position in the album. For albums, this is left empty." />
                                             <Button
-                                                Click="ScrollViewerButton_Click" Tag="{x:Bind SubfolderNameInput}"
+                                                Click="ScrollViewerButton_Click"
                                                 Content="{}{date}"
                                                 Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"
+                                                Tag="{x:Bind SubfolderNameInput}"
                                                 ToolTipService.ToolTip="The release date in YYYY-MM-DD." />
                                             <Button
-                                                Click="ScrollViewerButton_Click" Tag="{x:Bind SubfolderNameInput}"
+                                                Click="ScrollViewerButton_Click"
                                                 Content="{}{title}"
                                                 Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"
+                                                Tag="{x:Bind SubfolderNameInput}"
                                                 ToolTipService.ToolTip="The title of the track or album." />
                                         </StackPanel>
                                     </ScrollViewer>
@@ -453,7 +474,7 @@
                             </local:SettingsCard>
                         </local:SettingsExpander.Items>
                     </local:SettingsExpander>
-                    
+
                     <local:SettingsExpander
                         x:Name="DownloadOptions"
                         Description="Select preferred audio quality for each streaming service"
@@ -516,7 +537,7 @@
                             </local:SettingsCard>
                         </local:SettingsExpander.Items>
                     </local:SettingsExpander>
-                    
+
                     <!--  Auth SETTINGS __________________________________________________________________________________________________  -->
                     <TextBlock Style="{StaticResource TextBlockSectionStyle}" Text="Authentication" />
 

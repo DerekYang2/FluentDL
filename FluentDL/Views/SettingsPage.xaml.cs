@@ -84,7 +84,7 @@ public sealed partial class SettingsPage : Page
         AlbumSubfoldersToggle.IsOn = await localSettings.ReadSettingAsync<bool>(SettingsViewModel.AlbumSubfolders);
 
         // Set wildcards
-        SubfolderWildcardCard.IsEnabled = SubfoldersToggle.IsOn || AlbumSubfoldersToggle.IsOn;
+        SubfolderNameInput.IsEnabled = SubfoldersToggle.IsOn || AlbumSubfoldersToggle.IsOn;
         SubfolderNameInput.Text = await localSettings.ReadSettingAsync<string?>(SettingsViewModel.SubfolderWildcard) ?? "";
         FileNameInput.Text = await localSettings.ReadSettingAsync<string?>(SettingsViewModel.FileWildcard) ?? "";
 
@@ -548,14 +548,14 @@ public sealed partial class SettingsPage : Page
     private async void SubfoldersToggle_OnToggled(object sender, RoutedEventArgs e)
     {
         var isToggled = (sender as ToggleSwitch)?.IsOn ?? false;
-        SubfolderWildcardCard.IsEnabled = SubfoldersToggle.IsOn || AlbumSubfoldersToggle.IsOn;
+        SubfolderNameInput.IsEnabled = SubfoldersToggle.IsOn || AlbumSubfoldersToggle.IsOn;
         await localSettings.SaveSettingAsync(SettingsViewModel.Subfolders, isToggled);
     }
 
     private async void AlbumSubfoldersToggle_OnToggled(object sender, RoutedEventArgs e)
     {
         var isToggled = (sender as ToggleSwitch)?.IsOn ?? false;
-        SubfolderWildcardCard.IsEnabled = SubfoldersToggle.IsOn || AlbumSubfoldersToggle.IsOn;
+        SubfolderNameInput.IsEnabled = SubfoldersToggle.IsOn || AlbumSubfoldersToggle.IsOn;
         await localSettings.SaveSettingAsync(SettingsViewModel.AlbumSubfolders, isToggled);
     }
 
