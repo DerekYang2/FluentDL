@@ -546,6 +546,9 @@ public sealed partial class Search : Page
         }
 
         AddToQueueButton.IsEnabled = false;
+
+        ShowInfoBarPermanent(InfoBarSeverity.Informational, $"Adding all search tracks to queue");
+        InfobarProgress.Visibility = Visibility.Visible;
         try
         {
             var beforeCount = QueueViewModel.Source.Count;
@@ -609,11 +612,11 @@ public sealed partial class Search : Page
 
             if (addedCount < listViewCount)
             {
-                ShowInfoBar(InfoBarSeverity.Informational, $"Added {addedCount} tracks to queue (duplicates ignored)");
+                ShowInfoBar(InfoBarSeverity.Informational, $"Added {addedCount} {(addedCount == 1 ? "track" : "tracks")} to queue (duplicates ignored)");
             }
             else
             {
-                ShowInfoBar(InfoBarSeverity.Success, $"Added {addedCount} tracks to queue");
+                ShowInfoBar(InfoBarSeverity.Success, $"Added {addedCount} {(addedCount == 1 ? "track" : "tracks")} to queue");
             }
 
             await QueueViewModel.SaveQueue();
@@ -625,6 +628,7 @@ public sealed partial class Search : Page
         finally
         {
             AddToQueueButton.IsEnabled = true;
+            InfobarProgress.Visibility = Visibility.Collapsed;
         }
     }
 
@@ -749,63 +753,86 @@ public sealed partial class Search : Page
 
         if (song is AlbumSearchObject album)
         {
-            List<SongSearchObject> albumTracks = [];
+            InfobarProgress.Visibility = Visibility.Visible;
+            ShowInfoBarPermanent(InfoBarSeverity.Informational, $"Adding album <a href='{ApiHelper.GetUrl(album)}'>{album.Title}</a> to queue");
 
-            if (album.Source == "qobuz")
+            try
             {
-                var albumInternal = await QobuzApi.GetInternalAlbum(album.Id);
-                albumInternal.Tracks.Items.ForEach(t => t.Album = albumInternal);
-                albumTracks = albumInternal.Tracks.Items.Select(t => QobuzApi.ConvertSongSearchObject(t, albumInternal.Artist?.Name)).ToList();
-            }
-            else if (album.Source == "deezer")
-            {
-                var fullAlbumObj = await DeezerApi.GetAlbum(album.Id);
+                List<SongSearchObject> albumTracks = [];
 
-                if (fullAlbumObj != null)
+                if (album.Source == "qobuz")
                 {
-                    foreach (var t in fullAlbumObj.TrackList ?? [])
+                    var albumInternal = await QobuzApi.GetInternalAlbum(album.Id);
+                    albumInternal.Tracks.Items.ForEach(t => t.Album = albumInternal);
+                    albumTracks = albumInternal.Tracks.Items.Select(t => QobuzApi.ConvertSongSearchObject(t, albumInternal.Artist?.Name)).ToList();
+                }
+                else if (album.Source == "deezer")
+                {
+                    var fullAlbumObj = await DeezerApi.GetAlbum(album.Id);
+
+                    if (fullAlbumObj != null)
                     {
-                        var track = await DeezerApi.GetTrack(t.Id);
+                        foreach (var t in fullAlbumObj.TrackList ?? [])
+                        {
+                            var track = await DeezerApi.GetTrack(t.Id);
+                            if (track != null)
+                            {
+                                albumTracks.Add(track);
+                            }
+                        }
+                    }
+                }
+                else if (album.Source == "spotify")
+                {
+                    foreach (var t in album.TrackList ?? [])
+                    {
+                        var track = await SpotifyApi.GetTrack(t.Id);
                         if (track != null)
                         {
-                            albumTracks.Add(track);
+                            var songObj = SpotifyApi.ConvertSongSearchObject(track);
+                            if (songObj != null)
+                            {
+                                albumTracks.Add(songObj);
+                            }
                         }
                     }
                 }
-            }
-            else if (album.Source == "spotify")
-            {
-                foreach (var t in album.TrackList ?? [])
+                else if (album.Source == "youtube")
                 {
-                    var track = await SpotifyApi.GetTrack(t.Id);
-                    if (track != null)
-                    {
-                        var songObj = SpotifyApi.ConvertSongSearchObject(track);
-                        if (songObj != null)
-                        {
-                            albumTracks.Add(songObj);
-                        }
-                    }
+                    albumTracks = album?.TrackList ?? [];
                 }
-            }
-            else if (album.Source == "youtube")
-            {
-                albumTracks = album?.TrackList ?? [];
-            }
 
-            albumTracks.ForEach(QueueViewModel.Add);
+                albumTracks.ForEach(QueueViewModel.Add);
+
+                int addedCount = QueueViewModel.Source.Count - beforeCount;
+                if (addedCount < albumTracks.Count)
+                {
+                    ShowInfoBar(InfoBarSeverity.Informational, $"Added {addedCount} {(addedCount == 1 ? "track" : "tracks")} from <a href='{ApiHelper.GetUrl(album)}'>{album.Title}</a> to queue (duplicates ignored)", 3);
+                }
+                else
+                {
+                    ShowInfoBar(InfoBarSeverity.Success, $"Added {addedCount} {(addedCount == 1 ? "track" : "tracks")} from <a href='{ApiHelper.GetUrl(album)}'>{album.Title}</a> to queue", 3);
+                }
+            } catch (Exception ex)
+            {
+                ShowInfoBar(InfoBarSeverity.Error, $"Error adding album to queue: {ex.Message}", 5);
+            } finally
+            {
+                InfobarProgress.Visibility = Visibility.Collapsed;
+            }
         }
         else
         {
             QueueViewModel.Add(song);
-        }
-        if (QueueViewModel.Source.Count == beforeCount) // No change
-        {
-            ShowInfoBar(InfoBarSeverity.Warning, $"<a href='{ApiHelper.GetUrl(song)}'>{song.Title}</a> already in queue");
-        }
-        else
-        {
-            ShowInfoBar(InfoBarSeverity.Success, $"<a href='{ApiHelper.GetUrl(song)}'>{song.Title}</a> added to queue");
+
+            if (QueueViewModel.Source.Count == beforeCount) // No change
+            {
+                ShowInfoBar(InfoBarSeverity.Warning, $"<a href='{ApiHelper.GetUrl(song)}'>{song.Title}</a> already in queue");
+            }
+            else
+            {
+                ShowInfoBar(InfoBarSeverity.Success, $"<a href='{ApiHelper.GetUrl(song)}'>{song.Title}</a> added to queue");
+            }
         }
         await QueueViewModel.SaveQueue();
     }
