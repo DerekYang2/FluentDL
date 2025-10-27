@@ -112,7 +112,7 @@
                     <local:SettingsExpander
                         x:Name="FFmpegExpander"
                         HorizontalContentAlignment="Stretch"
-                        Description="Specify custom FFmpeg binaries location (optional)"
+                        Description="Optional: custom FFMpeg location (folder should contain ffmpeg.exe)"
                         Header="FFmpeg Directory">
                         <local:SettingsExpander.HeaderIcon>
                             <FontIcon Glyph="&#xE8B7;" />
@@ -464,7 +464,7 @@
                         x:Name="QobuzExpander"
                         VerticalAlignment="Top"
                         HorizontalContentAlignment="Stretch"
-                        Description="Sign into Qobuz (only one method required)"
+                        Description="Sign into Qobuz (only one option required)"
                         Header="Qobuz">
                         <local:SettingsExpander.HeaderIcon>
                             <FontIcon Glyph="&#xE72E;" />

@@ -498,42 +498,6 @@ internal class ApiHelper
         return null;
     }
 
-    public static async Task DownloadObject(SongSearchObject song, Windows.Storage.StorageFile? file)
-    {
-        if (file == null)
-        {
-            return;
-        }
-
-        var flacLocation = ApiHelper.RemoveExtension(file.Path) + ".flac";
-        var opusLocation = ApiHelper.RemoveExtension(file.Path) + ".opus";
-
-        if (song.Source == "youtube")
-        {
-            await YoutubeApi.DownloadAudio(opusLocation, song.Id);
-            await FFmpegRunner.ConvertToFlacAsync(opusLocation); // Convert opus to flac
-            await YoutubeApi.UpdateMetadata(flacLocation, song.Id);
-        }
-
-        if (song.Source == "deezer")
-        {
-            await DeezerApi.DownloadTrack(flacLocation, song);
-            await DeezerApi.UpdateMetadata(flacLocation, song.Id);
-        }
-
-        if (song.Source == "qobuz")
-        {
-            await QobuzApi.DownloadTrack(flacLocation, song);
-            await QobuzApi.UpdateMetadata(flacLocation, song.Id);
-        }
-
-        if (song.Source == "spotify")
-        {
-            await SpotifyApi.DownloadEquivalentTrack(flacLocation, song, false);
-            await SpotifyApi.UpdateMetadata(flacLocation, song.Id);
-        }
-    }
-
     public static int CalcLevenshteinDistance(string a, string b)
     {
         if (string.IsNullOrEmpty(a) && string.IsNullOrEmpty(b))

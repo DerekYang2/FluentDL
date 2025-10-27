@@ -767,7 +767,13 @@ internal class DeezerApi
         // Convert to flac if needed
         if (bitrateEnum == Bitrate.FLAC && filePath.EndsWith(".mp3"))
         {
-            await FFmpegRunner.ConvertToFlacAsync(filePath, 44100);
+            try
+            {
+                await FFmpegRunner.ConvertToFlacAsync(filePath, 44100);
+            } catch (Exception e)
+            {
+                throw new Exception("Failed to convert to FLAC: " + e.Message);
+            }
             filePath = ApiHelper.RemoveExtension(filePath) + ".flac";
         }
         return filePath;
