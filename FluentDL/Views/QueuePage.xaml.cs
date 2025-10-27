@@ -223,7 +223,7 @@ public sealed partial class QueuePage : Page
     {
         SetCountText();
 
-        if (!IsConverting) // Ignore the below
+        if (!IsConverting)
         {
             dispatcherQueue.TryEnqueue(() =>
             {
@@ -231,7 +231,6 @@ public sealed partial class QueuePage : Page
                 if (cancellationTokenSource.Token.IsCancellationRequested)
                 {
                     SetContinueUI(); // If paused, UI should show continue
-                    ShowInfoBar(InfoBarSeverity.Informational, "Queue paused");
                 }
 
                 if (QueueViewModel.Source.Count == 0)
@@ -1040,6 +1039,12 @@ public sealed partial class QueuePage : Page
 
         // Clear queue command running progress
         QueueViewModel.Reset(); // Reset the queue object result strings and index
+        // Reset back to normal
+        ProgressTextButton.Visibility = StartStopButton.Visibility = Visibility.Collapsed;
+        CountTextButton.Visibility = Visibility.Visible;
+        EnableButtons();
+        QueueProgress.Value = 0;
+
         cancellationTokenSource = new CancellationTokenSource(); // Create a new cancellation token source
 
         // Prepare UI

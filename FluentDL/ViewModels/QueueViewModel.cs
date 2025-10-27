@@ -26,6 +26,7 @@ using System.Runtime.CompilerServices;
 using System.Xml.Linq;
 using Windows.Storage;
 using Windows.Storage.Streams;
+using static FluentDL.Views.QueuePage;
 using static System.Net.WebRequestMethods;
 using DispatcherQueue = Microsoft.UI.Dispatching.DispatcherQueue;
 
@@ -311,6 +312,7 @@ public partial class QueueViewModel : ObservableRecipient, INotifyPropertyChange
     {
         index = 0; // Reset the index
         completedCount = 0;
+        IsRunning = false;
 
         for (int i = 0; i < Source.Count; i++) // Remove all result str, set new obj to refresh ui
         {
@@ -360,6 +362,7 @@ public partial class QueueViewModel : ObservableRecipient, INotifyPropertyChange
                     if (token.IsCancellationRequested) // Break the loop if the token is cancelled
                     {
                         IsRunning = false;
+                        callback.Invoke(InfoBarSeverity.Informational, "Command running paused.");
                         return;
                     }
 

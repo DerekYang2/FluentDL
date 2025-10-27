@@ -456,138 +456,145 @@ namespace FluentDL.Services
                 return null;
             }
 
-            // Try to find by ISRC first
-            if (song.Isrc != null)
-            {
-                var track = await GetTrackFromISRC(song.Isrc, token);
-                if (track != null)
-                {
-                    var retObj = ConvertSongSearchObject(track);
-                    if (retObj != null) // Update callback with result
-                    {
-                        callback?.Invoke(InfoBarSeverity.Success, retObj);
-                    }
-
-                    return retObj;
-                }
-            }
-
-            // Find by metadata
-            var artistCSV = song.Artists;
-            var artists = artistCSV.Split(", ");
-            var trackName = song.Title;
-            var albumName = song.AlbumName;
-
-            var reqStr = "";
-            if (!string.IsNullOrWhiteSpace(artistCSV))
-            {
-                reqStr += $"artist:\"{artistCSV}\" ";
-            }
-
-            if (!string.IsNullOrWhiteSpace(trackName))
-            {
-                reqStr += $"track:\"{trackName}\" ";
-            }
-
-            if (!string.IsNullOrWhiteSpace(albumName))
-            {
-                reqStr += $"album:\"{albumName}\" ";
-            }
-
-            reqStr = reqStr.Trim(); // Trim the query
-
-            var songObjList = new List<SongSearchObject>(); // List of SongSearchObject results
-            HashSet<string> idSet = new HashSet<string>(); // Set of track ids
-
-            SearchResponse? response;
             try
             {
-                if (reqStr.Length >= 250)
-                {  // Maximum query is 250 characters
-                    reqStr = reqStr.Substring(0, 250);
-                }
-                response = await spotify.Search.Item(new SearchRequest(SearchRequest.Types.Track, reqStr) {Limit=20 }, token);
-            }
-            catch (Exception e)
-            {
-                Debug.WriteLine("Failed to advanced search: " + e.Message);
-                // Remove album: and everything after
-                var albumIdx = reqStr.IndexOf("album:");
-                if (albumIdx != -1)
+                // Try to find by ISRC first
+                if (song.Isrc != null)
                 {
-                    reqStr = reqStr.Substring(0, albumIdx);
-                    response = await spotify.Search.Item(new SearchRequest(SearchRequest.Types.Track, reqStr) {Limit=20 }, token);
-                }
-                else
-                {
-                    return null;
-                }
-            }
-            
-            int notNullCount = 0, totalCount = 0;
-            int LIMIT = 20;
-
-            if (response.Tracks != null)
-            {
-
-                await foreach (FullTrack track in spotify.Paginate(response.Tracks, (s) => s.Tracks)) {
-                    if (token.IsCancellationRequested) return null;
-
-                    if (notNullCount >= LIMIT || totalCount >= 1.5*LIMIT) break;
-                    totalCount++;  // Increment total count
-
-                    var songObject = ConvertSongSearchObject(track);
-                    
-                    if (songObject == null) continue;   
-                    notNullCount++;  // Increment count of non-null tracks found
-
-                    if (!idSet.Contains(songObject.Id))
+                    var track = await GetTrackFromISRC(song.Isrc, token);
+                    if (track != null)
                     {
-                        idSet.Add(songObject.Id);
-
-                        var oneArtistMatch = artists.Any(a => track.Artists.Any(ta => CloseMatch(a, ta.Name)));
-
-                        if (oneArtistMatch)
+                        var retObj = ConvertSongSearchObject(track);
+                        if (retObj != null) // Update callback with result
                         {
-                            songObjList.Add(songObject);
+                            callback?.Invoke(InfoBarSeverity.Success, retObj);
+                        }
+
+                        return retObj;
+                    }
+                }
+
+                // Find by metadata
+                var artistCSV = song.Artists;
+                var artists = artistCSV.Split(", ");
+                var trackName = song.Title;
+                var albumName = song.AlbumName;
+
+                var reqStr = "";
+                if (!string.IsNullOrWhiteSpace(artistCSV))
+                {
+                    reqStr += $"artist:\"{artistCSV}\" ";
+                }
+
+                if (!string.IsNullOrWhiteSpace(trackName))
+                {
+                    reqStr += $"track:\"{trackName}\" ";
+                }
+
+                if (!string.IsNullOrWhiteSpace(albumName))
+                {
+                    reqStr += $"album:\"{albumName}\" ";
+                }
+
+                reqStr = reqStr.Trim(); // Trim the query
+
+                var songObjList = new List<SongSearchObject>(); // List of SongSearchObject results
+                HashSet<string> idSet = new HashSet<string>(); // Set of track ids
+
+                SearchResponse? response;
+                try
+                {
+                    if (reqStr.Length >= 250)
+                    {  // Maximum query is 250 characters
+                        reqStr = reqStr.Substring(0, 250);
+                    }
+                    response = await spotify.Search.Item(new SearchRequest(SearchRequest.Types.Track, reqStr) { Limit = 20 }, token);
+                }
+                catch (Exception e)
+                {
+                    Debug.WriteLine("Failed to advanced search: " + e.Message);
+                    // Remove album: and everything after
+                    var albumIdx = reqStr.IndexOf("album:");
+                    if (albumIdx != -1)
+                    {
+                        reqStr = reqStr.Substring(0, albumIdx);
+                        response = await spotify.Search.Item(new SearchRequest(SearchRequest.Types.Track, reqStr) { Limit = 20 }, token);
+                    }
+                    else
+                    {
+                        return null;
+                    }
+                }
+
+                int notNullCount = 0, totalCount = 0;
+                int LIMIT = 20;
+
+                if (response.Tracks != null)
+                {
+
+                    await foreach (FullTrack track in spotify.Paginate(response.Tracks, (s) => s.Tracks))
+                    {
+                        if (token.IsCancellationRequested) return null;
+
+                        if (notNullCount >= LIMIT || totalCount >= 1.5 * LIMIT) break;
+                        totalCount++;  // Increment total count
+
+                        var songObject = ConvertSongSearchObject(track);
+
+                        if (songObject == null) continue;
+                        notNullCount++;  // Increment count of non-null tracks found
+
+                        if (!idSet.Contains(songObject.Id))
+                        {
+                            idSet.Add(songObject.Id);
+
+                            var oneArtistMatch = artists.Any(a => track.Artists.Any(ta => CloseMatch(a, ta.Name)));
+
+                            if (oneArtistMatch)
+                            {
+                                songObjList.Add(songObject);
+                            }
                         }
                     }
                 }
-            }
 
-            // Pass 1: exact title match, find least edit distance album name
-            SongSearchObject? closeMatchObj = null;
-            int minEditDistance = int.MaxValue;
-            foreach (var songObj in songObjList)
-            {
-                if (token.IsCancellationRequested) // Cancel requested, terminate this method
+                // Pass 1: exact title match, find least edit distance album name
+                SongSearchObject? closeMatchObj = null;
+                int minEditDistance = int.MaxValue;
+                foreach (var songObj in songObjList)
                 {
-                    return null;
-                }
-
-                var titlePruned = ApiHelper.PruneTitle(trackName);
-                var songObjTitlePruned = ApiHelper.PruneTitle(songObj.Title);
-                if (titlePruned.Equals(songObjTitlePruned) || titlePruned.Replace("radioedit", "").Equals(songObjTitlePruned.Replace("radioedit", ""))) // If the title matches without punctuation
-                {
-                    if (albumName.ToLower().Replace(" ", "").Equals(songObj.AlbumName.ToLower().Replace(" ", ""))) // If the album name is exact match
+                    if (token.IsCancellationRequested) // Cancel requested, terminate this method
                     {
-                        callback?.Invoke(InfoBarSeverity.Warning, songObj);
-                        return songObj; // Return direct match
+                        return null;
                     }
 
-                    var dist = ApiHelper.CalcLevenshteinDistance(ApiHelper.PruneTitle(albumName), ApiHelper.PruneTitle(songObj.AlbumName));
-                    if (dist < minEditDistance)
+                    var titlePruned = ApiHelper.PruneTitle(trackName);
+                    var songObjTitlePruned = ApiHelper.PruneTitle(songObj.Title);
+                    if (titlePruned.Equals(songObjTitlePruned) || titlePruned.Replace("radioedit", "").Equals(songObjTitlePruned.Replace("radioedit", ""))) // If the title matches without punctuation
                     {
-                        minEditDistance = dist;
-                        closeMatchObj = songObj;
+                        if (albumName.ToLower().Replace(" ", "").Equals(songObj.AlbumName.ToLower().Replace(" ", ""))) // If the album name is exact match
+                        {
+                            callback?.Invoke(InfoBarSeverity.Warning, songObj);
+                            return songObj; // Return direct match
+                        }
+
+                        var dist = ApiHelper.CalcLevenshteinDistance(ApiHelper.PruneTitle(albumName), ApiHelper.PruneTitle(songObj.AlbumName));
+                        if (dist < minEditDistance)
+                        {
+                            minEditDistance = dist;
+                            closeMatchObj = songObj;
+                        }
                     }
                 }
-            }
 
-            if (closeMatchObj != null) // Return the least edit distance album name
+                if (closeMatchObj != null) // Return the least edit distance album name
+                {
+                    callback?.Invoke(InfoBarSeverity.Warning, closeMatchObj);
+                    return closeMatchObj;
+                }
+            } catch(Exception ex)
             {
-                callback?.Invoke(InfoBarSeverity.Warning, closeMatchObj);
-                return closeMatchObj;
+                Debug.WriteLine("failed to get spotify track: " + ex.ToString());
             }
 
             callback?.Invoke(InfoBarSeverity.Error, song); // Show error with original song object
