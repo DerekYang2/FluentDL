@@ -763,16 +763,30 @@ public sealed partial class Search : Page
 
                 if (fullAlbumObj != null)
                 {
-                    var trackTasks = fullAlbumObj.TrackList?.Select(t => DeezerApi.GetTrack(t.Id)) ?? [];
-                    var resolvedTracks = await Task.WhenAll(trackTasks);
-                    albumTracks = [.. resolvedTracks];
+                    foreach (var t in fullAlbumObj.TrackList ?? [])
+                    {
+                        var track = await DeezerApi.GetTrack(t.Id);
+                        if (track != null)
+                        {
+                            albumTracks.Add(track);
+                        }
+                    }
                 }
             }
             else if (album.Source == "spotify")
             {
-                var trackTasks = album.TrackList?.Select(t => SpotifyApi.GetTrack(t.Id)) ?? [];
-                var resolvedTracks = await Task.WhenAll(trackTasks);
-                albumTracks = [.. resolvedTracks.Select(SpotifyApi.ConvertSongSearchObject)];
+                foreach (var t in album.TrackList ?? [])
+                {
+                    var track = await SpotifyApi.GetTrack(t.Id);
+                    if (track != null)
+                    {
+                        var songObj = SpotifyApi.ConvertSongSearchObject(track);
+                        if (songObj != null)
+                        {
+                            albumTracks.Add(songObj);
+                        }
+                    }
+                }
             }
             else if (album.Source == "youtube")
             {
