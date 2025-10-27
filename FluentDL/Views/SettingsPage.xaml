@@ -21,27 +21,6 @@
         <ScrollViewer Margin="0,0,0,12" Padding="0,0,16,0">
             <Grid>
                 <StackPanel HorizontalAlignment="Stretch" Spacing="8">
-                    <!--  Import And Export  -->
-                    <TextBlock Style="{StaticResource TextBlockSectionStyle}" Text="Import and Export" />
-                    <local:SettingsCard
-                        x:Name="ImportExportSettingsCard"
-                        Description="Import or export FluentDL settings with JSON format (.json file)"
-                        Header="Import or Export Settings">
-                        <local:SettingsCard.HeaderIcon>
-                            <FontIcon Glyph="&#xE8AB;" />
-                        </local:SettingsCard.HeaderIcon>
-                        <StackPanel Orientation="Horizontal" Spacing="8">
-                            <Button
-                                x:Name="UploadImportFile"
-                                Click="UploadImportFile_Click"
-                                Content="Import" />
-                            <Button
-                                x:Name="UploadExportFile"
-                                Click="UploadExportFile_Click"
-                                Content="Export" />
-                        </StackPanel>
-                    </local:SettingsCard>
-
                     <!--  GENERAL SETTINGS ______________________________________________________________________________________________  -->
                     <TextBlock Style="{StaticResource TextBlockSectionStyle}" Text="General" />
 
@@ -154,118 +133,6 @@
                                     Click="SelectFFmpegButton_OnClick"
                                     Content="Browse" />
                             </local:SettingsCard>
-                        </local:SettingsExpander.Items>
-                    </local:SettingsExpander>
-
-                    <local:SettingsExpander
-                        x:Name="ShortcutButtonExpander"
-                        HorizontalContentAlignment="Stretch"
-                        Description="Customize shortcut buttons for each page"
-                        Header="Shortcut Buttons">
-                        <local:SettingsExpander.HeaderIcon>
-                            <FontIcon Glyph="&#xE945;" />
-                        </local:SettingsExpander.HeaderIcon>
-                        <local:SettingsExpander.Items>
-                            <local:SettingsCard
-                                x:Name="SearchPageShortcuts"
-                                HorizontalContentAlignment="Left"
-                                ContentAlignment="Vertical"
-                                Description="Enabled shortcut buttons for Search"
-                                Header="Search Page">
-                                <local:SettingsCard.HeaderIcon>
-                                    <FontIcon Glyph="&#xE721;" />
-                                </local:SettingsCard.HeaderIcon>
-                                <StackPanel>
-                                    <CheckBox
-                                        x:Name="SearchAddCheckbox"
-                                        Checked="Search_OnChecked"
-                                        Content="Add to queue"
-                                        Tag="0"
-                                        Unchecked="Search_OnUnchecked" />
-                                    <CheckBox
-                                        x:Name="SearchDownloadCheckbox"
-                                        Checked="Search_OnChecked"
-                                        Content="Download"
-                                        Tag="1"
-                                        Unchecked="Search_OnUnchecked" />
-                                    <CheckBox
-                                        x:Name="SearchShareCheckbox"
-                                        Checked="Search_OnChecked"
-                                        Content="Share link"
-                                        Tag="2"
-                                        Unchecked="Search_OnUnchecked" />
-                                    <CheckBox
-                                        x:Name="SearchOpenCheckbox"
-                                        Checked="Search_OnChecked"
-                                        Content="Open"
-                                        Tag="3"
-                                        Unchecked="Search_OnUnchecked" />
-                                </StackPanel>
-                            </local:SettingsCard>
-
-                            <local:SettingsCard
-                                x:Name="LocalExplorerPageShortcuts"
-                                HorizontalContentAlignment="Left"
-                                ContentAlignment="Vertical"
-                                Description="Enabled shortcut buttons for Local Explorer"
-                                Header="Local Explorer Page">
-                                <local:SettingsCard.HeaderIcon>
-                                    <FontIcon Glyph="&#xEC50;" />
-                                </local:SettingsCard.HeaderIcon>
-                                <StackPanel>
-                                    <CheckBox
-                                        x:Name="LocalExplorerAddCheckbox"
-                                        Checked="LocalExplorer_OnChecked"
-                                        Content="Add to queue"
-                                        Tag="0"
-                                        Unchecked="LocalExplorer_OnUnchecked" />
-                                    <CheckBox
-                                        x:Name="LocalExplorerEditCheckbox"
-                                        Checked="LocalExplorer_OnChecked"
-                                        Content="Edit song metadata"
-                                        Tag="1"
-                                        Unchecked="LocalExplorer_OnUnchecked" />
-                                    <CheckBox
-                                        x:Name="LocalExplorerOpenCheckbox"
-                                        Checked="LocalExplorer_OnChecked"
-                                        Content="Open in File Explorer"
-                                        Tag="2"
-                                        Unchecked="LocalExplorer_OnUnchecked" />
-                                </StackPanel>
-                            </local:SettingsCard>
-
-                            <!--  New settings card for Queue Page  -->
-                            <local:SettingsCard
-                                x:Name="QueuePageShortcuts"
-                                HorizontalContentAlignment="Left"
-                                ContentAlignment="Vertical"
-                                Description="Enabled shortcut buttons for Queue"
-                                Header="Queue Page">
-                                <local:SettingsCard.HeaderIcon>
-                                    <FontIcon Glyph="&#xE9D5;" />
-                                </local:SettingsCard.HeaderIcon>
-                                <StackPanel>
-                                    <CheckBox
-                                        x:Name="QueueShareCheckbox"
-                                        Checked="Queue_OnChecked"
-                                        Content="Share link"
-                                        Tag="0"
-                                        Unchecked="Queue_OnUnchecked" />
-                                    <CheckBox
-                                        x:Name="QueueDownloadCoverCheckbox"
-                                        Checked="Queue_OnChecked"
-                                        Content="Download cover"
-                                        Tag="1"
-                                        Unchecked="Queue_OnUnchecked" />
-                                    <CheckBox
-                                        x:Name="QueueRemoveCheckbox"
-                                        Checked="Queue_OnChecked"
-                                        Content="Remove from queue"
-                                        Tag="2"
-                                        Unchecked="Queue_OnUnchecked" />
-                                </StackPanel>
-                            </local:SettingsCard>
-
                         </local:SettingsExpander.Items>
                     </local:SettingsExpander>
 
@@ -568,10 +435,12 @@
                             <FontIcon Glyph="&#xE72E;" />
                         </local:SettingsExpander.HeaderIcon>
                         <local:SettingsExpander.Items>
-                            <local:SettingsCard
-                                HorizontalContentAlignment="Stretch"
-                                Description="Enter your Deezer ARL"
-                                Header="Deezer ARL">
+                            <local:SettingsCard HorizontalContentAlignment="Stretch" Header="Deezer ARL">
+                                <local:SettingsCard.Description>
+                                    <TextBlock>
+                                        Enter your Deezer&#32;<Hyperlink NavigateUri="https://github.com/DerekYang2/FluentDL/wiki/Authentication#deezer">ARL</Hyperlink>
+                                        &#8291;</TextBlock>
+                                </local:SettingsCard.Description>
                                 <helpers:CustomPasswordBox
                                     x:Name="DeezerARLInput"
                                     Width="500"
@@ -634,15 +503,17 @@
                                     Header="Password"
                                     Tooltip="Qobuz password" />
                             </local:SettingsCard>
-                            <local:SettingsCard
-                                HorizontalContentAlignment="Stretch"
-                                Description="Option 2: enter your user ID"
-                                Header="User ID">
+                            <local:SettingsCard HorizontalContentAlignment="Stretch" Header="ID">
+                                <local:SettingsCard.Description>
+                                    <TextBlock>
+                                        <Hyperlink NavigateUri="https://github.com/DerekYang2/FluentDL/wiki/Authentication#qobuz">Option 2:</Hyperlink>
+                                        enter your id (recommended)</TextBlock>
+                                </local:SettingsCard.Description>
                                 <TextBox
                                     x:Name="QobuzIDInput"
                                     Width="500"
                                     Margin="0,0,0,4"
-                                    Header="User ID"
+                                    Header="ID"
                                     ToolTipService.ToolTip="User ID">
                                     <TextBox.HeaderTemplate>
                                         <DataTemplate>
@@ -658,13 +529,17 @@
                             <local:SettingsCard
                                 x:Name="QobuzAuthToken"
                                 HorizontalContentAlignment="Stretch"
-                                Description="Option 2: enter your authentication token"
-                                Header="Authentication Token">
+                                Header="Token">
+                                <local:SettingsCard.Description>
+                                    <TextBlock>
+                                        <Hyperlink NavigateUri="https://github.com/DerekYang2/FluentDL/wiki/Authentication#qobuz">Option 2:</Hyperlink>
+                                        enter your token (recommended)</TextBlock>
+                                </local:SettingsCard.Description>
                                 <helpers:CustomPasswordBox
                                     x:Name="QobuzTokenInput"
                                     Width="500"
                                     VerticalAlignment="Center"
-                                    Header="Authentication token"
+                                    Header="Token"
                                     Tooltip="Qobuz authentication token" />
                             </local:SettingsCard>
                             <local:SettingsCard
@@ -687,8 +562,8 @@
                         <local:SettingsExpander.Description>
                             <!--Removed text for now: Alternatively, ensure you are logged into the <Hyperlink NavigateUri="https://open.spotify.com/">web player</Hyperlink> for automatic authentication.-->
                             <TextBlock>
-                                Sign in to Spotify using custom&#32;<Hyperlink NavigateUri="https://developer.spotify.com/documentation/web-api/concepts/apps">developer app credentials</Hyperlink>
-                            </TextBlock>
+                                Sign in to Spotify using&#32;<Hyperlink NavigateUri="https://github.com/DerekYang2/FluentDL/wiki/Authentication#spotify">developer app credentials</Hyperlink>
+                                &#8291;</TextBlock>
                         </local:SettingsExpander.Description>
                         <local:SettingsExpander.HeaderIcon>
                             <FontIcon Glyph="&#xE72E;" />
@@ -742,6 +617,7 @@
                     <!--  PERSONALIZATION SETTINGS _______________________________________________________________________________________________  -->
                     <TextBlock Style="{StaticResource TextBlockSectionStyle}" Text="Personalization" />
 
+
                     <local:SettingsExpander
                         x:Name="ThemeExpander"
                         VerticalAlignment="Top"
@@ -785,6 +661,156 @@
                             </local:SettingsCard>
                         </local:SettingsExpander.Items>
                     </local:SettingsExpander>
+
+                    <local:SettingsExpander
+                        x:Name="ShortcutButtonExpander"
+                        HorizontalContentAlignment="Stretch"
+                        Description="Customize shortcut buttons for each page"
+                        Header="Shortcut Buttons">
+                        <local:SettingsExpander.HeaderIcon>
+                            <FontIcon Glyph="&#xE945;" />
+                        </local:SettingsExpander.HeaderIcon>
+                        <local:SettingsExpander.Items>
+                            <local:SettingsCard
+                                x:Name="SearchPageShortcuts"
+                                HorizontalContentAlignment="Left"
+                                ContentAlignment="Vertical"
+                                Description="Enabled shortcut buttons for Search"
+                                Header="Search Page">
+                                <local:SettingsCard.HeaderIcon>
+                                    <FontIcon Glyph="&#xE721;" />
+                                </local:SettingsCard.HeaderIcon>
+                                <StackPanel>
+                                    <CheckBox
+                                        x:Name="SearchAddCheckbox"
+                                        Checked="Search_OnChecked"
+                                        Content="Add to queue"
+                                        Tag="0"
+                                        Unchecked="Search_OnUnchecked" />
+                                    <CheckBox
+                                        x:Name="SearchDownloadCheckbox"
+                                        Checked="Search_OnChecked"
+                                        Content="Download"
+                                        Tag="1"
+                                        Unchecked="Search_OnUnchecked" />
+                                    <CheckBox
+                                        x:Name="SearchShareCheckbox"
+                                        Checked="Search_OnChecked"
+                                        Content="Share link"
+                                        Tag="2"
+                                        Unchecked="Search_OnUnchecked" />
+                                    <CheckBox
+                                        x:Name="SearchOpenCheckbox"
+                                        Checked="Search_OnChecked"
+                                        Content="Open"
+                                        Tag="3"
+                                        Unchecked="Search_OnUnchecked" />
+                                </StackPanel>
+                            </local:SettingsCard>
+
+                            <local:SettingsCard
+                                x:Name="LocalExplorerPageShortcuts"
+                                HorizontalContentAlignment="Left"
+                                ContentAlignment="Vertical"
+                                Description="Enabled shortcut buttons for Local Explorer"
+                                Header="Local Explorer Page">
+                                <local:SettingsCard.HeaderIcon>
+                                    <FontIcon Glyph="&#xEC50;" />
+                                </local:SettingsCard.HeaderIcon>
+                                <StackPanel>
+                                    <CheckBox
+                                        x:Name="LocalExplorerAddCheckbox"
+                                        Checked="LocalExplorer_OnChecked"
+                                        Content="Add to queue"
+                                        Tag="0"
+                                        Unchecked="LocalExplorer_OnUnchecked" />
+                                    <CheckBox
+                                        x:Name="LocalExplorerEditCheckbox"
+                                        Checked="LocalExplorer_OnChecked"
+                                        Content="Edit song metadata"
+                                        Tag="1"
+                                        Unchecked="LocalExplorer_OnUnchecked" />
+                                    <CheckBox
+                                        x:Name="LocalExplorerOpenCheckbox"
+                                        Checked="LocalExplorer_OnChecked"
+                                        Content="Open in File Explorer"
+                                        Tag="2"
+                                        Unchecked="LocalExplorer_OnUnchecked" />
+                                </StackPanel>
+                            </local:SettingsCard>
+
+                            <!--  New settings card for Queue Page  -->
+                            <local:SettingsCard
+                                x:Name="QueuePageShortcuts"
+                                HorizontalContentAlignment="Left"
+                                ContentAlignment="Vertical"
+                                Description="Enabled shortcut buttons for Queue"
+                                Header="Queue Page">
+                                <local:SettingsCard.HeaderIcon>
+                                    <FontIcon Glyph="&#xE9D5;" />
+                                </local:SettingsCard.HeaderIcon>
+                                <StackPanel>
+                                    <CheckBox
+                                        x:Name="QueueShareCheckbox"
+                                        Checked="Queue_OnChecked"
+                                        Content="Share link"
+                                        Tag="0"
+                                        Unchecked="Queue_OnUnchecked" />
+                                    <CheckBox
+                                        x:Name="QueueDownloadCoverCheckbox"
+                                        Checked="Queue_OnChecked"
+                                        Content="Download cover"
+                                        Tag="1"
+                                        Unchecked="Queue_OnUnchecked" />
+                                    <CheckBox
+                                        x:Name="QueueRemoveCheckbox"
+                                        Checked="Queue_OnChecked"
+                                        Content="Remove from queue"
+                                        Tag="2"
+                                        Unchecked="Queue_OnUnchecked" />
+                                </StackPanel>
+                            </local:SettingsCard>
+
+                        </local:SettingsExpander.Items>
+                    </local:SettingsExpander>
+
+                    <!--  IMPORT AND EXPORT  ____________________________________________________________________________________  -->
+                    <TextBlock Style="{StaticResource TextBlockSectionStyle}" Text="Import and Export" />
+
+                    <local:SettingsCard
+                        x:Name="ImportExportSettingsCard"
+                        Description="Import or export FluentDL settings with JSON format (.json file)"
+                        Header="Import or Export Settings">
+                        <local:SettingsCard.HeaderIcon>
+                            <FontIcon Glyph="&#xE8AB;" />
+                        </local:SettingsCard.HeaderIcon>
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <Button
+                                x:Name="UploadImportFile"
+                                Click="UploadImportFile_Click"
+                                Content="Import" />
+                            <Button
+                                x:Name="UploadExportFile"
+                                Click="UploadExportFile_Click"
+                                Content="Export" />
+                        </StackPanel>
+                    </local:SettingsCard>
+
+                    <local:SettingsCard
+                        x:Name="ResetDefaultsCard"
+                        Description="Reset to default settings"
+                        Header="Reset">
+                        <local:SettingsCard.HeaderIcon>
+                            <FontIcon Glyph="&#xEBC4;" />
+                        </local:SettingsCard.HeaderIcon>
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <Button
+                                x:Name="ResetDefaultsButton"
+                                Click="ResetDefaultsButton_Click"
+                                Content="Reset"
+                                ToolTipService.ToolTip="Reset all settings to their default values." />
+                        </StackPanel>
+                    </local:SettingsCard>
 
                     <!--  ABOUT __________________________________________________________________________________________________  -->
                     <TextBlock Style="{StaticResource TextBlockSectionStyle}" Text="About" />

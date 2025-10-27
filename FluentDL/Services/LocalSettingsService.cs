@@ -169,4 +169,17 @@ public class LocalSettingsService : ILocalSettingsService
             return ex.Message;
         }
     }
+
+    public async Task ClearSettings()
+    {
+        if (RuntimeHelper.IsMSIX)
+        {
+            ApplicationData.Current.LocalSettings.Values.Clear();
+        }
+        else
+        {
+            _settings.Clear();
+            await Task.Run(() => _fileService.Save(_applicationDataFolder, _localsettingsFile, _settings));
+        }
+    }
 }

@@ -1,4 +1,4 @@
-﻿using System.Reflection;
+using System.Reflection;
 using System.Windows.Input;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -140,6 +140,12 @@ public partial class SettingsViewModel : ObservableRecipient
         await SaveSettingsAsyncIfNull<bool?>(QueueDownloadCoverChecked, false);
         await SaveSettingsAsyncIfNull<bool?>(QueueRemoveChecked, false);
         await localSettings.SaveSettingAsync(FirstRun, false);  // Set first run to false
+    }
+
+    public static async Task ResetSettings()
+    {
+        await localSettings.ClearSettings();
+        await SetMissingDefaults();
     }
 
     public static async Task<T?> GetSetting<T>(string key)

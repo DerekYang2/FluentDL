@@ -8,5 +8,6 @@ public interface ILocalSettingsService
 
     Task<string> ExportSettingsAsync();
     Task<string?> ImportSettingsAsync(string json);
+    Task ClearSettings();
 
 }

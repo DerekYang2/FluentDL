@@ -659,4 +659,18 @@ public sealed partial class SettingsPage : Page
             ShowInfoBar(InfoBarSeverity.Error, ex.Message, seconds: 5, title: "Export Failed");
         }
     }
+
+    private async void ResetDefaultsButton_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            await SettingsViewModel.ResetSettings();
+            await InitializeAsync();
+            ShowInfoBar(InfoBarSeverity.Success, "You may need to restart the application for all changes to apply.", seconds: 3, title: "Reset Successful");
+        }
+        catch (Exception ex)
+        {
+            ShowInfoBar(InfoBarSeverity.Error, ex.Message, seconds: 5, title: "Reset Failed");
+        }
+    }
 }
