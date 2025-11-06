@@ -1,10 +1,9 @@
-﻿using System.Diagnostics;
-using Windows.Storage;
-using Windows.Storage.AccessCache;
-using Windows.Storage.Pickers;
-using CommunityToolkit.WinUI;
+﻿using CommunityToolkit.WinUI;
+using CommunityToolkit.WinUI.Controls;
+using CommunityToolkit.WinUI.Helpers;
 using FluentDL.Contracts.Services;
 using FluentDL.Helpers;
+using FluentDL.Models;
 using FluentDL.Services;
 using FluentDL.ViewModels;
 using Microsoft.UI.Dispatching;
@@ -12,11 +11,13 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Controls.Primitives;
 using Microsoft.UI.Xaml.Input;
-using FluentDL.Models;
-using CommunityToolkit.WinUI.Controls;
 using Microsoft.UI.Xaml.Media;
+using QobuzApiSharp.Service;
+using System.Diagnostics;
 using System.Threading.Tasks;
-using CommunityToolkit.WinUI.Helpers;
+using Windows.Storage;
+using Windows.Storage.AccessCache;
+using Windows.Storage.Pickers;
 
 namespace FluentDL.Views;
 
@@ -110,9 +111,11 @@ public sealed partial class SettingsPage : Page
         SpotifySecretInput.Password = (await localSettings.ReadSettingAsync<string?>(SettingsViewModel.SpotifyClientSecret)) ?? "";
         DeezerARLInput.Password = await localSettings.ReadSettingAsync<string?>(SettingsViewModel.DeezerARL) ?? "";
         QobuzIDInput.Text = await localSettings.ReadSettingAsync<string?>(SettingsViewModel.QobuzId) ?? "";
-        QobuzTokenInput.Password = await localSettings.ReadSettingAsync<string?>(SettingsViewModel.QobuzToken) ?? "";
-        QobuzEmailInput.Text = AesHelper.Decrypt(await localSettings.ReadSettingAsync<string?>(SettingsViewModel.QobuzEmail) ?? "");
-        QobuzPasswordInput.Password = AesHelper.Decrypt(await localSettings.ReadSettingAsync<string?>(SettingsViewModel.QobuzPassword) ?? "");
+        QobuzTokenInput.Text = await localSettings.ReadSettingAsync<string?>(SettingsViewModel.QobuzToken) ?? "";
+        QobuzEmailInput.Text = DPAPIHelper.Decrypt(await localSettings.ReadSettingAsync<string?>(SettingsViewModel.QobuzEmail) ?? "");
+        QobuzPasswordInput.Password = DPAPIHelper.Decrypt(await localSettings.ReadSettingAsync<string?>(SettingsViewModel.QobuzPassword) ?? "");
+        QobuzAppIdInput.Text = await localSettings.ReadSettingAsync<string?>(SettingsViewModel.QobuzAppId) ?? "";
+        QobuzAppSecretInput.Text = await localSettings.ReadSettingAsync<string?>(SettingsViewModel.QobuzAppSecret) ?? "";
 
         // Set search checkboxes
         SearchAddCheckbox.IsChecked = await localSettings.ReadSettingAsync<bool>(SettingsViewModel.SearchAddChecked);
@@ -163,10 +166,12 @@ public sealed partial class SettingsPage : Page
     }
 
     private async void QobuzUpdateButton_Click(object sender, RoutedEventArgs e) {
-        await localSettings.SaveSettingAsync(SettingsViewModel.QobuzEmail, AesHelper.Encrypt(QobuzEmailInput.Text.Trim()));
-        await localSettings.SaveSettingAsync(SettingsViewModel.QobuzPassword, AesHelper.Encrypt(QobuzPasswordInput.Password.Trim()));
+        await localSettings.SaveSettingAsync(SettingsViewModel.QobuzEmail, DPAPIHelper.Encrypt(QobuzEmailInput.Text.Trim()));
+        await localSettings.SaveSettingAsync(SettingsViewModel.QobuzPassword, DPAPIHelper.Encrypt(QobuzPasswordInput.Password.Trim()));
         await localSettings.SaveSettingAsync(SettingsViewModel.QobuzId, QobuzIDInput.Text.Trim());
-        await localSettings.SaveSettingAsync(SettingsViewModel.QobuzToken, QobuzTokenInput.Password.Trim());
+        await localSettings.SaveSettingAsync(SettingsViewModel.QobuzToken, QobuzTokenInput.Text.Trim());
+        await localSettings.SaveSettingAsync(SettingsViewModel.QobuzAppId, QobuzAppIdInput.Text.Trim());
+        await localSettings.SaveSettingAsync(SettingsViewModel.QobuzAppSecret, QobuzAppSecretInput.Text.Trim());
 
         AuthenticationCallback authCallback = (bool success) =>
         {
@@ -185,11 +190,13 @@ public sealed partial class SettingsPage : Page
 
         Thread thread = new Thread(() =>
         {
-            var qobuzEmail = AesHelper.Decrypt(localSettings.ReadSettingAsync<string>(SettingsViewModel.QobuzEmail).GetAwaiter().GetResult() ?? "");
-            var qobuzPassword = AesHelper.Decrypt(localSettings.ReadSettingAsync<string>(SettingsViewModel.QobuzPassword).GetAwaiter().GetResult() ?? "");
+            var qobuzEmail = DPAPIHelper.Decrypt(localSettings.ReadSettingAsync<string>(SettingsViewModel.QobuzEmail).GetAwaiter().GetResult() ?? "");
+            var qobuzPassword = DPAPIHelper.Decrypt(localSettings.ReadSettingAsync<string>(SettingsViewModel.QobuzPassword).GetAwaiter().GetResult() ?? "");
             var qobuzId = localSettings.ReadSettingAsync<string>(SettingsViewModel.QobuzId).GetAwaiter().GetResult();
             var qobuzToken = localSettings.ReadSettingAsync<string>(SettingsViewModel.QobuzToken).GetAwaiter().GetResult();
-            QobuzApi.Initialize(qobuzEmail, qobuzPassword, qobuzId, qobuzToken, authCallback);
+            var qobuzAppId = localSettings.ReadSettingAsync<string>(SettingsViewModel.QobuzAppId).GetAwaiter().GetResult();
+            var qobuzAppSecret = localSettings.ReadSettingAsync<string>(SettingsViewModel.QobuzAppSecret).GetAwaiter().GetResult();
+            QobuzApi.Initialize(qobuzEmail, qobuzPassword, qobuzId, qobuzToken, qobuzAppId, qobuzAppSecret, authCallback);
         });
         thread.Priority = ThreadPriority.Highest;
         thread.Start();
@@ -671,6 +678,31 @@ public sealed partial class SettingsPage : Page
         catch (Exception ex)
         {
             ShowInfoBar(InfoBarSeverity.Error, ex.Message, seconds: 5, title: "Reset Failed");
+        }
+    }
+
+    private async void GetAppIdSecretButton_Click(object sender, RoutedEventArgs e)
+    {
+        QobuzApiService? defaultService = await Task.Run(() =>
+        {
+            try
+            {
+                return new QobuzApiService();
+            } catch
+            {
+                return null;
+            }
+        });
+
+        if (defaultService != null)
+        {
+            QobuzAppIdInput.Text = defaultService.AppId;
+            QobuzAppSecretInput.Text = defaultService.AppSecret;
+            ShowInfoBar(InfoBarSeverity.Informational, "Retrieved latest Qobuz App ID and Secret.", seconds: 3);
+        }
+        else
+        {
+            ShowInfoBar(InfoBarSeverity.Error, "Failed to retrieve latest Qobuz App ID and Secret.", seconds: 5);
         }
     }
 }

@@ -143,11 +143,13 @@ public partial class App : Application
             // Run seperate thread for synchronous Qobuz initialization
             Thread thread = new Thread(() =>
             {
-                var qobuzEmail = AesHelper.Decrypt(localSettings.ReadSettingAsync<string>(SettingsViewModel.QobuzEmail).GetAwaiter().GetResult() ?? "");
-                var qobuzPassword = AesHelper.Decrypt(localSettings.ReadSettingAsync<string>(SettingsViewModel.QobuzPassword).GetAwaiter().GetResult() ?? "");
+                var qobuzEmail = DPAPIHelper.Decrypt(localSettings.ReadSettingAsync<string>(SettingsViewModel.QobuzEmail).GetAwaiter().GetResult() ?? "");
+                var qobuzPassword = DPAPIHelper.Decrypt(localSettings.ReadSettingAsync<string>(SettingsViewModel.QobuzPassword).GetAwaiter().GetResult() ?? "");
                 var qobuzId = localSettings.ReadSettingAsync<string>(SettingsViewModel.QobuzId).GetAwaiter().GetResult();
                 var qobuzToken = localSettings.ReadSettingAsync<string>(SettingsViewModel.QobuzToken).GetAwaiter().GetResult();
-                QobuzApi.Initialize(qobuzEmail, qobuzPassword, qobuzId, qobuzToken);
+                var qobuzAppId = localSettings.ReadSettingAsync<string>(SettingsViewModel.QobuzAppId).GetAwaiter().GetResult();
+                var qobuzAppSecret = localSettings.ReadSettingAsync<string>(SettingsViewModel.QobuzAppSecret).GetAwaiter().GetResult();
+                QobuzApi.Initialize(qobuzEmail, qobuzPassword, qobuzId, qobuzToken, qobuzAppId, qobuzAppSecret);
             });
             thread.Priority = ThreadPriority.Highest;
             thread.Start();

@@ -471,76 +471,118 @@
                         </local:SettingsExpander.HeaderIcon>
                         <local:SettingsExpander.Items>
                             <local:SettingsCard
-                                HorizontalContentAlignment="Stretch"
-                                Description="Option 1: enter your Qobuz email"
-                                Header="Email">
-                                <TextBox
-                                    x:Name="QobuzEmailInput"
-                                    Width="500"
-                                    Margin="0,0,0,4"
-                                    Header="Email"
-                                    ToolTipService.ToolTip="Email">
-                                    <TextBox.HeaderTemplate>
-                                        <DataTemplate>
-                                            <TextBlock
-                                                Margin="0,2,0,-2"
-                                                Foreground="{ThemeResource TextFillColorSecondary}"
-                                                Style="{ThemeResource CaptionTextBlockStyle}"
-                                                Text="{Binding}" />
-                                        </DataTemplate>
-                                    </TextBox.HeaderTemplate>
-                                </TextBox>
+                                HorizontalContentAlignment="Left"
+                                ContentAlignment="Vertical"
+                                Description="Email and Password"
+                                Header="Option 1">
+                                <StackPanel>
+                                    <TextBox
+                                        x:Name="QobuzEmailInput"
+                                        Width="500"
+                                        Margin="0,0,0,4"
+                                        Header="Email"
+                                        ToolTipService.ToolTip="Email">
+                                        <TextBox.HeaderTemplate>
+                                            <DataTemplate>
+                                                <TextBlock
+                                                    Margin="0,2,0,-2"
+                                                    Style="{ThemeResource CaptionTextBlockStyle}"
+                                                    Text="{Binding}" />
+                                            </DataTemplate>
+                                        </TextBox.HeaderTemplate>
+                                    </TextBox>
+                                    <helpers:CustomPasswordBox
+                                        x:Name="QobuzPasswordInput"
+                                        Width="500"
+                                        Margin="0,0,0,4"
+                                        VerticalAlignment="Center"
+                                        Header="Password"
+                                        Tooltip="Qobuz password" />
+                                </StackPanel>
                             </local:SettingsCard>
                             <local:SettingsCard
-                                x:Name="QobuzPassword"
-                                HorizontalContentAlignment="Stretch"
-                                Description="Option 1: enter your Qobuz password"
-                                Header="Password">
-                                <helpers:CustomPasswordBox
-                                    x:Name="QobuzPasswordInput"
-                                    Width="500"
-                                    VerticalAlignment="Center"
-                                    Header="Password"
-                                    Tooltip="Qobuz password" />
-                            </local:SettingsCard>
-                            <local:SettingsCard HorizontalContentAlignment="Stretch" Header="ID">
+                                HorizontalContentAlignment="Left"
+                                ContentAlignment="Vertical"
+                                Header="Option 2">
                                 <local:SettingsCard.Description>
                                     <TextBlock>
-                                        <Hyperlink NavigateUri="https://github.com/DerekYang2/FluentDL/wiki/Authentication#qobuz">Option 2:</Hyperlink>
-                                        enter your id (recommended)</TextBlock>
+                                        <Hyperlink NavigateUri="https://github.com/DerekYang2/FluentDL/wiki/Authentication#qobuz">ID and Token</Hyperlink>
+                                        &#8291;</TextBlock>
                                 </local:SettingsCard.Description>
-                                <TextBox
-                                    x:Name="QobuzIDInput"
-                                    Width="500"
-                                    Margin="0,0,0,4"
-                                    Header="ID"
-                                    ToolTipService.ToolTip="User ID">
-                                    <TextBox.HeaderTemplate>
-                                        <DataTemplate>
-                                            <TextBlock
-                                                Margin="0,2,0,-2"
-                                                Foreground="{ThemeResource TextFillColorSecondary}"
-                                                Style="{ThemeResource CaptionTextBlockStyle}"
-                                                Text="{Binding}" />
-                                        </DataTemplate>
-                                    </TextBox.HeaderTemplate>
-                                </TextBox>
-                            </local:SettingsCard>
-                            <local:SettingsCard
-                                x:Name="QobuzAuthToken"
-                                HorizontalContentAlignment="Stretch"
-                                Header="Token">
-                                <local:SettingsCard.Description>
-                                    <TextBlock>
-                                        <Hyperlink NavigateUri="https://github.com/DerekYang2/FluentDL/wiki/Authentication#qobuz">Option 2:</Hyperlink>
-                                        enter your token (recommended)</TextBlock>
-                                </local:SettingsCard.Description>
-                                <helpers:CustomPasswordBox
-                                    x:Name="QobuzTokenInput"
-                                    Width="500"
-                                    VerticalAlignment="Center"
-                                    Header="Token"
-                                    Tooltip="Qobuz authentication token" />
+                                <StackPanel>
+                                    <TextBox
+                                        x:Name="QobuzIDInput"
+                                        Width="500"
+                                        Margin="0,0,0,4"
+                                        Header="ID"
+                                        ToolTipService.ToolTip="User ID">
+                                        <TextBox.HeaderTemplate>
+                                            <DataTemplate>
+                                                <TextBlock
+                                                    Margin="0,2,0,-2"
+                                                    Style="{ThemeResource CaptionTextBlockStyle}"
+                                                    Text="{Binding}" />
+                                            </DataTemplate>
+                                        </TextBox.HeaderTemplate>
+                                    </TextBox>
+                                    <TextBox
+                                        x:Name="QobuzTokenInput"
+                                        Width="500"
+                                        Margin="0,0,0,4"
+                                        Header="Token"
+                                        ToolTipService.ToolTip="Qobuz Authentication Token">
+                                        <TextBox.HeaderTemplate>
+                                            <DataTemplate>
+                                                <TextBlock
+                                                    Margin="0,2,0,-2"
+                                                    Style="{ThemeResource CaptionTextBlockStyle}"
+                                                    Text="{Binding}" />
+                                            </DataTemplate>
+                                        </TextBox.HeaderTemplate>
+                                    </TextBox>
+                                    <TextBox
+                                        x:Name="QobuzAppIdInput"
+                                        Width="500"
+                                        Margin="0,0,0,4"
+                                        Header="Bound App ID (optional)"
+                                        ToolTipService.ToolTip="Qobuz app_id">
+                                        <TextBox.HeaderTemplate>
+                                            <DataTemplate>
+                                                <TextBlock
+                                                    Margin="0,2,0,-2"
+                                                    Foreground="{ThemeResource TextFillColorSecondary}"
+                                                    Style="{ThemeResource CaptionTextBlockStyle}"
+                                                    Text="{Binding}" />
+                                            </DataTemplate>
+                                        </TextBox.HeaderTemplate>
+                                    </TextBox>
+                                    <TextBox
+                                        x:Name="QobuzAppSecretInput"
+                                        Width="500"
+                                        Margin="0,0,0,8"
+                                        Header="Bound App Secret (optional)"
+                                        ToolTipService.ToolTip="Qobuz app_secret">
+                                        <TextBox.HeaderTemplate>
+                                            <DataTemplate>
+                                                <TextBlock
+                                                    Margin="0,2,0,-2"
+                                                    Foreground="{ThemeResource TextFillColorSecondary}"
+                                                    Style="{ThemeResource CaptionTextBlockStyle}"
+                                                    Text="{Binding}" />
+                                            </DataTemplate>
+                                        </TextBox.HeaderTemplate>
+                                    </TextBox>
+                                    <Button x:Name="GetAppIdSecretButton" Click="GetAppIdSecretButton_Click">
+                                        <StackPanel Orientation="Horizontal">
+                                            <FontIcon
+                                                x:Name="ShowDialogIcon"
+                                                Margin="0,0,8,0"
+                                                FontSize="16"
+                                                Glyph="&#xE895;" />
+                                            <TextBlock Text="Get Latest App ID/Secret" />
+                                        </StackPanel>
+                                    </Button>
+                                </StackPanel>
                             </local:SettingsCard>
                             <local:SettingsCard
                                 x:Name="QobuzUpdateCard"

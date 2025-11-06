@@ -33,40 +33,55 @@ internal partial class QobuzApi
     public static string oldI = "VuCHDsuyiFjcl994xa1eyg==";
     public static string oldS = "5mLYFjeXUrtSoZvPIYn7ymMz6QQY65+XBg2OBH9cxLJlT9hMiDIrRB8Yj4OfOikn";
 
-    public static void Initialize(string? email, string? password, string? userId, string? AuthToken, AuthenticationCallback? authCallback = null)
+    public static void Initialize(string? email, string? password, string? userId, string? AuthToken, string? appId, string? appSecret, AuthenticationCallback? authCallback = null)
     {
         IsInitialized = false;
         bool oldInitialization = false;
 
         if (!string.IsNullOrWhiteSpace(userId) && !string.IsNullOrWhiteSpace(AuthToken))  // Token route
         {
-            try
+            if (!string.IsNullOrWhiteSpace(appId) && !string.IsNullOrWhiteSpace(appSecret)) // Custom app credentials
             {
-                apiService = new QobuzApiService();
-                apiService.LoginWithToken(userId, AuthToken);
-                IsInitialized = true;
-                Debug.WriteLine("Qobuz initialized");
-                authCallback?.Invoke(IsInitialized);
-
-            }
-            catch (Exception e)
-            {
-                Debug.WriteLine("Qobuz initialization failed: " + e.Message);
-
-                // Try intialize using old app credentials
                 try
                 {
-                    apiService = new QobuzApiService(AesHelper.Decrypt(oldI), AesHelper.Decrypt(oldS));
+                    apiService = new QobuzApiService(appId, appSecret);
                     apiService.LoginWithToken(userId, AuthToken);
                     IsInitialized = true;
-                    oldInitialization = true;
-                    Debug.WriteLine("Qobuz initialized (old)");
+                    Debug.WriteLine("Qobuz initialized custom");
                     authCallback?.Invoke(IsInitialized);
                 }
-                catch (Exception e2)
+                catch
                 {
-                    Debug.WriteLine("Qobuz (old) initialization failed: " + e2.Message);
-                    authCallback?.Invoke(false);
+                    Debug.WriteLine("Qobuz custom initialization failed");
+                }
+            }
+
+            if (!IsInitialized)
+            {
+                try
+                {
+                    apiService = new QobuzApiService();
+                    apiService.LoginWithToken(userId, AuthToken);
+                    IsInitialized = true;
+                    Debug.WriteLine("Qobuz initialized latest");
+                    authCallback?.Invoke(IsInitialized);
+                }
+                catch
+                {
+                    // Try intialize using old app credentials
+                    try
+                    {
+                        apiService = new QobuzApiService(AesHelper.Decrypt(oldI), AesHelper.Decrypt(oldS));
+                        apiService.LoginWithToken(userId, AuthToken);
+                        IsInitialized = true;
+                        oldInitialization = true;
+                        Debug.WriteLine("Qobuz initialized (old)");
+                        authCallback?.Invoke(IsInitialized);
+                    }
+                    catch
+                    {
+                        authCallback?.Invoke(false);
+                    }
                 }
             }
         }
@@ -88,19 +103,29 @@ internal partial class QobuzApi
             }
         }
 
-        // If still not initialized
-        if (!IsInitialized) {
-            authCallback?.Invoke(false);
+        try
+        {
+            var defaultService = new QobuzApiService();
+
+            if (apiService.AppId != defaultService.AppId)
+            {
+                InitializeQobuzHttpClient(defaultService.AppId, defaultService.UserAuthToken);
+            }
+            else
+            {
+                InitializeQobuzHttpClient(apiService.AppId, apiService.UserAuthToken);
+            }
+        }
+        catch (Exception e)
+        {
+            Debug.WriteLine("Failed to initialize Qobuz HTTP client: " + e.Message);
+            IsInitialized = false;
         }
 
-        if (oldInitialization)
+        // If still not initialized
+        if (!IsInitialized)
         {
-           var defaultService = new QobuzApiService();
-            InitializeQobuzHttpClient(defaultService.AppId, defaultService.UserAuthToken);
-        }
-        else
-        {
-            InitializeQobuzHttpClient(apiService.AppId, apiService.UserAuthToken);
+            authCallback?.Invoke(false);
         }
     }
 

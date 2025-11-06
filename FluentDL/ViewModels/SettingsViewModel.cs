@@ -22,6 +22,8 @@ public partial class SettingsViewModel : ObservableRecipient
         QobuzToken = "qobuz_token",
         QobuzEmail = "qobuz_email",
         QobuzPassword = "qobuz_password",
+        QobuzAppId = "qobuz_app_id",
+        QobuzAppSecret = "qobuz_app_secret",
         SearchSource = "search_source",
         DownloadDirectory = "download_directory",
         AskBeforeDownload = "ask_before_download",
@@ -122,8 +124,10 @@ public partial class SettingsViewModel : ObservableRecipient
         await SaveSettingsAsyncIfNull<string?>(DeezerARL, "");
         await SaveSettingsAsyncIfNull<string?>(QobuzId, "");
         await SaveSettingsAsyncIfNull<string?>(QobuzToken, "");
-        await SaveSettingsAsyncIfNull<string?>(QobuzEmail, "");
-        await SaveSettingsAsyncIfNull<string?>(QobuzPassword, "");
+        await SaveSettingsAsyncIfNull<string?>(QobuzEmail, DPAPIHelper.Encrypt(""));
+        await SaveSettingsAsyncIfNull<string?>(QobuzPassword, DPAPIHelper.Encrypt(""));
+        await SaveSettingsAsyncIfNull<string?>(QobuzAppId, "");
+        await SaveSettingsAsyncIfNull<string?>(QobuzAppSecret, "");
         await SaveSettingsAsyncIfNull<string?>(SubfolderWildcard, "");
         await SaveSettingsAsyncIfNull<string?>(FileWildcard, "");
         await SaveSettingsAsyncIfNull<bool?>(Subfolders, false);

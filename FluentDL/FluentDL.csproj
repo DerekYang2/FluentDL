@@ -13,6 +13,7 @@
     <Nullable>enable</Nullable>
     <UseWinUI>true</UseWinUI>
     <EnableMsixTooling>true</EnableMsixTooling>
+    <WindowsAppSDKSelfContained>true</WindowsAppSDKSelfContained>
     <GenerateAppInstallerFile>False</GenerateAppInstallerFile>
     <AppxPackageSigningEnabled>True</AppxPackageSigningEnabled>
     <PackageCertificateThumbprint>5363EF5F026911B80EB8FBB154109CF7D782F4F8</PackageCertificateThumbprint>
@@ -30,6 +31,7 @@
     <AppxPackageSigningTimestampServerUrl>http://timestamp.digicert.com</AppxPackageSigningTimestampServerUrl>
   </PropertyGroup>
   <ItemGroup>
+    <None Remove="Assets\ffmpeg\bin\ffmpeg.exe" />
     <None Remove="Helpers\CustomPasswordBox.xaml" />
     <None Remove="Views\PreviewPane.xaml" />
   </ItemGroup>
@@ -52,6 +54,7 @@
     <PackageReference Include="QobuzApiSharp" Version="0.0.8" />
     <PackageReference Include="RestSharp" Version="111.4.1" />
     <PackageReference Include="SpotifyAPI.Web" Version="7.2.1" />
+    <PackageReference Include="System.Security.Cryptography.ProtectedData" Version="9.0.10" />
     <PackageReference Include="TagLibSharp" Version="2.3.0" />
     <PackageReference Include="WinUIEx" Version="2.5.1" />
     <PackageReference Include="YoutubeExplode" Version="6.5.6" />
@@ -75,14 +78,16 @@
     <ProjectCapability Include="Msix" />
   </ItemGroup>
   <ItemGroup>
-    <Folder Include="Assets\ffmpeg\bin\" />
-  </ItemGroup>
-  <ItemGroup>
     <Compile Update="Properties\Resources.Designer.cs">
       <DesignTime>True</DesignTime>
       <AutoGen>True</AutoGen>
       <DependentUpon>Resources.resx</DependentUpon>
     </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <Content Update="Assets\ffmpeg\bin\ffmpeg.exe">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Update="Properties\Resources.resx">
