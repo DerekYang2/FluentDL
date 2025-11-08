@@ -36,7 +36,6 @@ internal partial class QobuzApi
     public static void Initialize(string? email, string? password, string? userId, string? AuthToken, string? appId, string? appSecret, AuthenticationCallback? authCallback = null)
     {
         IsInitialized = false;
-        bool oldInitialization = false;
 
         if (!string.IsNullOrWhiteSpace(userId) && !string.IsNullOrWhiteSpace(AuthToken))  // Token route
         {
@@ -46,6 +45,10 @@ internal partial class QobuzApi
                 {
                     apiService = new QobuzApiService(appId, appSecret);
                     apiService.LoginWithToken(userId, AuthToken);
+
+                    if (!apiService.IsAppSecretValid())
+                        throw new Exception("Invalid app secret");
+
                     IsInitialized = true;
                     Debug.WriteLine("Qobuz initialized custom");
                     authCallback?.Invoke(IsInitialized);
@@ -53,10 +56,10 @@ internal partial class QobuzApi
                 catch
                 {
                     Debug.WriteLine("Qobuz custom initialization failed");
+                    authCallback?.Invoke(false);
                 }
             }
-
-            if (!IsInitialized)
+            else
             {
                 try
                 {
@@ -73,8 +76,11 @@ internal partial class QobuzApi
                     {
                         apiService = new QobuzApiService(AesHelper.Decrypt(oldI), AesHelper.Decrypt(oldS));
                         apiService.LoginWithToken(userId, AuthToken);
+
+                        if (!apiService.IsAppSecretValid())
+                            throw new Exception("Invalid app secret");
+
                         IsInitialized = true;
-                        oldInitialization = true;
                         Debug.WriteLine("Qobuz initialized (old)");
                         authCallback?.Invoke(IsInitialized);
                     }
@@ -105,16 +111,7 @@ internal partial class QobuzApi
 
         try
         {
-            var defaultService = new QobuzApiService();
-
-            if (apiService.AppId != defaultService.AppId)
-            {
-                InitializeQobuzHttpClient(defaultService.AppId, defaultService.UserAuthToken);
-            }
-            else
-            {
-                InitializeQobuzHttpClient(apiService.AppId, apiService.UserAuthToken);
-            }
+            InitializeQobuzHttpClient(apiService.AppId, apiService.UserAuthToken);
         }
         catch (Exception e)
         {
@@ -714,7 +711,14 @@ internal partial class QobuzApi
 
     public static string? GetPreviewUri(string trackId)
     {
-        return apiService.GetTrackFileUrl(trackId, "5").Url;
+        try
+        {
+            return apiService.GetTrackFileUrl(trackId, "5")?.Url;
+        }
+        catch
+        {
+            return null;
+        }
     }
 
     public static List<string> GetAllContributorsList(string performerStr)
