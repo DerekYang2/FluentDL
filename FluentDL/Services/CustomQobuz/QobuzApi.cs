@@ -2,6 +2,7 @@
 using QobuzApiSharp.Models.Content;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
@@ -12,6 +13,7 @@ namespace FluentDL.Services
 {
     internal partial class QobuzApi
     {
+        private static bool HttpClientInitialized = false;
         public const string BaseUrl = "https://www.qobuz.com/api.json/0.2";
         public enum EnumQobuzSearchType
         {
@@ -23,17 +25,29 @@ namespace FluentDL.Services
 
         public static void InitializeQobuzHttpClient(string appId, string? userAuthToken = "")
         {
-            QobuzHttpClient = new HttpClient();
-            QobuzHttpClient.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/110.0");
-            QobuzHttpClient.DefaultRequestHeaders.Add("X-App-Id", appId);
-            if (!string.IsNullOrWhiteSpace(userAuthToken))
+            HttpClientInitialized = false;
+            try
             {
-                QobuzHttpClient.DefaultRequestHeaders.Add("X-User-Auth-Token", userAuthToken);
+                QobuzHttpClient = new HttpClient();
+                QobuzHttpClient.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/110.0");
+                QobuzHttpClient.DefaultRequestHeaders.Add("X-App-Id", appId);
+                if (!string.IsNullOrWhiteSpace(userAuthToken))
+                {
+                    QobuzHttpClient.DefaultRequestHeaders.Add("X-User-Auth-Token", userAuthToken);
+                }
+                HttpClientInitialized = true;
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine("Failed to initialize qobuz http client: " + ex.ToString());
             }
         }
 
         public static async Task<Playlist?> GetPlaylistAsync(string playlistId, CancellationToken cancellationToken = default)
         {
+            if (!HttpClientInitialized)
+                return null;
+
             // /playlist/get?playlist_id=2049430&extra=track_ids
             var requestUrl = $"{BaseUrl}/playlist/get?playlist_id={playlistId}&extra=track_ids";
 
@@ -53,6 +67,9 @@ namespace FluentDL.Services
 
         public static async IAsyncEnumerable<T> ApiSearch<T>(string query, int limit = 25, EnumQobuzSearchType searchType = EnumQobuzSearchType.None)
         {
+            if (!HttpClientInitialized)
+                yield break;
+
             // Check if generic type is Track or Album
             bool isTrack = typeof(T) == typeof(Track);
 

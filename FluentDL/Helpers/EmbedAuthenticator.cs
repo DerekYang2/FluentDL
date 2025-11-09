@@ -15,7 +15,7 @@ namespace FluentDL.Helpers
     internal class EmbedAuthenticator : IAuthenticator
     {
         // Some arbitrary embed, should work unless it is moved 
-        private static readonly string EmbedTokenUrl = "https://open.spotify.com/embed/playlist/37i9dQZF1DXcBWIGoYBM5M";
+        private static readonly string EmbedTokenUrl = "https://open.spotify.com/embed/artist/3WrFJ7ztbogyGnTHbHJFl2";
         private static readonly HttpClient httpClient = new();
         public EmbedToken? Token { get; private set; }
         public EmbedAuthenticator() : this(null) {}

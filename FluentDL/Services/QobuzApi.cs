@@ -14,8 +14,8 @@ namespace FluentDL.Services;
 
 internal partial class QobuzApi
 {
-    private static QobuzApiService apiService = new QobuzApiService();
-    private static HttpClient QobuzHttpClient = new HttpClient();
+    private static QobuzApiService apiService = null!;
+    private static HttpClient QobuzHttpClient = null!;
 
     private static string GetFullTitle(Track? track)
     {
@@ -28,14 +28,12 @@ internal partial class QobuzApi
         return $"{track.Title} ({track.Version})";
     }
 
-
-    public static bool IsInitialized = false;
     public static string oldI = "VuCHDsuyiFjcl994xa1eyg==";
     public static string oldS = "5mLYFjeXUrtSoZvPIYn7ymMz6QQY65+XBg2OBH9cxLJlT9hMiDIrRB8Yj4OfOikn";
 
     public static void Initialize(string? email, string? password, string? userId, string? AuthToken, string? appId, string? appSecret, AuthenticationCallback? authCallback = null)
     {
-        IsInitialized = false;
+        bool IsInitialized = false;
 
         if (!string.IsNullOrWhiteSpace(userId) && !string.IsNullOrWhiteSpace(AuthToken))  // Token route
         {
@@ -111,6 +109,7 @@ internal partial class QobuzApi
 
         try
         {
+            apiService ??= new QobuzApiService();
             InitializeQobuzHttpClient(apiService.AppId, apiService.UserAuthToken);
         }
         catch (Exception e)
@@ -413,7 +412,7 @@ internal partial class QobuzApi
                 itemSource.Clear(); // Clear the item source
 
                 int failedCount = 0; // Count of failed tracks
-                foreach (var trackId in playlist.TrackIds) // Need to recreate the tracks so they have album objects
+                foreach (var trackId in playlist?.TrackIds!) // Need to recreate the tracks so they have album objects
                 {
                     if (token.IsCancellationRequested)
                     {
@@ -427,7 +426,7 @@ internal partial class QobuzApi
                         {
                             return apiService.GetTrack(trackId.ToString(), withAuth: true);
                         }
-                        catch (Exception e)
+                        catch
                         {
                             Debug.WriteLine($"Failed to get qobuz track: {trackId}");
                             failedCount++;
@@ -481,7 +480,7 @@ internal partial class QobuzApi
             Duration = track.Duration?.ToString() ?? "0",
             Explicit = track.ParentalWarning ?? false,
             Source = "qobuz",
-            Id = track.Id.ToString(),
+            Id = track.Id?.ToString() ?? "",
             TrackPosition = (track.TrackNumber ?? 1).ToString(),
             ImageLocation = track.Album?.Image?.Small ?? "",
             LocalBitmapImage = null,
@@ -559,14 +558,34 @@ internal partial class QobuzApi
         };
     }
 
-    public static async Task<Album> GetInternalAlbum(string id)
+    public static async Task<Album?> GetInternalAlbum(string id)
     {
-        return await Task.Run(() => apiService.GetAlbum(id, withAuth: true));
+        return await Task.Run(() =>
+        {
+            try
+            {
+                return apiService.GetAlbum(id, withAuth: true);
+            }
+            catch
+            {
+                return null;
+            }
+        });
     }
 
-    public static async Task<Track> GetInternalTrack(string id)
+    public static async Task<Track?> GetInternalTrack(string id)
     {
-        return await Task.Run(() => apiService.GetTrack(id, withAuth: true));
+        return await Task.Run(() =>
+        {
+            try
+            {
+                return apiService.GetTrack(id, withAuth: true);
+            }
+            catch
+            {
+                return null;
+            }
+        });
     }
 
     public static async Task<SongSearchObject?> GetTrackAsync(int? id, CancellationToken token = default)
@@ -761,11 +780,6 @@ internal partial class QobuzApi
 
     public static async Task<string> DownloadTrack(string filePath, SongSearchObject song, string? format = null)
     {
-        if (!IsInitialized)
-        {
-            throw new Exception("Not logged in");
-        }
-
         // Remove extension if it exists
         filePath = ApiHelper.RemoveExtension(filePath);
 
@@ -819,9 +833,9 @@ internal partial class QobuzApi
     {
         var track = await GetInternalTrack(trackId);
 
-        var listedArtist = track.Performer?.Name ?? "unlisted";
-        var contribList = GetAllContributorsList(track.Performers);
-        if ((contribList == null || contribList.Count == 0) && !string.IsNullOrWhiteSpace(track.Album?.Artist?.Name))
+        var listedArtist = track?.Performer?.Name ?? "unlisted";
+        var contribList = GetAllContributorsList(track?.Performers ?? "");
+        if ((contribList == null || contribList.Count == 0) && !string.IsNullOrWhiteSpace(track?.Album?.Artist?.Name))
         {
             contribList = [track.Album.Artist.Name];
         }
@@ -839,14 +853,14 @@ internal partial class QobuzApi
             Title = GetFullTitle(track),
             Artists = contribList.ToArray(),
             Genres = PruneGenreList(track?.Album?.GenresList ?? []).ToArray(),
-            AlbumName = track.Album?.Title ?? "",
-            AlbumArtists = track.Album?.Artists?.Select(x => x.Name)?.ToArray() ?? [],
-            Isrc = track.Isrc,
-            ReleaseDate = track.ReleaseDateOriginal.GetValueOrDefault().Date,
-            TrackNumber = track.TrackNumber.GetValueOrDefault(),
-            TrackTotal = track.Album?.TracksCount ?? 0,
-            Upc = track.Album?.Upc ?? "",
-            AlbumArtPath = track.Album?.Image.Large ?? "",
+            AlbumName = track?.Album?.Title ?? "",
+            AlbumArtists = track?.Album?.Artists?.Select(x => x.Name)?.ToArray() ?? [],
+            Isrc = track?.Isrc ?? "",
+            ReleaseDate = track?.ReleaseDateOriginal.GetValueOrDefault().Date ?? DateTime.MinValue,
+            TrackNumber = track?.TrackNumber.GetValueOrDefault() ?? 1,
+            TrackTotal = track?.Album?.TracksCount ?? 0,
+            Upc = track?.Album?.Upc ?? "",
+            AlbumArtPath = track?.Album?.Image.Large ?? "",
         };
         await metadata.SaveAsync();
 
