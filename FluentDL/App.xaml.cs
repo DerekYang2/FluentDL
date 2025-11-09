@@ -1,3 +1,7 @@
+﻿using System.Diagnostics;
+using System.Text;
+using System.Threading;
+
 using FluentDL.Activation;
 using FluentDL.Contracts.Services;
 using FluentDL.Core.Contracts.Services;
@@ -8,12 +12,12 @@ using FluentDL.Notifications;
 using FluentDL.Services;
 using FluentDL.ViewModels;
 using FluentDL.Views;
+
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.UI.Xaml;
-using System.Diagnostics;
-using System.Text;
-using System.Threading;
+using Microsoft.UI.Xaml.Controls;
+
 using Windows.Graphics.Display;
 
 namespace FluentDL;
@@ -89,6 +93,8 @@ public partial class App : Application
                 services.AddTransient<LocalExplorerPage>();
                 services.AddTransient<QueueViewModel>();
                 services.AddTransient<QueuePage>();
+                services.AddTransient<SplashScreenViewModel>();
+                services.AddTransient<SplashScreenPage>();
                 services.AddTransient<SearchViewModel>();
                 services.AddTransient<Search>();
                 services.AddTransient<ShellPage>();
@@ -100,12 +106,6 @@ public partial class App : Application
             }).Build();
         App.GetService<IAppNotificationService>().Initialize();
         UnhandledException += App_UnhandledException;
-        MainWindow.Closed += MainWindow_Closed;
-    }
-
-    private void MainWindow_Closed(object sender, WindowEventArgs args)
-    {
-        QueueSaver.Close();
     }
 
     private void App_UnhandledException(object sender, Microsoft.UI.Xaml.UnhandledExceptionEventArgs e)
@@ -116,54 +116,9 @@ public partial class App : Application
 
     protected async override void OnLaunched(LaunchActivatedEventArgs args)
     {
-        await Task.Delay(250);
         base.OnLaunched(args);
         // App.GetService<IAppNotificationService>().Show(string.Format("AppNotificationSamplePayload".GetLocalized(), AppContext.BaseDirectory));
 
         await App.GetService<IActivationService>().ActivateAsync(args);
-
-        if (await SettingsViewModel.GetSetting<bool?>(SettingsViewModel.FirstRun) ?? true)
-            await SettingsViewModel.SetMissingDefaults();
-
-        await QueueViewModel.UpdateShortcutVisibility();
-        try
-        {
-            // Fetch previous command list
-            await LocalCommands.Init();
-
-            // Initialize FFMpeg 
-            await FFmpegRunner.Initialize();
-
-            // Initialize environment variables
-            await KeyReader.Initialize();
-
-            // Initialize api objects
-            var localSettings = App.GetService<ILocalSettingsService>();
-
-            // Run seperate thread for synchronous Qobuz initialization
-            Thread thread = new Thread(() =>
-            {
-                var qobuzEmail = DPAPIHelper.Decrypt(localSettings.ReadSettingAsync<string>(SettingsViewModel.QobuzEmail).GetAwaiter().GetResult() ?? "");
-                var qobuzPassword = DPAPIHelper.Decrypt(localSettings.ReadSettingAsync<string>(SettingsViewModel.QobuzPassword).GetAwaiter().GetResult() ?? "");
-                var qobuzId = localSettings.ReadSettingAsync<string>(SettingsViewModel.QobuzId).GetAwaiter().GetResult();
-                var qobuzToken = localSettings.ReadSettingAsync<string>(SettingsViewModel.QobuzToken).GetAwaiter().GetResult();
-                var qobuzAppId = localSettings.ReadSettingAsync<string>(SettingsViewModel.QobuzAppId).GetAwaiter().GetResult();
-                var qobuzAppSecret = localSettings.ReadSettingAsync<string>(SettingsViewModel.QobuzAppSecret).GetAwaiter().GetResult();
-                QobuzApi.Initialize(qobuzEmail, qobuzPassword, qobuzId, qobuzToken, qobuzAppId, qobuzAppSecret);
-            });
-            thread.Priority = ThreadPriority.Highest;
-            thread.Start();
-
-
-            await SpotifyApi.Initialize(await localSettings.ReadSettingAsync<string>(SettingsViewModel.SpotifyClientId), await localSettings.ReadSettingAsync<string>(SettingsViewModel.SpotifyClientSecret));
-            await DeezerApi.InitDeezerClient(await localSettings.ReadSettingAsync<string>(SettingsViewModel.DeezerARL));
-            await QueueViewModel.LoadSaveQueue();
-
-            QueueSaver.Init();
-        }
-        catch (Exception e)
-        {
-            Debug.WriteLine(e);
-        }
     }
 }

@@ -34,7 +34,11 @@ namespace FluentDL.Services
 
         }
 
-        public static async Task Initialize(string? clientId, string? clientSecret)
+        public static async Task InitializeAsync(string? clientId, string? clientSecret)
+        {
+            await Task.Run(() => Initialize(clientId, clientSecret));
+        }
+        public static void Initialize(string? clientId, string? clientSecret)
         {
             IsInitialized = false;
 
@@ -43,7 +47,7 @@ namespace FluentDL.Services
             {
                 try
                 {
-                    spotify = await Task.Run(() => new SpotifyClient(config.WithAuthenticator(new ClientCredentialsAuthenticator(clientId, clientSecret))));
+                    spotify = new SpotifyClient(config.WithAuthenticator(new ClientCredentialsAuthenticator(clientId, clientSecret)));
                     IsInitialized = true;
                     return;
                 }
@@ -52,19 +56,22 @@ namespace FluentDL.Services
                     Debug.WriteLine("Failed to initialize Spotify API: " + e.Message);
                 }
             }
-            
+
             // If clientId and clientSecret are not provided, try to get from browser
             try
             {
-                spotify = await Task.Run(() => new SpotifyClient(config.WithAuthenticator(new EmbedAuthenticator())));
+                spotify = new SpotifyClient(config.WithAuthenticator(new EmbedAuthenticator()));
                 IsInitialized = true;
                 return;
-            } catch (Exception e) {
+            }
+            catch (Exception e)
+            {
                 Debug.WriteLine("Failed to get access token: " + e.Message);
             }
-            
+
             // If still not initialized, try to get bundled keys
-            try {
+            try
+            {
                 var idList = KeyReader.GetValues("spot_id");
                 var secretList = KeyReader.GetValues("spot_secret");
 
@@ -74,15 +81,17 @@ namespace FluentDL.Services
                     var id = idList[randIdx];
                     var secret = secretList[randIdx];
 
-                    if (string.IsNullOrWhiteSpace(id) || string.IsNullOrWhiteSpace(secret))  
+                    if (string.IsNullOrWhiteSpace(id) || string.IsNullOrWhiteSpace(secret))
                     {
                         throw new Exception("invalid/empty bundled key in list");
                     }
 
-                    spotify = await Task.Run(() => new SpotifyClient(config.WithAuthenticator(new ClientCredentialsAuthenticator(id, secret))));
+                    spotify = new SpotifyClient(config.WithAuthenticator(new ClientCredentialsAuthenticator(id, secret)));
                     IsInitialized = true;
                 }
-            } catch (Exception e) {
+            }
+            catch (Exception e)
+            {
                 Debug.WriteLine("Failed to initialize Spotify API: " + e.Message);
             }
         }

@@ -1,7 +1,9 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
+
 using FluentDL.Contracts.Services;
 using FluentDL.ViewModels;
 using FluentDL.Views;
+
 using Microsoft.UI.Xaml.Controls;
 
 namespace FluentDL.Services;
@@ -17,6 +19,7 @@ public class PageService : IPageService
         Configure<LocalExplorerViewModel, LocalExplorerPage>();
         Configure<ContentGridDetailViewModel, ContentGridDetailPage>();
         Configure<SettingsViewModel, SettingsPage>();
+        Configure<SplashScreenViewModel, SplashScreenPage>();
     }
 
     public Type GetPageType(string key)

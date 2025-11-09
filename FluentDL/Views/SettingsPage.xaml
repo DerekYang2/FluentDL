@@ -506,8 +506,8 @@
                                 Header="Option 2">
                                 <local:SettingsCard.Description>
                                     <TextBlock>
-                                        <Hyperlink NavigateUri="https://github.com/DerekYang2/FluentDL/wiki/Authentication#qobuz">ID and Token</Hyperlink>
-                                        &#8291;</TextBlock>
+                                        <Hyperlink NavigateUri="https://github.com/DerekYang2/FluentDL/wiki/Authentication#qobuz">ID and Token.</Hyperlink>
+                                        &#8291;Use a fixed App ID/Secret to keep ID/Token working when Qobuz player updates.</TextBlock>
                                 </local:SettingsCard.Description>
                                 <StackPanel>
                                     <TextBox
@@ -544,7 +544,7 @@
                                         x:Name="QobuzAppIdInput"
                                         Width="500"
                                         Margin="0,0,0,4"
-                                        Header="Bound App ID (optional)"
+                                        Header="App ID (optional)"
                                         ToolTipService.ToolTip="Qobuz app_id">
                                         <TextBox.HeaderTemplate>
                                             <DataTemplate>
@@ -560,7 +560,7 @@
                                         x:Name="QobuzAppSecretInput"
                                         Width="500"
                                         Margin="0,0,0,8"
-                                        Header="Bound App Secret (optional)"
+                                        Header="App Secret (optional)"
                                         ToolTipService.ToolTip="Qobuz app_secret">
                                         <TextBox.HeaderTemplate>
                                             <DataTemplate>
@@ -578,8 +578,8 @@
                                                 x:Name="ShowDialogIcon"
                                                 Margin="0,0,8,0"
                                                 FontSize="16"
-                                                Glyph="&#xE895;" />
-                                            <TextBlock Text="Get Latest App ID/Secret" />
+                                                Glyph="&#xE722;" />
+                                            <TextBlock Text="Capture Current App ID/Secret" />
                                         </StackPanel>
                                     </Button>
                                 </StackPanel>

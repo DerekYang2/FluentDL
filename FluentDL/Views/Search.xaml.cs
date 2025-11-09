@@ -146,7 +146,7 @@ public sealed partial class Search : Page
                                 buttonText: "Don't Show Again", 
                                 onButtonClick: () => 
                                 {
-                                    ViewModel.SaveNotifyUpdate(false);
+                                    _ = ViewModel.SaveNotifyUpdate(false);
                                     ForceHideInfoBar();
                                 });
                 }

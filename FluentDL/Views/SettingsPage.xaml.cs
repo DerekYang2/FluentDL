@@ -138,7 +138,7 @@ public sealed partial class SettingsPage : Page
     {
         await localSettings.SaveSettingAsync(SettingsViewModel.SpotifyClientId, ClientIdInput.Text.Trim());
         await localSettings.SaveSettingAsync(SettingsViewModel.SpotifyClientSecret, SpotifySecretInput.Password.Trim());
-        await SpotifyApi.Initialize(await localSettings.ReadSettingAsync<string>(SettingsViewModel.SpotifyClientId), await localSettings.ReadSettingAsync<string>(SettingsViewModel.SpotifyClientSecret));
+        await SpotifyApi.InitializeAsync(await localSettings.ReadSettingAsync<string>(SettingsViewModel.SpotifyClientId), await localSettings.ReadSettingAsync<string>(SettingsViewModel.SpotifyClientSecret));
 
         if (SpotifyApi.IsInitialized)
         {
@@ -658,7 +658,7 @@ public sealed partial class SettingsPage : Page
             {
                 string content = await localSettings.ExportSettingsAsync();
                 await FileIO.WriteTextAsync(file, content);
-                ShowInfoBar(InfoBarSeverity.Success, $"Settings saved to <a href='{file.Path}'>FluentDL_Settings.json</a>.", seconds: 3, title: "Export Successful");
+                ShowInfoBar(InfoBarSeverity.Success, $"Settings saved to <a href='{file.Path}'>{file.Name}</a>.", seconds: 3, title: "Export Successful");
             }
         }
         catch (Exception ex)
@@ -698,11 +698,11 @@ public sealed partial class SettingsPage : Page
         {
             QobuzAppIdInput.Text = defaultService.AppId;
             QobuzAppSecretInput.Text = defaultService.AppSecret;
-            ShowInfoBar(InfoBarSeverity.Informational, "Retrieved latest Qobuz App ID and Secret.", seconds: 3);
+            ShowInfoBar(InfoBarSeverity.Informational, "Retrieved current player App ID and Secret. Press Save to apply.", seconds: 5);
         }
         else
         {
-            ShowInfoBar(InfoBarSeverity.Error, "Failed to retrieve latest Qobuz App ID and Secret.", seconds: 5);
+            ShowInfoBar(InfoBarSeverity.Error, "Failed to retrieve current player Qobuz App ID and Secret.", seconds: 5);
         }
     }
 }

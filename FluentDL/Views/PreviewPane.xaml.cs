@@ -110,8 +110,8 @@ namespace FluentDL.Views
             var trackDetailsList = new ObservableCollection<TrackDetail>
             {
                 new() { Label = "Artists", Value = selectedSong.Artists }, 
-                new() { Label = "Release Date", Value = new DateVerboseConverter().Convert(selectedSong.ReleaseDate, null, null, null).ToString() }, 
-                new() { Label = "Length", Value = new DurationConverter().Convert(selectedSong.Duration, null, null, null).ToString() },
+                new() { Label = "Release Date", Value = new DateVerboseConverter().Convert(selectedSong.ReleaseDate, null!, null!, null!)?.ToString() ?? "" }, 
+                new() { Label = "Length", Value = new DurationConverter().Convert(selectedSong.Duration, null!, null!, null!)?.ToString() ?? "" },
                 new() { Label = "Album", Value = selectedSong.AlbumName },
             };
 
@@ -122,8 +122,12 @@ namespace FluentDL.Views
                 {
                     var jsonObject = await DeezerApi.restClient.FetchJsonElement("album/" + selectedAlbum.Id);
                     var fullAlbumObject = DeezerApi.GetAlbumFromJsonElement(jsonObject);
-                    PreviewImage.Source = new BitmapImage(new Uri(jsonObject.GetProperty("cover_big").GetString()));
-
+                    if (jsonObject.TryGetProperty("cover_big", out var cover_big))
+                    {
+                        var str = cover_big.GetString();
+                        if (!string.IsNullOrEmpty(str))
+                            PreviewImage.Source = new BitmapImage(new Uri(str));
+                    }
                     PreviewInfoControl2.ItemsSource = PreviewInfoControl.ItemsSource = trackDetailsList; // First set the details list
                     trackDetailsList.Add(new TrackDetail { Label = "Genre", Value = DeezerApi.GetGenreStr(jsonObject) });
                     trackDetailsList.Add(new TrackDetail { Label = "Max Quality", Value = $"16-Bit/44.1 kHz" });
@@ -171,36 +175,41 @@ namespace FluentDL.Views
                 {
                     var album = await QobuzApi.GetInternalAlbum(selectedAlbum.Id);
 
-                    PreviewImage.Source = new BitmapImage(new Uri(album.Image.Large)); // Get cover art
 
                     PreviewInfoControl2.ItemsSource = PreviewInfoControl.ItemsSource = trackDetailsList; // First set the details list
-                    trackDetailsList.Add(new TrackDetail { Label = "Genre", Value = string.Join(", ", QobuzApi.PruneGenreList(album.GenresList)) });
-                    trackDetailsList.Add(new TrackDetail { Label = "Max Quality", Value = $"{album.MaximumBitDepth}-Bit/{album.MaximumSamplingRate} kHz" });
+                    if (album != null)
+                    {
+                        PreviewImage.Source = new BitmapImage(new Uri(album.Image.Large)); // Get cover art
+                        trackDetailsList.Add(new TrackDetail { Label = "Genre", Value = string.Join(", ", QobuzApi.PruneGenreList(album.GenresList)) });
+                        trackDetailsList.Add(new TrackDetail { Label = "Max Quality", Value = $"{album.MaximumBitDepth}-Bit/{album.MaximumSamplingRate} kHz" });
+                    }
                     trackDetailsList.RemoveAt(trackDetailsList.ToList().FindIndex(t => t.Label == "Album"));
 
                     RankRatingControl.Visibility = Visibility.Collapsed;
 
                     // Tracks list view
-                    TrackListHeader.Text = album.TracksCount switch
+                    TrackListHeader.Text = (album?.TracksCount ?? 0) switch
                     {
                         0 => "No Tracks",
                         1 => "1 Track",
-                        _ => $"{album.TracksCount} Tracks"
+                        _ => $"{album!.TracksCount} Tracks"
                     };
-                    List<SongSearchObject> albumTracks = album.Tracks.Items.Select(t=>QobuzApi.ConvertSongSearchObject(t, album.Artist?.Name)).ToList();
+                    List<SongSearchObject> albumTracks = album?.Tracks.Items.Select(t=>QobuzApi.ConvertSongSearchObject(t, album.Artist?.Name)).ToList() ?? [];
                     AlbumTrackListView.ItemsSource = selectedAlbum.TrackList = albumTracks;
                 }
                 else
                 {
                     var track = await QobuzApi.GetInternalTrack(selectedSong.Id);
-
-                    PreviewImage.Source = new BitmapImage(new Uri(track.Album.Image.Large)); // Get cover art
-
+                    if (track != null)
+                        PreviewImage.Source = new BitmapImage(new Uri(track.Album.Image.Large)); // Get cover art
                     // trackDetailsList.RemoveAt(trackDetailsList.ToList().FindIndex(x => x.Label == "Popularity")); // Remove popularity
                     PreviewInfoControl2.ItemsSource = PreviewInfoControl.ItemsSource = trackDetailsList;
                     trackDetailsList.Add(new TrackDetail() { Label = "Track", Value = selectedSong.TrackPosition });
-                    trackDetailsList.Add(new TrackDetail { Label = "Genre", Value = string.Join(", ", QobuzApi.PruneGenreList(track.Album.GenresList)) });
-                    trackDetailsList.Add(new TrackDetail { Label = "Max Quality", Value = $"{track.MaximumBitDepth}-Bit/{track.MaximumSamplingRate} kHz" });
+                    if (track != null)
+                    {
+                        trackDetailsList.Add(new TrackDetail { Label = "Genre", Value = string.Join(", ", QobuzApi.PruneGenreList(track.Album.GenresList)) });
+                        trackDetailsList.Add(new TrackDetail { Label = "Max Quality", Value = $"{track.MaximumBitDepth}-Bit/{track.MaximumSamplingRate} kHz" });
+                    }
                     RankRatingControl.Visibility = Visibility.Collapsed;
 
                     // Load the audio stream
@@ -212,9 +221,9 @@ namespace FluentDL.Views
             {
                 if (selectedSong is AlbumSearchObject selectedAlbum)
                 {
-                    PreviewImage.Source = new BitmapImage(new Uri((string)(selectedAlbum.AdditionalFields["cover_max"] ?? ""))); // Get the largest
+                    PreviewImage.Source = new BitmapImage(new Uri((string)(selectedAlbum?.AdditionalFields?["cover_max"] ?? ""))); // Get the largest
                     PreviewInfoControl2.ItemsSource = PreviewInfoControl.ItemsSource = trackDetailsList; // First set the details list
-                    var genreList = await SpotifyApi.GetGenres((List<SimpleArtist>)selectedAlbum.AdditionalFields["artists"]);
+                    var genreList = await SpotifyApi.GetGenres((List<SimpleArtist>?)selectedAlbum?.AdditionalFields?["artists"] ?? []);
                     if (genreList.Count > 0)
                     {
                         trackDetailsList.Add(new TrackDetail { Label = "Genre", Value = string.Join(", ", genreList) });
@@ -224,13 +233,13 @@ namespace FluentDL.Views
                     RankRatingControl.Visibility = Visibility.Visible;
                     SetRatingPercentage(GetPercentage(selectedSong));
                     // Tracks list view
-                    TrackListHeader.Text = selectedAlbum.TracksCount switch
+                    TrackListHeader.Text = (selectedAlbum?.TracksCount ?? 0) switch
                     {
                         0 => "No Tracks",
                         1 => "1 Track",
-                        _ => $"{selectedAlbum.TracksCount} Tracks"
+                        _ => $"{selectedAlbum!.TracksCount} Tracks"
                     };
-                    AlbumTrackListView.ItemsSource = selectedAlbum.TrackList;
+                    AlbumTrackListView.ItemsSource = selectedAlbum?.TrackList ?? [];
                 }
                 else
                 {
@@ -293,8 +302,8 @@ namespace FluentDL.Views
                         new() { Label = "Album", Value = selectedSong.AlbumName },
                         new() { Label = "Album Artist", Value = string.Join(", ", metadata.AlbumArtists ?? Array.Empty<string>()) },
                         new() { Label = "Genre", Value = string.Join(", ", metadata.Genres ?? Array.Empty<string>()) },
-                        new() { Label = "Length", Value = new DurationConverter().Convert(metadata.Duration, null, null, null).ToString() },
-                        new() { Label = "Release Date", Value = new DateVerboseConverter().Convert(selectedSong.ReleaseDate, null, null, null).ToString() },
+                        new() { Label = "Length", Value = new DurationConverter().Convert(metadata.Duration, null!, null!, null!)?.ToString() ?? "" },
+                        new() { Label = "Release Date", Value = new DateVerboseConverter().Convert(selectedSong.ReleaseDate, null!, null!, null!)?.ToString() ?? ""},
                         new() { Label = "Track Position", Value = selectedSong.TrackPosition },
                         new() { Label = "Type", Value = metadata.Codec ?? System.IO.Path.GetExtension(selectedSong.Id) },
                         new() { Label = "Size", Value = GetFileLength(selectedSong.Id) },
