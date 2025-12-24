@@ -1,32 +1,38 @@
-<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8" ?>
 
 <UserControl
     x:Class="FluentDL.Views.PreviewPane"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-    xmlns:sys="using:System"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    xmlns:views="using:FluentDL.Views"
-    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:controls="using:CommunityToolkit.WinUI.UI.Controls"
     xmlns:controls1="using:Microsoft.UI.Xaml.Controls"
     xmlns:controls2="using:CommunityToolkit.WinUI.Controls"
-    xmlns:marqueeTextRns="using:CommunityToolkit.Labs.WinUI.MarqueeTextRns" xmlns:models="using:FluentDL.Models" xmlns:helpers="using:FluentDL.Helpers"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:helpers="using:FluentDL.Helpers"
+    xmlns:marqueeTextRns="using:CommunityToolkit.Labs.WinUI.MarqueeTextRns"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:media="using:CommunityToolkit.WinUI.Media"
+    xmlns:models="using:FluentDL.Models"
+    xmlns:sys="using:System"
+    xmlns:views="using:FluentDL.Views"
     mc:Ignorable="d">
     <UserControl.Resources>
-        <helpers:DurationConverterShort x:Key="DurationConverterShort"/>
+        <helpers:DurationConverterShort x:Key="DurationConverterShort" />
+        <helpers:ASCIIVisibilityConverter x:Key="ASCIIVisibilityConverter" />
+        <helpers:ASCIIInvertedVisibilityConverter x:Key="ASCIIInvertedVisibilityConverter" />
     </UserControl.Resources>
+
     <Grid
         x:Name="RelativePreviewPanel"
-        CornerRadius="8"
-        BorderThickness="1"
-        BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
-        Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
         MinWidth="340"
-        MaxWidth="740">
+        MaxWidth="740"
+        Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+        BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+        BorderThickness="1"
+        CornerRadius="8">
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="Auto"></ColumnDefinition>
-            <ColumnDefinition Width="*"></ColumnDefinition>
+            <ColumnDefinition Width="Auto" />
+            <ColumnDefinition Width="*" />
         </Grid.ColumnDefinitions>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
@@ -34,39 +40,108 @@
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
-        <controls2:ContentSizer Grid.Row="0" Grid.RowSpan="3" Grid.Column="0"
-                                TargetControl="{x:Bind RelativePreviewPanel}" IsDragInverted="True" IsThumbVisible="True" Margin="0, 0, -12, 0">
-        </controls2:ContentSizer>
+        <controls2:ContentSizer
+            Grid.Row="0"
+            Grid.RowSpan="3"
+            Grid.Column="0"
+            Margin="0,0,-12,0"
+            IsDragInverted="True"
+            IsThumbVisible="True"
+            TargetControl="{x:Bind RelativePreviewPanel}" />
 
-        <CommandBar Grid.Column="1" x:Name="CommandBar" Background="Transparent" IsOpen="False"
-                    DefaultLabelPosition="Right"
-                    Visibility="Collapsed" Grid.Row="0" Margin="0, 4, 12, 2">
-        </CommandBar>
+        <CommandBar
+            x:Name="CommandBar"
+            Grid.Row="0"
+            Grid.Column="1"
+            Margin="0,4,12,2"
+            Background="Transparent"
+            DefaultLabelPosition="Right"
+            IsOpen="False"
+            Visibility="Collapsed" />
 
-        <ScrollView Grid.Column="1" x:Name="PreviewScrollView" VerticalScrollBarVisibility="Auto" Grid.Row="1"
-                    Margin="12, 0, 12, 0" Visibility="Visible" CornerRadius="8"
-                    Background="{ThemeResource AcrylicBackgroundFillColorDefaultBrush}"
-                    BorderBrush="{ThemeResource ControlStrokeColorOnAccentTertiaryBrush}" BorderThickness="1">
-            <StackPanel Orientation="Vertical" VerticalAlignment="Top" Height="Auto">
+        <ScrollView
+            x:Name="PreviewScrollView"
+            Grid.Row="1"
+            Grid.Column="1"
+            Margin="12,0,12,0"
+            Background="{ThemeResource AcrylicBackgroundFillColorDefaultBrush}"
+            BorderBrush="{ThemeResource ControlStrokeColorOnAccentTertiaryBrush}"
+            BorderThickness="1"
+            CornerRadius="8"
+            VerticalScrollBarVisibility="Auto"
+            Visibility="Visible">
+            <StackPanel
+                Height="Auto"
+                VerticalAlignment="Top"
+                Orientation="Vertical">
+                <Grid>
+                    <!--  Background image  -->
+                    <Border
+                        MaxHeight="300"
+                        Margin="14,14,14,12"
+                        BorderBrush="{ThemeResource ControlStrokeColorOnAccentTertiaryBrush}"
+                        BorderThickness="1"
+                        CornerRadius="9">
+                        <Image
+                            HorizontalAlignment="Center"
+                            VerticalAlignment="Center"
+                            Source="{Binding ElementName=PreviewImage, Path=Source}"
+                            Stretch="UniformToFill" />
+                    </Border>
+                    <!--  Brush area  -->
+                    <Border
+                        MaxHeight="300"
+                        Margin="14,14,14,12"
+                        HorizontalAlignment="Stretch"
+                        VerticalAlignment="Center"
+                        CornerRadius="8">
+                        <Border.Background>
+                            <media:AcrylicBrush
+                                BlurAmount="15"
+                                TintColor="{ThemeResource SolidBackgroundFillColorBase}"
+                                TintOpacity=".6" />
+                        </Border.Background>
+                        <!--  Foreground image  -->
+                        <Image
+                            x:Name="PreviewImage"
+                            MaxHeight="300"
+                            HorizontalAlignment="Center"
+                            VerticalAlignment="Center" />
+                    </Border>
+                </Grid>
 
-                <Border CornerRadius="8" Margin="12">
-                    <Image x:Name="PreviewImage" />
+                <!--
+                <Border CornerRadius="8" Margin="12" HorizontalAlignment="Stretch" Background="{StaticResource CustomAcrylicBrush}">
+                    <Image x:Name="PreviewImage" MaxHeight="300" HorizontalAlignment="Center" />
                 </Border>
+                -->
 
-                <StackPanel x:Name="PreviewInfoStack" Orientation="Vertical" HorizontalAlignment="Stretch"
-                            VerticalAlignment="Top" Margin="16, 0, 16, 12">
-                    <TextBlock x:Name="PreviewTitleText" Text="" Style="{ThemeResource HeaderText}"
-                               Margin="0, 0,0,8" TextWrapping="WrapWholeWords"
-                               VerticalAlignment="Top" HorizontalAlignment="Left"
-                               LineHeight="22" />
+                <StackPanel
+                    x:Name="PreviewInfoStack"
+                    Margin="16,0,16,12"
+                    HorizontalAlignment="Stretch"
+                    VerticalAlignment="Top"
+                    Orientation="Vertical">
+                    <TextBlock
+                        x:Name="PreviewTitleText"
+                        Margin="0,0,0,8"
+                        HorizontalAlignment="Left"
+                        VerticalAlignment="Top"
+                        LineHeight="22"
+                        Style="{ThemeResource HeaderText}"
+                        Text=""
+                        TextWrapping="WrapWholeWords" />
 
                     <controls:DockPanel>
                         <Border Margin="0,0,12,0">
                             <ItemsControl x:Name="PreviewInfoControl">
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate x:DataType="views:TrackDetail">
-                                        <TextBlock Text="{x:Bind Label}" Style="{ThemeResource BodyText}"
-                                                   HorizontalAlignment="Left" LineHeight="22" />
+                                        <TextBlock
+                                            HorizontalAlignment="Left"
+                                            LineHeight="22"
+                                            Style="{ThemeResource BodyText}"
+                                            Text="{x:Bind Label}" />
                                     </DataTemplate>
                                 </ItemsControl.ItemTemplate>
                             </ItemsControl>
@@ -77,19 +152,48 @@
                                 <ItemsControl x:Name="PreviewInfoControl2">
                                     <ItemsControl.ItemTemplate>
                                         <DataTemplate x:DataType="views:TrackDetail">
-                                            <marqueeTextRns:MarqueeText Text="{x:Bind Value, Mode=OneWay}"  controls1:ToolTipService.ToolTip="{x:Bind Value, Mode=OneWay}"
-                                                                        FontFamily="Segoe UI Variable Display" 
-                                                                        Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}" 
-                                                                        Speed="50"
-                                                                        Behavior="Looping" Direction="Left" HorizontalAlignment="Stretch" Margin="0, 0, 0, 0" RepeatBehavior="Forever" Height="22" 
-                                                                        PointerEntered="PreviewMarquee_OnPointerEntered" PointerExited="PreviewMarquee_OnPointerExited" Loaded="PreviewMarquee_OnLoaded"/>
+                                            <Grid>
+                                                <marqueeTextRns:MarqueeText
+                                                    Height="22"
+                                                    Margin="0,0,0,0"
+                                                    HorizontalAlignment="Stretch"
+                                                    controls1:ToolTipService.ToolTip="{x:Bind Value, Mode=OneWay}"
+                                                    Behavior="Looping"
+                                                    Direction="Left"
+                                                    FontFamily="Segoe UI Variable Display"
+                                                    Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"
+                                                    Loaded="PreviewMarquee_OnLoaded"
+                                                    PointerEntered="PreviewMarquee_OnPointerEntered"
+                                                    PointerExited="PreviewMarquee_OnPointerExited"
+                                                    RepeatBehavior="Forever"
+                                                    Speed="50"
+                                                    Text="{x:Bind Value, Mode=OneWay}"
+                                                    Visibility="{x:Bind Value, Converter={StaticResource ASCIIVisibilityConverter}, Mode=OneWay}" />
+                                                <TextBlock
+                                                    Height="22"
+                                                    Margin="0,0,0,0"
+                                                    HorizontalAlignment="Stretch"
+                                                    ToolTipService.ToolTip="{x:Bind Value, Mode=OneWay}"
+                                                    FontFamily="Segoe UI Variable Display"
+                                                    Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"
+                                                    Text="{x:Bind Value, Mode=OneWay}"
+                                                    Visibility="{x:Bind Value, Converter={StaticResource ASCIIInvertedVisibilityConverter}, Mode=OneWay}" />
+                                            </Grid>
                                         </DataTemplate>
                                     </ItemsControl.ItemTemplate>
                                 </ItemsControl>
-                                <!-- final item, deezer rank / spotify popularity index / youtube views -->
-                                <Viewbox Height="22" HorizontalAlignment="Left" Margin="0,-26,0,0">
-                                    <RatingControl x:Name="RankRatingControl" PlaceholderValue="{x:Bind RankValue, Mode=OneWay}" IsReadOnly="True" HorizontalAlignment="Left"
-                                                   ToolTipService.ToolTip="{x:Bind sys:String.Format('{0:F2}', RankValue), Mode=OneWay}" Visibility="Collapsed">
+                                <!--  final item, deezer rank / spotify popularity index / youtube views  -->
+                                <Viewbox
+                                    Height="22"
+                                    Margin="0,-26,0,0"
+                                    HorizontalAlignment="Left">
+                                    <RatingControl
+                                        x:Name="RankRatingControl"
+                                        HorizontalAlignment="Left"
+                                        IsReadOnly="True"
+                                        PlaceholderValue="{x:Bind RankValue, Mode=OneWay}"
+                                        ToolTipService.ToolTip="{x:Bind sys:String.Format('{0:F2}', RankValue), Mode=OneWay}"
+                                        Visibility="Collapsed">
                                         <RatingControl.Resources>
                                             <SolidColorBrush x:Key="RatingControlPlaceholderForeground" Color="{ThemeResource SystemAccentColorLight3}" />
                                             <SolidColorBrush x:Key="RatingControlUnselectedForeground" Color="{ThemeResource SystemAccentColorLight3}" />
@@ -100,37 +204,75 @@
                         </Border>
                     </controls:DockPanel>
                     <StackPanel x:Name="AlbumTrackListContainer">
-                        <TextBlock x:Name="TrackListHeader" Text="No Tracks" FontWeight="Normal" HorizontalAlignment="Left" Margin="0, 8, 0, 0" Foreground="{ThemeResource TextFillColorSecondary}"/>
-                        <Rectangle  HorizontalAlignment="Stretch"  VerticalAlignment="Center" Margin="0, 4" Fill="{ThemeResource TextFillColorTertiary}" Height="1"/>
-                        <ListView 
+                        <TextBlock
+                            x:Name="TrackListHeader"
+                            Margin="0,8,0,0"
+                            HorizontalAlignment="Left"
+                            FontWeight="Normal"
+                            Foreground="{ThemeResource TextFillColorSecondary}"
+                            Text="No Tracks" />
+                        <Rectangle
+                            Height="1"
+                            Margin="0,4"
+                            HorizontalAlignment="Stretch"
+                            VerticalAlignment="Center"
+                            Fill="{ThemeResource TextFillColorTertiary}" />
+                        <ListView
                             x:Name="AlbumTrackListView"
+                            Margin="-8,0,0,0"
                             BorderBrush="{ThemeResource ControlStrongStrokeColorDefaultBrush}"
-                            Margin="-8, 0, 0, 0"
                             SelectionChanged="AlbumTrackListView_SelectionChanged">
                             <ListView.ItemTemplate>
                                 <DataTemplate x:DataType="models:SongSearchObject">
-                                    <Grid ColumnSpacing="16" Margin="0,4">
+                                    <Grid Margin="0,4" ColumnSpacing="16">
                                         <Grid.RowDefinitions>
-                                            <RowDefinition Height="*"></RowDefinition>
-                                            <RowDefinition Height="*"></RowDefinition>
+                                            <RowDefinition Height="*" />
+                                            <RowDefinition Height="*" />
                                         </Grid.RowDefinitions>
                                         <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="Auto"></ColumnDefinition>
-                                            <ColumnDefinition Width="*"></ColumnDefinition>
-                                            <ColumnDefinition Width="Auto"></ColumnDefinition>
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
                                         </Grid.ColumnDefinitions>
-                                        <!-- Position -->
-                                        <TextBlock Grid.Column="0" Grid.Row="0" Grid.RowSpan="2" Text="{x:Bind TrackPosition, Mode=OneWay}" Style="{ThemeResource BodyText}"
-                                               HorizontalAlignment="Left" VerticalAlignment="Center" Foreground="{ThemeResource TextFillColorSecondary}"/>
-                                        <!-- Title and Artists under-->
-                                        <TextBlock Grid.Column="1" Grid.Row="0" Text="{x:Bind Title, Mode=OneWay}" Style="{ThemeResource BodyText}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"
-                                                   ToolTipService.ToolTip="{x:Bind Title, Mode=OneWay}" HorizontalAlignment="Left" VerticalAlignment="Center"/>
-                                        <TextBlock Grid.Column="1" Grid.Row="1" Text="{x:Bind Artists, Mode=OneWay}" TextTrimming="CharacterEllipsis"
-                                                       Foreground="{ThemeResource TextFillColorSecondary}"
-                                                       HorizontalAlignment="Left" VerticalAlignment="Center" />
-                                        <!-- Duration -->
-                                        <TextBlock Grid.Column="2" Grid.Row="0" Grid.RowSpan="2" Text="{x:Bind Duration, Mode=OneWay, Converter={StaticResource DurationConverterShort}}" Style="{ThemeResource BodyText}"
-                                               HorizontalAlignment="Right" VerticalAlignment="Center" Foreground="{ThemeResource TextFillColorSecondary}"/>
+                                        <!--  Position  -->
+                                        <TextBlock
+                                            Grid.Row="0"
+                                            Grid.RowSpan="2"
+                                            Grid.Column="0"
+                                            HorizontalAlignment="Left"
+                                            VerticalAlignment="Center"
+                                            Foreground="{ThemeResource TextFillColorSecondary}"
+                                            Style="{ThemeResource BodyText}"
+                                            Text="{x:Bind TrackPosition, Mode=OneWay}" />
+                                        <!--  Title and Artists under  -->
+                                        <TextBlock
+                                            Grid.Row="0"
+                                            Grid.Column="1"
+                                            HorizontalAlignment="Left"
+                                            VerticalAlignment="Center"
+                                            FontWeight="SemiBold"
+                                            Style="{ThemeResource BodyText}"
+                                            Text="{x:Bind Title, Mode=OneWay}"
+                                            TextTrimming="CharacterEllipsis"
+                                            ToolTipService.ToolTip="{x:Bind Title, Mode=OneWay}" />
+                                        <TextBlock
+                                            Grid.Row="1"
+                                            Grid.Column="1"
+                                            HorizontalAlignment="Left"
+                                            VerticalAlignment="Center"
+                                            Foreground="{ThemeResource TextFillColorSecondary}"
+                                            Text="{x:Bind Artists, Mode=OneWay}"
+                                            TextTrimming="CharacterEllipsis" />
+                                        <!--  Duration  -->
+                                        <TextBlock
+                                            Grid.Row="0"
+                                            Grid.RowSpan="2"
+                                            Grid.Column="2"
+                                            HorizontalAlignment="Right"
+                                            VerticalAlignment="Center"
+                                            Foreground="{ThemeResource TextFillColorSecondary}"
+                                            Style="{ThemeResource BodyText}"
+                                            Text="{x:Bind Duration, Mode=OneWay, Converter={StaticResource DurationConverterShort}}" />
                                     </Grid>
                                 </DataTemplate>
                             </ListView.ItemTemplate>
@@ -140,19 +282,34 @@
             </StackPanel>
         </ScrollView>
 
-        <MediaPlayerElement Grid.Column="1" Grid.Row="2" x:Name="SongPreviewPlayer"
-                            AreTransportControlsEnabled="True" RelativePanel.AlignBottomWithPanel="True" 
-                            Visibility="Collapsed" IsFullWindow="False" CornerRadius="8">
+        <MediaPlayerElement
+            x:Name="SongPreviewPlayer"
+            Grid.Row="2"
+            Grid.Column="1"
+            AreTransportControlsEnabled="True"
+            CornerRadius="8"
+            IsFullWindow="False"
+            RelativePanel.AlignBottomWithPanel="True"
+            Visibility="Collapsed">
             <MediaPlayerElement.TransportControls>
-                <MediaTransportControls IsCompact="False" IsSeekBarVisible="True" IsVolumeButtonVisible="True" IsVolumeEnabled="True">
-                </MediaTransportControls>
+                <MediaTransportControls
+                    IsCompact="False"
+                    IsSeekBarVisible="True"
+                    IsVolumeButtonVisible="True"
+                    IsVolumeEnabled="True" />
             </MediaPlayerElement.TransportControls>
         </MediaPlayerElement>
 
-        <TextBlock Grid.Column="1" x:Name="NoneSelectedText" Text="No track selected." Style="{ThemeResource BodyText}"
-                   HorizontalAlignment="Center" VerticalAlignment="Center"
-                   Grid.Row="0" Grid.RowSpan="3"
-                   Margin="0,0,0,10" />
+        <TextBlock
+            x:Name="NoneSelectedText"
+            Grid.Row="0"
+            Grid.RowSpan="3"
+            Grid.Column="1"
+            Margin="0,0,0,10"
+            HorizontalAlignment="Center"
+            VerticalAlignment="Center"
+            Style="{ThemeResource BodyText}"
+            Text="No track selected." />
 
     </Grid>
 </UserControl>

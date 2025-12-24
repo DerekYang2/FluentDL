@@ -244,3 +244,52 @@ internal class BooleanInverterConverter : IValueConverter
     public object ConvertBack(object value, Type targetType, object parameter, string language)
         => value is bool b ? !b : value;
 }
+
+/// <summary>
+/// If the string contains only ASCII characters, return Visible; otherwise, return Collapsed.
+/// </summary>
+internal class ASCIIVisibilityConverter : IValueConverter
+{
+    public object Convert(object? value, Type targetType, object parameter, string language)
+    {
+        if (value is string str)
+        {
+            foreach (char c in str)
+            {
+                if (c > 127) // Non-ASCII character
+                {
+                    return Microsoft.UI.Xaml.Visibility.Collapsed;
+                }
+            }
+            return Microsoft.UI.Xaml.Visibility.Visible;
+        }
+        return Microsoft.UI.Xaml.Visibility.Collapsed;
+    }
+    public object ConvertBack(object value, Type targetType, object parameter, string language)
+    {
+        throw new NotImplementedException();
+    }
+}
+
+internal class ASCIIInvertedVisibilityConverter : IValueConverter
+{
+    public object Convert(object? value, Type targetType, object parameter, string language)
+    {
+        if (value is string str)
+        {
+            foreach (char c in str)
+            {
+                if (c > 127) // Non-ASCII character
+                {
+                    return Microsoft.UI.Xaml.Visibility.Visible;
+                }
+            }
+            return Microsoft.UI.Xaml.Visibility.Collapsed;
+        }
+        return Microsoft.UI.Xaml.Visibility.Collapsed;
+    }
+    public object ConvertBack(object value, Type targetType, object parameter, string language)
+    {
+        throw new NotImplementedException();
+    }
+}
