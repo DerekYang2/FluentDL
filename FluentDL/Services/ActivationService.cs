@@ -111,11 +111,25 @@ public class ActivationService : IActivationService
             var spotifyClientId = await localSettings.ReadSettingAsync<string>(SettingsViewModel.SpotifyClientId);
             var spotifyClientSecret = await localSettings.ReadSettingAsync<string>(SettingsViewModel.SpotifyClientSecret);
             var deezerArl = await localSettings.ReadSettingAsync<string>(SettingsViewModel.DeezerARL);
-            await Task.WhenAll(
-                Task.Run(() => QobuzApi.Initialize(qobuzEmail, qobuzPassword, qobuzId, qobuzToken, qobuzAppId, qobuzAppSecret)),
-                Task.Run(() => SpotifyApi.Initialize(spotifyClientId, spotifyClientSecret)),
-                DeezerApi.InitDeezerClient(deezerArl)
-            );
+            try
+            {
+                var tasks = new[]
+                {
+                    Task.Run(() => QobuzApi.Initialize(qobuzEmail, qobuzPassword, qobuzId, qobuzToken, qobuzAppId, qobuzAppSecret)),
+                    SpotifyApi.Initialize(spotifyClientId, spotifyClientSecret),
+                    DeezerApi.InitDeezerClient(deezerArl)
+                };
+
+                await Task.WhenAll(tasks.Select(t => t.WaitAsync(TimeSpan.FromSeconds(10))));
+            }
+            catch (TimeoutException)
+            {
+                Debug.WriteLine("One or more APIs timed out");
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"API init error: {ex}");
+            }
             await QueueViewModel.LoadSaveQueue();
 
             QueueSaver.Init();
