@@ -21,7 +21,7 @@ using Windows.Storage.Pickers;
 
 namespace FluentDL.Views;
 
-public delegate void AuthenticationCallback(bool success); // Callback for conversion updates
+public delegate void AuthenticationCallback(InfoBarSeverity severity, string message); // Callback for conversion updates
 
 // TODO: Set the URL for your privacy policy by updating SettingsPage_PrivacyTermsLink.NavigateUri in Resources.resw.
 public sealed partial class SettingsPage : Page
@@ -132,37 +132,56 @@ public sealed partial class SettingsPage : Page
         QueueShareCheckbox.IsChecked = await localSettings.ReadSettingAsync<bool>(SettingsViewModel.QueueShareChecked);
         QueueDownloadCoverCheckbox.IsChecked = await localSettings.ReadSettingAsync<bool>(SettingsViewModel.QueueDownloadCoverChecked);
         QueueRemoveCheckbox.IsChecked = await localSettings.ReadSettingAsync<bool>(SettingsViewModel.QueueRemoveChecked);
+
+        // Auth indicators
+        SetDeezerAuthInfo(DeezerApi.IsInitialized);
+    }
+
+    private void SetDeezerAuthInfo(bool isInitialized)
+    {
+        if (isInitialized)
+        {
+            DeezerInfoButton.IsEnabled = true;
+            DeezerInfoButtonText.Text = "Logged In";
+            DeezerInfoText.Text = DeezerApi.loginString ?? "No Info";
+            DeezerInfoIcon.Glyph = "\uE946";
+        }
+        else
+        {
+            DeezerInfoButton.IsEnabled = false;
+            DeezerInfoButtonText.Text = "Not Logged In";
+            DeezerInfoIcon.Glyph = "\uEA39";
+        }
     }
 
     private async void SpotifyUpdateButton_Click(object sender, RoutedEventArgs e)
     {
+        void authCallback(InfoBarSeverity severity, string message)
+        {
+            dispatcher.TryEnqueue(() =>
+            {
+                ShowInfoBar(severity, message, 3, "Spotify");
+            });
+        }
+
         await localSettings.SaveSettingAsync(SettingsViewModel.SpotifyClientId, ClientIdInput.Text.Trim());
         await localSettings.SaveSettingAsync(SettingsViewModel.SpotifyClientSecret, SpotifySecretInput.Password.Trim());
-        await SpotifyApi.InitializeAsync(await localSettings.ReadSettingAsync<string>(SettingsViewModel.SpotifyClientId), await localSettings.ReadSettingAsync<string>(SettingsViewModel.SpotifyClientSecret));
-
-        if (SpotifyApi.IsInitialized)
-        {
-            ShowInfoBar(InfoBarSeverity.Success, "Authentication successful", 3, "Spotify");
-        }
-        else
-        {
-            ShowInfoBar(InfoBarSeverity.Error, "Authentication failed", 3, "Spotify");
-        }
+        await SpotifyApi.Initialize(await localSettings.ReadSettingAsync<string>(SettingsViewModel.SpotifyClientId), await localSettings.ReadSettingAsync<string>(SettingsViewModel.SpotifyClientSecret), authCallback);
     }
 
     private async void DeezerUpdateButton_Click(object sender, RoutedEventArgs e)
     {
-        await localSettings.SaveSettingAsync(SettingsViewModel.DeezerARL, DeezerARLInput.Password.Trim());
-        await DeezerApi.InitDeezerClient(DeezerARLInput.Password.Trim());
+        void authCallback(InfoBarSeverity severity, string message)
+        {
+            dispatcher.TryEnqueue(() =>
+            {
+                ShowInfoBar(severity, message, 3, "Deezer");
+                SetDeezerAuthInfo(severity != InfoBarSeverity.Error);
+            });
+        }
 
-        if (DeezerApi.IsInitialized)
-        {
-            ShowInfoBar(InfoBarSeverity.Success, "Authentication successful", 3, "Deezer");
-        }
-        else
-        {
-            ShowInfoBar(InfoBarSeverity.Error, "Authentication failed", 3, "Deezer");
-        }
+        await localSettings.SaveSettingAsync(SettingsViewModel.DeezerARL, DeezerARLInput.Password.Trim());
+        await DeezerApi.InitDeezerClient(DeezerARLInput.Password.Trim(), authCallback);
     }
 
     private async void QobuzUpdateButton_Click(object sender, RoutedEventArgs e) {
@@ -173,20 +192,13 @@ public sealed partial class SettingsPage : Page
         await localSettings.SaveSettingAsync(SettingsViewModel.QobuzAppId, QobuzAppIdInput.Text.Trim());
         await localSettings.SaveSettingAsync(SettingsViewModel.QobuzAppSecret, QobuzAppSecretInput.Text.Trim());
 
-        AuthenticationCallback authCallback = (bool success) =>
+        void authCallback(InfoBarSeverity severity, string message)
         {
             dispatcher.TryEnqueue(() =>
             {
-                if (success)
-                {
-                    ShowInfoBar(InfoBarSeverity.Success, "Authentication successful", 3, "Qobuz");
-                }
-                else
-                {
-                    ShowInfoBar(InfoBarSeverity.Error, "Authentication failed", 3, "Qobuz");
-                }
+                ShowInfoBar(severity, message, 3, "Qobuz");
             });
-        };
+        }
 
         Thread thread = new Thread(() =>
         {
@@ -197,8 +209,11 @@ public sealed partial class SettingsPage : Page
             var qobuzAppId = localSettings.ReadSettingAsync<string>(SettingsViewModel.QobuzAppId).GetAwaiter().GetResult();
             var qobuzAppSecret = localSettings.ReadSettingAsync<string>(SettingsViewModel.QobuzAppSecret).GetAwaiter().GetResult();
             QobuzApi.Initialize(qobuzEmail, qobuzPassword, qobuzId, qobuzToken, qobuzAppId, qobuzAppSecret, authCallback);
-        });
-        thread.Priority = ThreadPriority.Highest;
+        })
+        {
+            Priority = ThreadPriority.Highest
+        };
+
         thread.Start();
     }
 

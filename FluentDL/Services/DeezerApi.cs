@@ -1,4 +1,4 @@
-﻿using CommunityToolkit.WinUI.UI.Animations;
+using CommunityToolkit.WinUI.UI.Animations;
 using DeezNET;
 using DeezNET.Data;
 using FluentDL.Helpers;
@@ -26,20 +26,53 @@ internal class DeezerApi
     private static DeezerClient deezerClient = new DeezerClient();
     public static RestHelper restClient = new RestHelper(baseURL, 5); // 5 seconds timeout
     public static bool IsInitialized = false;
+    public static string? loginString = null;
 
-    public static async Task InitDeezerClient(string? ARL)
+    public static async Task InitDeezerClient(string? ARL, AuthenticationCallback? authCallback = null)
     {
         IsInitialized = false;
+        loginString = null;
+
         if (!string.IsNullOrWhiteSpace(ARL))
         {
             try
             {
+                deezerClient = new DeezerClient();
                 await deezerClient.SetARL(ARL);
-                IsInitialized = true;
+                var data = await deezerClient.GWApi.GetUserData();
+    
+                var userId = data?["USER"]?["USER_ID"]?.ToString() ?? "0";
+
+                if (userId != "0")
+                {
+                    IsInitialized = true;
+
+                    loginString = data?["OFFER_NAME"]?.ToString() ?? "Unknown Offer";
+
+                    // Sound quality (is lossless/320kbps available)
+                    var soundQualityOptions = data?["USER"]?["OPTIONS"]?["web_sound_quality"];
+
+                    if (soundQualityOptions?.Value<bool>("lossless") ?? false)
+                    {
+                        authCallback?.Invoke(InfoBarSeverity.Success, "Log in success: premium account");
+                        loginString += "\nLossless supported";
+                    }
+                    else
+                    {
+                        authCallback?.Invoke(InfoBarSeverity.Success, "Log in success: free account");
+                        loginString += "\nOnly 128 kbps MP3 supported";
+                    }
+                    loginString += "\nCOUNTRY: " + data?["COUNTRY"]?.ToString() ?? "Unknown";
+                }
+                else
+                {
+                    authCallback?.Invoke(InfoBarSeverity.Error, "Log in failure: ARL invalid");
+                }
             }
             catch (Exception e)
             {
                 Debug.WriteLine(e);
+                authCallback?.Invoke(InfoBarSeverity.Error, "Log in failure: " +  e.Message);
             }
         }
     }
@@ -717,18 +750,18 @@ internal class DeezerApi
             var settingIdx = await SettingsViewModel.GetSetting<int?>(SettingsViewModel.DeezerQuality) ?? 0;
             bitrateEnum = settingIdx switch
             {
-                0 => Bitrate.MP3_128,
-                1 => Bitrate.MP3_320,
-                _ => Bitrate.FLAC // 2 or anything else
+                0 => DeezNET.Data.Bitrate.MP3_128,
+                1 => DeezNET.Data.Bitrate.MP3_320,
+                _ => DeezNET.Data.Bitrate.FLAC // 2 or anything else
             };
         }
 
         // Add the extension according to bitrateEnum
         filePath += bitrateEnum switch
         {
-            Bitrate.MP3_128 => ".mp3",
-            Bitrate.MP3_320 => ".mp3",
-            Bitrate.FLAC => ".flac",
+            DeezNET.Data.Bitrate.MP3_128 => ".mp3",
+            DeezNET.Data.Bitrate.MP3_320 => ".mp3",
+            DeezNET.Data.Bitrate.FLAC => ".flac",
             _ => throw new ArgumentOutOfRangeException("Invalid bitrate enum")
         };
 
@@ -739,7 +772,7 @@ internal class DeezerApi
         byte[]? trackBytes = null;
         try
         {
-            trackBytes = await deezerClient.Downloader.GetRawTrackBytes(id, (Bitrate)bitrateEnum);
+            trackBytes = await deezerClient.Downloader.GetRawTrackBytes(id, (DeezNET.Data.Bitrate)bitrateEnum);
 
             if (trackBytes == null || trackBytes.Length == 0)
             {
@@ -747,14 +780,14 @@ internal class DeezerApi
             }
         } catch (Exception e)
         {
-            if (!use128Fallback || (!FFmpegRunner.IsInitialized && bitrateEnum == Bitrate.FLAC))  // Rethrow if not using fallback
+            if (!use128Fallback || (!FFmpegRunner.IsInitialized && bitrateEnum == DeezNET.Data.Bitrate.FLAC))  // Rethrow if not using fallback
             {
                 throw;
             }
             Debug.WriteLine($"Error downloading track {id}: {e.Message}");
             // Fallback to 128 kbps
             filePath = ApiHelper.RemoveExtension(filePath) + ".mp3";
-            trackBytes = await deezerClient.Downloader.GetRawTrackBytes(id, Bitrate.MP3_128);
+            trackBytes = await deezerClient.Downloader.GetRawTrackBytes(id, DeezNET.Data.Bitrate.MP3_128);
             if (trackBytes == null || trackBytes.Length == 0)
             {
                 throw new Exception("Failed to download track even with fallback");
@@ -765,7 +798,7 @@ internal class DeezerApi
         await File.WriteAllBytesAsync(filePath, trackBytes);
 
         // Convert to flac if needed
-        if (bitrateEnum == Bitrate.FLAC && filePath.EndsWith(".mp3"))
+        if (bitrateEnum == DeezNET.Data.Bitrate.FLAC && filePath.EndsWith(".mp3"))
         {
             try
             {
