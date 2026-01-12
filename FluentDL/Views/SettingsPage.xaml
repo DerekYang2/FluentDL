@@ -434,6 +434,29 @@
                         <local:SettingsExpander.HeaderIcon>
                             <FontIcon Glyph="&#xE72E;" />
                         </local:SettingsExpander.HeaderIcon>
+                        <Grid HorizontalAlignment="Stretch">
+                            <Button x:Name="DeezerInfoButton" IsEnabled="False">
+                                <Button.Flyout>
+                                    <Flyout>
+                                        <StackPanel>
+                                            <TextBlock Text="User Info" />
+                                            <TextBlock
+                                                x:Name="DeezerInfoText"
+                                                Foreground="{ThemeResource TextFillColorSecondary}"
+                                                Style="{ThemeResource CaptionTextBlockStyle}" />
+                                        </StackPanel>
+                                    </Flyout>
+                                </Button.Flyout>
+                                <StackPanel Orientation="Horizontal">
+                                    <FontIcon
+                                        x:Name="DeezerInfoIcon"
+                                        Margin="0,0,8,0"
+                                        FontSize="16"
+                                        Glyph="&#xEA39;" />
+                                    <TextBlock x:Name="DeezerInfoButtonText" Text="Not Logged In" />
+                                </StackPanel>
+                            </Button>
+                        </Grid>
                         <local:SettingsExpander.Items>
                             <local:SettingsCard HorizontalContentAlignment="Stretch" Header="Deezer ARL">
                                 <local:SettingsCard.Description>
@@ -469,6 +492,29 @@
                         <local:SettingsExpander.HeaderIcon>
                             <FontIcon Glyph="&#xE72E;" />
                         </local:SettingsExpander.HeaderIcon>
+                        <Grid HorizontalAlignment="Stretch">
+                            <Button x:Name="QobuzInfoButton" IsEnabled="False">
+                                <Button.Flyout>
+                                    <Flyout>
+                                        <StackPanel>
+                                            <TextBlock Text="User Info" />
+                                            <TextBlock
+                                                x:Name="QobuzInfoText"
+                                                Foreground="{ThemeResource TextFillColorSecondary}"
+                                                Style="{ThemeResource CaptionTextBlockStyle}" />
+                                        </StackPanel>
+                                    </Flyout>
+                                </Button.Flyout>
+                                <StackPanel Orientation="Horizontal">
+                                    <FontIcon
+                                        x:Name="QobuzInfoIcon"
+                                        Margin="0,0,8,0"
+                                        FontSize="16"
+                                        Glyph="&#xEA39;" />
+                                    <TextBlock x:Name="QobuzInfoButtonText" Text="Not Logged In" />
+                                </StackPanel>
+                            </Button>
+                        </Grid>
                         <local:SettingsExpander.Items>
                             <local:SettingsCard
                                 HorizontalContentAlignment="Left"
@@ -604,8 +650,8 @@
                         <local:SettingsExpander.Description>
                             <!--Removed text for now: Alternatively, ensure you are logged into the <Hyperlink NavigateUri="https://open.spotify.com/">web player</Hyperlink> for automatic authentication.-->
                             <TextBlock>
-                                Sign in to Spotify using&#32;<Hyperlink NavigateUri="https://github.com/DerekYang2/FluentDL/wiki/Authentication#spotify">developer app credentials</Hyperlink>
-                                &#8291;</TextBlock>
+                                Optional: enter your own&#32;<Hyperlink NavigateUri="https://github.com/DerekYang2/FluentDL/wiki/Authentication#spotify">developer app credentials.</Hyperlink>
+                                Otherwise, FluentDL will use its included credentials.</TextBlock>
                         </local:SettingsExpander.Description>
                         <local:SettingsExpander.HeaderIcon>
                             <FontIcon Glyph="&#xE72E;" />

@@ -26,7 +26,7 @@ internal class DeezerApi
     private static DeezerClient deezerClient = new DeezerClient();
     public static RestHelper restClient = new RestHelper(baseURL, 5); // 5 seconds timeout
     public static bool IsInitialized = false;
-    public static string? loginString = null;
+    private static string? loginString = null;
 
     public static async Task InitDeezerClient(string? ARL, AuthenticationCallback? authCallback = null)
     {
@@ -75,6 +75,11 @@ internal class DeezerApi
                 authCallback?.Invoke(InfoBarSeverity.Error, "Log in failure: " +  e.Message);
             }
         }
+    }
+
+    public static string? LoginString()
+    {
+        return loginString;
     }
 
     public static async Task AddTracksFromLink(ObservableCollection<SongSearchObject> list, string url, CancellationToken token, Search.UrlStatusUpdateCallback? statusUpdate, bool albumMode = false)

@@ -135,6 +135,7 @@ public sealed partial class SettingsPage : Page
 
         // Auth indicators
         SetDeezerAuthInfo(DeezerApi.IsInitialized);
+        SetQobuzAuthInfo(QobuzApi.IsInitialized);
     }
 
     private void SetDeezerAuthInfo(bool isInitialized)
@@ -143,7 +144,7 @@ public sealed partial class SettingsPage : Page
         {
             DeezerInfoButton.IsEnabled = true;
             DeezerInfoButtonText.Text = "Logged In";
-            DeezerInfoText.Text = DeezerApi.loginString ?? "No Info";
+            DeezerInfoText.Text = DeezerApi.LoginString() ?? "No Info";
             DeezerInfoIcon.Glyph = "\uE946";
         }
         else
@@ -151,6 +152,23 @@ public sealed partial class SettingsPage : Page
             DeezerInfoButton.IsEnabled = false;
             DeezerInfoButtonText.Text = "Not Logged In";
             DeezerInfoIcon.Glyph = "\uEA39";
+        }
+    }
+
+    private void SetQobuzAuthInfo(bool isInitialized)
+    {
+        if (isInitialized)
+        {
+            QobuzInfoButton.IsEnabled = true;
+            QobuzInfoButtonText.Text = "Logged In";
+            QobuzInfoText.Text = QobuzApi.LoginString() ?? "No Info";
+            QobuzInfoIcon.Glyph = "\uE946";
+        }
+        else
+        {
+            QobuzInfoButton.IsEnabled = false;
+            QobuzInfoButtonText.Text = "Not Logged In";
+            QobuzInfoIcon.Glyph = "\uEA39";
         }
     }
 
@@ -197,6 +215,7 @@ public sealed partial class SettingsPage : Page
             dispatcher.TryEnqueue(() =>
             {
                 ShowInfoBar(severity, message, 3, "Qobuz");
+                SetQobuzAuthInfo(severity != InfoBarSeverity.Error);
             });
         }
 

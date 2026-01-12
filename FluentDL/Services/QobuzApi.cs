@@ -4,6 +4,7 @@ using FluentDL.ViewModels;
 using FluentDL.Views;
 using Microsoft.UI.Xaml.Controls;
 using QobuzApiSharp.Models.Content;
+using QobuzApiSharp.Models.User;
 using QobuzApiSharp.Service;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
@@ -30,10 +31,14 @@ internal partial class QobuzApi
 
     public static string oldI = "VuCHDsuyiFjcl994xa1eyg==";
     public static string oldS = "5mLYFjeXUrtSoZvPIYn7ymMz6QQY65+XBg2OBH9cxLJlT9hMiDIrRB8Yj4OfOikn";
+    public static bool IsInitialized = false;
+    private static Login? loginResult = null;
 
     public static void Initialize(string? email, string? password, string? userId, string? AuthToken, string? appId, string? appSecret, AuthenticationCallback? authCallback = null)
     {
-        bool IsInitialized = false;
+        IsInitialized = false;
+        string? failMessage = null;
+        loginResult = null;
 
         if (!string.IsNullOrWhiteSpace(userId) && !string.IsNullOrWhiteSpace(AuthToken))  // Token route
         {
@@ -42,19 +47,19 @@ internal partial class QobuzApi
                 try
                 {
                     apiService = new QobuzApiService(appId, appSecret);
-                    apiService.LoginWithToken(userId, AuthToken);
+                    loginResult = apiService.LoginWithToken(userId, AuthToken);
 
                     if (!apiService.IsAppSecretValid())
                         throw new Exception("Invalid app secret");
 
                     IsInitialized = true;
                     Debug.WriteLine("Qobuz initialized custom");
-                    authCallback?.Invoke(IsInitialized);
+                    authCallback?.Invoke(InfoBarSeverity.Success, "Logged in using custom app ID/secret");
                 }
                 catch
                 {
-                    Debug.WriteLine("Qobuz custom initialization failed");
-                    authCallback?.Invoke(false);
+                    failMessage = "Failed to log in using custom app ID/secret";
+                    loginResult = null;
                 }
             }
             else
@@ -62,10 +67,9 @@ internal partial class QobuzApi
                 try
                 {
                     apiService = new QobuzApiService();
-                    apiService.LoginWithToken(userId, AuthToken);
+                    loginResult = apiService.LoginWithToken(userId, AuthToken);
                     IsInitialized = true;
-                    Debug.WriteLine("Qobuz initialized latest");
-                    authCallback?.Invoke(IsInitialized);
+                    authCallback?.Invoke(InfoBarSeverity.Success, "Logged in using latest app ID/secret");
                 }
                 catch
                 {
@@ -73,18 +77,19 @@ internal partial class QobuzApi
                     try
                     {
                         apiService = new QobuzApiService(AesHelper.Decrypt(oldI), AesHelper.Decrypt(oldS));
-                        apiService.LoginWithToken(userId, AuthToken);
+                        loginResult = apiService.LoginWithToken(userId, AuthToken);
 
                         if (!apiService.IsAppSecretValid())
                             throw new Exception("Invalid app secret");
 
                         IsInitialized = true;
                         Debug.WriteLine("Qobuz initialized (old)");
-                        authCallback?.Invoke(IsInitialized);
+                        authCallback?.Invoke(InfoBarSeverity.Success, "Logged in using old app ID/secret");
                     }
                     catch
                     {
-                        authCallback?.Invoke(false);
+                        failMessage = "Failed to log in using ID/token";
+                        loginResult = null;
                     }
                 }
             }
@@ -95,15 +100,18 @@ internal partial class QobuzApi
             try
             {
                 apiService = new QobuzApiService();
-                apiService.LoginWithEmail(email, password);
+                loginResult = apiService.LoginWithEmail(email, password);
                 IsInitialized = true;
-                Debug.WriteLine("Qobuz initialized email");
-                authCallback?.Invoke(IsInitialized);
+                authCallback?.Invoke(InfoBarSeverity.Success, "Logged in using email");
             }
             catch (Exception e)
             {
                 Debug.WriteLine("Qobuz initialization failed (email): " + e.Message);
-                authCallback?.Invoke(false);
+                if (string.IsNullOrWhiteSpace(failMessage))
+                    failMessage = "Failed to log in using email";
+                else
+                    failMessage += " and email";
+                loginResult = null;
             }
         }
 
@@ -116,13 +124,48 @@ internal partial class QobuzApi
         {
             Debug.WriteLine("Failed to initialize Qobuz HTTP client: " + e.Message);
             IsInitialized = false;
+            failMessage = "Failed to initialize HTTP client: " + e.Message;
+            loginResult = null;
         }
 
-        // If still not initialized
         if (!IsInitialized)
         {
-            authCallback?.Invoke(false);
+            authCallback?.Invoke(InfoBarSeverity.Error, failMessage ?? "No login methods attempted");
         }
+    }
+
+    public static string? LoginString()
+    {
+        if (loginResult == null)
+        {
+            return null;
+        }
+
+        string str = string.Empty;
+        str += "User Zone: " + loginResult.User.Zone + "\n";
+        str += "Qobuz Credential Description: " + loginResult.User.Credential.Description + "\n";
+
+        if (loginResult.User.Subscription != null)
+        {
+            str += "Offer Type: " + loginResult.User.Subscription.Offer + "\n";
+            str += "Start Date: ";
+            str += loginResult.User.Subscription.StartDate != null ? ((DateTimeOffset)loginResult.User.Subscription.StartDate).ToString("yyyy-MM-dd") : "?";
+            str += "\n";
+            str += "End Date: ";
+            str += loginResult.User.Subscription.EndDate != null ? ((DateTimeOffset)loginResult.User.Subscription.EndDate).ToString("yyyy-MM-dd") : "?";
+            str += "\n";
+            str += "Periodicity: " + loginResult.User.Subscription.Periodicity;
+        }
+        else if (loginResult.User?.Credential?.Parameters?.Source == "household" && loginResult.User.Credential.Parameters?.HiresStreaming == true)
+        {
+            str += "Active Family sub-account, unknown End Date \n";
+            str += "Credential Label: " + loginResult.User.Credential.Label;
+        }
+        else
+        {
+            str += "No active subscriptions, only sample downloads possible!";
+        }
+        return str;
     }
 
     public static async Task GeneralSearch(ObservableCollection<SongSearchObject> itemSource, string query, CancellationToken token, int limit = 25, bool albumMode = false)
@@ -714,7 +757,7 @@ internal partial class QobuzApi
             foreach (var artist in artists)
             {
                 var a1 = ApiHelper.PrunePunctuation(artist.ToLower());
-                var performerPrune = ApiHelper.PrunePunctuation(result.Performers.ToLower());
+                var performerPrune = result.Performers == null ? "" : ApiHelper.PrunePunctuation(result.Performers.ToLower());
                 if (performerPrune.Contains(a1) && ApiHelper.PrunePunctuation(trackName.ToLower()).Equals(ApiHelper.PrunePunctuation(GetFullTitle(result).ToLower())))
                 {
                     var retObj = ConvertSongSearchObject(result);
