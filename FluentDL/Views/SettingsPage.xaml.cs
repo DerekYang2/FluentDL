@@ -136,6 +136,7 @@ public sealed partial class SettingsPage : Page
         // Auth indicators
         SetDeezerAuthInfo(DeezerApi.IsInitialized);
         SetQobuzAuthInfo(QobuzApi.IsInitialized);
+        SetSpotifyAuthInfo(SpotifyApi.IsInitialized);
     }
 
     private void SetDeezerAuthInfo(bool isInitialized)
@@ -172,6 +173,23 @@ public sealed partial class SettingsPage : Page
         }
     }
 
+    private void SetSpotifyAuthInfo(bool isInitialized)
+    {
+        if (isInitialized)
+        {
+            SpotifyInfoButton.IsEnabled = true;
+            SpotifyInfoButtonText.Text = "Logged In";
+            SpotifyInfoText.Text = SpotifyApi.LoginString() ?? "No Info";
+            SpotifyInfoIcon.Glyph = "\uE946";
+        }
+        else
+        {
+            SpotifyInfoButton.IsEnabled = false;
+            SpotifyInfoButtonText.Text = "Not Logged In";
+            SpotifyInfoIcon.Glyph = "\uEA39";
+        }
+    }
+
     private async void SpotifyUpdateButton_Click(object sender, RoutedEventArgs e)
     {
         void authCallback(InfoBarSeverity severity, string message)
@@ -179,6 +197,7 @@ public sealed partial class SettingsPage : Page
             dispatcher.TryEnqueue(() =>
             {
                 ShowInfoBar(severity, message, 3, "Spotify");
+                SetSpotifyAuthInfo(severity != InfoBarSeverity.Error);
             });
         }
 

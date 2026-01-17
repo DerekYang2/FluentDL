@@ -1,3 +1,5 @@
+using Acornima;
+using AngleSharp.Io;
 using AngleSharp.Text;
 using DeezNET.Data;
 using FluentDL.Helpers;
@@ -5,6 +7,7 @@ using FluentDL.Models;
 using FluentDL.ViewModels;
 using FluentDL.Views;
 using Microsoft.UI.Xaml.Controls;
+using Newtonsoft.Json.Linq;
 using SpotifyAPI.Web;
 using SpotifyAPI.Web.Http;
 using System;
@@ -25,31 +28,35 @@ namespace FluentDL.Services
     {
         private static SpotifyClientConfig config = SpotifyClientConfig.CreateDefault().WithRetryHandler(new SimpleRetryHandler() { RetryTimes = 3, TooManyRequestsConsumesARetry = false});
         private static SpotifyClient spotify;
-        private static Random rand = new Random();
-        private static HttpClient httpClient = new HttpClient();
+        private static Random rand = new();
         public static bool IsInitialized = false;
+        private static string? loginString = null;
 
         public SpotifyApi()
         {
 
         }
 
-        public static async Task InitializeAsync(string? clientId, string? clientSecret)
-        {
-            await Task.Run(() => Initialize(clientId, clientSecret));
-        }
-        public static void Initialize(string? clientId, string? clientSecret)
+        public static async Task Initialize(string? clientId, string? clientSecret, Action<InfoBarSeverity, string>? authCallback = null)
         {
             IsInitialized = false;
+            bool attemptedCustomIdSecret = false;
+            loginString = null;
 
             // First try to use clientId and clientSecret from settings
             if (!string.IsNullOrWhiteSpace(clientId) && !string.IsNullOrWhiteSpace(clientSecret))
             {
+                attemptedCustomIdSecret = true;
                 try
                 {
                     spotify = new SpotifyClient(config.WithAuthenticator(new ClientCredentialsAuthenticator(clientId, clientSecret)));
-                    IsInitialized = true;
-                    return;
+                    if (await CheckClient())
+                    {
+                        IsInitialized = true;
+                        authCallback?.Invoke(InfoBarSeverity.Success, "Logged in with user credentials");
+                        loginString = $"Logged in with user credentials:\nClient ID: {clientId}";
+                        return;
+                    }
                 }
                 catch (Exception e)
                 {
@@ -58,6 +65,7 @@ namespace FluentDL.Services
             }
 
             // If clientId and clientSecret are not provided, try to get from browser
+            /*
             try
             {
                 spotify = new SpotifyClient(config.WithAuthenticator(new EmbedAuthenticator()));
@@ -68,6 +76,7 @@ namespace FluentDL.Services
             {
                 Debug.WriteLine("Failed to get access token: " + e.Message);
             }
+            */
 
             // If still not initialized, try to get bundled keys
             try
@@ -77,28 +86,81 @@ namespace FluentDL.Services
 
                 if (!idList.IsEmpty && !secretList.IsEmpty && idList.Length == secretList.Length)  // If lists have content and same length
                 {
-                    var randIdx = rand.Next(0, idList.Length);
-                    var id = idList[randIdx];
-                    var secret = secretList[randIdx];
-
-                    if (string.IsNullOrWhiteSpace(id) || string.IsNullOrWhiteSpace(secret))
+                    // Shuffle idList
+                    var pairs = new List<(string? id, string? secret)>();
+                    for (int i = 0; i < idList.Length; i++)
                     {
-                        throw new Exception("invalid/empty bundled key in list");
+                        pairs.Add((idList[i], secretList[i]));
                     }
+                    var pairArr = pairs.ToArray();
+                    rand.Shuffle(pairArr);
 
-                    spotify = new SpotifyClient(config.WithAuthenticator(new ClientCredentialsAuthenticator(id, secret)));
-                    IsInitialized = true;
+                    foreach (var (id, secret) in pairArr)
+                    {                        
+                        if (!string.IsNullOrEmpty(id) && !string.IsNullOrEmpty(secret))
+                        {
+                            spotify = new SpotifyClient(config.WithAuthenticator(new ClientCredentialsAuthenticator(id, secret)));
+                            if (await CheckClient())
+                            {
+                                IsInitialized = true;
+                                if (attemptedCustomIdSecret)
+                                {
+                                    authCallback?.Invoke(InfoBarSeverity.Warning, "User credentials failed — using included instead");
+                                }
+                                else
+                                {
+                                    authCallback?.Invoke(InfoBarSeverity.Success, "Logged in with included credentials");
+                                }
+                                loginString = $"Logged in with included (FluentDL) credentials:\nSelected Client ID:{id[..8] + "..."}";
+                                return;
+                            } else
+                            {
+                                Debug.WriteLine("Failed to validate client: " + id);
+                            }
+                        }   
+                    }
                 }
             }
             catch (Exception e)
             {
                 Debug.WriteLine("Failed to initialize Spotify API: " + e.Message);
+                authCallback?.Invoke(InfoBarSeverity.Error, "Failed to initialize: " + e.Message);
+            }
+            if (!IsInitialized)
+            {
+                authCallback?.Invoke(InfoBarSeverity.Error, "All credential options failed");
+            }
+        }
+
+        private static async Task<bool> CheckClient()
+        {
+            try
+            {
+                var responseTask = spotify.Browse.GetCategories();
+                var response = await responseTask.WaitAsync(TimeSpan.FromSeconds(3)); // 3s timeout
+
+                return response != null;
+            }
+            catch (TimeoutException)
+            {
+                Debug.WriteLine("Spotify CheckClient timed out");
+                return false;
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Spotify CheckClient failed: {ex.Message}");
+                return false;
             }
         }
 
         private static bool CloseMatch(string str1, string str2)
         {
             return ApiHelper.IsSubstring(str1.ToLower(), str2.ToLower());
+        }
+
+        public static string? LoginString()
+        {
+            return loginString;
         }
 
         // For whatever reason, a request like below throws bad request error

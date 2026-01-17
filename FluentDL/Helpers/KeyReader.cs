@@ -11,11 +11,10 @@ namespace FluentDL.Helpers
         private static JsonElement rootElement;
         private static bool isLoaded = false;
 
-        public static async Task Initialize() { 
+        public static async Task Initialize() {
             isLoaded = false;
             try {
                 var text = AesHelper.Decrypt(await File.ReadAllTextAsync(PATH));
-                //Debug.WriteLine(text);
                 rootElement = JsonDocument.Parse(text).RootElement;
                 isLoaded = true;
             } catch (Exception e) {

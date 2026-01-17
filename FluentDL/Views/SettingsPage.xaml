@@ -656,6 +656,29 @@
                         <local:SettingsExpander.HeaderIcon>
                             <FontIcon Glyph="&#xE72E;" />
                         </local:SettingsExpander.HeaderIcon>
+                        <Grid HorizontalAlignment="Stretch">
+                            <Button x:Name="SpotifyInfoButton" IsEnabled="False">
+                                <Button.Flyout>
+                                    <Flyout>
+                                        <StackPanel>
+                                            <TextBlock Text="User Info" />
+                                            <TextBlock
+                                                x:Name="SpotifyInfoText"
+                                                Foreground="{ThemeResource TextFillColorSecondary}"
+                                                Style="{ThemeResource CaptionTextBlockStyle}" />
+                                        </StackPanel>
+                                    </Flyout>
+                                </Button.Flyout>
+                                <StackPanel Orientation="Horizontal">
+                                    <FontIcon
+                                        x:Name="SpotifyInfoIcon"
+                                        Margin="0,0,8,0"
+                                        FontSize="16"
+                                        Glyph="&#xEA39;" />
+                                    <TextBlock x:Name="SpotifyInfoButtonText" Text="Not Logged In" />
+                                </StackPanel>
+                            </Button>
+                        </Grid>
                         <local:SettingsExpander.Items>
                             <local:SettingsCard
                                 HorizontalContentAlignment="Stretch"

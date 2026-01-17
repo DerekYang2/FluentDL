@@ -285,16 +285,22 @@ public sealed partial class Search : Page
 
     private async void CustomListView_OnSelectionChanged(object sender, SelectionChangedEventArgs e)
     {
-        // Get the selected item
-        var selectedSong = (SongSearchObject)CustomListView.SelectedItem;
-        if (selectedSong == null)
+        try
         {
-            PreviewPanel.Clear();
-            return;
-        }
+            // Get the selected item
+            var selectedSong = (SongSearchObject)CustomListView.SelectedItem;
+            if (selectedSong == null)
+            {
+                PreviewPanel.Clear();
+                return;
+            }
 
-        PreviewPanel.Show();
-        await PreviewPanel.Update(selectedSong);
+            PreviewPanel.Show();
+            await PreviewPanel.Update(selectedSong);
+        } catch (Exception ex)
+        {
+
+        }
     }
 
     private void SortBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
