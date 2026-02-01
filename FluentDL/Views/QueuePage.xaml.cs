@@ -1,17 +1,8 @@
 ﻿using System.Collections.Concurrent;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
-using System.Diagnostics.Eventing.Reader;
-using System.Drawing;
 using System.Text.RegularExpressions;
-using Windows.ApplicationModel.AppService;
-using Windows.Storage;
-using Windows.Storage.AccessCache;
 using Windows.Storage.Pickers;
-using ABI.Windows.Storage.Pickers;
-using ABI.Windows.UI.ApplicationSettings;
-using CommunityToolkit.WinUI.UI.Controls;
-using CommunityToolkit.WinUI.UI.Controls.TextToolbarSymbols;
 using FluentDL.Services;
 using FluentDL.ViewModels;
 using Microsoft.UI.Dispatching;
@@ -22,21 +13,12 @@ using FluentDL.Contracts.Services;
 using FluentDL.Helpers;
 using FluentDL.Models;
 using Microsoft.UI.Xaml.Media;
-using Microsoft.UI.Xaml.Media.Imaging;
 using Microsoft.UI.Xaml.Navigation;
-using Color = Windows.UI.Color;
 using FileSavePicker = Windows.Storage.Pickers.FileSavePicker;
 using Symbol = Microsoft.UI.Xaml.Controls.Symbol;
-using System.Diagnostics.Metrics;
-using ABI.Microsoft.UI.Text;
-using Microsoft.UI.Xaml.Documents;
-using FolderPicker = ABI.Windows.Storage.Pickers.FolderPicker;
-using FontWeights = Microsoft.UI.Text.FontWeights;
-using Newtonsoft.Json;
-
 namespace FluentDL.Views;
 
-public class PathToVisibilityConverter : IValueConverter
+public partial class PathToVisibilityConverter : IValueConverter
 {
     public object Convert(object value, Type targetType, object parameter, string language)
     {
@@ -96,13 +78,12 @@ public sealed partial class QueuePage : Page
         InitializeComponent();
         dispatcherQueue = DispatcherQueue.GetForCurrentThread();
         dispatcherTimer = new DispatcherTimer();
-        dispatcherTimer.Tick += dispatcherTimer_Tick;
+        dispatcherTimer.Tick += DispatcherTimer_Tick;
 
         CustomListView.ItemsSource = QueueViewModel.Source;
         cancellationTokenSource = new CancellationTokenSource();
         InitPreviewPanelButtons();
         InitializeAnimations();
-        StartStopButton.Visibility = Visibility.Collapsed; // Hide the start/stop button initially
         OutputComboBox.ItemsSource = new List<string>
         {
             "Deezer",
@@ -150,14 +131,12 @@ public sealed partial class QueuePage : Page
     {
         AnimationHelper.AttachSpringDownAnimation(DownloadAllButton, DownloadAllButtonIcon);
         AnimationHelper.AttachSpringRightAnimation(ConvertDialogOpenButton, ConvertDialogOpenIcon);
-        AnimationHelper.AttachScaleAnimation(CommandButton, CommandIcon);
         AnimationHelper.AttachScaleAnimation(ClearButton, ClearIcon);
-        AnimationHelper.AttachScaleAnimation(StartStopButton, StartStopIcon);
     }
 
     protected async override void OnNavigatedTo(NavigationEventArgs e)
     {
-        SetCountText();
+        OnQueueSourceChange();
 
         // Get the selected item
         var selectedSong = (SongSearchObject)CustomListView.SelectedItem;
@@ -222,43 +201,8 @@ public sealed partial class QueuePage : Page
     private void OnQueueSourceChange()
     {
         SetCountText();
-
-        if (!IsConverting)
-        {
-            dispatcherQueue.TryEnqueue(() =>
-            {
-                // Check if pause was called
-                if (cancellationTokenSource.Token.IsCancellationRequested)
-                {
-                    SetContinueUI(); // If paused, UI should show continue
-                }
-
-                if (QueueViewModel.Source.Count == 0)
-                {
-                    CountText.Text = "No tracks in queue";
-                    QueueProgress.Value = 0;
-                    StartStopButton.Visibility = Visibility.Collapsed;
-                }
-                else
-                {
-                    var completedCount = QueueViewModel.GetCompletedCount();
-                    QueueProgress.Value = 100.0 * completedCount / QueueViewModel.Source.Count;
-                    ProgressText.Text = $"Completed {QueueViewModel.GetCompletedCount()} of {QueueViewModel.Source.Count}";
-
-                    if (completedCount == QueueViewModel.Source.Count) // If all tracks are completed
-                    {
-                        // Reset UI to normal
-                        ProgressTextButton.Visibility = StartStopButton.Visibility = Visibility.Collapsed; // Hide the start/stop button
-                        CountTextButton.Visibility = Visibility.Visible;
-                        EnableButtons();
-                        QueueProgress.Value = 0;
-                    }
-                }
-
-                NoItemsText.Visibility = QueueViewModel.Source.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
-                ClearButton.IsEnabled = QueueViewModel.Source.Count > 0 && !QueueViewModel.IsRunning;
-            });
-        }
+        NoItemsText.Visibility = QueueViewModel.Source.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
+        ClearButton.IsEnabled = QueueViewModel.Source.Count > 0;
     }
 
     private void InitPreviewPanelButtons()
@@ -350,15 +294,14 @@ public sealed partial class QueuePage : Page
             return;
         }
 
-        if (IsConverting || QueueViewModel.IsRunning)
+        if (IsConverting)
         {
             ShowInfoBar(InfoBarSeverity.Warning, "Cannot remove track while queue is running", 3);
             return;
         }
 
-        QueueViewModel.Remove(selectedSong);
+        await QueueViewModel.Remove(selectedSong);
         PreviewPanel.Clear();
-        await QueueViewModel.SaveQueue(); // Save the queue to file
     }
 
     private async Task DownloadSongCover(SongSearchObject? songObj)
@@ -443,113 +386,10 @@ public sealed partial class QueuePage : Page
         }
     }
 
-    private async void CommandButton_OnClick(object sender, RoutedEventArgs e)
-    {
-        CustomCommandDialog.XamlRoot = this.XamlRoot;
-
-        // Set latest command used if null
-        if (CommandInput.Text == null || CommandInput.Text.Trim().Length == 0)
-        {
-            CommandInput.Text = await LocalCommands.GetLatestCommand();
-        }
-
-        // Set latest path used if null
-        if (DirectoryInput.Text == null || DirectoryInput.Text.Trim().Length == 0)
-        {
-            DirectoryInput.Text = await LocalCommands.GetLatestPath();
-        }
-
-        await CustomCommandDialog.ShowAsync();
-    }
-
-    private async void CustomCommandDialog_OnPrimaryButtonClick(ContentDialog sender, ContentDialogButtonClickEventArgs args)
-    {
-        var commandInputText = CommandInput.Text.Trim();
-        var directoryInputText = DirectoryInput.Text.Trim();
-        if (string.IsNullOrWhiteSpace(commandInputText) || QueueViewModel.IsRunning || QueueViewModel.Source.Count == 0) // If the command is empty or the queue is currently running, return
-        {
-            return;
-        }
-        StartStopButton.Visibility = Visibility.Visible; // Display start stop
-        QueueViewModel.SetCommand(commandInputText);
-        QueueViewModel.Reset(); // Reset the queue object result strings and index
-
-        cancellationTokenSource = new CancellationTokenSource();
-        await QueueViewModel.RunCommand(directoryInputText, cancellationTokenSource.Token, queueRunCallback);
-        SetPauseUI();
-
-        LocalCommands.AddCommand(commandInputText); // Add the command to the previous command list
-        LocalCommands.AddPath(directoryInputText); // Add the path to the previous path list
-
-        await LocalCommands.SaveLatestCommand(commandInputText);
-        await LocalCommands.SaveLatestPath(directoryInputText);
-        await LocalCommands.SaveCommands();
-        await LocalCommands.SavePaths();
-    }
-
     private async void ClearButton_OnClick(object sender, RoutedEventArgs e)
     {
-        QueueViewModel.Clear();
-        StartStopButton.Visibility = Visibility.Collapsed;
+        await QueueViewModel.Clear();
         ShowInfoBar(InfoBarSeverity.Informational, "Queue cleared");
-        await QueueViewModel.SaveQueue();
-    }
-
-    private async void StartStopButton_OnClick(object sender, RoutedEventArgs e)
-    {
-        const string pauseText = "Pausing ...";
-        if (StartStopText.Text.Equals(pauseText)) // If already attempted a pause
-        {
-            return;
-        }
-
-        if (QueueViewModel.IsRunning) // If the queue is running, cancel 
-        {
-            cancellationTokenSource.Cancel();
-            StartStopText.Text = pauseText;
-        }
-        else // If the queue is not running, start
-        {
-            cancellationTokenSource = new CancellationTokenSource();
-            SetPauseUI();
-            await QueueViewModel.RunCommand(DirectoryInput.Text, cancellationTokenSource.Token, queueRunCallback);
-        }
-    }
-
-    private void SetContinueUI()
-    {
-        // UI states when queue is paused
-        StartStopIcon.Glyph = "\uE768"; // Change the icon to a start icon
-        StartStopText.Text = "Continue";
-        EnableButtons();
-        ProgressTextButton.Visibility = Visibility.Collapsed;
-        CountTextButton.Visibility = Visibility.Visible;
-    }
-
-    private void SetPauseUI()
-    {
-        // UI states when the queue is running
-        StartStopIcon.Glyph = "\uE769"; // Change the icon to a pause icon
-        StartStopText.Text = "Pause";
-        DisableButtons();
-        ProgressTextButton.Visibility = Visibility.Visible;
-        CountTextButton.Visibility = Visibility.Collapsed;
-    }
-
-    private void EnableButtons()
-    {
-        DownloadAllButton.IsEnabled = true;
-        CommandButton.IsEnabled = true;
-        ConvertDialogOpenButton.IsEnabled = true;
-        ClearButton.IsEnabled = true;
-    }
-
-    private void DisableButtons()
-    {
-        DownloadAllButton.IsEnabled = false;
-        CommandButton.IsEnabled = false;
-        ConvertDialogOpenButton.IsEnabled = false;
-        ClearButton.IsEnabled = false;
     }
 
     private void CommandInput_OnTextChanged(AutoSuggestBox sender, AutoSuggestBoxTextChangedEventArgs args)
@@ -703,7 +543,7 @@ public sealed partial class QueuePage : Page
     }
 
     // Event handler to close the info bar and stop the timer (only ticks once)
-    private void dispatcherTimer_Tick(object sender, object e)
+    private void DispatcherTimer_Tick(object? sender, object? e)
     {
         var timer = sender as DispatcherTimer;
         if (timer == null || !timer.IsEnabled) return; // Already closed
@@ -824,7 +664,7 @@ public sealed partial class QueuePage : Page
         cancellationTokenSource = new CancellationTokenSource(); // Create a new cancellation token source
 
         // Prepare UI
-        DownloadAllButton.Visibility = CommandButton.Visibility = ConvertDialogOpenButton.Visibility = ClearButton.Visibility = Visibility.Collapsed; // Hide buttons
+        DownloadAllButton.Visibility = ConvertDialogOpenButton.Visibility = ClearButton.Visibility = Visibility.Collapsed; // Hide buttons
         ConvertStopButton.Visibility = Visibility.Visible; // Show stop button
         // Clear the conversion results
         successSource.Clear();
@@ -863,7 +703,7 @@ public sealed partial class QueuePage : Page
 
         var EndConversionLambda = async () =>
         {
-            DownloadAllButton.Visibility = CommandButton.Visibility = ConvertDialogOpenButton.Visibility = ClearButton.Visibility = Visibility.Visible; // Show buttons
+            DownloadAllButton.Visibility = ConvertDialogOpenButton.Visibility = ClearButton.Visibility = Visibility.Visible; // Show buttons
             ConvertStopText.Text = "Stop"; // Reset stop button text
             ConvertStopButton.Visibility = Visibility.Collapsed; // Hide stop button
             QueueProgress.Value = ogVal; // Reset the progress bar
@@ -873,8 +713,6 @@ public sealed partial class QueuePage : Page
             }
 
             ForceHideInfoBar();
-
-            await QueueViewModel.SaveQueue();
         };
 
         var downloadThreads = await SettingsViewModel.GetSetting<int?>(SettingsViewModel.ConversionThreads) ?? 1;
@@ -910,7 +748,6 @@ public sealed partial class QueuePage : Page
                     dispatcherQueue.TryEnqueue(() =>
                     {
                         song.IsRunning = true;
-                        QueueViewModel.Source[i] = song;
                     });
 
                     SongSearchObject? newSongObj = null;
@@ -928,11 +765,12 @@ public sealed partial class QueuePage : Page
                             if (localSong != null)
                             {
                                 localSong.LocalBitmapImage = await LocalExplorerViewModel.GetBitmapImageAsync(fileLocation);
-                                queueObj = await QueueViewModel.CreateQueueObject(localSong);
+                                queueObj = await QueueViewModel.CreateQueueObject(localSong, song.QueueCounter);
+                                await QueueViewModel.Replace(i, queueObj);
                             }
                             else // Can happen when trying to parse opus files
                             {
-                                queueObj = QueueViewModel.Source[i]; // Set to the initial object so badge is shown below
+                                queueObj = song; // Set to the initial object so badge is shown below
                             }
 
 
@@ -946,11 +784,8 @@ public sealed partial class QueuePage : Page
                                 }
 
                                 queueObj.IsRunning = false; // Set song to not running
-                                QueueViewModel.Replace(i, queueObj);
+                                // await QueueViewModel.Replace(i, queueObj);
                             }
-
-                            // Save state of the queue in case of crashes?
-                            await QueueViewModel.SaveQueue();
                         }
                         else // Failed conversion, set current object badge to error
                         {
@@ -961,7 +796,7 @@ public sealed partial class QueuePage : Page
                                 song.ConvertBadgeColor = new SolidColorBrush(Windows.UI.Color.FromArgb(255, 255, 153, 164));
                             }
 
-                            QueueViewModel.Replace(i, song);
+                            // await QueueViewModel.Replace(i, song);
                         }
                     });
 
@@ -1040,15 +875,14 @@ public sealed partial class QueuePage : Page
         // Clear queue command running progress
         QueueViewModel.Reset(); // Reset the queue object result strings and index
         // Reset back to normal
-        ProgressTextButton.Visibility = StartStopButton.Visibility = Visibility.Collapsed;
+        ProgressTextButton.Visibility = Visibility.Collapsed;
         CountTextButton.Visibility = Visibility.Visible;
-        EnableButtons();
         QueueProgress.Value = 0;
 
         cancellationTokenSource = new CancellationTokenSource(); // Create a new cancellation token source
 
         // Prepare UI
-        DownloadAllButton.Visibility = CommandButton.Visibility = ConvertDialogOpenButton.Visibility = ClearButton.Visibility = Visibility.Collapsed; // Hide buttons
+        DownloadAllButton.Visibility = ConvertDialogOpenButton.Visibility = ClearButton.Visibility = Visibility.Collapsed; // Hide buttons
         ConvertStopButton.Visibility = Visibility.Visible; // Show stop button
         // Clear the conversion results
         successSource.Clear();
@@ -1087,7 +921,7 @@ public sealed partial class QueuePage : Page
 
         var EndConversionLambda = async () =>
         {
-            DownloadAllButton.Visibility = CommandButton.Visibility = ConvertDialogOpenButton.Visibility = ClearButton.Visibility = Visibility.Visible; // Show buttons
+            DownloadAllButton.Visibility = ConvertDialogOpenButton.Visibility = ClearButton.Visibility = Visibility.Visible; // Show buttons
             ConvertStopText.Text = "Stop"; // Reset stop button text
             ConvertStopButton.Visibility = Visibility.Collapsed; // Hide stop button
             QueueProgress.Value = ogVal; // Reset the progress bar
@@ -1099,7 +933,6 @@ public sealed partial class QueuePage : Page
 
             ForceHideInfoBar();
             await ShowConversionDialog();  // Show conversion results dialog
-            await QueueViewModel.SaveQueue(); // Save the queue
         };
 
         var downloadThreads = await SettingsViewModel.GetSetting<int?>(SettingsViewModel.ConversionThreads) ?? 1;
@@ -1135,7 +968,6 @@ public sealed partial class QueuePage : Page
                     dispatcherQueue.TryEnqueue(() =>
                     {
                         song.IsRunning = true;
-                        QueueViewModel.Source[i] = song;
                     });
 
                     SongSearchObject? newSongObj = null;
@@ -1169,16 +1001,18 @@ public sealed partial class QueuePage : Page
                                 if (localSong != null)
                                 {
                                     localSong.LocalBitmapImage = await LocalExplorerViewModel.GetBitmapImageAsync(fileLocation);
-                                    queueObj = await QueueViewModel.CreateQueueObject(localSong);
+                                    queueObj = await QueueViewModel.CreateQueueObject(localSong, song.QueueCounter);
+                                    await QueueViewModel.Replace(i, queueObj);
                                 }
                                 else // Can happen when trying to parse opus files
                                 {
-                                    queueObj = QueueViewModel.Source[i]; // Set to the initial object so badge is shown below
+                                    queueObj = song; // Set to the initial object so badge is shown below
                                 }
                             }
                             else
                             {
-                                queueObj = await QueueViewModel.CreateQueueObject(newSongObj);
+                                queueObj = await QueueViewModel.CreateQueueObject(newSongObj, song.QueueCounter);
+                                await QueueViewModel.Replace(i, queueObj);
                             }
 
                             if (queueObj != null)
@@ -1191,7 +1025,6 @@ public sealed partial class QueuePage : Page
                                 }
 
                                 queueObj.IsRunning = false; // Set song to not running
-                                QueueViewModel.Replace(i, queueObj);
                             }
                         }
                         else // Failed conversion, set current object badge to error
@@ -1203,7 +1036,7 @@ public sealed partial class QueuePage : Page
                                 song.ConvertBadgeColor = new SolidColorBrush(Windows.UI.Color.FromArgb(255, 255, 153, 164));
                             }
 
-                            QueueViewModel.Replace(i, song);
+                            //await QueueViewModel.Replace(i, song);
                         }
                     });
 
@@ -1211,10 +1044,7 @@ public sealed partial class QueuePage : Page
 
                     dispatcherQueue.TryEnqueue(() =>
                     {
-                        Debug.WriteLine("bef: " + QueueProgress.Value);
-
                         QueueProgress.Value = 100.0 * processCaptured / totalCount; // Update the progress bar
-                        Debug.WriteLine("aft: " + QueueProgress.Value);
                     });
 
 
@@ -1274,6 +1104,7 @@ public sealed partial class QueuePage : Page
         // Set the counts
         ViewModel.SuccessCount = successSource.Count;
         ViewModel.WarningCount = warningSource.Count;
+        Debug.WriteLine(warningSource.Count);
         ViewModel.ErrorCount = errorSource.Count;
 
         if (ViewModel.SuccessCount > 0)

@@ -111,7 +111,7 @@ namespace FluentDL.Services
                                 {
                                     authCallback?.Invoke(InfoBarSeverity.Success, "Logged in with included credentials");
                                 }
-                                loginString = $"Logged in with included (FluentDL) credentials:\nSelected Client ID:{id[..8] + "..."}";
+                                loginString = $"Logged in with included (FluentDL) credentials:\nSelected Client ID: {id[..5] + "..."}";
                                 return;
                             } else
                             {

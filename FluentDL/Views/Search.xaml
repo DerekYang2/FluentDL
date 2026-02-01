@@ -354,7 +354,8 @@
                 BorderBrush="{ThemeResource ControlStrongStrokeColorDefaultBrush}"
                 BorderThickness="0"
                 CornerRadius="8"
-                SelectionChanged="CustomListView_OnSelectionChanged">
+                SelectionChanged="CustomListView_OnSelectionChanged"
+                ShowsScrollingPlaceholders="True">
                 <ListView.ItemTemplate>
                     <DataTemplate x:DataType="models:SongSearchObject">
                         <Grid

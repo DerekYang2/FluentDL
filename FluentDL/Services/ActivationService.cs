@@ -90,6 +90,7 @@ public class ActivationService : IActivationService
         await QueueViewModel.UpdateShortcutVisibility();
         try
         {
+
             // Fetch previous command list
             await LocalCommands.Init();
 
@@ -101,6 +102,9 @@ public class ActivationService : IActivationService
 
             // Initialize api objects
             var localSettings = App.GetService<ILocalSettingsService>();
+
+            // Init queue database
+            await DatabaseService.InitDatabase();
 
             var qobuzEmail = DPAPIHelper.Decrypt(await localSettings.ReadSettingAsync<string>(SettingsViewModel.QobuzEmail) ?? "");
             var qobuzPassword = DPAPIHelper.Decrypt(await localSettings.ReadSettingAsync<string>(SettingsViewModel.QobuzPassword) ?? "");

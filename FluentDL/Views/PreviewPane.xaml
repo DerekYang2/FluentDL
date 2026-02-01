@@ -157,7 +157,7 @@
                                                     Height="22"
                                                     Margin="0,0,0,0"
                                                     HorizontalAlignment="Stretch"
-                                                    controls1:ToolTipService.ToolTip="{x:Bind Value, Mode=OneWay}"
+                                                    controls1:ToolTipService.ToolTip="{x:Bind Value}"
                                                     Behavior="Looping"
                                                     Direction="Left"
                                                     FontFamily="Segoe UI Variable Display"
@@ -167,17 +167,17 @@
                                                     PointerExited="PreviewMarquee_OnPointerExited"
                                                     RepeatBehavior="Forever"
                                                     Speed="50"
-                                                    Text="{x:Bind Value, Mode=OneWay}"
-                                                    Visibility="{x:Bind Value, Converter={StaticResource ASCIIVisibilityConverter}, Mode=OneWay}" />
+                                                    Text="{x:Bind Value}"
+                                                    Visibility="{x:Bind Value, Converter={StaticResource ASCIIVisibilityConverter}}" />
                                                 <TextBlock
                                                     Height="22"
                                                     Margin="0,0,0,0"
                                                     HorizontalAlignment="Stretch"
-                                                    ToolTipService.ToolTip="{x:Bind Value, Mode=OneWay}"
                                                     FontFamily="Segoe UI Variable Display"
                                                     Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"
-                                                    Text="{x:Bind Value, Mode=OneWay}"
-                                                    Visibility="{x:Bind Value, Converter={StaticResource ASCIIInvertedVisibilityConverter}, Mode=OneWay}" />
+                                                    Text="{x:Bind Value}"
+                                                    ToolTipService.ToolTip="{x:Bind Value}"
+                                                    Visibility="{x:Bind Value, Converter={StaticResource ASCIIInvertedVisibilityConverter}}" />
                                             </Grid>
                                         </DataTemplate>
                                     </ItemsControl.ItemTemplate>

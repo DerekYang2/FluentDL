@@ -101,20 +101,6 @@
                 </Button>
 
                 <Button
-                    x:Name="CommandButton"
-                    VerticalAlignment="Center"
-                    Click="CommandButton_OnClick"
-                    ToolTipService.ToolTip="Run a command in Command Prompt">
-                    <StackPanel Orientation="Horizontal">
-                        <FontIcon
-                            x:Name="CommandIcon"
-                            Margin="0,0,8,0"
-                            FontSize="16"
-                            Glyph="&#xE756;" />
-                        <TextBlock Text="CMD" />
-                    </StackPanel>
-                </Button>
-                <Button
                     x:Name="ClearButton"
                     VerticalAlignment="Center"
                     Click="ClearButton_OnClick"
@@ -126,20 +112,6 @@
                             FontSize="16"
                             Glyph="&#xE894;" />
                         <TextBlock Text="Clear" />
-                    </StackPanel>
-                </Button>
-                <Button
-                    x:Name="StartStopButton"
-                    VerticalAlignment="Center"
-                    Click="StartStopButton_OnClick"
-                    ToolTipService.ToolTip="Pause or continue running the command">
-                    <StackPanel Orientation="Horizontal">
-                        <FontIcon
-                            x:Name="StartStopIcon"
-                            Margin="0,0,8,0"
-                            FontSize="16"
-                            Glyph="&#xE768;" />
-                        <TextBlock x:Name="StartStopText" Text="Continue" />
                     </StackPanel>
                 </Button>
                 <Button
@@ -183,7 +155,8 @@
             BorderBrush="{ThemeResource ControlStrongStrokeColorDefaultBrush}"
             BorderThickness="0"
             CornerRadius="8"
-            SelectionChanged="CustomListView_OnSelectionChanged">
+            SelectionChanged="CustomListView_OnSelectionChanged"
+            ShowsScrollingPlaceholders="True">
             <ListView.ItemTemplate>
                 <DataTemplate x:DataType="viewModels:QueueObject">
                     <Grid
@@ -210,9 +183,9 @@
                             Margin="0"
                             Padding="0"
                             CornerRadius="4"
-                            Visibility="{x:Bind LocalBitmapImage, Converter={StaticResource NullVisibilityConverter}}">
+                            Visibility="{x:Bind LocalBitmapImage, Mode=OneWay, Converter={StaticResource NullVisibilityConverter}}">
                             <Border.Background>
-                                <ImageBrush ImageSource="{x:Bind LocalBitmapImage}" Stretch="UniformToFill" />
+                                <ImageBrush ImageSource="{x:Bind LocalBitmapImage, Mode=OneWay}" Stretch="UniformToFill" />
                             </Border.Background>
                         </Border>
 
@@ -328,7 +301,7 @@
                                 VerticalAlignment="Bottom"
                                 Orientation="Horizontal"
                                 Spacing="4"
-                                Visibility="{x:Bind IsRunning, Converter={StaticResource CollapsedConverter}}">
+                                Visibility="{x:Bind IsRunning, Mode=OneWay, Converter={StaticResource CollapsedConverter}}">
                                 <Button
                                     x:Name="ShareLinkButton"
                                     Padding="4,4,3,3"
@@ -402,13 +375,13 @@
                                 Style="{ThemeResource AccentButtonStyle}"
                                 Tag="{Binding}"
                                 ToolTipService.ToolTip="View command output"
-                                Visibility="{x:Bind ResultString, Converter={StaticResource PathToVisibilityConverter}}">
+                                Visibility="{x:Bind ResultString, Mode=OneWay, Converter={StaticResource PathToVisibilityConverter}}">
                                 <FontIcon FontSize="20" Glyph="&#xE756;" />
                             </Button>
                             <ProgressRing
                                 HorizontalAlignment="Right"
                                 VerticalAlignment="Bottom"
-                                Visibility="{x:Bind IsRunning, Converter={StaticResource VisibilityConverter}}" />
+                                Visibility="{x:Bind IsRunning, Mode=OneWay, Converter={StaticResource VisibilityConverter}}" />
                         </StackPanel>
 
 
@@ -421,7 +394,7 @@
                             Margin="-6,-6,0,0"
                             HorizontalAlignment="Left"
                             VerticalAlignment="Top"
-                            Background="{x:Bind ConvertBadgeColor}" />
+                            Background="{x:Bind ConvertBadgeColor, Mode=OneWay}" />
 
                     </Grid>
                 </DataTemplate>
@@ -446,216 +419,6 @@
             Margin="12,-2,0,12"
             Padding="12"
             VerticalAlignment="Stretch" />
-
-        <!--  Content Dialog for command running  -->
-        <ContentDialog
-            x:Name="CustomCommandDialog"
-            Title="Run Command"
-            CloseButtonText="Cancel"
-            IsPrimaryButtonEnabled="True"
-            IsSecondaryButtonEnabled="True"
-            PrimaryButtonClick="CustomCommandDialog_OnPrimaryButtonClick"
-            PrimaryButtonStyle="{ThemeResource AccentButtonStyle}"
-            PrimaryButtonText="Run">
-            <StackPanel Spacing="12">
-
-                <InfoBar
-                    Margin="0,0,0,0"
-                    IsClosable="False"
-                    IsOpen="True"
-                    Message="Run custom commands (with Command Prompt) on each queue item. Click on the wildcards below for more details."
-                    Severity="Informational" />
-
-                <ScrollViewer
-                    x:Name="ScrollViewerWildcards"
-                    HorizontalAlignment="Stretch"
-                    HorizontalScrollBarVisibility="Visible"
-                    HorizontalScrollMode="Enabled"
-                    ToolTipService.ToolTip="Available wildcards"
-                    VerticalScrollMode="Disabled">
-                    <StackPanel
-                        Margin="0,0,0,16"
-                        Orientation="Horizontal"
-                        Spacing="8">
-                        <Button
-                            Content="{}{url}"
-                            Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"
-                            ToolTipService.ToolTip="The source URL of the track">
-                            <Button.Flyout>
-                                <Flyout>
-                                    <TextBlock
-                                        MaxWidth="400"
-                                        Text="The source URL if online source (e.g., https://api.deezer.com/track/123456) or the absolute path if local file (e.g., C:/folder/file.extension)"
-                                        TextWrapping="WrapWholeWords" />
-                                </Flyout>
-                            </Button.Flyout>
-                        </Button>
-                        <Button
-                            Content="{}{ext}"
-                            Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"
-                            ToolTipService.ToolTip="The file extension of the track">
-                            <Button.Flyout>
-                                <Flyout>
-                                    <TextBlock
-                                        MaxWidth="400"
-                                        Text="The file extension of the track WITHOUT the period (e.g., mp3, wav)"
-                                        TextWrapping="WrapWholeWords" />
-                                </Flyout>
-                            </Button.Flyout>
-                        </Button>
-                        <Button
-                            Content="{}{file_name}"
-                            Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"
-                            ToolTipService.ToolTip="The file name of the track">
-                            <Button.Flyout>
-                                <Flyout>
-                                    <TextBlock
-                                        MaxWidth="400"
-                                        Text="The file name of the track without its extension"
-                                        TextWrapping="WrapWholeWords" />
-                                </Flyout>
-                            </Button.Flyout>
-                        </Button>
-                        <Button
-                            Content="{}{title}"
-                            Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"
-                            ToolTipService.ToolTip="The title of the track">
-                            <Button.Flyout>
-                                <Flyout>
-                                    <TextBlock
-                                        MaxWidth="400"
-                                        Text="The title of the track"
-                                        TextWrapping="WrapWholeWords" />
-                                </Flyout>
-                            </Button.Flyout>
-                        </Button>
-                        <Button
-                            Content="{}{image_url}"
-                            Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"
-                            ToolTipService.ToolTip="The image URL of the track">
-                            <Button.Flyout>
-                                <Flyout>
-                                    <TextBlock
-                                        MaxWidth="400"
-                                        Text="The image URL of the track (only applicable to online sources)"
-                                        TextWrapping="WrapWholeWords" />
-                                </Flyout>
-                            </Button.Flyout>
-                        </Button>
-                        <Button
-                            Content="{}{id}"
-                            Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"
-                            ToolTipService.ToolTip="The ID of the track">
-                            <Button.Flyout>
-                                <Flyout>
-                                    <TextBlock
-                                        MaxWidth="400"
-                                        Text="The ID of the track, often a number (only applicable to online sources)"
-                                        TextWrapping="WrapWholeWords" />
-                                </Flyout>
-                            </Button.Flyout>
-                        </Button>
-                        <Button
-                            Content="{}{release_date}"
-                            Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"
-                            ToolTipService.ToolTip="The release date of the track">
-                            <Button.Flyout>
-                                <Flyout>
-                                    <TextBlock
-                                        MaxWidth="400"
-                                        Text="The release date of the track, format YYYY-MM-DD"
-                                        TextWrapping="WrapWholeWords" />
-                                </Flyout>
-                            </Button.Flyout>
-                        </Button>
-                        <Button
-                            Content="{}{artists}"
-                            Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"
-                            ToolTipService.ToolTip="The artists of the track">
-                            <Button.Flyout>
-                                <Flyout>
-                                    <TextBlock
-                                        MaxWidth="400"
-                                        Text="The artists of the track, comma separated (eg. artist1, artist2, artist3)"
-                                        TextWrapping="WrapWholeWords" />
-                                </Flyout>
-                            </Button.Flyout>
-                        </Button>
-                        <Button
-                            Content="{}{duration}"
-                            Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"
-                            ToolTipService.ToolTip="The duration of the track">
-                            <Button.Flyout>
-                                <Flyout>
-                                    <TextBlock
-                                        MaxWidth="400"
-                                        Text="The duration of the track in seconds (eg. 237)"
-                                        TextWrapping="WrapWholeWords" />
-                                </Flyout>
-                            </Button.Flyout>
-                        </Button>
-                        <Button
-                            Content="{}{album}"
-                            Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"
-                            ToolTipService.ToolTip="The album name of the track">
-                            <Button.Flyout>
-                                <Flyout>
-                                    <TextBlock
-                                        MaxWidth="400"
-                                        Text="The album name of the track"
-                                        TextWrapping="WrapWholeWords" />
-                                </Flyout>
-                            </Button.Flyout>
-                        </Button>
-                        <Button
-                            Content="{}{isrc}"
-                            Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"
-                            ToolTipService.ToolTip="The ISRC (International Standard Recording Code) identifier for the track">
-                            <Button.Flyout>
-                                <Flyout>
-                                    <TextBlock
-                                        MaxWidth="400"
-                                        Text="The ISRC (International Standard Recording Code) identifier for the track (eg. CCXXXYYNNNNN)"
-                                        TextWrapping="WrapWholeWords" />
-                                </Flyout>
-                            </Button.Flyout>
-                        </Button>
-                    </StackPanel>
-                </ScrollViewer>
-
-                <AutoSuggestBox
-                    x:Name="DirectoryInput"
-                    Margin="0,0,0,8"
-                    HorizontalAlignment="Stretch"
-                    PlaceholderText="Directory of command prompt"
-                    SuggestionChosen="DirectoryInput_OnSuggestionChosen"
-                    TextChanged="DirectoryInput_OnTextChanged"
-                    ToolTipService.ToolTip="The directory to run commands in">
-                    <AutoSuggestBox.Header>
-                        <TextBlock
-                            Foreground="{ThemeResource TextFillColorSecondary}"
-                            Style="{ThemeResource CaptionTextBlockStyle}"
-                            Text="Directory" />
-                    </AutoSuggestBox.Header>
-                </AutoSuggestBox>
-
-                <AutoSuggestBox
-                    x:Name="CommandInput"
-                    Margin="0,0,0,8"
-                    HorizontalAlignment="Stretch"
-                    PlaceholderText="Run custom command"
-                    SuggestionChosen="CommandInput_OnSuggestionChosen"
-                    TextChanged="CommandInput_OnTextChanged"
-                    ToolTipService.ToolTip="The command to be run in Command Prompt">
-                    <AutoSuggestBox.Header>
-                        <TextBlock
-                            Foreground="{ThemeResource TextFillColorSecondary}"
-                            Style="{ThemeResource CaptionTextBlockStyle}"
-                            Text="Command" />
-                    </AutoSuggestBox.Header>
-                </AutoSuggestBox>
-            </StackPanel>
-        </ContentDialog>
 
 
         <InfoBar

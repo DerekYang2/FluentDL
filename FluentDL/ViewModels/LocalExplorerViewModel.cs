@@ -19,6 +19,7 @@ using FluentDL.Models;
 using Microsoft.UI.Xaml;
 using TagLib;
 using File = TagLib.File;
+using Microsoft.UI.Dispatching;
 
 namespace FluentDL.ViewModels;
 
@@ -269,7 +270,41 @@ public partial class LocalExplorerViewModel : ObservableRecipient
         }
         return null;
     }
+    public static async Task<BitmapImage?> GetBitmapImageBackground(string filePath, DispatcherQueue dispatcher)
+    {
+        try
+        {
+            // Background Thread
+            using var memoryStream = GetAlbumArtMemoryStream(filePath);
+            if (memoryStream == null) return null;
 
+            var tcs = new TaskCompletionSource<BitmapImage?>();
+
+            // UI Thread
+            dispatcher.TryEnqueue(async () =>
+            {
+                try
+                {
+                    var bitmapImage = new BitmapImage { DecodePixelHeight = 76 };
+                    // SetSourceAsync reads the stream into the bitmap
+                    await bitmapImage.SetSourceAsync(memoryStream.AsRandomAccessStream());
+                    tcs.SetResult(bitmapImage);
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine($"Dispatcher load failed: {ex.Message}");
+                    tcs.SetResult(null);
+                }
+            });
+
+            return await tcs.Task;
+        }
+        catch (Exception e)
+        {
+            Debug.WriteLine("Background IO Error: " + e.Message);
+            return null;
+        }
+    }
 
     public static byte[]? GetAlbumArtBytes(string filePath)
     {

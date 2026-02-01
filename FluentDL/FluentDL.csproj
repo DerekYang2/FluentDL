@@ -49,17 +49,19 @@
     <PackageReference Include="CommunityToolkit.WinUI.UI.Controls.DataGrid" Version="7.1.2" />
     <PackageReference Include="DeezNET" Version="1.2.2" />
     <PackageReference Include="FFMpegCore" Version="5.1.0" />
+    <PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.2" />
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="8.0.1" />
     <PackageReference Include="Microsoft.WindowsAppSDK" Version="1.7.250401001" />
     <PackageReference Include="Microsoft.Xaml.Behaviors.WinUI.Managed" Version="2.0.9" />
     <PackageReference Include="QobuzApiSharp" Version="0.0.8" />
     <PackageReference Include="RestSharp" Version="111.4.1" />
+    <PackageReference Include="SixLabors.ImageSharp" Version="3.1.12" />
     <PackageReference Include="SpotifyAPI.Web" Version="7.2.1" />
     <PackageReference Include="System.Security.Cryptography.ProtectedData" Version="9.0.10" />
     <PackageReference Include="TagLibSharp" Version="2.3.0" />
     <PackageReference Include="WinUIEx" Version="2.5.1" />
     <PackageReference Include="YoutubeExplode" Version="6.5.6" />
-    <PackageReference Include="YouTubeMusicAPI" Version="3.0.1" />
+    <PackageReference Include="YouTubeMusicAPI" Version="3.0.3" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\FluentDL.Core\FluentDL.Core.csproj" />

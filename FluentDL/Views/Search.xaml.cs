@@ -567,8 +567,8 @@ public sealed partial class Search : Page
                     if (album.Source == "qobuz")
                     {
                         var albumInternal = await QobuzApi.GetInternalAlbum(album.Id);
-                        albumInternal.Tracks.Items.ForEach(t => t.Album = albumInternal);
-                        albumTracks = albumInternal.Tracks.Items.Select(t => QobuzApi.ConvertSongSearchObject(t, albumInternal.Artist?.Name)).ToList();
+                        albumInternal?.Tracks.Items.ForEach(t => t.Album = albumInternal);
+                        albumTracks = albumInternal?.Tracks.Items.Select(t => QobuzApi.ConvertSongSearchObject(t, albumInternal.Artist?.Name)).ToList() ?? [];
                     }
                     else if (album.Source == "deezer")
                     {
@@ -603,10 +603,10 @@ public sealed partial class Search : Page
                     }
                     else if (album.Source == "youtube")
                     {
-                        albumTracks = album.TrackList;
+                        albumTracks = album.TrackList ?? [];
                     }
 
-                    albumTracks.ForEach(QueueViewModel.Add);
+                    albumTracks.ForEach((song)=>QueueViewModel.Add(song));
                 }
                 else
                 {
@@ -624,8 +624,6 @@ public sealed partial class Search : Page
             {
                 ShowInfoBar(InfoBarSeverity.Success, $"Added {addedCount} {(addedCount == 1 ? "track" : "tracks")} to queue");
             }
-
-            await QueueViewModel.SaveQueue();
         }
         catch (Exception ex)
         {
@@ -769,8 +767,8 @@ public sealed partial class Search : Page
                 if (album.Source == "qobuz")
                 {
                     var albumInternal = await QobuzApi.GetInternalAlbum(album.Id);
-                    albumInternal.Tracks.Items.ForEach(t => t.Album = albumInternal);
-                    albumTracks = albumInternal.Tracks.Items.Select(t => QobuzApi.ConvertSongSearchObject(t, albumInternal.Artist?.Name)).ToList();
+                    albumInternal?.Tracks.Items.ForEach(t => t.Album = albumInternal);
+                    albumTracks = albumInternal?.Tracks.Items.Select(t => QobuzApi.ConvertSongSearchObject(t, albumInternal.Artist?.Name)).ToList() ?? [];
                 }
                 else if (album.Source == "deezer")
                 {
@@ -808,7 +806,7 @@ public sealed partial class Search : Page
                     albumTracks = album?.TrackList ?? [];
                 }
 
-                albumTracks.ForEach(QueueViewModel.Add);
+                albumTracks.ForEach((song) => QueueViewModel.Add(song));
 
                 int addedCount = QueueViewModel.Source.Count - beforeCount;
                 if (addedCount < albumTracks.Count)
@@ -840,7 +838,6 @@ public sealed partial class Search : Page
                 ShowInfoBar(InfoBarSeverity.Success, $"<a href='{ApiHelper.GetUrl(song)}'>{song.Title}</a> added to queue");
             }
         }
-        await QueueViewModel.SaveQueue();
     }
 
     private void CopySongLink(SongSearchObject? song)

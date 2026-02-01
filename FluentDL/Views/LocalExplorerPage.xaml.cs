@@ -577,23 +577,27 @@ public sealed partial class LocalExplorerPage : Page
 
         var beforeCount = QueueViewModel.Source.Count;
 
-        foreach (var song in LocalExplorerViewModel.OriginalList)
+        try
         {
-            QueueViewModel.Add(song);
-        }
+            foreach (var song in LocalExplorerViewModel.OriginalList)
+            {
+                QueueViewModel.Add(song);
+            }
 
-        var addedCount = QueueViewModel.Source.Count - beforeCount;
+            var addedCount = QueueViewModel.Source.Count - beforeCount;
 
-        if (addedCount < LocalExplorerViewModel.OriginalList.Count)
+            if (addedCount < LocalExplorerViewModel.OriginalList.Count)
+            {
+                ShowInfoBar(InfoBarSeverity.Informational, $"Added {addedCount} tracks to queue (duplicates ignored)");
+            }
+            else
+            {
+                ShowInfoBar(InfoBarSeverity.Success, $"Added {addedCount} tracks to queue");
+            }
+        } catch (Exception ex)
         {
-            ShowInfoBar(InfoBarSeverity.Informational, $"Added {addedCount} tracks to queue (duplicates ignored)");
+            ShowInfoBar(InfoBarSeverity.Error, $"Failed to add tracks to queue: {ex.Message}");
         }
-        else
-        {
-            ShowInfoBar(InfoBarSeverity.Success, $"Added {addedCount} tracks to queue");
-        }
-
-        await QueueViewModel.SaveQueue();
     }
 
     private async void MetadataDialog_OnPrimaryButtonClick(ContentDialog sender, ContentDialogButtonClickEventArgs args)
@@ -673,7 +677,7 @@ public sealed partial class LocalExplorerPage : Page
         }
     }
 
-    private async void AddSongToQueue(SongSearchObject? song)
+    private void AddSongToQueue(SongSearchObject? song)
     {
         if (song == null)
         {
@@ -682,18 +686,22 @@ public sealed partial class LocalExplorerPage : Page
         }
 
         var beforeCount = QueueViewModel.Source.Count;
-
-        QueueViewModel.Add(song);
-        if (QueueViewModel.Source.Count == beforeCount) // No change
+        try
         {
-            ShowInfoBar(InfoBarSeverity.Warning, $"<a href='{ApiHelper.GetUrl(song)}'>{song.Title}</a> already in queue");
-        }
-        else
-        {
-            ShowInfoBar(InfoBarSeverity.Success, $"<a href='{ApiHelper.GetUrl(song)}'>{song.Title}</a> added to queue");
-        }
+            QueueViewModel.Add(song);
 
-        await QueueViewModel.SaveQueue();
+            if (QueueViewModel.Source.Count == beforeCount) // No change
+            {
+                ShowInfoBar(InfoBarSeverity.Warning, $"<a href='{ApiHelper.GetUrl(song)}'>{song.Title}</a> already in queue");
+            }
+            else
+            {
+                ShowInfoBar(InfoBarSeverity.Success, $"<a href='{ApiHelper.GetUrl(song)}'>{song.Title}</a> added to queue");
+            }
+        } catch (Exception ex)
+        {
+            ShowInfoBar(InfoBarSeverity.Error, $"Error adding <a href='{ApiHelper.GetUrl(song)}'>{song.Title}</a> to queue: {ex.Message}");
+        }
     }
 
     private static void OpenSongInExplorer(SongSearchObject? song)

@@ -1,59 +1,75 @@
-﻿using ABI.Microsoft.UI.Dispatching;
-using Acornima.Ast;
-using CommunityToolkit.Mvvm.ComponentModel;
+﻿using CommunityToolkit.Mvvm.ComponentModel;
 using FluentDL.Contracts.Services;
-using FluentDL.Contracts.ViewModels;
-using FluentDL.Core.Contracts.Services;
 using FluentDL.Core.Helpers;
-using FluentDL.Core.Models;
-using FluentDL.Helpers;
 using FluentDL.Models;
 using FluentDL.Services;
-using FluentDL.Views;
-using Jint.Native;
 using Microsoft.UI.Xaml;
-using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Imaging;
 using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
+using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.Formats.Jpeg;
+using SixLabors.ImageSharp.Formats.Webp;
+using SixLabors.ImageSharp.Processing;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
-using System.IO;
-using System.Net;
-using System.Runtime.CompilerServices;
-using System.Xml.Linq;
-using Windows.Storage;
 using Windows.Storage.Streams;
-using static FluentDL.Views.QueuePage;
-using static System.Net.WebRequestMethods;
 using DispatcherQueue = Microsoft.UI.Dispatching.DispatcherQueue;
 
 namespace FluentDL.ViewModels;
 
-public class QueueObject : SongSearchObject
-{    
+public class QueueObject : SongSearchObject, INotifyPropertyChanged
+{
+    [JsonIgnore]
+    private string? _resultString;
+    
     [JsonIgnore]
     public string? ResultString
     {
-        get;
-        set;
+        get => _resultString;
+        set
+        {
+            if (_resultString != value)
+            {
+                _resultString = value;
+                OnPropertyChanged();
+            }
+        }
     }
 
     [JsonIgnore]
+    private bool _isRunning;
+    [JsonIgnore]
     public bool IsRunning
     {
-        get;
-        set;
+        get => _isRunning;
+        set
+        {
+            if (_isRunning != value)
+            {
+                _isRunning = value;
+                OnPropertyChanged();
+            }
+        }
     }
+
+    [JsonIgnore]
+    private SolidColorBrush _convertBadgeColor = new(Windows.UI.Color.FromArgb(0, 0, 0, 0));
 
     [JsonIgnore]
     public SolidColorBrush ConvertBadgeColor
     {
-        get;
-        set;
-    } = new SolidColorBrush(Windows.UI.Color.FromArgb(0, 0, 0, 0));
+        get => _convertBadgeColor;
+        set
+        {
+            if (_convertBadgeColor != value)
+            {
+                _convertBadgeColor = value;
+                OnPropertyChanged();
+            }
+        }
+    }
 
     [JsonIgnore]
     // Shortcut Visibilities
@@ -94,6 +110,7 @@ public class QueueObject : SongSearchObject
         IsRunning = false;
         LocalBitmapImage = song.LocalBitmapImage;
         Isrc = song.Isrc;
+        QueueCounter = song.QueueCounter;
 
         this.ShareVisibility = ShareVisibility;
         this.DownloadCoverVisibility = DownloadCoverVisibility;
@@ -101,8 +118,10 @@ public class QueueObject : SongSearchObject
     }
 }
 
-public partial class QueueViewModel : ObservableRecipient, INotifyPropertyChanged
+public partial class QueueViewModel : ObservableRecipient
 {
+    private static readonly HttpClient _httpClient = new();
+    private static readonly BitmapImage UnloadedPlaceholder = new(new Uri("ms-appx:///Assets/Unloaded.jpg"));
     public static ObservableCollection<QueueObject> Source
     {
         get;
@@ -114,7 +133,13 @@ public partial class QueueViewModel : ObservableRecipient, INotifyPropertyChange
     public int SuccessCount
     {
         get => _successCount;
-        set => SetField(ref _successCount, value, nameof(SuccessCount));
+        set {
+            if (_successCount != value)
+            {
+                _successCount = value;
+                OnPropertyChanged();
+            }
+        }
     }
 
     private int _warningCount;
@@ -122,7 +147,14 @@ public partial class QueueViewModel : ObservableRecipient, INotifyPropertyChange
     public int WarningCount
     {
         get => _warningCount;
-        set => SetField(ref _warningCount, value, nameof(WarningCount));
+        set
+        {
+            if (_warningCount != value)
+            {
+                _warningCount = value;
+                OnPropertyChanged();
+            }
+        }
     }
 
     private int _errorCount;
@@ -130,59 +162,21 @@ public partial class QueueViewModel : ObservableRecipient, INotifyPropertyChange
     public int ErrorCount
     {
         get => _errorCount;
-        set => SetField(ref _errorCount, value, nameof(ErrorCount));
+        set
+        {
+            if (_errorCount != value)
+            {
+                _errorCount = value;
+                OnPropertyChanged();
+            }
+        }
     }
-
-    // boiler-plate
-    public event PropertyChangedEventHandler PropertyChanged;
-
-    protected virtual void OnPropertyChanged(string propertyName)
-    {
-        PropertyChangedEventHandler handler = PropertyChanged;
-        if (handler != null) handler(this, new PropertyChangedEventArgs(propertyName));
-    }
-
-    protected bool SetField<T>(ref T field, T value, string propertyName)
-    {
-        if (EqualityComparer<T>.Default.Equals(field, value)) return false;
-        field = value;
-        OnPropertyChanged(propertyName);
-        return true;
-    }
-
-    private static string command
-    {
-        get;
-        set;
-    } = string.Empty;
 
     private static ILocalSettingsService localSettings = App.GetService<ILocalSettingsService>();
 
-
     public static DispatcherQueue dispatcher = DispatcherQueue.GetForCurrentThread();
     private static HashSet<string> trackSet = new HashSet<string>();
-    private static int index, completedCount;
 
-    private static readonly object _lock = new object();
-    private static bool _isRunning = false;
-
-    public static bool IsRunning
-    {
-        get
-        {
-            lock (_lock)
-            {
-                return _isRunning;
-            }
-        }
-        set
-        {
-            lock (_lock)
-            {
-                _isRunning = value;
-            }
-        }
-    }
 
     public static Visibility ShareVisibility = Visibility.Collapsed;
     public static Visibility DownloadCoverVisibility = Visibility.Collapsed;
@@ -193,8 +187,6 @@ public partial class QueueViewModel : ObservableRecipient, INotifyPropertyChange
     {
         localSettings = App.GetService<ILocalSettingsService>();
         dispatcher = DispatcherQueue.GetForCurrentThread();
-        index = 0;
-        completedCount = 0;
     }
 
     public static async Task UpdateShortcutVisibility() {
@@ -203,15 +195,15 @@ public partial class QueueViewModel : ObservableRecipient, INotifyPropertyChange
         RemoveVisibility = await localSettings.ReadSettingAsync<bool?>(SettingsViewModel.QueueRemoveChecked) == true ? Visibility.Visible : Visibility.Collapsed;
     }
 
-    public static async Task<IRandomAccessStream?> GetRandomAccessStreamFromUrl(string uri)
+    public static async Task<Stream?> GetStreamFromUrl(string? uri)
     {
+        if (string.IsNullOrWhiteSpace(uri)) return null;
         try
         {
-            var client = new HttpClient();
-            var response = await client.GetAsync(uri);
+            HttpClient httpClient = new();
+            var response = await httpClient.GetAsync(uri);
             response.EnsureSuccessStatusCode();
-            var inputStream = await response.Content.ReadAsStreamAsync();
-            return inputStream.AsRandomAccessStream();
+            return await response.Content.ReadAsStreamAsync();
         }
         catch (Exception e)
         {
@@ -220,115 +212,139 @@ public partial class QueueViewModel : ObservableRecipient, INotifyPropertyChange
         }
     }
 
-    public static async Task<QueueObject?> CreateQueueObject(SongSearchObject song)
+    public static async Task<IRandomAccessStream?> GetRandomAccessStreamOptimized(string? uri)
     {
-        var queueObj = new QueueObject(song, ShareVisibility, DownloadCoverVisibility, RemoveVisibility);   
+        using var stream = await GetStreamFromUrl(uri);
+        if (stream == null) return null;
 
+        using var image = await Image.LoadAsync(stream);
+        await Task.Run(()=>image.Mutate(ctx => ctx.Resize(new ResizeOptions { 
+            Size = new Size(76, 76), 
+            Mode = ResizeMode.Min, 
+            Sampler = KnownResamplers.Lanczos3 
+        })));
+        var ras = new InMemoryRandomAccessStream();
+        var outStream = ras.AsStreamForWrite();
+        await image.SaveAsJpegAsync(outStream, new JpegEncoder { Quality = 80 });
+        await outStream.FlushAsync();
+
+        ras.Seek(0);
+        return ras;
+    }
+
+    public static int GetNextOrderCounter()
+    {
+        if (Source.Count == 0) return 0;
+        return (Source.Last().QueueCounter ?? 0) + 1;
+    }
+
+    public static async Task<QueueObject?> CreateQueueObject(SongSearchObject song, int? queueCounter)
+    {
+        var queueObj = new QueueObject(song, ShareVisibility, DownloadCoverVisibility, RemoveVisibility);
+        queueObj.QueueCounter = queueCounter;
         if (queueObj.LocalBitmapImage == null) // Create a local bitmap image for queue objects to prevent disappearing listview images
         {
-            using var memoryStream = await GetRandomAccessStreamFromUrl(queueObj.ImageLocation); // Get the memory stream from the url
-
+            using var memoryStream = await GetRandomAccessStreamOptimized(queueObj.ImageLocation); // Get the memory stream from the url
             if (memoryStream == null) return null;
 
-
             var bitmapImage = new BitmapImage { DecodePixelHeight = 76 }; // Create a new bitmap image
-
-            // Set the source of the bitmap image
             await bitmapImage.SetSourceAsync(memoryStream);
-
             queueObj.LocalBitmapImage = bitmapImage; // Set the local bitmap image
+
+            await DatabaseService.QueueSave(GetHash(queueObj), queueObj.ToString(), memoryStream);
         }
 
         return queueObj;
     }
 
-    public static void Add(SongSearchObject? song)
+    public static QueueObject? Add(SongSearchObject? song)
     {
         if (song == null || trackSet.Contains(GetHash(song)))
         {
-            return;
+            return null;
         }
 
+        var hash = GetHash(song);
         var queueObj = new QueueObject(song, ShareVisibility, DownloadCoverVisibility, RemoveVisibility);
+        queueObj.QueueCounter ??= GetNextOrderCounter();  // Only set order if new addition
         Source.Add(queueObj);
-        trackSet.Add(GetHash(song));
+        trackSet.Add(hash);
 
-        if (dispatcher == null)
+        if (queueObj.LocalBitmapImage == null)  // Create a bitmapimage to prevent disappearing listview images
         {
-            dispatcher = DispatcherQueue.GetForCurrentThread();
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    // Background
+                    var memoryStream = await GetRandomAccessStreamOptimized(queueObj.ImageLocation);
+                    if (memoryStream == null) return;
+
+                    // Save the bitmap
+                    await DatabaseService.QueueSave(hash, queueObj.ToString(), memoryStream);
+
+                    // UI Thread
+                    dispatcher.TryEnqueue(async () =>
+                    {
+                        var bitmapImage = new BitmapImage { DecodePixelHeight = 76 };
+                        await bitmapImage.SetSourceAsync(memoryStream);
+                        queueObj.LocalBitmapImage = bitmapImage;
+                        memoryStream.Dispose();
+                    });
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine($"Background image load failed: {ex.Message}");
+                }
+            });
+        } else if (queueObj.Source == "local")
+        {
+            _ = DatabaseService.QueueSave(hash, queueObj.ToString(), null);
         }
 
-        Thread t = new Thread(async () =>
-        {
-            if (queueObj.LocalBitmapImage == null) // Create a local bitmap image for queue objects to prevent disappearing listview images
-            {
-                var memoryStream = await GetRandomAccessStreamFromUrl(queueObj.ImageLocation); // Get the memory stream from the url
-
-                if (memoryStream == null) return;
-
-
-                dispatcher.TryEnqueue(() =>
-                {
-                    var bitmapImage = new BitmapImage { DecodePixelHeight = 76 }; // Create a new bitmap image
-
-                    // Set the source of the bitmap image
-                    bitmapImage.SetSourceAsync(memoryStream).Completed += (info, status) =>
-                    {
-                        queueObj.LocalBitmapImage = bitmapImage; // Set the local bitmap image
-                        Source[Source.IndexOf(queueObj)] = queueObj; // Refresh the UI
-                    };
-                });
-            }
-        });
-        t.Start();
+        return queueObj;
     }
 
-    public static void Remove(SongSearchObject song)
+    public static async Task Remove(SongSearchObject song)
     {
         var hash = GetHash(song);
         trackSet.Remove(hash);
         Source.Remove(Source.First(x => GetHash(x) == hash));
+        await DatabaseService.Remove(hash);
     }
 
-    public static void Replace(int index, QueueObject? queueObj)
+    public static async Task Replace(int index, QueueObject? queueObj)
     {
         if (queueObj == null) return;
 
-        trackSet.Remove(GetHash(Source[index])); // Remove old from trackset
-        Source[index] = queueObj; // SEt to new object
-        trackSet.Add(GetHash(Source[index])); // Add new hash to trackset
+        var oldHash = GetHash(Source[index]);
+        trackSet.Remove(oldHash); // Remove old from trackset
+        Source[index] = queueObj; // Set to new object
+        trackSet.Add(GetHash(queueObj)); // Add new hash to trackset
+        await DatabaseService.Remove(oldHash);
     }
 
-    public static void Clear()
+    public static async Task Clear()
     {
         Source.Clear();
         trackSet.Clear();
-        IsRunning = false;
-        index = 0;
-        completedCount = 0;
+        await DatabaseService.Clear();
     }
 
     public static void Reset()
     {
-        index = 0; // Reset the index
-        completedCount = 0;
-        IsRunning = false;
-
-        for (int i = 0; i < Source.Count; i++) // Remove all result str, set new obj to refresh ui
+        foreach (QueueObject queueObject in Source)
         {
-            var cleanObj = Source[i];
-            cleanObj.ResultString = null;
-            Source[i] = cleanObj;
+            queueObject.ResultString = null;
         }
     }
 
     public static void ResetConversionResults()
     {
-        for (int i = 0; i < Source.Count; i++) // Remove all result str, set new obj to refresh ui
+        // Reset the badge color
+        foreach (QueueObject queueObject in Source)
         {
-            var cleanObj = Source[i];
-            cleanObj.ConvertBadgeColor = new SolidColorBrush(Windows.UI.Color.FromArgb(0, 0, 0, 0)); // Reset the badge color
-            Source[i] = cleanObj;
+            queueObject.ConvertBadgeColor = new SolidColorBrush(Windows.UI.Color.FromArgb(0, 0, 0, 0));
         }
     }
 
@@ -337,161 +353,74 @@ public partial class QueueViewModel : ObservableRecipient, INotifyPropertyChange
         return song.Source + song.Id;
     }
 
-    public static void SetCommand(string newCommand)
+    public static async Task LoadSaveQueue() 
     {
-        command = newCommand;
-    }
-
-    public static async Task RunCommand(string? directory, CancellationToken token, QueuePage.QueueRunCallback callback)
-    {
-        if (IsRunning || index >= Source.Count)
+        try
         {
-            return;
-        }
+            var items = await DatabaseService.LoadQueueJSON();
+            var sortedList = new List<(string, SongSearchObject)>();
 
-        IsRunning = true; // Start running 
-
-        int threadCount = await SettingsViewModel.GetSetting<int?>(SettingsViewModel.CommandThreads) ?? 1;
-
-        for (int t = 0; t < threadCount; t++) // Edit this to change the number of threads
-        {
-            Thread thread = new Thread(() =>
+            foreach (var item in items)
             {
-                while (IsRunning) // Multithreaded loop
+                var song = await Json.ToObjectAsync<SongSearchObject>(item.Value);
+                if (song == null) continue;
+                sortedList.Add((item.Key, song));
+            }
+
+            foreach (var pair in sortedList.OrderBy(pair => pair.Item2.QueueCounter))
+            {
+                string hash = pair.Item1;
+                SongSearchObject song = pair.Item2;
+
+                // If local, set the local bitmap image
+                if (song.Source == "local")
                 {
-                    if (token.IsCancellationRequested) // Break the loop if the token is cancelled
+                    var localSong = LocalExplorerViewModel.ParseFile(song.Id);  // Re-parse the file
+                    if (localSong != null)
                     {
-                        IsRunning = false;
-                        callback.Invoke(InfoBarSeverity.Informational, "Command running paused.");
-                        return;
-                    }
-
-                    var i = Interlocked.Increment(ref index) - 1; // Increment the index in a thread-safe manner
-
-                    if (i >= Source.Count)
-                    {
-                        return;
-                    }
-
-                    // Update the is running of the current object
-                    dispatcher.TryEnqueue(() =>
-                    {
-                        var newObj = Source[i];
-                        newObj.IsRunning = true;
-                        Source[i] = newObj;
-                    });
-
-                    var isLocal = Source[i].Source.Equals("local");
-                    // Get the url of the current object
-                    var url = ApiHelper.GetUrl(Source[i]);
-
-                    var thisCommand = command.Replace("{url}", url)
-                        .Replace("{ext}", (isLocal ? Path.GetExtension(Source[i].Id) : ".").Substring(1))
-                        .Replace("{file_name}", isLocal ? Path.GetFileName(Source[i].Id) : "")
-                        .Replace("{title}", Source[i].Title)
-                        .Replace("{image_url}", Source[i].ImageLocation ?? "")
-                        .Replace("{id}", isLocal ? "" : Source[i].Id)
-                        .Replace("{release_date}", Source[i].ReleaseDate)
-                        .Replace("{artists}", Source[i].Artists)
-                        .Replace("{duration}", Source[i].Duration)
-                        .Replace("{album}", Source[i].AlbumName)
-                        .Replace("{isrc}", Source[i].Isrc);
-
-                    // Run the command
-                    var resultStr = TerminalSubprocess.GetRunCommandSync(thisCommand, directory);
-
-                    // Update the actual object
-                    dispatcher.TryEnqueue(() =>
-                    {
-                        try {
-                            var newObj = Source[i];
-                            newObj.ResultString = resultStr;
-                            newObj.IsRunning = false;
-                            Source[i] = newObj; // This actually refreshes the UI of ObservableCollection
-                        } catch (Exception e) {
-                            Debug.WriteLine("error updating UI for command runner");  
+                        localSong.LocalBitmapImage = UnloadedPlaceholder;
+                        var queueObj = Add(localSong);
+                        // Get the bitmap image from the file
+                        if (queueObj != null)
+                        {
+                            _ = Task.Run(async () =>
+                            {
+                                var image = await LocalExplorerViewModel.GetBitmapImageBackground(song.Id, dispatcher);
+                                if (image != null)
+                                {
+                                    dispatcher.TryEnqueue(() =>
+                                    {
+                                        queueObj.LocalBitmapImage = image;
+                                    });
+                                }
+                            });
                         }
-                    });
-
-                    var capturedCount = Interlocked.Increment(ref completedCount);
-                    if (capturedCount == Source.Count) // Check if all completed
-                    {
-                        IsRunning = false;
-                        callback.Invoke(InfoBarSeverity.Success, "Command running complete.");
                     }
                 }
-            });
-            thread.Start();
-        }
-    }
-
-    public static int GetCompletedCount()
-    {
-        int completed = 0;
-        foreach (var item in Source)
-        {
-            if (item.ResultString != null)
-            {
-                completed++;
-            }
-        }
-
-        return completed;
-    }
-
-    public override string ToString() {
-        return JsonConvert.SerializeObject(Source.Select(x => x.ToString()).ToList()); // Convert to json string
-    }
-
-    public static async Task SaveQueue() {
-        await Task.Run(()=>{
-            try {
-                var saveString = JsonConvert.SerializeObject(Source.Select(x => x.ToString()).ToList()); // Convert to json string
-                QueueSaver.SaveString(saveString); // Save the string to the 
-            } catch (Exception e) {
-                Debug.WriteLine("Error saving queue: " + e.Message); // Log the error
-            }
-        });
-    }
-
-    public static async Task LoadSaveQueue() {
-        string path = QueueSaver.GetPath(); // Get the path of the file
-        try {
-            if (System.IO.File.Exists(path)) {
-                var saveString = await System.IO.File.ReadAllTextAsync(path); // Read the file
-                await LoadSaveQueue(saveString); // Load the queue from the file
-            } else {
-                // Create the file if it does not exist
-                using (var fileStream = System.IO.File.Create(path)) {
-                    // File created
-                }
-            }
-        } catch (Exception e) {
-            Debug.WriteLine("Error loading queue: " + e.Message); // Log the error
-        }
-    }
-    private static async Task LoadSaveQueue(string saveString) {
-        if (string.IsNullOrEmpty(saveString)) return; // Check if the string is empty
-   
-        var listJsonStr = JsonConvert.DeserializeObject<List<string>>(saveString);
-        
-        if (listJsonStr == null) return;
-        foreach (var songStr in listJsonStr) {
-            var song = await Json.ToObjectAsync<SongSearchObject>(songStr); // Deserialize the string to a SongSearchObject
-            if (song == null) continue;
-            // If local, set the local bitmap image
-            if (song.Source == "local") {
-                var localSong = LocalExplorerViewModel.ParseFile(song.Id);  // Re-parse the file
-                if (localSong != null)
+                else
                 {
-                    localSong.LocalBitmapImage = await LocalExplorerViewModel.GetBitmapImageAsync(song.Id); // Get the bitmap image from the file
-                    Add(localSong);
+                    song.LocalBitmapImage = UnloadedPlaceholder;
+                    var queueObj = Add(song);
+                    // Get the bitmap image from the queue
+                    if (queueObj != null)
+                    {
+                        _ = Task.Run(async () =>
+                        {
+                            var image = await DatabaseService.GetBitmapAsync(hash, dispatcher);
+                            if (image != null)
+                            {
+                                dispatcher.TryEnqueue(() =>
+                                {
+                                    queueObj.LocalBitmapImage = image;
+                                });
+                            }
+                        });
+                    }
                 }
-            } else {
-                Add(song);
             }
+        } catch (Exception ex)
+        {
+            Debug.WriteLine(ex.ToString());
         }
     }
-
-
 }
