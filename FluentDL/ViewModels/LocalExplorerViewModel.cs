@@ -1,25 +1,29 @@
-﻿using System.Collections.ObjectModel;
-using System.Diagnostics;
-using System.Text.RegularExpressions;
-using System.Windows.Input;
 using ABI.Microsoft.UI.Xaml;
 using AngleSharp.Common;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using CommunityToolkit.WinUI.UI.Controls;
+using FFMpegCore.Builders.MetaData;
 using FluentDL.Contracts.Services;
 using FluentDL.Contracts.ViewModels;
 using FluentDL.Core.Contracts.Services;
 using FluentDL.Core.Models;
-using FluentDL.Services;
-using CommunityToolkit.WinUI.UI.Controls;
-using FFMpegCore.Builders.MetaData;
 using FluentDL.Helpers;
-using Microsoft.UI.Xaml.Media.Imaging;
 using FluentDL.Models;
-using Microsoft.UI.Xaml;
-using TagLib;
-using File = TagLib.File;
+using FluentDL.Services;
 using Microsoft.UI.Dispatching;
+using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Media.Imaging;
+using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.Formats.Jpeg;
+using SixLabors.ImageSharp.Processing;
+using System.Collections.ObjectModel;
+using System.Diagnostics;
+using System.Text.RegularExpressions;
+using System.Windows.Input;
+using TagLib;
+using Windows.Storage.Streams;
+using File = TagLib.File;
 
 namespace FluentDL.ViewModels;
 
@@ -216,15 +220,13 @@ public partial class LocalExplorerViewModel : ObservableRecipient
 
         song.LocalBitmapImage = bitmapImage;
 
-        var memoryStream = await Task.Run(() => GetAlbumArtMemoryStream(song.Id));
+        using var memoryStream = await GetAlbumArtMemoryStream(song.Id);
 
         await bitmapImage.SetSourceAsync(memoryStream.AsRandomAccessStream());
 
         OriginalList.Add(song);
         Source.Add(song);
         _fileSet.Add(song.Id);
-
-        memoryStream?.Dispose();
     }
 
     public static bool ContainsFile(string filePath)
@@ -254,7 +256,7 @@ public partial class LocalExplorerViewModel : ObservableRecipient
     public static async Task<BitmapImage?> GetBitmapImageAsync(string filePath)
     {
         try {
-            using var memoryStream = await Task.Run(() => GetAlbumArtMemoryStream(filePath));
+            using var memoryStream = await GetAlbumArtMemoryStream(filePath);
         
             if (memoryStream != null) // Set album art if available
             {
@@ -275,7 +277,7 @@ public partial class LocalExplorerViewModel : ObservableRecipient
         try
         {
             // Background Thread
-            using var memoryStream = GetAlbumArtMemoryStream(filePath);
+            using var memoryStream = await GetAlbumArtMemoryStream(filePath);
             if (memoryStream == null) return null;
 
             var tcs = new TaskCompletionSource<BitmapImage?>();
@@ -316,7 +318,7 @@ public partial class LocalExplorerViewModel : ObservableRecipient
         return value.GetAlbumArt();
     }
 
-    public static MemoryStream? GetAlbumArtMemoryStream(string filePath)
+    public static async Task<MemoryStream?> GetAlbumArtMemoryStream(string filePath)
     {
         if (!tmpUpdates.TryGetValue(filePath, out var value))
         {
@@ -328,8 +330,18 @@ public partial class LocalExplorerViewModel : ObservableRecipient
         {
             return null;
         }
+        using var image = Image.Load(byteArr);
+        await Task.Run(() => image.Mutate(ctx => ctx.Resize(new ResizeOptions
+        {
+            Size = new Size(120, 120),
+            Mode = ResizeMode.Min,
+            Sampler = KnownResamplers.Lanczos3
+        })));
 
-        return new MemoryStream(byteArr);
+        var ms = new MemoryStream();
+        await image.SaveAsJpegAsync(ms, new JpegEncoder { Quality = 80 });
+        ms.Position = 0;
+        return ms;
     }
 
     public static readonly HashSet<string> SupportedExtensions =

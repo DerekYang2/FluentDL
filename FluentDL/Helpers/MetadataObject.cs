@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
@@ -84,22 +84,16 @@ namespace FluentDL.Helpers
             set;
         }
 
-        public byte[]? AlbumArt
-        {
-            get;
-            set;
-        }
-
         public string? AlbumArtPath
         {
             get;
             set;
         }
 
-        private string? FilePath
+        public string? FilePath
         {
             get;
-            set;
+            internal set;
         }
 
         public string? Codec
@@ -114,12 +108,15 @@ namespace FluentDL.Helpers
             internal set;
         }
 
-        public TagLib.File tfile;
+        public int AudioBitrate { get; internal set; }
+        public int AudioChannels { get; internal set;  }
+        public int AudioSampleRate { get; internal set; }
+        public int BitsPerSample { get; internal set;  }
 
         public MetadataObject(string filePath)
         {
             FilePath = filePath;
-            tfile = TagLib.File.Create(filePath);
+            using TagLib.File tfile = TagLib.File.Create(filePath);
             tfile.Mode = TagLib.File.AccessMode.Closed;
 
             // Set codec
@@ -147,6 +144,10 @@ namespace FluentDL.Helpers
             {
                 ReleaseDate = new DateTime(Convert.ToInt32(tfile.Tag.Year), 1, 1); // Default to January 1st if only year is provided
             }
+            AudioBitrate = tfile.Properties.AudioBitrate;
+            AudioChannels = tfile.Properties.AudioChannels;
+            AudioSampleRate = tfile.Properties.AudioSampleRate;
+            BitsPerSample = tfile.Properties.BitsPerSample;
 
             if (Path.GetExtension(tfile.Name) == ".flac" || Path.GetExtension(tfile.Name) == ".ogg") // Both .flac and .ogg files use the XiphComments
             {
@@ -173,139 +174,136 @@ namespace FluentDL.Helpers
 
                 Url = custom.GetTextAsString("WOAS");
             }
+        }
+
+        // Inside MetadataObject
+        public byte[]? GetAlbumArt()
+        {
+            using var tfile = TagLib.File.Create(FilePath);
+            tfile.Mode = TagLib.File.AccessMode.Closed;
 
             IPicture[] pictures = tfile.Tag.Pictures;
-
+            byte[]? albumArt = null;
             if (pictures.Length > 0)
             {
                 // Get front cover
-                AlbumArt = pictures[0].Data.Data; // Default to first picture
+                albumArt = pictures[0].Data.Data; // Default to first picture
                 foreach (var picture in pictures) // Find front cover if possible
                 {
                     if (picture.Type == PictureType.FrontCover)
                     {
-                        AlbumArt = picture.Data.Data;
+                        albumArt = picture.Data.Data;
                         break;
                     }
                 }
             }
+            return albumArt;
         }
 
-        public void Save()
+        public async Task SaveAsync()
         {
-            tfile.Tag.AlbumArtists = AlbumArtists;
-            tfile.Tag.Album = AlbumName;
-            tfile.Tag.Performers = Artists;
-            tfile.Tag.Title = Title;
-            tfile.Tag.Genres = Genres;
-            tfile.Tag.ISRC = Isrc;
-            tfile.Tag.Track = Convert.ToUInt32(TrackNumber);
-            tfile.Tag.TrackCount = Convert.ToUInt32(TrackTotal);
+            try 
+            { 
+                using var tfile = TagLib.File.Create(FilePath);
+                tfile.Mode = TagLib.File.AccessMode.Write;
+                tfile.Tag.AlbumArtists = AlbumArtists;
+                tfile.Tag.Album = AlbumName;
+                tfile.Tag.Performers = Artists;
+                tfile.Tag.Title = Title;
+                tfile.Tag.Genres = Genres;
+                tfile.Tag.ISRC = Isrc;
+                tfile.Tag.Track = Convert.ToUInt32(TrackNumber);
+                tfile.Tag.TrackCount = Convert.ToUInt32(TrackTotal);
 
-            // CUSTOM TAGS: https://wiki.hydrogenaud.io/index.php?title=Tag_Mapping
+                // CUSTOM TAGS: https://wiki.hydrogenaud.io/index.php?title=Tag_Mapping
 
-            if (Path.GetExtension(tfile.Name) == ".flac" || Path.GetExtension(tfile.Name) == ".ogg")
-            {
-                var custom = (TagLib.Ogg.XiphComment)tfile.GetTag(TagLib.TagTypes.Xiph);
-
-                // Override TRACKNUMBER tag again to prevent using "two-digit zero-filled value"
-                // See https://github.com/mono/taglib-sharp/pull/240 where this change was introduced in taglib-sharp v2.3
-                custom.SetField("TRACKNUMBER", Convert.ToUInt32(TrackNumber));
-
-                // Set Date fields
-                var releaseDateString = ReleaseDate?.ToString("yyyy-MM-dd") ?? "";
-                if (!string.IsNullOrWhiteSpace(releaseDateString))
-                {
-                    // Release Year tag (The "tfile.Tag.Year" field actually writes to the DATE tag, so use custom tag)
-                    custom.SetField("YEAR", releaseDateString.Substring(0, 4));
-
-                    // Release Date tag
-                    custom.SetField("DATE", releaseDateString);
-                }
-
-                // UPC tag
-                custom.SetField("UPC", Upc);
-                custom.SetField("URL", Url);
-            }
-            else if (Path.GetExtension(tfile.Name) == ".mp3")
-            {
-                var custom = (TagLib.Id3v2.Tag)tfile.GetTag(TagTypes.Id3v2, true);
-
-                // Set single year
-                tfile.Tag.Year = Convert.ToUInt32(ReleaseDate?.Year ?? 0);
-
-                // Set the full release date
-                var releaseDateString = ReleaseDate?.ToString("yyyy-MM-dd") ?? "";
-                if (!string.IsNullOrWhiteSpace(releaseDateString))
-                {
-                    custom.SetTextFrame("TDRL", releaseDateString);
-                }
-
-                custom.SetNumberFrame("TRCK", Convert.ToUInt32(TrackNumber), tfile.Tag.TrackCount);
-
-                // SRC URL
-                custom.SetTextFrame("WOAS", Url);
-            }
-            else
-            {
-                tfile.Tag.Year = Convert.ToUInt32(ReleaseDate?.Year ?? 0);
-            }
-
-            if (AlbumArt != null) // Save cover art if it exists
-            {
-                if (Path.GetExtension(tfile.Name) == ".ogg")
+                if (Path.GetExtension(tfile.Name) == ".flac" || Path.GetExtension(tfile.Name) == ".ogg")
                 {
                     var custom = (TagLib.Ogg.XiphComment)tfile.GetTag(TagLib.TagTypes.Xiph);
 
-                    TagLib.Flac.Picture pic = new TagLib.Flac.Picture(new Picture(new ByteVector(AlbumArt))) { MimeType = System.Net.Mime.MediaTypeNames.Image.Jpeg, Type = PictureType.FrontCover };
-                    TagLib.ByteVector picData = pic.Render();
+                    // Override TRACKNUMBER tag again to prevent using "two-digit zero-filled value"
+                    // See https://github.com/mono/taglib-sharp/pull/240 where this change was introduced in taglib-sharp v2.3
+                    custom.SetField("TRACKNUMBER", Convert.ToUInt32(TrackNumber));
 
+                    // Set Date fields
+                    var releaseDateString = ReleaseDate?.ToString("yyyy-MM-dd") ?? "";
+                    if (!string.IsNullOrWhiteSpace(releaseDateString))
+                    {
+                        // Release Year tag (The "tfile.Tag.Year" field actually writes to the DATE tag, so use custom tag)
+                        custom.SetField("YEAR", releaseDateString.Substring(0, 4));
 
-                    custom.SetField("METADATA_BLOCK_PICTURE", Convert.ToBase64String(picData.Data));
+                        // Release Date tag
+                        custom.SetField("DATE", releaseDateString);
+                    }
+
+                    // UPC tag
+                    custom.SetField("UPC", Upc);
+                    custom.SetField("URL", Url);
+                }
+                else if (Path.GetExtension(tfile.Name) == ".mp3")
+                {
+                    var custom = (TagLib.Id3v2.Tag)tfile.GetTag(TagTypes.Id3v2, true);
+
+                    // Set single year
+                    tfile.Tag.Year = Convert.ToUInt32(ReleaseDate?.Year ?? 0);
+
+                    // Set the full release date
+                    var releaseDateString = ReleaseDate?.ToString("yyyy-MM-dd") ?? "";
+                    if (!string.IsNullOrWhiteSpace(releaseDateString))
+                    {
+                        custom.SetTextFrame("TDRL", releaseDateString);
+                    }
+
+                    custom.SetNumberFrame("TRCK", Convert.ToUInt32(TrackNumber), tfile.Tag.TrackCount);
+
+                    // SRC URL
+                    custom.SetTextFrame("WOAS", Url);
                 }
                 else
                 {
-                    TagLib.Id3v2.AttachmentFrame pic = new TagLib.Id3v2.AttachmentFrame { TextEncoding = StringType.Latin1, MimeType = System.Net.Mime.MediaTypeNames.Image.Jpeg, Type = PictureType.FrontCover, Data = new ByteVector(AlbumArt) };
-                    // Save cover art to FLAC file.
-                    tfile.Tag.Pictures = new IPicture[] { pic };
+                    tfile.Tag.Year = Convert.ToUInt32(ReleaseDate?.Year ?? 0);
                 }
-            }
 
-            try
-            {
-                tfile.Save();
+                byte[]? albumArt = null;
+                if (!string.IsNullOrWhiteSpace(AlbumArtPath))
+                {
+                    if (System.IO.File.Exists(AlbumArtPath)) // Local
+                    {
+                        albumArt = await System.IO.File.ReadAllBytesAsync(AlbumArtPath); // Covert image to byte array
+                    }
+                    else
+                    {
+                        albumArt = await new HttpClient().GetByteArrayAsync(AlbumArtPath); // Download image
+                    }
+                }
+
+                if (albumArt != null) // Save cover art if it exists
+                {
+                    if (Path.GetExtension(tfile.Name) == ".ogg")
+                    {
+                        var custom = (TagLib.Ogg.XiphComment)tfile.GetTag(TagLib.TagTypes.Xiph);
+
+                        TagLib.Flac.Picture pic = new TagLib.Flac.Picture(new Picture(albumArt)) { MimeType = System.Net.Mime.MediaTypeNames.Image.Jpeg, Type = PictureType.FrontCover };
+                        TagLib.ByteVector picData = pic.Render();
+
+
+                        custom.SetField("METADATA_BLOCK_PICTURE", Convert.ToBase64String(picData.Data));
+                    }
+                    else
+                    {
+                        TagLib.Id3v2.AttachmentFrame pic = new TagLib.Id3v2.AttachmentFrame { TextEncoding = StringType.Latin1, MimeType = System.Net.Mime.MediaTypeNames.Image.Jpeg, Type = PictureType.FrontCover, Data = albumArt };
+                        // Save cover art to FLAC file.
+                        tfile.Tag.Pictures = new IPicture[] { pic };
+                    }
+                }
+
+
+                await Task.Run(tfile.Save);
             }
             catch (Exception e)
             {
                 Debug.WriteLine("FAILED TO SAVE METADATA: " + e.Message);
             }
-        }
-
-        public async Task SaveAsync()
-        {
-            // Check if path is local or remote
-            if (!string.IsNullOrWhiteSpace(AlbumArtPath))
-            {
-                if (System.IO.File.Exists(AlbumArtPath)) // Local
-                {
-                    AlbumArt = await System.IO.File.ReadAllBytesAsync(AlbumArtPath); // Covert image to byte array
-                }
-                else
-                {
-                    AlbumArt = await new HttpClient().GetByteArrayAsync(AlbumArtPath); // Download image
-                }
-            }
-
-            await Task.Run(() => Save()); // Save metadata
-        }
-
-        public byte[]? GetAlbumArt()
-        {
-            if (AlbumArt == null || AlbumArt.Length == 0) return null; // Return null if no album art
-            // Get a deep copy of the album art byte array
-            byte[] deepCopy = new byte[AlbumArt.Length];
-            Buffer.BlockCopy(AlbumArt, 0, deepCopy, 0, AlbumArt.Length);
-            return deepCopy;
         }
 
         private static string? GetISRC(TagLib.File track)
@@ -319,7 +317,7 @@ namespace FluentDL.Helpers
             var fileName = track.Name;
             if (fileName != null)
             {
-                var isrc = Regex.Match(fileName, @"[A-Z]{2}[A-Z0-9]{3}\d{2}\d{5}").Value;
+                var isrc = Regex.Match(fileName.Replace("-", ""), @"[A-Z]{2}[A-Z0-9]{3}\d{2}\d{5}").Value;
                 if (isrc.Length == 12)
                 {
                     return isrc;

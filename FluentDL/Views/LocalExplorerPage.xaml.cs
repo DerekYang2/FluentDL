@@ -252,15 +252,25 @@ public sealed partial class LocalExplorerPage : Page
             ShowInfoBarPermanent(InfoBarSeverity.Informational, $"Scanning <a href='{folder.Path}'>{folder.Name}</a> for audio files", "Upload");
             InfobarProgress.Visibility = Visibility.Visible;
             // Get all music files in the folder
-            Thread t = new Thread(async () =>
+            _ = Task.Run(async () =>
             {
-                ProcessFiles(await folder.GetFilesAsync());
-                dispatcher.TryEnqueue(() =>
+                try
                 {
-                    InfobarProgress.Visibility = Visibility.Collapsed; // Hide progress bar
-                });
+                    await ProcessFiles(await folder.GetFilesAsync());
+                } catch (Exception ex)
+                {
+                    dispatcher.TryEnqueue(() =>
+                    {
+                        ShowInfoBar(InfoBarSeverity.Error, $"Error occurred: {ex.Message}", 3, "Upload");
+                    });
+                } finally
+                {
+                    dispatcher.TryEnqueue(() =>
+                    {
+                        InfobarProgress.Visibility = Visibility.Collapsed; // Hide progress bar
+                    });
+                }
             });
-            t.Start();
         }
         else
         {
@@ -317,15 +327,27 @@ public sealed partial class LocalExplorerPage : Page
         }
 
         // Create thread to process the files
-        Thread t = new Thread(() =>
+        _ = Task.Run(async () =>
         {
-            ProcessFiles(files);
-            dispatcher.TryEnqueue(() =>
+            try
             {
-                InfobarProgress.Visibility = Visibility.Collapsed; // Hide progress bar
-            });
+                await ProcessFiles(files);
+            }
+            catch (Exception ex)
+            {
+                dispatcher.TryEnqueue(() =>
+                {
+                    ShowInfoBar(InfoBarSeverity.Error, $"Error occurred: {ex.Message}", 3, "Upload");
+                });
+            }
+            finally
+            {
+                dispatcher.TryEnqueue(() =>
+                {
+                    InfobarProgress.Visibility = Visibility.Collapsed; // Hide progress bar
+                });
+            }
         });
-        t.Start();
 
         SortListView();
     }
@@ -348,7 +370,7 @@ public sealed partial class LocalExplorerPage : Page
         }
     }
 
-    private void ProcessFiles(IReadOnlyList<StorageFile> files)
+    private async Task ProcessFiles(IReadOnlyList<StorageFile> files)
     {
         if (files.Count > 0)
         {
@@ -381,26 +403,19 @@ public sealed partial class LocalExplorerPage : Page
                     addedCount++;
                 });
 
-                var memoryStream = LocalExplorerViewModel.GetAlbumArtMemoryStream(song.Id);
+                var memoryStream = await LocalExplorerViewModel.GetAlbumArtMemoryStream(song.Id);
 
                 if (memoryStream != null) // Set album art if available
                 {
-                    dispatcher.TryEnqueue(() =>
+                    dispatcher.TryEnqueue(async () =>
                     {
                         var bitmapImage = new BitmapImage
                         {
-                            // No need to set height, aspect ratio is automatically handled
                             DecodePixelHeight = 76,
                         };
-
+                        await bitmapImage.SetSourceAsync(memoryStream.AsRandomAccessStream());
                         song.LocalBitmapImage = bitmapImage;
-                        bitmapImage.SetSourceAsync(memoryStream.AsRandomAccessStream()).Completed += (info, status) =>
-                        {
-                            // Refresh the listview to show the album art
-                            var index = ((ObservableCollection<SongSearchObject>)FileListView.ItemsSource).IndexOf(song);
-                            ((ObservableCollection<SongSearchObject>)FileListView.ItemsSource)[index] = song;
-                            memoryStream.Dispose();
-                        };
+                        memoryStream.Dispose();
                     });
                 }
             }

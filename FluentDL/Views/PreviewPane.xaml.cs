@@ -307,10 +307,10 @@ namespace FluentDL.Views
                         new() { Label = "Track Position", Value = selectedSong.TrackPosition },
                         new() { Label = "Type", Value = metadata.Codec ?? System.IO.Path.GetExtension(selectedSong.Id) },
                         new() { Label = "Size", Value = GetFileLength(selectedSong.Id) },
-                        new() { Label = "Bit rate", Value = metadata.tfile.Properties.AudioBitrate + " kbps" },
-                        new() { Label = "Channels", Value = metadata.tfile.Properties.AudioChannels.ToString() },
-                        new() { Label = "Sample rate", Value = metadata.tfile.Properties.AudioSampleRate + " Hz" },
-                        new() { Label = "Bit depth", Value = metadata.tfile.Properties.BitsPerSample + " bit" },
+                        new() { Label = "Bit rate", Value = metadata.AudioBitrate + " kbps" },
+                        new() { Label = "Channels", Value = metadata.AudioChannels.ToString() },
+                        new() { Label = "Sample rate", Value = metadata.AudioSampleRate + " Hz" },
+                        new() { Label = "Bit depth", Value = metadata.BitsPerSample + " bit" },
                         new() { Label = "Location", Value = selectedSong.Id }
                     };
                     SetPlayerSource(selectedSong.Id);

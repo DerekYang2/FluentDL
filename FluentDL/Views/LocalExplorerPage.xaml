@@ -316,7 +316,7 @@
                                 Height="76"
                                 CornerRadius="4">
                                 <Border.Background>
-                                    <ImageBrush ImageSource="{x:Bind LocalBitmapImage}" Stretch="UniformToFill" />
+                                    <ImageBrush ImageSource="{x:Bind LocalBitmapImage, Mode=OneWay}" Stretch="UniformToFill" />
                                 </Border.Background>
                             </Border>
 
@@ -670,7 +670,7 @@
                                                 Height="76"
                                                 CornerRadius="4">
                                                 <Border.Background>
-                                                    <ImageBrush ImageSource="{x:Bind Song.LocalBitmapImage}" Stretch="UniformToFill" />
+                                                    <ImageBrush ImageSource="{x:Bind Song.LocalBitmapImage, Mode=OneWay}" Stretch="UniformToFill" />
                                                 </Border.Background>
                                             </Border>
 
