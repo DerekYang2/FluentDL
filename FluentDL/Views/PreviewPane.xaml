@@ -85,7 +85,7 @@
                         <Image
                             HorizontalAlignment="Center"
                             VerticalAlignment="Center"
-                            Source="{Binding ElementName=PreviewImage, Path=Source}"
+                            Source="{Binding ElementName=PreviewImage, Path=Source, Mode=OneWay}"
                             Stretch="UniformToFill" />
                     </Border>
                     <!--  Brush area  -->
@@ -93,7 +93,7 @@
                         MaxHeight="300"
                         Margin="14,14,14,12"
                         HorizontalAlignment="Stretch"
-                        VerticalAlignment="Center"
+                        VerticalAlignment="Stretch"
                         CornerRadius="8">
                         <Border.Background>
                             <media:AcrylicBrush
