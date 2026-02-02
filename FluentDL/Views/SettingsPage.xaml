@@ -91,7 +91,10 @@
                                     TickFrequency="1"
                                     TickPlacement="Outside" />
                             </local:SettingsCard>
-                            <local:SettingsCard x:Name="CommandThreadsCard" Header="Command Runner">
+                            <local:SettingsCard
+                                x:Name="CommandThreadsCard"
+                                Header="Command Runner"
+                                Visibility="Collapsed">
                                 <local:SettingsCard.HeaderIcon>
                                     <FontIcon Glyph="&#xE756;" />
                                 </local:SettingsCard.HeaderIcon>
