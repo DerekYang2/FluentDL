@@ -74,10 +74,35 @@ internal class ApiHelper
         return titlePruned.Trim();
     }
 
+    public static string PruneFeaturing(string? title)
+    {
+        if (string.IsNullOrWhiteSpace(title))
+            return string.Empty;
+
+        // Pattern: Matches a space, then brackets containing feat/ft/featuring, any text, and closing bracket.
+        // The \s* at the start ensures we don't leave a trailing space behind.
+        string pattern = @"\s*\((?:feat|ft|featuring|with)\.?\s+.*?\)";
+
+        return Regex.Replace(title, pattern, string.Empty, RegexOptions.IgnoreCase | RegexOptions.Compiled).Trim();
+    }
+
     public static string PrunePunctuation(string str)
     {
         // Remove all punctuation and whitespace from string, only include alphanumeric characters
-        return Regex.Replace(str, @"[^a-zA-Z0-9]", string.Empty);
+        return Regex.Replace(PruneFeaturing(str), @"[^a-zA-Z0-9]", string.Empty);
+    }
+
+    public static bool CloseMatch(string str1, string str2)
+    {
+        str1 = ApiHelper.PruneFeaturing(str1).ToLower();
+        str2 = ApiHelper.PruneFeaturing(str2).ToLower();
+        var keywords = new[] { "remix", "edit", "live", "version", "remaster", "instrumental", "acoustic" };
+        // XOR keywords (must both contain or both don't contain)
+        if (keywords.Any(s => str1.Contains(s) ^ str2.Contains(s)))
+        {
+            return false;
+        }
+        return ApiHelper.IsSubstring(str1.ToLower(), str2.ToLower());
     }
 
     // Convert illegal filename characters to an underscore
@@ -182,7 +207,7 @@ internal class ApiHelper
                         throw new Exception("FFmpeg is not initialized.");
                     }
 
-                    await YoutubeApi.DownloadAudioAAC(mp4Location, song.Id);
+                    await YoutubeApi.DownloadAudioAAC2(mp4Location, song.Id);
                     await FFmpegRunner.ConvertMp4ToM4aAsync(mp4Location);
                     await YoutubeApi.UpdateMetadata(m4aLocation, song.Id);
                     callback?.Invoke(InfoBarSeverity.Success, song, m4aLocation); // Assume success
@@ -195,7 +220,7 @@ internal class ApiHelper
                     throw new Exception("File already exists."); // Will be caught below
                 }
 
-                await YoutubeApi.DownloadAudio(opusLocation, song.Id); // Download opus stream
+                await YoutubeApi.DownloadAudio2(opusLocation, song.Id);  // Download opus stream
 
                 if (settingIdx == 0) // Do not convert to flac
                 {

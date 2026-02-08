@@ -169,40 +169,11 @@ internal class DeezerApi
         }
     }
 
-
-    private static bool CloseMatch(string str1, string str2)
-    {
-        return ApiHelper.IsSubstring(str1.ToLower(), str2.ToLower());
-    }
-
     public static string PruneTitle(string title)
     {
         var titlePruned = title.ToLower().Trim();
 
-        // Remove (feat. X) from the title
-        var index = titlePruned.IndexOf("(feat.");
-        if (index != -1)
-        {
-            var closingIndex = titlePruned.IndexOf(")", index);
-            titlePruned = titlePruned.Remove(index, closingIndex - index + 1);
-        }
-
-        // Remove (ft. X) from the title
-        var index2 = titlePruned.IndexOf("(ft.");
-        if (index2 != -1)
-        {
-            var closingIndex = titlePruned.IndexOf(")", index2);
-            titlePruned = titlePruned.Remove(index2, closingIndex - index2 + 1);
-        }
-
-        // Remove (with X) from the title
-        var index3 = titlePruned.IndexOf("(with");
-        if (index3 != -1)
-        {
-            var closingIndex = titlePruned.IndexOf(")", index3);
-            titlePruned = titlePruned.Remove(index3, closingIndex - index3 + 1);
-        }
-
+        titlePruned = ApiHelper.PruneFeaturing(titlePruned);
         // Remove punctuation that may cause inconsistency
         titlePruned = titlePruned.Replace(" ", "").Replace("(", "").Replace(")", "").Replace("-", "").Replace(".", "").Replace("[", "").Replace("]", "").Replace("—", "").Replace("'", "").Replace("\"", "");
 
@@ -383,7 +354,7 @@ internal class DeezerApi
 
                     // Check if close artist match to add to list
                     var queryArtists = song.Artists.Split(", ").ToList();
-                    var oneArtistMatch = queryArtists.Any(queryArtist => artists.Any(artist => CloseMatch(queryArtist, artist)));
+                    var oneArtistMatch = queryArtists.Any(queryArtist => artists.Any(artist => ApiHelper.CloseMatch(queryArtist, artist)));
 
                     if (oneArtistMatch)
                     {
@@ -415,7 +386,7 @@ internal class DeezerApi
 
                     // Check if close artist match to add to list
                     var queryArtists = song.Artists.Split(", ").ToList();
-                    var oneArtistMatch = queryArtists.Any(queryArtist => artists.Any(artist => CloseMatch(queryArtist, artist)));
+                    var oneArtistMatch = queryArtists.Any(queryArtist => artists.Any(artist => ApiHelper.CloseMatch(queryArtist, artist)));
 
                     if (oneArtistMatch)
                     {
@@ -439,7 +410,7 @@ internal class DeezerApi
             var songObjTitlePruned = PruneTitle(songObj.Title);
             if (titlePruned.Equals(songObjTitlePruned) || titlePruned.Replace("radioedit", "").Equals(songObjTitlePruned.Replace("radioedit", ""))) // If the title matches without punctuation
             {
-                if (albumName.ToLower().Replace(" ", "").Equals(songObj.AlbumName.ToLower().Replace(" ", ""))) // If the album name is exact match
+                if (ApiHelper.PruneFeaturing(albumName).Replace(" ", "").Equals(ApiHelper.PruneFeaturing(songObj.AlbumName).Replace(" ", ""))) // If the album name is exact match
                 {
                     var fullTrack = await GetTrack(songObj.Id);
                     if (fullTrack != null)
