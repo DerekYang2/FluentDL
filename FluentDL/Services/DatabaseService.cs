@@ -4,6 +4,7 @@ using Microsoft.UI.Xaml.Media.Imaging;
 using System.Diagnostics;
 using System.Runtime.InteropServices.WindowsRuntime;
 using System.Threading.Channels;
+using Windows.Storage;
 using Windows.Storage.Streams;
 
 namespace FluentDL.Services
@@ -16,12 +17,9 @@ namespace FluentDL.Services
         private static SqliteConnection Conn => _consumerConnection
             ?? throw new InvalidOperationException("Database not initialized. Call InitDatabase first.");
 
-        private static string _applicationDataFolder = "FluentDL\\ApplicationData";
+        private static string _applicationDataFolder = ApplicationData.Current.LocalFolder.Path;
         private static string _databaseFile = "fluentdl.db";
-
-        private static readonly string _localApplicationData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
-        private static string _applicationDataFolderAbs = Path.Combine(_localApplicationData, _applicationDataFolder);
-        private static string _dbPath = Path.Combine(_applicationDataFolderAbs, _databaseFile);
+        private static string _dbPath = Path.Combine(_applicationDataFolder, _databaseFile);
 
         private static SqliteConnection CreateConnection()
         {

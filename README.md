@@ -68,7 +68,6 @@ FluentDL is organized into three sections: Search, Local Explorer, and Queue.
         <li>Matching between all possible combinations of online sources (e.g., convert Spotify and YouTube to Deezer equivalents)</li>
         <li>Download tracks from Deezer, Qobuz, or Youtube with maximum quality</li>
         <li>Inspect downloaded tracks using Spek, a spectrogram tool</li>
-        <li>Run custom terminal tools on tracks using wildcards</li>
       </ul>
     </td>
     <td>
