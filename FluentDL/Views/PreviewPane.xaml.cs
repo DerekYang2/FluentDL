@@ -28,6 +28,47 @@ namespace FluentDL.Views
         SongSearchObject? song = null;
         DispatcherQueue dispatcher;
 
+        // Streams
+        private Stream? _originalStream;
+        private Windows.Storage.Streams.IRandomAccessStream? _ras;
+
+        public void ClearMediaPlayerSource()
+        {
+            try
+            {
+                var mediaPlayer = SongPreviewPlayer.MediaPlayer;
+                var source = SongPreviewPlayer.Source;
+                if (mediaPlayer == null || source == null) // Already cleared
+                {
+                    return;
+                }
+
+                if (mediaPlayer.PlaybackSession.CanPause)
+                {
+                    mediaPlayer.Pause();
+                }
+
+                SongPreviewPlayer.Source = null;
+                SongPreviewPlayer.SetMediaPlayer(null);
+                if (source is MediaSource mediaSource)
+                {
+                    mediaSource.Dispose();
+                }
+
+                mediaPlayer.Dispose();
+
+                // Original sources
+                _ras?.Dispose();
+                _ras = null;
+
+                _originalStream?.Dispose();
+                _originalStream = null;
+            } catch (Exception ex)
+            {
+                Debug.WriteLine(ex);
+            }
+        }
+
         public event PropertyChangedEventHandler? PropertyChanged;
 
         public double RankValue
@@ -51,12 +92,27 @@ namespace FluentDL.Views
 
         public void SetPlayerSource(string? uriStr)
         {
+            ClearMediaPlayerSource();
             if (string.IsNullOrWhiteSpace(uriStr))
             {
-                ClearMediaPlayerSource();
                 return;
             }
             SongPreviewPlayer.Source = MediaSource.CreateFromUri(new Uri(uriStr));
+        }
+
+        public void SetPlayerSource(Stream? stream, string? mime)
+        {
+            ClearMediaPlayerSource();
+            if (stream == null || mime == null)
+            {
+                return;
+            }
+
+            // Take ownership
+            _originalStream = stream;
+            _ras = _originalStream.AsRandomAccessStream();
+
+            SongPreviewPlayer.Source = MediaSource.CreateFromStream(_ras, mime);
         }
 
         public void SetAppBarButtons(List<AppBarButton> appBarButtons)
@@ -287,7 +343,9 @@ namespace FluentDL.Views
                     RankRatingControl.Visibility = Visibility.Collapsed;
 
                     // Load the audio stream
-                    SetPlayerSource(await YoutubeApi.AudioStreamWorstUrl("https://www.youtube.com/watch?v=" + selectedSong.Id));
+                    var (stream, mime) = await YoutubeApi.AudioStreamWorst(ApiHelper.GetUrl(selectedSong));
+                    SetPlayerSource(stream, mime);
+                    //SetPlayerSource(await YoutubeApi.AudioStreamWorstUrl("https://www.youtube.com/watch?v=" + selectedSong.Id));
                 }
             }
 
@@ -329,30 +387,6 @@ namespace FluentDL.Views
                     throw new Exception("Metadata object is null");
                 }
             }
-        }
-
-        public void ClearMediaPlayerSource()
-        {   
-            var mediaPlayer = SongPreviewPlayer.MediaPlayer;
-            var source = SongPreviewPlayer.Source;
-            if (mediaPlayer == null || source == null) // Already cleared
-            {
-                return;
-            }
-
-            if (mediaPlayer.PlaybackSession.CanPause)
-            {
-                mediaPlayer.Pause();
-            }
-
-            SongPreviewPlayer.Source = null;
-            SongPreviewPlayer.SetMediaPlayer(null);
-            if (source is MediaSource mediaSource)
-            {
-                mediaSource.Dispose();
-            }
-
-            mediaPlayer.Dispose();
         }
 
         public SongSearchObject? GetSong()
@@ -491,7 +525,9 @@ namespace FluentDL.Views
             }
             if (selectedSong.Source == "youtube")
             {
-                SetPlayerSource(await YoutubeApi.AudioStreamWorstUrl("https://www.youtube.com/watch?v=" + selectedSong.Id));
+                // SetPlayerSource(await YoutubeApi.AudioStreamWorstUrl("https://www.youtube.com/watch?v=" + selectedSong.Id));
+                var (stream, mime) = await YoutubeApi.AudioStreamWorst(ApiHelper.GetUrl(selectedSong));
+                SetPlayerSource(stream, mime);
             }
             if (selectedSong.Source == "spotify")
             {

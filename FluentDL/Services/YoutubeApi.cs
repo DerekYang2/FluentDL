@@ -1,8 +1,10 @@
-﻿using CommunityToolkit.WinUI.UI.Animations;
+﻿using AngleSharp.Media;
+using CommunityToolkit.WinUI.UI.Animations;
 using FluentDL.Helpers;
 using FluentDL.Models;
 using FluentDL.Views;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Shapes;
 using QobuzApiSharp.Models.Content;
 using System;
 using System.Collections.Generic;
@@ -12,6 +14,7 @@ using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using VideoLibrary;
 using Windows.Media.Protection.PlayReady;
 using YoutubeExplode;
 using YoutubeExplode.Common;
@@ -22,6 +25,7 @@ using YouTubeMusicAPI.Client;
 using YouTubeMusicAPI.Models;
 using YouTubeMusicAPI.Models.Info;
 using YouTubeMusicAPI.Models.Search;
+using YouTubeMusicAPI.Models.Streaming;
 using static System.Net.WebRequestMethods;
 
 namespace FluentDL.Services
@@ -30,6 +34,7 @@ namespace FluentDL.Services
     {
         private static YoutubeClient youtube = new YoutubeClient();
         private static YouTubeMusicClient ytm = new YouTubeMusicClient();
+        private static YouTube youtubeAlt = YouTube.Default;
 
         public YoutubeApi()
         {
@@ -108,11 +113,6 @@ namespace FluentDL.Services
             }
         }
 
-        private static bool CloseMatch(string str1, string str2)
-        {
-            return ApiHelper.IsSubstring(str1.ToLower(), str2.ToLower());
-        }
-
         public static async Task AdvancedSearch(ObservableCollection<SongSearchObject> itemSource, string artistName, string trackName, string albumName, CancellationToken token = default, int limit = 25)
         {
             // Youtube doesn't have an advanced search, must be done manually
@@ -147,7 +147,7 @@ namespace FluentDL.Services
                     {
                         foreach (var queryArtist in album.Artists)
                         {
-                            if (CloseMatch(queryArtist.Name, artistName))
+                            if (ApiHelper.CloseMatch(queryArtist.Name, artistName))
                             {
                                 oneArtistMatch = true;
                                 break;
@@ -159,7 +159,7 @@ namespace FluentDL.Services
                         oneArtistMatch = true; // Assume true if artist not specified
                     }
 
-                    if (oneArtistMatch && CloseMatch(album.Name, albumName)) // This album result substring matches
+                    if (oneArtistMatch && ApiHelper.CloseMatch(album.Name, albumName)) // This album result substring matches
                     {
                         // https://music.youtube.com/playlist?list={albumId}
 
@@ -185,21 +185,21 @@ namespace FluentDL.Services
                                         oneArtistMatch = false;
                                         foreach (var artist in song.Artists) // Check if at least one artist matches
                                         {
-                                            if (CloseMatch(artist.Name, artistName))
+                                            if (ApiHelper.CloseMatch(artist.Name, artistName))
                                             {
                                                 oneArtistMatch = true;
                                                 break;
                                             }
                                         }
 
-                                        valid = oneArtistMatch && CloseMatch(trackName, song.Name);
+                                        valid = oneArtistMatch && ApiHelper.CloseMatch(trackName, song.Name);
                                     }
                                 }
                                 else if (isTrackSpecified) // Album and track specified
                                 {
                                     if (isTrackSpecified) // Album and track specified
                                     {
-                                        valid = CloseMatch(trackName, song.Name);
+                                        valid = ApiHelper.CloseMatch(trackName, song.Name);
                                     }
                                 }
 
@@ -230,21 +230,21 @@ namespace FluentDL.Services
                                         oneArtistMatch = false;
                                         foreach (var artist in song.Artists) // Check if at least one artist matches
                                         {
-                                            if (CloseMatch(artist.Name, artistName))
+                                            if (ApiHelper.CloseMatch(artist.Name, artistName))
                                             {
                                                 oneArtistMatch = true;
                                                 break;
                                             }
                                         }
 
-                                        valid = oneArtistMatch && CloseMatch(trackName, song.Name);
+                                        valid = oneArtistMatch && ApiHelper.CloseMatch(trackName, song.Name);
                                     }
                                 }
                                 else if (isTrackSpecified) // Album and track specified
                                 {
                                     if (isTrackSpecified) // Album and track specified
                                     {
-                                        valid = CloseMatch(trackName, song.Name);
+                                        valid = ApiHelper.CloseMatch(trackName, song.Name);
                                     }
                                 }
 
@@ -275,14 +275,14 @@ namespace FluentDL.Services
                         bool oneArtistMatch = false;
                         foreach (var artist in song.Artists) // Check if at least one artist matches
                         {
-                            if (CloseMatch(artist.Name, artistName))
+                            if (ApiHelper.CloseMatch(artist.Name, artistName))
                             {
                                 oneArtistMatch = true;
                                 break;
                             }
                         }
 
-                        if (oneArtistMatch && CloseMatch(song.Name, trackName)) // If at least one artist match and track name close match
+                        if (oneArtistMatch && ApiHelper.CloseMatch(song.Name, trackName)) // If at least one artist match and track name close match
                         {
                             if (!trackIdList.Contains(song.Id)) // If not already added
                             {
@@ -308,7 +308,7 @@ namespace FluentDL.Services
                                 bool oneArtistMatch = false;
                                 foreach (var artist in song.Artists) // Check if at least one artist matches
                                 {
-                                    if (CloseMatch(artist.Name, artistName))
+                                    if (ApiHelper.CloseMatch(artist.Name, artistName))
                                     {
                                         oneArtistMatch = true;
                                         break;
@@ -619,34 +619,24 @@ namespace FluentDL.Services
             var artistName = songObj.Artists.Split(", ")[0]; // Get one artist
             var trackName = songObj.Title;
             var albumName = songObj.AlbumName;
+            var albumQuery = $"{artistName} {albumName}";
 
             int ct = 0;
             try
             {
                 // Start searching through albums
-                await foreach (var result in ytm.SearchAsync(albumName, SearchCategory.Albums))
+                await foreach (var result in ytm.SearchAsync(albumQuery, SearchCategory.Albums))
                 {
                     if (token.IsCancellationRequested) return null; // Check if task is cancelled
-                    if (ct++ >= 15) break;
+                    if (ct++ >= 5) break;
 
                     var browseId = await ytm.GetAlbumBrowseIdAsync(result.Id); // Get the browse id
                     var album = await ytm.GetAlbumInfoAsync(browseId);
 
                     // Ensure album artist matches
-                    bool oneArtistMatch = false;
-                    foreach (var queryArtist in album.Artists)
-                    {
-                        foreach (var artist in artists)
-                        {
-                            if (CloseMatch(queryArtist.Name, artist))
-                            {
-                                oneArtistMatch = true;
-                                break;
-                            }
-                        }
-                    }
+                    bool oneArtistMatch = album.Artists.Any(queryArtist => artists.Any(artist => ApiHelper.CloseMatch(queryArtist.Name, artist)));
 
-                    if (oneArtistMatch && CloseMatch(album.Name, albumName)) // This album result substring matches
+                    if (oneArtistMatch && ApiHelper.CloseMatch(album.Name, albumName)) // This album result substring matches
                     {
                         var playlistUrl = $"https://music.youtube.com/playlist?list={album.Id}";
 
@@ -660,20 +650,9 @@ namespace FluentDL.Services
                                     return null;
                                 }
 
-                                oneArtistMatch = false;
-                                foreach (var queryArtist in song.Artists) // Check if at least one artist matches for track
-                                {
-                                    foreach (var artist in artists)
-                                    {
-                                        if (CloseMatch(queryArtist.Name, artist))
-                                        {
-                                            oneArtistMatch = true;
-                                            break;
-                                        }
-                                    }
-                                }
+                                oneArtistMatch = song.Artists.Any(queryArtist => artists.Any(artist => ApiHelper.CloseMatch(queryArtist.Name, artist)));
 
-                                if (oneArtistMatch && CloseMatch(song.Name, trackName))
+                                if (oneArtistMatch && ApiHelper.CloseMatch(song.Name, trackName))
                                 {
                                     var retObj = await ConvertSongSearchObject(song);
                                     if (retObj != null)
@@ -698,26 +677,24 @@ namespace FluentDL.Services
             }
 
             // Try searching without album
-            var query = artistName + " " + trackName;
-
+            var query = $"{artistName} {trackName}";
+            ct = 0;
             try
             {
                 await foreach (var res in ytm.SearchAsync(query, SearchCategory.Songs))
                 {
+                    if (ct >= 20) break;
                     if (token.IsCancellationRequested) return null; // Check if task is cancelled
                     if (ApiHelper.PrunePunctuation(songObj.Title.ToLower()).Equals(ApiHelper.PrunePunctuation(res.Name.ToLower())))
                     {
-                        foreach (var artist in artists)
+                        var fullRes = await ytm.GetSongVideoInfoAsync(res.Id);
+                        foreach (var artistResult in fullRes.Artists)
                         {
-                            var fullRes = await ytm.GetSongVideoInfoAsync(res.Id);
-                            foreach (var artistResult in fullRes.Artists)
+                            if (artists.Any(artist => ApiHelper.CloseMatch(artistResult.Name, artist)))
                             {
-                                if (CloseMatch(artistResult.Name, artist))
-                                {
-                                    var retObj = await ConvertSongSearchObject(fullRes);
-                                    callback?.Invoke(InfoBarSeverity.Warning, retObj); // Not found by ISRC
-                                    return retObj;
-                                }
+                                var retObj = await ConvertSongSearchObject(fullRes);
+                                callback?.Invoke(InfoBarSeverity.Warning, retObj); // Not found by ISRC
+                                return retObj;
                             }
                         }
                     }
@@ -747,22 +724,22 @@ namespace FluentDL.Services
 
         // Largest image ends in maxresdefault.webp
         // Use mqdefault.jpg for smaller image (no black borders)
-        /*
-            Image formats:
-            https://i.ytimg.com/vi_webp/{id}/maxresdefault.webp
-            OR
-            https://i.ytimg.com/vi/{id}/maxresdefault.jpg
-            https://i.ytimg.com/vi/{id}/maxresdefault.jpg?{string}
+            /*
+                Image formats:
+                https://i.ytimg.com/vi_webp/{id}/maxresdefault.webp
+                OR
+                https://i.ytimg.com/vi/{id}/maxresdefault.jpg
+                https://i.ytimg.com/vi/{id}/maxresdefault.jpg?{string}
 
-            https://img.youtube.com/vi/{id}/default.jpg
-            https://img.youtube.com/vi/{id}/mqdefault.jpg
-            https://img.youtube.com/vi/{id}/hqdefault.jpg
+                https://img.youtube.com/vi/{id}/default.jpg
+                https://img.youtube.com/vi/{id}/mqdefault.jpg
+                https://img.youtube.com/vi/{id}/hqdefault.jpg
 
-            Youtube music image format:
-            https://lh3.googleusercontent.com/{string}=w60-h60-l90-rj
-            https://lh3.googleusercontent.com/{string}=w120-h120-l90-rj
-            https://lh3.googleusercontent.com/{string}=w544-h544-l90-rj (not returned by youtube music api, manually get)
-         */
+                Youtube music image format:
+                https://lh3.googleusercontent.com/{string}=w60-h60-l90-rj
+                https://lh3.googleusercontent.com/{string}=w120-h120-l90-rj
+                https://lh3.googleusercontent.com/{string}=w544-h544-l90-rj (not returned by youtube music api, manually get)
+             */
         public static async Task<string?> GetMaxResThumbnail(SongSearchObject song)
         {
             if (song.ImageLocation == null)
@@ -1082,6 +1059,62 @@ namespace FluentDL.Services
             await youtube.Videos.Streams.DownloadAsync(streamInfo, filePath /*, new Progress<double>(progressHandler)*/);
         }
 
+        // youtubeexplode alternative (libvideo)
+        public static async Task DownloadAudio2(string filePath, VideoId id)
+        {
+            var youtubeUrl = $"https://www.youtube.com/watch?v={id}";
+            var videoInfos = await youtubeAlt.GetAllVideosAsync(youtubeUrl);
+            var audioFormats = videoInfos.Where(i => i.AudioFormat == AudioFormat.Opus);
+            if (audioFormats.Any())
+            {
+                YouTubeVideo? bestAudioFormat = audioFormats.FirstOrDefault(i => i.AudioBitrate == audioFormats.Max(i => i.AudioBitrate));
+                if (bestAudioFormat != null) {
+                    Container container = new(bestAudioFormat.AudioFormat.ToString().ToLower());
+                    FileSize fileSize = new(bestAudioFormat.ContentLength ?? throw new("Invalid file size"));
+                    Bitrate bitrate = new(bestAudioFormat.AudioBitrate);
+                    AudioOnlyStreamInfo audioStreamInfo = new(bestAudioFormat.Uri, container, fileSize, bitrate, "opus", new(), false);
+                    await youtube.Videos.Streams.DownloadAsync(audioStreamInfo, filePath);
+                }
+            }
+        }
+
+        public static async Task DownloadAudioYTDLP(
+            string filePath,
+            string youtubeUrl)
+        {
+            var fullPath = System.IO.Path.Combine(AppContext.BaseDirectory, "Assets\\yt-dlp\\yt-dlp.exe");
+            var ffmpegPath = System.IO.Path.Combine(AppContext.BaseDirectory, "Assets\\ffmpeg\\bin");
+            var startInfo = new ProcessStartInfo(fullPath)
+            {
+                CreateNoWindow = true,
+                RedirectStandardError = true, // We only redirect what we will actually read
+                RedirectStandardOutput = false, // Set to false to prevent buffer deadlocks
+                ArgumentList = {"--ffmpeg-location", ffmpegPath, "-f", "bestaudio[acodec=opus]", "-o", filePath, youtubeUrl }
+            };
+
+            using var process = new Process { StartInfo = startInfo };
+            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(120));
+
+            try
+            {
+                process.Start();
+
+                await process.WaitForExitAsync(cts.Token);
+
+                if (process.ExitCode != 0)
+                {
+                    var error = await process.StandardError.ReadToEndAsync();
+                    throw new Exception($"yt-dlp error: {error}");
+                }
+            }
+            catch (OperationCanceledException)
+            {
+                process.Kill(entireProcessTree: true);
+                throw new TimeoutException("The download took too long.");
+            }
+        }
+
+
         /*
            Example codecs:
            Codec: mp4a.40.2 145.77 Kbit/s
@@ -1107,6 +1140,25 @@ namespace FluentDL.Services
             }
 
             await youtube.Videos.Streams.DownloadAsync(streamInfo, filePath /*, new Progress<double>(progressHandler)*/);
+        }
+
+        public static async Task DownloadAudioAAC2(string filePath, VideoId id)
+        {
+            var youtubeUrl = $"https://www.youtube.com/watch?v={id}";
+            var videoInfos = await youtubeAlt.GetAllVideosAsync(youtubeUrl);
+            var audioFormats = videoInfos.Where(i => i.AudioFormat == AudioFormat.Aac);
+            if (audioFormats.Any())
+            {
+                YouTubeVideo? bestAudioFormat = audioFormats.FirstOrDefault(i => i.AudioBitrate == audioFormats.Max(i => i.AudioBitrate));
+                if (bestAudioFormat != null)
+                {
+                    Container container = new(bestAudioFormat.AudioFormat.ToString().ToLower());
+                    FileSize fileSize = new(bestAudioFormat.ContentLength ?? throw new("Invalid file size"));
+                    Bitrate bitrate = new(bestAudioFormat.AudioBitrate);
+                    AudioOnlyStreamInfo audioStreamInfo = new(bestAudioFormat.Uri, container, fileSize, bitrate, "mp4a", new(), false);
+                    await youtube.Videos.Streams.DownloadAsync(audioStreamInfo, filePath);
+                }
+            }
         }
 
         public static async Task UpdateMetadata(string filePath, string id)
@@ -1230,6 +1282,31 @@ namespace FluentDL.Services
                 Debug.WriteLine("Error getting worst audio stream: " + e.Message);
                 return "";
             }
+        }
+
+        public static async Task<(Stream?, string?)> AudioStreamWorst(string url)
+        {
+            try
+            {
+                var videoInfos = await youtubeAlt.GetAllVideosAsync(url);
+                var audioFormats = videoInfos.Where(i => i.AudioFormat == AudioFormat.Opus);
+                if (audioFormats.Any())
+                {
+                    YouTubeVideo? bestAudioFormat = audioFormats.FirstOrDefault(i => i.AudioBitrate == audioFormats.Min(i => i.AudioBitrate));
+                    if (bestAudioFormat != null)
+                    {
+                        Container container = new(bestAudioFormat.AudioFormat.ToString().ToLower());
+                        FileSize fileSize = new(bestAudioFormat.ContentLength ?? throw new("Invalid file size"));
+                        Bitrate bitrate = new(bestAudioFormat.AudioBitrate);
+                        AudioOnlyStreamInfo audioStreamInfo = new(bestAudioFormat.Uri, container, fileSize, bitrate, "opus", new(), false);
+                        return (await youtube.Videos.Streams.GetAsync(audioStreamInfo), "audio/opus");
+                    }
+                }
+            } catch (Exception ex)
+            {
+                Debug.WriteLine("Error getting worst audio stream: " + ex.Message);
+            }
+            return (null, null);
         }
     }
 }
