@@ -35,30 +35,20 @@ FluentDL is organized into three sections: Search, Local Explorer, and Queue.
       <strong>Search</strong>
       <ul>
         <li>Lookup songs/albums from any of the four online sources</li>
-        <li>Search using natural language or strict search by title/artist/album</li>
         <li>Parse all tracks from an online link, with track/album/playlist links supported</li>
         <li>Open songs/albums in preview sidebar to listen, download, or view metadata.</li>
-        <li>Add songs to Queue (see below)</li>
       </ul>
-    </td>
-    <td>
-      <p align="center"><img src="./SampleGifs/search_page.webp" alt="Search Webp"/></p>
     </td>
   </tr>
   <tr>
     <td valign="top">
       <strong>Local Explorer</strong>
       <ul>
-        <li>Upload files from your computer or scan all audio files in a folder</li>
         <li>View file metadata and technical audio specs in-depth</li>
         <li>Edit file metadata live, including option to change cover art</li>
         <li>View file spectrogram using Spek</li>
         <li>Convert between flac, mp3, aac, alac, vorbis, opus with control over bitrate</li>
-        <li>Add songs to Queue (see below)</li>
       </ul>
-    </td>
-    <td>
-      <p align="center"><img src="./SampleGifs/local_page.webp" alt="Local Webp"/></p>
     </td>
   </tr>
   <tr>
@@ -67,23 +57,20 @@ FluentDL is organized into three sections: Search, Local Explorer, and Queue.
       <ul>
         <li>Matching between all possible combinations of online sources (e.g., convert Spotify and YouTube to Deezer equivalents)</li>
         <li>Download tracks from Deezer, Qobuz, or Youtube with maximum quality</li>
-        <li>Inspect downloaded tracks using Spek, a spectrogram tool</li>
+        <li>Inspect downloaded track spectrogram</li>
       </ul>
-    </td>
-    <td>
-      <p align="center"><img src="./SampleGifs/queue_page.webp" alt="Queue Webp"/></p>
     </td>
   </tr>
 </table>
 
 ## Installation
-To install the app, download the first zip from [Releases](https://github.com/DerekYang2/FluentDL/releases).
+<a href="https://apps.microsoft.com/detail/9mx44km97x7x?referrer=appbadge&cid=Github&mode=full" target="_blank"  rel="noopener noreferrer">
+	<img src="https://get.microsoft.com/images/en-us%20dark.svg" width="200"/>
+</a>
 
-If you are updating FluentDL, directly run `FluentDL_{VERSION}_x64_MSIX.msix` (recommended) or run the install script.
+You can download directly from the [Microsoft Store](https://apps.microsoft.com/detail/9mx44km97x7x?referrer=appbadge&cid=Github&mode=full) for easier updates.
 
-If this is your **first** installation, you must run the install script. The main purpose of the script is to trust the self-signed certificate.
-
-There are two ways to run the script, see the [install wiki](https://github.com/DerekYang2/FluentDL/wiki/Installation).
+Alternatively, you install the unsigned version from [Releases](https://github.com/DerekYang2/FluentDL/releases).
 
 ## Authentication
 
