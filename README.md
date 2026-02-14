@@ -9,8 +9,12 @@
 </h1>
 
 <p align="center">
-  <a href="https://github.com/derekyang2/fluentdl/releases/latest"><img src="https://img.shields.io/github/v/release/derekyang2/fluentdl"></a>
-  <a href="https://github.com/derekyang2/fluentdl/releases"><img src="https://img.shields.io/github/downloads/derekyang2/fluentdl/total?logo=github">
+  <a href="https://github.com/derekyang2/fluentdl/releases/latest"><img src="https://img.shields.io/github/v/release/derekyang2/fluentdl?style=for-the-badge" height="60"></a>
+	<a href="https://apps.microsoft.com/detail/9mx44km97x7x?referrer=appbadge&cid=Github&mode=full" target="_blank"  rel="noopener noreferrer">
+		<sub>
+	  <img src="https://get.microsoft.com/images/en-us%20dark.svg" height="35" />
+		</sub>
+    </a>
 </p>
 
 <p align="center">
@@ -25,9 +29,7 @@
 </p>
 
 ## About
-A Fluent UI desktop application that helps you download lossless songs as FLACs, convert between audio formats, match songs between different online sources, edit song metadata, and more. Under the hood, the app uses FFmpeg and APIs for Deezer, Qobuz, Spotify, and YouTube.
-
-FluentDL is organized into three sections: Search, Local Explorer, and Queue.
+A Fluent UI desktop application that helps you download lossless songs as FLACs, convert between audio formats, match songs between different online sources, edit song metadata, and more. FluentDL supports Deezer, Qobuz, Spotify, and YouTube.
 
 <table>
   <tr>
@@ -42,7 +44,7 @@ FluentDL is organized into three sections: Search, Local Explorer, and Queue.
   </tr>
   <tr>
     <td valign="top">
-      <strong>Local Explorer</strong>
+      <strong>Local</strong>
       <ul>
         <li>View file metadata and technical audio specs in-depth</li>
         <li>Edit file metadata live, including option to change cover art</li>
@@ -70,26 +72,24 @@ FluentDL is organized into three sections: Search, Local Explorer, and Queue.
 
 You can download directly from the [Microsoft Store](https://apps.microsoft.com/detail/9mx44km97x7x?referrer=appbadge&cid=Github&mode=full) for easier updates.
 
-Alternatively, you install the unsigned version from [Releases](https://github.com/DerekYang2/FluentDL/releases).
+Alternatively, you can sideload an unsigned version from [Releases](https://github.com/DerekYang2/FluentDL/releases).
 
 ## Authentication
 
 > [!NOTE]  
-> Streaming services occasionally make changes to APIs, which may result in authentication issues. Double check the [Issues](https://github.com/DerekYang2/FluentDL/issues) page for ongoing problems. 
+> Streaming services occasionally make changes to APIs, which may result in authentication issues.  Check the [Issues](https://github.com/DerekYang2/FluentDL/issues) page for known problems and feel free to report them. 
 
 The authentication required depends on the sources and features you use. 
 
 ### Searching and Converting
-Searches and conversions do not require authentication.
+For all sources except for Spotify, searches and conversions do not require authentication.
 
-If logged into the Spotify Web Player in your default browser, FluentDL will automatically authenticate from cookies.
-
-Otherwise, the bundled API keys will be used. 
-
-If the bundled keys are rate limited, generate your own as described in the [authentication wiki](https://github.com/DerekYang2/FluentDL/wiki/Authentication#spotify).
+For Spotify, searches require API keys, which come bundled with FluentDL. If the bundled keys are rate limited, you can generate your own as described in the [authentication wiki](https://github.com/DerekYang2/FluentDL/wiki/Authentication#spotify).
 
 ### Downloading
-Authentication requirements for downloading varies for the sources. The type of account (free vs subscription) may also affect the audio quality available. You do not have re-enter credentials each time because they are stored locally. They can be left alone for months or even longer, but may eventually expire or invalidate due to occasional web-player changes. 
+Authentication requirements for downloading varies for the sources. The type of account (free vs subscription) may also affect the audio quality available. 
+
+You do not have re-enter credentials each time because they are stored locally. They can be left alone for months or even longer, but may eventually expire or invalidate due to occasional web-player changes. 
 
 <table>
   <tr>
@@ -110,14 +110,12 @@ Authentication requirements for downloading varies for the sources. The type of 
   </tr>
   <tr>
     <td>Spotify</td>
-    <td>Not natively available, auto converted from other sources</td>
+    <td>Not natively available. Use the Queue to convert song to other sources.</td>
   </tr>
 </table>
 
 ### Retrieving Tokens
-Qobuz email and password is self explanatory. Some authentication methods, such as Deezer ARL, Qobuz id/tokens alternative, or Spotify developer app tokens, are not obvious. 
-
-However, tokens are not difficult to obtain: see the [authentication wiki](https://github.com/DerekYang2/FluentDL/wiki/Authentication) for a detailed guide. 
+See the [authentication wiki](https://github.com/DerekYang2/FluentDL/wiki/Authentication) for a detailed guide. 
 
 ## Build
 
