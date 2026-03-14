@@ -44,7 +44,7 @@ public class ActivationService : IActivationService
         await HandleActivationAsync(activationArgs);
 
         // Initialize APIs
-        await InitAPIs();
+        await InitAPIs(splashScreen);
 
         // Switch from splash screen to shell
         App.MainWindow.Content = _shell ?? new Frame();
@@ -82,29 +82,27 @@ public class ActivationService : IActivationService
         await Task.CompletedTask;
     }
 
-    private async Task InitAPIs()
+    private async Task InitAPIs(SplashScreenPage splashScreen)
     {
-        if (await SettingsViewModel.GetSetting<bool?>(SettingsViewModel.FirstRun) ?? true)
-            await SettingsViewModel.SetMissingDefaults();
-
-        await QueueViewModel.UpdateShortcutVisibility();
         try
         {
+            if (await SettingsViewModel.GetSetting<bool?>(SettingsViewModel.FirstRun) ?? true)
+                await SettingsViewModel.SetMissingDefaults();
 
+            await QueueViewModel.UpdateShortcutVisibility();
             // Fetch previous command list
-            await LocalCommands.Init();
-
+            //await LocalCommands.Init();
             // Initialize FFMpeg 
+            splashScreen.SetText("Initializing FFmpeg ...");
             await FFmpegRunner.Initialize();
 
             // Initialize environment variables
+            splashScreen.SetText("Reading Bundled Keys ...");
             await KeyReader.Initialize();
 
             // Initialize api objects
-            var localSettings = App.GetService<ILocalSettingsService>();
 
-            // Init queue database
-            await DatabaseService.InitDatabase();
+            var localSettings = App.GetService<ILocalSettingsService>();
 
             var qobuzEmail = DPAPIHelper.Decrypt(await localSettings.ReadSettingAsync<string>(SettingsViewModel.QobuzEmail) ?? "");
             var qobuzPassword = DPAPIHelper.Decrypt(await localSettings.ReadSettingAsync<string>(SettingsViewModel.QobuzPassword) ?? "");
@@ -119,28 +117,45 @@ public class ActivationService : IActivationService
             {
                 var tasks = new[]
                 {
-                    Task.Run(() => QobuzApi.Initialize(qobuzEmail, qobuzPassword, qobuzId, qobuzToken, qobuzAppId, qobuzAppSecret)),
-                    SpotifyApi.Initialize(spotifyClientId, spotifyClientSecret),
-                    DeezerApi.InitDeezerClient(deezerArl)
+                    Task.Run(() => {
+                        splashScreen.SetText("Initializing Qobuz ...", 0);
+                        QobuzApi.Initialize(qobuzEmail, qobuzPassword, qobuzId, qobuzToken, qobuzAppId, qobuzAppSecret);
+                        splashScreen.SetText("Qobuz Complete", 0);
+                    }),
+                    Task.Run(async()=>{
+                        splashScreen.SetText("Initializing Spotify ...", 1);
+                        await SpotifyApi.Initialize(spotifyClientId, spotifyClientSecret);
+                        splashScreen.SetText("Spotify Complete", 1);
+                    }),
+                    Task.Run(async()=>{
+                        splashScreen.SetText("Initializing Deezer ...", 2);
+                        await DeezerApi.InitDeezerClient(deezerArl);                         
+                        splashScreen.SetText("Deezer Complete", 2); 
+                    })
                 };
 
-                await Task.WhenAll(tasks.Select(t => t.WaitAsync(TimeSpan.FromSeconds(10))));
+                await Task.WhenAll(tasks.Select(t => t.WaitAsync(TimeSpan.FromSeconds(20))));
+
+                // Init queue database
+                splashScreen.ClearRows();
+                splashScreen.SetText("Loading Queue State ...");
+                await DatabaseService.InitDatabase();
+                await QueueViewModel.LoadSaveQueue();
             }
             catch (TimeoutException)
             {
                 Debug.WriteLine("One or more APIs timed out");
+                splashScreen.ClearRows();
+                splashScreen.SetText("ERROR: One or more APIs timed out");
+                await Task.Delay(2000);  // So user can see the message
             }
-            catch (Exception ex)
-            {
-                Debug.WriteLine($"API init error: {ex}");
-            }
-            await QueueViewModel.LoadSaveQueue();
-
-            QueueSaver.Init();
         }
         catch (Exception e)
         {
-            Debug.WriteLine(e);
+            Debug.WriteLine("Initialization error: " + e.ToString());
+            splashScreen.ClearRows();
+            splashScreen.SetText($"ERROR: {e.Message}");
+            await Task.Delay(2000);  // So user can see the message
         }
     }
 }

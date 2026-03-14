@@ -1,14 +1,18 @@
-﻿using System;
+﻿using FFMpegCore;
+using FFMpegCore.Enums;
+using FFMpegCore.Pipes;
+using FluentDL.Helpers;
+using FluentDL.ViewModels;
+using Microsoft.UI.Dispatching;
+using Microsoft.UI.Xaml.Media.Imaging;
+using Org.BouncyCastle.Bcpg.OpenPgp;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using FFMpegCore;
-using FFMpegCore.Enums;
-using FluentDL.Helpers;
-using FluentDL.ViewModels;
-using Org.BouncyCastle.Bcpg.OpenPgp;
+using Windows.Storage.Streams;
 
 namespace FluentDL.Services;
 
@@ -34,6 +38,47 @@ internal class FFmpegRunner
         catch (Exception e)
         {
             Debug.WriteLine(e.Message);
+        }
+    }
+
+    // Spectrogram
+    public static async Task<BitmapImage?> GetSpectrogram(string filePath, DispatcherQueue dispatcher)
+    {
+        try
+        {
+            int height = 512;
+            int width = height * 2;
+            using var ms = new MemoryStream();
+            await FFMpegArguments.FromFileInput(filePath)
+                .OutputToPipe(new StreamPipeSink(ms), options => options
+                .WithCustomArgument("-filter_complex")
+                .WithCustomArgument($"showspectrumpic=s={width}x{height}")
+                .WithVideoCodec("png")
+                .ForceFormat("image2pipe")).ProcessAsynchronously(throwOnError: true);
+            ms.Position = 0;
+            using IRandomAccessStream randomStream = ms.AsRandomAccessStream();
+            
+            var tcs = new TaskCompletionSource<BitmapImage?>();
+            // UI Thread
+            dispatcher.TryEnqueue(async () =>
+            {
+                try
+                {
+                    var bitmap = new BitmapImage();
+                    await bitmap.SetSourceAsync(randomStream);
+                    tcs.SetResult(bitmap);
+                }
+                catch
+                {
+                    tcs.SetResult(null);
+                }
+            });
+
+            return await tcs.Task;
+        } catch (Exception ex)
+        {
+            Debug.WriteLine(ex);
+            return null;
         }
     }
 

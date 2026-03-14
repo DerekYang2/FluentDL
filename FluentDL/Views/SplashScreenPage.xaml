@@ -30,13 +30,17 @@
                         UriSource="/Assets/StoreLogo.scale-200.png" />
                 </Image.Source>
             </Image>
-
-            <ProgressRing
-                Grid.Row="3"
-                Width="32"
-                Height="32"
-                HorizontalAlignment="Center"
-                IsActive="True" />
+            <StackPanel Grid.Row="3" Spacing="12">
+                <ProgressRing
+                    Width="32"
+                    Height="32"
+                    HorizontalAlignment="Center"
+                    IsActive="True" />
+                <TextBlock
+                    x:Name="InfoText"
+                    HorizontalAlignment="Center"
+                    Foreground="{ThemeResource TextFillColorSecondary}" />
+            </StackPanel>
         </Grid>
     </Grid>
 </Page>
