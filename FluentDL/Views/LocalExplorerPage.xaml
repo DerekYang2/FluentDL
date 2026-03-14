@@ -26,6 +26,8 @@
     </Page.Resources>
 
     <Grid x:Name="ContentArea">
+        <!--  Spectrogram dialog  -->
+        <views:SpectrogramDialog x:Name="SpectrogramDialog" />
         <!--  Metadata dialog  -->
         <ContentDialog
             x:Name="MetadataDialog"

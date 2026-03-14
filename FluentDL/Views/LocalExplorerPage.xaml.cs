@@ -107,7 +107,7 @@ public sealed partial class LocalExplorerPage : Page
         // Set on load
         this.Loaded += LocalExplorerPage_Loaded;
     }
-
+  
     private void ListChangeDelegate(object? sender, NotifyCollectionChangedEventArgs e)
     {
         SetResultsAmount(LocalExplorerViewModel.OriginalList.Count);
@@ -158,7 +158,7 @@ public sealed partial class LocalExplorerPage : Page
         editButton.Click += (sender, e) => OpenMetadataDialog(PreviewPanel.GetSong());
 
         var openSpekButton = new AppBarButton { Icon = new FontIcon { Glyph = "\uE9D2" }, Label = "Analyze" };
-        openSpekButton.Click += (sender, e) => { SpekRunner.RunSpek(PreviewPanel.GetSong()?.Id); };
+        openSpekButton.Click += async (sender, e) => await OpenSpectrogramDialog(PreviewPanel.GetSong());
 
         var openButton = new AppBarButton { Icon = new FontIcon { Glyph = "\uE8DA" }, Label = "Open" };
         openButton.Click += (sender, e) => OpenSongInExplorer(PreviewPanel.GetSong());
@@ -682,14 +682,20 @@ public sealed partial class LocalExplorerPage : Page
         if (selectedSong != null)
         {
             MetadataDialog.XamlRoot = this.XamlRoot;
-            dispatcher.TryEnqueue(() =>
+
+            dispatcher.TryEnqueue(async () =>
             {
                 ViewModel.SetUpdateObject(selectedSong);
                 MetadataTable.ItemsSource = ViewModel.CurrentMetadataList; // Fill table with the metadata list 
                 CoverArtTextBox.Text = ViewModel.GetCurrentImagePath() ?? "";
-                MetadataDialog.ShowAsync();
+                await MetadataDialog.ShowAsync();
             });
         }
+    }
+
+    private async Task OpenSpectrogramDialog(SongSearchObject? selectedSong)
+    {
+        await SpectrogramDialog.OpenSpectrogramDialog(selectedSong, dispatcher, this.XamlRoot);
     }
 
     private void AddSongToQueue(SongSearchObject? song)
