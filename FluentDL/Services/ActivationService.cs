@@ -96,9 +96,9 @@ public class ActivationService : IActivationService
             splashScreen.SetText("Initializing FFmpeg ...");
             await FFmpegRunner.Initialize();
 
-            // Initialize environment variables
-            splashScreen.SetText("Reading Bundled Keys ...");
-            await KeyReader.Initialize();
+            //// Initialize environment variables
+            //splashScreen.SetText("Reading Bundled Keys ...");
+            //await KeyReader.Initialize();
 
             // Initialize api objects
 

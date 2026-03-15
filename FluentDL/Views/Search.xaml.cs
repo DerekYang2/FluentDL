@@ -18,9 +18,12 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Drawing;
+using System.Globalization;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
+using Windows.Globalization.NumberFormatting;
+using Windows.UI.WebUI;
 using YoutubeExplode.Search;
 using YouTubeMusicAPI.Models.Info;
 using static System.Net.WebRequestMethods;
@@ -664,7 +667,13 @@ public sealed partial class Search : Page
             System.Threading.Thread.Sleep(250);
             dispatcher.TryEnqueue(() =>
             {
-                PageInfoBar.IsOpen = false;
+                try
+                {
+                    PageInfoBar.IsOpen = false;
+                } catch
+                {
+
+                }
             });
         });
     }
@@ -895,33 +904,26 @@ public sealed partial class Search : Page
 
         InfobarProgress.Visibility = Visibility.Visible; // Show the infobar's progress bar
 
-        int downloadCount = 0;
+        // Download notification helper
+        var downloadHelper = new DownloadProgressHelper($"<a href='{ApiHelper.GetUrl(songObj)}'>{directory}</a>");
+        downloadHelper.ProgressUpdated += (s, e) => {
+            var finalStr = e.DisplayString;
+            var progress = e.ProgressValue;
+            dispatcher.TryEnqueue(() =>
+            {
+                ShowInfoBarPermanent(InfoBarSeverity.Informational, finalStr, title: "Downloading", isIndeterminate: false, progressPercent: progress);
+            });
+        };
 
         if (songObj is AlbumSearchObject albumObj)
         {
-            InfobarProgress.IsIndeterminate = false;
-            InfobarProgress.Value = 0;
-            List<string> paths = await ApiHelper.DownloadAlbum(albumObj, directory, (severity, song, location) =>
-            {
-                dispatcher.TryEnqueue(() =>
-                {
-                    var count = Interlocked.Increment(ref downloadCount);
-                    InfobarProgress.Value = (double)count / albumObj.TracksCount * 100;
-                    if (severity == InfoBarSeverity.Error)
-                    {
-                        ShowInfoBarPermanent(InfoBarSeverity.Informational, $"Error: {location ?? "unspecified"} ({count} of {albumObj.TracksCount})");
-                    }
-                    else if (severity == InfoBarSeverity.Success)
-                    {
-                        ShowInfoBarPermanent(InfoBarSeverity.Informational, $"Successfully downloaded <a href='{location}'>{song.Title}</a> ({count} of {albumObj.TracksCount})");
-                    }
-                    else if (severity == InfoBarSeverity.Warning)
-                    {
-                        ShowInfoBarPermanent(InfoBarSeverity.Informational, $"Downloaded a possible equivalent of <a href='{location}'>{song.Title}</a> ({count} of {albumObj.TracksCount})");
-                    }
-                });
-            });
+            downloadHelper.SetTracksCount(albumObj.TracksCount);
+            downloadHelper.StartLoop();
+            var progress = new Progress<ProgressData>(downloadHelper.UpdateProgressLoop);
+            List<string> paths = await ApiHelper.DownloadAlbum(albumObj, directory, progress);
+            downloadHelper.StopLoop();
 
+            var failedTracks = 0;
             foreach (var path in paths)
             {
                 if (!string.IsNullOrWhiteSpace(path) && System.IO.File.Exists(path))
@@ -933,6 +935,7 @@ public sealed partial class Search : Page
                     catch (Exception ex)
                     {
                         Debug.WriteLine($"Failed to add downloaded song to local explorer: {ex.Message}");
+                        failedTracks++;
                     }
                 }
             }
@@ -952,9 +955,9 @@ public sealed partial class Search : Page
             {
                 ShowInfoBar(InfoBarSeverity.Error, $"Failed to download album '{albumObj.AlbumName}'", seconds: 10);
             }
-            else if (paths.Count < albumObj.TracksCount)
+            else if (paths.Count - failedTracks < albumObj.TracksCount)
             {
-                ShowInfoBar(InfoBarSeverity.Warning, $"Downloaded {paths.Count} of {albumObj.TracksCount} tracks for album <a href='{albumDir}'>{albumObj.Title}</a>", 10, buttonText: "View Download", onButtonClick: navigateLocalExplorer);
+                ShowInfoBar(InfoBarSeverity.Warning, $"Downloaded {paths.Count - failedTracks} of {albumObj.TracksCount} tracks for album <a href='{albumDir}'>{albumObj.Title}</a>", 10, buttonText: "View Download", onButtonClick: navigateLocalExplorer);
             }
             else
             {
@@ -963,10 +966,14 @@ public sealed partial class Search : Page
         }
         else
         {
-            string path = await ApiHelper.DownloadObject(songObj, directory, (severity, song, location) =>
+            var progress = new Progress<ProgressData>(downloadHelper.UpdateProgressLoop);
+            downloadHelper.StartLoop();
+
+            string path = await ApiHelper.DownloadObject(songObj, directory, progress, (severity, song, location) =>
             {
                 dispatcher.TryEnqueue(() =>
                 {
+                    downloadHelper.StopLoop();
                     InfobarProgress.Visibility = Visibility.Collapsed; // Hide the infobar's progress bar
 
                     Action navigateLocalExplorer = () =>
@@ -987,7 +994,6 @@ public sealed partial class Search : Page
                     {
                         ShowInfoBar(severity, $"Downloaded a possible equivalent of <a href='{location}'>{songObj.Title}</a>", 10, buttonText: "View Download", onButtonClick: navigateLocalExplorer);
                     }
-
                 });
             });
 
@@ -1043,7 +1049,7 @@ public sealed partial class Search : Page
         dispatcherTimer.Start();
     }
 
-    private void ShowInfoBarPermanent(InfoBarSeverity severity, string message, string title = "", string buttonText = "", Action? onButtonClick = null)
+    private void ShowInfoBarPermanent(InfoBarSeverity severity, string message, string title = "", string buttonText = "", Action? onButtonClick = null, bool isIndeterminate = true, double progressPercent = 0)
     {
         title = title.Trim();
         message = message.Trim();
@@ -1052,6 +1058,8 @@ public sealed partial class Search : Page
             PageInfoBar.IsOpen = true;
             PageInfoBar.Opacity = 1;
             PageInfoBar.Severity = severity;
+            InfobarProgress.IsIndeterminate = isIndeterminate;
+            InfobarProgress.Value = Math.Clamp(progressPercent * 100, 0, 100);
             //PageInfoBar.Title = title;
             if (!string.IsNullOrWhiteSpace(title))
             {

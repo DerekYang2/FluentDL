@@ -707,7 +707,7 @@ internal class DeezerApi
         return GetAlbumFromJsonElement(jsonObject);
     }
 
-    public static async Task<string> DownloadTrack(string filePath, SongSearchObject? song, DeezNET.Data.Bitrate? bitrateEnum = null, bool use128Fallback = false)
+    public static async Task<string> DownloadTrack(string filePath, SongSearchObject? song, DeezNET.Data.Bitrate? bitrateEnum = null, bool use128Fallback = false, IProgress<ProgressData>? progress = null)
     {
         // Remove extension if it exists
         filePath = ApiHelper.RemoveExtension(filePath);
@@ -745,11 +745,14 @@ internal class DeezerApi
         {
             throw new Exception("File already exists");
         }
+        // Progress identifier
+        var uniqueId = DateTime.Now.Ticks;
+        var stopwatch = Stopwatch.StartNew();
+
         byte[]? trackBytes = null;
         try
         {
             trackBytes = await deezerClient.Downloader.GetRawTrackBytes(id, (DeezNET.Data.Bitrate)bitrateEnum);
-
             if (trackBytes == null || trackBytes.Length == 0)
             {
                 throw new Exception("Failed to download track");
@@ -768,6 +771,16 @@ internal class DeezerApi
             {
                 throw new Exception("Failed to download track even with fallback");
             }
+        } finally
+        {
+            var arbitraryLength = (long)1e6;
+            progress?.Report(new ProgressData
+            {
+                uniqueId = uniqueId,
+                currentBytes = trackBytes?.Length ?? arbitraryLength,
+                totalBytes = trackBytes?.Length ?? arbitraryLength,
+                bps = trackBytes != null ? trackBytes.Length / stopwatch.Elapsed.TotalSeconds : 0
+            });
         }
 
         //trackBytes = await deezerClient.Downloader.ApplyMetadataToTrackBytes(id, trackBytes);

@@ -821,7 +821,7 @@ internal partial class QobuzApi
         return artistList.ToList();
     }
 
-    public static async Task<string> DownloadTrack(string filePath, SongSearchObject song, string? format = null)
+    public static async Task<string> DownloadTrack(string filePath, SongSearchObject song, IProgress<ProgressData> progress, string? format = null)
     {
         // Remove extension if it exists
         filePath = ApiHelper.RemoveExtension(filePath);
@@ -850,7 +850,7 @@ internal partial class QobuzApi
         }
 
         var fileUrl = apiService.GetTrackFileUrl(song.Id, format);
-        await ApiHelper.DownloadFileAsync(filePath, fileUrl.Url);
+        await ApiHelper.DownloadFileAsync(filePath, fileUrl.Url, progress);
         return filePath;
         //var trackBytes = await new HttpClient().GetByteArrayAsync(fileUrl.Url);
         //await File.WriteAllBytesAsync(filePath, trackBytes);

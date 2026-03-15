@@ -636,7 +636,7 @@ namespace FluentDL.Services
                     // Ensure album artist matches
                     bool oneArtistMatch = album.Artists.Any(queryArtist => artists.Any(artist => ApiHelper.CloseMatch(queryArtist.Name, artist)));
 
-                    if (oneArtistMatch && ApiHelper.CloseMatch(album.Name, albumName)) // This album result substring matches
+                        if (oneArtistMatch && ApiHelper.CloseMatch(album.Name, albumName)) // This album result substring matches
                     {
                         var playlistUrl = $"https://music.youtube.com/playlist?list={album.Id}";
 
@@ -1038,7 +1038,7 @@ namespace FluentDL.Services
         }
 
 
-        public static async Task DownloadAudio(string filePath, VideoId id)
+        public static async Task DownloadAudio(string filePath, VideoId id, IProgress<ProgressData> progress)
         {
             var streamManifest = await youtube.Videos.Streams.GetManifestAsync(id);
             var streamInfo = streamManifest.GetAudioOnlyStreams().GetWithHighestBitrate();
@@ -1056,7 +1056,53 @@ namespace FluentDL.Services
                 }
             }
 
-            await youtube.Videos.Streams.DownloadAsync(streamInfo, filePath /*, new Progress<double>(progressHandler)*/);
+            var uniqueId = DateTime.Now.Ticks;
+            var totalBytes = streamInfo.Size.Bytes;
+            long lastBytes = 0;
+            var stopwatch = Stopwatch.StartNew();
+            var lastTime = stopwatch.Elapsed; 
+            object progressLock = new();
+
+            var progressInner = new Progress<double>((percent) =>
+            {
+                var currentBytes = (long)Math.Round(percent * totalBytes);
+                double bps = 0;
+                lock (progressLock)
+                {
+                    var elapsedTime = stopwatch.Elapsed - lastTime;
+                    var deltaBytes = currentBytes - lastBytes; 
+                    bps = deltaBytes / elapsedTime.TotalSeconds; 
+                    // Next iteration
+                    lastBytes = currentBytes;
+                    lastTime = stopwatch.Elapsed; 
+                }
+                progress.Report(new ProgressData()
+                {
+                    uniqueId = uniqueId,
+                    totalBytes = totalBytes,
+                    currentBytes = currentBytes,
+                    bps = bps,
+                });
+            });
+
+            try
+            {
+                await youtube.Videos.Streams.DownloadAsync(streamInfo, filePath, progressInner);
+            }
+            catch
+            {
+                throw;
+            }
+            finally
+            {
+                progress.Report(new ProgressData()
+                {
+                    uniqueId = uniqueId,
+                    totalBytes = totalBytes,
+                    currentBytes = totalBytes,
+                    bps = 0
+                });
+            }
         }
 
         // youtubeexplode alternative (libvideo)
@@ -1191,10 +1237,10 @@ namespace FluentDL.Services
                 var metadata = new MetadataObject(filePath)
                 {
                     Title = ytmSong.Name,
-                    Artists = artists.ToArray(),
+                    Artists = artists?.ToArray(),
                     AlbumArtPath = GetMaxResThumbnail(ytmSong, video),
                     AlbumName = albumName,
-                    AlbumArtists = new[] { artists.First() },
+                    AlbumArtists = [artists?.FirstOrDefault("") ?? ""],
                     ReleaseDate = video.UploadDate.Date,
                     TrackNumber = 1,
                     TrackTotal = 1,

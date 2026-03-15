@@ -259,7 +259,7 @@ public sealed partial class QueuePage : Page
         }
     }
 
-    private void OpenSpekButton_Click(object sender, RoutedEventArgs e)
+    private async void OpenSpekButton_Click(object sender, RoutedEventArgs e)
     {
         var button = sender as Button;
         var song = button?.Tag as SongSearchObject;
@@ -268,8 +268,7 @@ public sealed partial class QueuePage : Page
             ShowInfoBar(InfoBarSeverity.Warning, "Track does not exist locally", 3);
             return;
         }
-
-        SpekRunner.RunSpek(song.Id);
+        await SpectrogramDialog.OpenSpectrogramDialog(song, dispatcherQueue, this.XamlRoot);
     }
 
     private void CopySongLink(SongSearchObject? song)
@@ -492,7 +491,7 @@ public sealed partial class QueuePage : Page
         dispatcherTimer.Start();
     }
 
-    private void ShowInfoBarPermanent(InfoBarSeverity severity, string message, string title = "")
+    private void ShowInfoBarPermanent(InfoBarSeverity severity, string message, string title = "", string buttonText = "", bool isIndeterminate = true, double progressPercent = 0)
     {
         title = title.Trim();
         message = message.Trim();
@@ -501,6 +500,8 @@ public sealed partial class QueuePage : Page
             PageInfoBar.IsOpen = true;
             PageInfoBar.Opacity = 1;
             PageInfoBar.Severity = severity;
+            InfobarProgress.IsIndeterminate = isIndeterminate;
+            InfobarProgress.Value = Math.Clamp(progressPercent * 100, 0, 100);
             //PageInfoBar.Title = title;
             if (!string.IsNullOrWhiteSpace(title))
             {
@@ -691,6 +692,19 @@ public sealed partial class QueuePage : Page
             }
         };
 
+        var downloadHelper = new DownloadProgressHelper($"Queue to <a href='{directory}'>{directory}</a>", totalCount);
+        downloadHelper.ProgressUpdated += (sender, args) =>
+        {
+            var finalStr = args.DisplayString;
+            var progress = args.ProgressValue;
+            dispatcherQueue.TryEnqueue(() =>
+            {
+                ShowInfoBarPermanent(InfoBarSeverity.Informational, finalStr, title: "Downloading", isIndeterminate: false, progressPercent: progress);
+            });
+        };
+        var progress = new Progress<ProgressData>(downloadHelper.UpdateProgressLoop);
+        downloadHelper.StartLoop();
+
         // Infobar notification
         ShowInfoBarPermanent(InfoBarSeverity.Informational, $"Saving {totalCount} tracks to <a href='{directory}'>{directory}</a>", title: "Download in Progress");
 
@@ -701,7 +715,7 @@ public sealed partial class QueuePage : Page
         var token = cancellationTokenSource.Token;
         IsConverting = true;
 
-        var EndConversionLambda = async () =>
+        async Task EndConversionLambda(string message)
         {
             DownloadAllButton.Visibility = ConvertDialogOpenButton.Visibility = ClearButton.Visibility = Visibility.Visible; // Show buttons
             ConvertStopText.Text = "Stop"; // Reset stop button text
@@ -713,7 +727,9 @@ public sealed partial class QueuePage : Page
             }
 
             ForceHideInfoBar();
-        };
+            downloadHelper.StopLoop();
+            ShowInfoBar(InfoBarSeverity.Informational, message);
+        }
 
         var downloadThreads = await SettingsViewModel.GetSetting<int?>(SettingsViewModel.ConversionThreads) ?? 1;
 
@@ -726,7 +742,7 @@ public sealed partial class QueuePage : Page
                     if (token.IsCancellationRequested) // Break the loop if the token is cancelled
                     {
                         IsConverting = false;
-                        dispatcherQueue.TryEnqueue(async () => await EndConversionLambda());
+                        dispatcherQueue.TryEnqueue(async () => await EndConversionLambda("Downloading Cancelled"));
                         return;
                     }
 
@@ -751,7 +767,7 @@ public sealed partial class QueuePage : Page
                     });
 
                     SongSearchObject? newSongObj = null;
-                    string fileLocation = await ApiHelper.DownloadObject(song, directory, conversionUpdateCallback);
+                    string fileLocation = await ApiHelper.DownloadObject(song, directory, progress, conversionUpdateCallback);
                     newSongObj = song;
 
                     dispatcherQueue.TryEnqueue(async () =>
@@ -810,7 +826,7 @@ public sealed partial class QueuePage : Page
                     if (processCaptured == totalCount) // If all tracks are processed
                     {
                         IsConverting = false;
-                        dispatcherQueue.TryEnqueue(async () => await EndConversionLambda());
+                        dispatcherQueue.TryEnqueue(async () => await EndConversionLambda("Downloading Complete"));
                         return;
                     }
                 }
@@ -909,8 +925,25 @@ public sealed partial class QueuePage : Page
             }
         };
 
+        // For to local output
+        var downloadHelper = new DownloadProgressHelper($"Queue to <a href='{directory}'>{directory}</a>", totalCount);
+        downloadHelper.ProgressUpdated += (sender, args) =>
+        {
+            var finalStr = args.DisplayString;
+            var progress = args.ProgressValue;
+            dispatcherQueue.TryEnqueue(() =>
+            {
+                ShowInfoBarPermanent(InfoBarSeverity.Informational, finalStr, title: "Downloading", isIndeterminate: false, progressPercent: progress);
+            });
+        };
+        var progress = new Progress<ProgressData>(downloadHelper.UpdateProgressLoop);
+        if (outputSource == "local")
+        {
+            downloadHelper.StartLoop();
+        }
+
         // Infobar notification
-        ShowInfoBarPermanent(InfoBarSeverity.Informational, $"Converting selected input sources to {GetOutputSource()}", "Conversion in Progress");
+        ShowInfoBarPermanent(InfoBarSeverity.Informational, $"Converting selected input sources to {GetOutputSource()}", title: "Conversion in Progress");
 
         var ogVal = QueueProgress.Value; // Save the original value of the progress bar
         QueueProgress.Value = 0; // Set to 0
@@ -919,7 +952,7 @@ public sealed partial class QueuePage : Page
         var token = cancellationTokenSource.Token;
         IsConverting = true;
 
-        var EndConversionLambda = async () =>
+        async Task EndConversionLambda()
         {
             DownloadAllButton.Visibility = ConvertDialogOpenButton.Visibility = ClearButton.Visibility = Visibility.Visible; // Show buttons
             ConvertStopText.Text = "Stop"; // Reset stop button text
@@ -930,10 +963,13 @@ public sealed partial class QueuePage : Page
             {
                 App.GetService<IAppNotificationService>().Show(string.Format("QueueCompletePayload".GetLocalized(), AppContext.BaseDirectory));
             }
-
+            if (outputSource == "local")
+            {
+                downloadHelper.StopLoop();
+            }
             ForceHideInfoBar();
             await ShowConversionDialog();  // Show conversion results dialog
-        };
+        }
 
         var downloadThreads = await SettingsViewModel.GetSetting<int?>(SettingsViewModel.ConversionThreads) ?? 1;
 
@@ -974,7 +1010,7 @@ public sealed partial class QueuePage : Page
                     string? fileLocation = null;
                     if (outputSource == "local") // Conversion to local, download the track
                     {
-                        fileLocation = await ApiHelper.DownloadObject(song, directory, conversionUpdateCallback);
+                        fileLocation = await ApiHelper.DownloadObject(song, directory, progress, conversionUpdateCallback);
                         newSongObj = song;
                     }
                     else
@@ -1104,7 +1140,6 @@ public sealed partial class QueuePage : Page
         // Set the counts
         ViewModel.SuccessCount = successSource.Count;
         ViewModel.WarningCount = warningSource.Count;
-        Debug.WriteLine(warningSource.Count);
         ViewModel.ErrorCount = errorSource.Count;
 
         if (ViewModel.SuccessCount > 0)

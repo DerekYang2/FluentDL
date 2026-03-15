@@ -653,8 +653,8 @@
                         <local:SettingsExpander.Description>
                             <!--Removed text for now: Alternatively, ensure you are logged into the <Hyperlink NavigateUri="https://open.spotify.com/">web player</Hyperlink> for automatic authentication.-->
                             <TextBlock>
-                                Optional: enter your own&#32;<Hyperlink NavigateUri="https://github.com/DerekYang2/FluentDL/wiki/Authentication#spotify">developer app credentials.</Hyperlink>
-                                Otherwise, FluentDL will use its included credentials.</TextBlock>
+                                Enter your own&#32;<Hyperlink NavigateUri="https://github.com/DerekYang2/FluentDL/wiki/Authentication#spotify">developer app credentials.</Hyperlink>
+                                NOTE: this requires a premium subscription for now.</TextBlock>
                         </local:SettingsExpander.Description>
                         <local:SettingsExpander.HeaderIcon>
                             <FontIcon Glyph="&#xE72E;" />

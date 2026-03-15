@@ -285,9 +285,7 @@ namespace FluentDL.Views
                         trackDetailsList.Add(new TrackDetail { Label = "Genre", Value = string.Join(", ", genreList) });
                     }
                     trackDetailsList.RemoveAt(trackDetailsList.ToList().FindIndex(t => t.Label == "Album"));
-                    trackDetailsList.Add(new TrackDetail { Label = "Popularity", Value = "" });
-                    RankRatingControl.Visibility = Visibility.Visible;
-                    SetRatingPercentage(GetPercentage(selectedSong));
+                    RankRatingControl.Visibility = Visibility.Collapsed;
                     // Tracks list view
                     TrackListHeader.Text = (selectedAlbum?.TracksCount ?? 0) switch
                     {
@@ -307,10 +305,7 @@ namespace FluentDL.Views
                     var genreStr = string.Join(", ", await SpotifyApi.GetGenres(track.Artists));
                     trackDetailsList.Add(new TrackDetail { Label = "Genre", Value = genreStr });
 
-                    // Configure popularity field
-                    trackDetailsList.Add(new TrackDetail { Label = "Popularity", Value = "" });
-                    RankRatingControl.Visibility = Visibility.Visible;
-                    SetRatingPercentage(GetPercentage(selectedSong));
+                    RankRatingControl.Visibility = Visibility.Collapsed;
 
                     // Load the audio stream
                     SetPlayerSource(await GetSpotifyPreviewUrl(selectedSong.Id));

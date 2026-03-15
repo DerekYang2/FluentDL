@@ -448,7 +448,10 @@
                     <TextBlock
                         x:Name="InfoBarTextBlock"
                         Margin="0,0,0,0"
-                        VerticalAlignment="Center" />
+                        VerticalAlignment="Center"
+                        FontFamily="Segoe UI Variable"
+                        Typography.NumeralAlignment="Tabular"
+                        Typography.NumeralStyle="Lining" />
                     <ProgressBar
                         x:Name="InfobarProgress"
                         Margin="0,0,0,-8"
@@ -550,6 +553,9 @@
                 </Grid>
             </StackPanel>
         </ContentDialog>
+
+        <!--  Spectrogram dialog  -->
+        <views:SpectrogramDialog x:Name="SpectrogramDialog" />
 
         <!--  Content Dialog for conversion results  -->
         <ContentDialog

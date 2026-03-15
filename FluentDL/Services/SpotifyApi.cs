@@ -64,80 +64,78 @@ namespace FluentDL.Services
                 }
             }
 
-            // If clientId and clientSecret are not provided, try to get from browser
-            /*
-            try
-            {
-                spotify = new SpotifyClient(config.WithAuthenticator(new EmbedAuthenticator()));
-                IsInitialized = true;
-                return;
-            }
-            catch (Exception e)
-            {
-                Debug.WriteLine("Failed to get access token: " + e.Message);
-            }
-            */
+            //// If clientId and clientSecret are not provided, try to get from browser
+            //try
+            //{
+            //    spotify = new SpotifyClient(config.WithAuthenticator(new EmbedAuthenticator()));
+            //    IsInitialized = true;
+            //    return;
+            //}
+            //catch (Exception e)
+            //{
+            //    Debug.WriteLine("Failed to get access token: " + e.Message);
+            //}
 
-            // If still not initialized, try to get bundled keys
-            try
-            {
-                var idList = KeyReader.GetValues("spot_id");
-                var secretList = KeyReader.GetValues("spot_secret");
+            //// If still not initialized, try to get bundled keys
+            //try
+            //{
+            //    var idList = KeyReader.GetValues("spot_id");
+            //    var secretList = KeyReader.GetValues("spot_secret");
 
-                if (!idList.IsEmpty && !secretList.IsEmpty && idList.Length == secretList.Length)  // If lists have content and same length
-                {
-                    // Shuffle idList
-                    var pairs = new List<(string? id, string? secret)>();
-                    for (int i = 0; i < idList.Length; i++)
-                    {
-                        pairs.Add((idList[i], secretList[i]));
-                    }
-                    var pairArr = pairs.ToArray();
-                    rand.Shuffle(pairArr);
+            //    if (!idList.IsEmpty && !secretList.IsEmpty && idList.Length == secretList.Length)  // If lists have content and same length
+            //    {
+            //        // Shuffle idList
+            //        var pairs = new List<(string? id, string? secret)>();
+            //        for (int i = 0; i < idList.Length; i++)
+            //        {
+            //            pairs.Add((idList[i], secretList[i]));
+            //        }
+            //        var pairArr = pairs.ToArray();
+            //        rand.Shuffle(pairArr);
 
-                    foreach (var (id, secret) in pairArr)
-                    {                        
-                        if (!string.IsNullOrEmpty(id) && !string.IsNullOrEmpty(secret))
-                        {
-                            spotify = new SpotifyClient(config.WithAuthenticator(new ClientCredentialsAuthenticator(id, secret)));
-                            if (await CheckClient())
-                            {
-                                IsInitialized = true;
-                                if (attemptedCustomIdSecret)
-                                {
-                                    authCallback?.Invoke(InfoBarSeverity.Warning, "User credentials failed — using included instead");
-                                }
-                                else
-                                {
-                                    authCallback?.Invoke(InfoBarSeverity.Success, "Logged in with included credentials");
-                                }
-                                loginString = $"Logged in with included (FluentDL) credentials:\nSelected Client ID: {id[..5] + "..."}";
-                                return;
-                            } else
-                            {
-                                Debug.WriteLine("Failed to validate client: " + id);
-                            }
-                        }   
-                    }
-                }
-            }
-            catch (Exception e)
-            {
-                Debug.WriteLine("Failed to initialize Spotify API: " + e.Message);
-                authCallback?.Invoke(InfoBarSeverity.Error, "Failed to initialize: " + e.Message);
-            }
-            if (!IsInitialized)
-            {
-                authCallback?.Invoke(InfoBarSeverity.Error, "All credential options failed");
-            }
+            //        foreach (var (id, secret) in pairArr)
+            //        {                        
+            //            if (!string.IsNullOrEmpty(id) && !string.IsNullOrEmpty(secret))
+            //            {
+            //                spotify = new SpotifyClient(config.WithAuthenticator(new ClientCredentialsAuthenticator(id, secret)));
+            //                if (await CheckClient())
+            //                {
+            //                    IsInitialized = true;
+            //                    if (attemptedCustomIdSecret)
+            //                    {
+            //                        authCallback?.Invoke(InfoBarSeverity.Warning, "User credentials failed — using included instead");
+            //                    }
+            //                    else
+            //                    {
+            //                        authCallback?.Invoke(InfoBarSeverity.Success, "Logged in with included credentials");
+            //                    }
+            //                    loginString = $"Logged in with included (FluentDL) credentials:\nSelected Client ID: {id[..5] + "..."}";
+            //                    return;
+            //                } else
+            //                {
+            //                    Debug.WriteLine("Failed to validate client: " + id);
+            //                }
+            //            }   
+            //        }
+            //    }
+            //}
+            //catch (Exception e)
+            //{
+            //    Debug.WriteLine("Failed to initialize Spotify API: " + e.Message);
+            //    authCallback?.Invoke(InfoBarSeverity.Error, "Failed to initialize: " + e.Message);
+            //}
+            //if (!IsInitialized)
+            //{
+            //    authCallback?.Invoke(InfoBarSeverity.Error, "All credential options failed");
+            //}
         }
 
         private static async Task<bool> CheckClient()
         {
             try
             {
-                var responseTask = spotify.Browse.GetCategories();
-                var response = await responseTask.WaitAsync(TimeSpan.FromSeconds(3)); // 3s timeout
+                var responseTask = spotify.Browse.GetFeaturedPlaylists();
+                  var response = await responseTask.WaitAsync(TimeSpan.FromSeconds(3)); // 3s timeout
 
                 return response != null;
             }
@@ -691,7 +689,7 @@ namespace FluentDL.Services
                 Id = track.Id,
                 ReleaseDate = track.Album.ReleaseDate,
                 Duration = ((int)Math.Round(track.DurationMs / 1000.0)).ToString(),
-                Rank = track.Popularity.ToString(),
+                Rank = "0",
                 AlbumName = track.Album.Name,
                 Explicit = track.Explicit,
                 TrackPosition = track.TrackNumber.ToString(),
@@ -741,7 +739,7 @@ namespace FluentDL.Services
                 AlbumName = album.Name,
                 Explicit = album.Tracks.Items?.Any(t => t.Explicit) ?? false,
                 TrackPosition = "1",
-                Rank = album.Popularity.ToString(),
+                Rank = "0",
                 Isrc = album.ExternalIds.TryGetValue("upc", out var upc) ? upc : null,
                 TracksCount = album.TotalTracks,
                 TrackList = album.Tracks.Items?.Select(t => ConvertSongSearchObject(t, album))?.Where(t => t != null)?.ToList() ?? [],
@@ -764,7 +762,7 @@ namespace FluentDL.Services
             return genreSet;
         }
 
-        public static async Task<string?> DownloadEquivalentTrack(string filePath, SongSearchObject song, bool strict = true, ConversionUpdateCallback? callback = default)
+        public static async Task<string?> DownloadEquivalentTrack(string filePath, SongSearchObject song, IProgress<ProgressData> progress, bool strict = true, ConversionUpdateCallback? callback = default)
         {
             if (!IsInitialized)
             {
@@ -787,7 +785,7 @@ namespace FluentDL.Services
 
                 try // Wrap in try catch because deezer can throw exception (overwrite or api exception)
                 {
-                    var resultPath = await DeezerApi.DownloadTrack(filePath, deezerEquivalent, bitrateEnum);
+                    var resultPath = await DeezerApi.DownloadTrack(filePath, deezerEquivalent, bitrateEnum, progress: progress);
                     callback?.Invoke(InfoBarSeverity.Success, song, resultPath);
                     return resultPath;
                 }
@@ -804,7 +802,7 @@ namespace FluentDL.Services
             {
                 try
                 {
-                    var resultPath = await QobuzApi.DownloadTrack(filePath, qobuzEquivalent, settingIdx == 0 ? "5" : " 6"); // mp3 or 16/44.1 flac
+                    var resultPath = await QobuzApi.DownloadTrack(filePath, qobuzEquivalent, progress, settingIdx == 0 ? "5" : " 6"); // mp3 or 16/44.1 flac
                     callback?.Invoke(InfoBarSeverity.Success, song, resultPath);
                     return resultPath;
                 }
@@ -825,7 +823,7 @@ namespace FluentDL.Services
 
                 try // Wrap in try catch because deezer can throw exception (overwrite or api exception)
                 {
-                    var resultPath = await DeezerApi.DownloadTrack(filePath, deezerEquivalent, bitrateEnum, use128Fallback: true);
+                    var resultPath = await DeezerApi.DownloadTrack(filePath, deezerEquivalent, bitrateEnum, use128Fallback: true, progress: progress);
                     callback?.Invoke(InfoBarSeverity.Success, song, resultPath);
                     return resultPath;
                 }
@@ -858,7 +856,7 @@ namespace FluentDL.Services
                         return null;
                     }
 
-                    await YoutubeApi.DownloadAudio(opusLocation, equivalent.Id); // Download audio as opus
+                    await YoutubeApi.DownloadAudio(opusLocation, equivalent.Id, progress); // Download audio as opus
 
                     string? convertedLocation = "";
 

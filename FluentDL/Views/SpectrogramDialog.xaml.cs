@@ -65,7 +65,6 @@ namespace FluentDL.Views
                     double heightRatio = measuredHeight / measuredWidth;  // Height = X * Width
                     double imgTargetH = Math.Floor(heightRatio * (double)imgW) - 1;
                     double scale_factor = imgTargetH / (double)imgH;
-                    Debug.WriteLine(scale_factor);
                     SpectrogramScrollView.ZoomTo((float)scale_factor, null);
                     await Task.Delay(100);
                 }

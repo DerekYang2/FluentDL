@@ -20,8 +20,53 @@ using BitmapImage = Microsoft.UI.Xaml.Media.Imaging.BitmapImage;
 
 namespace FluentDL.Helpers;
 
-internal class ApiHelper
+internal struct ProgressData
 {
+    public long uniqueId;
+    public long? totalBytes;
+    public long? currentBytes;
+    public readonly double? percent
+    {
+        get
+        {
+            if (totalBytes != null && currentBytes != null)
+            {
+                return (double)currentBytes / totalBytes;
+            }
+            return null;
+        }
+    }
+    public double? bps;
+
+    public readonly double PercentRounded()
+    {
+        if (percent == null)
+            return 0;
+        return Math.Round((double)percent * 100d);
+    }
+
+    public readonly double TotalMB()
+    {
+        if (totalBytes == null)
+            return 0;
+        return Math.Round((double)totalBytes / 1024d / 1024d, 1);
+    } 
+    public readonly double CurrentMB()
+    {
+        if (currentBytes == null)
+            return 0;
+        return Math.Round((double)currentBytes / 1024d / 1024d, 1);
+    }
+    public readonly double MBPS()
+    {
+        if (bps == null)
+            return 0;
+        return Math.Round((double)bps / 1024d / 1024d, 1);
+    }
+}
+
+internal class ApiHelper
+{   
     private static HttpClient client = new HttpClient();
     private static HttpClient clientNoRedir = new HttpClient(new HttpClientHandler { AllowAutoRedirect = false }, true);
 
@@ -171,7 +216,7 @@ internal class ApiHelper
             .Replace("{title}", song.Title).Trim();
     }
    
-    private static async Task<string> DownloadTrackInternal(SongSearchObject song, string directory, ConversionUpdateCallback? callback = default)
+    private static async Task<string> DownloadTrackInternal(SongSearchObject song, string directory, IProgress<ProgressData> progress, ConversionUpdateCallback? callback = default)
     {
         // Create file name
         var wildCardStr = await SettingsViewModel.GetSetting<string>(SettingsViewModel.FileWildcard);
@@ -207,7 +252,7 @@ internal class ApiHelper
                         throw new Exception("FFmpeg is not initialized.");
                     }
 
-                    await YoutubeApi.DownloadAudioAAC2(mp4Location, song.Id);
+                    await YoutubeApi.DownloadAudioAAC(mp4Location, song.Id);
                     await FFmpegRunner.ConvertMp4ToM4aAsync(mp4Location);
                     await YoutubeApi.UpdateMetadata(m4aLocation, song.Id);
                     callback?.Invoke(InfoBarSeverity.Success, song, m4aLocation); // Assume success
@@ -220,7 +265,7 @@ internal class ApiHelper
                     throw new Exception("File already exists."); // Will be caught below
                 }
 
-                await YoutubeApi.DownloadAudio2(opusLocation, song.Id);  // Download opus stream
+                await YoutubeApi.DownloadAudio(opusLocation, song.Id, progress);  // Download opus stream
 
                 if (settingIdx == 0) // Do not convert to flac
                 {
@@ -251,7 +296,7 @@ internal class ApiHelper
         {
             try
             {
-                var resultPath = await DeezerApi.DownloadTrack(locationNoExt, song, use128Fallback: true);
+                var resultPath = await DeezerApi.DownloadTrack(locationNoExt, song, use128Fallback: true, progress: progress);
                 await DeezerApi.UpdateMetadata(resultPath, song.Id);
                 callback?.Invoke(InfoBarSeverity.Success, song, resultPath); // Assume success
                 return resultPath;
@@ -267,7 +312,7 @@ internal class ApiHelper
         {
             try
             {
-                var resultPath = await QobuzApi.DownloadTrack(locationNoExt, song);
+                var resultPath = await QobuzApi.DownloadTrack(locationNoExt, song, progress);
                 await QobuzApi.UpdateMetadata(resultPath, song.Id);
                 callback?.Invoke(InfoBarSeverity.Success, song, resultPath); // Assume success
                 return resultPath;
@@ -281,7 +326,7 @@ internal class ApiHelper
 
         if (song.Source == "spotify")
         {
-            var resultPath = await SpotifyApi.DownloadEquivalentTrack(locationNoExt, song, false, callback);
+            var resultPath = await SpotifyApi.DownloadEquivalentTrack(locationNoExt, song, progress, false, callback);
 
             if (resultPath != null)
             {
@@ -295,7 +340,7 @@ internal class ApiHelper
         return string.Empty;
     }
 
-    public static async Task<string> DownloadObject(SongSearchObject song, string directory, ConversionUpdateCallback? callback = default)
+    public static async Task<string> DownloadObject(SongSearchObject song, string directory, IProgress<ProgressData> progress, ConversionUpdateCallback? callback = default)
     {
         // Create file path
         bool createTrackSubfolder = await SettingsViewModel.GetSetting<bool>(SettingsViewModel.Subfolders);
@@ -323,10 +368,10 @@ internal class ApiHelper
             }
         }
 
-        return await DownloadTrackInternal(song, directory, callback);
+        return await DownloadTrackInternal(song, directory, progress, callback);
     }
 
-    public static async Task<List<string>> DownloadAlbum(AlbumSearchObject album, string directory, ConversionUpdateCallback? callback = default)
+    public static async Task<List<string>> DownloadAlbum(AlbumSearchObject album, string directory, IProgress<ProgressData> progress, ConversionUpdateCallback? callback = default)
     {
         bool createAlbumSubfolder = await SettingsViewModel.GetSetting<bool>(SettingsViewModel.AlbumSubfolders);
         if (createAlbumSubfolder)
@@ -428,7 +473,7 @@ internal class ApiHelper
                 try
                 {
                     // Download the track
-                    var downloadPath = await DownloadTrackInternal(track, directory, conversionCallback);
+                    var downloadPath = await DownloadTrackInternal(track, directory, progress, conversionCallback);
                     if (File.Exists(downloadPath))
                     {
                         downloadedFiles.Add(downloadPath);
@@ -649,31 +694,44 @@ internal class ApiHelper
     }
 
     // For any file downloading with progress
-    public static async Task DownloadFileAsync(string filePath, string downloadUrl)
+    public static async Task DownloadFileAsync(string filePath, string downloadUrl, IProgress<ProgressData> progress)
     {
+        using var response = await client.GetAsync(downloadUrl, HttpCompletionOption.ResponseHeadersRead); 
+        response.EnsureSuccessStatusCode(); 
+        var contentLength = response.Content.Headers.ContentLength ?? 0;
+
+
         await using Stream streamRead = await client.GetStreamAsync(downloadUrl);
         await using FileStream streamWrite = System.IO.File.Create(filePath);
-        var totalBytesRead = 0;
-        var buffer = new byte[131072]; // 128KB buffer size
+        long totalBytesRead = 0;
+        var buffer = new byte[128 * 1024]; // 128KB buffer size
         var firstBufferRead = false;
-        //Stopwatch stopwatch = Stopwatch.StartNew();
 
+        Stopwatch stopwatch = Stopwatch.StartNew();
+        var lastElapsed = stopwatch.Elapsed;
         int bytesRead;
-        while ((bytesRead = await streamRead.ReadAsync(buffer, 0, buffer.Length)) > 0)
+
+        // Progress identifier
+        var uniqueId = DateTime.Now.Ticks;
+
+        try
         {
-            await streamWrite.WriteAsync(buffer.AsMemory(0, Math.Min(buffer.Length, bytesRead)));
-            /*
-            totalBytesRead += bytesRead;
-            
-            var speed = totalBytesRead / 1024d / 1024d / stopwatch.Elapsed.TotalSeconds;
-
-            if (!firstBufferRead || stopwatch.ElapsedMilliseconds >= 500)
+            while ((bytesRead = await streamRead.ReadAsync(buffer, 0, buffer.Length)) > 0)
             {
-                Debug.WriteLine($"Downloading... {speed:F3} MB/s");
-            }
+                await streamWrite.WriteAsync(buffer.AsMemory(0, Math.Min(buffer.Length, bytesRead)));
+                totalBytesRead += bytesRead;
+                double? percent = contentLength > 0 ? (double)totalBytesRead / contentLength : null;
 
-            firstBufferRead = true;
-            */
+                var loopElapsed = stopwatch.Elapsed - lastElapsed;
+                progress.Report(new ProgressData() { uniqueId = uniqueId, currentBytes = totalBytesRead, totalBytes = contentLength, bps = bytesRead / loopElapsed.TotalSeconds });
+                lastElapsed = stopwatch.Elapsed;
+            }
+        } catch
+        {
+            throw;
+        } finally
+        {
+            progress.Report(new ProgressData() { uniqueId = uniqueId, currentBytes = contentLength, totalBytes = contentLength, bps = 0 });
         }
     }
 }
