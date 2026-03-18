@@ -11,15 +11,15 @@
   IgnorableNamespaces="uap rescap genTemplate">
 
   <Identity
-    Name="e2a9b324-d68e-4e2d-9c36-70405ade87d9"
-    Publisher="CN=derek"
-    Version="3.3.0.0" />
-    
-  <mp:PhoneIdentity PhoneProductId="e2a9b324-d68e-4e2d-9c36-70405ade87d9" PhonePublisherId="00000000-0000-0000-0000-000000000000"/>
-    
+    Name="DerekYang2.FluentDL"
+    Publisher="CN=DD45FB67-1F5A-4180-88DE-453755BBC3D4"
+    Version="3.4.0.0" />
+
+  <mp:PhoneIdentity PhoneProductId="c3999bea-b5ce-432c-be9f-fdcadbb0e6d1" PhonePublisherId="00000000-0000-0000-0000-000000000000"/>
+
   <Properties>
     <DisplayName>FluentDL</DisplayName>
-    <PublisherDisplayName>derek</PublisherDisplayName>
+    <PublisherDisplayName>DerekYang2</PublisherDisplayName>
     <Logo>Assets\StoreLogo.png</Logo>
   </Properties>
 
@@ -47,17 +47,17 @@
         <uap:SplashScreen Image="Assets\SplashScreen.png" />
       </uap:VisualElements>
       <Extensions>
-          <desktop:Extension Category="windows.toastNotificationActivation">
-              <desktop:ToastNotificationActivation ToastActivatorCLSID="d8c5041b-3eb2-4a89-b0f8-48687319a526" />
-          </desktop:Extension>
+        <desktop:Extension Category="windows.toastNotificationActivation">
+          <desktop:ToastNotificationActivation ToastActivatorCLSID="d8c5041b-3eb2-4a89-b0f8-48687319a526" />
+        </desktop:Extension>
 
-          <com:Extension Category="windows.comServer">
-              <com:ComServer>
-                  <com:ExeServer Executable="FluentDL.exe" Arguments="----AppNotificationActivated:" DisplayName="Toast activator">
-                      <com:Class Id="d8c5041b-3eb2-4a89-b0f8-48687319a526" DisplayName="Toast activator"/>
-                  </com:ExeServer>
-              </com:ComServer>
-          </com:Extension>
+        <com:Extension Category="windows.comServer">
+          <com:ComServer>
+            <com:ExeServer Executable="FluentDL.exe" Arguments="----AppNotificationActivated:" DisplayName="Toast activator">
+              <com:Class Id="d8c5041b-3eb2-4a89-b0f8-48687319a526" DisplayName="Toast activator"/>
+            </com:ExeServer>
+          </com:ComServer>
+        </com:Extension>
       </Extensions>
     </Application>
   </Applications>
