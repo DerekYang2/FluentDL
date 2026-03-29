@@ -3,3 +3,11 @@ FluentDL.Core/obj/
 FluentDL.Core/bin/
 /FluentDL/Assets/keys.json
 /FluentDL/Assets/keys.txt
+/FluentDL/PackageSelect/csproj_local.txt
+/FluentDL/PackageSelect/csproj_store.txt
+/FluentDL/PackageSelect/Package.appxmanifest.bak
+/FluentDL/PackageSelect/select.ps1
+/FluentDL/PackageSelect/sideload.appxmanifest.txt
+/FluentDL/PackageSelect/store.appxmanifest.txt
+
+*.bak

@@ -1,4 +1,4 @@
-﻿using Newtonsoft.Json;
+using Newtonsoft.Json;
 using QobuzApiSharp.Models.Content;
 using System;
 using System.Collections.Generic;
@@ -140,6 +140,47 @@ namespace FluentDL.Services
 
                 offset += currentLimit;
             }
+        }
+
+        public static async Task<Track?> SearchISRC(string isrc)
+        {
+            try
+            {
+                var requestUrl = $"{BaseUrl}/track/search?query={Uri.EscapeDataString(isrc)}&limit=1";
+
+                using HttpRequestMessage request = new(HttpMethod.Get, requestUrl);
+                var response = await QobuzHttpClient.SendAsync(request);
+                if (response?.IsSuccessStatusCode ?? false) {
+                
+                    var jsonResultString = await response.Content.ReadAsStringAsync();
+                    if (string.IsNullOrWhiteSpace(jsonResultString))
+                        return null;
+                    // Create JSON object from the response
+                    Newtonsoft.Json.Linq.JObject jsonObject = await Task.Run(() =>
+                    {
+                        try
+                        {
+                            return Newtonsoft.Json.Linq.JObject.Parse(jsonResultString);
+                        }
+                        catch (JsonReaderException)
+                        {
+                            // Handle JSON parsing error
+                            return [];
+                        }
+                    });
+                    var jsonArray = jsonObject["tracks"]?["items"];
+                    if (jsonArray != null && jsonArray.Any())
+                    {
+                        var trackObj = jsonArray.First;
+                        return trackObj?.ToObject<Track>();
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine("Error searching ISRC: " + ex.ToString());
+            }
+            return null;
         }
     }
 }

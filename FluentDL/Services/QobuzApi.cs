@@ -651,22 +651,18 @@ internal partial class QobuzApi
 
     public static async Task<SongSearchObject?> GetQobuzTrack(SongSearchObject songObj, CancellationToken token = default, ConversionUpdateCallback? callback = null, bool onlyISRC = false)
     {
-        // No built-in method for this, so we have to get all tracks and search for the ISRC
         string? isrc = songObj.Isrc;
         string query = songObj.Artists.Split(", ")[0] + " " + songObj.Title;
 
+        // First attempt exact isrc search
         if (isrc != null)
         {
-            await foreach (var track in ApiSearch<Track>(query, 50))
+            var foundTrack = await SearchISRC(isrc);
+            if (foundTrack != null)
             {
-                if (token.IsCancellationRequested) return null;
-
-                if (track.Isrc == isrc)
-                {
-                    var retObj = ConvertSongSearchObject(track);
-                    callback?.Invoke(InfoBarSeverity.Success, retObj); // Show a success message
-                    return retObj;
-                }
+                var retObj = ConvertSongSearchObject(foundTrack);
+                callback?.Invoke(InfoBarSeverity.Success, retObj); // Show a success message
+                return retObj;
             }
         }
 
