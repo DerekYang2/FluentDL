@@ -23,6 +23,7 @@
         <helpers:DurationConverter x:Key="DurationConverter" />
         <helpers:VisibilityConverter x:Key="VisibilityConverter" />
         <helpers:CollapsedConverter x:Key="CollapsedConverter" />
+        <helpers:StringNullorEmptyVisibilityConverter x:Key="StringNullorEmptyVisibilityConverter" />
         <helpers:SourceToColorConverter x:Key="SourceToColorConverter" />
         <helpers:AlbumCountConverter x:Key="AlbumCountConverter" />
     </Page.Resources>
@@ -428,7 +429,8 @@
                                     FontFamily="Segoe UI Variable Display"
                                     Foreground="{ThemeResource TextFillColorSecondary}"
                                     Style="{ThemeResource BodyTextBlockStyle}"
-                                    Text="&#160;&#x2022;&#160;&#xfeff;" />
+                                    Text="&#160;&#x2022;&#160;&#xfeff;"
+                                    Visibility="{x:Bind ReleaseDate, Converter={StaticResource StringNullorEmptyVisibilityConverter}}" />
                                 <TextBlock
                                     HorizontalAlignment="Left"
                                     FontFamily="Segoe UI Variable Display"

@@ -171,6 +171,20 @@ internal class InverseNullVisibilityConverter : IValueConverter
     }
 }
 
+internal class StringNullorEmptyVisibilityConverter : IValueConverter
+{
+    // Converts imagelocation path to Visibility
+    public object Convert(object? value, Type targetType, object parameter, string language)
+    {
+        return !string.IsNullOrEmpty(value?.ToString()) ? Microsoft.UI.Xaml.Visibility.Visible : Microsoft.UI.Xaml.Visibility.Collapsed;
+    }
+
+    public object ConvertBack(object value, Type targetType, object parameter, string language)
+    {
+        throw new NotImplementedException();
+    }
+}
+
 internal class SourceToColorConverter : IValueConverter
 {
     // Converts source to color
