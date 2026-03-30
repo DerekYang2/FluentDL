@@ -593,14 +593,10 @@ public sealed partial class Search : Page
                     {
                         foreach (var t in album.TrackList ?? [])
                         {
-                            var track = await SpotifyApi.GetTrack(t.Id);
-                            if (track != null)
+                            var songObj = await SpotifyApi.GetTrack(t.Id);
+                            if (songObj != null)
                             {
-                                var songObj = SpotifyApi.ConvertSongSearchObject(track);
-                                if (songObj != null)
-                                {
-                                    albumTracks.Add(songObj);
-                                }
+                                albumTracks.Add(songObj);
                             }
                         }
                     }
@@ -799,14 +795,10 @@ public sealed partial class Search : Page
                 {
                     foreach (var t in album.TrackList ?? [])
                     {
-                        var track = await SpotifyApi.GetTrack(t.Id);
-                        if (track != null)
+                        var songObj = await SpotifyApi.GetTrack(t.Id);
+                        if (songObj != null)
                         {
-                            var songObj = SpotifyApi.ConvertSongSearchObject(track);
-                            if (songObj != null)
-                            {
-                                albumTracks.Add(songObj);
-                            }
+                            albumTracks.Add(songObj);
                         }
                     }
                 }

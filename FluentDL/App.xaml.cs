@@ -6,6 +6,7 @@ using FluentDL.Helpers;
 using FluentDL.Models;
 using FluentDL.Notifications;
 using FluentDL.Services;
+using FluentDL.Services.CustomSpotify;
 using FluentDL.ViewModels;
 using FluentDL.Views;
 using Microsoft.Extensions.DependencyInjection;
@@ -104,6 +105,13 @@ public partial class App : Application
                     services.AddTransient<Search>();
                     services.AddTransient<ShellPage>();
                     services.AddTransient<ShellViewModel>();
+
+                    // Spotify web player services
+                    services.AddHttpClient();
+                    services.AddSingleton<IClientTokenService, ClientTokenService>();
+                    services.AddHttpClient<ISpotifyISRCService, SpotifyISRCService>();
+                    services.AddSingleton<ISpotifyWebService, SpotifyWebService>();
+                    services.AddMemoryCache();
 
                     // Configuration
                     services.Configure<LocalSettingsOptions>(

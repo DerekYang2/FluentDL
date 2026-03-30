@@ -429,14 +429,10 @@ internal class ApiHelper
             List<SongSearchObject> newList = [];
             foreach (var t in album.TrackList ?? [])
             {
-                var track = await SpotifyApi.GetTrack(t.Id);
-                if (track != null)
+                var songObj = await SpotifyApi.GetTrack(t.Id);
+                if (songObj != null)
                 {
-                    var songObj = SpotifyApi.ConvertSongSearchObject(track);
-                    if (songObj != null)
-                    {
-                        newList.Add(songObj);
-                    }
+                    newList.Add(songObj);
                 }
             }
             album.TrackList = newList;
