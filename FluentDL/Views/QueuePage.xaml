@@ -27,6 +27,7 @@
         <helpers:InverseNullVisibilityConverter x:Key="InverseNullVisibilityConverter" />
         <helpers:SourceToColorConverter x:Key="SourceToColorConverter" />
         <helpers:LocalSourceToVisibilityConverter x:Key="LocalSourceToVisibilityConverter" />
+        <helpers:StringNullorEmptyVisibilityConverter x:Key="StringNullorEmptyVisibilityConverter" />
     </Page.Resources>
 
     <Grid>
@@ -227,14 +228,13 @@
                                 Style="{ThemeResource BodyTextBlockStyle}"
                                 Text="{x:Bind ReleaseDate, Converter={StaticResource DateToYearConverter}}" />
                             <TextBlock
-                                Margin="5,0,0,0"
                                 HorizontalAlignment="Left"
                                 FontFamily="Segoe UI Variable Display"
                                 Foreground="{ThemeResource TextFillColorSecondary}"
                                 Style="{ThemeResource BodyTextBlockStyle}"
-                                Text="&#x2022;" />
+                                Text="&#160;&#x2022;&#160;&#xfeff;"
+                                Visibility="{x:Bind ReleaseDate, Converter={StaticResource StringNullorEmptyVisibilityConverter}}" />
                             <TextBlock
-                                Margin="5,0,0,0"
                                 HorizontalAlignment="Left"
                                 FontFamily="Segoe UI Variable Display"
                                 Foreground="{ThemeResource TextFillColorSecondary}"
@@ -720,10 +720,11 @@
                                                     Style="{ThemeResource BodyTextBlockStyle}"
                                                     Text="{x:Bind ReleaseDate, Converter={StaticResource DateToYearConverter}}" />
                                                 <TextBlock
-                                                    Margin="5,0,0,0"
                                                     HorizontalAlignment="Left"
+                                                    FontFamily="Segoe UI Variable Display"
                                                     Style="{ThemeResource BodyTextBlockStyle}"
-                                                    Text="&#x2022;" />
+                                                    Text="&#160;&#x2022;&#160;&#xfeff;"
+                                                    Visibility="{x:Bind ReleaseDate, Converter={StaticResource StringNullorEmptyVisibilityConverter}}" />
                                                 <TextBlock
                                                     Margin="5,0,0,0"
                                                     HorizontalAlignment="Left"

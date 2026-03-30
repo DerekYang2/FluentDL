@@ -7,11 +7,13 @@ using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
+using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Imaging;
 using SpotifyAPI.Web;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using Windows.Media.Core;
 
 
@@ -27,6 +29,28 @@ namespace FluentDL.Views
         private double rankValue = 0;
         SongSearchObject? song = null;
         DispatcherQueue dispatcher;
+        public event PropertyChangedEventHandler? PropertyChanged;
+
+        public double RankValue
+        {
+            get { return rankValue; }
+            set
+            {
+                rankValue = value;
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(RankValue)));
+            }
+        }
+
+        private ImageSource? _imageSource;
+        public ImageSource? ImageSource
+        {
+            get => _imageSource;
+            set
+            {
+                _imageSource = value;
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(ImageSource)));
+            }
+        }
 
         // Streams
         private Stream? _originalStream;
@@ -66,18 +90,6 @@ namespace FluentDL.Views
             } catch (Exception ex)
             {
                 Debug.WriteLine(ex);
-            }
-        }
-
-        public event PropertyChangedEventHandler? PropertyChanged;
-
-        public double RankValue
-        {
-            get { return rankValue; }
-            set
-            {
-                rankValue = value;
-                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(RankValue)));
             }
         }
 
@@ -131,7 +143,7 @@ namespace FluentDL.Views
             CommandBar.Visibility = Visibility.Collapsed;
             PreviewScrollView.Visibility = Visibility.Collapsed;
             PreviewTitleText.Text = "";
-            PreviewImage.Source = null;
+            ImageSource = null;
             PreviewInfoControl.ItemsSource = new List<TrackDetail>();
             PreviewInfoControl2.ItemsSource = new List<TrackDetail>();
             ClearMediaPlayerSource();
@@ -149,8 +161,7 @@ namespace FluentDL.Views
         {
             SongPreviewPlayer.AutoPlay = Task.Run(() => SettingsViewModel.GetSetting<bool>(SettingsViewModel.AutoPlay)).GetAwaiter().GetResult(); 
             ClearMediaPlayerSource();
-            PreviewImage.Source = null; // Clear previous source
-            PreviewImage.UpdateLayout();
+            ImageSource = null; // Clear previous source
 
             AlbumTrackListContainer.Visibility = selectedSong.GetType() == typeof(AlbumSearchObject) ? Visibility.Visible : Visibility.Collapsed;
 
@@ -182,7 +193,7 @@ namespace FluentDL.Views
                     {
                         var str = cover_big.GetString();
                         if (!string.IsNullOrEmpty(str))
-                            PreviewImage.Source = new BitmapImage(new Uri(str));
+                            ImageSource = new BitmapImage(new Uri(str));
                     }
                     PreviewInfoControl2.ItemsSource = PreviewInfoControl.ItemsSource = trackDetailsList; // First set the details list
                     trackDetailsList.Add(new TrackDetail { Label = "Genre", Value = DeezerApi.GetGenreStr(jsonObject) });
@@ -208,7 +219,7 @@ namespace FluentDL.Views
                     var jsonObject = await DeezerApi.restClient.FetchJsonElement("track/" + selectedSong.Id);
                     var albumObj = jsonObject.GetProperty("album");
                     PreviewInfoControl2.ItemsSource = PreviewInfoControl.ItemsSource = trackDetailsList; // First set the details list
-                    PreviewImage.Source = new BitmapImage(new Uri(albumObj.GetProperty("cover_big").ToString()));
+                    ImageSource = new BitmapImage(new Uri(albumObj.GetProperty("cover_big").ToString()));
 
                     trackDetailsList.Add(new TrackDetail { Label = "Track", Value = jsonObject.GetProperty("track_position").ToString() });
                     trackDetailsList.Add(new TrackDetail { Label = "Genre", Value = await DeezerApi.GetGenreStr(albumObj.GetProperty("id").GetInt32()) });
@@ -235,7 +246,7 @@ namespace FluentDL.Views
                     PreviewInfoControl2.ItemsSource = PreviewInfoControl.ItemsSource = trackDetailsList; // First set the details list
                     if (album != null)
                     {
-                        PreviewImage.Source = new BitmapImage(new Uri(album.Image.Large)); // Get cover art
+                        ImageSource = new BitmapImage(new Uri(album.Image.Large)); // Get cover art
                         trackDetailsList.Add(new TrackDetail { Label = "Genre", Value = string.Join(", ", QobuzApi.PruneGenreList(album.GenresList)) });
                         trackDetailsList.Add(new TrackDetail { Label = "Max Quality", Value = $"{album.MaximumBitDepth}-Bit/{album.MaximumSamplingRate} kHz" });
                     }
@@ -257,7 +268,7 @@ namespace FluentDL.Views
                 {
                     var track = await QobuzApi.GetInternalTrack(selectedSong.Id);
                     if (track != null)
-                        PreviewImage.Source = new BitmapImage(new Uri(track.Album.Image.Large)); // Get cover art
+                        ImageSource = new BitmapImage(new Uri(track.Album.Image.Large)); // Get cover art
                     // trackDetailsList.RemoveAt(trackDetailsList.ToList().FindIndex(x => x.Label == "Popularity")); // Remove popularity
                     PreviewInfoControl2.ItemsSource = PreviewInfoControl.ItemsSource = trackDetailsList;
                     trackDetailsList.Add(new TrackDetail() { Label = "Track", Value = selectedSong.TrackPosition });
@@ -277,7 +288,7 @@ namespace FluentDL.Views
             {
                 if (selectedSong is AlbumSearchObject selectedAlbum)
                 {
-                    PreviewImage.Source = new BitmapImage(new Uri((string)(selectedAlbum?.AdditionalFields?["cover_max"] ?? ""))); // Get the largest
+                    ImageSource = new BitmapImage(new Uri((string)(selectedAlbum?.AdditionalFields?["cover_max"] ?? ""))); // Get the largest
                     PreviewInfoControl2.ItemsSource = PreviewInfoControl.ItemsSource = trackDetailsList; // First set the details list
                     var genreList = await SpotifyApi.GetGenres((List<SimpleArtist>?)selectedAlbum?.AdditionalFields?["artists"] ?? []);
                     if (genreList.Count > 0)
@@ -298,23 +309,36 @@ namespace FluentDL.Views
                 else
                 {
                     var track = await SpotifyApi.GetTrack(selectedSong.Id);
-                    var album = await SpotifyApi.GetAlbum(track.Album.Id);
-                    PreviewImage.Source = new BitmapImage(new Uri(album.Images.First().Url)); // Get the largest
+                    //var album = await SpotifyApi.GetAlbum(track.Album.Id);
+                    if (track?.ImageLocation != null)
+                    {
+                        ImageSource = new BitmapImage(new Uri(track.ImageLocation)); // new BitmapImage(new Uri(album.Images.First().Url)); // Get the largest
+                    }
                     PreviewInfoControl2.ItemsSource = PreviewInfoControl.ItemsSource = trackDetailsList; // First set the details list
-                    trackDetailsList.Add(new TrackDetail { Label = "Track", Value = selectedSong.TrackPosition });
-                    var genreStr = string.Join(", ", await SpotifyApi.GetGenres(track.Artists));
-                    trackDetailsList.Add(new TrackDetail { Label = "Genre", Value = genreStr });
+                    // var genreStr = string.Join(", ", await SpotifyApi.GetGenres(track.Artists));
+                    // trackDetailsList.Add(new TrackDetail { Label = "Genre", Value = genreStr });
 
                     RankRatingControl.Visibility = Visibility.Collapsed;
+                    trackDetailsList.First(t => t.Label == "Release Date").Value = new DateVerboseConverter().Convert(track?.ReleaseDate ?? selectedSong.ReleaseDate, null!, null!, null!)?.ToString() ?? "";
+                    trackDetailsList.Add(new TrackDetail { Label = "Track", Value = track?.TrackPosition ?? selectedSong.TrackPosition });
+                    if (track?.Rank != null)
+                        trackDetailsList.Add(new TrackDetail { Label = "Play Count", Value = YoutubeApi.FormatLargeValue(long.Parse(track.Rank)) });
 
                     // Load the audio stream
-                    SetPlayerSource(await GetSpotifyPreviewUrl(selectedSong.Id));
+                    if (track?.AdditionalFields?.ContainsKey("preview_url") ?? false)
+                    {
+                        SetPlayerSource(track.AdditionalFields["preview_url"]?.ToString());
+                    }
+                    else
+                    {
+                        SetPlayerSource(await GetSpotifyPreviewUrl(selectedSong.Id));
+                    }
                 }
             }
 
             if (selectedSong.Source.Equals("youtube"))
             {
-                PreviewImage.Source = new BitmapImage(new Uri(await YoutubeApi.GetMaxResThumbnail(selectedSong) ?? "")); // Get max res thumbnail
+                ImageSource = new BitmapImage(new Uri(await YoutubeApi.GetMaxResThumbnail(selectedSong) ?? "")); // Get max res thumbnail
 
                 if (selectedSong is AlbumSearchObject selectedAlbum)
                 {
@@ -374,7 +398,7 @@ namespace FluentDL.Views
                         var bitmapImage = new BitmapImage();
                         using var stream = new MemoryStream(byteBuffer);
                         await bitmapImage.SetSourceAsync(stream.AsRandomAccessStream());
-                        PreviewImage.Source = bitmapImage;
+                        ImageSource = bitmapImage;
                     }
                 }
                 else
@@ -391,7 +415,7 @@ namespace FluentDL.Views
 
         public BitmapImage? GetImage()
         {
-            return (BitmapImage)PreviewImage.Source;
+            return ImageSource as BitmapImage;
         }
 
         public List<SongSearchObject>? GetAlbumTrackList()
@@ -491,11 +515,7 @@ namespace FluentDL.Views
             try {
                 string htmlStr = await httpClient.GetStringAsync($"https://open.spotify.com/embed/track/{trackId}");
                 // Find occurrence of audio preview
-                var previewStr = "\"audioPreview\":{\"url\":\"";
-                var startIdx = htmlStr.IndexOf(previewStr);
-                var endIdx = htmlStr.IndexOf("\"}", startIdx + previewStr.Length);
-                var url = htmlStr.Substring(startIdx + previewStr.Length, endIdx - (startIdx + previewStr.Length));
-                return url;
+                return SpotifyApi.GetSpotifyPreviewUrl(htmlStr);
             } catch (Exception e) {
                 Debug.WriteLine("Failed to get spotify preview url: " + e.Message);
             }
@@ -528,6 +548,37 @@ namespace FluentDL.Views
             {
                 SetPlayerSource(await GetSpotifyPreviewUrl(selectedSong.Id));
             }
+        }
+
+        // Fix background acrylic loading
+        private CancellationTokenSource _bgRefreshCts;
+
+        private void PreviewImage_ImageOpened(object sender, RoutedEventArgs e)
+        {
+            _bgRefreshCts?.Cancel();
+            _bgRefreshCts = new CancellationTokenSource();
+
+            var token = _bgRefreshCts.Token;
+            Task.Run(async () =>
+            {
+                var start = DateTime.UtcNow;
+                var timeout = TimeSpan.FromSeconds(10);
+                double delayTime = 100; // ms
+                while (!token.IsCancellationRequested && DateTime.UtcNow - start < timeout)
+                {
+                    // Ask the UI thread to perform a tiny nudge
+                    dispatcher.TryEnqueue(() =>
+                    {
+                        BackgroundImage.Opacity = 0.999;
+                        BackgroundImage.Opacity = 1;
+                    });
+
+                    // Check less frequently if you want to reduce load
+                    await Task.Delay((int)delayTime, token).ContinueWith(_ => { }, TaskContinuationOptions.OnlyOnRanToCompletion);
+                    // Increase delay time
+                    delayTime = Math.Min(delayTime * 1.5, timeout.TotalMilliseconds); // Cap at max time
+                }
+            }, token);
         }
     }
 }

@@ -77,15 +77,17 @@
                 <Grid>
                     <!--  Background image  -->
                     <Border
+                        x:Name="BackgroundImageContainer"
                         MaxHeight="300"
                         Margin="14,14,14,12"
                         BorderBrush="{ThemeResource ControlStrokeColorOnAccentTertiaryBrush}"
                         BorderThickness="1"
                         CornerRadius="9">
                         <Image
+                            x:Name="BackgroundImage"
                             HorizontalAlignment="Center"
                             VerticalAlignment="Center"
-                            Source="{Binding ElementName=PreviewImage, Path=Source, Mode=OneWay}"
+                            Source="{x:Bind ImageSource, Mode=OneWay}"
                             Stretch="UniformToFill" />
                     </Border>
                     <!--  Brush area  -->
@@ -106,7 +108,9 @@
                             x:Name="PreviewImage"
                             MaxHeight="300"
                             HorizontalAlignment="Center"
-                            VerticalAlignment="Center" />
+                            VerticalAlignment="Center"
+                            ImageOpened="PreviewImage_ImageOpened"
+                            Source="{x:Bind ImageSource, Mode=OneWay}" />
                     </Border>
                 </Grid>
 
