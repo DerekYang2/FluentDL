@@ -133,7 +133,7 @@ internal class ApiHelper
 
     public static string PrunePunctuation(string str)
     {
-        // Remove all punctuation and whitespace from string, only include alphanumeric characters
+        // Remove all punctuation and whitespace from string, only include alphanumeric characters 
         return Regex.Replace(PruneFeaturing(str), @"[^a-zA-Z0-9]", string.Empty);
     }
 
@@ -154,7 +154,7 @@ internal class ApiHelper
     public static string GetSafeFilename(string filename)
     {
         var result = filename.Trim().TrimEnd('.');
-        return string.Join("_", result.Split(Path.GetInvalidFileNameChars()));
+        return string.Join("_", result.Split(Path.GetInvalidPathChars())).Replace('/', '\\');
     }
 
     public static string RemoveExtension(string filename)
