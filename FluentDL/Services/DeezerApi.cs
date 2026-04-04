@@ -302,9 +302,16 @@ internal class DeezerApi
     public static async Task<SongSearchObject?> GetDeezerTrack(SongSearchObject song, CancellationToken token = default, ConversionUpdateCallback? callback = null, bool onlyISRC = false)
     {
         // Try to find by ISRC first
-        if (song.Isrc != null)
+        string? isrc = song.Isrc;
+        // Spotify specific
+        if (song.Source == "spotify" && string.IsNullOrWhiteSpace(isrc))
         {
-            var songObj = await GetTrackFromISRC(song.Isrc);
+            isrc = await SpotifyApi.GetIsrcFromId(song.Id);
+        }
+
+        if (isrc != null)
+        {
+            var songObj = await GetTrackFromISRC(isrc);
 
             if (songObj != null)
             {

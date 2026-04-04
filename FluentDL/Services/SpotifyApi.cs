@@ -359,7 +359,7 @@ namespace FluentDL.Services
             if (spotifyISRCService == null) return null;
             try
             {
-                return await spotifyISRCService.LookupIsrcViaIsrcFinderAsync(id);
+                return await spotifyISRCService.GetIsrc(id);
             }
             catch (Exception e)
             {

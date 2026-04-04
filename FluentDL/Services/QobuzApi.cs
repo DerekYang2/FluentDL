@@ -652,6 +652,11 @@ internal partial class QobuzApi
     public static async Task<SongSearchObject?> GetQobuzTrack(SongSearchObject songObj, CancellationToken token = default, ConversionUpdateCallback? callback = null, bool onlyISRC = false)
     {
         string? isrc = songObj.Isrc;
+        // Spotify specific
+        if (songObj.Source == "spotify" && string.IsNullOrWhiteSpace(isrc))
+        {
+            isrc = await SpotifyApi.GetIsrcFromId(songObj.Id);
+        }
         string query = songObj.Artists.Split(", ")[0] + " " + songObj.Title;
 
         // First attempt exact isrc search

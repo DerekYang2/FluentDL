@@ -1,7 +1,5 @@
 ﻿using Microsoft.Extensions.Logging;
-using System.IO.Compression;
-using System.Net;
-using System.Text;
+using System.Net.Http.Json;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
@@ -10,7 +8,8 @@ namespace FluentDL.Services.CustomSpotify
 {
     public interface ISpotifyISRCService
     {
-        Task<string> LookupIsrcViaIsrcFinderAsync(string spotifyId, CancellationToken cancellationToken = default);
+        Task<string> GetIsrc(string spotifyId, CancellationToken cancellationToken = default);
+        Task<string> GetIsrcViaSoundplateAsync(string spotifyId, CancellationToken cancellationToken = default);
     }
 
     public class SpotifyISRCService : ISpotifyISRCService
@@ -18,20 +17,23 @@ namespace FluentDL.Services.CustomSpotify
         private readonly HttpClient _httpClient;
         private readonly ILogger<SpotifyISRCService> _logger;
 
-        private const string UserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36 Edg/146.0.0.0";
-        private const string IsrcFinderEndpoint = "https://www.isrcfinder.com/";
-        private static readonly Regex CsrfTokenPattern = new(@"name=[\""']csrfmiddlewaretoken[\""'][^>]*value=[\""']([^\""']+)[\""']", RegexOptions.Compiled | RegexOptions.CultureInvariant);
-        private static readonly Regex IsrcPattern = new("\\b[A-Z]{2}[A-Z0-9]{3}\\d{7}\\b", RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
-        private readonly SemaphoreSlim _phpStackSemaphore = new SemaphoreSlim(1, 1);
+        private const string UserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36";
+
+        private const string Endpoint = "https://sp.afkarxyz.qzz.io/api";
+        private const string SoundplateSpotifyApiUrl = "https://phpstack-822472-6184058.cloudwaysapps.com/api/spotify.php";
+        private const string SoundplateRefererUrl = "https://phpstack-822472-6184058.cloudwaysapps.com/?";
+        private static readonly Regex IsrcRegex = new(@"\b[A-Z]{2}[A-Z0-9]{3}\d{7}\b", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        private readonly SemaphoreSlim _semaphore = new(1, 1);
+
         public SpotifyISRCService(HttpClient httpClient, ILogger<SpotifyISRCService> logger)
         {
             _httpClient = httpClient;
             _logger = logger;
         }
 
-        public async Task<string> LookupIsrcViaIsrcFinderAsync(string spotifyId, CancellationToken cancellationToken = default)
+        public async Task<string> GetIsrc(string spotifyId, CancellationToken cancellationToken = default)
         {
-            await _phpStackSemaphore.WaitAsync(cancellationToken).ConfigureAwait(false);
+            await _semaphore.WaitAsync(cancellationToken).ConfigureAwait(false);
 
             try
             {
@@ -40,104 +42,140 @@ namespace FluentDL.Services.CustomSpotify
                     throw new ArgumentException("Spotify id cannot be empty.", nameof(spotifyId));
                 }
 
-                var spotifyUrl = $"https://open.spotify.com/track/{spotifyId.Trim()}";
+                var normalizedTrackId = ExtractSpotifyTrackId(spotifyId);
+                
+                try
+                {
+                    return await GetIsrcSpotiFlac(normalizedTrackId, cancellationToken).ConfigureAwait(false);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Primary ISRC lookup failed for track {TrackId}. Falling back to Soundplate.", normalizedTrackId);
+                    return await GetIsrcViaSoundplateAsync(normalizedTrackId, cancellationToken).ConfigureAwait(false);
+                }
+            }
+            finally
+            {
+                _semaphore.Release();
+            }
+        }
 
-                var cookieContainer = new CookieContainer();
-                using var handler = new HttpClientHandler { CookieContainer = cookieContainer };
-                using var client = new HttpClient(handler) { Timeout = TimeSpan.FromSeconds(20) };
+        /// <summary>
+        /// Retrieves a Spotify track ISRC using the Soundplate endpoint.
+        /// </summary>
+        public async Task<string> GetIsrcViaSoundplateAsync(string spotifyId, CancellationToken cancellationToken = default)
+        {
+            if (string.IsNullOrWhiteSpace(spotifyId))
+            {
+                throw new ArgumentException("Spotify id cannot be empty.", nameof(spotifyId));
+            }
 
-                using var getRequest = new HttpRequestMessage(HttpMethod.Get, IsrcFinderEndpoint);
+            var normalizedTrackId = ExtractSpotifyTrackId(spotifyId);
+            var spotifyTrackUrl = $"https://open.spotify.com/track/{normalizedTrackId}";
+            var encodedTrackUrl = Uri.EscapeDataString(spotifyTrackUrl);
+            var requestUrl = $"{SoundplateSpotifyApiUrl}?q={encodedTrackUrl}";
+
+            using var request = new HttpRequestMessage(HttpMethod.Get, requestUrl);
+            request.Headers.Add("User-Agent", UserAgent);
+            request.Headers.Add("Accept", "*/*");
+            request.Headers.Add("Referer", SoundplateRefererUrl);
+            request.Headers.Add("Accept-Language", "en-US,en;q=0.9,id;q=0.8");
+            request.Headers.Add("Sec-CH-UA", "\"Chromium\";v=\"146\", \"Not-A.Brand\";v=\"24\", \"Google Chrome\";v=\"146\"");
+            request.Headers.Add("Sec-CH-UA-Mobile", "?0");
+            request.Headers.Add("Sec-CH-UA-Platform", "\"Windows\"");
+            request.Headers.Add("Sec-Fetch-Dest", "empty");
+            request.Headers.Add("Sec-Fetch-Mode", "cors");
+            request.Headers.Add("Sec-Fetch-Site", "same-origin");
+            request.Headers.Add("Priority", "u=1, i");
+
+            using var response = await _httpClient.SendAsync(request, cancellationToken).ConfigureAwait(false);
+            var body = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                throw new HttpRequestException($"Soundplate ISRC returned status {(int)response.StatusCode} ({body})");
+            }
+
+            var isrc = FirstIsrcMatch(body);
+
+            if (string.IsNullOrWhiteSpace(isrc))
+            {
+                throw new InvalidOperationException("ISRC missing in Soundplate response.");
+            }
+
+            return isrc;
+        }
+
+        private async Task<string> GetIsrcSpotiFlac(string spotifyTrackId, CancellationToken cancellationToken)
+        {
+            var requestUrl = $"{Endpoint.TrimEnd('/')}/isrc/{spotifyTrackId}";
+                using var getRequest = new HttpRequestMessage(HttpMethod.Get, requestUrl);
                 getRequest.Headers.Add("User-Agent", UserAgent);
-                getRequest.Headers.Add("Referer", IsrcFinderEndpoint);
-                getRequest.Headers.Add("Origin", "https://www.isrcfinder.com");
+                getRequest.Headers.Add("Accept", "application/json");
 
-                using var getResponse = await client.SendAsync(getRequest, cancellationToken);
-                var getBody = await getResponse.Content.ReadAsStringAsync(cancellationToken);
-                if (!getResponse.IsSuccessStatusCode)
-                {
-                    throw new HttpRequestException($"isrcfinder returned status {(int)getResponse.StatusCode}");
-                }
-
-                var token = ExtractCsrfToken(getBody);
-                if (string.IsNullOrWhiteSpace(token))
-                {
-                    var uri = new Uri(IsrcFinderEndpoint);
-                    token = cookieContainer.GetCookies(uri)
-                        .Cast<Cookie>()
-                        .FirstOrDefault(c => string.Equals(c.Name, "csrftoken", StringComparison.OrdinalIgnoreCase))
-                        ?.Value;
-                }
-
-                if (string.IsNullOrWhiteSpace(token))
-                {
-                    throw new InvalidOperationException("csrf token not found");
-                }
-
-                var form = new Dictionary<string, string>
-                {
-                    ["csrfmiddlewaretoken"] = token,
-                    ["URI"] = spotifyUrl
-                };
-
-                using var postRequest = new HttpRequestMessage(HttpMethod.Post, IsrcFinderEndpoint)
-                {
-                    Content = new FormUrlEncodedContent(form)
-                };
-                postRequest.Headers.Add("User-Agent", UserAgent);
-                postRequest.Headers.Add("Referer", IsrcFinderEndpoint);
-                postRequest.Headers.Add("Origin", "https://www.isrcfinder.com");
-
-                using var postResponse = await client.SendAsync(postRequest, cancellationToken);
-                var postBody = await postResponse.Content.ReadAsStringAsync(cancellationToken);
-                if (!postResponse.IsSuccessStatusCode)
-                {
-                    throw new HttpRequestException($"isrcfinder POST returned status {(int)postResponse.StatusCode}");
-                }
-
-                var isrc = FirstIsrcMatch(postBody);
-                if (string.IsNullOrWhiteSpace(isrc))
-                {
-                    throw new InvalidOperationException("ISRC not found in isrcfinder response");
-                }
-
-                return isrc;
-            } finally
+            using var getResponse = await _httpClient.SendAsync(getRequest, cancellationToken).ConfigureAwait(false);
+            var getBody = await getResponse.Content.ReadFromJsonAsync<JsonElement>(cancellationToken).ConfigureAwait(false);
+            if (!getResponse.IsSuccessStatusCode)
             {
-                _phpStackSemaphore.Release();
+                throw new HttpRequestException($"isrcfinder returned status {(int)getResponse.StatusCode}");
             }
+
+            if (!getBody.TryGetProperty("isrc", out var isrcProperty))
+            {
+                throw new InvalidOperationException("ISRC not found in isrcfinder response.");
+            }
+
+            var isrc = isrcProperty.GetString();
+            if (string.IsNullOrWhiteSpace(isrc))
+            {
+                throw new InvalidOperationException("ISRC not found in isrcfinder response.");
+            }
+
+            return isrc;
         }
 
-        private static string ExtractCsrfToken(string body)
+        private static string FirstIsrcMatch(string? input)
         {
-            if (string.IsNullOrWhiteSpace(body))
+            if (string.IsNullOrWhiteSpace(input))
             {
                 return string.Empty;
             }
 
-            var match = CsrfTokenPattern.Match(body);
-            if (!match.Success || match.Groups.Count < 2)
-            {
-                return string.Empty;
-            }
-
-            return match.Groups[1].Value.Trim();
-        }
-
-        private static string FirstIsrcMatch(string text)
-        {
-            if (string.IsNullOrWhiteSpace(text))
-            {
-                return string.Empty;
-            }
-
-            var match = IsrcPattern.Match(text);
+            var match = IsrcRegex.Match(input);
             return match.Success ? match.Value.ToUpperInvariant() : string.Empty;
         }
 
-        private sealed class PhpStackIsrcResponse
+        private static string ExtractSpotifyTrackId(string input)
         {
-            [JsonPropertyName("isrc")]
-            public string? Isrc { get; set; }
+            var value = input.Trim();
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                throw new ArgumentException("Spotify id cannot be empty.", nameof(input));
+            }
+
+            const string uriPrefix = "spotify:track:";
+            if (value.StartsWith(uriPrefix, StringComparison.OrdinalIgnoreCase))
+            {
+                return value[uriPrefix.Length..];
+            }
+
+            if (!Uri.TryCreate(value, UriKind.Absolute, out var uri))
+            {
+                return value;
+            }
+
+            if (!uri.Host.Contains("spotify.com", StringComparison.OrdinalIgnoreCase))
+            {
+                throw new ArgumentException("Provided URL is not a Spotify URL.", nameof(input));
+            }
+
+            var segments = uri.AbsolutePath.Trim('/').Split('/', StringSplitOptions.RemoveEmptyEntries);
+            if (segments.Length >= 2 && segments[0].Equals("track", StringComparison.OrdinalIgnoreCase))
+            {
+                return segments[1];
+            }
+
+            throw new ArgumentException("Unable to extract Spotify track id from input.", nameof(input));
         }
     }
 }
