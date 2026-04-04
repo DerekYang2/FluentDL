@@ -252,25 +252,22 @@ public sealed partial class LocalExplorerPage : Page
             ShowInfoBarPermanent(InfoBarSeverity.Informational, $"Scanning <a href='{folder.Path}'>{folder.Name}</a> for audio files", "Upload");
             InfobarProgress.Visibility = Visibility.Visible;
             // Get all music files in the folder
-            _ = Task.Run(async () =>
+            try
             {
-                try
+                await ProcessFiles(await folder.GetFilesAsync());
+            } catch (Exception ex)
+            {
+                dispatcher.TryEnqueue(() =>
                 {
-                    await ProcessFiles(await folder.GetFilesAsync());
-                } catch (Exception ex)
+                    ShowInfoBar(InfoBarSeverity.Error, $"Error occurred: {ex.Message}", 3, "Upload");
+                });
+            } finally
+            {
+                dispatcher.TryEnqueue(() =>
                 {
-                    dispatcher.TryEnqueue(() =>
-                    {
-                        ShowInfoBar(InfoBarSeverity.Error, $"Error occurred: {ex.Message}", 3, "Upload");
-                    });
-                } finally
-                {
-                    dispatcher.TryEnqueue(() =>
-                    {
-                        InfobarProgress.Visibility = Visibility.Collapsed; // Hide progress bar
-                    });
-                }
-            });
+                    InfobarProgress.Visibility = Visibility.Collapsed; // Hide progress bar
+                });
+            }
         }
         else
         {
@@ -438,6 +435,9 @@ public sealed partial class LocalExplorerPage : Page
                     ShowInfoBar(InfoBarSeverity.Success, $"Added {addedCount} tracks to local explorer");
                 }
             });
+        } else
+        {
+            ShowInfoBar(InfoBarSeverity.Informational, $"No tracks found");
         }
     }
 
