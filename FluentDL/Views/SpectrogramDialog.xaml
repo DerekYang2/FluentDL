@@ -23,29 +23,37 @@
         <Grid>
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
                 <RowDefinition Height="*" />
             </Grid.RowDefinitions>
+            <StackPanel Grid.Row="0" Orientation="Horizontal">
+                <FontIcon
+                    Margin="4,0"
+                    FontSize="14"
+                    Foreground="{ThemeResource TextFillColorSecondary}"
+                    Glyph="&#xE946;" />
+                <TextBlock
+                    Margin="4,0,0,4"
+                    HorizontalAlignment="Left"
+                    Foreground="{ThemeResource TextFillColorSecondary}"
+                    Style="{ThemeResource CaptionTextBlockStyle}"
+                    Text="Zoom: ctrl + scroll"
+                    Visibility="{Binding Visibility, ElementName=SpectrogramImage}" />
+            </StackPanel>
+
             <TextBlock
                 x:Name="SpectrogramInfoText"
-                Grid.Row="0"
+                Grid.Row="1"
                 Margin="0,0,0,4"
                 HorizontalAlignment="Center"
                 FontWeight="SemiBold"
                 Foreground="{ThemeResource TextFillColorPrimary}"
                 Style="{ThemeResource CaptionTextBlockStyle}"
                 Text="" />
-            <TextBlock
-                Grid.Row="0"
-                Margin="4,0,0,4"
-                HorizontalAlignment="Left"
-                Foreground="{ThemeResource TextFillColorSecondary}"
-                Style="{ThemeResource CaptionTextBlockStyle}"
-                Text="Zoom: ctrl + scroll"
-                Visibility="{Binding Visibility, ElementName=SpectrogramImage}" />
 
             <ScrollView
                 x:Name="SpectrogramScrollView"
-                Grid.Row="1"
+                Grid.Row="2"
                 HorizontalAlignment="Stretch"
                 VerticalAlignment="Stretch"
                 Background="Black"
@@ -66,7 +74,7 @@
             </ScrollView>
             <ProgressRing
                 x:Name="SpectrogramProgressRing"
-                Grid.Row="1"
+                Grid.Row="2"
                 Margin="40" />
         </Grid>
     </ContentDialog>
