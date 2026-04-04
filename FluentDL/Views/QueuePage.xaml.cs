@@ -624,8 +624,10 @@ public sealed partial class QueuePage : Page
 
     private async Task ConversionTask(IEnumerable<string> selectedSources, string outputSource)
     {
-        var songsToConvert = QueueViewModel.Source
-            .Where(song => selectedSources.Contains(song.Source) && outputSource != song.Source);
+        var songsWithOriginalIndex = QueueViewModel.Source
+            .Select((song, originalIndex) => new { Song = song, OriginalIndex = originalIndex });
+        var songsToConvert = songsWithOriginalIndex
+            .Where(x => selectedSources.Contains(x.Song.Source) && outputSource != x.Song.Source);
 
         int totalCount = songsToConvert.Count();
         if (totalCount == 0)
@@ -725,8 +727,10 @@ public sealed partial class QueuePage : Page
             var downloadThreads = await SettingsViewModel.GetSetting<int?>(SettingsViewModel.ConversionThreads) ?? 1;
             using var semaphore = new SemaphoreSlim(downloadThreads);
 
-            var tasks = songsToConvert.Select(async (song, index) =>
+            var tasks = songsToConvert.Select(async (x) =>
             {
+                var song = x.Song;
+                var index = x.OriginalIndex;
                 try
                 {
                     bool isReleased = false;
