@@ -491,7 +491,7 @@ public sealed partial class QueuePage : Page
         dispatcherTimer.Start();
     }
 
-    private void ShowInfoBarPermanent(InfoBarSeverity severity, string message, string title = "", string buttonText = "", bool isIndeterminate = true, double progressPercent = 0)
+    private void ShowInfoBarPermanent(InfoBarSeverity severity, string message, string title = "", string buttonText = "")
     {
         title = title.Trim();
         message = message.Trim();
@@ -500,8 +500,7 @@ public sealed partial class QueuePage : Page
             PageInfoBar.IsOpen = true;
             PageInfoBar.Opacity = 1;
             PageInfoBar.Severity = severity;
-            InfobarProgress.IsIndeterminate = isIndeterminate;
-            InfobarProgress.Value = Math.Clamp(progressPercent * 100, 0, 100);
+
             //PageInfoBar.Title = title;
             if (!string.IsNullOrWhiteSpace(title))
             {
@@ -623,253 +622,15 @@ public sealed partial class QueuePage : Page
         await ConversionDialog.ShowAsync();
     }
 
-    private async void DownloadAllButton_Click(object sender, RoutedEventArgs e)
+    private async Task ConversionTask(IEnumerable<string> selectedSources, string outputSource)
     {
-        // Create a queue with the indexes of sources to process
-        ConcurrentQueue<int> indexQueue = new ConcurrentQueue<int>();
+        var songsToConvert = QueueViewModel.Source
+            .Where(song => selectedSources.Contains(song.Source) && outputSource != song.Source);
 
-        // Loop through and find the total number of queries to process
-        for (int i = 0; i < QueueViewModel.Source.Count; i++)
-        {
-            var song = QueueViewModel.Source[i];
-            if (song.Source != "local") // If source is not already local
-            {
-                indexQueue.Enqueue(i);
-            }
-        }
-        int totalCount = indexQueue.Count;
-
+        int totalCount = songsToConvert.Count();
         if (totalCount == 0)
         {
-            ShowInfoBar(InfoBarSeverity.Warning, "No tracks to download", 3);
-            return;
-        }
-        // Set download location if output is local and ask before download is enabled or download directory is not set
-        var directory = await SettingsViewModel.GetSetting<string>(SettingsViewModel.DownloadDirectory);
-
-        if (await SettingsViewModel.GetSetting<bool>(SettingsViewModel.AskBeforeDownload) || string.IsNullOrWhiteSpace(directory))
-        {
-            directory = await StoragePickerHelper.GetDirectory();
-            if (directory == null)
-            {
-                ShowInfoBar(InfoBarSeverity.Warning, "No download directory selected", 3);
-                return;
-            }
-        }
-
-        // Clear preview pane when source is being edited
-        PreviewPanel.Clear();
-
-        // Clear queue command running progress
-        QueueViewModel.Reset(); // Reset the queue object result strings and index
-        cancellationTokenSource = new CancellationTokenSource(); // Create a new cancellation token source
-
-        // Prepare UI
-        DownloadAllButton.Visibility = ConvertDialogOpenButton.Visibility = ClearButton.Visibility = Visibility.Collapsed; // Hide buttons
-        ConvertStopButton.Visibility = Visibility.Visible; // Show stop button
-        // Clear the conversion results
-        successSource.Clear();
-        warningSource.Clear();
-        errorSource.Clear();
-        QueueViewModel.ResetConversionResults(); // Clear all badges and results on queue objects
-        ViewModel.SuccessCount = ViewModel.WarningCount = ViewModel.ErrorCount = 0; // Reset the counts
-
-        ConversionUpdateCallback conversionUpdateCallback = (severity, song, location) =>
-        {
-            switch (severity)
-            {
-                case InfoBarSeverity.Success:
-                    successSource.TryAdd(song, 0);
-                    break;
-                case InfoBarSeverity.Warning:
-                    warningSource.TryAdd(song, 0);
-                    break;
-                case InfoBarSeverity.Error:
-                    errorSource.TryAdd(song, 0);
-                    break;
-                default:
-                    throw new Exception("Unspecified severity in callback");
-            }
-        };
-
-        var downloadHelper = new DownloadProgressHelper($"Queue to <a href='{directory}'>{directory}</a>", totalCount);
-        downloadHelper.ProgressUpdated += (sender, args) =>
-        {
-            var finalStr = args.DisplayString;
-            var progress = args.ProgressValue;
-            dispatcherQueue.TryEnqueue(() =>
-            {
-                ShowInfoBarPermanent(InfoBarSeverity.Informational, finalStr, title: "Downloading", isIndeterminate: false, progressPercent: progress);
-            });
-        };
-        var progress = new Progress<ProgressData>(downloadHelper.UpdateProgressLoop);
-        downloadHelper.StartLoop();
-
-        // Infobar notification
-        ShowInfoBarPermanent(InfoBarSeverity.Informational, $"Saving {totalCount} tracks to <a href='{directory}'>{directory}</a>", title: "Download in Progress");
-
-        var ogVal = QueueProgress.Value; // Save the original value of the progress bar
-        QueueProgress.Value = 0; // Set to 0
-
-        int processedCount = 0;
-        var token = cancellationTokenSource.Token;
-        IsConverting = true;
-
-        async Task EndConversionLambda(string message)
-        {
-            DownloadAllButton.Visibility = ConvertDialogOpenButton.Visibility = ClearButton.Visibility = Visibility.Visible; // Show buttons
-            ConvertStopText.Text = "Stop"; // Reset stop button text
-            ConvertStopButton.Visibility = Visibility.Collapsed; // Hide stop button
-            QueueProgress.Value = ogVal; // Reset the progress bar
-            if (await SettingsViewModel.GetSetting<bool?>(SettingsViewModel.Notifications) ?? false)
-            {
-                App.GetService<IAppNotificationService>().Show(string.Format("QueueCompletePayload".GetLocalized(), AppContext.BaseDirectory));
-            }
-
-            ForceHideInfoBar();
-            downloadHelper.StopLoop();
-            ShowInfoBar(InfoBarSeverity.Informational, message);
-        }
-
-        var downloadThreads = await SettingsViewModel.GetSetting<int?>(SettingsViewModel.ConversionThreads) ?? 1;
-
-        for (int threadNum = 0; threadNum < downloadThreads; threadNum++)
-        {
-            Thread t = new Thread(async () =>
-            {
-                while (IsConverting)
-                {
-                    if (token.IsCancellationRequested) // Break the loop if the token is cancelled
-                    {
-                        IsConverting = false;
-                        dispatcherQueue.TryEnqueue(async () => await EndConversionLambda("Downloading Cancelled"));
-                        return;
-                    }
-
-                    if (indexQueue.IsEmpty) // If the queue is already empty, end this thread
-                    {
-                        return;
-                    }
-
-                    int i = indexQueue.TryDequeue(out var iVal) ? iVal : -1; // Get the index from the queue
-
-                    if (i == -1) // If the index is invalid, skip
-                    {
-                        continue;
-                    }
-
-                    var song = QueueViewModel.Source[i];
-
-                    // Set song to running (progress ring will appear)
-                    dispatcherQueue.TryEnqueue(() =>
-                    {
-                        song.IsRunning = true;
-                    });
-
-                    SongSearchObject? newSongObj = null;
-                    string fileLocation = await ApiHelper.DownloadObject(song, directory, progress, conversionUpdateCallback);
-                    newSongObj = song;
-
-                    dispatcherQueue.TryEnqueue(async () =>
-                    {
-                        if (newSongObj != null)
-                        {
-                            QueueObject? queueObj;
-
-                            var localSong = LocalExplorerViewModel.ParseFile(fileLocation);
-
-                            if (localSong != null)
-                            {
-                                localSong.LocalBitmapImage = await LocalExplorerViewModel.GetBitmapImageAsync(fileLocation);
-                                queueObj = await QueueViewModel.CreateQueueObject(localSong, song.QueueCounter);
-                                await QueueViewModel.Replace(i, queueObj);
-                            }
-                            else // Can happen when trying to parse opus files
-                            {
-                                queueObj = song; // Set to the initial object so badge is shown below
-                            }
-
-
-                            if (queueObj != null)
-                            {
-                                if (successSource.ContainsKey(newSongObj)) queueObj.ConvertBadgeColor = new SolidColorBrush(Windows.UI.Color.FromArgb(255, 108, 203, 95));
-                                else if (warningSource.ContainsKey(newSongObj)) queueObj.ConvertBadgeColor = new SolidColorBrush(Windows.UI.Color.FromArgb(255, 252, 225, 0));
-                                else // Assume failure
-                                {
-                                    queueObj.ConvertBadgeColor = new SolidColorBrush(Windows.UI.Color.FromArgb(255, 255, 153, 164));
-                                }
-
-                                queueObj.IsRunning = false; // Set song to not running
-                                // await QueueViewModel.Replace(i, queueObj);
-                            }
-                        }
-                        else // Failed conversion, set current object badge to error
-                        {
-                            song.IsRunning = false; // Set song to not running
-
-                            if (!token.IsCancellationRequested) // If token is cancelled, don't show error badge
-                            {
-                                song.ConvertBadgeColor = new SolidColorBrush(Windows.UI.Color.FromArgb(255, 255, 153, 164));
-                            }
-
-                            // await QueueViewModel.Replace(i, song);
-                        }
-                    });
-
-                    var processCaptured = Interlocked.Increment(ref processedCount); // Increment the processed count
-
-                    dispatcherQueue.TryEnqueue(() =>
-                    {
-                        QueueProgress.Value = 100.0 * processCaptured / totalCount; // Update the progress bar
-                    });
-
-                    if (processCaptured == totalCount) // If all tracks are processed
-                    {
-                        IsConverting = false;
-                        dispatcherQueue.TryEnqueue(async () => await EndConversionLambda("Downloading Complete"));
-                        return;
-                    }
-                }
-            });
-            t.Priority = ThreadPriority.AboveNormal;
-            t.Start();
-        }
-    }
-
-    private async void ConversionDialog_OnPrimaryButtonClick(ContentDialog sender, ContentDialogButtonClickEventArgs args)
-    {
-        // Check for valid input
-        if (GetOutputSource() == null)
-        {
-            ShowInfoBar(InfoBarSeverity.Warning, "Please select an output source.", 3);
-            return;
-        }
-
-        if (DeezerCheckBox.IsChecked == false && QobuzCheckBox.IsChecked == false && SpotifyCheckBox.IsChecked == false && YouTubeCheckBox.IsChecked == false && LocalCheckBox.IsChecked == false)
-        {
-            ShowInfoBar(InfoBarSeverity.Warning, "Please select at least one input source.", 3);
-            return;
-        }
-
-        var outputSource = GetOutputSource().ToLower();
-
-        // Create a queue with the indexes of sources to process
-        ConcurrentQueue<int> indexQueue = new ConcurrentQueue<int>();
-
-        // Loop through and find the total number of queries to process
-        for (int i = 0; i < QueueViewModel.Source.Count; i++)
-        {
-            var song = QueueViewModel.Source[i];
-            if (selectedSources.Contains(song.Source) && outputSource != song.Source) // If source is selected as input and isn't the same as output
-            {
-                indexQueue.Enqueue(i);
-            }
-        }
-        int totalCount = indexQueue.Count;
-
-        if (totalCount == 0)
-        {
-            ShowInfoBar(InfoBarSeverity.Warning, "No tracks to convert", 3);
+            ShowInfoBar(InfoBarSeverity.Warning, $"No tracks to {(outputSource == "local" ? "download" : "convert")}", 3);
             return;
         }
 
@@ -897,9 +658,6 @@ public sealed partial class QueuePage : Page
 
         cancellationTokenSource = new CancellationTokenSource(); // Create a new cancellation token source
 
-        // Prepare UI
-        DownloadAllButton.Visibility = ConvertDialogOpenButton.Visibility = ClearButton.Visibility = Visibility.Collapsed; // Hide buttons
-        ConvertStopButton.Visibility = Visibility.Visible; // Show stop button
         // Clear the conversion results
         successSource.Clear();
         warningSource.Clear();
@@ -907,7 +665,7 @@ public sealed partial class QueuePage : Page
         QueueViewModel.ResetConversionResults(); // Clear all badges and results on queue objects
         ViewModel.SuccessCount = ViewModel.WarningCount = ViewModel.ErrorCount = 0; // Reset the counts
 
-        ConversionUpdateCallback conversionUpdateCallback = (severity, song, location) =>
+        void conversionUpdateCallback(InfoBarSeverity severity, SongSearchObject song, string? location = null)
         {
             switch (severity)
             {
@@ -923,7 +681,7 @@ public sealed partial class QueuePage : Page
                 default:
                     throw new Exception("Unspecified severity in callback");
             }
-        };
+        }
 
         // For to local output
         var downloadHelper = new DownloadProgressHelper($"Queue to <a href='{directory}'>{directory}</a>", totalCount);
@@ -933,168 +691,220 @@ public sealed partial class QueuePage : Page
             var progress = args.ProgressValue;
             dispatcherQueue.TryEnqueue(() =>
             {
-                ShowInfoBarPermanent(InfoBarSeverity.Informational, finalStr, title: "Downloading", isIndeterminate: false, progressPercent: progress);
+                QueueProgress.Value = Math.Clamp(progress * 100, 0, 100); ;
+                ShowInfoBarPermanent(InfoBarSeverity.Informational, finalStr, title: "Downloading");
             });
         };
         var progress = new Progress<ProgressData>(downloadHelper.UpdateProgressLoop);
-        if (outputSource == "local")
+
+        try
         {
-            downloadHelper.StartLoop();
-        }
+            // Infobar notification
+            if (outputSource == "local")
+            {
+                ShowInfoBarPermanent(InfoBarSeverity.Informational, $"Saving {totalCount} tracks to <a href='{directory}'>{directory}</a>", title: "Download in Progress");
+            }
+            else
+            {
+                ShowInfoBarPermanent(InfoBarSeverity.Informational, $"Converting selected input sources to {GetOutputSource()}", title: "Conversion in Progress");
+            }
 
-        // Infobar notification
-        ShowInfoBarPermanent(InfoBarSeverity.Informational, $"Converting selected input sources to {GetOutputSource()}", title: "Conversion in Progress");
+            // Prepare UI
+            DownloadAllButton.Visibility = ConvertDialogOpenButton.Visibility = ClearButton.Visibility = Visibility.Collapsed; // Hide buttons
+            ConvertStopButton.Visibility = Visibility.Visible; // Show stop button
 
-        var ogVal = QueueProgress.Value; // Save the original value of the progress bar
-        QueueProgress.Value = 0; // Set to 0
+            // Other initialization
+            if (outputSource == "local")
+            {
+                downloadHelper.StartLoop();
+            }
+            IsConverting = true;
+            int processedCount = 0;
+            var token = cancellationTokenSource.Token;
 
-        int processedCount = 0;
-        var token = cancellationTokenSource.Token;
-        IsConverting = true;
+            var downloadThreads = await SettingsViewModel.GetSetting<int?>(SettingsViewModel.ConversionThreads) ?? 1;
+            using var semaphore = new SemaphoreSlim(downloadThreads);
 
-        async Task EndConversionLambda()
-        {
-            DownloadAllButton.Visibility = ConvertDialogOpenButton.Visibility = ClearButton.Visibility = Visibility.Visible; // Show buttons
-            ConvertStopText.Text = "Stop"; // Reset stop button text
-            ConvertStopButton.Visibility = Visibility.Collapsed; // Hide stop button
-            QueueProgress.Value = ogVal; // Reset the progress bar
+            var tasks = songsToConvert.Select(async (song, index) =>
+            {
+                try
+                {
+                    bool isReleased = false;
+                    await semaphore.WaitAsync(token);
+                    try
+                    {
+                        // Set song to running (progress ring will appear)
+                        dispatcherQueue.TryEnqueue(() =>
+                        {
+                            song.IsRunning = true;
+                        });
+
+                        // Convert the track and get new song object
+                        SongSearchObject? newSongObj = null;
+                        string? fileLocation = null;
+                        if (outputSource == "local") // Conversion to local, download the track
+                        {
+                            fileLocation = await ApiHelper.DownloadObject(song, directory, progress, conversionUpdateCallback);
+                            newSongObj = song;
+                        }
+                        else
+                        {
+                            newSongObj = outputSource switch
+                            {
+                                "deezer" => await DeezerApi.GetDeezerTrack(song, token, conversionUpdateCallback),
+                                "qobuz" => await QobuzApi.GetQobuzTrack(song, token, conversionUpdateCallback),
+                                "spotify" => await SpotifyApi.GetSpotifyTrack(song, token, conversionUpdateCallback),
+                                "youtube" => await YoutubeApi.GetYoutubeTrack(song, token, conversionUpdateCallback),
+                                _ => throw new Exception("Unspecified output source") // Should never happen
+                            };
+                        }
+
+                        var tcs = new TaskCompletionSource();
+                        // Update the UI with the new song object or set error badge if conversion failed
+                        dispatcherQueue.TryEnqueue(async () =>
+                        {
+                            try
+                            {
+                                if (newSongObj != null)
+                                {
+                                    QueueObject? queueObj;
+                                    if (outputSource == "local")
+                                    {
+                                        var localSong = LocalExplorerViewModel.ParseFile(fileLocation);
+
+                                        if (localSong != null)
+                                        {
+                                            localSong.LocalBitmapImage = await LocalExplorerViewModel.GetBitmapImageAsync(fileLocation);
+                                            queueObj = await QueueViewModel.CreateQueueObject(localSong, song.QueueCounter);
+                                            await QueueViewModel.Replace(index, queueObj);
+                                        }
+                                        else // Can happen when trying to parse opus files
+                                        {
+                                            queueObj = song; // Set to the initial object so badge is shown below
+                                        }
+                                    }
+                                    else
+                                    {
+                                        queueObj = await QueueViewModel.CreateQueueObject(newSongObj, song.QueueCounter);
+                                        await QueueViewModel.Replace(index, queueObj);
+                                    }
+
+                                    if (queueObj != null)
+                                    {
+                                        if (successSource.ContainsKey(newSongObj)) queueObj.ConvertBadgeColor = new SolidColorBrush(Windows.UI.Color.FromArgb(255, 108, 203, 95));
+                                        else if (warningSource.ContainsKey(newSongObj)) queueObj.ConvertBadgeColor = new SolidColorBrush(Windows.UI.Color.FromArgb(255, 252, 225, 0));
+                                        else // Assume failure
+                                        {
+                                            queueObj.ConvertBadgeColor = new SolidColorBrush(Windows.UI.Color.FromArgb(255, 255, 153, 164));
+                                        }
+                                    }
+                                }
+                                else // Failed conversion, set current object badge to error
+                                {
+                                    song.ConvertBadgeColor = new SolidColorBrush(Windows.UI.Color.FromArgb(255, 255, 153, 164));
+                                }
+                            }
+                            finally
+                            {
+                                tcs.TrySetResult();
+                            }
+                        });
+
+                        // No need to wait for dispatcher/ui update to complete
+                        semaphore.Release();
+                        isReleased = true;
+
+                        await tcs.Task.WaitAsync(TimeSpan.FromSeconds(5));
+                    }
+                    catch (Exception ex)
+                    {
+                        dispatcherQueue.TryEnqueue(() =>
+                        {
+                            // Exception color code
+                            song.ConvertBadgeColor = new SolidColorBrush(Windows.UI.Color.FromArgb(255, 255, 0, 0));
+                        });
+                    }
+                    finally
+                    {
+                        var processCaptured = Interlocked.Increment(ref processedCount); // Increment the processed count
+                        dispatcherQueue.TryEnqueue(() =>
+                        {
+                            song.IsRunning = false; // Set song to not running
+                            if (outputSource != "local")
+                            {
+                                QueueProgress.Value = 100.0 * processCaptured / totalCount; // Update the progress bar
+                            }
+                        });
+
+                        if (!isReleased)
+                        {
+                            semaphore.Release();
+                        }
+                    }
+                }
+                catch (OperationCanceledException)
+                {
+                    // Handle cancellation if needed
+                }
+            });
+
+            await Task.WhenAll(tasks);
 
             if (await SettingsViewModel.GetSetting<bool?>(SettingsViewModel.Notifications) ?? false)
             {
                 App.GetService<IAppNotificationService>().Show(string.Format("QueueCompletePayload".GetLocalized(), AppContext.BaseDirectory));
             }
+        }
+        finally
+        {
+            // Resetting UI
+            dispatcherQueue.TryEnqueue(() =>
+            {
+                QueueProgress.Value = 0;  // Ensures this happens after currently queued progress changes
+            });
+
+            DownloadAllButton.Visibility = ConvertDialogOpenButton.Visibility = ClearButton.Visibility = Visibility.Visible; // Show buttons
+            ConvertStopText.Text = "Stop"; // Reset stop button text
+            ConvertStopButton.Visibility = Visibility.Collapsed; // Hide stop button
+            IsConverting = false;
+
             if (outputSource == "local")
             {
                 downloadHelper.StopLoop();
             }
+
             ForceHideInfoBar();
-            await ShowConversionDialog();  // Show conversion results dialog
+
+            await ShowConversionDialog();
         }
+    }
 
-        var downloadThreads = await SettingsViewModel.GetSetting<int?>(SettingsViewModel.ConversionThreads) ?? 1;
+    private async void DownloadAllButton_Click(object sender, RoutedEventArgs e)
+    {
+        string outputSource = "local";
+        var selectedSources = new List<string> { "deezer", "qobuz", "spotify", "youtube" }; // All sources except local
 
-        for (int threadNum = 0; threadNum < downloadThreads; threadNum++)
+        await ConversionTask(selectedSources, outputSource);
+    }
+
+    private async void ConversionDialog_OnPrimaryButtonClick(ContentDialog sender, ContentDialogButtonClickEventArgs args)
+    {
+        // Check for valid input
+        if (GetOutputSource() == null)
         {
-            Thread t = new Thread(async () =>
-            {
-                while (IsConverting)
-                {
-                    if (token.IsCancellationRequested) // Break the loop if the token is cancelled
-                    {
-                        IsConverting = false;
-                        dispatcherQueue.TryEnqueue(async () => await EndConversionLambda());
-                        return;
-                    }
-
-                    if (indexQueue.IsEmpty) // If the queue is already empty, end this thread
-                    {
-                        return;
-                    }
-
-                    int i = indexQueue.TryDequeue(out var iVal) ? iVal : -1; // Get the index from the queue
-
-                    if (i == -1) // If the index is invalid, skip
-                    {
-                        continue;
-                    }
-
-                    var song = QueueViewModel.Source[i];
-
-                    // Set song to running (progress ring will appear)
-                    dispatcherQueue.TryEnqueue(() =>
-                    {
-                        song.IsRunning = true;
-                    });
-
-                    SongSearchObject? newSongObj = null;
-                    string? fileLocation = null;
-                    if (outputSource == "local") // Conversion to local, download the track
-                    {
-                        fileLocation = await ApiHelper.DownloadObject(song, directory, progress, conversionUpdateCallback);
-                        newSongObj = song;
-                    }
-                    else
-                    {
-                        newSongObj = outputSource switch
-                        {
-                            "deezer" => await DeezerApi.GetDeezerTrack(song, token, conversionUpdateCallback),
-                            "qobuz" => await QobuzApi.GetQobuzTrack(song, token, conversionUpdateCallback),
-                            "spotify" => await SpotifyApi.GetSpotifyTrack(song, token, conversionUpdateCallback),
-                            "youtube" => await YoutubeApi.GetYoutubeTrack(song, token, conversionUpdateCallback),
-                            _ => throw new Exception("Unspecified output source") // Should never happen
-                        };
-                    }
-
-                    dispatcherQueue.TryEnqueue(async () =>
-                    {
-                        if (newSongObj != null)
-                        {
-                            QueueObject? queueObj;
-                            if (outputSource == "local")
-                            {
-                                var localSong = LocalExplorerViewModel.ParseFile(fileLocation);
-
-                                if (localSong != null)
-                                {
-                                    localSong.LocalBitmapImage = await LocalExplorerViewModel.GetBitmapImageAsync(fileLocation);
-                                    queueObj = await QueueViewModel.CreateQueueObject(localSong, song.QueueCounter);
-                                    await QueueViewModel.Replace(i, queueObj);
-                                }
-                                else // Can happen when trying to parse opus files
-                                {
-                                    queueObj = song; // Set to the initial object so badge is shown below
-                                }
-                            }
-                            else
-                            {
-                                queueObj = await QueueViewModel.CreateQueueObject(newSongObj, song.QueueCounter);
-                                await QueueViewModel.Replace(i, queueObj);
-                            }
-
-                            if (queueObj != null)
-                            {
-                                if (successSource.ContainsKey(newSongObj)) queueObj.ConvertBadgeColor = new SolidColorBrush(Windows.UI.Color.FromArgb(255, 108, 203, 95));
-                                else if (warningSource.ContainsKey(newSongObj)) queueObj.ConvertBadgeColor = new SolidColorBrush(Windows.UI.Color.FromArgb(255, 252, 225, 0));
-                                else // Assume failure
-                                {
-                                    queueObj.ConvertBadgeColor = new SolidColorBrush(Windows.UI.Color.FromArgb(255, 255, 153, 164));
-                                }
-
-                                queueObj.IsRunning = false; // Set song to not running
-                            }
-                        }
-                        else // Failed conversion, set current object badge to error
-                        {
-                            song.IsRunning = false; // Set song to not running
-
-                            if (!token.IsCancellationRequested) // If token is cancelled, don't show error badge
-                            {
-                                song.ConvertBadgeColor = new SolidColorBrush(Windows.UI.Color.FromArgb(255, 255, 153, 164));
-                            }
-
-                            //await QueueViewModel.Replace(i, song);
-                        }
-                    });
-
-                    var processCaptured = Interlocked.Increment(ref processedCount); // Increment the processed count
-
-                    dispatcherQueue.TryEnqueue(() =>
-                    {
-                        QueueProgress.Value = 100.0 * processCaptured / totalCount; // Update the progress bar
-                    });
-
-
-                    if (processCaptured == totalCount) // If all tracks are processed
-                    {
-                        IsConverting = false;
-                        dispatcherQueue.TryEnqueue(async () => await EndConversionLambda());
-                        return;
-                    }
-                }
-            });
-            t.Priority = ThreadPriority.AboveNormal;
-            t.Start();
+            ShowInfoBar(InfoBarSeverity.Warning, "Please select an output source.", 3);
+            return;
         }
+
+        if (DeezerCheckBox.IsChecked == false && QobuzCheckBox.IsChecked == false && SpotifyCheckBox.IsChecked == false && YouTubeCheckBox.IsChecked == false && LocalCheckBox.IsChecked == false)
+        {
+            ShowInfoBar(InfoBarSeverity.Warning, "Please select at least one input source.", 3);
+            return;
+        }
+
+        var outputSource = GetOutputSource().ToLower();
+
+        await ConversionTask(selectedSources, outputSource);
     }
 
     private void ConvertStopButton_OnClick(object sender, RoutedEventArgs e)

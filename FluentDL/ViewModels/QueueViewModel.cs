@@ -240,8 +240,10 @@ public partial class QueueViewModel : ObservableRecipient
 
     public static async Task<QueueObject?> CreateQueueObject(SongSearchObject song, int? queueCounter)
     {
-        var queueObj = new QueueObject(song, ShareVisibility, DownloadCoverVisibility, RemoveVisibility);
-        queueObj.QueueCounter = queueCounter;
+        var queueObj = new QueueObject(song, ShareVisibility, DownloadCoverVisibility, RemoveVisibility)
+        {
+            QueueCounter = queueCounter
+        };
         if (queueObj.LocalBitmapImage == null) // Create a local bitmap image for queue objects to prevent disappearing listview images
         {
             using var memoryStream = await GetRandomAccessStreamOptimized(queueObj.ImageLocation); // Get the memory stream from the url
@@ -251,7 +253,10 @@ public partial class QueueViewModel : ObservableRecipient
             await bitmapImage.SetSourceAsync(memoryStream);
             queueObj.LocalBitmapImage = bitmapImage; // Set the local bitmap image
 
-            await DatabaseService.QueueSave(GetHash(queueObj), queueObj.ToString(), memoryStream);
+            _ = DatabaseService.QueueSave(GetHash(queueObj), queueObj.ToString(), memoryStream);
+        } else
+        {
+            _ = DatabaseService.QueueSave(GetHash(queueObj), queueObj.ToString(), null);
         }
 
         return queueObj;
