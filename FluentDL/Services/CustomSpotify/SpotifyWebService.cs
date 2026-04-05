@@ -224,9 +224,13 @@ namespace FluentDL.Services.CustomSpotify
                 {
                     if (GetJsonNested(item, "itemV3.data", out var trackData))
                     {
-                        yield return BuildSongFromItemV3(trackData);
-                        count++;
+                        var song = BuildSongFromItemV3(trackData);
+                        if (!string.IsNullOrEmpty(song.Title))
+                        {
+                            yield return song;
+                        }
                     }
+                    count++;
                 }
 
                 if (GetJsonNested(content, "pagingInfo.totalCount", out var totalCountElement) &&
@@ -272,7 +276,8 @@ namespace FluentDL.Services.CustomSpotify
                 return null;
             }
 
-            return BuildSongFromTrackUnion(trackElement);
+            var song = BuildSongFromTrackUnion(trackElement);
+            return string.IsNullOrEmpty(song?.Title) ? null : song;
         }
 
         private static List<SongSearchObject> ParseSongs(string rawJson)
@@ -287,7 +292,7 @@ namespace FluentDL.Services.CustomSpotify
             if (!GetJsonNested(doc.RootElement, "data.searchV2.tracksV2.items", out var itemsElement) ||
                 itemsElement.ValueKind != JsonValueKind.Array)
             {
-                return new List<SongSearchObject>();
+                return [];
             }
 
             var results = new List<SongSearchObject>();
@@ -314,11 +319,6 @@ namespace FluentDL.Services.CustomSpotify
                         TrackPosition = "1",
                         Isrc = ""
                     };
-                }
-                else if (GetJsonNested(listItem, "itemV3.data", out var itemV3TrackElement) &&
-                         itemV3TrackElement.ValueKind == JsonValueKind.Object)
-                {
-                    song = BuildSongFromItemV3(itemV3TrackElement);
                 }
 
                 if (song is null)
@@ -567,7 +567,6 @@ namespace FluentDL.Services.CustomSpotify
         private static SongSearchObject BuildSongFromItemV3(JsonElement entityElement)
         {
             var uri = GetString(entityElement, "uri");
-
             return new SongSearchObject
             {
                 Source = "spotify",

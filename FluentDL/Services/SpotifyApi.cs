@@ -156,7 +156,7 @@ namespace FluentDL.Services
             try
             {
                 var responseTask = spotify.Browse.GetFeaturedPlaylists();
-                  var response = await responseTask.WaitAsync(TimeSpan.FromSeconds(3)); // 3s timeout
+                var response = await responseTask.WaitAsync(TimeSpan.FromSeconds(3)); // 3s timeout
 
                 return response != null;
             }
@@ -408,6 +408,10 @@ namespace FluentDL.Services
                 // Find occurrence of audio preview
                 var previewStr = "\"audioPreview\":{\"url\":\"";
                 var startIdx = html.IndexOf(previewStr);
+                if (startIdx == -1)
+                {
+                    return null; // Not found
+                }
                 var endIdx = html.IndexOf("\"}", startIdx + previewStr.Length);
                 var url = html.Substring(startIdx + previewStr.Length, endIdx - (startIdx + previewStr.Length));
                 Debug.WriteLine(url);
@@ -499,13 +503,13 @@ namespace FluentDL.Services
                                  .OrderByDescending(x => x.Width)
                                  .FirstOrDefault();
 
-                result.ImageLocation = best?.Url;
+                result.ImageLocation = best?.Url ?? result.ImageLocation;
             }
             else if (entity.TryGetProperty("image", out var imageProp) && imageProp.ValueKind == JsonValueKind.Array)
             {
                 var first = imageProp.EnumerateArray().FirstOrDefault();
                 if (first.ValueKind == JsonValueKind.Object && first.TryGetProperty("url", out var u))
-                    result.ImageLocation = u.GetString();
+                    result.ImageLocation = u.GetString() ?? result.ImageLocation;
             }
 
             // Explicit flag
@@ -615,14 +619,14 @@ namespace FluentDL.Services
                                      .OrderByDescending(x => x.Width)
                                      .FirstOrDefault();
 
-                    track.ImageLocation = best?.Url;
+                    track.ImageLocation = best?.Url ?? track.ImageLocation;
                 }
                 else if (entity.TryGetProperty("image", out var imageProp) && imageProp.ValueKind == JsonValueKind.Array && string.IsNullOrEmpty(track.ImageLocation)
                     && string.IsNullOrEmpty(track.ImageLocation))
                 {
                     var first = imageProp.EnumerateArray().FirstOrDefault();
                     if (first.ValueKind == JsonValueKind.Object && first.TryGetProperty("url", out var u))
-                        track.ImageLocation = u.GetString();
+                        track.ImageLocation = u.GetString() ?? track.ImageLocation;
                 }
 
                 // Explicit flag

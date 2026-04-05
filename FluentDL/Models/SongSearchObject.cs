@@ -14,10 +14,19 @@ public class SongSearchObject : INotifyPropertyChanged
         set;
     } = string.Empty;
 
-    public string? ImageLocation
+    private string _imageLocation = "ms-appx:///Assets/Unloaded.jpg";
+    public string ImageLocation
     {
-        get;
-        set;
+        get => _imageLocation;
+        set
+        {
+            var newValue = string.IsNullOrWhiteSpace(value)
+                ? "ms-appx:///Assets/Unloaded.jpg"
+                : value;
+            if (_imageLocation == newValue) return;
+            _imageLocation = newValue;
+            OnPropertyChanged();
+        }
     }
 
     public string? Isrc

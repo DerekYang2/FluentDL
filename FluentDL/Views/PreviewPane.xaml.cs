@@ -109,7 +109,14 @@ namespace FluentDL.Views
             {
                 return;
             }
-            SongPreviewPlayer.Source = MediaSource.CreateFromUri(new Uri(uriStr));
+            try
+            {
+                SongPreviewPlayer.Source = MediaSource.CreateFromUri(new Uri(uriStr));
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine("Failed to set media player source: " + ex.Message);
+            }
         }
 
         public void SetPlayerSource(Stream? stream, string? mime)
