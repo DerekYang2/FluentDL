@@ -578,7 +578,7 @@ public sealed partial class SettingsPage : Page
 
     private void SpotifyRedirectUriCopyButton_Click(object sender, RoutedEventArgs e)
     {
-        Clipboard.CopyToClipboard("http://127.0.0.1:5543/callback");
+        Clipboard.CopyToClipboard(ViewModel.SpotifyCallbackUri);
         ShowInfoBar(InfoBarSeverity.Success, "Copied redirect URI.", 2, "Spotify");
     }
 

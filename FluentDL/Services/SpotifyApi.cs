@@ -1,6 +1,3 @@
-using Acornima;
-using AngleSharp.Dom;
-using ColorCode.Compilation.Languages;
 using FluentDL.Helpers;
 using FluentDL.Models;
 using FluentDL.Services.CustomSpotify;
@@ -11,12 +8,10 @@ using SpotifyAPI.Web;
 using SpotifyAPI.Web.Auth;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
-using System.Diagnostics.Eventing.Reader;
 using System.Globalization;
 using System.Text.Json;
 using System.Text.RegularExpressions;
-using VideoLibrary;
-using Windows.Web.Http;
+
 
 namespace FluentDL.Services
 {
@@ -33,8 +28,8 @@ namespace FluentDL.Services
         // Login as user related
         private static EmbedIOAuthServer? _server;
         private static string? _clientId, _clientSecret;
-        private static int _port = 5543;
-        private static string _redirect = $"http://127.0.0.1:{_port}/callback";
+        private static readonly int _port = 5543;
+        private static readonly string _redirect = $"http://127.0.0.1:{_port}/callback";
         private static TaskCompletionSource<bool> _loginTcs = new();
 
         // Custom web player
@@ -44,6 +39,11 @@ namespace FluentDL.Services
         public SpotifyApi()
         {
 
+        }
+
+        public static string GetCallbackUri()
+        {
+            return _redirect;
         }
 
         public static async Task Initialize(string? clientId, string? clientSecret,  Action<InfoBarSeverity, string>? authCallback = null)
@@ -66,6 +66,7 @@ namespace FluentDL.Services
                         _server = null;
                         spotifyUser = null;
 
+                        // Create client without user access
                         attemptedCustomIdSecret = true;
                         spotify = new SpotifyClient(config.WithAuthenticator(new ClientCredentialsAuthenticator(clientId, clientSecret)));
                         if (await CheckClient())
@@ -73,8 +74,8 @@ namespace FluentDL.Services
                             IsInitialized = true;
                             spotifyWebService = null;
                             spotifyISRCService = null;
-                            authCallback?.Invoke(InfoBarSeverity.Success, "Logged in with user credentials");
-                            loginString = $"Logged in with user credentials:\nClient ID: {clientId}";
+                            authCallback?.Invoke(InfoBarSeverity.Success, "Using official Spotify API");
+                            loginString = $"Using official API developer app:\nClient ID: {clientId}";
                             return;
                         }
                     }
@@ -207,10 +208,8 @@ namespace FluentDL.Services
                     var tokenResponse = await new OAuthClient().RequestToken(
                         new AuthorizationCodeTokenRequest(_clientId!, _clientSecret!, response.Code, new Uri(_redirect))
                     );
-                    var config = SpotifyClientConfig
-                      .CreateDefault()
-                      .WithAuthenticator(new AuthorizationCodeAuthenticator(_clientId!, _clientSecret!, tokenResponse));
-                    spotifyUser = new SpotifyClient(config);
+                    var customConfig = config.WithAuthenticator(new AuthorizationCodeAuthenticator(_clientId!, _clientSecret!, tokenResponse));
+                    spotifyUser = new SpotifyClient(customConfig);
                     await _server!.Stop();
                     _loginTcs.TrySetResult(true);
                 }

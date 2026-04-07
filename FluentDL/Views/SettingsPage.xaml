@@ -687,8 +687,8 @@
                                 <local:SettingsCard.Description>
                                     <StackPanel Spacing="4">
                                         <TextBlock>
-                                            Optional: prompt for private playlist access using official API. Click&#32;<Hyperlink NavigateUri="https://github.com/DerekYang2/FluentDL/wiki/Authentication#spotify">here</Hyperlink>
-                                            for details. IMPORTANT: Add the URI below in your Spotify app redirect URIs:</TextBlock>
+                                            Optional: prompt for private playlist access using official API. Click&#32;<Hyperlink NavigateUri="https://github.com/DerekYang2/FluentDL/wiki/Authentication#about-playlists">here</Hyperlink>
+                                            for details. Add the URI below in your Spotify app redirect URIs:</TextBlock>
                                         <Border
                                             Padding="4,4"
                                             HorizontalAlignment="Left"
@@ -705,7 +705,7 @@
                                                     VerticalAlignment="Center"
                                                     FontSize="12"
                                                     IsTextSelectionEnabled="True"
-                                                    Text="http://127.0.0.1:5543/callback"
+                                                    Text="{x:Bind ViewModel.SpotifyCallbackUri, Mode=OneTime}"
                                                     TextWrapping="NoWrap" />
                                                 <Button
                                                     x:Name="SpotifyRedirectUriCopyButton"
