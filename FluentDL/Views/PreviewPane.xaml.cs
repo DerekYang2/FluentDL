@@ -232,6 +232,11 @@ namespace FluentDL.Views
                     trackDetailsList.Add(new TrackDetail { Label = "Genre", Value = await DeezerApi.GetGenreStr(albumObj.GetProperty("id").GetInt32()) });
                     trackDetailsList.Add(new TrackDetail { Label = "Max Quality", Value = $"16-Bit/44.1 kHz" });
 
+                    if (!string.IsNullOrEmpty(selectedSong?.Isrc))
+                    {
+                        trackDetailsList.Add(new TrackDetail { Label = "ISRC", Value = selectedSong.Isrc! });
+                    }
+
                     // Configure popularity field
                     trackDetailsList.Add(new TrackDetail { Label = "Popularity", Value = "" });
                     RankRatingControl.Visibility = Visibility.Visible;
@@ -284,6 +289,11 @@ namespace FluentDL.Views
                         trackDetailsList.Add(new TrackDetail { Label = "Genre", Value = string.Join(", ", QobuzApi.PruneGenreList(track.Album.GenresList)) });
                         trackDetailsList.Add(new TrackDetail { Label = "Max Quality", Value = $"{track.MaximumBitDepth}-Bit/{track.MaximumSamplingRate} kHz" });
                     }
+                    if (!string.IsNullOrEmpty(selectedSong?.Isrc))
+                    {
+                        trackDetailsList.Add(new TrackDetail { Label = "ISRC", Value = selectedSong.Isrc! });
+                    }
+
                     RankRatingControl.Visibility = Visibility.Collapsed;
 
                     // Load the audio stream
@@ -297,11 +307,6 @@ namespace FluentDL.Views
                 {
                     ImageSource = new BitmapImage(new Uri((string)(selectedAlbum?.AdditionalFields?["cover_max"] ?? ""))); // Get the largest
                     PreviewInfoControl2.ItemsSource = PreviewInfoControl.ItemsSource = trackDetailsList; // First set the details list
-                    var genreList = await SpotifyApi.GetGenres((List<SimpleArtist>?)selectedAlbum?.AdditionalFields?["artists"] ?? []);
-                    if (genreList.Count > 0)
-                    {
-                        trackDetailsList.Add(new TrackDetail { Label = "Genre", Value = string.Join(", ", genreList) });
-                    }
                     trackDetailsList.RemoveAt(trackDetailsList.ToList().FindIndex(t => t.Label == "Album"));
                     RankRatingControl.Visibility = Visibility.Collapsed;
                     // Tracks list view
@@ -328,8 +333,13 @@ namespace FluentDL.Views
                     RankRatingControl.Visibility = Visibility.Collapsed;
                     trackDetailsList.First(t => t.Label == "Release Date").Value = new DateVerboseConverter().Convert(track?.ReleaseDate ?? selectedSong.ReleaseDate, null!, null!, null!)?.ToString() ?? "";
                     trackDetailsList.Add(new TrackDetail { Label = "Track", Value = track?.TrackPosition ?? selectedSong.TrackPosition });
-                    if (track?.Rank != null)
-                        trackDetailsList.Add(new TrackDetail { Label = "Play Count", Value = YoutubeApi.FormatLargeValue(long.Parse(track.Rank)) });
+                    if (track?.Rank != null && long.TryParse(track.Rank, out long plays) && plays > 0)
+                        trackDetailsList.Add(new TrackDetail { Label = "Play Count", Value = YoutubeApi.FormatLargeValue(plays) });
+
+                    if (!string.IsNullOrEmpty(track?.Isrc))
+                    {
+                        trackDetailsList.Add(new TrackDetail { Label = "ISRC", Value = track?.Isrc!});
+                    }
 
                     // Load the audio stream
                     if (track?.AdditionalFields?.ContainsKey("preview_url") ?? false)
