@@ -1,3 +1,4 @@
+using Acornima;
 using AngleSharp.Dom;
 using ColorCode.Compilation.Languages;
 using FluentDL.Helpers;
@@ -7,11 +8,14 @@ using FluentDL.ViewModels;
 using FluentDL.Views;
 using Microsoft.UI.Xaml.Controls;
 using SpotifyAPI.Web;
+using SpotifyAPI.Web.Auth;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
+using System.Diagnostics.Eventing.Reader;
 using System.Globalization;
 using System.Text.Json;
 using System.Text.RegularExpressions;
+using VideoLibrary;
 using Windows.Web.Http;
 
 namespace FluentDL.Services
@@ -21,9 +25,17 @@ namespace FluentDL.Services
         private static readonly SemaphoreSlim _lock = new(1, 1);
         private static SpotifyClientConfig config = SpotifyClientConfig.CreateDefault().WithRetryHandler(new SimpleRetryHandler() { RetryTimes = 3, TooManyRequestsConsumesARetry = false});
         private static SpotifyClient spotify;
+        private static SpotifyClient? spotifyUser;
         private static Random rand = new();
         public static bool IsInitialized = false;
         private static string? loginString = null;
+        
+        // Login as user related
+        private static EmbedIOAuthServer? _server;
+        private static string? _clientId, _clientSecret;
+        private static int _port = 5543;
+        private static string _redirect = $"http://127.0.0.1:{_port}/callback";
+        private static TaskCompletionSource<bool> _loginTcs = new();
 
         // Custom web player
         private static ISpotifyWebService? spotifyWebService;
@@ -34,7 +46,7 @@ namespace FluentDL.Services
 
         }
 
-        public static async Task Initialize(string? clientId, string? clientSecret, Action<InfoBarSeverity, string>? authCallback = null)
+        public static async Task Initialize(string? clientId, string? clientSecret,  Action<InfoBarSeverity, string>? authCallback = null)
         {
             await _lock.WaitAsync();
             try 
@@ -48,6 +60,12 @@ namespace FluentDL.Services
                     // First try to use clientId and clientSecret from settings
                     if (!string.IsNullOrWhiteSpace(clientId) && !string.IsNullOrWhiteSpace(clientSecret))
                     {
+                        // Save these for login usage (if user wants to login with browser, we need these to get the token)
+                        _clientId = clientId;
+                        _clientSecret = clientSecret;
+                        _server = null;
+                        spotifyUser = null;
+
                         attemptedCustomIdSecret = true;
                         spotify = new SpotifyClient(config.WithAuthenticator(new ClientCredentialsAuthenticator(clientId, clientSecret)));
                         if (await CheckClient())
@@ -151,11 +169,70 @@ namespace FluentDL.Services
             }
         }
 
+        private static async Task PromptUserLogin()
+        {
+            if (_clientId == null || _clientSecret == null)
+            {
+                Debug.WriteLine("Client ID or secret not set, cannot prompt user login");
+                return;
+            }
+
+            if (_server == null)
+            {
+                _server = new EmbedIOAuthServer(new Uri(_redirect), _port);
+                await _server.Start();
+
+                _server.AuthorizationCodeReceived += OnAuthorizationCodeReceived;
+                _server.ErrorReceived += OnErrorReceived;
+            }
+
+            if (spotifyUser == null)
+            {
+                var request = new LoginRequest(_server.BaseUri, _clientId, LoginRequest.ResponseType.Code)
+                {
+                    Scope = new List<string> { Scopes.PlaylistReadCollaborative, Scopes.PlaylistReadPrivate }
+                };
+
+                BrowserUtil.Open(request.ToUri());
+                _loginTcs = new TaskCompletionSource<bool>();
+            }
+        }
+
+        private static async Task OnAuthorizationCodeReceived(object sender, AuthorizationCodeResponse response)
+        {
+            if (spotifyUser == null)
+            {
+                try
+                {
+                    var tokenResponse = await new OAuthClient().RequestToken(
+                        new AuthorizationCodeTokenRequest(_clientId!, _clientSecret!, response.Code, new Uri(_redirect))
+                    );
+                    var config = SpotifyClientConfig
+                      .CreateDefault()
+                      .WithAuthenticator(new AuthorizationCodeAuthenticator(_clientId!, _clientSecret!, tokenResponse));
+                    spotifyUser = new SpotifyClient(config);
+                    await _server!.Stop();
+                    _loginTcs.TrySetResult(true);
+                }
+                catch (Exception ex) {
+                    Debug.Write("Failed to authenticate spotify user: " + ex.ToString());
+                    spotifyUser = null;
+                    _loginTcs.TrySetResult(false);
+                }
+            }
+        }
+
+        private static async Task OnErrorReceived(object sender, string error, string? state)
+        {
+            Debug.WriteLine($"Aborting authorization, error received: {error}");
+            await _server!.Stop();
+        }
+
         private static async Task<bool> CheckClient()
         {
             try
             {
-                var responseTask = spotify.Browse.GetFeaturedPlaylists();
+                var responseTask = spotify.Search.Item(new SearchRequest(SearchRequest.Types.Track, "test"));
                 var response = await responseTask.WaitAsync(TimeSpan.FromSeconds(3)); // 3s timeout
 
                 return response != null;
@@ -341,9 +418,10 @@ namespace FluentDL.Services
 
         public static async Task<string?> GetPlaylistName(string playlistId)
         {
+            if (spotifyUser == null) return null;
             try
             {
-                var playlist = await spotify.Playlists.Get(playlistId);
+                var playlist = await spotifyUser.Playlists.Get(playlistId);
                 var playlistName = playlist.Name;
                 return playlistName;
             }
@@ -356,10 +434,23 @@ namespace FluentDL.Services
 
         public static async Task<string?> GetIsrcFromId(string id)
         {
-            if (spotifyISRCService == null) return null;
             try
             {
-                return await spotifyISRCService.GetIsrc(id);
+                if (spotifyISRCService == null)
+                {
+                    var track = await spotify.Tracks.Get(id);
+                    return track.ExternalIds["isrc"];
+                }
+            } catch (Exception e)
+            {
+                Debug.WriteLine("Failed to get ISRC from id using official API: " + e.Message);
+            }
+
+            // Fallback
+            try
+            {
+                var isrcServiceInstance = spotifyISRCService ?? App.GetService<ISpotifyISRCService>();
+                return await isrcServiceInstance.GetIsrc(id);
             }
             catch (Exception e)
             {
@@ -414,7 +505,6 @@ namespace FluentDL.Services
                 }
                 var endIdx = html.IndexOf("\"}", startIdx + previewStr.Length);
                 var url = html.Substring(startIdx + previewStr.Length, endIdx - (startIdx + previewStr.Length));
-                Debug.WriteLine(url);
                 return url;
             }
             catch (Exception e)
@@ -719,7 +809,7 @@ namespace FluentDL.Services
             return songs;
         }
 
-        public static async Task AddTracksFromLink(ObservableCollection<SongSearchObject> itemSource, string url, CancellationToken token, Search.UrlStatusUpdateCallback? statusUpdate, bool albumMode = false)
+        public static async Task AddTracksFromLink(ObservableCollection<SongSearchObject> itemSource, string url, CancellationToken token, Search.UrlStatusUpdateCallback? statusUpdate, bool userLogin, bool albumMode = false)
         {
             if (!IsInitialized)
             {
@@ -736,58 +826,88 @@ namespace FluentDL.Services
 
             if (url.StartsWith("https://open.spotify.com/playlist/"))
             {
-                if (spotifyWebService != null)
-                {
-                    statusUpdate?.Invoke(InfoBarSeverity.Informational, $"<b>Spotify</b>   Loading <a href='{url}'>playlist</a>", -1);
+                ISpotifyWebService webServiceInstance = spotifyWebService ?? App.GetService<ISpotifyWebService>();
 
-                    try
+                statusUpdate?.Invoke(InfoBarSeverity.Informational, $"<b>Spotify</b>   Loading <a href='{url}'>playlist</a>", -1);
+
+                // Attempt official API (private or collaborative playlists only)
+                try
+                {
+                    if (userLogin)
                     {
-                        await foreach (var song in spotifyWebService.GetPlaylistAsync(id, token))
+                        await PromptUserLogin();
+                        var status = await _loginTcs.Task.WaitAsync(TimeSpan.FromSeconds(60)); // Wait for user to login, with timeout
+
+                        if (!status || spotifyUser == null)
+                        {
+                            statusUpdate?.Invoke(InfoBarSeverity.Error, $"<b>Spotify</b>   Authentication failed. Cannot load playlist <a href='{url}'>{url}</a>");
+                            return;
+                        }
+
+                        var playlistName = await GetPlaylistName(id);
+                        if (playlistName == null)
+                        {
+                            statusUpdate?.Invoke(InfoBarSeverity.Error, $"<b>Spotify</b>   Failed to load playlist <a href='{url}'>{url}</a>");
+                            return;
+                        }
+
+                        statusUpdate?.Invoke(InfoBarSeverity.Informational, $"<b>Spotify</b>   Loading playlist <a href='{url}'>{playlistName}</a>", -1);
+
+                        var pages = await spotifyUser.Playlists.GetPlaylistItems(id, cancel: token);
+                        var allPages = await spotifyUser.PaginateAll(pages, cancellationToken: token);
+                        itemSource.Clear(); // Clear the item source
+
+                        // Debug: loop and print all tracks
+                        foreach (PlaylistTrack<IPlayableItem> item in allPages)
+                        {
+                            if (item.Item is FullTrack track)
+                            {
+                                if (token.IsCancellationRequested)
+                                {
+                                    statusUpdate?.Invoke(InfoBarSeverity.Warning, $"<b>Spotify</b>   Cancelled loading playlist <a href='{url}'>{playlistName}</a>");
+                                    return; // Stop if cancelled
+                                }
+
+                                var songObj = await Task.Run(() => ConvertSongSearchObject(track), token);
+                                if (songObj != null)
+                                {
+                                    itemSource.Add(songObj);
+                                }
+                            }
+                        }
+                        statusUpdate?.Invoke(InfoBarSeverity.Success, $"<b>Spotify</b>   Loaded playlist <a href='{url}'>{playlistName}</a>");
+                    }
+                    else
+                    {
+                        itemSource.Clear(); // Clear the item source
+                        await foreach (var song in webServiceInstance.GetPlaylistAsync(id, token))
                         {
                             itemSource.Add(song);
                         }
                         statusUpdate?.Invoke(InfoBarSeverity.Success, $"<b>Spotify</b>   Loaded <a href='{url}'>playlist</a>");
                     }
-                    catch (Exception e)
-                    {
-                        Debug.WriteLine("Failed to load playlist from web service: " + e.Message);
-                        statusUpdate?.Invoke(InfoBarSeverity.Error, $"<b>Spotify</b>   Failed to load playlist <a href='{url}'>{url}</a>");
-                    }
                 }
-                else
+                catch (Exception ex)
                 {
-                    var playlistName = await GetPlaylistName(id);
-                    if (playlistName == null)
+                    if (userLogin)  // Attempt webservice fallback
                     {
-                        statusUpdate?.Invoke(InfoBarSeverity.Error, $"<b>Spotify</b>   Failed to load playlist <a href='{url}'>{url}</a>");
-                        return;
-                    }
-
-                    statusUpdate?.Invoke(InfoBarSeverity.Informational, $"<b>Spotify</b>   Loading playlist <a href='{url}'>{playlistName}</a>", -1);
-
-                    var pages = await spotify.Playlists.GetPlaylistItems(id, cancel: token);
-                    var allPages = await spotify.PaginateAll(pages, cancellationToken: token);
-                    itemSource.Clear(); // Clear the item source
-
-                    // Debug: loop and print all tracks
-                    foreach (PlaylistTrack<IPlayableItem> item in allPages)
-                    {
-                        if (item.Track is FullTrack track)
+                        try
                         {
-                            if (token.IsCancellationRequested)
+                            itemSource.Clear(); // Clear the item source
+                            await foreach (var song in webServiceInstance.GetPlaylistAsync(id, token))
                             {
-                                statusUpdate?.Invoke(InfoBarSeverity.Warning, $"<b>Spotify</b>   Cancelled loading playlist <a href='{url}'>{playlistName}</a>");
-                                return; // Stop if cancelled
+                                itemSource.Add(song);
                             }
-
-                            var songObj = await Task.Run(() => ConvertSongSearchObject(track), token);
-                            if (songObj != null)
-                            {
-                                itemSource.Add(songObj);
-                            }
+                            statusUpdate?.Invoke(InfoBarSeverity.Warning, $"<b>Spotify</b>   Error: {ex.Message}. Loaded <a href='{url}'>playlist</a> using fallback method.", 10);
                         }
+                        catch (Exception ex2)
+                        {
+                            statusUpdate?.Invoke(InfoBarSeverity.Error, $"<b>Spotify</b>   Failed to load with both methods. Error 1: {ex.Message} | Error 2: {ex2.Message}", 10);
+                        }
+                    } else
+                    {
+                        statusUpdate?.Invoke(InfoBarSeverity.Error, $"<b>Spotify</b>   Failed to load playlist: {ex.Message}", 10);
                     }
-                    statusUpdate?.Invoke(InfoBarSeverity.Success, $"<b>Spotify</b>   Loaded playlist <a href='{url}'>{playlistName}</a>");
                 }
             }
 
@@ -881,7 +1001,7 @@ namespace FluentDL.Services
 
 
                 var songObjList = new List<SongSearchObject>(); // List of SongSearchObject results
-                HashSet<string> idSet = new HashSet<string>(); // Set of track ids
+                HashSet<string> idSet = new(); // Set of track ids
                 int LIMIT = 20;
 
                 if (spotifyWebService != null)
@@ -939,7 +1059,7 @@ namespace FluentDL.Services
                         {  // Maximum query is 250 characters
                             reqStr = reqStr.Substring(0, 250);
                         }
-                        response = await spotify.Search.Item(new SearchRequest(SearchRequest.Types.Track, reqStr) { Limit = 20 }, token);
+                        response = await spotify.Search.Item(new SearchRequest(SearchRequest.Types.Track, reqStr), token);
                     }
                     catch (Exception e)
                     {
@@ -949,7 +1069,7 @@ namespace FluentDL.Services
                         if (albumIdx != -1)
                         {
                             reqStr = reqStr.Substring(0, albumIdx);
-                            response = await spotify.Search.Item(new SearchRequest(SearchRequest.Types.Track, reqStr) { Limit = 20 }, token);
+                            response = await spotify.Search.Item(new SearchRequest(SearchRequest.Types.Track, reqStr), token);
                         }
                         else
                         {
@@ -959,31 +1079,27 @@ namespace FluentDL.Services
 
                     int notNullCount = 0, totalCount = 0;
 
-                    if (response.Tracks != null)
+                    await foreach (FullTrack track in spotify.Paginate(response.Tracks, (s) => s.Tracks))
                     {
+                        if (token.IsCancellationRequested) return null;
 
-                        await foreach (FullTrack track in spotify.Paginate(response.Tracks, (s) => s.Tracks))
+                        if (notNullCount >= LIMIT || totalCount >= 1.5 * LIMIT) break;
+                        totalCount++;  // Increment total count
+
+                        var songObject = ConvertSongSearchObject(track);
+
+                        if (songObject == null) continue;
+                        notNullCount++;  // Increment count of non-null tracks found
+
+                        if (!idSet.Contains(songObject.Id))
                         {
-                            if (token.IsCancellationRequested) return null;
+                            idSet.Add(songObject.Id);
 
-                            if (notNullCount >= LIMIT || totalCount >= 1.5 * LIMIT) break;
-                            totalCount++;  // Increment total count
+                            var oneArtistMatch = artists.Any(a => track.Artists.Any(ta => CloseMatch(a, ta.Name)));
 
-                            var songObject = ConvertSongSearchObject(track);
-
-                            if (songObject == null) continue;
-                            notNullCount++;  // Increment count of non-null tracks found
-
-                            if (!idSet.Contains(songObject.Id))
+                            if (oneArtistMatch)
                             {
-                                idSet.Add(songObject.Id);
-
-                                var oneArtistMatch = artists.Any(a => track.Artists.Any(ta => CloseMatch(a, ta.Name)));
-
-                                if (oneArtistMatch)
-                                {
-                                    songObjList.Add(songObject);
-                                }
+                                songObjList.Add(songObject);
                             }
                         }
                     }
@@ -1107,21 +1223,6 @@ namespace FluentDL.Services
                 TrackList = album.Tracks.Items?.Select(t => ConvertSongSearchObject(t, album))?.Where(t => t != null)?.ToList() ?? [],
                 AdditionalFields = new Dictionary<string, object?> { { "artists", album.Artists}, { "cover_max", album.Images.First().Url} }
             };
-        }
-
-        public static async Task<SortedSet<string>> GetGenres(List<SimpleArtist> artists)
-        {
-            var genreSet = new SortedSet<string>();
-            foreach (var artist in artists)
-            {
-                var fullArtist = await spotify.Artists.Get(artist.Id);
-                foreach (var genre in fullArtist.Genres)
-                {
-                    genreSet.Add(genre);
-                }
-            }
-
-            return genreSet;
         }
 
         public static async Task<string?> DownloadEquivalentTrack(string filePath, SongSearchObject song, IProgress<ProgressData> progress, bool strict = true, ConversionUpdateCallback? callback = default)
@@ -1258,7 +1359,6 @@ namespace FluentDL.Services
                 var fullAlbum = await spotify.Albums.Get(track.Album.Id); // Get the full album for genres + upc
                 var artistList = track.Artists.Select(a => a.Name);
                 var albumArtistList = fullAlbum.Artists.Select(a => a.Name);
-                var genreList = await GetGenres(track.Artists);
 
                 var metadata = new MetadataObject(filePath)
                 {
@@ -1269,7 +1369,6 @@ namespace FluentDL.Services
                     Isrc = track.ExternalIds["isrc"],
                     ReleaseDate = DateTime.Parse(track.Album.ReleaseDate),
                     AlbumArtPath = track.Album.Images.First().Url, // First is the largest image
-                    Genres = genreList.ToArray(),
                     TrackNumber = track.TrackNumber,
                     TrackTotal = track.Album.TotalTracks,
                     Upc = fullAlbum.ExternalIds["upc"],
