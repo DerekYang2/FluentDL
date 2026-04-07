@@ -37,7 +37,8 @@ public partial class SettingsViewModel : ObservableRecipient
         AudioConversionThreads = "audio_conversion_threads",
         Notifications = "notifications",
         AutoPlay = "auto_play",
-        NotifyUpdate = "notify_update";
+        NotifyUpdate = "notify_update",
+        SpotifyPlaylistPrompt = "spotify_playlist_prompt";
 
     // Shortcut button checkboxes
     public static readonly string SearchAddChecked = "search_add_checked",
@@ -117,6 +118,7 @@ public partial class SettingsViewModel : ObservableRecipient
         await SaveSettingsAsyncIfNull<bool?>(Notifications, false);
         await SaveSettingsAsyncIfNull<bool?>(AutoPlay, true);
         await SaveSettingsAsyncIfNull<bool?>(NotifyUpdate, true);
+        await SaveSettingsAsyncIfNull<bool?>(SpotifyPlaylistPrompt, false);
         await SaveSettingsAsyncIfNull<string?>(DownloadDirectory, null);
         await SaveSettingsAsyncIfNull<string?>(FFmpegPath, null);
         await SaveSettingsAsyncIfNull<string?>(SpotifyClientId, "");

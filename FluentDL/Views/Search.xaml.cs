@@ -441,7 +441,8 @@ public sealed partial class Search : Page
 
         if (generalQuery.StartsWith("https://open.spotify.com/"))
         {
-            await SpotifyApi.AddTracksFromLink((ObservableCollection<SongSearchObject>)CustomListView.ItemsSource, generalQuery, cancellationTokenSource.Token, statusUpdate, ViewModel.AlbumMode);
+            bool userLogin = await SettingsViewModel.GetSetting<bool>(SettingsViewModel.SpotifyPlaylistPrompt);
+            await SpotifyApi.AddTracksFromLink((ObservableCollection<SongSearchObject>)CustomListView.ItemsSource, generalQuery, cancellationTokenSource.Token, statusUpdate, userLogin, ViewModel.AlbumMode);
 
             /*
             var playlistId = generalQuery.Split("/").Last();

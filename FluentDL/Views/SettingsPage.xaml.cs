@@ -105,6 +105,7 @@ public sealed partial class SettingsPage : Page
         NotificationsToggle.IsOn = await localSettings.ReadSettingAsync<bool>(SettingsViewModel.Notifications);
         AutoPlayToggle.IsOn = await localSettings.ReadSettingAsync<bool>(SettingsViewModel.AutoPlay);
         NotifyUpdateToggle.IsOn = await localSettings.ReadSettingAsync<bool>(SettingsViewModel.NotifyUpdate);
+        SpotifyPlaylistPromptToggle.IsOn = await localSettings.ReadSettingAsync<bool>(SettingsViewModel.SpotifyPlaylistPrompt);
 
         // Set Ids/Secrets
         ClientIdInput.Text = (await localSettings.ReadSettingAsync<string?>(SettingsViewModel.SpotifyClientId)) ?? "";
@@ -192,6 +193,12 @@ public sealed partial class SettingsPage : Page
 
     private async void SpotifyUpdateButton_Click(object sender, RoutedEventArgs e)
     {
+        if (SpotifyPlaylistPromptToggle.IsOn && (string.IsNullOrWhiteSpace(ClientIdInput.Text) || string.IsNullOrWhiteSpace(SpotifySecretInput.Password)))
+        {
+            ShowInfoBar(InfoBarSeverity.Warning, "Private playlist prompt requires Spotify client ID and client secret.", 4, "Spotify");
+            return;
+        }
+
         void authCallback(InfoBarSeverity severity, string message)
         {
             dispatcher.TryEnqueue(() =>
@@ -562,6 +569,19 @@ public sealed partial class SettingsPage : Page
         var isToggled = (sender as ToggleSwitch).IsOn;
         await localSettings.SaveSettingAsync(SettingsViewModel.NotifyUpdate, isToggled);
     }
+
+    private async void SpotifyPlaylistPromptToggle_OnToggled(object sender, RoutedEventArgs e)
+    {
+        var isToggled = (sender as ToggleSwitch).IsOn;
+        await localSettings.SaveSettingAsync(SettingsViewModel.SpotifyPlaylistPrompt, isToggled);
+    }
+
+    private void SpotifyRedirectUriCopyButton_Click(object sender, RoutedEventArgs e)
+    {
+        Clipboard.CopyToClipboard("http://127.0.0.1:5543/callback");
+        ShowInfoBar(InfoBarSeverity.Success, "Copied redirect URI.", 2, "Spotify");
+    }
+
     private async void ResetFFmpegButton_OnClick(object sender, RoutedEventArgs e)
     {
         FFmpegPathCard.Description = "No folder selected";

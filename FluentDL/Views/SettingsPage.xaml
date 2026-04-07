@@ -653,8 +653,8 @@
                         <local:SettingsExpander.Description>
                             <!--Removed text for now: Alternatively, ensure you are logged into the <Hyperlink NavigateUri="https://open.spotify.com/">web player</Hyperlink> for automatic authentication.-->
                             <TextBlock>
-                                Optional: if not logged in, enter your own&#32;<Hyperlink NavigateUri="https://github.com/DerekYang2/FluentDL/wiki/Authentication#spotify">developer app credentials</Hyperlink>
-                                (requires premium subscription).</TextBlock>
+                                Optional: Use the official API by entering your own&#32;<Hyperlink NavigateUri="https://github.com/DerekYang2/FluentDL/wiki/Authentication#spotify">developer app credentials</Hyperlink>
+                                (requires premium subscription). This method is more stable.</TextBlock>
                         </local:SettingsExpander.Description>
                         <local:SettingsExpander.HeaderIcon>
                             <FontIcon Glyph="&#xE72E;" />
@@ -683,6 +683,48 @@
                             </Button>
                         </Grid>
                         <local:SettingsExpander.Items>
+                            <local:SettingsCard HorizontalContentAlignment="Stretch" Header="Private Playlist Prompt">
+                                <local:SettingsCard.Description>
+                                    <StackPanel Spacing="4">
+                                        <TextBlock>
+                                            Optional: prompt for private playlist access using official API. Click&#32;<Hyperlink NavigateUri="https://github.com/DerekYang2/FluentDL/wiki/Authentication#spotify">here</Hyperlink>
+                                            for details. IMPORTANT: Add the URI below in your Spotify app redirect URIs:</TextBlock>
+                                        <Border
+                                            Padding="4,4"
+                                            HorizontalAlignment="Left"
+                                            Background="{ThemeResource ControlFillColorSecondaryBrush}"
+                                            CornerRadius="4">
+                                            <Grid ColumnSpacing="8">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*" />
+                                                    <ColumnDefinition Width="Auto" />
+                                                </Grid.ColumnDefinitions>
+                                                <TextBlock
+                                                    Grid.Column="0"
+                                                    Margin="4,0"
+                                                    VerticalAlignment="Center"
+                                                    FontSize="12"
+                                                    IsTextSelectionEnabled="True"
+                                                    Text="http://127.0.0.1:5543/callback"
+                                                    TextWrapping="NoWrap" />
+                                                <Button
+                                                    x:Name="SpotifyRedirectUriCopyButton"
+                                                    Grid.Column="1"
+                                                    Padding="4"
+                                                    Click="SpotifyRedirectUriCopyButton_Click"
+                                                    ToolTipService.ToolTip="Copy redirect URI">
+                                                    <FontIcon FontSize="12" Glyph="&#xE8C8;" />
+                                                </Button>
+                                            </Grid>
+                                        </Border>
+                                    </StackPanel>
+                                </local:SettingsCard.Description>
+                                <ToggleSwitch
+                                    x:Name="SpotifyPlaylistPromptToggle"
+                                    OffContent=""
+                                    OnContent=""
+                                    Toggled="SpotifyPlaylistPromptToggle_OnToggled" />
+                            </local:SettingsCard>
                             <local:SettingsCard
                                 HorizontalContentAlignment="Stretch"
                                 Description="Enter your client ID string"
