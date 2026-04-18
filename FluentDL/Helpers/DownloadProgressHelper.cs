@@ -11,6 +11,124 @@ internal class ProgressEventArgs(string displayString, double progressValue) : E
     public double ProgressValue { get; } = progressValue;
 }
 
+internal class ValueDamper
+{
+    private readonly object _lock = new object();
+
+    // tuning parameters
+    public double TimeConstantSeconds { get; }
+    public double MaxDeltaPerSecond { get; } // maximum allowed change per second (absolute)
+
+    // state
+    private double _current;
+    private double _target;
+    private DateTime _lastUpdateUtc;
+
+    public ValueDamper(double initialValue = 0.0, double timeConstantSeconds = 0.5, double maxDeltaPerSecond = double.PositiveInfinity)
+    {
+        TimeConstantSeconds = Math.Max(1e-6, timeConstantSeconds);
+        MaxDeltaPerSecond = maxDeltaPerSecond;
+        _current = initialValue;
+        _target = initialValue;
+        _lastUpdateUtc = DateTime.UtcNow;
+    }
+
+    /// <summary>
+    /// Report a new raw measurement (target). Does not immediately set the displayed value;
+    /// the displayed value will ease toward this target when GetValue is called.
+    /// </summary>
+    public void Report(double newValue)
+    {
+        lock (_lock)
+        {
+            _target = newValue;
+            // keep lastUpdate time as-is; smoothing happens in GetValue
+        }
+    }
+
+    /// <summary>
+    /// Force both current and target to a value (instant jump).
+    /// </summary>
+    public void ForceSet(double value)
+    {
+        lock (_lock)
+        {
+            _current = value;
+            _target = value;
+            _lastUpdateUtc = DateTime.UtcNow;
+        }
+    }
+
+    /// <summary>
+    /// Reset the damper to a value and reset internal timer.
+    /// </summary>
+    public void Reset(double value = 0.0)
+    {
+        ForceSet(value);
+    }
+
+    /// <summary>
+    /// Returns the smoothed value, advancing internal state using the current time.
+    /// Optionally pass a custom 'now' for deterministic updates (useful with Stopwatch).
+    /// </summary>
+    public double GetValue(DateTime? nowUtc = null)
+    {
+        lock (_lock)
+        {
+            var now = nowUtc ?? DateTime.UtcNow;
+            var dt = (now - _lastUpdateUtc).TotalSeconds;
+            if (dt <= 0)
+            {
+                return _current;
+            }
+
+            // exponential smoothing alpha from time constant tau
+            var tau = TimeConstantSeconds;
+            var alpha = 1.0 - Math.Exp(-dt / tau);
+
+            // candidate eased value
+            var eased = _current + (_target - _current) * alpha;
+
+            // clamp the change to MaxDeltaPerSecond * dt to avoid large instantaneous jumps
+            if (!double.IsInfinity(MaxDeltaPerSecond))
+            {
+                var maxDelta = MaxDeltaPerSecond * dt;
+                var delta = eased - _current;
+                if (Math.Abs(delta) > maxDelta)
+                {
+                    eased = _current + Math.Sign(delta) * maxDelta;
+                }
+            }
+
+            _current = eased;
+            _lastUpdateUtc = now;
+            return _current;
+        }
+    }
+
+    /// <summary>
+    /// Convenience: check whether the displayed value is effectively at the target.
+    /// </summary>
+    public bool IsAtTarget(double epsilon = 1e-6)
+    {
+        lock (_lock)
+        {
+            return Math.Abs(_current - _target) <= epsilon;
+        }
+    }
+
+    /// <summary>
+    /// Peek the current target (not smoothed).
+    /// </summary>
+    public double PeekTarget()
+    {
+        lock (_lock)
+        {
+            return _target;
+        }
+    }
+}
+
 internal class DownloadProgressHelper
 {
     private readonly string _title;
@@ -97,6 +215,8 @@ internal class DownloadProgressHelper
     private CancellationTokenSource? _cts;
     private long lastBytesPredicted = 0;
     private TimeSpan lastTimePredicted = TimeSpan.Zero;
+    private long lastBytesCycle = 0;
+    private TimeSpan lastTimeCycle = TimeSpan.Zero;
 
     public void UpdateProgressLoop(ProgressData data)
     {
@@ -106,9 +226,9 @@ internal class DownloadProgressHelper
             _progressDict[data.uniqueId] = data;
 
             var sumMBPS = _progressDict.Values.Sum(d => d.MBPS());
-            _speedQueue.AddLast(sumMBPS);
-            if (_speedQueue.Count > 50) _speedQueue.RemoveFirst();
 
+            // _speedQueue.AddLast(sumMBPS);
+            //if (_speedQueue.Count > 50) _speedQueue.RemoveFirst();
 
             var currentBytes = _progressDict.Values.Sum(d => d.currentBytes ?? 0L);
             var currentTime = _stopwatch.Elapsed.TotalMilliseconds;
@@ -130,6 +250,9 @@ internal class DownloadProgressHelper
         _stopwatch.Start();
         // Initial times
         lastTimePredicted = _stopwatch.Elapsed;
+
+        var percentDamper = new ValueDamper(initialValue: 0.0, timeConstantSeconds: 1, maxDeltaPerSecond: 10.0);
+        var speedDamper = new ValueDamper(initialValue: 0.0, timeConstantSeconds: 2, maxDeltaPerSecond: 10.0);
 
         Task.Run(async () =>
         {
@@ -163,8 +286,25 @@ internal class DownloadProgressHelper
                             percent = Math.Min(100.0 * curBytes / (double)totalBytes, 100.0);
        
                             percentMax = Math.Max(percentMax, percent);  // This value should never decrease
-                            var avgMBPS = _speedQueue.Average();
-                            display = GenerateDisplayString(percent, avgMBPS > 0 ? avgMBPS : null);
+
+                            // Speed calculations
+                            double cycleTime = (curTime - lastTimeCycle).TotalSeconds;
+                            if (cycleTime > 0.05)
+                            {
+                                var mbps = Math.Max((curBytes - lastBytesCycle) / (curTime - lastTimeCycle).TotalSeconds / (1024 * 1024), 0);
+                                lastBytesCycle = curBytes;
+                                lastTimeCycle = curTime;
+                                speedDamper.Report(mbps);
+                            }
+
+                            // Report values
+                            percentDamper.Report(percent);
+
+                            var now = DateTime.UtcNow;
+                            var displayPercent = percentDamper.GetValue(now);
+                            var displaySpeed = speedDamper.GetValue(now);
+
+                            display = GenerateDisplayString(displayPercent, Math.Max(displaySpeed, 0));
                         }
 
                         lastTimePredicted = curTime;
