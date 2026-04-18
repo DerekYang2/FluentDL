@@ -14,6 +14,8 @@
         Title="View Spectrogram"
         CloseButtonText="Close"
         IsSecondaryButtonEnabled="True"
+        PrimaryButtonClick="SpectrogramDialog_PrimaryButtonClick"
+        PrimaryButtonText="Save Image"
         SecondaryButtonClick="SpectrogramDialog_SecondaryButtonClick"
         SecondaryButtonText="Reset Zoom">
         <ContentDialog.Resources>
@@ -26,20 +28,28 @@
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="*" />
             </Grid.RowDefinitions>
-            <StackPanel Grid.Row="0" Orientation="Horizontal">
-                <FontIcon
-                    Margin="4,0"
-                    FontSize="14"
-                    Foreground="{ThemeResource TextFillColorSecondary}"
-                    Glyph="&#xE946;" />
-                <TextBlock
-                    Margin="4,0,0,4"
-                    HorizontalAlignment="Left"
-                    Foreground="{ThemeResource TextFillColorSecondary}"
-                    Style="{ThemeResource CaptionTextBlockStyle}"
-                    Text="Zoom: ctrl + scroll"
-                    Visibility="{Binding Visibility, ElementName=SpectrogramImage}" />
-            </StackPanel>
+            <Grid Grid.Row="0" ColumnSpacing="8">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <StackPanel
+                    Grid.Column="0"
+                    Orientation="Horizontal"
+                    Visibility="{Binding Visibility, ElementName=SpectrogramImage}">
+                    <FontIcon
+                        Margin="4,0"
+                        FontSize="14"
+                        Foreground="{ThemeResource TextFillColorSecondary}"
+                        Glyph="&#xE946;" />
+                    <TextBlock
+                        Margin="4,0,0,4"
+                        HorizontalAlignment="Left"
+                        Foreground="{ThemeResource TextFillColorSecondary}"
+                        Style="{ThemeResource CaptionTextBlockStyle}"
+                        Text="Zoom: ctrl + scroll" />
+                </StackPanel>
+            </Grid>
 
             <TextBlock
                 x:Name="SpectrogramInfoText"

@@ -20,6 +20,16 @@ internal class FFmpegRunner
 {
     public static bool IsInitialized = false;
 
+    private static int NormalizeSpectrogramHeight(int height)
+    {
+        return height switch
+        {
+            <= 384 => 256,
+            <= 768 => 512,
+            _ => 1024,
+        };
+    }
+
     public static async Task Initialize()
     {
         try
@@ -42,11 +52,11 @@ internal class FFmpegRunner
     }
 
     // Spectrogram
-    public static async Task<BitmapImage?> GetSpectrogram(string filePath, DispatcherQueue dispatcher)
+    public static async Task<BitmapImage?> GetSpectrogram(string filePath, int imageHeight, DispatcherQueue dispatcher)
     {
         try
         {
-            int height = 512;
+            int height = NormalizeSpectrogramHeight(imageHeight);
             int width = height * 2;
             using var ms = new MemoryStream();
             await FFMpegArguments.FromFileInput(filePath)
@@ -79,6 +89,30 @@ internal class FFmpegRunner
         {
             Debug.WriteLine(ex);
             return null;
+        }
+    }
+
+    public static async Task<bool> SaveSpectrogram(string filePath, string outputPath, int imageHeight = 512)
+    {
+        try
+        {
+            int height = NormalizeSpectrogramHeight(imageHeight);
+            int width = height * 2;
+
+            await FFMpegArguments.FromFileInput(filePath)
+                .OutputToFile(outputPath, true, options => options
+                    .WithCustomArgument("-filter_complex")
+                    .WithCustomArgument($"showspectrumpic=s={width}x{height}")
+                    .WithVideoCodec("png")
+                    .ForceFormat("image2"))
+                .ProcessAsynchronously(throwOnError: true);
+
+            return File.Exists(outputPath);
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine(ex);
+            return false;
         }
     }
 

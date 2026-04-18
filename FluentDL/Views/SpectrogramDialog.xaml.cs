@@ -1,10 +1,12 @@
 using FluentDL.Models;
 using FluentDL.Services;
+using FluentDL.Helpers;
 using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media.Imaging;
 using System.Diagnostics;
+using System.IO;
 
 // To learn more about WinUI, the WinUI project structure,
 // and more about our project templates, see: http://aka.ms/winui-project-info.
@@ -14,6 +16,8 @@ namespace FluentDL.Views
     public sealed partial class SpectrogramDialog : UserControl
     {
         private int _isApplyingZoom = 0;
+        private string? _selectedFilePath;
+
         public SpectrogramDialog()
         {
             InitializeComponent();
@@ -27,6 +31,8 @@ namespace FluentDL.Views
                 dispatcher.TryEnqueue(async () =>
                 {
                     Dialog.XamlRoot = xamlRoot;
+                    _selectedFilePath = selectedSong.Id;
+                    Dialog.IsPrimaryButtonEnabled = !string.IsNullOrWhiteSpace(_selectedFilePath);
                     SpectrogramImage.Visibility = Visibility.Collapsed;
                     SpectrogramProgressRing.Visibility = Visibility.Visible;
                     SpectrogramProgressRing.IsActive = true;
@@ -36,7 +42,7 @@ namespace FluentDL.Views
 
                 _ = Task.Run(async () =>
                 {
-                    var bitmapImage = await FFmpegRunner.GetSpectrogram(selectedSong.Id, dispatcher);
+                    var bitmapImage = await FFmpegRunner.GetSpectrogram(selectedSong.Id, 512, dispatcher);
                     dispatcher.TryEnqueue(() => {
                         SpectrogramImage.Visibility = Visibility.Visible;
                         SpectrogramProgressRing.Visibility = Visibility.Collapsed;
@@ -85,6 +91,38 @@ namespace FluentDL.Views
         {
             args.Cancel = true;
             await SetZoomDefault();
+        }
+
+        private async void SpectrogramDialog_PrimaryButtonClick(ContentDialog sender, ContentDialogButtonClickEventArgs args)
+        {
+            args.Cancel = true;
+
+            if (string.IsNullOrWhiteSpace(_selectedFilePath))
+            {
+                SpectrogramInfoText.Text = "No audio source selected";
+                return;
+            }
+
+            var suggestedName = $"{Path.GetFileNameWithoutExtension(_selectedFilePath)}_spectrogram";
+            var file = await StoragePickerHelper.FileSavePickerAsync([".png"], suggestedName);
+            if (file == null)
+            {
+                return;
+            }
+
+            SpectrogramProgressRing.Visibility = Visibility.Visible;
+            SpectrogramProgressRing.IsActive = true;
+
+            try
+            {
+                var saved = await FFmpegRunner.SaveSpectrogram(_selectedFilePath, file.Path);
+                SpectrogramInfoText.Text = saved ? $"Saved: {file.Name}" : "Failed to save spectrogram";
+            }
+            finally
+            {
+                SpectrogramProgressRing.Visibility = Visibility.Collapsed;
+                SpectrogramProgressRing.IsActive = false;
+            }
         }
     }
 }
