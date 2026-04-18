@@ -1,32 +1,18 @@
-﻿using AngleSharp.Media;
-using CommunityToolkit.WinUI.UI.Animations;
-using FluentDL.Helpers;
+﻿using FluentDL.Helpers;
 using FluentDL.Models;
 using FluentDL.Views;
 using Microsoft.UI.Xaml.Controls;
-using Microsoft.UI.Xaml.Shapes;
-using QobuzApiSharp.Models.Content;
-using System;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
-using System.Linq;
-using System.Text;
 using System.Text.RegularExpressions;
-using System.Threading.Tasks;
 using VideoLibrary;
-using Windows.Media.Protection.PlayReady;
 using YoutubeExplode;
 using YoutubeExplode.Common;
-using YoutubeExplode.Search;
 using YoutubeExplode.Videos;
 using YoutubeExplode.Videos.Streams;
 using YouTubeMusicAPI.Client;
-using YouTubeMusicAPI.Models;
 using YouTubeMusicAPI.Models.Info;
 using YouTubeMusicAPI.Models.Search;
-using YouTubeMusicAPI.Models.Streaming;
-using static System.Net.WebRequestMethods;
 
 namespace FluentDL.Services
 {

@@ -404,19 +404,19 @@ internal class ApiHelper
             }
             var subfolderName = GetSafeDirectoryPath(EvaluateWildcard(album, wildCardStr));
 
-            try
+
+            string newDirectory = Path.Combine(directory, subfolderName);
+            if (!Directory.Exists(newDirectory))
             {
-                string newDirectory = Path.Combine(directory, subfolderName);
-                if (!Directory.Exists(newDirectory))
+                Directory.CreateDirectory(newDirectory);
+            } else
+            {
+                if (await SettingsViewModel.GetSetting<bool>(SettingsViewModel.Overwrite) == false) // Do not overwrite
                 {
-                    Directory.CreateDirectory(newDirectory);
+                    throw new Exception($"Directory already exists: '{newDirectory}'");
                 }
-                directory = newDirectory;
             }
-            catch (Exception ex)
-            {
-                Debug.WriteLine("Error creating subfolder: " + ex.Message);
-            }
+            directory = newDirectory;
         }
 
         if (album.Source == "qobuz")

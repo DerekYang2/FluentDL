@@ -170,7 +170,7 @@
                                     OnContent=""
                                     Toggled="AskToggle_OnToggled" />
                             </local:SettingsCard>
-                            <local:SettingsCard Description="Overwrite existing files with the same name" Header="Overwrite existing files">
+                            <local:SettingsCard Description="Overwrite existing files and album directories with the same name" Header="Overwrite existing files">
                                 <ToggleSwitch
                                     x:Name="OverwriteToggle"
                                     IsOn="False"

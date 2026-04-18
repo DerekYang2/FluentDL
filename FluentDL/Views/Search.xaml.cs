@@ -913,49 +913,61 @@ public sealed partial class Search : Page
             downloadHelper.SetTracksCount(albumObj.TracksCount);
             downloadHelper.StartLoop();
             var progress = new Progress<ProgressData>(downloadHelper.UpdateProgressLoop);
-            List<string> paths = await ApiHelper.DownloadAlbum(albumObj, directory, progress);
+            List<string>? paths = [];
+            try
+            {
+                paths = await ApiHelper.DownloadAlbum(albumObj, directory, progress);
+            } catch (Exception ex)
+            {
+                ShowInfoBar(InfoBarSeverity.Error, ex.Message, seconds: 10);
+                paths = null;  // Set to null (error happened)
+            }
+
             downloadHelper.StopLoop();
 
-            var failedTracks = 0;
-            foreach (var path in paths)
+            if (paths != null)  // Not error
             {
-                if (!string.IsNullOrWhiteSpace(path) && System.IO.File.Exists(path))
+                var failedTracks = 0;
+                foreach (var path in paths)
                 {
-                    try
+                    if (!string.IsNullOrWhiteSpace(path) && System.IO.File.Exists(path))
                     {
-                        await LocalExplorerViewModel.AddSongFromFile(path);
+                        try
+                        {
+                            await LocalExplorerViewModel.AddSongFromFile(path);
+                        }
+                        catch (Exception ex)
+                        {
+                            Debug.WriteLine($"Failed to add downloaded song to local explorer: {ex.Message}");
+                            failedTracks++;
+                        }
                     }
-                    catch (Exception ex)
-                    {
-                        Debug.WriteLine($"Failed to add downloaded song to local explorer: {ex.Message}");
-                        failedTracks++;
-                    }
+                }
+
+                Action navigateLocalExplorer = () =>
+                {
+                    var navService = App.GetService<INavigationViewService>();
+                    navService.NavigateTo(typeof(LocalExplorerViewModel).FullName);
+                };
+
+                var albumDir = paths.Count > 0 ? System.IO.Path.GetDirectoryName(paths[0]) : "";
+
+                if (paths.Count == 0)
+                {
+                    ShowInfoBar(InfoBarSeverity.Error, $"Failed to download album '{albumObj.AlbumName}'", seconds: 10);
+                }
+                else if (paths.Count - failedTracks < albumObj.TracksCount)
+                {
+                    ShowInfoBar(InfoBarSeverity.Warning, $"Downloaded {paths.Count - failedTracks} of {albumObj.TracksCount} tracks for album <a href='{albumDir}'>{albumObj.Title}</a>", 10, buttonText: "View Download", onButtonClick: navigateLocalExplorer);
+                }
+                else
+                {
+                    ShowInfoBar(InfoBarSeverity.Success, $"Successfully downloaded album <a href='{albumDir}'>{albumObj.Title}</a>.", 10, buttonText: "View Download", onButtonClick: navigateLocalExplorer);
                 }
             }
 
-            Action navigateLocalExplorer = () =>
-            {
-                var navService = App.GetService<INavigationViewService>();
-                navService.NavigateTo(typeof(LocalExplorerViewModel).FullName);
-            };
-
-            var albumDir = paths.Count > 0 ? System.IO.Path.GetDirectoryName(paths[0]) : "";
-
             InfobarProgress.Visibility = Visibility.Collapsed; // Hide the infobar's progress bar
             InfobarProgress.IsIndeterminate = true;
-
-            if (paths.Count == 0)
-            {
-                ShowInfoBar(InfoBarSeverity.Error, $"Failed to download album '{albumObj.AlbumName}'", seconds: 10);
-            }
-            else if (paths.Count - failedTracks < albumObj.TracksCount)
-            {
-                ShowInfoBar(InfoBarSeverity.Warning, $"Downloaded {paths.Count - failedTracks} of {albumObj.TracksCount} tracks for album <a href='{albumDir}'>{albumObj.Title}</a>", 10, buttonText: "View Download", onButtonClick: navigateLocalExplorer);
-            }
-            else
-            {
-                ShowInfoBar(InfoBarSeverity.Success, $"Successfully downloaded album <a href='{albumDir}'>{albumObj.Title}</a>.", 10, buttonText: "View Download", onButtonClick: navigateLocalExplorer);
-            }
         }
         else
         {
