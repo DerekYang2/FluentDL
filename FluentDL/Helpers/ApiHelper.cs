@@ -1,21 +1,13 @@
-﻿using ABI.Microsoft.UI.Xaml.Media.Imaging;
-using AngleSharp.Dom;
-using AngleSharp.Media.Dom;
-using FluentDL.Models;
+﻿using FluentDL.Models;
 using FluentDL.Services;
 using FluentDL.ViewModels;
 using FluentDL.Views;
 using Microsoft.UI.Xaml.Controls;
-using QobuzApiSharp.Models.Content;
-using System;
-using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
 using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
-using System.Threading.Tasks;
 using BitmapImage = Microsoft.UI.Xaml.Media.Imaging.BitmapImage;
 
 namespace FluentDL.Helpers;
@@ -153,8 +145,37 @@ internal class ApiHelper
     // Convert illegal filename characters to an underscore
     public static string GetSafeFilename(string filename)
     {
+        HashSet<string> reservedNames = new(StringComparer.OrdinalIgnoreCase)
+        {
+            "CON","PRN","AUX","NUL",
+            "COM0","COM1","COM2","COM3","COM4","COM5","COM6","COM7","COM8","COM9",
+            "LPT0","LPT1","LPT2","LPT3","LPT4","LPT5","LPT6","LPT7","LPT8","LPT9"
+        };
         var result = filename.Trim().TrimEnd('.');
-        return string.Join("_", result.Split(Path.GetInvalidPathChars())).Replace('/', '\\');
+        var s = string.Join("_", result.Split(Path.GetInvalidFileNameChars()));
+        if (reservedNames.Contains(s))
+        {
+            s = "_" + s;
+        }
+        if (string.IsNullOrWhiteSpace(s))
+        {
+            s = "_";
+        }
+        return s;
+    }
+
+    // For safe directory only (not directory and file)
+    public static string GetSafeDirectoryPath(string filename)
+    {
+        var result = filename.Trim().Replace('/', '\\');
+
+        // Split 
+        var segments = result.Split('\\', StringSplitOptions.None);
+        // Sanitize each segment
+        var sanitizedSegments = segments
+            .Select(GetSafeFilename)
+            .ToList();
+        return string.Join("\\", sanitizedSegments);
     }
 
     public static string RemoveExtension(string filename)
@@ -351,7 +372,7 @@ internal class ApiHelper
             {
                 wildCardStr = string.IsNullOrWhiteSpace(song.Isrc) ? "{position}. {artist} - {title}" : "{position}. {artist} - {title} [{isrc}]";
             }
-            var subfolderName = GetSafeFilename(EvaluateWildcard(song, wildCardStr));
+            var subfolderName = GetSafeDirectoryPath(EvaluateWildcard(song, wildCardStr));
 
             try
             {
@@ -381,7 +402,7 @@ internal class ApiHelper
             {
                 wildCardStr = string.IsNullOrWhiteSpace(album.Isrc) ? "{artist} - {title}" : "{artist} - {title} [{isrc}]";
             }
-            var subfolderName = GetSafeFilename(EvaluateWildcard(album, wildCardStr));
+            var subfolderName = GetSafeDirectoryPath(EvaluateWildcard(album, wildCardStr));
 
             try
             {
