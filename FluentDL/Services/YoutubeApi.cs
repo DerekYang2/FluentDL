@@ -745,35 +745,38 @@ namespace FluentDL.Services
             if (song.ImageLocation == null)
                 return null;
 
-            if (song.ImageLocation.StartsWith("https://lh3.googleusercontent.com")) // If youtube music image
+            var pattern = @"=w\d+-h\d+[^&]*";
+            if (Regex.IsMatch(song.ImageLocation, pattern))
             {
-                string imageUrl = song.ImageLocation;
-                // Delete everything after the last =
-                var i = imageUrl.LastIndexOf("=");
-                imageUrl = imageUrl.Substring(0, i + 1); // Include everything up to and including the =
-                imageUrl += "w544-h544-l90-rj"; // Add the max res version
-                return imageUrl;
+                // Replace the matched size/modifier segment with the desired max-res suffix
+                return Regex.Replace(song.ImageLocation, pattern, "=w544-h544-l90-rj");
             }
 
-            var video = await youtube.Videos.GetAsync(song.Id);
-            if (video.Thumbnails.Count == 0) 
-                return null;
-
-            var idx = video.Thumbnails.ToList().FindIndex(x =>
+            try
             {
-                var url = x.Url;
-                // Remove query string
-                var i = url.LastIndexOf('?');
-                if (i != -1) url = url.Substring(0, i);
-                return url.EndsWith("maxresdefault.webp") || url.EndsWith("maxresdefault.jpg");
-            });
+                var video = await youtube.Videos.GetAsync(song.Id);
+                if (video.Thumbnails.Count == 0)
+                    return null;
 
-            if (idx == -1) // If not found
+                var idx = video.Thumbnails.ToList().FindIndex(x =>
+                {
+                    var url = x.Url;
+                    // Remove query string
+                    var i = url.LastIndexOf('?');
+                    if (i != -1) url = url.Substring(0, i);
+                    return url.EndsWith("maxresdefault.webp") || url.EndsWith("maxresdefault.jpg");
+                });
+
+                if (idx == -1) // If not found
+                {
+                    idx = 0; // Just take first
+                }
+
+                return video.Thumbnails[idx].Url;
+            } catch
             {
-                idx = 0; // Just take first
+                return song.ImageLocation;
             }
-
-            return video.Thumbnails[idx].Url;
         }
 
         public static string GetMaxResThumbnail(SongVideoInfo? ytmSong, YoutubeExplode.Videos.Video video)
