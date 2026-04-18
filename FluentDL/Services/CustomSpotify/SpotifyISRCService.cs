@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
-using System.Net.Http.Json;
+using System.Net.Http.Headers;
+using System.Numerics;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
@@ -15,19 +16,22 @@ namespace FluentDL.Services.CustomSpotify
     public class SpotifyISRCService : ISpotifyISRCService
     {
         private readonly HttpClient _httpClient;
+        private readonly IClientTokenService _tokenService;
         private readonly ILogger<SpotifyISRCService> _logger;
 
         private const string UserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36";
+        private const string SpotifyMetadataTrackUrlTemplate = "https://spclient.wg.spotify.com/metadata/4/track/{0}?market=from_token";
+        private const string SpotifyBase62Alphabet = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
-        private const string Endpoint = "https://sp.afkarxyz.qzz.io/api";
         private const string SoundplateSpotifyApiUrl = "https://phpstack-822472-6184058.cloudwaysapps.com/api/spotify.php";
         private const string SoundplateRefererUrl = "https://phpstack-822472-6184058.cloudwaysapps.com/?";
         private static readonly Regex IsrcRegex = new(@"\b[A-Z]{2}[A-Z0-9]{3}\d{7}\b", RegexOptions.IgnoreCase | RegexOptions.Compiled);
         private readonly SemaphoreSlim _semaphore = new(1, 1);
 
-        public SpotifyISRCService(HttpClient httpClient, ILogger<SpotifyISRCService> logger)
+        public SpotifyISRCService(HttpClient httpClient, IClientTokenService tokenService, ILogger<SpotifyISRCService> logger)
         {
             _httpClient = httpClient;
+            _tokenService = tokenService;
             _logger = logger;
         }
 
@@ -43,14 +47,14 @@ namespace FluentDL.Services.CustomSpotify
                 }
 
                 var normalizedTrackId = ExtractSpotifyTrackId(spotifyId);
-                
+
                 try
                 {
-                    return await GetIsrcSpotiFlac(normalizedTrackId, cancellationToken).ConfigureAwait(false);
+                    return await GetIsrcViaSpotifyMetadataAsync(normalizedTrackId, cancellationToken).ConfigureAwait(false);
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogWarning(ex, "Primary ISRC lookup failed for track {TrackId}. Falling back to Soundplate.", normalizedTrackId);
+                    _logger.LogWarning(ex, "Spotify metadata ISRC lookup failed for track {TrackId}. Falling back to third party.", normalizedTrackId);
                     return await GetIsrcViaSoundplateAsync(normalizedTrackId, cancellationToken).ConfigureAwait(false);
                 }
             }
@@ -58,6 +62,43 @@ namespace FluentDL.Services.CustomSpotify
             {
                 _semaphore.Release();
             }
+        }
+
+        /// <summary>
+        /// Retrieves a Spotify track ISRC using Spotify metadata endpoint.
+        /// </summary>
+        private async Task<string> GetIsrcViaSpotifyMetadataAsync(string spotifyId, CancellationToken cancellationToken = default)
+        {
+            if (string.IsNullOrWhiteSpace(spotifyId))
+            {
+                throw new ArgumentException("Spotify id cannot be empty.", nameof(spotifyId));
+            }
+
+            var normalizedTrackId = ExtractSpotifyTrackId(spotifyId);
+            var trackGid = SpotifyEntityIdToGid(normalizedTrackId);
+            var metadataUrl = string.Format(SpotifyMetadataTrackUrlTemplate, trackGid);
+            var (anonymousToken, _) = await _tokenService.GetAnonymousTokenAsync(cancellationToken).ConfigureAwait(false);
+
+            using var request = new HttpRequestMessage(HttpMethod.Get, metadataUrl);
+            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", anonymousToken);
+            request.Headers.Add("Accept", "application/json");
+            request.Headers.Add("User-Agent", UserAgent);
+
+            using var response = await _httpClient.SendAsync(request, cancellationToken).ConfigureAwait(false);
+            var body = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                throw new HttpRequestException($"Spotify metadata ISRC returned status {(int)response.StatusCode} ({body})");
+            }
+
+            var isrc = ExtractSpotifyMetadataIsrc(body);
+            if (string.IsNullOrWhiteSpace(isrc))
+            {
+                throw new InvalidOperationException("ISRC missing in Spotify metadata response.");
+            }
+
+            return isrc;
         }
 
         /// <summary>
@@ -106,34 +147,6 @@ namespace FluentDL.Services.CustomSpotify
             return isrc;
         }
 
-        private async Task<string> GetIsrcSpotiFlac(string spotifyTrackId, CancellationToken cancellationToken)
-        {
-            var requestUrl = $"{Endpoint.TrimEnd('/')}/isrc/{spotifyTrackId}";
-                using var getRequest = new HttpRequestMessage(HttpMethod.Get, requestUrl);
-                getRequest.Headers.Add("User-Agent", UserAgent);
-                getRequest.Headers.Add("Accept", "application/json");
-
-            using var getResponse = await _httpClient.SendAsync(getRequest, cancellationToken).ConfigureAwait(false);
-            var getBody = await getResponse.Content.ReadFromJsonAsync<JsonElement>(cancellationToken).ConfigureAwait(false);
-            if (!getResponse.IsSuccessStatusCode)
-            {
-                throw new HttpRequestException($"isrcfinder returned status {(int)getResponse.StatusCode}");
-            }
-
-            if (!getBody.TryGetProperty("isrc", out var isrcProperty))
-            {
-                throw new InvalidOperationException("ISRC not found in isrcfinder response.");
-            }
-
-            var isrc = isrcProperty.GetString();
-            if (string.IsNullOrWhiteSpace(isrc))
-            {
-                throw new InvalidOperationException("ISRC not found in isrcfinder response.");
-            }
-
-            return isrc;
-        }
-
         private static string FirstIsrcMatch(string? input)
         {
             if (string.IsNullOrWhiteSpace(input))
@@ -143,6 +156,74 @@ namespace FluentDL.Services.CustomSpotify
 
             var match = IsrcRegex.Match(input);
             return match.Success ? match.Value.ToUpperInvariant() : string.Empty;
+        }
+
+        private static string ExtractSpotifyMetadataIsrc(string payload)
+        {
+            if (string.IsNullOrWhiteSpace(payload))
+            {
+                return string.Empty;
+            }
+
+            SpotifyMetadataResponse? response;
+            try
+            {
+                response = JsonSerializer.Deserialize<SpotifyMetadataResponse>(payload);
+            }
+            catch (JsonException)
+            {
+                return FirstIsrcMatch(payload);
+            }
+
+            if (response?.ExternalIds is not null)
+            {
+                foreach (var externalId in response.ExternalIds)
+                {
+                    if (externalId is null || !string.Equals(externalId.Type?.Trim(), "isrc", StringComparison.OrdinalIgnoreCase))
+                    {
+                        continue;
+                    }
+
+                    var isrc = FirstIsrcMatch(externalId.Id);
+                    if (!string.IsNullOrWhiteSpace(isrc))
+                    {
+                        return isrc;
+                    }
+                }
+            }
+
+            return FirstIsrcMatch(payload);
+        }
+
+        private static string SpotifyEntityIdToGid(string entityId)
+        {
+            var normalizedEntityId = entityId.Trim();
+            if (string.IsNullOrWhiteSpace(normalizedEntityId))
+            {
+                throw new ArgumentException("Spotify id cannot be empty.", nameof(entityId));
+            }
+
+            var value = BigInteger.Zero;
+            var radix = new BigInteger(62);
+
+            foreach (var symbol in normalizedEntityId)
+            {
+                var index = SpotifyBase62Alphabet.IndexOf(symbol);
+                if (index < 0)
+                {
+                    throw new ArgumentException($"Spotify id contains invalid base62 character '{symbol}'.", nameof(entityId));
+                }
+
+                value = (value * radix) + index;
+            }
+
+            var gidBytes = value.ToByteArray(isUnsigned: true, isBigEndian: true);
+            if (gidBytes.Length > 16)
+            {
+                throw new InvalidOperationException("Spotify track id conversion produced an out-of-range GID.");
+            }
+
+            return Convert.ToHexString(gidBytes).ToLowerInvariant().PadLeft(32, '0');
         }
 
         private static string ExtractSpotifyTrackId(string input)
@@ -176,6 +257,21 @@ namespace FluentDL.Services.CustomSpotify
             }
 
             throw new ArgumentException("Unable to extract Spotify track id from input.", nameof(input));
+        }
+
+        private sealed class SpotifyMetadataResponse
+        {
+            [JsonPropertyName("external_id")]
+            public List<SpotifyExternalId>? ExternalIds { get; set; }
+        }
+
+        private sealed class SpotifyExternalId
+        {
+            [JsonPropertyName("type")]
+            public string? Type { get; set; }
+
+            [JsonPropertyName("id")]
+            public string? Id { get; set; }
         }
     }
 }
