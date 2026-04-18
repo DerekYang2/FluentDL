@@ -1,8 +1,8 @@
-﻿using FluentDL.ViewModels;
+﻿using FluentDL.Helpers;
+using FluentDL.ViewModels;
 using Microsoft.UI.Xaml.Controls;
-using SQLitePCL;
-using System.Collections;
-using System.Globalization;
+using System.Reflection;
+using Windows.ApplicationModel;
 using DispatcherQueue = Microsoft.UI.Dispatching.DispatcherQueue;
 
 namespace FluentDL.Views;
@@ -22,6 +22,7 @@ public sealed partial class SplashScreenPage : Page
         InitializeComponent();
         dispatcher = DispatcherQueue.GetForCurrentThread();
         rowDict = [];
+        VersionText.Text = GetVersionDescription();
     }
 
     public void ClearRows()
@@ -39,5 +40,23 @@ public sealed partial class SplashScreenPage : Page
             rowDict[row] = s;
             InfoText.Text = string.Join('\n', rowDict.Values);
         });
+    }
+
+    public static string GetVersionDescription()
+    {
+        Version version;
+
+        if (RuntimeHelper.IsMSIX)
+        {
+            var packageVersion = Package.Current.Id.Version;
+
+            version = new(packageVersion.Major, packageVersion.Minor, packageVersion.Build, packageVersion.Revision);
+        }
+        else
+        {
+            version = Assembly.GetExecutingAssembly().GetName().Version!;
+        }
+
+        return $"Version {version.Major}.{version.Minor}.{version.Build}.{version.Revision}";
     }
 }
