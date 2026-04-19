@@ -21,7 +21,8 @@
   <a href="#about">About</a> •
   <a href="#installation">Installation</a> •
 <a href="#authentication">Authentication</a> •
-  <a href="#build">Build</a>
+  <a href="#build">Build</a> •
+  <a href="https://github.com/DerekYang2/FluentDL/wiki">Wiki</a>
 </p>
 
 <p align="center">
@@ -29,7 +30,17 @@
 </p>
 
 ## About
-A Fluent UI desktop application that helps you download lossless songs as FLACs, convert between audio formats, match songs between different online sources, edit song metadata, and more. FluentDL supports Deezer, Qobuz, Spotify, and YouTube.
+FluentDL is a Fluent UI desktop app for finding, matching, and downloading lossless audio (FLAC) at high speeds. 
+
+It automatically matches tracks across streaming services, gives you fine‑grained control over matches, and includes tools for format conversion, metadata editing, and quality inspection. 
+
+FluentDL supports Deezer, Qobuz, Spotify, and YouTube.
+
+#### Why FluentDL?
+If you have your own credentials and don't need a website downloader:
+- Performance: native desktop downloader for fast, multi‑threaded saving.
+- Control: review matches, edit metadata, and inspect audio quality with spectrograms.
+- All‑in‑one workflow: search, preview, match, download, convert, and tag in one app.
 
 <table>
   <tr>
@@ -38,7 +49,7 @@ A Fluent UI desktop application that helps you download lossless songs as FLACs,
       <ul>
         <li>Lookup songs/albums from any of the four online sources</li>
         <li>Parse all tracks from an online link, with track/album/playlist links supported</li>
-        <li>Open songs/albums in preview sidebar to listen, download, or view metadata.</li>
+        <li>Open songs/albums in preview sidebar to listen, download, or view metadata and available sample rates/bit depths</li>
       </ul>
     </td>
   </tr>
@@ -47,9 +58,9 @@ A Fluent UI desktop application that helps you download lossless songs as FLACs,
       <strong>Local</strong>
       <ul>
         <li>View file metadata and technical audio specs in-depth</li>
-        <li>Edit file metadata live, including option to change cover art</li>
-        <li>View file spectrogram using Spek</li>
-        <li>Convert between flac, mp3, aac, alac, vorbis, opus with control over bitrate</li>
+        <li>Edit file metadata, including option to change cover art</li>
+        <li>View file spectrogram to determine true lossless/quality</li>
+        <li>Convert between flac, mp3, aac, alac, vorbis, opus with specific bitrate or VBR</li>
       </ul>
     </td>
   </tr>
@@ -58,6 +69,7 @@ A Fluent UI desktop application that helps you download lossless songs as FLACs,
       <strong>Queue</strong>
       <ul>
         <li>Matching between all possible combinations of online sources (e.g., convert Spotify and YouTube to Deezer equivalents)</li>
+		<li>Review matches and failures and find backups from other sources</li>
         <li>Download tracks from Deezer, Qobuz, or Youtube with maximum quality</li>
         <li>Inspect downloaded track spectrogram</li>
       </ul>
@@ -65,14 +77,23 @@ A Fluent UI desktop application that helps you download lossless songs as FLACs,
   </tr>
 </table>
 
+See [usage guide wiki](https://github.com/DerekYang2/FluentDL/wiki/Usage-Guide) to learn more.
+
 ## Installation
-<a href="https://apps.microsoft.com/detail/9mx44km97x7x?referrer=appbadge&cid=Github&mode=full" target="_blank"  rel="noopener noreferrer">
-	<img src="https://get.microsoft.com/images/en-us%20dark.svg" width="200"/>
-</a>
-
-You can download directly from the [Microsoft Store](https://apps.microsoft.com/detail/9mx44km97x7x?referrer=appbadge&cid=Github&mode=full) for easier updates.
-
-Alternatively, you can sideload an unsigned version from [Releases](https://github.com/DerekYang2/FluentDL/releases).
+<table>
+  <tr>
+    <td valign="top">
+      You can download directly from the Microsoft Store for an easier and efficient update process.
+		<br>
+      Check out <a href="https://github.com/DerekYang2/FluentDL/releases">Releases</a> to see full changelogs and sideloaded versions.
+    </td>
+    <td valign="top" style="padding-left: 20px;">
+      <a href="https://apps.microsoft.com/detail/9mx44km97x7x?referrer=appbadge&cid=Github&mode=full" target="_blank" rel="noopener noreferrer">
+        <img src="https://get.microsoft.com/images/en-us%20dark.svg" width="200"/>
+      </a>
+    </td>
+  </tr>
+</table>
 
 ## Authentication
 
@@ -84,7 +105,7 @@ The authentication required depends on the sources and features you use.
 ### Searching and Converting
 For all sources except for Spotify, searches and conversions do not require authentication.
 
-For Spotify, searches require API keys, which come bundled with FluentDL. If the bundled keys are rate limited, you can generate your own as described in the [authentication wiki](https://github.com/DerekYang2/FluentDL/wiki/Authentication#spotify).
+For Spotify, searches require API keys, which come bundled with FluentDL. If the bundled keys are rate limited, you can generate your own as described in the [spotify wiki section](https://github.com/DerekYang2/FluentDL/wiki/Authentication#spotify).
 
 ### Downloading
 Authentication requirements for downloading varies for the sources. The type of account (free vs subscription) may also affect the audio quality available. 
@@ -119,6 +140,6 @@ See the [authentication wiki](https://github.com/DerekYang2/FluentDL/wiki/Authen
 
 ## Build
 
-Only relevant for developers who wish to customize source code.
+Only needed for developers who wish to customize source code.
 
 To build and run the project on Visual Studio, see [development wiki](https://github.com/DerekYang2/FluentDL/wiki/Development).
