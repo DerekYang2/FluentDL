@@ -425,6 +425,79 @@
                         </local:SettingsExpander.Items>
                     </local:SettingsExpander>
 
+                    <local:SettingsExpander
+                        x:Name="LyricsExpander"
+                        HorizontalContentAlignment="Stretch"
+                        Description="Configure lyrics download options"
+                        Header="Download Lyrics">
+                        <local:SettingsExpander.HeaderIcon>
+                            <FontIcon Glyph="&#xED1E;" />
+                        </local:SettingsExpander.HeaderIcon>
+                        <local:SettingsExpander.Items>
+                            <local:SettingsCard Description="Automatically download lyrics when downloading tracks" Header="Enable Lyrics Download">
+                                <ToggleSwitch
+                                    x:Name="DownloadLyricsToggle"
+                                    IsOn="False"
+                                    OffContent=""
+                                    OnContent=""
+                                    Toggled="DownloadLyricsToggle_Toggled" />
+                            </local:SettingsCard>
+                            <local:SettingsCard Description="Choose the preferred type of lyrics to download" Header="Lyrics Preference">
+                                <ComboBox
+                                    x:Name="LyricsPreferenceComboBox"
+                                    Width="200"
+                                    SelectionChanged="LyricsPreferenceComboBox_SelectionChanged">
+                                    <ComboBoxItem Content="Unsynced" />
+                                    <ComboBoxItem Content="Synced Only" />
+                                    <ComboBoxItem Content="Synced (unsynced fallback)" />
+                                </ComboBox>
+                            </local:SettingsCard>
+                            <local:SettingsCard Description="Choose the file extension format for saved lyrics" Header="Lyrics File Extension">
+                                <ComboBox
+                                    x:Name="LyricsExtensionComboBox"
+                                    Width="200"
+                                    SelectionChanged="LyricsExtensionComboBox_SelectionChanged">
+                                    <ComboBoxItem x:Name="LyricsLrc" Content=".lrc" />
+                                    <ComboBoxItem x:Name="LyricsTxt" Content=".txt" />
+                                </ComboBox>
+                            </local:SettingsCard>
+                            <local:SettingsCard
+                                x:Name="LyricsLocationCard"
+                                HorizontalContentAlignment="Stretch"
+                                Header="Custom Lyrics Directory">
+                                <local:SettingsCard.Description>
+                                    <StackPanel Spacing="8">
+                                        <TextBlock>
+                                            Optional: set a custom folder for downloaded lyrics. Otherwise, lyrics are saved in the same location as downloads.
+                                        </TextBlock>
+                                        <Border
+                                            Padding="8,4"
+                                            HorizontalAlignment="Left"
+                                            Background="{ThemeResource ControlFillColorSecondaryBrush}"
+                                            CornerRadius="4">
+                                            <TextBlock
+                                                x:Name="LyricsLocationText"
+                                                FontSize="12"
+                                                Foreground="{ThemeResource TextFillColorSecondary}"
+                                                IsTextSelectionEnabled="True"
+                                                Text="No folder selected" />
+                                        </Border>
+                                    </StackPanel>
+                                </local:SettingsCard.Description>
+                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                    <Button
+                                        x:Name="SelectLyricsDirectoryButton"
+                                        Click="SelectLyricsDirectoryButton_Click"
+                                        Content="Browse" />
+                                    <Button
+                                        x:Name="ResetLyricsDirectoryButton"
+                                        Click="ResetLyricsDirectoryButton_Click"
+                                        Content="Reset" />
+                                </StackPanel>
+                            </local:SettingsCard>
+                        </local:SettingsExpander.Items>
+                    </local:SettingsExpander>
+
                     <!--  Auth SETTINGS __________________________________________________________________________________________________  -->
                     <TextBlock Style="{StaticResource TextBlockSectionStyle}" Text="Authentication" />
 

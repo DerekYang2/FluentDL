@@ -90,6 +90,13 @@ public sealed partial class SettingsPage : Page
         SubfoldersToggle.IsOn = await localSettings.ReadSettingAsync<bool>(SettingsViewModel.Subfolders);
         AlbumSubfoldersToggle.IsOn = await localSettings.ReadSettingAsync<bool>(SettingsViewModel.AlbumSubfolders);
 
+        // Set lyric options
+        DownloadLyricsToggle.IsOn = await localSettings.ReadSettingAsync<bool>(SettingsViewModel.DownloadLyrics);
+        LyricsPreferenceComboBox.SelectedIndex = await localSettings.ReadSettingAsync<int?>(SettingsViewModel.LyricsPreference) ?? 2;
+        LyricsExtensionComboBox.SelectedIndex = await localSettings.ReadSettingAsync<int?>(SettingsViewModel.LyricsExtension) ?? 0;
+        var lyricsDir = await localSettings.ReadSettingAsync<string?>(SettingsViewModel.LyricsDirectory);
+        LyricsLocationText.Text = string.IsNullOrWhiteSpace(lyricsDir) ? "No folder selected" : lyricsDir;
+
         // Set wildcards
         SubfolderNameInput.IsEnabled = SubfoldersToggle.IsOn || AlbumSubfoldersToggle.IsOn;
         SubfolderNameInput.Text = await localSettings.ReadSettingAsync<string?>(SettingsViewModel.SubfolderWildcard) ?? "";
@@ -574,6 +581,44 @@ public sealed partial class SettingsPage : Page
     {
         var isToggled = (sender as ToggleSwitch).IsOn;
         await localSettings.SaveSettingAsync(SettingsViewModel.SpotifyPlaylistPrompt, isToggled);
+    }
+
+    private async void DownloadLyricsToggle_Toggled(object sender, RoutedEventArgs e)
+    {
+        var isToggled = (sender as ToggleSwitch).IsOn;
+        await localSettings.SaveSettingAsync(SettingsViewModel.DownloadLyrics, isToggled);
+    }
+
+    private async void LyricsPreferenceComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        var comboBox = sender as ComboBox;
+        if (comboBox?.SelectedItem is ComboBoxItem item)
+        {
+            await localSettings.SaveSettingAsync(SettingsViewModel.LyricsPreference, comboBox.SelectedIndex);
+        }
+    }
+
+    private async void LyricsExtensionComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        // 0 - .lrc
+        // 1 - .txt
+        await localSettings.SaveSettingAsync(SettingsViewModel.LyricsExtension, LyricsExtensionComboBox.SelectedIndex);
+    }
+
+    private async void SelectLyricsDirectoryButton_Click(object sender, RoutedEventArgs e)
+    {
+        var folder = await StoragePickerHelper.PickFolderAsync(PickerLocationId.MusicLibrary);
+        if (folder != null)
+        {
+            LyricsLocationText.Text = folder.Path;
+            await localSettings.SaveSettingAsync(SettingsViewModel.LyricsDirectory, folder.Path);
+        }
+    }
+
+    private async void ResetLyricsDirectoryButton_Click(object sender, RoutedEventArgs e)
+    {
+        LyricsLocationText.Text = "No folder selected";
+        await localSettings.SaveSettingAsync(SettingsViewModel.LyricsDirectory, "");
     }
 
     private void SpotifyRedirectUriCopyButton_Click(object sender, RoutedEventArgs e)

@@ -236,7 +236,68 @@ internal class ApiHelper
             .Replace("{date}", song.ReleaseDate ?? "")
             .Replace("{title}", song.Title).Trim();
     }
-   
+
+    private static async Task DownloadLyricsAsync(SongSearchObject song, string directory, string fileName, TaskCompletionSource<bool>? downloadTcs = default)
+    {
+        try
+        {
+            // Check if lyrics download is enabled
+            var downloadLyricsEnabled = await SettingsViewModel.GetSetting<bool>(SettingsViewModel.DownloadLyrics);
+            if (!downloadLyricsEnabled)
+                return;
+
+            // Get lyrics settings
+            var lyricsExtension = await SettingsViewModel.GetSetting<int?>(SettingsViewModel.LyricsExtension) ?? 0; // 0 = .lrc, 1 = .txt
+            var lyricsDir = await SettingsViewModel.GetSetting<string?>(SettingsViewModel.LyricsDirectory) ?? "";
+
+            // Determine lyrics file extension
+            var extension = lyricsExtension == 0 ? ".lrc" : ".txt";
+
+            // Determine lyrics save directory
+            string lyricsSaveDir;
+            if (string.IsNullOrWhiteSpace(lyricsDir))
+            {
+                // Same directory as track
+                lyricsSaveDir = directory;
+            }
+            else
+            {
+                lyricsSaveDir = lyricsDir;
+            }
+
+            if (string.IsNullOrWhiteSpace(lyricsSaveDir))
+                return;
+
+            // Get lyrics from service
+            var lyricService = App.GetService<ILyricService>();
+            var lyrics = await lyricService.GetLyricsAsync(song);
+
+            if (lyrics == null)
+                return; // No lyrics found
+
+            // Build lyrics file path (same name as track, different extension)
+            var lyricsFilePath = Path.Combine(lyricsSaveDir, fileName + extension);
+
+            // Wait for track download status (must be success to save lyrics)
+            if (downloadTcs != null)
+            {
+                var downloadSuccess = await downloadTcs.Task;
+                if (!downloadSuccess)
+                {
+                    return;
+                }
+            }
+
+            // Write lyrics to file
+            await File.WriteAllTextAsync(lyricsFilePath, lyrics);
+            Debug.WriteLine($"Lyrics saved to: {lyricsFilePath}");
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"Failed to download lyrics: {ex.Message}");
+        }
+    }
+
     private static async Task<string> DownloadTrackInternal(SongSearchObject song, string directory, IProgress<ProgressData> progress, ConversionUpdateCallback? callback = default)
     {
         // Create file name
@@ -249,12 +310,18 @@ internal class ApiHelper
 
         var locationNoExt = Path.Combine(directory, fileName);
 
+        // Run lyrics download in parallel
+        var downloadTcs = new TaskCompletionSource<bool>();
+        _ = Task.Run(async () => await DownloadLyricsAsync(song, directory, fileName, downloadTcs));
+
+
         if (song.Source == "youtube")
         {
             var flacLocation = Path.Combine(directory, fileName + ".flac");
             var opusLocation = Path.Combine(directory, fileName + ".opus");
             var mp4Location = Path.Combine(directory, fileName + ".mp4");
             var m4aLocation = Path.Combine(directory, fileName + ".m4a");
+
             try
             {
                 // 0 - opus
@@ -276,6 +343,7 @@ internal class ApiHelper
                     await YoutubeApi.DownloadAudioAAC(mp4Location, song.Id);
                     await FFmpegRunner.ConvertMp4ToM4aAsync(mp4Location);
                     await YoutubeApi.UpdateMetadata(m4aLocation, song.Id);
+                    downloadTcs.SetResult(true);
                     callback?.Invoke(InfoBarSeverity.Success, song, m4aLocation); // Assume success
                     return m4aLocation;
                 }
@@ -291,6 +359,7 @@ internal class ApiHelper
                 if (settingIdx == 0) // Do not convert to flac
                 {
                     await YoutubeApi.UpdateMetadata(opusLocation, song.Id);
+                    downloadTcs.SetResult(true);
                     callback?.Invoke(InfoBarSeverity.Success, song, opusLocation); // Assume success
                     return opusLocation;
                 }
@@ -303,6 +372,7 @@ internal class ApiHelper
 
                 await FFmpegRunner.ConvertToFlacAsync(opusLocation); // Convert opus to flac
                 await YoutubeApi.UpdateMetadata(flacLocation, song.Id);
+                downloadTcs.SetResult(true);
                 callback?.Invoke(InfoBarSeverity.Success, song, flacLocation); // Assume success
                 return flacLocation;
             }
@@ -319,6 +389,7 @@ internal class ApiHelper
             {
                 var resultPath = await DeezerApi.DownloadTrack(locationNoExt, song, use128Fallback: true, progress: progress);
                 await DeezerApi.UpdateMetadata(resultPath, song.Id);
+                downloadTcs.SetResult(true);
                 callback?.Invoke(InfoBarSeverity.Success, song, resultPath); // Assume success
                 return resultPath;
             }
@@ -335,6 +406,7 @@ internal class ApiHelper
             {
                 var resultPath = await QobuzApi.DownloadTrack(locationNoExt, song, progress);
                 await QobuzApi.UpdateMetadata(resultPath, song.Id);
+                downloadTcs.SetResult(true);
                 callback?.Invoke(InfoBarSeverity.Success, song, resultPath); // Assume success
                 return resultPath;
             }
@@ -352,12 +424,14 @@ internal class ApiHelper
             if (resultPath != null)
             {
                 await SpotifyApi.UpdateMetadata(resultPath, song.Id);
+                downloadTcs.SetResult(true);
                 return resultPath;
             }
 
             callback?.Invoke(InfoBarSeverity.Error, song); // Null - error
         }
 
+        downloadTcs.SetResult(false);
         return string.Empty;
     }
 

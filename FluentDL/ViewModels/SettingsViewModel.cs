@@ -38,7 +38,12 @@ public partial class SettingsViewModel : ObservableRecipient
         Notifications = "notifications",
         AutoPlay = "auto_play",
         NotifyUpdate = "notify_update",
-        SpotifyPlaylistPrompt = "spotify_playlist_prompt";
+        SpotifyPlaylistPrompt = "spotify_playlist_prompt",
+        DownloadLyrics = "download_lyrics",
+        LyricsPreference = "lyrics_preference",
+        LyricsExtension = "lyrics_extension",
+        LyricsDirectory = "lyrics_directory";
+
 
     // Shortcut button checkboxes
     public static readonly string SearchAddChecked = "search_add_checked",
@@ -150,6 +155,10 @@ public partial class SettingsViewModel : ObservableRecipient
         await SaveSettingsAsyncIfNull<bool?>(SearchDownloadChecked, false);
         await SaveSettingsAsyncIfNull<bool?>(QueueDownloadCoverChecked, false);
         await SaveSettingsAsyncIfNull<bool?>(QueueRemoveChecked, false);
+        await SaveSettingsAsyncIfNull<bool?>(DownloadLyrics, false);
+        await SaveSettingsAsyncIfNull<int?>(LyricsPreference, 2); // 2 = Synced
+        await SaveSettingsAsyncIfNull<int?>(LyricsExtension, 0); // 0 = .lrc, 1 = .txt
+        await SaveSettingsAsyncIfNull<string?>(LyricsDirectory, ""); // Empty means same directory as track
         await localSettings.SaveSettingAsync(FirstRun, false);  // Set first run to false
     }
 
