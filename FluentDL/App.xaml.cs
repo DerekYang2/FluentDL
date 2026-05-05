@@ -113,6 +113,9 @@ public partial class App : Application
                     services.AddSingleton<ISpotifyWebService, SpotifyWebService>();
                     services.AddMemoryCache();
 
+                    // Lyrics
+                    services.AddTransient<ILyricService, LRCLyricService>();
+
                     // Configuration
                     services.Configure<LocalSettingsOptions>(
                         context.Configuration.GetSection(nameof(LocalSettingsOptions)));
