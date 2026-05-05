@@ -23,6 +23,7 @@
         <helpers:VisibilityConverter x:Key="VisibilityConverter" />
         <helpers:NullVisibilityConverter x:Key="NullVisibilityConverter" />
         <helpers:InverseNullVisibilityConverter x:Key="InverseNullVisibilityConverter" />
+        <helpers:StringNullorEmptyVisibilityConverter x:Key="StringNullorEmptyVisibilityConverter" />
     </Page.Resources>
 
     <Grid x:Name="ContentArea">
@@ -180,6 +181,20 @@
                                 FontSize="16"
                                 Glyph="&#xF623;" />
                             <TextBlock Text="Convert" />
+                        </StackPanel>
+                    </Button>
+                    <Button
+                        x:Name="LyricsDialogOpenButton"
+                        VerticalAlignment="Center"
+                        Click="LyricsDialogOpenButton_OnClick"
+                        ToolTipService.ToolTip="Download lyrics for local tracks">
+                        <StackPanel Orientation="Horizontal">
+                            <FontIcon
+                                x:Name="LyricsDialogOpenIcon"
+                                Margin="0,0,8,0"
+                                FontSize="16"
+                                Glyph="&#xED1E;" />
+                            <TextBlock Text="Lyrics" />
                         </StackPanel>
                     </Button>
                     <Button
@@ -360,14 +375,13 @@
                                     Style="{ThemeResource BodyTextBlockStyle}"
                                     Text="{x:Bind ReleaseDate, Converter={StaticResource DateToYearConverter}}" />
                                 <TextBlock
-                                    Margin="5,0,0,0"
                                     HorizontalAlignment="Left"
                                     FontFamily="Segoe UI Variable Display"
                                     Foreground="{ThemeResource TextFillColorSecondary}"
                                     Style="{ThemeResource BodyTextBlockStyle}"
-                                    Text="&#x2022;" />
+                                    Text="&#160;&#x2022;&#160;&#xfeff;"
+                                    Visibility="{x:Bind ReleaseDate, Converter={StaticResource StringNullorEmptyVisibilityConverter}}" />
                                 <TextBlock
-                                    Margin="5,0,0,0"
                                     HorizontalAlignment="Left"
                                     FontFamily="Segoe UI Variable Display"
                                     Foreground="{ThemeResource TextFillColorSecondary}"
@@ -709,17 +723,20 @@
                                                     Margin="0,0,0,0"
                                                     HorizontalAlignment="Left"
                                                     FontFamily="Segoe UI Variable Display"
+                                                    Foreground="{ThemeResource TextFillColorSecondary}"
                                                     Style="{ThemeResource BodyTextBlockStyle}"
                                                     Text="{x:Bind Song.ReleaseDate, Converter={StaticResource DateToYearConverter}}" />
                                                 <TextBlock
-                                                    Margin="5,0,0,0"
-                                                    HorizontalAlignment="Left"
-                                                    Style="{ThemeResource BodyTextBlockStyle}"
-                                                    Text="&#x2022;" />
-                                                <TextBlock
-                                                    Margin="5,0,0,0"
                                                     HorizontalAlignment="Left"
                                                     FontFamily="Segoe UI Variable Display"
+                                                    Foreground="{ThemeResource TextFillColorSecondary}"
+                                                    Style="{ThemeResource BodyTextBlockStyle}"
+                                                    Text="&#160;&#x2022;&#160;&#xfeff;"
+                                                    Visibility="{x:Bind Song.ReleaseDate, Converter={StaticResource StringNullorEmptyVisibilityConverter}}" />
+                                                <TextBlock
+                                                    HorizontalAlignment="Left"
+                                                    FontFamily="Segoe UI Variable Display"
+                                                    Foreground="{ThemeResource TextFillColorSecondary}"
                                                     Style="{ThemeResource BodyTextBlockStyle}"
                                                     Text="{x:Bind Song.Duration, Converter={StaticResource DurationConverter}}" />
                                             </StackPanel>
@@ -796,6 +813,198 @@
                                 VerticalAlignment="Center"
                                 Visibility="Visible">
                                 No conversions.
+                            </TextBlock>
+                        </Grid>
+                    </Border>
+                </StackPanel>
+            </StackPanel>
+        </ContentDialog>
+        <ContentDialog
+            x:Name="LyricsDialog"
+            Title="Download Lyrics"
+            CloseButtonClick="LyricsDialog_OnCloseButtonClick"
+            CloseButtonText="Close"
+            Closing="LyricsDialog_OnClosing"
+            IsPrimaryButtonEnabled="True"
+            IsSecondaryButtonEnabled="True"
+            PrimaryButtonClick="LyricsDialog_OnPrimaryButtonClick"
+            PrimaryButtonStyle="{ThemeResource AccentButtonStyle}"
+            PrimaryButtonText="Download"
+            SecondaryButtonClick="LyricsDialog_SecondaryButtonClick"
+            SecondaryButtonText="Cancel">
+            <ContentDialog.Resources>
+                <x:Double x:Key="ContentDialogMaxWidth">1000</x:Double>
+            </ContentDialog.Resources>
+            <StackPanel HorizontalAlignment="Stretch">
+                <InfoBar
+                    x:Name="LyricsInfobar"
+                    Margin="0,0,0,8"
+                    HorizontalAlignment="Stretch"
+                    VerticalAlignment="Bottom"
+                    HorizontalContentAlignment="Stretch"
+                    IsClosable="False"
+                    IsOpen="True"
+                    Severity="Informational">
+                    <InfoBar.OpacityTransition>
+                        <ScalarTransition Duration="0:0:0.25" />
+                    </InfoBar.OpacityTransition>
+                    <InfoBar.Content>
+                        <Grid x:Name="LyricsInfobarContent" VerticalAlignment="Center">
+                            <TextBlock x:Name="LyricsInfobarText" Margin="0,0,12,0" />
+                            <ProgressBar
+                                x:Name="LyricsInfobarProgress"
+                                Margin="0,0,12,-8"
+                                HorizontalAlignment="Stretch"
+                                VerticalAlignment="Bottom"
+                                IsIndeterminate="True"
+                                Visibility="Collapsed" />
+                        </Grid>
+                    </InfoBar.Content>
+                </InfoBar>
+
+                <StackPanel>
+                    <TextBlock
+                        Margin="0,0,0,8"
+                        Foreground="{ThemeResource TextFillColorSecondary}"
+                        Style="{ThemeResource CaptionTextBlockStyle}"
+                        Text="Lyrics Results" />
+                    <Border
+                        x:Name="LyricsListCard"
+                        Padding="4,8,4,8"
+                        Background="{ThemeResource CardBackgroundFillColorSecondaryBrush}"
+                        BorderBrush="{ThemeResource ControlStrongStrokeColorDefaultBrush}"
+                        CornerRadius="4">
+                        <Grid>
+                            <ListView
+                                x:Name="LyricsListView"
+                                Height="300"
+                                Padding="2,0,12,0"
+                                Background="Transparent"
+                                BorderThickness="0"
+                                CornerRadius="4">
+                                <ListView.ItemTemplate>
+                                    <DataTemplate x:DataType="views:LocalLyricResult">
+                                        <Grid
+                                            Height="48"
+                                            Margin="0,4"
+                                            AutomationProperties.Name="{x:Bind Song.Title}">
+                                            <Grid.ColumnDefinitions>
+                                                <!--  Main text area takes remaining space  -->
+                                                <ColumnDefinition Width="*" />
+                                                <!--  Fixed/Auto widths for the right-side metadata  -->
+                                                <ColumnDefinition Width="Auto" />
+                                                <!--  Duration  -->
+                                                <ColumnDefinition Width="Auto" />
+                                                <!--  Lyric type tag  -->
+                                                <ColumnDefinition Width="Auto" />
+                                                <!--  Preview button  -->
+                                                <ColumnDefinition Width="Auto" />
+                                                <!--  Open in explorer  -->
+                                            </Grid.ColumnDefinitions>
+
+                                            <!--  1. TITLE AND ARTIST (Stacked)  -->
+                                            <StackPanel
+                                                Grid.Column="0"
+                                                Margin="12,0,12,0"
+                                                VerticalAlignment="Center">
+                                                <TextBlock
+                                                    FontSize="14"
+                                                    FontWeight="SemiBold"
+                                                    MaxLines="1"
+                                                    Text="{x:Bind Song.Title}"
+                                                    TextTrimming="CharacterEllipsis" />
+                                                <TextBlock
+                                                    FontSize="12"
+                                                    MaxLines="1"
+                                                    Opacity="0.7"
+                                                    Text="{x:Bind Song.Artists}"
+                                                    TextTrimming="CharacterEllipsis" />
+                                            </StackPanel>
+
+                                            <!--  2. DURATION  -->
+                                            <TextBlock
+                                                Grid.Column="1"
+                                                Margin="12,0"
+                                                VerticalAlignment="Center"
+                                                Opacity="0.8"
+                                                Text="{x:Bind Song.Duration, Converter={StaticResource DurationConverter}}" />
+
+                                            <!--  3. LYRIC TYPE TAG  -->
+                                            <Border
+                                                Grid.Column="2"
+                                                Padding="8,2"
+                                                VerticalAlignment="Center"
+                                                Background="{ThemeResource LayerOnMicaBaseAltFillColorSecondaryBrush}"
+                                                CornerRadius="4">
+                                                <TextBlock
+                                                    FontSize="11"
+                                                    FontWeight="Medium"
+                                                    Text="{x:Bind LyricType}" />
+                                            </Border>
+
+                                            <!--  4. PREVIEW BUTTON (opens Flyout)  -->
+                                            <Button
+                                                x:Name="PreviewButton"
+                                                Grid.Column="3"
+                                                Margin="12,0,0,0"
+                                                VerticalAlignment="Center"
+                                                Background="Transparent"
+                                                BorderBrush="Transparent"
+                                                ToolTipService.ToolTip="Preview lyrics"
+                                                Visibility="{x:Bind LyricsPath, Converter={StaticResource NullVisibilityConverter}}">
+                                                <FontIcon FontSize="16" Glyph="&#xE890;" />
+                                                <!--  preview glyph  -->
+                                                <Button.Flyout>
+                                                    <Flyout Placement="Bottom">
+                                                        <Border
+                                                            MaxWidth="800"
+                                                            MaxHeight="480"
+                                                            Padding="12"
+                                                            Background="{ThemeResource SystemControlBackgroundBaseLowBrush}"
+                                                            CornerRadius="6">
+                                                            <ScrollViewer
+                                                                MaxWidth="600"
+                                                                MaxHeight="440"
+                                                                HorizontalScrollBarVisibility="Auto"
+                                                                VerticalScrollBarVisibility="Auto">
+                                                                <TextBlock
+                                                                    FontFamily="Consolas"
+                                                                    FontSize="13"
+                                                                    Foreground="{ThemeResource SystemControlForegroundBaseHighBrush}"
+                                                                    Text="{x:Bind LyricsContent, Mode=OneWay}"
+                                                                    TextWrapping="Wrap" />
+                                                            </ScrollViewer>
+                                                        </Border>
+                                                    </Flyout>
+                                                </Button.Flyout>
+                                            </Button>
+
+                                            <!--  5. ACTION BUTTON (Open in Explorer)  -->
+                                            <Button
+                                                x:Name="OpenLyricsButton"
+                                                Grid.Column="4"
+                                                Margin="12,0,0,0"
+                                                VerticalAlignment="Center"
+                                                Background="Transparent"
+                                                BorderBrush="Transparent"
+                                                Click="OpenLyricsButton_OnClick"
+                                                Tag="{Binding}"
+                                                ToolTipService.ToolTip="Open in explorer"
+                                                Visibility="{x:Bind LyricsPath, Converter={StaticResource NullVisibilityConverter}}">
+                                                <FontIcon FontSize="16" Glyph="&#xE8DA;" />
+                                            </Button>
+                                        </Grid>
+                                    </DataTemplate>
+                                </ListView.ItemTemplate>
+                            </ListView>
+
+                            <TextBlock
+                                x:Name="NoLyricsText"
+                                Margin="0,-8,0,0"
+                                HorizontalAlignment="Center"
+                                VerticalAlignment="Center"
+                                Visibility="Visible">
+                                No lyrics downloaded.
                             </TextBlock>
                         </Grid>
                     </Border>

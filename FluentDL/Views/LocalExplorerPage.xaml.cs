@@ -39,11 +39,29 @@ public class LocalConversionResult
     }
 }
 
+// Represents a lyrics download result for local tracks.
+public class LocalLyricResult
+{
+    public SongSearchObject Song;
+    public string? LyricsPath;
+    public string LyricType;
+    public string? LyricsContent;
+
+    public LocalLyricResult(SongSearchObject song, string? lyricsPath, string lyricType, string? lyricsContent)
+    {
+        Song = song;
+        LyricsPath = lyricsPath;
+        LyricType = lyricType;
+        LyricsContent = lyricsContent;
+    }
+}
+
 public sealed partial class LocalExplorerPage : Page
 {
     private DispatcherQueue dispatcher;
     private DispatcherTimer dispatcherTimer;
     private CancellationTokenSource? cancellationTokenSource = null;
+    private CancellationTokenSource? lyricCancellationTokenSource = null;
 
     public LocalExplorerViewModel ViewModel
     {
@@ -51,6 +69,12 @@ public sealed partial class LocalExplorerPage : Page
     }
 
     public ObservableCollection<LocalConversionResult> ConversionResults
+    {
+        get;
+        set;
+    }
+
+    public ObservableCollection<LocalLyricResult> LyricResults
     {
         get;
         set;
@@ -81,6 +105,7 @@ public sealed partial class LocalExplorerPage : Page
 
         FileListView.ItemsSource = LocalExplorerViewModel.Source;
         ConversionResults = new ObservableCollection<LocalConversionResult>();
+        LyricResults = new ObservableCollection<LocalLyricResult>();
         InitPreviewPanelButtons();
         InitializeAnimations();
 
@@ -97,6 +122,18 @@ public sealed partial class LocalExplorerPage : Page
             else
             {
                 NoConversionText.Visibility = Visibility.Collapsed;
+            }
+        };
+
+        LyricResults.CollectionChanged += (sender, e) =>
+        {
+            if (LyricResults.Count == 0)
+            {
+                NoLyricsText.Visibility = Visibility.Visible;
+            }
+            else
+            {
+                NoLyricsText.Visibility = Visibility.Collapsed;
             }
         };
 
@@ -127,6 +164,7 @@ public sealed partial class LocalExplorerPage : Page
         AnimationHelper.AttachSpringUpAnimation(UploadFileButton, UploadFileButtonIcon);
         AnimationHelper.AttachScaleAnimation(ClearButton, ClearButtonIcon);
         AnimationHelper.AttachScaleAnimation(AddToQueueButton, ResultsIcon);
+        AnimationHelper.AttachScaleAnimation(LyricsDialogOpenButton, LyricsDialogOpenIcon);
         AnimationHelper.AttachScaleAnimation(ConvertDialogOpenButton, ConvertDialogOpenIcon);
         AnimationHelper.AttachScaleAnimation(SelectOutputButton, SelectOutputIcon);
     }
@@ -752,6 +790,7 @@ public sealed partial class LocalExplorerPage : Page
     }
 
     private bool shouldClose;
+    private bool shouldCloseLyrics;
 
     private async void ConversionDialog_OnPrimaryButtonClick(ContentDialog sender, ContentDialogButtonClickEventArgs args)
     {
@@ -1011,5 +1050,206 @@ public sealed partial class LocalExplorerPage : Page
     {
         var folder = await StoragePickerHelper.PickFolderAsync(PickerLocationId.MusicLibrary);
         OutputTextBox.Text = folder?.Path ?? "";
+    }
+
+    // Lyrics dialog related methods ------------------------------------------------
+
+    private async void LyricsDialogOpenButton_OnClick(object sender, RoutedEventArgs e)
+    {
+        LyricsDialog.XamlRoot = this.XamlRoot;
+        if (LyricsInfobarProgress.Visibility == Visibility.Collapsed)
+        {
+            LyricsInfobar.Severity = InfoBarSeverity.Informational;
+            UrlParser.ParseTextBlock(LyricsInfobarText, "Download lyrics for tracks in Local Explorer. Configure lyric downloads in Settings.");
+        }
+
+        await LyricsDialog.ShowAsync();
+    }
+
+    private async void LyricsDialog_OnPrimaryButtonClick(ContentDialog sender, ContentDialogButtonClickEventArgs args)
+    {
+        shouldCloseLyrics = false;
+
+        if (LocalExplorerViewModel.OriginalList.Count == 0)
+        {
+            LyricsInfobar.Severity = InfoBarSeverity.Warning;
+            UrlParser.ParseTextBlock(LyricsInfobarText, "No tracks available. Configure lyric downloads in Settings.");
+            return;
+        }
+
+        var lyricsExtensionSetting = await SettingsViewModel.GetSetting<int?>(SettingsViewModel.LyricsExtension) ?? 0;
+        var lyricsDirectorySetting = await SettingsViewModel.GetSetting<string?>(SettingsViewModel.LyricsDirectory) ?? "";
+
+        if (!string.IsNullOrWhiteSpace(lyricsDirectorySetting) && !Directory.Exists(lyricsDirectorySetting))
+        {
+            LyricsInfobar.Severity = InfoBarSeverity.Warning;
+            UrlParser.ParseTextBlock(LyricsInfobarText, "Lyrics directory does not exist. Configure lyric downloads in Settings.");
+            return;
+        }
+
+        LyricsInfobar.Severity = InfoBarSeverity.Informational;
+        UrlParser.ParseTextBlock(LyricsInfobarText, $"Downloading <b>0 of {LocalExplorerViewModel.OriginalList.Count}</b> lyrics. Configure lyric downloads in Settings.");
+        LyricsInfobarProgress.Visibility = Visibility.Visible;
+        LyricsInfobarProgress.IsIndeterminate = true;
+        LyricsDialog.IsPrimaryButtonEnabled = false;
+
+        lyricCancellationTokenSource?.Dispose();
+        lyricCancellationTokenSource = new CancellationTokenSource();
+        var token = lyricCancellationTokenSource.Token;
+
+        LyricsListView.ItemsSource = LyricResults;
+        LyricResults.Clear();
+
+        var lyricService = App.GetService<ILyricService>();
+        var totalCount = LocalExplorerViewModel.OriginalList.Count;
+
+        for (var i = 0; i < totalCount; i++)
+        {
+            if (token.IsCancellationRequested)
+            {
+                break;
+            }
+
+            var song = LocalExplorerViewModel.OriginalList[i];
+            string? lyrics = null;
+            try
+            {
+                lyrics = await lyricService.GetLyricsAsync(song);
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Failed to fetch lyrics: {ex.Message}");
+            }
+
+            if (token.IsCancellationRequested)
+            {
+                break;
+            }
+
+            var lyricType = GetLyricType(lyrics);
+            string? lyricsPath = null;
+
+            if (lyrics != null)
+            {
+                lyricsPath = await SaveLyricsAsync(song, lyrics, lyricsDirectorySetting, lyricsExtensionSetting, token);
+            }
+
+            dispatcher.TryEnqueue(() =>
+            {
+                LyricResults.Add(new LocalLyricResult(song, lyricsPath, lyricType, lyrics));
+                LyricsInfobarProgress.IsIndeterminate = false;
+                LyricsInfobarProgress.Value = (double)LyricResults.Count / totalCount * 100;
+                UrlParser.ParseTextBlock(LyricsInfobarText, $"Downloading lyrics <b>{LyricsInfobarProgress.Value:F1}% ({LyricResults.Count} of {totalCount})</b> ...");
+            });
+        }
+
+        dispatcher.TryEnqueue(() =>
+        {
+            LyricsInfobarProgress.Visibility = Visibility.Collapsed;
+            LyricsInfobar.Severity = token.IsCancellationRequested ? InfoBarSeverity.Informational : InfoBarSeverity.Success;
+            UrlParser.ParseTextBlock(LyricsInfobarText, token.IsCancellationRequested
+                ? "Lyrics download cancelled. Configure lyric downloads in Settings."
+                : "Lyrics download complete. Configure lyric downloads in Settings.");
+            LyricsDialog.IsPrimaryButtonEnabled = true;
+        });
+    }
+
+    private void LyricsDialog_SecondaryButtonClick(ContentDialog sender, ContentDialogButtonClickEventArgs args)
+    {
+        shouldCloseLyrics = false;
+        lyricCancellationTokenSource?.Cancel();
+        dispatcher.TryEnqueue(() =>
+        {
+            LyricsInfobarProgress.Visibility = Visibility.Collapsed;
+            LyricsInfobar.Severity = InfoBarSeverity.Informational;
+            UrlParser.ParseTextBlock(LyricsInfobarText, "Lyrics download cancelled. Configure lyric downloads in Settings.");
+            LyricsDialog.IsPrimaryButtonEnabled = true;
+        });
+    }
+
+    private void LyricsDialog_OnCloseButtonClick(ContentDialog sender, ContentDialogButtonClickEventArgs args)
+    {
+        shouldCloseLyrics = true;
+    }
+
+    private void LyricsDialog_OnClosing(ContentDialog sender, ContentDialogClosingEventArgs args)
+    {
+        args.Cancel = !shouldCloseLyrics;
+    }
+
+    private void OpenLyricsButton_OnClick(object sender, RoutedEventArgs e)
+    {
+        var button = sender as Button;
+        var result = button?.Tag as LocalLyricResult;
+        if (File.Exists(result?.LyricsPath))
+        {
+            var argument = $"/select, \"{result.LyricsPath}\"";
+            System.Diagnostics.Process.Start("explorer.exe", argument);
+        }
+    }
+
+    private static string GetLyricType(string? lyrics)
+    {
+        if (lyrics == null)
+        {
+            return "Failed";
+        }
+
+        if (string.IsNullOrWhiteSpace(lyrics))
+        {
+            return "Instrumental";
+        }
+
+        return IsSyncedLyrics(lyrics) ? "Synced" : "Unsynced";
+    }
+
+    private static bool IsSyncedLyrics(string lyrics)
+    {
+        var lines = lyrics.Split(new[] { "\r\n", "\n" }, StringSplitOptions.RemoveEmptyEntries);
+        foreach (var line in lines)
+        {
+            if (Regex.IsMatch(line, @"^\[\d{2}:\d{2}\.\d{2}\]"))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static async Task<string?> SaveLyricsAsync(SongSearchObject song, string lyrics, string lyricsDirectory, int lyricsExtensionSetting, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var extension = lyricsExtensionSetting == 0 ? ".lrc" : ".txt";
+            var trackDirectory = Path.GetDirectoryName(song.Id);
+            var outputDirectory = string.IsNullOrWhiteSpace(lyricsDirectory) ? trackDirectory : lyricsDirectory;
+
+            if (string.IsNullOrWhiteSpace(outputDirectory))
+            {
+                return null;
+            }
+
+            var fileName = Path.GetFileName(song.Id);
+            if (string.IsNullOrWhiteSpace(fileName))
+            {
+                return null;
+            }
+
+            var safeFileName = ApiHelper.RemoveExtension(fileName);
+            var lyricsPath = Path.Combine(outputDirectory, safeFileName + extension);
+
+            await File.WriteAllTextAsync(lyricsPath, lyrics, cancellationToken);
+            return lyricsPath;
+        }
+        catch (OperationCanceledException)
+        {
+            return null;
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"Failed to save lyrics: {ex.Message}");
+            return null;
+        }
     }
 }
