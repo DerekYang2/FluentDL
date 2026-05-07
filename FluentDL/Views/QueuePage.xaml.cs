@@ -387,8 +387,32 @@ public sealed partial class QueuePage : Page
 
     private async void ClearButton_OnClick(object sender, RoutedEventArgs e)
     {
+        if (QueueViewModel.Source.Count == 0)
+        {
+            return;
+        }
+
+        var shouldClear = await ConfirmClearQueueAsync();
+        if (!shouldClear)
+        {
+            return;
+        }
+
         await QueueViewModel.Clear();
         ShowInfoBar(InfoBarSeverity.Informational, "Queue cleared");
+    }
+
+    private async Task<bool> ConfirmClearQueueAsync()
+    {
+        ClearQueueDialog.XamlRoot = this.XamlRoot;
+        ClearQueueDialog.Title = "Clear queue?";
+        ClearQueueDialog.CloseButtonText = "Cancel";
+        ClearQueueDialog.PrimaryButtonText = "Yes";
+        ClearQueueDialog.DefaultButton = ContentDialogButton.Close;
+        ClearQueueDialogText.Text = "Are you sure you want to clear the queue?";
+
+        var result = await ClearQueueDialog.ShowAsync();
+        return result == ContentDialogResult.Primary;
     }
 
     private void CommandInput_OnTextChanged(AutoSuggestBox sender, AutoSuggestBoxTextChangedEventArgs args)

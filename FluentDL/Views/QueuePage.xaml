@@ -482,6 +482,15 @@
             </StackPanel>
         </ContentDialog>
 
+        <!--  Content Dialog for clearing queue  -->
+        <ContentDialog
+            x:Name="ClearQueueDialog"
+            IsPrimaryButtonEnabled="True">
+            <TextBlock
+                x:Name="ClearQueueDialogText"
+                TextWrapping="Wrap" />
+        </ContentDialog>
+
         <!--  Content Dialog for conversion  -->
         <ContentDialog
             x:Name="ConversionDialog"
