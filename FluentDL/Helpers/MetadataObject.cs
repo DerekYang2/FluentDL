@@ -179,25 +179,32 @@ namespace FluentDL.Helpers
         // Inside MetadataObject
         public byte[]? GetAlbumArt()
         {
-            using var tfile = TagLib.File.Create(FilePath);
-            tfile.Mode = TagLib.File.AccessMode.Closed;
-
-            IPicture[] pictures = tfile.Tag.Pictures;
-            byte[]? albumArt = null;
-            if (pictures.Length > 0)
+            try
             {
-                // Get front cover
-                albumArt = pictures[0].Data.Data; // Default to first picture
-                foreach (var picture in pictures) // Find front cover if possible
+                using var tfile = TagLib.File.Create(FilePath);
+                tfile.Mode = TagLib.File.AccessMode.Closed;
+
+                IPicture[] pictures = tfile.Tag.Pictures;
+                byte[]? albumArt = null;
+                if (pictures.Length > 0)
                 {
-                    if (picture.Type == PictureType.FrontCover)
+                    // Get front cover
+                    albumArt = pictures[0].Data.Data; // Default to first picture
+                    foreach (var picture in pictures) // Find front cover if possible
                     {
-                        albumArt = picture.Data.Data;
-                        break;
+                        if (picture.Type == PictureType.FrontCover)
+                        {
+                            albumArt = picture.Data.Data;
+                            break;
+                        }
                     }
                 }
+                return albumArt;
+            } catch (Exception e)
+            {
+                Debug.WriteLine(e.ToString());
+                return null;
             }
-            return albumArt;
         }
 
         public async Task SaveAsync()

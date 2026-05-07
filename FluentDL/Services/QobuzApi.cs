@@ -651,6 +651,8 @@ internal partial class QobuzApi
 
     public static async Task<SongSearchObject?> GetQobuzTrack(SongSearchObject songObj, CancellationToken token = default, ConversionUpdateCallback? callback = null, bool onlyISRC = false)
     {
+        if (!IsInitialized) return null;
+
         string? isrc = songObj.Isrc;
         // Spotify specific
         if (songObj.Source == "spotify" && string.IsNullOrWhiteSpace(isrc))
@@ -690,11 +692,21 @@ internal partial class QobuzApi
         var trackName = songObj.Title;
 
         // Search by album
-        var albumResults = await Task.Run(() => apiService.SearchAlbums(albumName, 5, withAuth: true), token);
+        var albumResults = await Task.Run(() =>
+        {
+            try
+            {
+                return apiService.SearchAlbums(albumName, 5, withAuth: true);
+            }
+            catch
+            {
+                return null;
+            }
+        }, token);
 
         if (token.IsCancellationRequested) return null; // Check if task is cancelled
 
-        foreach (var album in albumResults.Albums.Items)
+        foreach (var album in albumResults?.Albums.Items ?? [])
         {
             if (token.IsCancellationRequested) return null; // Check if task is cancelled
 

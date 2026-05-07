@@ -1228,63 +1228,63 @@ namespace FluentDL.Services
         {
             if (!IsInitialized)
             {
-                return null;
+                throw new Exception("Spotify API not initialized");
             }
             // Remove extension if it exists
             filePath = ApiHelper.RemoveExtension(filePath);
             // 0 - mp3, 1 - flac
             var settingIdx = await SettingsViewModel.GetSetting<int?>(SettingsViewModel.SpotifyQuality);
 
-            var deezerEquivalent = await DeezerApi.GetDeezerTrack(song, onlyISRC: strict); // Try Deezer first
-
-            if (deezerEquivalent != null) // Found on Deezer
+            // Try Deezer first
+            SongSearchObject? deezerEquivalent = null;
+            try
             {
-                var bitrateEnum = settingIdx switch
+                deezerEquivalent = await DeezerApi.GetDeezerTrack(song, onlyISRC: strict); 
+                if (deezerEquivalent != null) // Found on Deezer
                 {
-                    0 => DeezNET.Data.Bitrate.MP3_320,
-                    _ => DeezNET.Data.Bitrate.FLAC,
-                };
+                    var bitrateEnum = settingIdx switch
+                    {
+                        0 => DeezNET.Data.Bitrate.MP3_320,
+                        _ => DeezNET.Data.Bitrate.FLAC,
+                    };
 
-                try // Wrap in try catch because deezer can throw exception (overwrite or api exception)
-                {
                     var resultPath = await DeezerApi.DownloadTrack(filePath, deezerEquivalent, bitrateEnum, progress: progress);
                     callback?.Invoke(InfoBarSeverity.Success, song, resultPath);
                     return resultPath;
                 }
-                catch (Exception e)
-                {
-                    Debug.WriteLine(e.Message);
-                }
+            }
+            catch (Exception e)
+            {
+                Debug.WriteLine(e.Message);
             }
 
             // Not found on Deezer, try Qobuz
-            var qobuzEquivalent = await QobuzApi.GetQobuzTrack(song, onlyISRC: strict);
-
-            if (qobuzEquivalent != null) // Found on Qobuz
+            try
             {
-                try
+                var qobuzEquivalent = await QobuzApi.GetQobuzTrack(song, onlyISRC: strict);
+                if (qobuzEquivalent != null) // Found on Qobuz
                 {
                     var resultPath = await QobuzApi.DownloadTrack(filePath, qobuzEquivalent, progress, settingIdx == 0 ? "5" : " 6"); // mp3 or 16/44.1 flac
                     callback?.Invoke(InfoBarSeverity.Success, song, resultPath);
                     return resultPath;
                 }
-                catch (Exception e)
-                {
-                    Debug.WriteLine(e.Message);
-                }
+            }
+            catch (Exception e)
+            {
+                Debug.WriteLine(e.Message);
             }
 
             // Reattempt deezer with 128 kbps fallback
             if (deezerEquivalent != null) // Found on Deezer
             {
-                var bitrateEnum = settingIdx switch
+                try
                 {
-                    0 => DeezNET.Data.Bitrate.MP3_128,
-                    _ => DeezNET.Data.Bitrate.FLAC,
-                };
+                    var bitrateEnum = settingIdx switch
+                    {
+                        0 => DeezNET.Data.Bitrate.MP3_128,
+                        _ => DeezNET.Data.Bitrate.FLAC,
+                    };
 
-                try // Wrap in try catch because deezer can throw exception (overwrite or api exception)
-                {
                     var resultPath = await DeezerApi.DownloadTrack(filePath, deezerEquivalent, bitrateEnum, use128Fallback: true, progress: progress);
                     callback?.Invoke(InfoBarSeverity.Success, song, resultPath);
                     return resultPath;
@@ -1297,51 +1297,39 @@ namespace FluentDL.Services
 
             if (strict) // If strict, do not try youtube
             {
-                return null;
+                throw new Exception("Equivalent not found in other sources");
             }
 
-            var equivalent = await YoutubeApi.GetYoutubeTrack(song);
+            var opusLocation = ApiHelper.RemoveExtension(filePath) + ".opus";
+            var actualLocation = ApiHelper.RemoveExtension(filePath) + (settingIdx == 0 ? ".mp3" : ".flac");
 
-            if (equivalent != null) // Found on Youtube
+            if (File.Exists(actualLocation) && await SettingsViewModel.GetSetting<bool>(SettingsViewModel.Overwrite) == false) // If file exists and overwrite is false
             {
-                try
-                {
-                    var opusLocation = ApiHelper.RemoveExtension(filePath) + ".opus";
-
-                    if (File.Exists(opusLocation) && await SettingsViewModel.GetSetting<bool>(SettingsViewModel.Overwrite) == false) // If file exists and overwrite is false
-                    {
-                        return null;
-                    }
-
-                    if (!FFmpegRunner.IsInitialized)
-                    {
-                        return null;
-                    }
-
-                    await YoutubeApi.DownloadAudio(opusLocation, equivalent.Id, progress); // Download audio as opus
-
-                    string? convertedLocation = "";
-
-                    if (settingIdx == 1)
-                    {
-                        await FFmpegRunner.ConvertToFlacAsync(opusLocation); // Convert opus to flac
-                        convertedLocation = opusLocation.Replace(".opus", ".flac");
-                    }
-                    else
-                    {
-                        convertedLocation = await FFmpegRunner.CreateMp3Async(opusLocation);
-                        await Task.Run(() => File.Delete(opusLocation));
-                    }
-                    callback?.Invoke(InfoBarSeverity.Warning, song, convertedLocation); // Not perfect match
-                    return convertedLocation; // Return the converted location
-                }
-                catch (Exception e)
-                {
-                    Debug.WriteLine(e.Message);
-                }
+                throw new Exception("File already exists");
             }
 
-            return null;
+            if (!FFmpegRunner.IsInitialized)
+            {
+                throw new Exception("FFmpeg not initialized");
+            }
+
+            var equivalent = await YoutubeApi.GetYoutubeTrack(song) ?? throw new Exception("Equivalent not found in other sources");
+            await YoutubeApi.DownloadAudio(opusLocation, equivalent.Id, progress); // Download audio as opus
+
+            string? convertedLocation = "";
+
+            if (settingIdx == 1)
+            {
+                await FFmpegRunner.ConvertToFlacAsync(opusLocation); // Convert opus to flac
+                convertedLocation = opusLocation.Replace(".opus", ".flac");
+            }
+            else
+            {
+                convertedLocation = await FFmpegRunner.CreateMp3Async(opusLocation);
+                await Task.Run(() => File.Delete(opusLocation));
+            }
+            callback?.Invoke(InfoBarSeverity.Warning, song, convertedLocation); // Not perfect match
+            return convertedLocation; // Return the converted location
         }
 
 
@@ -1376,7 +1364,7 @@ namespace FluentDL.Services
 
                 await metadata.SaveAsync();
             }
-            catch (Exception e)
+            catch (Exception e) 
             {
                 var songObj = await GetTrack(id);
 
@@ -1390,6 +1378,7 @@ namespace FluentDL.Services
                     Title = songObj.Title,
                     Artists = songObj.Artists.Split(", "),
                     AlbumName = songObj.AlbumName,
+                    AlbumArtists = songObj.Artists.Split(", "),
                     Isrc = songObj.Isrc,
                     ReleaseDate = DateTime.TryParse(songObj.ReleaseDate, out var dt) ? dt : null,
                     AlbumArtPath = songObj.ImageLocation,

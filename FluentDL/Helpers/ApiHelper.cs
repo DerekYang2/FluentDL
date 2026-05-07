@@ -419,16 +419,22 @@ internal class ApiHelper
 
         if (song.Source == "spotify")
         {
-            var resultPath = await SpotifyApi.DownloadEquivalentTrack(locationNoExt, song, progress, false, callback);
-
-            if (resultPath != null)
+            try
             {
-                await SpotifyApi.UpdateMetadata(resultPath, song.Id);
-                downloadTcs.SetResult(true);
-                return resultPath;
-            }
+                var resultPath = await SpotifyApi.DownloadEquivalentTrack(locationNoExt, song, progress, false, callback);
 
-            callback?.Invoke(InfoBarSeverity.Error, song); // Null - error
+                if (resultPath != null)
+                {
+                    await SpotifyApi.UpdateMetadata(resultPath, song.Id);
+                    downloadTcs.SetResult(true);
+                    return resultPath;
+                }
+
+                callback?.Invoke(InfoBarSeverity.Error, song); // Null - error
+            } catch (Exception e) 
+            {
+                callback?.Invoke(InfoBarSeverity.Error, song, e.Message);
+            }
         }
 
         downloadTcs.SetResult(false);
