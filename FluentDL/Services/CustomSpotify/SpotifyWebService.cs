@@ -169,7 +169,7 @@ namespace FluentDL.Services.CustomSpotify
             {
                 yield break;
             }
-            limit = Math.Min(limit, 100); // Absolute max limit
+            limit = Math.Min(limit, 1000); // Absolute max limit
 
             const int pageSize = 20;
             var yielded = 0;

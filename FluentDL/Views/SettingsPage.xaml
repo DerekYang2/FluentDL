@@ -213,17 +213,23 @@
                                     Toggled="OverwriteToggle_OnToggled" />
                             </local:SettingsCard>
 
-                            <local:SettingsCard Description="For singles downloads, create a subfolder containing the single track" Header="Create Track Subfolder">
+                            <local:SettingsCard Description="Place every downloaded track into a subfolder determined by your track rules. Applies to both single track and album downloads." Header="Create Track Subfolder">
                                 <ToggleSwitch
                                     x:Name="SubfoldersToggle"
                                     IsOn="False"
                                     Toggled="SubfoldersToggle_OnToggled" />
                             </local:SettingsCard>
-                            <local:SettingsCard Description="For album downloads, create a subfolder containing the album tracks" Header="Create Album Subfolder">
+                            <local:SettingsCard Description="Place tracks from the same album into a single folder determined by your album rules. Applies ONLY to album downloads and takes precedence over track subfolder rules." Header="Create Album Subfolder">
                                 <ToggleSwitch
                                     x:Name="AlbumSubfoldersToggle"
                                     IsOn="False"
                                     Toggled="AlbumSubfoldersToggle_OnToggled" />
+                            </local:SettingsCard>
+                            <local:SettingsCard Description="Download a cover.jpg image for album downloads. It will be placed in the track subfolder containing the {album} wildcard or the album subfolder." Header="Download Cover Art Image">
+                                <ToggleSwitch
+                                    x:Name="DownloadAlbumCoverArtToggle"
+                                    IsOn="False"
+                                    Toggled="DownloadAlbumCoverArtToggle_OnToggled" />
                             </local:SettingsCard>
                         </local:SettingsExpander.Items>
                     </local:SettingsExpander>
@@ -271,7 +277,7 @@
                                                 Content="{}{artists}"
                                                 Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"
                                                 Tag="{x:Bind FileNameInput}"
-                                                ToolTipService.ToolTip="The artists of the track, comma separated (e.g. artist1, artist2, artist3)." />
+                                                ToolTipService.ToolTip="The artists of the track in service-provided order, comma separated (e.g. artist1, artist2, artist3)." />
                                             <Button
                                                 Click="ScrollViewerButton_Click"
                                                 Content="{}{id}"
@@ -298,6 +304,12 @@
                                                 ToolTipService.ToolTip="The release date in YYYY-MM-DD." />
                                             <Button
                                                 Click="ScrollViewerButton_Click"
+                                                Content="{}{year}"
+                                                Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"
+                                                Tag="{x:Bind FileNameInput}"
+                                                ToolTipService.ToolTip="The release year in YYYY." />
+                                            <Button
+                                                Click="ScrollViewerButton_Click"
                                                 Content="{}{title}"
                                                 Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"
                                                 Tag="{x:Bind FileNameInput}"
@@ -313,16 +325,17 @@
                                 </StackPanel>
                             </local:SettingsCard>
                             <local:SettingsCard
-                                x:Name="SubfolderWildcardCard"
+                                x:Name="TrackSubfolderWildcardCard"
                                 HorizontalContentAlignment="Left"
                                 ContentAlignment="Vertical"
-                                Description="Customize the names for subfolders (both track and album). Leave blank to use default naming."
-                                Header="Subfolder Naming">
+                                Description="Customize every track's subfolder naming and structure. Leave blank to use default pattern."
+                                Header="Track Subfolder Rules">
                                 <StackPanel>
                                     <InfoBar
-                                        IsClosable="True"
-                                        IsOpen="{Binding IsEnabled, ElementName=SubfolderNameInput, Converter={StaticResource BooleanInverterconverter}}"
-                                        Message="Track and album subfolders are off. Enable them in Download Directory." />
+                                        x:Name="SubfolderInfoBar"
+                                        IsClosable="False"
+                                        IsOpen="False"
+                                        Message="Create Track Subfolder is disabled. Enable it under the Download Directory section." />
                                     <ScrollViewer
                                         Margin="0,8,0,0"
                                         HorizontalAlignment="Stretch"
@@ -340,7 +353,7 @@
                                                 Content="{}{album}"
                                                 Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"
                                                 Tag="{x:Bind SubfolderNameInput}"
-                                                ToolTipService.ToolTip="The track's album title. For albums, uses its own title." />
+                                                ToolTipService.ToolTip="The track's album title." />
                                             <Button
                                                 Click="ScrollViewerButton_Click"
                                                 Content="{}{artist}"
@@ -352,7 +365,13 @@
                                                 Content="{}{artists}"
                                                 Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"
                                                 Tag="{x:Bind SubfolderNameInput}"
-                                                ToolTipService.ToolTip="The artists comma separated (e.g. artist1, artist2, artist3)." />
+                                                ToolTipService.ToolTip="The artists in service-provided order, comma separated (e.g. artist1, artist2, artist3)." />
+                                            <Button
+                                                Click="ScrollViewerButton_Click"
+                                                Content="{}{artists_sorted}"
+                                                Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"
+                                                Tag="{x:Bind SubfolderNameInput}"
+                                                ToolTipService.ToolTip="The artists in alphabetical order, comma separated (e.g. artist1, artist2, artist3)." />
                                             <Button
                                                 Click="ScrollViewerButton_Click"
                                                 Content="{}{id}"
@@ -364,13 +383,13 @@
                                                 Content="{}{isrc}"
                                                 Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"
                                                 Tag="{x:Bind SubfolderNameInput}"
-                                                ToolTipService.ToolTip="The ISRC identifier for the track or UPC for the album." />
+                                                ToolTipService.ToolTip="The ISRC identifier for the track." />
                                             <Button
                                                 Click="ScrollViewerButton_Click"
                                                 Content="{}{position}"
                                                 Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"
                                                 Tag="{x:Bind SubfolderNameInput}"
-                                                ToolTipService.ToolTip="The track's position in the album. For albums, this is left empty." />
+                                                ToolTipService.ToolTip="The track's position in the album." />
                                             <Button
                                                 Click="ScrollViewerButton_Click"
                                                 Content="{}{date}"
@@ -379,18 +398,118 @@
                                                 ToolTipService.ToolTip="The release date in YYYY-MM-DD." />
                                             <Button
                                                 Click="ScrollViewerButton_Click"
+                                                Content="{}{year}"
+                                                Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"
+                                                Tag="{x:Bind SubfolderNameInput}"
+                                                ToolTipService.ToolTip="The release year in YYYY." />
+                                            <Button
+                                                Click="ScrollViewerButton_Click"
                                                 Content="{}{title}"
                                                 Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"
                                                 Tag="{x:Bind SubfolderNameInput}"
-                                                ToolTipService.ToolTip="The title of the track or album." />
+                                                ToolTipService.ToolTip="The title of the track." />
+                                            <Button
+                                                Click="ScrollViewerButton_Click"
+                                                Content="/"
+                                                Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"
+                                                Tag="{x:Bind SubfolderNameInput}"
+                                                ToolTipService.ToolTip="Folder separator (nested folder creation supported)" />
                                         </StackPanel>
                                     </ScrollViewer>
                                     <TextBox
                                         x:Name="SubfolderNameInput"
                                         Margin="0,0,0,8"
                                         LostFocus="SubfolderNameInput_OnLostFocus"
-                                        PlaceholderText="{}Example: {artist} - {title}"
-                                        ToolTipService.ToolTip="Subfolder Name (wildcard string)" />
+                                        PlaceholderText="{}Examples: {artist} - {album}, {artist}/{year} - {album}"
+                                        ToolTipService.ToolTip="Track Subfolder Name (wildcard string)" />
+                                </StackPanel>
+                            </local:SettingsCard>
+                            <local:SettingsCard
+                                x:Name="AlbumSubfolderWildcardCard"
+                                HorizontalContentAlignment="Left"
+                                ContentAlignment="Vertical"
+                                Description="Customize the album download subfolder naming and structure. Leave blank to use default pattern."
+                                Header="Album Subfolder Rules">
+                                <StackPanel>
+                                    <InfoBar
+                                        x:Name="AlbumSubfolderInfoBar"
+                                        IsClosable="False"
+                                        IsOpen="False"
+                                        Message="Create Album Subfolder is disabled. Enable it under the Download Directory section." />
+                                    <ScrollViewer
+                                        Margin="0,8,0,0"
+                                        HorizontalAlignment="Stretch"
+                                        HorizontalScrollBarVisibility="Visible"
+                                        HorizontalScrollMode="Enabled"
+                                        IsEnabled="{Binding IsEnabled, ElementName=AlbumSubfolderNameInput}"
+                                        ToolTipService.ToolTip="Available wildcards"
+                                        VerticalScrollMode="Disabled">
+                                        <StackPanel
+                                            Margin="0,0,0,16"
+                                            Orientation="Horizontal"
+                                            Spacing="8">
+                                            <Button
+                                                Click="ScrollViewerButton_Click"
+                                                Content="{}{artist}"
+                                                Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"
+                                                Tag="{x:Bind AlbumSubfolderNameInput}"
+                                                ToolTipService.ToolTip="The main artist (if service supports) or first artist." />
+                                            <Button
+                                                Click="ScrollViewerButton_Click"
+                                                Content="{}{artists}"
+                                                Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"
+                                                Tag="{x:Bind AlbumSubfolderNameInput}"
+                                                ToolTipService.ToolTip="The artists in service-provided order, comma separated (e.g. artist1, artist2, artist3)." />
+                                            <Button
+                                                Click="ScrollViewerButton_Click"
+                                                Content="{}{artists_sorted}"
+                                                Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"
+                                                Tag="{x:Bind AlbumSubfolderNameInput}"
+                                                ToolTipService.ToolTip="The artists in alphabetical order, comma separated (e.g. artist1, artist2, artist3)." />
+                                            <Button
+                                                Click="ScrollViewerButton_Click"
+                                                Content="{}{id}"
+                                                Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"
+                                                Tag="{x:Bind AlbumSubfolderNameInput}"
+                                                ToolTipService.ToolTip="The streaming service ID." />
+                                            <Button
+                                                Click="ScrollViewerButton_Click"
+                                                Content="{}{isrc}"
+                                                Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"
+                                                Tag="{x:Bind AlbumSubfolderNameInput}"
+                                                ToolTipService.ToolTip="The UPC of the album if available." />
+                                            <Button
+                                                Click="ScrollViewerButton_Click"
+                                                Content="{}{date}"
+                                                Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"
+                                                Tag="{x:Bind AlbumSubfolderNameInput}"
+                                                ToolTipService.ToolTip="The release date in YYYY-MM-DD." />
+                                            <Button
+                                                Click="ScrollViewerButton_Click"
+                                                Content="{}{year}"
+                                                Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"
+                                                Tag="{x:Bind AlbumSubfolderNameInput}"
+                                                ToolTipService.ToolTip="The release year in YYYY." />
+                                            <Button
+                                                Click="ScrollViewerButton_Click"
+                                                Content="{}{title}"
+                                                Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"
+                                                Tag="{x:Bind AlbumSubfolderNameInput}"
+                                                ToolTipService.ToolTip="The title of the album." />
+                                            <Button
+                                                Click="ScrollViewerButton_Click"
+                                                Content="/"
+                                                Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"
+                                                Tag="{x:Bind AlbumSubfolderNameInput}"
+                                                ToolTipService.ToolTip="Folder separator (nested folder creation supported)" />
+                                        </StackPanel>
+                                    </ScrollViewer>
+                                    <TextBox
+                                        x:Name="AlbumSubfolderNameInput"
+                                        Margin="0,0,0,8"
+                                        LostFocus="AlbumSubfolderNameInput_OnLostFocus"
+                                        PlaceholderText="{}Examples: {artist} - {album}, {artist}/{date} - {album}"
+                                        ToolTipService.ToolTip="Album Subfolder Name (wildcard string)" />
                                 </StackPanel>
                             </local:SettingsCard>
                         </local:SettingsExpander.Items>

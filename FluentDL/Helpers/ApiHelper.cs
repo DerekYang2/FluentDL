@@ -3,6 +3,7 @@ using FluentDL.Services;
 using FluentDL.ViewModels;
 using FluentDL.Views;
 using Microsoft.UI.Xaml.Controls;
+using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
@@ -230,11 +231,90 @@ internal class ApiHelper
             .Replace("{album}", song.AlbumName)
             .Replace("{artist}", song.Artists.Split(",")[0].Trim()) // First artist
             .Replace("{artists}", song.Artists) // All artists
+            .Replace("{artists_sorted}", GetSortedArtists(song.Artists))
             .Replace("{id}", song.Id)
             .Replace("{isrc}", song.Isrc ?? string.Empty) // ISRC, if available
             .Replace("{position}", song.TrackPosition?.ToString() ?? "1")
             .Replace("{date}", song.ReleaseDate ?? "")
+            .Replace("{year}", song.ReleaseDate?.Substring(0, 4) ?? "")
             .Replace("{title}", song.Title).Trim();
+    }
+
+    private static string GetSortedArtists(string? artists)
+    {
+        if (string.IsNullOrWhiteSpace(artists))
+        {
+            return string.Empty;
+        }
+
+        var sortedArtists = artists
+            .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .OrderBy(artist => artist, StringComparer.OrdinalIgnoreCase);
+
+        return string.Join(", ", sortedArtists);
+    }
+
+    private static string GetTrackSubfolderPath(SongSearchObject song, string baseDirectory, string? trackWildcard)
+    {
+        var wildCardStr = trackWildcard;
+        if (string.IsNullOrWhiteSpace(wildCardStr))
+        {
+            wildCardStr = "{artist}/{year} - {album}";
+        }
+
+        var subfolderName = GetSafeDirectoryPath(EvaluateWildcard(song, wildCardStr));
+        return Path.Combine(baseDirectory, subfolderName);
+    }
+
+    private static List<string> GetAlbumCoverDirectories(SongSearchObject album, IEnumerable<string> downloadPaths, string baseDirectory, bool createTrackSubfolder)
+    {
+        if (!createTrackSubfolder)
+        {
+            return [];
+        }
+
+        var albumMarker = GetSafeDirectoryPath(EvaluateWildcard(album, "{album}"));
+        if (string.IsNullOrWhiteSpace(albumMarker))
+        {
+            return [];
+        }
+
+        var coverDirectories = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var trackSubfolders = downloadPaths
+            .Select(path => Path.GetDirectoryName(path) ?? string.Empty)
+            .Where(dir => !string.IsNullOrWhiteSpace(dir))
+            .Distinct(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var trackSubfolder in trackSubfolders)
+        {
+            if (!trackSubfolder.StartsWith(baseDirectory, StringComparison.OrdinalIgnoreCase))
+            {
+                continue;
+            }
+
+            var relativePath = Path.GetRelativePath(baseDirectory, trackSubfolder);
+            var segments = relativePath.Split(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar)
+                .Where(segment => !string.IsNullOrWhiteSpace(segment))
+                .ToArray();
+
+            var albumSegmentIndex = Array.FindIndex(segments, segment =>
+                segment.Contains(albumMarker, StringComparison.OrdinalIgnoreCase));
+            if (albumSegmentIndex < 0)
+            {
+                continue;
+            }
+
+            var coverPathSegments = segments.Take(albumSegmentIndex + 1).ToArray();
+            if (coverPathSegments.Length == 0)
+            {
+                continue;
+            }
+
+            var coverDirectory = Path.Combine([baseDirectory, .. coverPathSegments]);
+            coverDirectories.Add(coverDirectory);
+        }
+
+        return coverDirectories.ToList();
     }
 
     private static async Task DownloadLyricsAsync(SongSearchObject song, string directory, string fileName, TaskCompletionSource<bool>? downloadTcs = default)
@@ -448,15 +528,10 @@ internal class ApiHelper
         if (createTrackSubfolder)
         {
             var wildCardStr = await SettingsViewModel.GetSetting<string>(SettingsViewModel.SubfolderWildcard);
-            if (string.IsNullOrWhiteSpace(wildCardStr))
-            {
-                wildCardStr = string.IsNullOrWhiteSpace(song.Isrc) ? "{position}. {artist} - {title}" : "{position}. {artist} - {title} [{isrc}]";
-            }
-            var subfolderName = GetSafeDirectoryPath(EvaluateWildcard(song, wildCardStr));
 
             try
             {
-                string newDirectory = Path.Combine(directory, subfolderName);
+                string newDirectory = GetTrackSubfolderPath(song, directory, wildCardStr);
                 if (!Directory.Exists(newDirectory))
                 {
                     Directory.CreateDirectory(newDirectory);
@@ -474,10 +549,13 @@ internal class ApiHelper
 
     public static async Task<List<string>> DownloadAlbum(AlbumSearchObject album, string directory, IProgress<ProgressData> progress, ConversionUpdateCallback? callback = default)
     {
+        var originalDirectory = directory;
         bool createAlbumSubfolder = await SettingsViewModel.GetSetting<bool>(SettingsViewModel.AlbumSubfolders);
+        var createTrackSubfolder = await SettingsViewModel.GetSetting<bool>(SettingsViewModel.Subfolders);
+        var trackWildcard = await SettingsViewModel.GetSetting<string>(SettingsViewModel.SubfolderWildcard);
         if (createAlbumSubfolder)
         {
-            var wildCardStr = await SettingsViewModel.GetSetting<string>(SettingsViewModel.SubfolderWildcard);
+            var wildCardStr = await SettingsViewModel.GetSetting<string>(SettingsViewModel.AlbumSubfolderWildcard);
             if (string.IsNullOrWhiteSpace(wildCardStr))
             {
                 wildCardStr = string.IsNullOrWhiteSpace(album.Isrc) ? "{artist} - {title}" : "{artist} - {title} [{isrc}]";
@@ -548,7 +626,8 @@ internal class ApiHelper
             return [];
         }
 
-        List<string> downloadedFiles = [];
+        var downloadPaths = new ConcurrentQueue<string>();
+
         bool allSuccess = true;
         ConversionUpdateCallback conversionCallback = (severity, song, location) =>
         {
@@ -561,6 +640,7 @@ internal class ApiHelper
 
         var allTasks = new List<Task>();
         var throttler = new SemaphoreSlim(initialCount: await SettingsViewModel.GetSetting<int?>(SettingsViewModel.ConversionThreads) ?? 1);
+
         foreach (var track in album.TrackList)
         {
             await throttler.WaitAsync();
@@ -569,11 +649,24 @@ internal class ApiHelper
             {
                 try
                 {
+                    // Fill missing info
+                    track.AlbumName = album.Title ?? album.AlbumName;
+
+                    var downloadDirectory = directory;
+                    if (!createAlbumSubfolder && createTrackSubfolder)
+                    {
+                        downloadDirectory = GetTrackSubfolderPath(track, originalDirectory, trackWildcard);
+                        if (!Directory.Exists(downloadDirectory))
+                        {
+                            Directory.CreateDirectory(downloadDirectory);
+                        }
+                    }
+
                     // Download the track
-                    var downloadPath = await DownloadTrackInternal(track, directory, progress, conversionCallback);
+                    var downloadPath = await DownloadTrackInternal(track, downloadDirectory, progress, conversionCallback);
                     if (File.Exists(downloadPath))
                     {
-                        downloadedFiles.Add(downloadPath);
+                        downloadPaths.Enqueue(downloadPath);
                     }
                 }
                 catch (Exception ex)
@@ -593,32 +686,46 @@ internal class ApiHelper
 #pragma warning disable CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
         Task.Run(async () =>
         {
-            if (createAlbumSubfolder)
+            var downloadCoverArt = await SettingsViewModel.GetSetting<bool>(SettingsViewModel.DownloadAlbumCoverArt);
+            if (!downloadCoverArt)
             {
-                byte[]? coverBytes = null;
+                return;
+            }
 
-                try
+            var coverDirectories = createAlbumSubfolder
+                ? [directory]
+                : GetAlbumCoverDirectories(album, downloadPaths, originalDirectory, createTrackSubfolder);
+            if (coverDirectories.Count == 0)
+            {
+                return;
+            }
+
+            byte[]? coverBytes = null;
+
+            try
+            {
+                var albumUrl = await GetAlbumArtLargest(album);
+                if (!string.IsNullOrWhiteSpace(albumUrl))
                 {
-                    var albumUrl = await GetAlbumArtLargest(album);
-                    if (!string.IsNullOrWhiteSpace(albumUrl))
-                    {
-                        coverBytes = await client.GetByteArrayAsync(albumUrl);
-                    }
+                    coverBytes = await client.GetByteArrayAsync(albumUrl);
+                }
 
-                    if (coverBytes != null)
+                if (coverBytes != null)
+                {
+                    foreach (var coverDirectory in coverDirectories)
                     {
-                        await File.WriteAllBytesAsync(Path.Combine(directory, "cover.jpg"), coverBytes);
+                        await File.WriteAllBytesAsync(Path.Combine(coverDirectory, "cover.jpg"), coverBytes);
                     }
                 }
-                catch (Exception ex)
-                {
-                    Debug.WriteLine(ex.Message);
-                }
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine(ex.Message);
             }
         });
 #pragma warning restore CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
 
-        return downloadedFiles;
+        return downloadPaths.ToList();
     }
 
     public static async Task<string?> GetAlbumArtLargest(AlbumSearchObject? album)

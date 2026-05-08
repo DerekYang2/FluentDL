@@ -95,6 +95,7 @@ public sealed partial class SettingsPage : Page
         if (string.IsNullOrWhiteSpace(LocationCard.Description.ToString())) LocationCard.Description = "No folder selected";
         SubfoldersToggle.IsOn = await localSettings.ReadSettingAsync<bool>(SettingsViewModel.Subfolders);
         AlbumSubfoldersToggle.IsOn = await localSettings.ReadSettingAsync<bool>(SettingsViewModel.AlbumSubfolders);
+        DownloadAlbumCoverArtToggle.IsOn = await localSettings.ReadSettingAsync<bool>(SettingsViewModel.DownloadAlbumCoverArt);
 
         // Set lyric options
         DownloadLyricsToggle.IsOn = await localSettings.ReadSettingAsync<bool>(SettingsViewModel.DownloadLyrics);
@@ -104,8 +105,12 @@ public sealed partial class SettingsPage : Page
         LyricsLocationText.Text = string.IsNullOrWhiteSpace(lyricsDir) ? "No folder selected" : lyricsDir;
 
         // Set wildcards
-        SubfolderNameInput.IsEnabled = SubfoldersToggle.IsOn || AlbumSubfoldersToggle.IsOn;
+        SubfolderNameInput.IsEnabled = SubfoldersToggle.IsOn;
+        AlbumSubfolderNameInput.IsEnabled = SubfoldersToggle.IsOn;
+        SubfolderInfoBar.IsOpen = !SubfoldersToggle.IsOn;
+        AlbumSubfolderInfoBar.IsOpen = !SubfoldersToggle.IsOn;
         SubfolderNameInput.Text = await localSettings.ReadSettingAsync<string?>(SettingsViewModel.SubfolderWildcard) ?? "";
+        AlbumSubfolderNameInput.Text = await localSettings.ReadSettingAsync<string?>(SettingsViewModel.AlbumSubfolderWildcard) ?? "";
         FileNameInput.Text = await localSettings.ReadSettingAsync<string?>(SettingsViewModel.FileWildcard) ?? "";
 
         // Set FFmpeg path
@@ -694,6 +699,13 @@ public sealed partial class SettingsPage : Page
         await localSettings.SaveSettingAsync(SettingsViewModel.SubfolderWildcard, wildcard ?? "");
     }
 
+    private async void AlbumSubfolderNameInput_OnLostFocus(object sender, RoutedEventArgs e)
+    {
+        var button = sender as TextBox;
+        var wildcard = button?.Text;
+        await localSettings.SaveSettingAsync(SettingsViewModel.AlbumSubfolderWildcard, wildcard ?? "");
+    }
+
     // Infobar helper methods ---------------------------------------------------
     private void PageInfoBar_OnCloseButtonClick(InfoBar sender, object args)
     {
@@ -703,15 +715,28 @@ public sealed partial class SettingsPage : Page
     private async void SubfoldersToggle_OnToggled(object sender, RoutedEventArgs e)
     {
         var isToggled = (sender as ToggleSwitch)?.IsOn ?? false;
-        SubfolderNameInput.IsEnabled = SubfoldersToggle.IsOn || AlbumSubfoldersToggle.IsOn;
+        SubfolderNameInput.IsEnabled = isToggled;
+        SubfolderInfoBar.IsOpen = !isToggled;
         await localSettings.SaveSettingAsync(SettingsViewModel.Subfolders, isToggled);
     }
 
     private async void AlbumSubfoldersToggle_OnToggled(object sender, RoutedEventArgs e)
     {
         var isToggled = (sender as ToggleSwitch)?.IsOn ?? false;
-        SubfolderNameInput.IsEnabled = SubfoldersToggle.IsOn || AlbumSubfoldersToggle.IsOn;
+        AlbumSubfolderNameInput.IsEnabled = isToggled;
+        AlbumSubfolderInfoBar.IsOpen = !isToggled;
         await localSettings.SaveSettingAsync(SettingsViewModel.AlbumSubfolders, isToggled);
+        if (isToggled)
+        {
+            DownloadAlbumCoverArtToggle.IsOn = true;
+            await localSettings.SaveSettingAsync(SettingsViewModel.DownloadAlbumCoverArt, true);
+        }
+    }
+
+    private async void DownloadAlbumCoverArtToggle_OnToggled(object sender, RoutedEventArgs e)
+    {
+        var isToggled = (sender as ToggleSwitch)?.IsOn ?? false;
+        await localSettings.SaveSettingAsync(SettingsViewModel.DownloadAlbumCoverArt, isToggled);
     }
 
     // Event handler to close the info bar and stop the timer (only ticks once)

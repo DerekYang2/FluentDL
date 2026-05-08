@@ -562,7 +562,7 @@ internal class DeezerApi
         }
 
         // Get the contributors of the track
-        var contributors = new HashSet<string>();
+        var contributors = new List<string>();
         if (jsonObject.TryGetProperty("contributors", out var contribElement))
         {
             foreach (var contribObject in contribElement.EnumerateArray())
@@ -619,7 +619,7 @@ internal class DeezerApi
             return null;
         }
         // Get the contributors of the album
-        var contributors = new HashSet<string>();
+        var contributors = new List<string>();
         if (jsonObject.TryGetProperty("contributors", out var contribElement))
         {
             foreach (var contribObject in contribElement.EnumerateArray())
@@ -838,7 +838,7 @@ internal class DeezerApi
         }
 
         // Get the contributors of the track
-        var contributors = new HashSet<string>();
+        var contributors = new List<string>();
         if (jsonObject.TryGetProperty("contributors", out var contribElement))
         {
             foreach (var contribObject in contribElement.EnumerateArray())
@@ -849,7 +849,7 @@ internal class DeezerApi
             }
         }
 
-        var albumContribs = new HashSet<string>();
+        var albumContribs = new List<string>();
         if (albumJson.TryGetProperty("contributors", out var albumContribElement))
         {
             foreach (var contribObject in albumContribElement.EnumerateArray())

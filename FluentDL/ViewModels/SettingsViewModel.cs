@@ -65,12 +65,14 @@ public partial class SettingsViewModel : ObservableRecipient
     public static readonly string
         Subfolders = "subfolders",
         AlbumSubfolders = "album_subfolders",
+        DownloadAlbumCoverArt = "download_album_cover_art",
         AutoBackupEnabled = "auto_backup_enabled",
         BackupRetentionCount = "backup_retention_count";
 
     // Naming settings
     public static readonly string
         SubfolderWildcard = "subfolder_wildcard",
+        AlbumSubfolderWildcard = "album_subfolder_wildcard",
         FileWildcard = "file_naming_wildcard";
 
     private static ILocalSettingsService localSettings = App.GetService<ILocalSettingsService>();
@@ -143,9 +145,11 @@ public partial class SettingsViewModel : ObservableRecipient
         await SaveSettingsAsyncIfNull<string?>(QobuzAppId, "");
         await SaveSettingsAsyncIfNull<string?>(QobuzAppSecret, "");
         await SaveSettingsAsyncIfNull<string?>(SubfolderWildcard, "");
+        await SaveSettingsAsyncIfNull<string?>(AlbumSubfolderWildcard, "");
         await SaveSettingsAsyncIfNull<string?>(FileWildcard, "");
         await SaveSettingsAsyncIfNull<bool?>(Subfolders, false);
         await SaveSettingsAsyncIfNull<bool?>(AlbumSubfolders, true);
+        await SaveSettingsAsyncIfNull<bool?>(DownloadAlbumCoverArt, true);
         await SaveSettingsAsyncIfNull<string?>(SearchSource, "deezer");
         await SaveSettingsAsyncIfNull<bool?>(SearchAddChecked, false);
         await SaveSettingsAsyncIfNull<bool?>(SearchShareChecked, false);
