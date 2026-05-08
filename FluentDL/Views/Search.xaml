@@ -172,7 +172,7 @@
                                     Width="160"
                                     Header="Results limit"
                                     LargeChange="10"
-                                    Maximum="100"
+                                    Maximum="5000"
                                     Minimum="1"
                                     SmallChange="5"
                                     SpinButtonPlacementMode="Inline"

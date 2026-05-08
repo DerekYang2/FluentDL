@@ -333,7 +333,7 @@ namespace FluentDL.Services
         public static async Task GeneralSearch(ObservableCollection<SongSearchObject> itemSource, string query, CancellationToken token, int limit = 25, bool albumMode = false)
         {
             query = query.Trim(); // Trim the query
-            limit = Math.Min(limit, 50); // Limit to 50 (maximum for this api)
+            limit = Math.Min(limit, 1000);
 
             if (!IsInitialized || string.IsNullOrWhiteSpace(query))
             {
