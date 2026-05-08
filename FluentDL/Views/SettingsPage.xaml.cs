@@ -60,6 +60,7 @@ public sealed partial class SettingsPage : Page
         ConversionThreadsCard.Description = $"{(int)Math.Round(ConversionThreadsSlider.Value)} threads";
         CommandThreadsCard.Description = $"{(int)Math.Round(CommandThreadsSlider.Value)} threads";
         AudioConversionThreadsCard.Description = $"{(int)Math.Round(AudioConversionThreadsSlider.Value)} threads";
+        BackupRetentionCard.Description = $"Keep the latest {Math.Round(BackupRetentionSlider.Value)} backups";
         // Change event
         ConversionThreadsSlider.ValueChanged += (s, e) =>
         {
@@ -73,10 +74,15 @@ public sealed partial class SettingsPage : Page
         {
             AudioConversionThreadsCard.Description = $"{(int)Math.Round(AudioConversionThreadsSlider.Value)} threads";
         };
+        BackupRetentionSlider.ValueChanged += (s, e) =>
+        {
+            BackupRetentionCard.Description = $"Keep the latest {Math.Round(BackupRetentionSlider.Value)} backups";
+        };
 
         CommandThreadsSlider.Value = await localSettings.ReadSettingAsync<int?>(SettingsViewModel.CommandThreads) ?? 1;
         ConversionThreadsSlider.Value = await localSettings.ReadSettingAsync<int?>(SettingsViewModel.ConversionThreads) ?? 3;
         AudioConversionThreadsSlider.Value = await localSettings.ReadSettingAsync<int?>(SettingsViewModel.AudioConversionThreads) ?? 6;
+        BackupRetentionSlider.Value = await localSettings.ReadSettingAsync<int?>(SettingsViewModel.BackupRetentionCount) ?? 5;
 
         // Set quality combo boxes (default flac)
         DeezerQualityComboBox.SelectedIndex = await localSettings.ReadSettingAsync<int?>(SettingsViewModel.DeezerQuality) ?? 2;
@@ -113,6 +119,7 @@ public sealed partial class SettingsPage : Page
         AutoPlayToggle.IsOn = await localSettings.ReadSettingAsync<bool>(SettingsViewModel.AutoPlay);
         NotifyUpdateToggle.IsOn = await localSettings.ReadSettingAsync<bool>(SettingsViewModel.NotifyUpdate);
         SpotifyPlaylistPromptToggle.IsOn = await localSettings.ReadSettingAsync<bool>(SettingsViewModel.SpotifyPlaylistPrompt);
+        AutoBackupToggle.IsOn = await localSettings.ReadSettingAsync<bool>(SettingsViewModel.AutoBackupEnabled);
 
         // Set Ids/Secrets
         ClientIdInput.Text = (await localSettings.ReadSettingAsync<string?>(SettingsViewModel.SpotifyClientId)) ?? "";
@@ -441,6 +448,18 @@ public sealed partial class SettingsPage : Page
         localSettings.SaveSettingAsync(SettingsViewModel.AudioConversionThreads, value);
     }
 
+    private async void BackupRetentionSlider_OnLostFocus(object sender, RoutedEventArgs e)
+    {
+        var slider = sender as Slider;
+        if (slider == null)
+        {
+            return;
+        }
+
+        var value = (int)slider.Value;
+        await localSettings.SaveSettingAsync(SettingsViewModel.BackupRetentionCount, value);
+    }
+
     private async void Search_OnChecked(object sender, RoutedEventArgs e)
     {
         var checkBox = sender as CheckBox;
@@ -570,6 +589,12 @@ public sealed partial class SettingsPage : Page
     {
         var isToggled = (sender as ToggleSwitch).IsOn;
         await localSettings.SaveSettingAsync(SettingsViewModel.AutoPlay, isToggled);
+    }
+
+    private async void AutoBackupToggle_OnToggled(object sender, RoutedEventArgs e)
+    {
+        var isToggled = (sender as ToggleSwitch).IsOn;
+        await localSettings.SaveSettingAsync(SettingsViewModel.AutoBackupEnabled, isToggled);
     }
     private async void NotifyUpdateToggle_Toggled(object sender, RoutedEventArgs e)
     {

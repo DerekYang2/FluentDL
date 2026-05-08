@@ -64,7 +64,9 @@ public partial class SettingsViewModel : ObservableRecipient
     // Subfolder settings
     public static readonly string
         Subfolders = "subfolders",
-        AlbumSubfolders = "album_subfolders";
+        AlbumSubfolders = "album_subfolders",
+        AutoBackupEnabled = "auto_backup_enabled",
+        BackupRetentionCount = "backup_retention_count";
 
     // Naming settings
     public static readonly string
@@ -159,6 +161,8 @@ public partial class SettingsViewModel : ObservableRecipient
         await SaveSettingsAsyncIfNull<int?>(LyricsPreference, 2); // 2 = Synced
         await SaveSettingsAsyncIfNull<int?>(LyricsExtension, 0); // 0 = .lrc, 1 = .txt
         await SaveSettingsAsyncIfNull<string?>(LyricsDirectory, ""); // Empty means same directory as track
+        await SaveSettingsAsyncIfNull<bool?>(AutoBackupEnabled, true);
+        await SaveSettingsAsyncIfNull<int?>(BackupRetentionCount, 5);
         await localSettings.SaveSettingAsync(FirstRun, false);  // Set first run to false
     }
 

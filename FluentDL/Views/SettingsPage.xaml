@@ -113,6 +113,40 @@
                     </local:SettingsExpander>
 
                     <local:SettingsExpander
+                        x:Name="BackupExpander"
+                        HorizontalContentAlignment="Stretch"
+                        Description="Configure automatic queue database backups"
+                        Header="Backups">
+                        <local:SettingsExpander.HeaderIcon>
+                            <FontIcon Glyph="&#xE777;" />
+                        </local:SettingsExpander.HeaderIcon>
+                        <local:SettingsExpander.Items>
+                            <local:SettingsCard Description="Automatically create queue backups on clear" Header="Automatic Backup">
+                                <ToggleSwitch
+                                    x:Name="AutoBackupToggle"
+                                    OffContent=""
+                                    OnContent=""
+                                    Toggled="AutoBackupToggle_OnToggled" />
+                            </local:SettingsCard>
+                            <local:SettingsCard
+                                x:Name="BackupRetentionCard"
+                                Description="Keep the latest 5 backups"
+                                Header="Backup Retention">
+                                <Slider
+                                    x:Name="BackupRetentionSlider"
+                                    Width="500"
+                                    LostFocus="BackupRetentionSlider_OnLostFocus"
+                                    Maximum="10"
+                                    Minimum="1"
+                                    SnapsTo="Ticks"
+                                    StepFrequency="1"
+                                    TickFrequency="1"
+                                    TickPlacement="Outside" />
+                            </local:SettingsCard>
+                        </local:SettingsExpander.Items>
+                    </local:SettingsExpander>
+
+                    <local:SettingsExpander
                         x:Name="FFmpegExpander"
                         HorizontalContentAlignment="Stretch"
                         Description="Optional: custom FFMpeg location (folder should contain ffmpeg.exe)"

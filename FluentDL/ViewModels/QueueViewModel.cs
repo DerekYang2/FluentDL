@@ -336,6 +336,27 @@ public partial class QueueViewModel : ObservableRecipient
         await DatabaseService.Clear();
     }
 
+    public static async Task ClearSources(HashSet<string> sources)
+    {
+        if (sources == null) throw new ArgumentNullException(nameof(sources));
+        if (sources.Count == 0) return;
+
+        if (sources.Count >= 5)
+        {
+            await Clear();
+            return;
+        }
+
+        var itemsToRemove = Source
+            .Where(item => sources.Contains(item.Source))
+            .ToList();
+
+        foreach (var item in itemsToRemove)
+        {
+            await Remove(item);
+        }
+    }
+
     public static void Reset()
     {
         foreach (QueueObject queueObject in Source)
@@ -362,6 +383,8 @@ public partial class QueueViewModel : ObservableRecipient
     {
         try
         {
+            Source.Clear();
+            trackSet.Clear();
             var items = await DatabaseService.LoadQueueJSON();
             var sortedList = new List<(string, SongSearchObject)>();
 

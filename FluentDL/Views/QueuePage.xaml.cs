@@ -1,6 +1,7 @@
 ﻿using System.Collections.Concurrent;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
+using System.Globalization;
 using System.Text.RegularExpressions;
 using Windows.Storage.Pickers;
 using FluentDL.Services;
@@ -32,6 +33,8 @@ public delegate void ConversionUpdateCallback(InfoBarSeverity severity, SongSear
 
 public sealed partial class QueuePage : Page
 {
+    private sealed record BackupOption(string DisplayName, FileInfo? File);
+    private const string BackupFileSuffix = ".zip";
     public delegate void QueueRunCallback(InfoBarSeverity severity, string message);
 
     // Create callback
@@ -132,6 +135,7 @@ public sealed partial class QueuePage : Page
         AnimationHelper.AttachSpringDownAnimation(DownloadAllButton, DownloadAllButtonIcon);
         AnimationHelper.AttachSpringRightAnimation(ConvertDialogOpenButton, ConvertDialogOpenIcon);
         AnimationHelper.AttachScaleAnimation(ClearButton, ClearIcon);
+        AnimationHelper.AttachScaleAnimation(RestoreQueueButton, RestoreQueueIcon);
     }
 
     protected async override void OnNavigatedTo(NavigationEventArgs e)
@@ -392,27 +396,278 @@ public sealed partial class QueuePage : Page
             return;
         }
 
-        var shouldClear = await ConfirmClearQueueAsync();
-        if (!shouldClear)
+        var selectedSources = await ConfirmClearQueueAsync();
+        if (selectedSources == null || selectedSources.Count == 0)
         {
             return;
         }
 
-        await QueueViewModel.Clear();
-        ShowInfoBar(InfoBarSeverity.Informational, "Queue cleared");
+        try
+        {
+            var autoBackupEnabled = await SettingsViewModel.GetSetting<bool?>(SettingsViewModel.AutoBackupEnabled) ?? true;
+            bool onlyLocal = selectedSources.Count == 1 && selectedSources.Contains("local");
+            int deletionCount = 0;
+            foreach (var song in QueueViewModel.Source)
+            {
+                if (selectedSources.Contains(song.Source))
+                {
+                    deletionCount++;
+                }
+            }
+
+            if (autoBackupEnabled && !onlyLocal && deletionCount > 0)  // Don't create backup if only clearing up local sources
+            {
+                var keep = await SettingsViewModel.GetSetting<int?>(SettingsViewModel.BackupRetentionCount) ?? 5;
+                await DatabaseService.CreateBackup(keep);
+            }
+
+            await QueueViewModel.ClearSources(selectedSources);
+            ShowInfoBar(InfoBarSeverity.Informational, $"Cleared {deletionCount} items");
+        }
+        catch (Exception ex)
+        {
+            ShowInfoBar(InfoBarSeverity.Error, $"Failed to clear queue: {ex.Message}", 5);
+        }
     }
 
-    private async Task<bool> ConfirmClearQueueAsync()
+    private async Task<HashSet<string>?> ConfirmClearQueueAsync()
     {
         ClearQueueDialog.XamlRoot = this.XamlRoot;
-        ClearQueueDialog.Title = "Clear queue?";
-        ClearQueueDialog.CloseButtonText = "Cancel";
-        ClearQueueDialog.PrimaryButtonText = "Yes";
-        ClearQueueDialog.DefaultButton = ContentDialogButton.Close;
-        ClearQueueDialogText.Text = "Are you sure you want to clear the queue?";
+        InitializeClearSourcesSelection();
 
         var result = await ClearQueueDialog.ShowAsync();
-        return result == ContentDialogResult.Primary;
+        if (result != ContentDialogResult.Primary)
+        {
+            return null;
+        }
+
+        var selectedSources = GetSelectedClearSources();
+        return selectedSources.Count == 0 ? null : selectedSources;
+    }
+
+    private void InitializeClearSourcesSelection()
+    {
+        ClearSourcesAllCheckBox.IsChecked = true;
+        foreach (var checkBox in GetClearSourceCheckBoxes())
+        {
+            checkBox.IsChecked = true;
+        }
+    }
+
+    private IEnumerable<CheckBox> GetClearSourceCheckBoxes()
+    {
+        return new[]
+        {
+            ClearSourcesDeezerCheckBox,
+            ClearSourcesQobuzCheckBox,
+            ClearSourcesSpotifyCheckBox,
+            ClearSourcesYouTubeCheckBox,
+            ClearSourcesLocalCheckBox
+        }.Where(checkBox => checkBox != null);
+    }
+
+    private HashSet<string> GetSelectedClearSources()
+    {
+        var selectedSources = new HashSet<string>();
+        foreach (var checkBox in GetClearSourceCheckBoxes())
+        {
+            if (checkBox.IsChecked == true && checkBox.Tag is string tag)
+            {
+                selectedSources.Add(tag);
+            }
+        }
+
+        return selectedSources;
+    }
+
+    private void ClearSourcesAllCheckBox_Click(object sender, RoutedEventArgs e)
+    {
+        var states = GetClearSourceCheckBoxes().Select(checkBox => checkBox.IsChecked).ToList();
+        if (states.Count == 0)
+        {
+            return;
+        }
+
+        if (states.All(state => state == false))
+        {
+            SetClearSourceSelections(true);
+            ClearSourcesAllCheckBox.IsChecked = true;
+        }
+        else
+        {
+            SetClearSourceSelections(false);
+            ClearSourcesAllCheckBox.IsChecked = false;
+        }
+    }
+
+    private void ClearSourceCheckBox_Checked(object sender, RoutedEventArgs e)
+    {
+        UpdateClearSourcesAllState();
+    }
+
+    private void ClearSourceCheckBox_Unchecked(object sender, RoutedEventArgs e)
+    {
+        UpdateClearSourcesAllState();
+    }
+
+    private void SetClearSourceSelections(bool isChecked)
+    {
+        foreach (var checkBox in GetClearSourceCheckBoxes())
+        {
+            checkBox.IsChecked = isChecked;
+        }
+    }
+
+    private void UpdateClearSourcesAllState()
+    {
+        var states = GetClearSourceCheckBoxes().Select(checkBox => checkBox.IsChecked).ToList();
+        if (states.Count == 0)
+        {
+            ClearSourcesAllCheckBox.IsChecked = false;
+            return;
+        }
+
+        if (states.All(state => state == true))
+        {
+            ClearSourcesAllCheckBox.IsChecked = true;
+        }
+        else if (states.All(state => state == false))
+        {
+            ClearSourcesAllCheckBox.IsChecked = false;
+        }
+        else
+        {
+            ClearSourcesAllCheckBox.IsChecked = null;
+        }
+    }
+
+    private async void RestoreQueueButton_OnClick(object sender, RoutedEventArgs e)
+    {
+        var backups = DatabaseService.GetBackups();
+        var backupOptions = BuildBackupOptions(backups, null);
+
+        RestoreQueueDialog.XamlRoot = this.XamlRoot;
+        RestoreQueueDialog.Title = "Restore queue";
+        RestoreQueueDialog.CloseButtonText = "Cancel";
+        RestoreQueueDialog.PrimaryButtonText = "Restore";
+        RestoreQueueDialog.SecondaryButtonText = "Export";
+        RestoreQueueDialog.DefaultButton = ContentDialogButton.Primary;
+        RestoreQueueBackupComboBox.ItemsSource = backupOptions;
+        RestoreQueueBackupComboBox.SelectedIndex = -1;
+
+        await RestoreQueueDialog.ShowAsync();
+    }
+
+    private async void RestoreQueueDialog_OnPrimaryButtonClick(ContentDialog sender, ContentDialogButtonClickEventArgs args)
+    {
+        if (RestoreQueueBackupComboBox.SelectedItem is not BackupOption { File: not null } option)
+        {
+            ShowInfoBar(InfoBarSeverity.Warning, "Select a backup to restore", 3);
+            return;
+        }
+
+        try
+        {
+            await DatabaseService.RestoreZip(option.File.FullName);
+            await QueueViewModel.LoadSaveQueue();
+            ShowInfoBar(InfoBarSeverity.Success, "Queue restored from backup", 3);
+        }
+        catch (Exception ex)
+        {
+            ShowInfoBar(InfoBarSeverity.Error, $"Failed to restore backup: {ex.Message}", 5);
+        }
+    }
+
+    private async void ImportBackupButton_OnClick(object sender, RoutedEventArgs e)
+    {
+        var file = await StoragePickerHelper.PickFileAsync([".zip"]);
+        if (file == null)
+        {
+            return;
+        }
+
+        var fileInfo = new FileInfo(file.Path);
+        if (!fileInfo.Exists)
+        {
+            ShowInfoBar(InfoBarSeverity.Warning, "Backup file not found", 3);
+            return;
+        }
+
+        var backups = DatabaseService.GetBackups();
+        var options = BuildBackupOptions(backups, fileInfo);
+        RestoreQueueBackupComboBox.ItemsSource = options;
+        RestoreQueueBackupComboBox.SelectedItem = options.FirstOrDefault(option =>
+            option.File != null && option.File.FullName == fileInfo.FullName);
+    }
+
+    private async void RestoreQueueDialog_OnSecondaryButtonClick(ContentDialog sender, ContentDialogButtonClickEventArgs args)
+    {
+        try
+        {
+            var suggestedName = $"{DatabaseService.BackupFilePrefix}{DateTime.UtcNow:yyyyMMdd_HHmmss}{BackupFileSuffix}";
+            var file = await StoragePickerHelper.FileSavePickerAsync([".zip"], suggestedName);
+            if (file == null)
+            {
+                return;
+            }
+
+            await DatabaseService.CreateBackupAtPath(file.Path);
+            ShowInfoBar(InfoBarSeverity.Success, "Backup exported", 3);
+            RefreshBackupOptions();
+        }
+        catch (Exception ex)
+        {
+            ShowInfoBar(InfoBarSeverity.Error, $"Failed to export backup: {ex.Message}", 5);
+        }
+    }
+
+    private void RefreshBackupOptions()
+    {
+        var backups = DatabaseService.GetBackups();
+        var options = BuildBackupOptions(backups, null);
+        RestoreQueueBackupComboBox.ItemsSource = options;
+        RestoreQueueBackupComboBox.SelectedIndex = -1;
+    }
+
+    private static List<BackupOption> BuildBackupOptions(List<FileInfo> backups, FileInfo? imported)
+    {
+        var options = backups
+            .Select(backup => new BackupOption(GetBackupDisplayName(backup), backup))
+            .ToList();
+
+        if (imported != null && options.All(option => option.File?.FullName != imported.FullName))
+        {
+            options.Insert(0, new BackupOption(GetBackupDisplayName(imported), imported));
+        }
+
+        return options;
+    }
+
+    private static string GetBackupDisplayName(FileInfo backup)
+    {
+        var localTime = TryParseBackupTimestamp(backup.Name, out var parsed)
+            ? parsed.ToLocalTime().ToString("g")
+            : backup.LastWriteTime.ToString("g");
+        return $"{localTime} - {backup.Name}";
+    }
+
+    private static bool TryParseBackupTimestamp(string fileName, out DateTimeOffset timestamp)
+    {
+        timestamp = default;
+        if (!fileName.StartsWith(DatabaseService.BackupFilePrefix, StringComparison.OrdinalIgnoreCase) ||
+            !fileName.EndsWith(BackupFileSuffix, StringComparison.OrdinalIgnoreCase))
+        {
+            return false;
+        }
+
+        var core = fileName.Substring(DatabaseService.BackupFilePrefix.Length,
+            fileName.Length - DatabaseService.BackupFilePrefix.Length - BackupFileSuffix.Length);
+        return DateTimeOffset.TryParseExact(
+            core,
+            "yyyyMMdd_HHmmss",
+            CultureInfo.InvariantCulture,
+            DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal,
+            out timestamp);
     }
 
     private void CommandInput_OnTextChanged(AutoSuggestBox sender, AutoSuggestBoxTextChangedEventArgs args)
@@ -736,7 +991,7 @@ public sealed partial class QueuePage : Page
             }
 
             // Prepare UI
-            DownloadAllButton.Visibility = ConvertDialogOpenButton.Visibility = ClearButton.Visibility = Visibility.Collapsed; // Hide buttons
+            DownloadAllButton.Visibility = ConvertDialogOpenButton.Visibility = ClearButton.Visibility = RestoreQueueButton.Visibility = Visibility.Collapsed; // Hide buttons
             ConvertStopButton.Visibility = Visibility.Visible; // Show stop button
 
             // Other initialization
@@ -891,7 +1146,7 @@ public sealed partial class QueuePage : Page
                 QueueProgress.Value = 0;  // Ensures this happens after currently queued progress changes
             });
 
-            DownloadAllButton.Visibility = ConvertDialogOpenButton.Visibility = ClearButton.Visibility = Visibility.Visible; // Show buttons
+            DownloadAllButton.Visibility = ConvertDialogOpenButton.Visibility = ClearButton.Visibility = RestoreQueueButton.Visibility = Visibility.Visible; // Show buttons
             ConvertStopText.Text = "Stop"; // Reset stop button text
             ConvertStopButton.Visibility = Visibility.Collapsed; // Hide stop button
             IsConverting = false;

@@ -100,7 +100,20 @@
                         <TextBlock Text="Download" />
                     </StackPanel>
                 </Button>
-
+                <Button
+                    x:Name="RestoreQueueButton"
+                    VerticalAlignment="Center"
+                    ToolTipService.ToolTip="Restore queue from backup"
+                    Click="RestoreQueueButton_OnClick">
+                    <StackPanel Orientation="Horizontal">
+                        <FontIcon
+                            x:Name="RestoreQueueIcon"
+                            Margin="0,0,8,0"
+                            FontSize="16"
+                            Glyph="&#xE777;" />
+                        <TextBlock x:Name="RestoreQueueButtonText" Text="Restore" />
+                    </StackPanel>
+                </Button>
                 <Button
                     x:Name="ClearButton"
                     VerticalAlignment="Center"
@@ -485,10 +498,90 @@
         <!--  Content Dialog for clearing queue  -->
         <ContentDialog
             x:Name="ClearQueueDialog"
-            IsPrimaryButtonEnabled="True">
-            <TextBlock
-                x:Name="ClearQueueDialogText"
-                TextWrapping="Wrap" />
+            Title="Clear Sources"
+            CloseButtonText="Cancel"
+            IsPrimaryButtonEnabled="True"
+            PrimaryButtonStyle="{ThemeResource AccentButtonStyle}"
+            PrimaryButtonText="Clear">
+            <StackPanel Spacing="0">
+                <CheckBox
+                    x:Name="ClearSourcesAllCheckBox"
+                    Click="ClearSourcesAllCheckBox_Click"
+                    Content="Select all"
+                    IsThreeState="True" />
+                <CheckBox
+                    x:Name="ClearSourcesDeezerCheckBox"
+                    Margin="12,0,0,0"
+                    Checked="ClearSourceCheckBox_Checked"
+                    Content="Deezer"
+                    IsChecked="True"
+                    Tag="deezer"
+                    Unchecked="ClearSourceCheckBox_Unchecked" />
+                <CheckBox
+                    x:Name="ClearSourcesQobuzCheckBox"
+                    Margin="12,0,0,0"
+                    Checked="ClearSourceCheckBox_Checked"
+                    Content="Qobuz"
+                    IsChecked="True"
+                    Tag="qobuz"
+                    Unchecked="ClearSourceCheckBox_Unchecked" />
+                <CheckBox
+                    x:Name="ClearSourcesSpotifyCheckBox"
+                    Margin="12,0,0,0"
+                    Checked="ClearSourceCheckBox_Checked"
+                    Content="Spotify"
+                    IsChecked="True"
+                    Tag="spotify"
+                    Unchecked="ClearSourceCheckBox_Unchecked" />
+                <CheckBox
+                    x:Name="ClearSourcesYouTubeCheckBox"
+                    Margin="12,0,0,0"
+                    Checked="ClearSourceCheckBox_Checked"
+                    Content="YouTube"
+                    IsChecked="True"
+                    Tag="youtube"
+                    Unchecked="ClearSourceCheckBox_Unchecked" />
+                <CheckBox
+                    x:Name="ClearSourcesLocalCheckBox"
+                    Margin="12,0,0,0"
+                    Checked="ClearSourceCheckBox_Checked"
+                    Content="Local"
+                    IsChecked="True"
+                    Tag="local"
+                    Unchecked="ClearSourceCheckBox_Unchecked" />
+            </StackPanel>
+        </ContentDialog>
+
+        <!--  Content Dialog for restoring queue  -->
+        <ContentDialog
+            x:Name="RestoreQueueDialog"
+            IsPrimaryButtonEnabled="True"
+            IsSecondaryButtonEnabled="True"
+            PrimaryButtonClick="RestoreQueueDialog_OnPrimaryButtonClick"
+            SecondaryButtonClick="RestoreQueueDialog_OnSecondaryButtonClick"
+            SecondaryButtonText="Export">
+            <StackPanel Spacing="12">
+                <InfoBar
+                    x:Name="RestoreQueueDialogInfoBar"
+                    IsClosable="False"
+                    IsOpen="True"
+                    Message="Restore from an automatic backup or import a user-created backup. Automatic backups are created on clear and can be enabled in settings.&#x0a;For manual backup, use browse to import and press export to create a backup for the current queue state."
+                    Severity="Informational" />
+                <ComboBox
+                    x:Name="RestoreQueueBackupComboBox"
+                    HorizontalAlignment="Stretch"
+                    DisplayMemberPath="DisplayName"
+                    PlaceholderText="Select a backup" />
+                <StackPanel
+                    HorizontalAlignment="Right"
+                    Orientation="Horizontal"
+                    Spacing="8">
+                    <Button
+                        x:Name="ImportBackupButton"
+                        Click="ImportBackupButton_OnClick"
+                        Content="Browse" />
+                </StackPanel>
+            </StackPanel>
         </ContentDialog>
 
         <!--  Content Dialog for conversion  -->

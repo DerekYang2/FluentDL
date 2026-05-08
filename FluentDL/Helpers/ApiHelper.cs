@@ -797,11 +797,10 @@ internal class ApiHelper
         response.EnsureSuccessStatusCode(); 
         var contentLength = response.Content.Headers.ContentLength ?? 0;
 
-
-        await using Stream streamRead = await client.GetStreamAsync(downloadUrl);
+        using Stream streamRead = await response.Content.ReadAsStreamAsync();
         await using FileStream streamWrite = System.IO.File.Create(filePath);
         long totalBytesRead = 0;
-        var buffer = new byte[128 * 1024]; // 128KB buffer size
+        var buffer = new byte[32768]; // 32KB buffer size
         var firstBufferRead = false;
 
         Stopwatch stopwatch = Stopwatch.StartNew();
