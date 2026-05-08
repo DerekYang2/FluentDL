@@ -106,9 +106,9 @@ public sealed partial class SettingsPage : Page
 
         // Set wildcards
         SubfolderNameInput.IsEnabled = SubfoldersToggle.IsOn;
-        AlbumSubfolderNameInput.IsEnabled = SubfoldersToggle.IsOn;
         SubfolderInfoBar.IsOpen = !SubfoldersToggle.IsOn;
-        AlbumSubfolderInfoBar.IsOpen = !SubfoldersToggle.IsOn;
+        AlbumSubfolderNameInput.IsEnabled = AlbumSubfoldersToggle.IsOn;
+        AlbumSubfolderInfoBar.IsOpen = !AlbumSubfoldersToggle.IsOn;
         SubfolderNameInput.Text = await localSettings.ReadSettingAsync<string?>(SettingsViewModel.SubfolderWildcard) ?? "";
         AlbumSubfolderNameInput.Text = await localSettings.ReadSettingAsync<string?>(SettingsViewModel.AlbumSubfolderWildcard) ?? "";
         FileNameInput.Text = await localSettings.ReadSettingAsync<string?>(SettingsViewModel.FileWildcard) ?? "";

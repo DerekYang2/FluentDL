@@ -226,6 +226,7 @@ internal class ApiHelper
 
     public static string EvaluateWildcard(SongSearchObject song, string wildcard)
     {
+        var yearStr = (song.ReleaseDate?.Length ?? 0) >= 4 ? song.ReleaseDate!.Substring(0, 4) : "YYYY";
         // Replace the wildcard with the song's properties
         return wildcard
             .Replace("{album}", song.AlbumName)
@@ -236,7 +237,7 @@ internal class ApiHelper
             .Replace("{isrc}", song.Isrc ?? string.Empty) // ISRC, if available
             .Replace("{position}", song.TrackPosition?.ToString() ?? "1")
             .Replace("{date}", song.ReleaseDate ?? "")
-            .Replace("{year}", song.ReleaseDate?.Substring(0, 4) ?? "")
+            .Replace("{year}", yearStr)
             .Replace("{title}", song.Title).Trim();
     }
 
@@ -380,6 +381,12 @@ internal class ApiHelper
 
     private static async Task<string> DownloadTrackInternal(SongSearchObject song, string directory, IProgress<ProgressData> progress, ConversionUpdateCallback? callback = default)
     {
+        // Spotify case (web player songs do not have full metadata)
+        if (song.Source == "spotify" && (string.IsNullOrWhiteSpace(song.ReleaseDate) || string.IsNullOrWhiteSpace(song.TrackPosition)))
+        {
+            song = await SpotifyApi.GetTrack(song.Id) ?? song;
+        }
+
         // Create file name
         var wildCardStr = await SettingsViewModel.GetSetting<string>(SettingsViewModel.FileWildcard);
         if (string.IsNullOrWhiteSpace(wildCardStr))
