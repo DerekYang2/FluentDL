@@ -34,7 +34,7 @@ internal partial class QobuzApi
     public static bool IsInitialized = false;
     private static Login? loginResult = null;
 
-    public static void Initialize(string? email, string? password, string? userId, string? AuthToken, string? appId, string? appSecret, AuthenticationCallback? authCallback = null)
+    public static void Initialize(string? userId, string? AuthToken, string? appId, string? appSecret, AuthenticationCallback? authCallback = null)
     {
         IsInitialized = false;
         string? failMessage = null;
@@ -95,26 +95,6 @@ internal partial class QobuzApi
             }
         }
 
-        if (!IsInitialized && !string.IsNullOrWhiteSpace(email) && !string.IsNullOrWhiteSpace(password))  // Email route
-        {
-            try
-            {
-                apiService = new QobuzApiService();
-                loginResult = apiService.LoginWithEmail(email, password);
-                IsInitialized = true;
-                authCallback?.Invoke(InfoBarSeverity.Success, "Logged in using email");
-            }
-            catch (Exception e)
-            {
-                Debug.WriteLine("Qobuz initialization failed (email): " + e.Message);
-                if (string.IsNullOrWhiteSpace(failMessage))
-                    failMessage = "Failed to log in using email";
-                else
-                    failMessage += " and email";
-                loginResult = null;
-            }
-        }
-
         try
         {
             apiService ??= new QobuzApiService();
@@ -168,7 +148,7 @@ internal partial class QobuzApi
         return str;
     }
 
-    public static async Task GeneralSearch(ObservableCollection<SongSearchObject> itemSource, string query, CancellationToken token, int limit = 25, bool albumMode = false)
+    public static async Task GeneralSearch(ObservableCollection<SongSearchObject> itemSource, string query, CancellationToken token, int offset = 0, int limit = 25, bool albumMode = false)
     {
         query = query.Trim(); // Trim the query
         if (string.IsNullOrWhiteSpace(query))
@@ -176,13 +156,11 @@ internal partial class QobuzApi
             return;
         }
 
-        itemSource.Clear(); // Clear the item source
-
         try
         {
             if (albumMode)
             {   
-                await foreach (var album in ApiSearch<Album>(query, limit))
+                await foreach (var album in ApiSearch<Album>(query, offset, limit))
                 {
                     if (token.IsCancellationRequested) return;
                     var albumObj = ConvertAlbumSearchObject(album);
@@ -194,7 +172,7 @@ internal partial class QobuzApi
             }
             else
             {
-                await foreach (var track in ApiSearch<Track>(query, limit))
+                await foreach (var track in ApiSearch<Track>(query, offset, limit))
                 {
                     if (token.IsCancellationRequested) return;
                     var song = ConvertSongSearchObject(track);
@@ -339,7 +317,7 @@ internal partial class QobuzApi
             {
                 var query = isTrackSpecified ? trackName : artistName; 
                 var searchType = isTrackSpecified ? EnumQobuzSearchType.ByReleaseName : EnumQobuzSearchType.ByMainArtist;
-                await foreach (var track in ApiSearch<Track>(query, limit, searchType))
+                await foreach (var track in ApiSearch<Track>(query, 0, limit, searchType))
                 {
                     if (token.IsCancellationRequested) return; // Check if task is cancelled
                     if (track.Id == null) continue;
@@ -417,7 +395,6 @@ internal partial class QobuzApi
                 }
                 else
                 {
-                    itemSource.Clear(); // Clear the item source
                     foreach (var track in album.Tracks.Items)
                     {
                         if (token.IsCancellationRequested)
@@ -452,7 +429,6 @@ internal partial class QobuzApi
             if (playlist?.TrackIds != null && (playlist.TrackIds?.Count ?? 0) > 0)
             {
                 statusUpdate?.Invoke(InfoBarSeverity.Informational, $"<b>Qobuz</b>   Loading playlist <a href='{url}'>{playlist.Name}</a>", -1); // Show an informational message
-                itemSource.Clear(); // Clear the item source
 
                 int failedCount = 0; // Count of failed tracks
                 foreach (var trackId in playlist?.TrackIds!) // Need to recreate the tracks so they have album objects

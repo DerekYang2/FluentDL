@@ -716,11 +716,15 @@
                         x:Name="QobuzExpander"
                         VerticalAlignment="Top"
                         HorizontalContentAlignment="Stretch"
-                        Description="Sign into Qobuz (only one option required)"
                         Header="Qobuz">
                         <local:SettingsExpander.HeaderIcon>
                             <FontIcon Glyph="&#xE72E;" />
                         </local:SettingsExpander.HeaderIcon>
+                        <local:SettingsExpander.Description>
+                            <TextBlock>
+                                Sign in using an&#32;<Hyperlink NavigateUri="https://github.com/DerekYang2/FluentDL/wiki/Authentication#qobuz">ID and Token.</Hyperlink>
+                                &#8291;Use a fixed App ID/Secret to keep ID/Token working across Qobuz web player updates.</TextBlock>
+                        </local:SettingsExpander.Description>
                         <Grid HorizontalAlignment="Stretch">
                             <Button x:Name="QobuzInfoButton" IsEnabled="False">
                                 <Button.Flyout>
@@ -745,45 +749,8 @@
                             </Button>
                         </Grid>
                         <local:SettingsExpander.Items>
-                            <local:SettingsCard
-                                HorizontalContentAlignment="Left"
-                                ContentAlignment="Vertical"
-                                Description="Email and Password"
-                                Header="Option 1">
-                                <StackPanel>
-                                    <TextBox
-                                        x:Name="QobuzEmailInput"
-                                        Width="500"
-                                        Margin="0,0,0,4"
-                                        Header="Email"
-                                        ToolTipService.ToolTip="Email">
-                                        <TextBox.HeaderTemplate>
-                                            <DataTemplate>
-                                                <TextBlock
-                                                    Margin="0,2,0,-2"
-                                                    Style="{ThemeResource CaptionTextBlockStyle}"
-                                                    Text="{Binding}" />
-                                            </DataTemplate>
-                                        </TextBox.HeaderTemplate>
-                                    </TextBox>
-                                    <helpers:CustomPasswordBox
-                                        x:Name="QobuzPasswordInput"
-                                        Width="500"
-                                        Margin="0,0,0,4"
-                                        VerticalAlignment="Center"
-                                        Header="Password"
-                                        Tooltip="Qobuz password" />
-                                </StackPanel>
-                            </local:SettingsCard>
-                            <local:SettingsCard
-                                HorizontalContentAlignment="Left"
-                                ContentAlignment="Vertical"
-                                Header="Option 2">
-                                <local:SettingsCard.Description>
-                                    <TextBlock>
-                                        <Hyperlink NavigateUri="https://github.com/DerekYang2/FluentDL/wiki/Authentication#qobuz">ID and Token.</Hyperlink>
-                                        &#8291;Use a fixed App ID/Secret to keep ID/Token working when Qobuz player updates.</TextBlock>
-                                </local:SettingsCard.Description>
+                            <local:SettingsCard HorizontalContentAlignment="Left" ContentAlignment="Vertical">
+
                                 <StackPanel>
                                     <TextBox
                                         x:Name="QobuzIDInput"

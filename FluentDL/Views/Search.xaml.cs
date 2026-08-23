@@ -1,4 +1,5 @@
 using AngleSharp.Dom;
+using AngleSharp.Text;
 using FluentDL.Contracts.Services;
 using FluentDL.Helpers;
 using FluentDL.Models;
@@ -90,6 +91,22 @@ public sealed partial class Search : Page
     private DispatcherQueue dispatcher;
     private DispatcherTimer dispatcherTimer;
 
+    // For incremental searching
+    private ScrollViewer? customListViewScrollViewer;
+    private bool customListViewBottomLogged;
+    private bool isInitial = true;  // Flag to indicate if initial search
+    private string generalQuery = "";
+    private int searchOffset = 0;
+    private Dictionary<string, int> searchChunkSize = new()
+    {
+        { "deezer", 10 },
+        { "qobuz", 10 },
+        { "spotify", 10 },
+        { "youtube", 5 }
+    };
+    private static readonly SemaphoreSlim searchLock = new SemaphoreSlim(1, 1);
+
+
     public SearchViewModel ViewModel
     {
         get;
@@ -174,7 +191,71 @@ public sealed partial class Search : Page
         }
 
         // Refresh all list view items
-        SortCustomListView();
+        // SortCustomListView();
+    }
+
+    private void CustomListView_Loaded(object sender, RoutedEventArgs e)
+    {
+        if (customListViewScrollViewer != null)
+        {
+            return;
+        }
+
+        customListViewScrollViewer = FindDescendant<ScrollViewer>(CustomListView);
+        if (customListViewScrollViewer != null)
+        {
+            customListViewScrollViewer.ViewChanged += CustomListViewScrollViewer_ViewChanged;
+        }
+    }
+
+    private async void CustomListViewScrollViewer_ViewChanged(object sender, ScrollViewerViewChangedEventArgs e)
+    {
+        if (sender is not ScrollViewer scrollViewer)
+        {
+            return;
+        }
+
+        var atBottom = scrollViewer.VerticalOffset + scrollViewer.ViewportHeight >= scrollViewer.ExtentHeight - 1;
+        if (atBottom)
+        {
+            if (!customListViewBottomLogged)
+            {
+                customListViewBottomLogged = true;
+                try
+                {
+                    Debug.WriteLine($"Search ListView bottom reached: {Random.Shared.Next()}");
+                    await SearchUtil();
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine($"Error in background search: {ex.ToString()}");
+                }
+            }
+        } else
+        { 
+            customListViewBottomLogged = false;
+        }
+    }
+
+    private static T? FindDescendant<T>(DependencyObject parent)
+        where T : DependencyObject
+    {
+        for (var i = 0; i < VisualTreeHelper.GetChildrenCount(parent); i++)
+        {
+            var child = VisualTreeHelper.GetChild(parent, i);
+            if (child is T match)
+            {
+                return match;
+            }
+
+            var descendant = FindDescendant<T>(child);
+            if (descendant != null)
+            {
+                return descendant;
+            }
+        }
+
+        return null;
     }
 
     private void InitPreviewPanelButtons()
@@ -399,11 +480,131 @@ public sealed partial class Search : Page
         originalList = new ObservableCollection<SongSearchObject>((ObservableCollection<SongSearchObject>)CustomListView.ItemsSource);
 
         SetResultsAmount(originalList.Count);
-        SortCustomListView();
+        SortComboBox.SelectedIndex = 0;
+        SortOrderComboBox.SelectedIndex = 0;
+        //SortCustomListView();
         SetNoSearchResults(); // Call again as actual check 
         SearchProgress.IsIndeterminate = false;
         StopSearchButton.Visibility = Visibility.Collapsed;
         EnableSearches();
+    }
+
+    private async Task SearchUtil()
+    {
+        if (searchLock.Wait(0))
+        {
+            try
+            {
+                SearchProgress.IsIndeterminate = true;
+                StopSearchButton.Visibility = Visibility.Visible;
+                NoSearchResults.Visibility = Visibility.Collapsed; // Hide the message for now
+                DisableSearches();
+                cancellationTokenSource = new CancellationTokenSource(); // Reset the cancel token
+
+                // Check if query is a spotify playlist link
+                // Format of links https://open.spotify.com/playlist/{id}?
+                // OR https://open.spotify.com/playlist/{id}?...
+
+                UrlStatusUpdateCallback statusUpdate = (severity, message, duration) =>
+                {
+                    if (duration == -1)
+                    {
+                        ShowInfoBarPermanent(severity, message);
+                        InfobarProgress.Visibility = Visibility.Visible;
+                    }
+                    else
+                    {
+                        InfobarProgress.Visibility = Visibility.Collapsed;
+                        ShowInfoBar(severity, message, duration);
+                    }
+                };
+
+                var generalSource = (SourceRadioButtons.SelectedItem as RadioButton).Content.ToString().ToLower();
+                var itemSource = (ObservableCollection<SongSearchObject>)CustomListView.ItemsSource;
+                int oldSize = itemSource.Count;
+                var searchLimit = isInitial ? ViewModel.ResultsLimit : searchChunkSize[generalSource];
+
+                if (generalQuery.StartsWith("https://open.spotify.com/"))
+                {
+                    if (isInitial)
+                    {
+                        bool userLogin = await SettingsViewModel.GetSetting<bool>(SettingsViewModel.SpotifyPlaylistPrompt);
+                        await SpotifyApi.AddTracksFromLink(itemSource, generalQuery, cancellationTokenSource.Token, statusUpdate, userLogin, ViewModel.AlbumMode);
+                        searchOffset = itemSource.Count;
+
+                        /*
+                        var playlistId = generalQuery.Split("/").Last();
+                        //Spotify to deezer conversion
+                        await LoadSpotifyPlaylist(playlistId, cancellationTokenSource.Token);
+                        */
+                    }
+                }
+                else if (generalQuery.StartsWith("https://deezer.page.link/") || generalQuery.StartsWith("https://dzr.page.link/") || generalQuery.StartsWith("https://link.deezer.com/") || System.Text.RegularExpressions.Regex.IsMatch(generalQuery, @"https://www\.deezer\.com(/[^/]+)?/(track|album|playlist)/.*"))
+                {
+                    if (isInitial)
+                    {
+                        await DeezerApi.AddTracksFromLink(itemSource, generalQuery, cancellationTokenSource.Token, statusUpdate, ViewModel.AlbumMode);
+                        searchOffset = itemSource.Count;
+                    }
+                }
+                else if (generalQuery.StartsWith("https://www.qobuz.com/") || generalQuery.StartsWith("https://play.qobuz.com/") || generalQuery.StartsWith("https://open.qobuz.com/"))
+                {
+                    if (isInitial)
+                    {
+                        await QobuzApi.AddTracksFromLink(itemSource, generalQuery, cancellationTokenSource.Token, statusUpdate, ViewModel.AlbumMode);
+                        searchOffset = itemSource.Count;
+                    }
+                }
+                else if (generalQuery.StartsWith("https://www.youtube.com/") || generalQuery.StartsWith("https://youtube.com/") || generalQuery.StartsWith("https://music.youtube.com/"))
+                {
+                    if (isInitial)
+                    {
+                        await YoutubeApi.AddTracksFromLink(itemSource, generalQuery, cancellationTokenSource.Token, statusUpdate, ViewModel.AlbumMode);
+                        searchOffset = itemSource.Count;
+                    }
+                }
+                else
+                {
+                    switch (generalSource)
+                    {
+                        case "qobuz":
+                            await QobuzApi.GeneralSearch(itemSource, generalQuery, cancellationTokenSource.Token, searchOffset, searchLimit, ViewModel.AlbumMode);
+                            break;
+                        case "spotify":
+                            await SpotifyApi.GeneralSearch(itemSource, generalQuery, cancellationTokenSource.Token, searchOffset, searchLimit, ViewModel.AlbumMode);
+                            break;
+                        case "youtube":
+                            await YoutubeApi.GeneralSearch(itemSource, generalQuery, cancellationTokenSource.Token, searchOffset, searchLimit, ViewModel.AlbumMode);
+                            break;
+                        default:
+                            await DeezerApi.GeneralSearch(itemSource, generalQuery, cancellationTokenSource.Token, searchOffset, searchLimit, ViewModel.AlbumMode);
+                            break;
+                    }
+                    searchOffset += searchLimit;
+                }
+
+                // Add new items to the originalList
+                foreach (var newItem in itemSource.Skip(oldSize))
+                {
+                    originalList.Add(newItem);
+                }
+            }
+            finally
+            {
+                isInitial = false; // Reset initial search flag
+                SetResultsAmount(originalList.Count);
+                //SortCustomListView();
+                SetNoSearchResults(); // Call again as actual check 
+                SearchProgress.IsIndeterminate = false;
+                EnableSearches();
+                StopSearchButton.Visibility = Visibility.Collapsed;
+
+                searchLock.Release();
+            }
+        } else
+        {
+            Debug.WriteLine("SEARCH BLOCKED");
+        }
     }
 
     private async void SearchBox_OnQuerySubmitted(AutoSuggestBox sender, AutoSuggestBoxQuerySubmittedEventArgs args)
@@ -414,82 +615,20 @@ public sealed partial class Search : Page
             return;
         }
 
-        SearchProgress.IsIndeterminate = true;
-        StopSearchButton.Visibility = Visibility.Visible;
-        NoSearchResults.Visibility = Visibility.Collapsed; // Hide the message for now
-        DisableSearches();
-        cancellationTokenSource = new CancellationTokenSource(); // Reset the cancel token
+        // Reset sort options
+        SortComboBox.SelectedIndex = 0;
+        SortOrderComboBox.SelectedIndex = 0;
 
-        // Check if query is a spotify playlist link
-        // Format of links https://open.spotify.com/playlist/{id}?
-        // OR https://open.spotify.com/playlist/{id}?...
+        this.generalQuery = generalQuery; // Save the query for incremental searching
+        searchOffset = 0; // Reset offset for new search
 
-        UrlStatusUpdateCallback statusUpdate = (severity, message, duration) =>
-        {
-            if (duration == -1)
-            {
-                ShowInfoBarPermanent(severity, message);
-                InfobarProgress.Visibility = Visibility.Visible;
-            }
-            else
-            {
-                InfobarProgress.Visibility = Visibility.Collapsed;
-                ShowInfoBar(severity, message, duration);
-            }
-        };
-        
+        // New search, clear the list first
+        var itemSource = (ObservableCollection<SongSearchObject>)CustomListView.ItemsSource;
+        itemSource.Clear();
+        originalList.Clear();
 
-        if (generalQuery.StartsWith("https://open.spotify.com/"))
-        {
-            bool userLogin = await SettingsViewModel.GetSetting<bool>(SettingsViewModel.SpotifyPlaylistPrompt);
-            await SpotifyApi.AddTracksFromLink((ObservableCollection<SongSearchObject>)CustomListView.ItemsSource, generalQuery, cancellationTokenSource.Token, statusUpdate, userLogin, ViewModel.AlbumMode);
-
-            /*
-            var playlistId = generalQuery.Split("/").Last();
-            //Spotify to deezer conversion
-            await LoadSpotifyPlaylist(playlistId, cancellationTokenSource.Token);
-            */
-        }
-        else if (generalQuery.StartsWith("https://deezer.page.link/") || generalQuery.StartsWith("https://dzr.page.link/") || generalQuery.StartsWith("https://link.deezer.com/") || System.Text.RegularExpressions.Regex.IsMatch(generalQuery, @"https://www\.deezer\.com(/[^/]+)?/(track|album|playlist)/.*"))
-        {
-            await DeezerApi.AddTracksFromLink((ObservableCollection<SongSearchObject>)CustomListView.ItemsSource, generalQuery, cancellationTokenSource.Token, statusUpdate, ViewModel.AlbumMode);
-        }
-        else if (generalQuery.StartsWith("https://www.qobuz.com/") || generalQuery.StartsWith("https://play.qobuz.com/") || generalQuery.StartsWith("https://open.qobuz.com/"))
-        {
-            await QobuzApi.AddTracksFromLink((ObservableCollection<SongSearchObject>)CustomListView.ItemsSource, generalQuery, cancellationTokenSource.Token, statusUpdate, ViewModel.AlbumMode);
-        }
-        else if (generalQuery.StartsWith("https://www.youtube.com/") || generalQuery.StartsWith("https://youtube.com/") || generalQuery.StartsWith("https://music.youtube.com/"))
-        {
-            await YoutubeApi.AddTracksFromLink((ObservableCollection<SongSearchObject>)CustomListView.ItemsSource, generalQuery, cancellationTokenSource.Token, statusUpdate, ViewModel.AlbumMode);
-        }
-        else
-        {
-            var generalSource = (SourceRadioButtons.SelectedItem as RadioButton).Content.ToString().ToLower();
-
-            switch (generalSource)
-            {
-                case "qobuz":
-                    await QobuzApi.GeneralSearch((ObservableCollection<SongSearchObject>)CustomListView.ItemsSource, generalQuery, cancellationTokenSource.Token, ViewModel.ResultsLimit, ViewModel.AlbumMode);
-                    break;
-                case "spotify":
-                    await SpotifyApi.GeneralSearch((ObservableCollection<SongSearchObject>)CustomListView.ItemsSource, generalQuery, cancellationTokenSource.Token, ViewModel.ResultsLimit, ViewModel.AlbumMode);
-                    break;
-                case "youtube":
-                    await YoutubeApi.GeneralSearch((ObservableCollection<SongSearchObject>)CustomListView.ItemsSource, generalQuery, cancellationTokenSource.Token, ViewModel.ResultsLimit, ViewModel.AlbumMode);
-                    break;
-                default:
-                    await DeezerApi.GeneralSearch((ObservableCollection<SongSearchObject>)CustomListView.ItemsSource, generalQuery, cancellationTokenSource.Token, ViewModel.ResultsLimit, ViewModel.AlbumMode);
-                    break;
-            }
-        }
-
-        originalList = new ObservableCollection<SongSearchObject>((ObservableCollection<SongSearchObject>)CustomListView.ItemsSource); // Save original list order
-        SetResultsAmount(originalList.Count);
-        SortCustomListView();
-        SetNoSearchResults(); // Call again as actual check 
-        SearchProgress.IsIndeterminate = false;
-        EnableSearches();
-        StopSearchButton.Visibility = Visibility.Collapsed;
+        isInitial = true; // Set initial search flag
+        await SearchUtil();
     }
 
     /*

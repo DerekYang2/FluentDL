@@ -355,6 +355,7 @@
                 BorderBrush="{ThemeResource ControlStrongStrokeColorDefaultBrush}"
                 BorderThickness="0"
                 CornerRadius="8"
+                Loaded="CustomListView_Loaded"
                 SelectionChanged="CustomListView_OnSelectionChanged"
                 ShowsScrollingPlaceholders="True">
                 <ListView.ItemTemplate>

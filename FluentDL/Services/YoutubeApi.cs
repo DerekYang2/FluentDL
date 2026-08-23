@@ -26,27 +26,26 @@ namespace FluentDL.Services
         {
         }
 
-        public static async Task GeneralSearch(ObservableCollection<SongSearchObject> itemSource, string query, CancellationToken token, int limit = 25, bool albumMode = false)
+        public static async Task GeneralSearch(ObservableCollection<SongSearchObject> itemSource, string query, CancellationToken token, int offset = 0, int limit = 25, bool albumMode = false)
         {
             query = query.Trim(); // Trim the query
             if (string.IsNullOrWhiteSpace(query))
             {
                 return;
             }
-            int ct = 0; // Count of results
-            itemSource.Clear();
 
             if (albumMode)
             {
                 try
                 {
-                    await foreach (var album in ytm.SearchAsync(query, SearchCategory.Albums))
+                    var searchResults = ytm.SearchAsync(query, SearchCategory.Albums);
+                    var bufferedResults = await searchResults.FetchItemsAsync(offset, limit);
+                    foreach (var album in bufferedResults)
                     {
-                        if (token.IsCancellationRequested || ct >= limit)
+                        if (token.IsCancellationRequested)
                             break;
                         var browseId = await ytm.GetAlbumBrowseIdAsync(album.Id); // Get the browse id
                         itemSource.Add(ConvertAlbumSearchObject(await ytm.GetAlbumInfoAsync(browseId)));
-                        ct++;
                     }
                 } catch (Exception e)
                 {
@@ -57,22 +56,23 @@ namespace FluentDL.Services
             {
                 try
                 {
-                    await foreach (var song in ytm.SearchAsync(query, SearchCategory.Songs))
+                    var searchResults = ytm.SearchAsync(query, SearchCategory.Songs);
+                    var bufferedResults = await searchResults.FetchItemsAsync(offset, limit);
+                    foreach (var song in bufferedResults)
                     {
-                        if (token.IsCancellationRequested || ct >= limit)
+                        if (token.IsCancellationRequested)
                             break;
                         var track = await GetTrack(song.Id);
                         if (track != null)
                         {
                             itemSource.Add(track);
-                            ct++;
                         }
                     }
                 }
                 catch (Exception e1)
                 {
                     Debug.WriteLine("Error searching YTM: " + e1.Message);
-
+                    int ct = 0;
                     // Fall back to regular youtube
                     try
                     {
@@ -390,8 +390,6 @@ namespace FluentDL.Services
 
                 // Show a permanent, loading message
                 statusUpdate?.Invoke(InfoBarSeverity.Informational, $"<b>YouTube</b>   Loading playlist <a href='{url}'>{playlistName}</a>", -1);
-
-                itemSource.Clear(); // Clear the item source
 
                 var failCount = 0;
                 try
