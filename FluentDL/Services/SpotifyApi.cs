@@ -330,10 +330,10 @@ namespace FluentDL.Services
             }
         }
 
-        public static async Task GeneralSearch(ObservableCollection<SongSearchObject> itemSource, string query, CancellationToken token, int limit = 25, bool albumMode = false)
+        public static async Task GeneralSearch(ObservableCollection<SongSearchObject> itemSource, string query, CancellationToken token, int offset = 0, int limit = 25, bool albumMode = false)
         {
             query = query.Trim(); // Trim the query
-            limit = Math.Min(limit, 1000);
+            //limit = Math.Min(limit, 1000);
 
             if (!IsInitialized || string.IsNullOrWhiteSpace(query))
             {
@@ -345,8 +345,7 @@ namespace FluentDL.Services
             {
                 try
                 {
-                    itemSource.Clear();
-                    await foreach (var song in spotifyWebService.SearchAnonymousAsync(query, limit, token))
+                    await foreach (var song in spotifyWebService.SearchAnonymousAsync(query, offset, limit, token))
                     {
                         itemSource.Add(song);
                     }
@@ -358,7 +357,11 @@ namespace FluentDL.Services
                 SearchResponse? response = null;
                 try
                 {
-                    response = await spotify.Search.Item(new SearchRequest(albumMode ? SearchRequest.Types.Album : SearchRequest.Types.Track, query), token);
+                    response = await spotify.Search.Item(new SearchRequest(albumMode ? SearchRequest.Types.Album : SearchRequest.Types.Track, query)
+                    {
+                        Offset = offset,
+                        Limit = limit
+                    }, token);
                 }
                 catch (Exception e)
                 {
@@ -371,40 +374,31 @@ namespace FluentDL.Services
                     return;
                 }
 
-                itemSource.Clear(); // Clear the item source
-
-                int notNullCount = 0;
-                int totalCount = 0;
-
                 try
                 {
                     if (albumMode)
                     {
                         await foreach (var album in spotify.Paginate(response.Albums, s => s.Albums))
                         {
-                            if (token.IsCancellationRequested || notNullCount >= limit || totalCount >= 100) return;
+                            if (token.IsCancellationRequested) return;
                             var albumObj = ConvertAlbumSearchObject(await spotify.Albums.Get(album.Id));
 
                             if (albumObj != null)
                             {
                                 itemSource.Add(albumObj);
-                                notNullCount++;
                             }
-                            totalCount++;  // On every iteration
                         }
                     }
                     else
                     {
                         await foreach (FullTrack track in spotify.Paginate(response.Tracks, s => s.Tracks))
                         {
-                            if (token.IsCancellationRequested || notNullCount >= limit || totalCount >= 100) return;
+                            if (token.IsCancellationRequested) return;
                             var song = ConvertSongSearchObject(track);
                             if (song != null)
                             {
                                 itemSource.Add(song);
-                                notNullCount++;  // Keep track of valid iterations
                             }
-                            totalCount++;  // On every iteration
                         }
                     }
                 }
@@ -854,7 +848,6 @@ namespace FluentDL.Services
 
                         var pages = await spotifyUser.Playlists.GetPlaylistItems(id, cancel: token);
                         var allPages = await spotifyUser.PaginateAll(pages, cancellationToken: token);
-                        itemSource.Clear(); // Clear the item source
 
                         // Debug: loop and print all tracks
                         foreach (PlaylistTrack<IPlayableItem> item in allPages)
@@ -878,7 +871,6 @@ namespace FluentDL.Services
                     }
                     else
                     {
-                        itemSource.Clear(); // Clear the item source
                         await foreach (var song in webServiceInstance.GetPlaylistAsync(id, token))
                         {
                             itemSource.Add(song);
@@ -892,7 +884,6 @@ namespace FluentDL.Services
                     {
                         try
                         {
-                            itemSource.Clear(); // Clear the item source
                             await foreach (var song in webServiceInstance.GetPlaylistAsync(id, token))
                             {
                                 itemSource.Add(song);
@@ -928,8 +919,6 @@ namespace FluentDL.Services
 
                 var pages = album.Tracks;
                 var allPages = await spotify.PaginateAll(pages, cancellationToken: token);
-
-                itemSource.Clear(); // Clear the item source
 
                 foreach (var simpleTrack in allPages)
                 {
@@ -1007,7 +996,7 @@ namespace FluentDL.Services
                 {
                     var reqStr = $"{trackName} {artists.FirstOrDefault() ?? ""}";
                     var observableList = new ObservableCollection<SongSearchObject>();
-                    await GeneralSearch(observableList, reqStr, token, LIMIT, false);
+                    await GeneralSearch(observableList, reqStr, token, 0, LIMIT, false);
                     foreach (var songObj in observableList)
                     {
                         if (!idSet.Contains(songObj.Id))

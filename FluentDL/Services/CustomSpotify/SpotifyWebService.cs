@@ -10,7 +10,7 @@ namespace FluentDL.Services.CustomSpotify
 {
     public interface ISpotifyWebService
     {
-        IAsyncEnumerable<SongSearchObject> SearchAnonymousAsync(string searchTerm, int limit = 20, CancellationToken cancellationToken = default);
+        IAsyncEnumerable<SongSearchObject> SearchAnonymousAsync(string searchTerm, int offset = 0, int limit = 20, CancellationToken cancellationToken = default);
         IAsyncEnumerable<SongSearchObject> GetPlaylistAsync(string playlistId, CancellationToken cancellationToken = default);
         Task<SongSearchObject?> GetTrack(string trackId, CancellationToken cancellationToken = default);
         Task<bool> IsAuthenticated(int timeoutMs = 5000, CancellationToken cancellationToken = default);
@@ -163,17 +163,15 @@ namespace FluentDL.Services.CustomSpotify
             }
         }
 
-        public async IAsyncEnumerable<SongSearchObject> SearchAnonymousAsync(string searchTerm, int limit = 20, [EnumeratorCancellation] CancellationToken cancellationToken = default)
+        public async IAsyncEnumerable<SongSearchObject> SearchAnonymousAsync(string searchTerm, int offset = 0, int limit = 20, [EnumeratorCancellation] CancellationToken cancellationToken = default)
         {
             if (string.IsNullOrWhiteSpace(searchTerm) || limit <= 0)
             {
                 yield break;
             }
-            limit = Math.Min(limit, 1000); // Absolute max limit
 
-            const int pageSize = 20;
+            int pageSize = Math.Min(limit, 100);
             var yielded = 0;
-            var offset = 0;
 
             while (yielded < limit)
             {

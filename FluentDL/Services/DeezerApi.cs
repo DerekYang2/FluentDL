@@ -147,8 +147,6 @@ internal class DeezerApi
                 var listName = await urlData.GetTitle(deezerClient);
                 statusUpdate?.Invoke(InfoBarSeverity.Informational, $"<b>Deezer</b>   Loading {(url.Contains("/album/") ? "album" : "playlist")} <a href='{url}'>{listName}</a>", -1);
 
-                list.Clear(); // Clear the item source for lists like playlist/albums
-
                 foreach (var trackId in tracksInAlbum)
                 {
                     if (token.IsCancellationRequested) // Stop the search
@@ -210,7 +208,7 @@ internal class DeezerApi
         return ApiHelper.EnforceAscii(titlePruned).Trim();
     }
 
-    public static async Task GeneralSearch(ObservableCollection<SongSearchObject> itemSource, string query, CancellationToken token, int limit = 25, bool albumMode = false)
+    public static async Task GeneralSearch(ObservableCollection<SongSearchObject> itemSource, string query, CancellationToken token, int offset = 0, int limit = 25, bool albumMode = false)
     {
         query = query.Trim(); // Trim the query
         if (string.IsNullOrWhiteSpace(query))
@@ -218,10 +216,8 @@ internal class DeezerApi
             return;
         }
 
-        itemSource.Clear();
-
         var req = (albumMode ? "search/album?q=" : "search?q=") + WebUtility.UrlEncode(query);
-        req += $"%20&limit={limit}"; // Added limit to the query 
+        req += $"%20&limit={limit}&index={offset}"; // Added limit and offset to the query 
         req = req.Replace("%28", "").Replace("%29", ""); // Remove brackets, causes issues occasionally for some reason
 
         var jsonObject = await restClient.FetchJsonElement(req);

@@ -67,7 +67,7 @@ namespace FluentDL.Services
             return null;
         }
 
-        public static async IAsyncEnumerable<T> ApiSearch<T>(string query, int limit = 25, EnumQobuzSearchType searchType = EnumQobuzSearchType.None)
+        public static async IAsyncEnumerable<T> ApiSearch<T>(string query, int offset = 0, int limit = 25, EnumQobuzSearchType searchType = EnumQobuzSearchType.None)
         {
             if (!HttpClientInitialized)
                 yield break;
@@ -76,7 +76,7 @@ namespace FluentDL.Services
             bool isTrack = typeof(T) == typeof(Track);
 
             const int searchChunkSize = 28;  //  Used by web player
-            int offset = 0;
+            limit += offset;  // Adjust limit to include offset
 
             // Example: https://www.qobuz.com/api.json/0.2/track/search?query=test%20%23ByLabel&offset=28&limit=28
             string searchTypeString = searchType switch

@@ -104,8 +104,8 @@ public class ActivationService : IActivationService
 
             var localSettings = App.GetService<ILocalSettingsService>();
 
-            var qobuzEmail = DPAPIHelper.Decrypt(await localSettings.ReadSettingAsync<string>(SettingsViewModel.QobuzEmail) ?? "");
-            var qobuzPassword = DPAPIHelper.Decrypt(await localSettings.ReadSettingAsync<string>(SettingsViewModel.QobuzPassword) ?? "");
+            //var qobuzEmail = DPAPIHelper.Decrypt(await localSettings.ReadSettingAsync<string>(SettingsViewModel.QobuzEmail) ?? "");
+            //var qobuzPassword = DPAPIHelper.Decrypt(await localSettings.ReadSettingAsync<string>(SettingsViewModel.QobuzPassword) ?? "");
             var qobuzId = await localSettings.ReadSettingAsync<string>(SettingsViewModel.QobuzId);
             var qobuzToken = await localSettings.ReadSettingAsync<string>(SettingsViewModel.QobuzToken);
             var qobuzAppId = await localSettings.ReadSettingAsync<string>(SettingsViewModel.QobuzAppId);
@@ -119,7 +119,7 @@ public class ActivationService : IActivationService
                 {
                     Task.Run(() => {
                         splashScreen.SetText("Initializing Qobuz ...", 0);
-                        QobuzApi.Initialize(qobuzEmail, qobuzPassword, qobuzId, qobuzToken, qobuzAppId, qobuzAppSecret);
+                        QobuzApi.Initialize(qobuzId, qobuzToken, qobuzAppId, qobuzAppSecret);
                         splashScreen.SetText("Qobuz Complete", 0);
                     }),
                     Task.Run(async()=>{

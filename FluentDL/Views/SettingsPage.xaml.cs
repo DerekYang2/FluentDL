@@ -132,8 +132,8 @@ public sealed partial class SettingsPage : Page
         DeezerARLInput.Password = await localSettings.ReadSettingAsync<string?>(SettingsViewModel.DeezerARL) ?? "";
         QobuzIDInput.Text = await localSettings.ReadSettingAsync<string?>(SettingsViewModel.QobuzId) ?? "";
         QobuzTokenInput.Text = await localSettings.ReadSettingAsync<string?>(SettingsViewModel.QobuzToken) ?? "";
-        QobuzEmailInput.Text = DPAPIHelper.Decrypt(await localSettings.ReadSettingAsync<string?>(SettingsViewModel.QobuzEmail) ?? "");
-        QobuzPasswordInput.Password = DPAPIHelper.Decrypt(await localSettings.ReadSettingAsync<string?>(SettingsViewModel.QobuzPassword) ?? "");
+        //QobuzEmailInput.Text = DPAPIHelper.Decrypt(await localSettings.ReadSettingAsync<string?>(SettingsViewModel.QobuzEmail) ?? "");
+        //QobuzPasswordInput.Password = DPAPIHelper.Decrypt(await localSettings.ReadSettingAsync<string?>(SettingsViewModel.QobuzPassword) ?? "");
         QobuzAppIdInput.Text = await localSettings.ReadSettingAsync<string?>(SettingsViewModel.QobuzAppId) ?? "";
         QobuzAppSecretInput.Text = await localSettings.ReadSettingAsync<string?>(SettingsViewModel.QobuzAppSecret) ?? "";
 
@@ -248,8 +248,8 @@ public sealed partial class SettingsPage : Page
     }
 
     private async void QobuzUpdateButton_Click(object sender, RoutedEventArgs e) {
-        await localSettings.SaveSettingAsync(SettingsViewModel.QobuzEmail, DPAPIHelper.Encrypt(QobuzEmailInput.Text.Trim()));
-        await localSettings.SaveSettingAsync(SettingsViewModel.QobuzPassword, DPAPIHelper.Encrypt(QobuzPasswordInput.Password.Trim()));
+        //await localSettings.SaveSettingAsync(SettingsViewModel.QobuzEmail, DPAPIHelper.Encrypt(QobuzEmailInput.Text.Trim()));
+        //await localSettings.SaveSettingAsync(SettingsViewModel.QobuzPassword, DPAPIHelper.Encrypt(QobuzPasswordInput.Password.Trim()));
         await localSettings.SaveSettingAsync(SettingsViewModel.QobuzId, QobuzIDInput.Text.Trim());
         await localSettings.SaveSettingAsync(SettingsViewModel.QobuzToken, QobuzTokenInput.Text.Trim());
         await localSettings.SaveSettingAsync(SettingsViewModel.QobuzAppId, QobuzAppIdInput.Text.Trim());
@@ -266,13 +266,13 @@ public sealed partial class SettingsPage : Page
 
         Thread thread = new Thread(() =>
         {
-            var qobuzEmail = DPAPIHelper.Decrypt(localSettings.ReadSettingAsync<string>(SettingsViewModel.QobuzEmail).GetAwaiter().GetResult() ?? "");
-            var qobuzPassword = DPAPIHelper.Decrypt(localSettings.ReadSettingAsync<string>(SettingsViewModel.QobuzPassword).GetAwaiter().GetResult() ?? "");
+            //var qobuzEmail = DPAPIHelper.Decrypt(localSettings.ReadSettingAsync<string>(SettingsViewModel.QobuzEmail).GetAwaiter().GetResult() ?? "");
+            //var qobuzPassword = DPAPIHelper.Decrypt(localSettings.ReadSettingAsync<string>(SettingsViewModel.QobuzPassword).GetAwaiter().GetResult() ?? "");
             var qobuzId = localSettings.ReadSettingAsync<string>(SettingsViewModel.QobuzId).GetAwaiter().GetResult();
             var qobuzToken = localSettings.ReadSettingAsync<string>(SettingsViewModel.QobuzToken).GetAwaiter().GetResult();
             var qobuzAppId = localSettings.ReadSettingAsync<string>(SettingsViewModel.QobuzAppId).GetAwaiter().GetResult();
             var qobuzAppSecret = localSettings.ReadSettingAsync<string>(SettingsViewModel.QobuzAppSecret).GetAwaiter().GetResult();
-            QobuzApi.Initialize(qobuzEmail, qobuzPassword, qobuzId, qobuzToken, qobuzAppId, qobuzAppSecret, authCallback);
+            QobuzApi.Initialize(qobuzId, qobuzToken, qobuzAppId, qobuzAppSecret, authCallback);
         })
         {
             Priority = ThreadPriority.Highest
