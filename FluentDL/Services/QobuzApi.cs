@@ -218,12 +218,16 @@ internal partial class QobuzApi
 
         if (!string.IsNullOrWhiteSpace(albumName))
         {
-            var albumResults = await Task.Run(() => apiService.SearchAlbums(albumName, offset, limit, withAuth: true), token);
+            var albumResults = new List<Album>();
+            await foreach (var album in ApiSearch<Album>(albumName, offset, limit))
+            {
+                albumResults.Add(album);
+            }
 
             if (token.IsCancellationRequested) return; // Check if task is cancelled
 
             // Add if album name match
-            foreach (var album in albumResults.Albums.Items)
+            foreach (var album in albumResults)
             {
                 if (token.IsCancellationRequested) return; // Check if task is cancelled
 
