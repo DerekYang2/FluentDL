@@ -26,6 +26,8 @@
         <helpers:StringNullorEmptyVisibilityConverter x:Key="StringNullorEmptyVisibilityConverter" />
         <helpers:SourceToColorConverter x:Key="SourceToColorConverter" />
         <helpers:AlbumCountConverter x:Key="AlbumCountConverter" />
+        <helpers:AlbumToVisibleConverter x:Key="AlbumToVisibleConverter" />
+        <helpers:AlbumToCollapsedConverter x:Key="AlbumToCollapsedConverter" />
     </Page.Resources>
 
     <Grid>
@@ -155,6 +157,16 @@
                     Grid.Column="2"
                     ToolTipService.ToolTip="Configure search sources">
                     <StackPanel Orientation="Horizontal">
+
+                        <!--  Add the FontIcon here  -->
+                        <FontIcon
+                            x:Name="SourceButtonFontIcon"
+                            Margin="0,0,10,0"
+                            VerticalAlignment="Center"
+                            FontSize="12"
+                            Glyph="&#xE8D5;"
+                            Visibility="Collapsed" />
+
                         <Ellipse
                             x:Name="SourceButtonEllipse"
                             Width="10"
@@ -163,11 +175,13 @@
                             VerticalAlignment="Center"
                             Fill="White"
                             StrokeThickness="0" />
+
                         <TextBlock Text="Source" />
                     </StackPanel>
                     <DropDownButton.Flyout>
                         <Flyout Closed="FlyoutBase_OnClosed" Placement="Bottom">
                             <StackPanel Spacing="12">
+                                <!--
                                 <NumberBox
                                     Width="160"
                                     Header="Results limit"
@@ -194,10 +208,11 @@
                                         </DataTemplate>
                                     </NumberBox.HeaderTemplate>
                                 </NumberBox>
+                                -->
                                 <RadioButtons
                                     x:Name="SourceRadioButtons"
                                     Padding="0"
-                                    Header="Override source"
+                                    Header="Override Source"
                                     SelectedIndex="0">
                                     <RadioButtons.HeaderTemplate>
                                         <DataTemplate>
@@ -284,7 +299,7 @@
                         Background="Transparent"
                         BorderBrush="Transparent"
                         DropDownOpened="ComboBox_OnDropDownOpened"
-                        PlaceholderText="Sort by:  Relevance"
+                        PlaceholderText="Sort by:  Default"
                         SelectionChanged="SortBox_SelectionChanged"
                         ToolTipService.ToolTip="Sort results by field">
                         <ComboBox.ItemTemplate>
@@ -299,7 +314,7 @@
                             </DataTemplate>
                         </ComboBox.ItemTemplate>
                         <ComboBox.Items>
-                            <views:SortObject Highlight="  Relevance" Text="Sort by:" />
+                            <views:SortObject Highlight="  Default" Text="Sort by:" />
                             <views:SortObject Highlight="  A - Z" Text="Sort by:" />
                             <views:SortObject Highlight="  Artist" Text="Sort by:" />
                             <views:SortObject Highlight="  Release date" Text="Sort by:" />
@@ -474,19 +489,34 @@
                                     Background="{ThemeResource LayerOnMicaBaseAltFillColorSecondaryBrush}"
                                     CornerRadius="2">
                                     <StackPanel Orientation="Horizontal">
+
+                                        <!--  Shown ONLY if the object IS an AlbumSearchObject  -->
+                                        <!--  Note: Visibility uses {Binding} to pass the whole object, while Foreground still uses {x:Bind Source}  -->
+                                        <FontIcon
+                                            Margin="0,0,6,0"
+                                            VerticalAlignment="Center"
+                                            FontSize="12"
+                                            Foreground="{x:Bind Source, Converter={StaticResource SourceToColorConverter}}"
+                                            Glyph="&#xE8D5;"
+                                            Visibility="{Binding Converter={StaticResource AlbumToVisibleConverter}}" />
+
+                                        <!--  Shown ONLY if the object is NOT an AlbumSearchObject  -->
                                         <Ellipse
                                             Width="10"
                                             Height="10"
                                             Margin="0,0,6,0"
                                             VerticalAlignment="Center"
                                             Fill="{x:Bind Source, Converter={StaticResource SourceToColorConverter}}"
-                                            StrokeThickness="0" />
+                                            StrokeThickness="0"
+                                            Visibility="{Binding Converter={StaticResource AlbumToCollapsedConverter}}" />
+
                                         <TextBlock
                                             x:Name="SourceBadge"
                                             Margin="0,-2,0,0"
                                             VerticalAlignment="Center"
                                             Style="{ThemeResource CaptionTextBlockStyle}"
                                             Text="{x:Bind Source}" />
+
                                     </StackPanel>
                                 </Border>
                             </StackPanel>

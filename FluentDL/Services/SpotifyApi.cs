@@ -136,7 +136,7 @@ namespace FluentDL.Services
                 //                    IsInitialized = true;
                 //                    if (attemptedCustomIdSecret)
                 //                    {
-                //                        authCallback?.Invoke(InfoBarSeverity.Warning, "User credentials failed — using included instead");
+                //                        authCallback?.Invoke(InfoBarSeverity.Warning, "User credentials failed â€” using included instead");
                 //                    }
                 //                    else
                 //                    {
@@ -260,7 +260,7 @@ namespace FluentDL.Services
 
         // For whatever reason, a request like below throws bad request error
         // REQUEST: artist:"The Beep Test" track:"The Beep Test: 20 Metre (Complete Test)" album:"The Beep Test: The Best 20 Metre and 15 Metre Bleep Test for Personal Fitness & Recruitment Practice to the Police, RAF, Army, Fire Brigade, Royal Air Force, Royal Navy and the Emergency Services"
-        public static async Task AdvancedSearch(ObservableCollection<SongSearchObject> itemSource, string artistName, string trackName, string albumName, CancellationToken token, int limit = 25)
+        public static async Task AdvancedSearch(ObservableCollection<SongSearchObject> itemSource, string artistName, string trackName, string albumName, CancellationToken token, int offset = 0, int limit = 25, bool clearResults = true)
         {
             // Trim
             artistName = artistName.Trim();
@@ -269,6 +269,11 @@ namespace FluentDL.Services
             if (!IsInitialized || (artistName.Length == 0 && trackName.Length == 0 && albumName.Length == 0)) // If no search query
             {
                 return;
+            }
+
+            if (clearResults)
+            {
+                itemSource.Clear();
             }
 
             var reqStr = "";
@@ -292,7 +297,11 @@ namespace FluentDL.Services
             SearchResponse? response;
             try
             {
-                response = await spotify.Search.Item(new SearchRequest(SearchRequest.Types.Track, reqStr), token);
+                response = await spotify.Search.Item(new SearchRequest(SearchRequest.Types.Track, reqStr)
+                {
+                    Offset = offset,
+                    Limit = limit
+                }, token);
             }
             catch (Exception e)
             {
@@ -302,7 +311,11 @@ namespace FluentDL.Services
                 if (albumIdx != -1)
                 {
                     reqStr = reqStr.Substring(0, albumIdx);
-                    response = await spotify.Search.Item(new SearchRequest(SearchRequest.Types.Track, reqStr), token);
+                    response = await spotify.Search.Item(new SearchRequest(SearchRequest.Types.Track, reqStr)
+                    {
+                        Offset = offset,
+                        Limit = limit
+                    }, token);
                 }
                 else
                 {

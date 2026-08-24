@@ -480,10 +480,8 @@ internal class DeezerApi
         return null;
     }
 
-    public static async Task AdvancedSearch(ObservableCollection<SongSearchObject> itemSource, string artistName, string trackName, string albumName, CancellationToken token, int limit = 25)
+    public static async Task AdvancedSearch(ObservableCollection<SongSearchObject> itemSource, string artistName, string trackName, string albumName, CancellationToken token, int offset = 0, int limit = 25, bool clearResults = true)
     {
-        itemSource.Clear();
-
         // Trim
         artistName = artistName.Trim();
         trackName = trackName.Trim();
@@ -494,8 +492,13 @@ internal class DeezerApi
             return;
         }
 
+        if (clearResults)
+        {
+            itemSource.Clear();
+        }
+
         var req = "search?q=" + WebUtility.UrlEncode((artistName.Length > 0 ? "artist:%22" + artistName + "%22 " : "") + (trackName.Length > 0 ? "track:%22" + trackName + "%22 " : "") + (albumName.Length > 0 ? "album:%22" + albumName + "%22" : "")) + "?strict=on"; // Strict search
-        req += $"%20&limit={limit}"; // Add limit to the query
+        req += $"%20&limit={limit}&index={offset}"; // Add limit and offset to the query
         var jsonObject = await restClient.FetchJsonElement(req); // Create json object from the response
 
         foreach (var track in jsonObject.GetProperty("data").EnumerateArray())
