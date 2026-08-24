@@ -74,6 +74,9 @@ namespace FluentDL.Services
                     Debug.WriteLine("Error searching YTM: " + e1.Message);
                     int ct = 0;
                     // Fall back to regular youtube
+                    if (offset > 0) {  // Does not support pagination so disable incremental loading 
+                        return;
+                    }
                     try
                     {
                         await foreach (var result in youtube.Search.GetVideosAsync(query, token))
@@ -99,7 +102,7 @@ namespace FluentDL.Services
             }
         }
 
-        public static async Task AdvancedSearch(ObservableCollection<SongSearchObject> itemSource, string artistName, string trackName, string albumName, CancellationToken token = default, int limit = 25)
+        public static async Task AdvancedSearch(ObservableCollection<SongSearchObject> itemSource, string artistName, string trackName, string albumName, CancellationToken token = default, int offset = 0, int limit = 25, bool clearResults = true)
         {
             // Youtube doesn't have an advanced search, must be done manually
             if (string.IsNullOrWhiteSpace(artistName) && string.IsNullOrWhiteSpace(trackName) && string.IsNullOrWhiteSpace(albumName))
@@ -111,12 +114,16 @@ namespace FluentDL.Services
             trackName = ApiHelper.EnforceAscii(trackName.Trim());
             albumName = ApiHelper.EnforceAscii(albumName.Trim());
 
-            itemSource.Clear();
+            if (clearResults)
+            {
+                itemSource.Clear();
+            }
 
             bool isArtistSpecified = !string.IsNullOrWhiteSpace(artistName);
             bool isTrackSpecified = !string.IsNullOrWhiteSpace(trackName);
 
             var trackIdList = new HashSet<string>();
+            var remainingOffset = offset;
 
             if (!string.IsNullOrWhiteSpace(albumName)) // Album was specified
             {
@@ -191,6 +198,12 @@ namespace FluentDL.Services
 
                                 if (valid && !trackIdList.Contains(song.Id)) // If valid and not already added
                                 {
+                                    if (remainingOffset > 0)
+                                    {
+                                        remainingOffset--;
+                                        continue;
+                                    }
+
                                     itemSource.Add(await ConvertSongSearchObject(song));
                                     trackIdList.Add(song.Id);
                                     if (trackIdList.Count >= limit) break;
@@ -236,6 +249,12 @@ namespace FluentDL.Services
 
                                 if (valid && !trackIdList.Contains(song.Id)) // If valid and not already added
                                 {
+                                    if (remainingOffset > 0)
+                                    {
+                                        remainingOffset--;
+                                        continue;
+                                    }
+
                                     itemSource.Add(await ConvertSongSearchObject(song));
                                     trackIdList.Add(song.Id);
                                     if (trackIdList.Count >= limit) break;
@@ -272,6 +291,12 @@ namespace FluentDL.Services
                         {
                             if (!trackIdList.Contains(song.Id)) // If not already added
                             {
+                                if (remainingOffset > 0)
+                                {
+                                    remainingOffset--;
+                                    continue;
+                                }
+
                                 itemSource.Add(await ConvertSongSearchObject(song));
                                 trackIdList.Add(song.Id);
                             }
@@ -303,6 +328,12 @@ namespace FluentDL.Services
 
                                 if (oneArtistMatch && !trackIdList.Contains(song.Id)) // If not already added
                                 {
+                                    if (remainingOffset > 0)
+                                    {
+                                        remainingOffset--;
+                                        continue;
+                                    }
+
                                     var songObj = await GetTrack(song.Id);
                                     if (songObj != null)
                                     {

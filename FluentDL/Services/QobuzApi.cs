@@ -194,7 +194,7 @@ internal partial class QobuzApi
         return ApiHelper.IsSubstring(str1.ToLower(), str2.ToLower());
     }
 
-    public static async Task AdvancedSearch(ObservableCollection<SongSearchObject> itemSource, string artistName, string trackName, string albumName, CancellationToken token, int limit = 25)
+    public static async Task AdvancedSearch(ObservableCollection<SongSearchObject> itemSource, string artistName, string trackName, string albumName, CancellationToken token, int offset = 0, int limit = 25, bool clearResults = true)
     {
         // Qobuz doesn't have an advanced search, must be done manually
         artistName = artistName.Trim();
@@ -206,7 +206,10 @@ internal partial class QobuzApi
             return;
         }
 
-        itemSource.Clear(); // Clear the item source
+        if (clearResults)
+        {
+            itemSource.Clear(); // Clear the item source
+        }
 
         bool isArtistSpecified = !string.IsNullOrWhiteSpace(artistName);
         bool isTrackSpecified = !string.IsNullOrWhiteSpace(trackName);
@@ -215,7 +218,7 @@ internal partial class QobuzApi
 
         if (!string.IsNullOrWhiteSpace(albumName))
         {
-            var albumResults = await Task.Run(() => apiService.SearchAlbums(albumName, 5, withAuth: true), token);
+            var albumResults = await Task.Run(() => apiService.SearchAlbums(albumName, offset, limit, withAuth: true), token);
 
             if (token.IsCancellationRequested) return; // Check if task is cancelled
 
@@ -294,7 +297,7 @@ internal partial class QobuzApi
         {
             if (isTrackSpecified && isArtistSpecified) // If artist and track are specified
             {
-                await foreach (var track in ApiSearch<Track>(artistName + " " + trackName, limit))
+                await foreach (var track in ApiSearch<Track>(artistName + " " + trackName, offset, limit))
                 {
                     if (token.IsCancellationRequested) return; // Check if task is cancelled
                     if (track.Id == null) continue;
@@ -317,7 +320,7 @@ internal partial class QobuzApi
             {
                 var query = isTrackSpecified ? trackName : artistName; 
                 var searchType = isTrackSpecified ? EnumQobuzSearchType.ByReleaseName : EnumQobuzSearchType.ByMainArtist;
-                await foreach (var track in ApiSearch<Track>(query, 0, limit, searchType))
+                await foreach (var track in ApiSearch<Track>(query, offset, limit, searchType))
                 {
                     if (token.IsCancellationRequested) return; // Check if task is cancelled
                     if (track.Id == null) continue;
@@ -471,6 +474,157 @@ internal partial class QobuzApi
             else
             {
                 statusUpdate?.Invoke(InfoBarSeverity.Error, $"<b>Qobuz</b>   Playlist may not exist or is private.");
+            }
+        }
+    }
+
+    public enum QobuzLinkType { None, Label, Artist }
+
+    public static bool IsLinkLabelOrArtist(string url, out QobuzLinkType linkType, out string? id)
+    {
+        linkType = QobuzLinkType.None;
+        id = null;
+
+        if (string.IsNullOrWhiteSpace(url))
+            return false;
+
+        if (!Uri.TryCreate(url, UriKind.Absolute, out var uri))
+            return false;
+
+        // Accept only qobuz.com and its subdomains
+        var host = uri.Host;
+        if (!host.Equals("qobuz.com", StringComparison.OrdinalIgnoreCase)
+            && !host.EndsWith(".qobuz.com", StringComparison.OrdinalIgnoreCase))
+        {
+            return false;
+        }
+
+        var path = uri.AbsolutePath;
+
+        // Matches /label/[slugs/](\d+)[/extra/paths]
+        var labelPattern = new Regex(
+            @"^/(?:[a-z]{2}(?:-[a-z]{2})?/)?label/(?:.*?/)?(\d+)(?:/.*)?$",
+            RegexOptions.IgnoreCase | RegexOptions.Compiled);
+
+        // Matches /(artist|interpreter)/[slugs/](\d+)[/extra/paths]
+        var artistPattern = new Regex(
+            @"^/(?:[a-z]{2}(?:-[a-z]{2})?/)?(?:artist|interpreter)/(?:.*?/)?(\d+)(?:/.*)?$",
+            RegexOptions.IgnoreCase | RegexOptions.Compiled);
+
+        var labelMatch = labelPattern.Match(path);
+        if (labelMatch.Success)
+        {
+            linkType = QobuzLinkType.Label;
+            id = labelMatch.Groups[1].Value;
+            return true;
+        }
+
+        var artistMatch = artistPattern.Match(path);
+        if (artistMatch.Success)
+        {
+            linkType = QobuzLinkType.Artist;
+            id = artistMatch.Groups[1].Value;
+            return true;
+        }
+
+        return false;
+    }
+
+    public static async Task AddTracksFromLabelOrArtist(ObservableCollection<SongSearchObject> itemSource, string url, CancellationToken token, Search.UrlStatusUpdateCallback? statusUpdate, int offset, int limit, bool albumMode = false)
+    {
+        if (token.IsCancellationRequested)
+        {
+            statusUpdate?.Invoke(InfoBarSeverity.Warning, $"<b>Qobuz</b>   Cancelled loading albums from <a href='{url}'>{url}</a>"); // Show a warning message
+            return;
+        }
+
+        QobuzLinkType linkType;
+        string? id;
+        if (!IsLinkLabelOrArtist(url, out linkType, out id) || string.IsNullOrEmpty(id))
+        {
+            return;
+        }
+
+        if (linkType == QobuzLinkType.Label)
+        {
+            // Can only be album
+            var labelResults = await Task.Run(() =>
+            {
+                try
+                {
+                    return apiService.GetLabel(id, withAuth: true, "albums", limit, offset);
+                }
+                catch (Exception e)
+                {
+                    Debug.WriteLine("Failed to get qobuz label: " + e.Message);
+                    return null;
+                }
+            });
+
+            if (labelResults?.Albums?.Items != null)
+            {
+
+                foreach (var album in labelResults.Albums.Items)
+                {
+                    if (token.IsCancellationRequested)
+                    {
+                        return;
+                    }
+                    var albumObj = ConvertAlbumSearchObject(album);
+                    if (albumObj != null)
+                    {
+                        itemSource.Add(albumObj);
+                    }
+                    //var fullAlbumObj = await Task.Run(() => apiService.GetAlbum(album.Id, withAuth: true), token);
+                    //if (fullAlbumObj == null || fullAlbumObj.Tracks == null || fullAlbumObj.Tracks.Items.Count == 0) continue;
+                    //foreach (var track in fullAlbumObj.Tracks.Items)
+                    //{
+                    //    if (track.Id == null) continue;
+                    //    itemSource.Add(CreateSongSearchObject(track, fullAlbumObj));
+                    //}
+                }
+            } else
+            {
+                statusUpdate?.Invoke(InfoBarSeverity.Error, $"<b>Qobuz</b>   Label may not exist or is private.");
+            }
+
+        }
+        else if (linkType == QobuzLinkType.Artist)
+        {
+            // Do only albums for now
+            // TODO: look into apiService.GetReleaseList("artist_id", true, "album, epSingle", "relevant", null, 30, limit, offset);
+
+            var artistResults = await Task.Run(() =>
+            {
+                try
+                {
+                    return apiService.GetArtist(id, withAuth: true, "albums", "official", limit, offset);
+                }
+                catch (Exception e)
+                {
+                    Debug.WriteLine("Failed to get qobuz artist: " + e.Message);
+                    return null;
+                }
+            });
+
+            if (artistResults?.Albums?.Items != null)
+            {
+                foreach (var album in artistResults.Albums.Items)
+                {
+                    if (token.IsCancellationRequested)
+                    {
+                        return;
+                    }
+                    var albumObj = ConvertAlbumSearchObject(album);
+                    if (albumObj != null)
+                    {
+                        itemSource.Add(albumObj);
+                    }
+                }
+            }
+            else
+            {
+                statusUpdate?.Invoke(InfoBarSeverity.Error, $"<b>Qobuz</b>   Artist may not exist or is private.");
             }
         }
     }
