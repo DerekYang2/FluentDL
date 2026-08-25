@@ -64,7 +64,7 @@
     <PackageReference Include="TagLibSharp" Version="2.3.0" />
     <PackageReference Include="VideoLibrary" Version="3.3.1" />
     <PackageReference Include="WinUIEx" Version="2.5.1" />
-    <PackageReference Include="YoutubeExplode" Version="6.6.1" />
+    <PackageReference Include="YoutubeExplode" Version="6.6.2" />
     <PackageReference Include="YouTubeMusicAPI" Version="3.0.10" />
   </ItemGroup>
   <ItemGroup>
