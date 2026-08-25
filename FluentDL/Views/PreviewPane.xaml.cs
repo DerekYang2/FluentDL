@@ -379,9 +379,9 @@ namespace FluentDL.Views
                     RankRatingControl.Visibility = Visibility.Collapsed;
 
                     // Load the audio stream
-                    var (stream, mime) = await YoutubeApi.AudioStreamWorst(ApiHelper.GetUrl(selectedSong));
-                    SetPlayerSource(stream, mime);
-                    //SetPlayerSource(await YoutubeApi.AudioStreamWorstUrl("https://www.youtube.com/watch?v=" + selectedSong.Id));
+                    //var (stream, mime) = await YoutubeApi.AudioStreamWorst(ApiHelper.GetUrl(selectedSong));
+                    //SetPlayerSource(stream, mime);
+                    SetPlayerSource(await YoutubeApi.AudioStreamWorstUrl("https://www.youtube.com/watch?v=" + selectedSong.Id));
                 }
             }
 
@@ -557,9 +557,9 @@ namespace FluentDL.Views
             }
             if (selectedSong.Source == "youtube")
             {
-                // SetPlayerSource(await YoutubeApi.AudioStreamWorstUrl("https://www.youtube.com/watch?v=" + selectedSong.Id));
-                var (stream, mime) = await YoutubeApi.AudioStreamWorst(ApiHelper.GetUrl(selectedSong));
-                SetPlayerSource(stream, mime);
+                SetPlayerSource(await YoutubeApi.AudioStreamWorstUrl("https://www.youtube.com/watch?v=" + selectedSong.Id));
+                //var (stream, mime) = await YoutubeApi.AudioStreamWorst(ApiHelper.GetUrl(selectedSong));
+                //SetPlayerSource(stream, mime);
             }
             if (selectedSong.Source == "spotify")
             {
