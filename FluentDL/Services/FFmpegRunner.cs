@@ -159,6 +159,10 @@ internal class FFmpegRunner
 
     public static async Task ConvertMp4ToM4aAsync(string initialPath)
     {
+        if (initialPath.EndsWith(".m4a"))
+        {
+            return;
+        }
         if (!initialPath.EndsWith(".mp4"))
         {
             throw new ArgumentException("The file must be an mp4 file.");

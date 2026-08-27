@@ -1,4 +1,5 @@
 ﻿using CommunityToolkit.Labs.WinUI.MarqueeTextRns;
+using FluentDL.Contracts.Services;
 using FluentDL.Helpers;
 using FluentDL.Models;
 using FluentDL.Services;
@@ -23,7 +24,8 @@ using Windows.Media.Core;
 namespace FluentDL.Views
 {
     public sealed partial class PreviewPane : UserControl, INotifyPropertyChanged
-    { 
+    {
+        private ILocalSettingsService localSettings;
 
         private static HttpClient httpClient = new HttpClient();
         private double rankValue = 0;
@@ -51,10 +53,33 @@ namespace FluentDL.Views
                 PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(ImageSource)));
             }
         }
+        // For pre-emption
+        private CancellationTokenSource? _previewCts;
+        private long _currentRequestId = 0;
 
         // Streams
         private Stream? _originalStream;
         private Windows.Storage.Streams.IRandomAccessStream? _ras;
+        private string? _previewPath;
+        // Volume
+        private double currentVolume = 1.0;
+
+
+        private CancellationToken BeginNewRequest()
+        {
+            // 1. Cancel any existing request currently in-flight
+            _previewCts?.Cancel();
+            _previewCts?.Dispose();
+            _previewCts = new CancellationTokenSource();
+
+            // 2. Increment request ID so background tasks can check if they are stale
+            Interlocked.Increment(ref _currentRequestId);
+
+            // 3. Stop active playback instantly
+            ClearMediaPlayerSource();
+
+            return _previewCts.Token;
+        }
 
         public void ClearMediaPlayerSource()
         {
@@ -66,6 +91,8 @@ namespace FluentDL.Views
                 {
                     return;
                 }
+                
+                mediaPlayer.VolumeChanged -= MediaPlayer_VolumeChanged;
 
                 if (mediaPlayer.PlaybackSession.CanPause)
                 {
@@ -87,6 +114,12 @@ namespace FluentDL.Views
 
                 _originalStream?.Dispose();
                 _originalStream = null;
+
+                if (_previewPath != null)
+                {
+                    File.Delete(_previewPath);
+                    _previewPath = null;
+                }
             } catch (Exception ex)
             {
                 Debug.WriteLine(ex);
@@ -96,10 +129,14 @@ namespace FluentDL.Views
         public PreviewPane()
         {
             this.InitializeComponent();
+            CleanupTempPreviewFiles(); // Clean up temp opus files on init
             RelativePreviewPanel.Width = Math.Min(App.MainWindow.Width * 0.4, App.MainWindow.Height * 0.5);
             dispatcher = DispatcherQueue.GetForCurrentThread();
             Clear();
-            SongPreviewPlayer.AutoPlay = Task.Run(() => SettingsViewModel.GetSetting<bool>(SettingsViewModel.AutoPlay)).GetAwaiter().GetResult(); 
+            // Set settings
+            localSettings = App.GetService<ILocalSettingsService>();
+            SongPreviewPlayer.AutoPlay = Task.Run(() => SettingsViewModel.GetSetting<bool>(SettingsViewModel.AutoPlay)).GetAwaiter().GetResult();
+            currentVolume = Task.Run(() => SettingsViewModel.GetSetting<double?>(SettingsViewModel.PreviewPlayerVolume)).GetAwaiter().GetResult() ?? 1.0;
         }
 
         public void SetPlayerSource(string? uriStr)
@@ -112,11 +149,22 @@ namespace FluentDL.Views
             try
             {
                 SongPreviewPlayer.Source = MediaSource.CreateFromUri(new Uri(uriStr));
+                // Set volume
+                SongPreviewPlayer.MediaPlayer.VolumeChanged -= MediaPlayer_VolumeChanged;
+                SongPreviewPlayer.MediaPlayer.Volume = currentVolume;
+                SongPreviewPlayer.MediaPlayer.VolumeChanged += MediaPlayer_VolumeChanged;
             }
             catch (Exception ex)
             {
                 Debug.WriteLine("Failed to set media player source: " + ex.Message);
             }
+        }
+
+        private async void MediaPlayer_VolumeChanged(Windows.Media.Playback.MediaPlayer sender, object args)
+        {
+            // Save the updated volume to settings
+            currentVolume = sender.Volume;
+            await localSettings.SaveSettingAsync(SettingsViewModel.PreviewPlayerVolume, currentVolume);
         }
 
         public void SetPlayerSource(Stream? stream, string? mime)
@@ -145,10 +193,12 @@ namespace FluentDL.Views
 
         public void Clear()
         {
+            BeginNewRequest();  // cancel token
             NoneSelectedText.Visibility = Visibility.Visible;
             SongPreviewPlayer.Visibility = Visibility.Collapsed;
             CommandBar.Visibility = Visibility.Collapsed;
             PreviewScrollView.Visibility = Visibility.Collapsed;
+            SongPreviewProgressBar.Visibility = Visibility.Collapsed;
             PreviewTitleText.Text = "";
             ImageSource = null;
             PreviewInfoControl.ItemsSource = new List<TrackDetail>();
@@ -166,6 +216,9 @@ namespace FluentDL.Views
 
         public async Task Update(SongSearchObject selectedSong, object? trackInfoObj = null)
         {
+            var token = BeginNewRequest();
+            var requestId = Interlocked.Read(ref _currentRequestId);
+
             SongPreviewPlayer.AutoPlay = Task.Run(() => SettingsViewModel.GetSetting<bool>(SettingsViewModel.AutoPlay)).GetAwaiter().GetResult(); 
             ClearMediaPlayerSource();
             ImageSource = null; // Clear previous source
@@ -195,6 +248,9 @@ namespace FluentDL.Views
                 if (selectedSong is AlbumSearchObject selectedAlbum)
                 {
                     var jsonObject = await DeezerApi.restClient.FetchJsonElement("album/" + selectedAlbum.Id);
+                    if (token.IsCancellationRequested || requestId != Interlocked.Read(ref _currentRequestId))
+                        return;
+
                     var fullAlbumObject = DeezerApi.GetAlbumFromJsonElement(jsonObject);
                     if (jsonObject.TryGetProperty("cover_big", out var cover_big))
                     {
@@ -224,12 +280,18 @@ namespace FluentDL.Views
                 else
                 {
                     var jsonObject = await DeezerApi.restClient.FetchJsonElement("track/" + selectedSong.Id);
+                    var genreStr = await DeezerApi.GetGenreStr(jsonObject.GetProperty("album").GetProperty("id").GetInt32());
+
+                    if (token.IsCancellationRequested || requestId != Interlocked.Read(ref _currentRequestId))
+                        return;
+
                     var albumObj = jsonObject.GetProperty("album");
                     PreviewInfoControl2.ItemsSource = PreviewInfoControl.ItemsSource = trackDetailsList; // First set the details list
                     ImageSource = new BitmapImage(new Uri(albumObj.GetProperty("cover_big").ToString()));
 
                     trackDetailsList.Add(new TrackDetail { Label = "Track", Value = jsonObject.GetProperty("track_position").ToString() });
-                    trackDetailsList.Add(new TrackDetail { Label = "Genre", Value = await DeezerApi.GetGenreStr(albumObj.GetProperty("id").GetInt32()) });
+                    if (!string.IsNullOrEmpty(genreStr))
+                        trackDetailsList.Add(new TrackDetail { Label = "Genre", Value = genreStr});
                     trackDetailsList.Add(new TrackDetail { Label = "Max Quality", Value = $"16-Bit/44.1 kHz" });
 
                     if (!string.IsNullOrEmpty(selectedSong?.Isrc))
@@ -242,7 +304,6 @@ namespace FluentDL.Views
                     RankRatingControl.Visibility = Visibility.Visible;
                     SetRatingPercentage(GetPercentage(selectedSong));
 
-
                     // Load the audio stream
                     SetPlayerSource(jsonObject.GetProperty("preview").ToString());
                 }
@@ -253,7 +314,8 @@ namespace FluentDL.Views
                 if (selectedSong is AlbumSearchObject selectedAlbum)
                 {
                     var album = await QobuzApi.GetInternalAlbum(selectedAlbum.Id);
-
+                    if (token.IsCancellationRequested || requestId != Interlocked.Read(ref _currentRequestId))
+                        return;
 
                     PreviewInfoControl2.ItemsSource = PreviewInfoControl.ItemsSource = trackDetailsList; // First set the details list
                     if (album != null)
@@ -279,6 +341,9 @@ namespace FluentDL.Views
                 else
                 {
                     var track = await QobuzApi.GetInternalTrack(selectedSong.Id);
+                    if (token.IsCancellationRequested || requestId != Interlocked.Read(ref _currentRequestId))
+                        return;
+
                     if (track != null)
                         ImageSource = new BitmapImage(new Uri(track.Album.Image.Large)); // Get cover art
                     // trackDetailsList.RemoveAt(trackDetailsList.ToList().FindIndex(x => x.Label == "Popularity")); // Remove popularity
@@ -296,8 +361,12 @@ namespace FluentDL.Views
 
                     RankRatingControl.Visibility = Visibility.Collapsed;
 
+                    var previewUri = await Task.Run(() => QobuzApi.GetPreviewUri(selectedSong.Id));
+
+                    if (token.IsCancellationRequested || requestId != Interlocked.Read(ref _currentRequestId))
+                        return;
                     // Load the audio stream
-                    SetPlayerSource(await Task.Run(() => QobuzApi.GetPreviewUri(selectedSong.Id)));
+                    SetPlayerSource(previewUri);
                 }
             }
 
@@ -321,6 +390,8 @@ namespace FluentDL.Views
                 else
                 {
                     var track = await SpotifyApi.GetTrack(selectedSong.Id);
+                    if (token.IsCancellationRequested || requestId != Interlocked.Read(ref _currentRequestId))
+                        return;
                     //var album = await SpotifyApi.GetAlbum(track.Album.Id);
                     if (track?.ImageLocation != null)
                     {
@@ -348,7 +419,10 @@ namespace FluentDL.Views
                     }
                     else
                     {
-                        SetPlayerSource(await GetSpotifyPreviewUrl(selectedSong.Id));
+                        var previewUri = await GetSpotifyPreviewUrl(selectedSong.Id);
+                        if (token.IsCancellationRequested || requestId != Interlocked.Read(ref _currentRequestId))
+                            return;
+                        SetPlayerSource(previewUri);
                     }
                 }
             }
@@ -356,6 +430,8 @@ namespace FluentDL.Views
             if (selectedSong.Source.Equals("youtube"))
             {
                 ImageSource = new BitmapImage(new Uri(await YoutubeApi.GetMaxResThumbnail(selectedSong) ?? "")); // Get max res thumbnail
+                if (token.IsCancellationRequested || requestId != Interlocked.Read(ref _currentRequestId))
+                    return;
 
                 if (selectedSong is AlbumSearchObject selectedAlbum)
                 {
@@ -379,9 +455,8 @@ namespace FluentDL.Views
                     RankRatingControl.Visibility = Visibility.Collapsed;
 
                     // Load the audio stream
-                    //var (stream, mime) = await YoutubeApi.AudioStreamWorst(ApiHelper.GetUrl(selectedSong));
-                    //SetPlayerSource(stream, mime);
-                    SetPlayerSource(await YoutubeApi.AudioStreamWorstUrl("https://www.youtube.com/watch?v=" + selectedSong.Id));
+                    //SongPreviewPlayer.Source = Windows.Media.Core.MediaSource.CreateFromUri(new Uri("http://localhost:8080/infinite_loading_stream.mp3"));
+                    await LoadYouTubeAudioPreviewAsync(selectedSong.Id, requestId, token);
                 }
             }
 
@@ -415,6 +490,8 @@ namespace FluentDL.Views
                         var bitmapImage = new BitmapImage();
                         using var stream = new MemoryStream(byteBuffer);
                         await bitmapImage.SetSourceAsync(stream.AsRandomAccessStream());
+                        if (token.IsCancellationRequested || requestId != Interlocked.Read(ref _currentRequestId))
+                            return;
                         ImageSource = bitmapImage;
                     }
                 }
@@ -547,9 +624,15 @@ namespace FluentDL.Views
                 ClearMediaPlayerSource();
                 return; // No song selected
             }
+            var token = BeginNewRequest();
+            var requestId = Interlocked.Read(ref _currentRequestId);
+
             if (selectedSong.Source == "qobuz")
             {
-                SetPlayerSource(await Task.Run(() => QobuzApi.GetPreviewUri(selectedSong.Id)));
+                var previewUri = await Task.Run(() => QobuzApi.GetPreviewUri(selectedSong.Id));
+                if (token.IsCancellationRequested || requestId != Interlocked.Read(ref _currentRequestId))
+                    return;
+                SetPlayerSource(previewUri);
             }
             if (selectedSong.Source == "deezer")
             {
@@ -557,16 +640,94 @@ namespace FluentDL.Views
             }
             if (selectedSong.Source == "youtube")
             {
-                SetPlayerSource(await YoutubeApi.AudioStreamWorstUrl("https://www.youtube.com/watch?v=" + selectedSong.Id));
-                //var (stream, mime) = await YoutubeApi.AudioStreamWorst(ApiHelper.GetUrl(selectedSong));
-                //SetPlayerSource(stream, mime);
+                await LoadYouTubeAudioPreviewAsync(selectedSong?.Id, requestId, token);
             }
             if (selectedSong.Source == "spotify")
             {
-                SetPlayerSource(await GetSpotifyPreviewUrl(selectedSong.Id));
+                var previewUrl = await GetSpotifyPreviewUrl(selectedSong.Id);
+                if (token.IsCancellationRequested || requestId != Interlocked.Read(ref _currentRequestId))
+                    return;
+                SetPlayerSource(previewUrl);
+            }
+        }
+        
+        private async Task LoadYouTubeAudioPreviewAsync(string? youtubeId, long requestId, CancellationToken token)
+        {
+            if (youtubeId == null) return;
+            var youtubeUrl = "https://www.youtube.com/watch?v=" + youtubeId;
+            
+            if (await SettingsViewModel.GetSetting<bool>(SettingsViewModel.UseYtdlp))
+            {
+                string? previewPath = null;
+                try
+                {
+                    SongPreviewProgressBar.Visibility = Visibility.Visible;
+
+                    previewPath = Path.Combine(Path.GetTempPath(), "FluentDL", $"preview-{Guid.NewGuid():N}.opus");
+                    Directory.CreateDirectory(Path.GetDirectoryName(previewPath)!);
+                    var ytdlpPath = await SettingsViewModel.GetSetting<string?>(SettingsViewModel.YtdlpPath);
+                    await YoutubeApi.DownloadAudioYTDLPWorst(previewPath, youtubeUrl, ytdlpPath, token);
+                    if (token.IsCancellationRequested || requestId != Interlocked.Read(ref _currentRequestId))
+                        return;
+                    _previewPath = previewPath;
+                    SetPlayerSource(previewPath);
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine("Failed to load YouTube preview with yt-dlp: " + ex.Message);
+                } finally
+                {
+                    SongPreviewProgressBar.Visibility = Visibility.Collapsed;
+                    if (File.Exists(previewPath))
+                    {
+                        File.Delete(previewPath);
+                    }
+                }
+            }
+            else
+            {
+                try
+                {
+                    SongPreviewProgressBar.Visibility = Visibility.Visible;
+                    var previewUri = await YoutubeApi.AudioStreamWorstUrl(youtubeUrl);
+                    if (token.IsCancellationRequested || requestId != Interlocked.Read(ref _currentRequestId))
+                        return;
+                    SetPlayerSource(previewUri);
+                    //var (stream, mime) = await YoutubeApi.AudioStreamWorst(ApiHelper.GetUrl(selectedSong));
+                    //SetPlayerSource(stream, mime);
+                } finally
+                {
+                    SongPreviewProgressBar.Visibility = Visibility.Collapsed;
+                }
             }
         }
 
+        private static void CleanupTempPreviewFiles()
+        {
+            try
+            {
+                var tempFolder = Path.Combine(Path.GetTempPath(), "FluentDL");
+                if (Directory.Exists(tempFolder))
+                {
+                    foreach (var file in Directory.GetFiles(tempFolder, "*.opus"))
+                    {
+                        try
+                        {
+                            File.Delete(file);
+                        }
+                        catch (Exception ex)
+                        {
+                            Debug.WriteLine($"Failed to delete temp file {file}: {ex.Message}");
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine("Failed to cleanup temp preview files: " + ex.Message);
+            }
+        }
+        
         // Fix background acrylic loading
         private CancellationTokenSource _bgRefreshCts;
 
@@ -586,8 +747,14 @@ namespace FluentDL.Views
                     // Ask the UI thread to perform a tiny nudge
                     dispatcher.TryEnqueue(() =>
                     {
-                        BackgroundImage.Opacity = 0.999;
-                        BackgroundImage.Opacity = 1;
+                        try
+                        {
+                            BackgroundImage.Opacity = 0.999;
+                            BackgroundImage.Opacity = 1;
+                        }
+                        catch { 
+                            // Sometimes crashes when force close application, ignore
+                        }
                     });
 
                     // Check less frequently if you want to reduce load
