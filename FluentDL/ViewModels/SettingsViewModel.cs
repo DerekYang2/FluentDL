@@ -37,6 +37,7 @@ public partial class SettingsViewModel : ObservableRecipient
         AudioConversionThreads = "audio_conversion_threads",
         Notifications = "notifications",
         AutoPlay = "auto_play",
+        PreviewPlayerVolume = "preview_player_volume",
         NotifyUpdate = "notify_update",
         SpotifyPlaylistPrompt = "spotify_playlist_prompt",
         DownloadLyrics = "download_lyrics",
@@ -59,7 +60,10 @@ public partial class SettingsViewModel : ObservableRecipient
         QueueDownloadCoverChecked = "queue_download_cover_checked",
         QueueRemoveChecked = "queue_remove_checked";
 
-    public static readonly string FFmpegPath = "ffmpeg_path";
+    public static readonly string FFmpegPath = "ffmpeg_path",
+        YtdlpPath = "ytdlp_path",
+        UseYtdlp = "use_ytdlp",
+        AutoUpdateYtdlp = "auto_update_ytdlp";
 
     // Subfolder settings
     public static readonly string
@@ -131,10 +135,14 @@ public partial class SettingsViewModel : ObservableRecipient
         await SaveSettingsAsyncIfNull<bool?>(Overwrite, false);
         await SaveSettingsAsyncIfNull<bool?>(Notifications, false);
         await SaveSettingsAsyncIfNull<bool?>(AutoPlay, true);
+        await SaveSettingsAsyncIfNull<double?>(PreviewPlayerVolume, 1.0);
         await SaveSettingsAsyncIfNull<bool?>(NotifyUpdate, true);
         await SaveSettingsAsyncIfNull<bool?>(SpotifyPlaylistPrompt, false);
         await SaveSettingsAsyncIfNull<string?>(DownloadDirectory, null);
         await SaveSettingsAsyncIfNull<string?>(FFmpegPath, null);
+        await SaveSettingsAsyncIfNull<string?>(YtdlpPath, null);
+        await SaveSettingsAsyncIfNull<bool?>(UseYtdlp, false);
+        await SaveSettingsAsyncIfNull<bool?>(AutoUpdateYtdlp, true);
         await SaveSettingsAsyncIfNull<string?>(SpotifyClientId, "");
         await SaveSettingsAsyncIfNull<string?>(SpotifyClientSecret, "");
         await SaveSettingsAsyncIfNull<string?>(DeezerARL, "");

@@ -799,14 +799,10 @@ namespace FluentDL.Services
             if (ytmSong !=null && ytmSong.Thumbnails.Length > 0 && 
                 video.Description.StartsWith("Provided to YouTube by") && video.Description.Contains("\u2117")) // Song
             {
-                var imageUrl = ytmSong.Thumbnails.Last().Url; // Use second youtube music image (larger, 120px)
-                if (imageUrl.StartsWith("https://lh3.googleusercontent.com"))
+                var urlMaxWidth = ytmSong.Thumbnails.MaxBy(x => x.Width)?.Url;
+                if (urlMaxWidth != null)
                 {
-                    // Delete everything after the last =
-                    var i = imageUrl.LastIndexOf("=");
-                    imageUrl = imageUrl.Substring(0, i + 1); // Include everything up to and including the =
-                    imageUrl += "w544-h544-l90-rj"; // Add the max res version
-                    return imageUrl;
+                    return urlMaxWidth;
                 }
             }
 
@@ -1144,40 +1140,230 @@ namespace FluentDL.Services
 
         public static async Task DownloadAudioYTDLP(
             string filePath,
-            string youtubeUrl)
+            string youtubeUrl,
+            string? executablePath = null,
+            CancellationToken cancellationToken = default)
         {
-            var fullPath = System.IO.Path.Combine(AppContext.BaseDirectory, "Assets\\yt-dlp\\yt-dlp.exe");
+            // Target format: opus
+            await DownloadAudioYTDLPInternal(filePath, youtubeUrl, executablePath, "bestaudio[acodec=opus]", "bestaudio[acodec^=opus]", "opus", cancellationToken);
+        }
+
+        public static async Task DownloadAudioYTDLPWorst(
+            string filePath,
+            string youtubeUrl,
+            string? executablePath = null,
+            CancellationToken cancellationToken = default)
+        {
+            // Target format: opus
+            await DownloadAudioYTDLPInternal(filePath, youtubeUrl, executablePath, "worstaudio[acodec=opus]", "worstaudio[acodec^=opus]", "opus", cancellationToken);
+        }
+
+        public static async Task DownloadAudioAACYTDLP(
+            string filePath,
+            string youtubeUrl,
+            string? executablePath = null,
+            CancellationToken cancellationToken = default)
+        {
+            if (filePath.EndsWith(".mp4"))
+            {
+                filePath = filePath.Substring(0, filePath.Length - 4) + ".m4a"; // Change extension to m4a
+            }
+            // Target format: m4a (AAC is packaged in m4a containers)
+            await DownloadAudioYTDLPInternal(filePath, youtubeUrl, executablePath, "bestaudio[acodec=mp4a.40.2]", "bestaudio[acodec^=mp4a]", "m4a", cancellationToken);
+        }
+
+        private static async Task DownloadAudioYTDLPInternal(
+            string filePath,
+            string youtubeUrl,
+            string? executablePath,
+            string format,
+            string fallbackFormat,
+            string targetAudioFormat,
+            CancellationToken cancellationToken = default)
+        {
+            var fullPath = !string.IsNullOrWhiteSpace(executablePath) && File.Exists(executablePath)
+                ? executablePath
+                : System.IO.Path.Combine(AppContext.BaseDirectory, "Assets\\yt-dlp\\yt-dlp.exe");
             var ffmpegPath = System.IO.Path.Combine(AppContext.BaseDirectory, "Assets\\ffmpeg\\bin");
+
+            try
+            {
+                await RunYtdlpAsync(fullPath, ffmpegPath, filePath, youtubeUrl, format, targetAudioFormat, cancellationToken);
+            }
+            catch (OperationCanceledException)
+            {
+                throw; // Let cancellation bubble up safely
+            }
+            catch (Exception firstError)
+            {
+                try
+                {
+                    if (File.Exists(filePath))
+                    {
+                        File.Delete(filePath);
+                    }
+
+                    await RunYtdlpAsync(fullPath, ffmpegPath, filePath, youtubeUrl, fallbackFormat, targetAudioFormat, cancellationToken);
+                }
+                catch (OperationCanceledException)
+                {
+                    throw; // Let cancellation bubble up safely
+                }
+                catch (Exception fallbackError)
+                {
+                    throw new Exception($"yt-dlp failed with the requested format: {firstError.Message} Fallback failed: {fallbackError.Message}", fallbackError);
+                }
+            }
+        }
+
+        private static async Task RunYtdlpAsync(
+            string executablePath,
+            string ffmpegPath,
+            string filePath,
+            string youtubeUrl,
+            string format,
+            string targetAudioFormat,
+            CancellationToken cancellationToken = default)
+        {
+            var startInfo = new ProcessStartInfo(executablePath)
+            {
+                CreateNoWindow = true,
+                RedirectStandardError = true,
+                RedirectStandardOutput = false,
+            };
+
+            // Build arguments safely using ArgumentList to avoid injection issues
+            startInfo.ArgumentList.Add("--ffmpeg-location");
+            startInfo.ArgumentList.Add(ffmpegPath);
+
+            startInfo.ArgumentList.Add("-f");
+            startInfo.ArgumentList.Add(format);
+
+            // Force clean audio extraction to fix corrupted containers
+            startInfo.ArgumentList.Add("-x");
+            startInfo.ArgumentList.Add("--audio-format");
+            startInfo.ArgumentList.Add(targetAudioFormat);
+
+            startInfo.ArgumentList.Add("-o");
+            startInfo.ArgumentList.Add(filePath);
+
+            startInfo.ArgumentList.Add(youtubeUrl);
+
+            using var process = new Process { StartInfo = startInfo };
+
+            try
+            {
+                process.Start();
+                await process.WaitForExitAsync(cancellationToken);
+
+                if (process.ExitCode != 0)
+                {
+                    var error = await process.StandardError.ReadToEndAsync();
+                    throw new Exception($"yt-dlp error: {error.Trim()}");
+                }
+            }
+            catch (OperationCanceledException)
+            {
+                if (!process.HasExited)
+                {
+                    process.Kill(entireProcessTree: true);
+                }
+                // Rethrow the cancellation so your Try/Catch in the UI layer knows to clean up
+                throw;
+            }
+        }
+
+        public static async Task<string?> UpdateYtdlpAsync(string? executablePath = null, CancellationToken cancellationToken = default)
+        {
+            var fullPath = !string.IsNullOrWhiteSpace(executablePath) && File.Exists(executablePath)
+                ? executablePath
+                : System.IO.Path.Combine(AppContext.BaseDirectory, "Assets\\yt-dlp\\yt-dlp.exe");
+
+            if (!File.Exists(fullPath))
+            {
+                throw new FileNotFoundException($"yt-dlp executable not found at: {fullPath}");
+            }
+
             var startInfo = new ProcessStartInfo(fullPath)
             {
                 CreateNoWindow = true,
-                RedirectStandardError = true, // We only redirect what we will actually read
-                RedirectStandardOutput = false, // Set to false to prevent buffer deadlocks
-                ArgumentList = {"--ffmpeg-location", ffmpegPath, "-f", "bestaudio[acodec=opus]", "-o", filePath, youtubeUrl }
+                RedirectStandardError = true,
+                RedirectStandardOutput = true,
             };
 
+            // Pass -U flag to trigger update
+            startInfo.ArgumentList.Add("-U");
+
             using var process = new Process { StartInfo = startInfo };
-            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(120));
 
             try
             {
                 process.Start();
 
-                await process.WaitForExitAsync(cts.Token);
+                // Read output concurrently to avoid deadlocks
+                var outputTask = process.StandardOutput.ReadToEndAsync(cancellationToken);
+                var errorTask = process.StandardError.ReadToEndAsync(cancellationToken);
+
+                await process.WaitForExitAsync(cancellationToken);
+
+                var output = await outputTask;
+                var error = await errorTask;
 
                 if (process.ExitCode != 0)
                 {
-                    var error = await process.StandardError.ReadToEndAsync();
-                    throw new Exception($"yt-dlp error: {error}");
+                    throw new Exception($"yt-dlp update failed: {error.Trim()}");
                 }
+
+                Debug.WriteLine($"yt-dlp update output: {output.Trim()}");
+                return output;
             }
             catch (OperationCanceledException)
             {
-                process.Kill(entireProcessTree: true);
-                throw new TimeoutException("The download took too long.");
+                if (!process.HasExited)
+                {
+                    process.Kill(entireProcessTree: true);
+                }
+                throw;
             }
         }
+        public static async Task<string?> GetYtdlpVersionAsync(string? executablePath = null, CancellationToken cancellationToken = default)
+        {
+            string fullPath = !string.IsNullOrWhiteSpace(executablePath) && File.Exists(executablePath)
+                ? executablePath
+                : Path.Combine(AppContext.BaseDirectory, "Assets\\yt-dlp\\yt-dlp.exe");
 
+            if (!File.Exists(fullPath))
+            {
+                return null;
+            }
+
+            var startInfo = new ProcessStartInfo(fullPath)
+            {
+                CreateNoWindow = true,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true
+            };
+
+            startInfo.ArgumentList.Add("--version");
+
+            using var process = new Process { StartInfo = startInfo };
+            try
+            {
+                process.Start();
+                string output = await process.StandardOutput.ReadToEndAsync(cancellationToken);
+                await process.WaitForExitAsync(cancellationToken);
+
+                if (process.ExitCode == 0)
+                {
+                    return output.Trim();
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine("Failed to get yt-dlp version: " + ex.Message);
+            }
+            return null;
+        }
 
         /*
            Example codecs:

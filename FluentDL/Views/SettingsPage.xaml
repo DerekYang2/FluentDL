@@ -157,7 +157,7 @@
                         <Button
                             x:Name="ResetFFmpegButton"
                             Click="ResetFFmpegButton_OnClick"
-                            Content="Reset"
+                            Content="Reset to Built-In"
                             ToolTipService.ToolTip="Reset to built-in FFmpeg" />
                         <local:SettingsExpander.Items>
                             <local:SettingsCard
@@ -168,6 +168,60 @@
                                 <Button
                                     x:Name="SelectFFmpegButton"
                                     Click="SelectFFmpegButton_OnClick"
+                                    Content="Browse" />
+                            </local:SettingsCard>
+                        </local:SettingsExpander.Items>
+                    </local:SettingsExpander>
+
+                    <local:SettingsExpander
+                        x:Name="YtdlpExpander"
+                        HorizontalContentAlignment="Stretch"
+                        Header="yt-dlp">
+                        <local:SettingsExpander.Description>
+                            <TextBlock>
+                                Use yt-dlp for YouTube (updates and fixes issues more often). Download Windows standalone binary &#32;<Hyperlink NavigateUri="https://github.com/yt-dlp/yt-dlp#release-files">yt-dlp.exe</Hyperlink>
+                                and add the path below.</TextBlock>
+                        </local:SettingsExpander.Description>
+                        <local:SettingsExpander.HeaderIcon>
+                            <FontIcon Glyph="&#xE8B7;" />
+                        </local:SettingsExpander.HeaderIcon>
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <!--  Version Display  -->
+                            <TextBlock
+                                x:Name="YtdlpVersionText"
+                                VerticalAlignment="Center"
+                                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                Visibility="Collapsed" />
+                            <!--  Update Button  -->
+                            <Button
+                                x:Name="UpdateYtdlpButton"
+                                Click="UpdateYtdlpButton_OnClick"
+                                Content="Update"
+                                IsEnabled="False" />
+                        </StackPanel>
+                        <local:SettingsExpander.Items>
+                            <local:SettingsCard Description="Use yt-dlp instead of the built-in YouTube stream downloader" Header="Use yt-dlp">
+                                <ToggleSwitch
+                                    x:Name="UseYtdlpToggle"
+                                    OffContent=""
+                                    OnContent=""
+                                    Toggled="UseYtdlpToggle_OnToggled" />
+                            </local:SettingsCard>
+                            <local:SettingsCard Description="Auto updates yt-dlp on startup using yt-dlp.exe -U" Header="Auto-update">
+                                <ToggleSwitch
+                                    x:Name="AutoUpdateYtdlpToggle"
+                                    OffContent=""
+                                    OnContent=""
+                                    Toggled="AutoUpdateYtdlpToggle_Toggled" />
+                            </local:SettingsCard>
+                            <local:SettingsCard
+                                x:Name="YtdlpPathCard"
+                                HorizontalContentAlignment="Stretch"
+                                Description="Bundled yt-dlp is used when no custom executable is selected"
+                                Header="Executable">
+                                <Button
+                                    x:Name="SelectYtdlpButton"
+                                    Click="SelectYtdlpButton_OnClick"
                                     Content="Browse" />
                             </local:SettingsCard>
                         </local:SettingsExpander.Items>

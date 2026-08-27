@@ -117,6 +117,12 @@ public sealed partial class SettingsPage : Page
         FFmpegPathCard.Description = await localSettings.ReadSettingAsync<string?>(SettingsViewModel.FFmpegPath) ?? "No folder selected";
         if (string.IsNullOrWhiteSpace(FFmpegPathCard.Description.ToString())) FFmpegPathCard.Description = "No folder selected";
 
+        // Ytdlp
+        var ytdlpPath = await localSettings.ReadSettingAsync<string?>(SettingsViewModel.YtdlpPath);
+        YtdlpPathCard.Description = string.IsNullOrWhiteSpace(ytdlpPath) ? "No file selected" : ytdlpPath;
+        // fire are forget
+        _ = RefreshYtdlpUIAsync(ytdlpPath);
+
         // Set ToggleSwitches
         AskToggle.IsOn = await localSettings.ReadSettingAsync<bool>(SettingsViewModel.AskBeforeDownload);
         OverwriteToggle.IsOn = await localSettings.ReadSettingAsync<bool>(SettingsViewModel.Overwrite);
@@ -125,6 +131,8 @@ public sealed partial class SettingsPage : Page
         NotifyUpdateToggle.IsOn = await localSettings.ReadSettingAsync<bool>(SettingsViewModel.NotifyUpdate);
         SpotifyPlaylistPromptToggle.IsOn = await localSettings.ReadSettingAsync<bool>(SettingsViewModel.SpotifyPlaylistPrompt);
         AutoBackupToggle.IsOn = await localSettings.ReadSettingAsync<bool>(SettingsViewModel.AutoBackupEnabled);
+        UseYtdlpToggle.IsOn = await localSettings.ReadSettingAsync<bool>(SettingsViewModel.UseYtdlp);
+        AutoUpdateYtdlpToggle.IsOn = await localSettings.ReadSettingAsync<bool>(SettingsViewModel.AutoUpdateYtdlp);
 
         // Set Ids/Secrets
         ClientIdInput.Text = (await localSettings.ReadSettingAsync<string?>(SettingsViewModel.SpotifyClientId)) ?? "";
@@ -350,6 +358,91 @@ public sealed partial class SettingsPage : Page
 
                 ShowInfoBar(InfoBarSeverity.Error, "Invalid folder path");
             }
+        }
+    }
+
+    private async Task RefreshYtdlpUIAsync(string? executablePath)
+    {
+        try
+        {
+            bool hasCustomExecutable = !string.IsNullOrWhiteSpace(executablePath) && File.Exists(executablePath);
+
+            // Grey out update button if no custom executable is attached
+            UpdateYtdlpButton.IsEnabled = hasCustomExecutable;
+
+            if (hasCustomExecutable)
+            {
+                string? version = await YoutubeApi.GetYtdlpVersionAsync(executablePath);
+                if (!string.IsNullOrWhiteSpace(version))
+                {
+                    YtdlpVersionText.Text = version;
+                    YtdlpVersionText.Visibility = Visibility.Visible;
+                    return;
+                }
+            }
+
+        }
+        catch
+        {
+            // Collapse if no executable is attached or version check fails
+            YtdlpVersionText.Visibility = Visibility.Collapsed;
+        }
+    }
+
+    private async void SelectYtdlpButton_OnClick(object sender, RoutedEventArgs e)
+    {
+        var openPicker = new FileOpenPicker
+        {
+            SuggestedStartLocation = PickerLocationId.ComputerFolder
+        };
+        openPicker.FileTypeFilter.Add(".exe");
+
+        var hWnd = WinRT.Interop.WindowNative.GetWindowHandle(App.MainWindow);
+        WinRT.Interop.InitializeWithWindow.Initialize(openPicker, hWnd);
+
+        var file = await openPicker.PickSingleFileAsync();
+        if (file == null)
+        {
+            return;
+        }
+
+        YtdlpPathCard.Description = file.Path;
+        await localSettings.SaveSettingAsync(SettingsViewModel.YtdlpPath, file.Path);
+
+        // Refresh the UI with the new executable
+        await RefreshYtdlpUIAsync(file.Path);
+
+        ShowInfoBar(InfoBarSeverity.Success, $"Set yt-dlp path to <a href='{file.Path}'>{file.Path}</a>");
+    }
+
+    private async void UpdateYtdlpButton_OnClick(object sender, RoutedEventArgs e)
+    {
+        var ytdlpPath = await localSettings.ReadSettingAsync<string?>(SettingsViewModel.YtdlpPath);
+
+        if (string.IsNullOrWhiteSpace(ytdlpPath) || !File.Exists(ytdlpPath)) return;
+
+        try
+        {
+            // Disable temporarily while updating
+            UpdateYtdlpButton.IsEnabled = false;
+            UpdateYtdlpButton.Content = "Updating...";
+
+            string? output = await YoutubeApi.UpdateYtdlpAsync(ytdlpPath);
+
+            // Output format is usually "yt-dlp is up to date" or "Updated yt-dlp to version X"
+            ShowInfoBar(InfoBarSeverity.Success, output ?? "Update finished silently.", seconds: 10);
+
+            // Refresh version display after update
+            await RefreshYtdlpUIAsync(ytdlpPath);
+        }
+        catch (Exception ex)
+        {
+            ShowInfoBar(InfoBarSeverity.Error, $"Failed to update yt-dlp: {ex.Message}", seconds: 10);
+        }
+        finally
+        {
+            UpdateYtdlpButton.Content = "Update";
+            UpdateYtdlpButton.IsEnabled = true;
         }
     }
 
@@ -665,6 +758,23 @@ public sealed partial class SettingsPage : Page
         await FFmpegRunner.Initialize();
 
         ShowInfoBar(InfoBarSeverity.Informational, "Reset to using built-in Ffmpeg");
+    }
+
+    private async void ResetYtdlpButton_OnClick(object sender, RoutedEventArgs e)
+    {
+        YtdlpPathCard.Description = "No file selected";
+        await localSettings.SaveSettingAsync(SettingsViewModel.YtdlpPath, "");
+        ShowInfoBar(InfoBarSeverity.Informational, "Reset to using bundled yt-dlp");
+    }
+
+    private async void UseYtdlpToggle_OnToggled(object sender, RoutedEventArgs e)
+    {
+        await localSettings.SaveSettingAsync(SettingsViewModel.UseYtdlp, UseYtdlpToggle.IsOn);
+    }
+
+    private async void AutoUpdateYtdlpToggle_Toggled(object sender, RoutedEventArgs e)
+    {
+        await localSettings.SaveSettingAsync(SettingsViewModel.AutoUpdateYtdlp, AutoUpdateYtdlpToggle.IsOn);
     }
 
     private async void ScrollViewerButton_Click(object sender, RoutedEventArgs e)

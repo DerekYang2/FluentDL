@@ -286,23 +286,47 @@
             </StackPanel>
         </ScrollView>
 
-        <MediaPlayerElement
-            x:Name="SongPreviewPlayer"
+        <Grid
             Grid.Row="2"
             Grid.Column="1"
-            AreTransportControlsEnabled="True"
-            CornerRadius="8"
-            IsFullWindow="False"
-            RelativePanel.AlignBottomWithPanel="True"
-            Visibility="Collapsed">
-            <MediaPlayerElement.TransportControls>
-                <MediaTransportControls
-                    IsCompact="False"
-                    IsSeekBarVisible="True"
-                    IsVolumeButtonVisible="True"
-                    IsVolumeEnabled="True" />
-            </MediaPlayerElement.TransportControls>
-        </MediaPlayerElement>
+            VerticalAlignment="Bottom"
+            RelativePanel.AlignBottomWithPanel="True">
+
+            <!--  Media Player  -->
+            <MediaPlayerElement
+                x:Name="SongPreviewPlayer"
+                AreTransportControlsEnabled="True"
+                CornerRadius="8"
+                IsFullWindow="False"
+                Visibility="Collapsed">
+                <MediaPlayerElement.TransportControls>
+                    <MediaTransportControls
+                        IsCompact="False"
+                        IsSeekBarVisible="True"
+                        IsVolumeButtonVisible="True"
+                        IsVolumeEnabled="True" />
+                </MediaPlayerElement.TransportControls>
+            </MediaPlayerElement>
+
+            <!--  Overlay Indeterminate Progress Bar (for YouTube)  -->
+            <Border
+                Margin="12"
+                HorizontalAlignment="Stretch"
+                VerticalAlignment="Stretch"
+                CornerRadius="8"
+                IsHitTestVisible="False">
+
+                <ProgressBar
+                    x:Name="SongPreviewProgressBar"
+                    Height="4"
+                    Margin="0,0,0,0"
+                    VerticalAlignment="Top"
+                    Background="Transparent"
+                    IsIndeterminate="True"
+                    Visibility="Collapsed" />
+
+            </Border>
+        </Grid>
 
         <TextBlock
             x:Name="NoneSelectedText"

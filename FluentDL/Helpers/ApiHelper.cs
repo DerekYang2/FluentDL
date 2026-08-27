@@ -427,8 +427,16 @@ internal class ApiHelper
                         throw new Exception("FFmpeg is not initialized.");
                     }
 
-                    await YoutubeApi.DownloadAudioAAC(mp4Location, song.Id);
-                    await FFmpegRunner.ConvertMp4ToM4aAsync(mp4Location);
+                    if (await SettingsViewModel.GetSetting<bool>(SettingsViewModel.UseYtdlp))
+                    {
+                        var ytdlpPath = await SettingsViewModel.GetSetting<string?>(SettingsViewModel.YtdlpPath);
+                        await YoutubeApi.DownloadAudioAACYTDLP(mp4Location, $"https://www.youtube.com/watch?v={song.Id}", ytdlpPath);  // Already m4a
+                    }
+                    else
+                    {
+                        await YoutubeApi.DownloadAudioAAC(mp4Location, song.Id);  // Downloads an mp4
+                        await FFmpegRunner.ConvertMp4ToM4aAsync(mp4Location);
+                    }
                     await YoutubeApi.UpdateMetadata(m4aLocation, song.Id);
                     downloadTcs.SetResult(true);
                     callback?.Invoke(InfoBarSeverity.Success, song, m4aLocation); // Assume success
@@ -441,7 +449,15 @@ internal class ApiHelper
                     throw new Exception("File already exists."); // Will be caught below
                 }
 
-                await YoutubeApi.DownloadAudio(opusLocation, song.Id, progress);  // Download opus stream
+                if (await SettingsViewModel.GetSetting<bool>(SettingsViewModel.UseYtdlp))
+                {
+                    var ytdlpPath = await SettingsViewModel.GetSetting<string?>(SettingsViewModel.YtdlpPath);
+                    await YoutubeApi.DownloadAudioYTDLP(opusLocation, $"https://www.youtube.com/watch?v={song.Id}", ytdlpPath);
+                }
+                else
+                {
+                    await YoutubeApi.DownloadAudio(opusLocation, song.Id, progress);  // Download opus stream
+                }
 
                 if (settingIdx == 0) // Do not convert to flac
                 {

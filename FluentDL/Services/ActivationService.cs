@@ -82,6 +82,33 @@ public class ActivationService : IActivationService
         await Task.CompletedTask;
     }
 
+    private async Task UpdateYtdlp(ILocalSettingsService localSettings, SplashScreenPage splashScreen, int rowIdx)
+    {
+        // yt-dlp
+        var useYtDlp = await localSettings.ReadSettingAsync<bool>(SettingsViewModel.UseYtdlp);
+        var updateYtdlp = false;
+        if (useYtDlp)
+        {
+            updateYtdlp = await localSettings.ReadSettingAsync<bool>(SettingsViewModel.AutoUpdateYtdlp);
+        }
+
+        if (updateYtdlp)
+        {
+            try
+            {
+                splashScreen.SetText("Updating yt-dlp ...", rowIdx);
+                var existingPath = await localSettings.ReadSettingAsync<string>(SettingsViewModel.YtdlpPath);
+                var output = await YoutubeApi.UpdateYtdlpAsync(existingPath);
+                splashScreen.SetText($"Update complete: {output ?? "null"}", rowIdx);
+            } catch(Exception ex)
+            {
+                Debug.WriteLine("Error updating yt-dlp: " + ex.ToString());
+                splashScreen.SetText("ERROR: yt-dlp Update Failed. Please update manually.", rowIdx);
+                await Task.Delay(2000);  // So user can see the message
+            }
+        }
+    }
+
     private async Task InitAPIs(SplashScreenPage splashScreen)
     {
         try
@@ -113,6 +140,7 @@ public class ActivationService : IActivationService
             var spotifyClientId = await localSettings.ReadSettingAsync<string>(SettingsViewModel.SpotifyClientId);
             var spotifyClientSecret = await localSettings.ReadSettingAsync<string>(SettingsViewModel.SpotifyClientSecret);
             var deezerArl = await localSettings.ReadSettingAsync<string>(SettingsViewModel.DeezerARL);
+
             try
             {
                 var tasks = new[]
@@ -131,11 +159,15 @@ public class ActivationService : IActivationService
                         splashScreen.SetText("Initializing Deezer ...", 2);
                         await DeezerApi.InitDeezerClient(deezerArl);                         
                         splashScreen.SetText("Deezer Complete", 2); 
+                    }),
+                    Task.Run(async()=>{
+                        await UpdateYtdlp(localSettings, splashScreen, 3);
                     })
                 };
 
-                await Task.WhenAll(tasks.Select(t => t.WaitAsync(TimeSpan.FromSeconds(20))));
+                await Task.WhenAll(tasks.Select(t => t.WaitAsync(TimeSpan.FromSeconds(30))));
 
+                
                 // Init queue database
                 splashScreen.ClearRows();
                 splashScreen.SetText("Loading Queue State ...");
