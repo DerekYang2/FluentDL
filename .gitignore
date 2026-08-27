@@ -11,3 +11,4 @@ FluentDL.Core/bin/
 /FluentDL/PackageSelect/store.appxmanifest.txt
 
 *.bak
+/FluentDL/PackageSelect/select.py
