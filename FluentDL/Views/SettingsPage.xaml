@@ -152,7 +152,7 @@
                         Description="Optional: custom FFMpeg location (folder should contain ffmpeg.exe)"
                         Header="FFmpeg Directory">
                         <local:SettingsExpander.HeaderIcon>
-                            <FontIcon Glyph="&#xE8B7;" />
+                            <FontIcon Glyph="&#xEC25;" />
                         </local:SettingsExpander.HeaderIcon>
                         <Button
                             x:Name="ResetFFmpegButton"
@@ -183,7 +183,7 @@
                                 and add the path below.</TextBlock>
                         </local:SettingsExpander.Description>
                         <local:SettingsExpander.HeaderIcon>
-                            <FontIcon Glyph="&#xE8B7;" />
+                            <FontIcon Glyph="&#xEC25;" />
                         </local:SettingsExpander.HeaderIcon>
                         <StackPanel Orientation="Horizontal" Spacing="8">
                             <!--  Version Display  -->
@@ -1242,12 +1242,33 @@
                                 VerticalAlignment="Top"
                                 HorizontalContentAlignment="Left"
                                 ContentAlignment="Left">
-                                <StackPanel Margin="0,0,0,12" Orientation="Vertical">
-                                    <TextBlock Margin="{StaticResource XSmallTopMargin}" Style="{ThemeResource BodyTextBlockStyle}">
-                                        View source code or open an issue on&#32;<Hyperlink NavigateUri="https://github.com/DerekYang2/FluentDL">GitHub</Hyperlink>
-                                    </TextBlock>
+                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                    <!--  Repository Link  -->
+                                    <HyperlinkButton NavigateUri="https://github.com/DerekYang2/FluentDL">
+                                        <StackPanel Orientation="Horizontal" Spacing="6">
+                                            <FontIcon FontSize="14" Glyph="&#xE71B;" />
+                                            <TextBlock Text="Github" />
+                                        </StackPanel>
+                                    </HyperlinkButton>
+
+                                    <!--  Help Link  -->
+                                    <HyperlinkButton NavigateUri="https://github.com/DerekYang2/FluentDL/wiki">
+                                        <StackPanel Orientation="Horizontal" Spacing="6">
+                                            <FontIcon FontSize="14" Glyph="&#xE71B;" />
+                                            <TextBlock Text="Help" />
+                                        </StackPanel>
+                                    </HyperlinkButton>
+
+                                    <!--  Report Issue Link  -->
+                                    <HyperlinkButton NavigateUri="https://github.com/DerekYang2/FluentDL/issues">
+                                        <StackPanel Orientation="Horizontal" Spacing="6">
+                                            <FontIcon FontSize="14" Glyph="&#xE71B;" />
+                                            <TextBlock Text="Report Issue" />
+                                        </StackPanel>
+                                    </HyperlinkButton>
                                 </StackPanel>
                             </local:SettingsCard>
+
                         </local:SettingsExpander.Items>
                     </local:SettingsExpander>
                 </StackPanel>
