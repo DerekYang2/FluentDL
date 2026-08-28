@@ -403,6 +403,7 @@ public partial class LocalExplorerViewModel : ObservableRecipient
         ".vgz",
         ".wv",
         ".wma",
-        ".asf"
+        ".asf",
+        ".webm",
     ];
 }

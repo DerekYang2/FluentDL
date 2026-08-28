@@ -663,7 +663,7 @@ namespace FluentDL.Views
                 {
                     SongPreviewProgressBar.Visibility = Visibility.Visible;
 
-                    previewPath = Path.Combine(Path.GetTempPath(), "FluentDL", $"preview-{Guid.NewGuid():N}.opus");
+                    previewPath = Path.Combine(Path.GetTempPath(), "FluentDL", $"preview-{Guid.NewGuid():N}.webm");
                     Directory.CreateDirectory(Path.GetDirectoryName(previewPath)!);
                     var ytdlpPath = await SettingsViewModel.GetSetting<string?>(SettingsViewModel.YtdlpPath);
                     await YoutubeApi.DownloadAudioYTDLPWorst(previewPath, youtubeUrl, ytdlpPath, token);

@@ -189,5 +189,58 @@ public class ActivationService : IActivationService
             splashScreen.SetText($"ERROR: {e.Message}");
             await Task.Delay(2000);  // So user can see the message
         }
+
+        _ = CleanupTempDirectoryAsync();  // Fire-and-forget cleanup of temp files
+    }
+
+    /// <summary>
+    /// Cleans up all temporary files created by FluentDL on startup.
+    /// </summary>
+    public static async Task CleanupTempDirectoryAsync()
+    {
+        await Task.Run(() =>
+        {
+            try
+            {
+                var tempBaseDir = Path.Combine(Path.GetTempPath(), "FluentDL");
+
+                if (!Directory.Exists(tempBaseDir))
+                {
+                    return;
+                }
+
+                // Delete all files in the temp directory
+                var directoryInfo = new DirectoryInfo(tempBaseDir);
+
+                foreach (var file in directoryInfo.GetFiles())
+                {
+                    try
+                    {
+                        file.Delete();
+                    }
+                    catch
+                    {
+                        // File might be locked by another process/instance, ignore and move on
+                    }
+                }
+
+                // Delete all subdirectories if any exist
+                foreach (var dir in directoryInfo.GetDirectories())
+                {
+                    try
+                    {
+                        dir.Delete(recursive: true);
+                    }
+                    catch
+                    {
+                        // Ignore locked folders
+                    }
+                }
+            }
+            catch
+            {
+                // Global safeguard to ensure fire-and-forget never throws on app startup
+            }
+        });
     }
 }

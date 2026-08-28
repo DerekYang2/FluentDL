@@ -30,6 +30,16 @@ internal class FFmpegRunner
         };
     }
 
+    public static async Task<string> GetPath()
+    {
+        var ffmpegPath = await SettingsViewModel.GetSetting<string?>(SettingsViewModel.FFmpegPath) ?? string.Empty;
+        if (!Directory.Exists(ffmpegPath))
+        {
+            ffmpegPath = Path.Combine(AppContext.BaseDirectory, "Assets\\ffmpeg\\bin");
+        }
+        return ffmpegPath;
+    }
+
     public static async Task Initialize()
     {
         try
@@ -119,6 +129,19 @@ internal class FFmpegRunner
     /**
      * NOTE: this method removes the original file
      */
+    public static async Task ConvertToFlacAsync(string inputPath, string outputPath)
+    {
+        await FFMpegArguments.FromFileInput(inputPath)
+            .OutputToFile(outputPath, true, options => options
+                .WithCustomArgument("-c:a flac -map 0:a:0"))
+            .ProcessAsynchronously();
+        // Delete the original
+        if (File.Exists(inputPath))
+        {
+            File.Delete(inputPath);
+        }
+    }
+
     public static async Task ConvertToFlacAsync(string initialPath, int samplingRate = 48000)
     {
         // Check if already flac
@@ -135,7 +158,10 @@ internal class FFmpegRunner
                 .WithAudioSamplingRate(samplingRate)).ProcessAsynchronously();
 
         // Delete the original
-        await Task.Run(() => File.Delete(initialPath));
+        if (File.Exists(outputPath) && File.Exists(initialPath))
+        {
+            File.Delete(initialPath);
+        }
     }
 
     public static void ConvertToFlac(string initialPath, int samplingRate = 48000)
@@ -154,27 +180,164 @@ internal class FFmpegRunner
                 .WithAudioSamplingRate(samplingRate)).ProcessSynchronously();
 
         // Delete the original opus
-        File.Delete(initialPath);
+        if (File.Exists(outputPath) && File.Exists(initialPath))
+        {
+            File.Delete(initialPath);
+        }
     }
 
-    public static async Task ConvertMp4ToM4aAsync(string initialPath)
+    public static async Task ConvertMp4ToM4aAsync(string inputPath, string outputPath, bool deleteOriginal = true)
     {
-        if (initialPath.EndsWith(".m4a"))
+        if (string.IsNullOrWhiteSpace(inputPath)) throw new ArgumentException("inputPath required", nameof(inputPath));
+        if (string.IsNullOrWhiteSpace(outputPath)) throw new ArgumentException("outputPath required", nameof(outputPath));
+        if (!File.Exists(inputPath)) throw new FileNotFoundException("Input file not found", inputPath);
+
+        // Prevent same-path conflicts
+        string fullInput = Path.GetFullPath(inputPath);
+        string fullOutput = Path.GetFullPath(outputPath);
+
+        if (string.Equals(fullInput, fullOutput, StringComparison.OrdinalIgnoreCase))
+        {
+            throw new InvalidOperationException("Input and output paths cannot be the same file.");
+        }
+
+        // Ensure target output directory exists
+        string? outputDir = Path.GetDirectoryName(fullOutput);
+        if (!string.IsNullOrEmpty(outputDir))
+        {
+            Directory.CreateDirectory(outputDir);
+        }
+
+        try
+        {
+            // Remux AAC stream from MP4 container directly to M4A container
+            await FFMpegArguments
+                .FromFileInput(fullInput)
+                .OutputToFile(fullOutput, overwrite: true, options => options
+                    .WithCustomArgument("-c copy -map 0:a:0"))
+                .ProcessAsynchronously();
+
+            if (!File.Exists(fullOutput) || new FileInfo(fullOutput).Length == 0)
+            {
+                throw new InvalidOperationException("Conversion failed: ffmpeg did not produce a valid output file.");
+            }
+
+            // Clean up the temporary input MP4 if requested
+            if (deleteOriginal && File.Exists(fullInput))
+            {
+                File.Delete(fullInput);
+            }
+        }
+        catch
+        {
+            // Clean up partial or corrupted output on failure
+            if (File.Exists(fullOutput))
+            {
+                try { File.Delete(fullOutput); } catch { }
+            }
+            throw;
+        }
+    }
+
+    public static async Task ConvertWebmToOpusAsync(string initialPath)
+    {
+        if (initialPath.EndsWith(".opus"))
         {
             return;
         }
-        if (!initialPath.EndsWith(".mp4"))
+        if (!initialPath.EndsWith(".webm"))
         {
-            throw new ArgumentException("The file must be an mp4 file.");
+            throw new ArgumentException("The file must be a webm file.");
         }
-        //ffmpeg -i input.mp4 -c copy -map 0:a:0 output.m4a
+
+        // ffmpeg -i input.webm -c copy -map 0:a:0 output.opus
+        var outputPath = ApiHelper.RemoveExtension(initialPath) + ".opus";
 
         await FFMpegArguments.FromFileInput(initialPath)
-            .OutputToFile(initialPath.Replace(".mp4", ".m4a"), true, options => options
-                .WithCustomArgument("-c copy -map 0:a:0")).ProcessAsynchronously();
+            .OutputToFile(outputPath, true, options => options
+                .WithCustomArgument("-c copy -map 0:a:0"))
+            .ProcessAsynchronously();
 
-        // Delete the original mp4
-        File.Delete(initialPath);
+        // Delete the original webm file
+        if (File.Exists(initialPath))
+        {
+            File.Delete(initialPath);
+        }
+    }
+
+    public static async Task ConvertWebmToFlacAsync(string initialPath)
+    {
+        if (!initialPath.EndsWith(".webm", StringComparison.OrdinalIgnoreCase))
+        {
+            throw new ArgumentException("The input file must be a .webm file.");
+        }
+
+        // Replace .webm extension with .flac
+        var outputPath = ApiHelper.RemoveExtension(initialPath) + ".flac";
+
+        await FFMpegArguments.FromFileInput(initialPath)
+            .OutputToFile(outputPath, true, options => options
+                .WithCustomArgument("-c:a flac -map 0:a:0"))
+            .ProcessAsynchronously();
+
+        // Delete the original temporary .webm file
+        if (File.Exists(initialPath))
+        {
+            File.Delete(initialPath);
+        }
+    }
+
+    public static async Task RemuxOpusAsync(string inputPath, string outputPath, bool deleteOriginal = true)
+    {
+        if (string.IsNullOrWhiteSpace(inputPath)) throw new ArgumentException("inputPath required", nameof(inputPath));
+        if (string.IsNullOrWhiteSpace(outputPath)) throw new ArgumentException("outputPath required", nameof(outputPath));
+        if (!File.Exists(inputPath)) throw new FileNotFoundException("Input file not found", inputPath);
+
+        // Prevent same-path conflicts
+        string fullInput = Path.GetFullPath(inputPath);
+        string fullOutput = Path.GetFullPath(outputPath);
+
+        if (string.Equals(fullInput, fullOutput, StringComparison.OrdinalIgnoreCase))
+        {
+            throw new InvalidOperationException("Input and output paths cannot be the same file.");
+        }
+
+        // Ensure output directory exists
+        string? outputDir = Path.GetDirectoryName(fullOutput);
+        if (!string.IsNullOrEmpty(outputDir))
+        {
+            Directory.CreateDirectory(outputDir);
+        }
+
+        try
+        {
+            // Remux directly from the temporary input to the final output path
+            await FFMpegArguments
+                .FromFileInput(fullInput)
+                .OutputToFile(fullOutput, overwrite: true, options => options
+                    .WithCustomArgument("-c copy"))
+                .ProcessAsynchronously();
+
+            if (!File.Exists(fullOutput) || new FileInfo(fullOutput).Length == 0)
+            {
+                throw new InvalidOperationException("Remux failed: ffmpeg did not produce a valid output file.");
+            }
+
+            // Clean up the temporary input file
+            if (deleteOriginal && File.Exists(fullInput))
+            {
+                File.Delete(fullInput);
+            }
+        }
+        catch
+        {
+            // If FFmpeg fails mid-process, clean up any partial/corrupted output file
+            if (File.Exists(fullOutput))
+            {
+                try { File.Delete(fullOutput); } catch { }
+            }
+            throw;
+        }
     }
 
     private static string GetOutputPath(string initialPath, string extension, string? outputDirectory = null)

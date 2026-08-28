@@ -406,7 +406,6 @@ internal class ApiHelper
         {
             var flacLocation = Path.Combine(directory, fileName + ".flac");
             var opusLocation = Path.Combine(directory, fileName + ".opus");
-            var mp4Location = Path.Combine(directory, fileName + ".mp4");
             var m4aLocation = Path.Combine(directory, fileName + ".m4a");
 
             try
@@ -415,69 +414,102 @@ internal class ApiHelper
                 // 1 - flac (opus)
                 // 2 - m4a (aac)
                 var settingIdx = await SettingsViewModel.GetSetting<int?>(SettingsViewModel.YoutubeQuality) ?? 0;
+                var useYtdlp = await SettingsViewModel.GetSetting<bool>(SettingsViewModel.UseYtdlp);
+                var ytdlpPath = useYtdlp ? await SettingsViewModel.GetSetting<string?>(SettingsViewModel.YtdlpPath) : null;
+
+                // Ensure the base FluentDL temp directory exists
+                var tempBaseDir = Path.Combine(Path.GetTempPath(), "FluentDL");
+                Directory.CreateDirectory(tempBaseDir);
+
+                // --- AAC / M4A PATH ---
                 if (settingIdx == 2)
                 {
-                    if (File.Exists(mp4Location) && await SettingsViewModel.GetSetting<bool>(SettingsViewModel.Overwrite) == false) // Do not overwrite
+                    if (File.Exists(m4aLocation) && await SettingsViewModel.GetSetting<bool>(SettingsViewModel.Overwrite) == false)
                     {
-                        throw new Exception("File already exists."); // Will be caught below
+                        throw new Exception("File already exists.");
                     }
 
-                    if (!FFmpegRunner.IsInitialized)
-                    {
-                        throw new Exception("FFmpeg is not initialized.");
-                    }
+                    var tempGuid = Guid.NewGuid().ToString("N");
+                    var tempM4a = Path.Combine(tempBaseDir, $"download-{tempGuid}.m4a");
+                    var tempMp4 = Path.Combine(tempBaseDir, $"download-{tempGuid}.mp4");
 
-                    if (await SettingsViewModel.GetSetting<bool>(SettingsViewModel.UseYtdlp))
+                    try
                     {
-                        var ytdlpPath = await SettingsViewModel.GetSetting<string?>(SettingsViewModel.YtdlpPath);
-                        await YoutubeApi.DownloadAudioAACYTDLP(mp4Location, $"https://www.youtube.com/watch?v={song.Id}", ytdlpPath);  // Already m4a
+                        if (useYtdlp)
+                        {
+                            // yt-dlp extracts bestaudio[acodec=mp4a.40.2] which natively saves as .m4a
+                            await YoutubeApi.DownloadAudioAACYTDLP(tempM4a, $"https://www.youtube.com/watch?v={song.Id}", ytdlpPath);
+                            // Move the temp file to the final destination
+                            File.Move(tempM4a, m4aLocation, overwrite: true);
+                        }
+                        else
+                        {
+                            if (!FFmpegRunner.IsInitialized) throw new Exception("FFmpeg is not initialized.");
+                            await YoutubeApi.DownloadAudioAAC(tempMp4, song.Id);
+                            await FFmpegRunner.ConvertMp4ToM4aAsync(tempMp4, m4aLocation);
+                        }
+
+                        await YoutubeApi.UpdateMetadata(m4aLocation, song.Id);
+                        downloadTcs.SetResult(true);
+                        callback?.Invoke(InfoBarSeverity.Success, song, m4aLocation);
+                        return m4aLocation;
+                    }
+                    finally
+                    {
+                        // Clean up possible temp files
+                        if (File.Exists(tempM4a)) File.Delete(tempM4a);
+                        if (File.Exists(tempMp4)) File.Delete(tempMp4);
+                    }
+                }
+
+                // --- OPUS / FLAC PATH ---
+                var finalLocation = settingIdx == 1 ? flacLocation : opusLocation;
+
+                if (File.Exists(finalLocation) && await SettingsViewModel.GetSetting<bool>(SettingsViewModel.Overwrite) == false)
+                {
+                    throw new Exception("File already exists.");
+                }
+
+                // Generate a single unique temporary path for the WebM download
+                var tempWebmLocation = Path.Combine(tempBaseDir, $"download-{Guid.NewGuid():N}.webm");
+
+                try
+                {
+                    // Both YT-DLP and Native download a .webm file
+                    if (useYtdlp)
+                    {
+                        await YoutubeApi.DownloadAudioYTDLP(tempWebmLocation, $"https://www.youtube.com/watch?v={song.Id}", ytdlpPath);
                     }
                     else
                     {
-                        await YoutubeApi.DownloadAudioAAC(mp4Location, song.Id);  // Downloads an mp4
-                        await FFmpegRunner.ConvertMp4ToM4aAsync(mp4Location);
+                        await YoutubeApi.DownloadAudio(tempWebmLocation, song.Id, progress);
                     }
-                    await YoutubeApi.UpdateMetadata(m4aLocation, song.Id);
+
+                    if (!FFmpegRunner.IsInitialized) throw new Exception("FFmpeg is not initialized.");
+
+                    if (settingIdx == 1) // FLAC
+                    {
+                        await FFmpegRunner.ConvertToFlacAsync(tempWebmLocation, flacLocation);
+                    }
+                    else // OPUS
+                    {
+                        await FFmpegRunner.RemuxOpusAsync(tempWebmLocation, opusLocation);
+                    }
+
+                    // Finalize Metadata and Return
+                    await YoutubeApi.UpdateMetadata(finalLocation, song.Id);
                     downloadTcs.SetResult(true);
-                    callback?.Invoke(InfoBarSeverity.Success, song, m4aLocation); // Assume success
-                    return m4aLocation;
+                    callback?.Invoke(InfoBarSeverity.Success, song, finalLocation);
+                    return finalLocation;
                 }
-
-
-                if (File.Exists(opusLocation) && await SettingsViewModel.GetSetting<bool>(SettingsViewModel.Overwrite) == false) // Do not overwrite
+                finally
                 {
-                    throw new Exception("File already exists."); // Will be caught below
+                    // Always clean up the temporary .webm file
+                    if (File.Exists(tempWebmLocation))
+                    {
+                        File.Delete(tempWebmLocation);
+                    }
                 }
-
-                if (await SettingsViewModel.GetSetting<bool>(SettingsViewModel.UseYtdlp))
-                {
-                    var ytdlpPath = await SettingsViewModel.GetSetting<string?>(SettingsViewModel.YtdlpPath);
-                    await YoutubeApi.DownloadAudioYTDLP(opusLocation, $"https://www.youtube.com/watch?v={song.Id}", ytdlpPath);
-                }
-                else
-                {
-                    await YoutubeApi.DownloadAudio(opusLocation, song.Id, progress);  // Download opus stream
-                }
-
-                if (settingIdx == 0) // Do not convert to flac
-                {
-                    await YoutubeApi.UpdateMetadata(opusLocation, song.Id);
-                    downloadTcs.SetResult(true);
-                    callback?.Invoke(InfoBarSeverity.Success, song, opusLocation); // Assume success
-                    return opusLocation;
-                }
-
-                // Convert to flac
-                if (!FFmpegRunner.IsInitialized)
-                {
-                    throw new Exception("FFmpeg is not initialized.");
-                }
-
-                await FFmpegRunner.ConvertToFlacAsync(opusLocation); // Convert opus to flac
-                await YoutubeApi.UpdateMetadata(flacLocation, song.Id);
-                downloadTcs.SetResult(true);
-                callback?.Invoke(InfoBarSeverity.Success, song, flacLocation); // Assume success
-                return flacLocation;
             }
             catch (Exception e)
             {

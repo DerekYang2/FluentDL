@@ -27,11 +27,13 @@ internal class DeezerApi
     public static RestHelper restClient = new RestHelper(baseURL, 5); // 5 seconds timeout
     public static bool IsInitialized = false;
     private static string? loginString = null;
+    public static bool IsPremium = false;
 
     public static async Task InitDeezerClient(string? ARL, AuthenticationCallback? authCallback = null)
     {
         IsInitialized = false;
         loginString = null;
+        IsPremium = false;
 
         if (!string.IsNullOrWhiteSpace(ARL))
         {
@@ -56,11 +58,13 @@ internal class DeezerApi
                     {
                         authCallback?.Invoke(InfoBarSeverity.Success, "Log in success: premium account");
                         loginString += "\nLossless supported";
+                        IsPremium = true;
                     }
                     else
                     {
                         authCallback?.Invoke(InfoBarSeverity.Success, "Log in success: free account");
                         loginString += "\nOnly 128 kbps MP3 supported";
+                        IsPremium = false;
                     }
                     loginString += "\nCOUNTRY: " + data?["COUNTRY"]?.ToString() ?? "Unknown";
                 }
@@ -736,6 +740,12 @@ internal class DeezerApi
                 1 => DeezNET.Data.Bitrate.MP3_320,
                 _ => DeezNET.Data.Bitrate.FLAC // 2 or anything else
             };
+        }
+
+        // If user is on free account, force 128 kbps
+        if (!IsPremium)
+        {
+            bitrateEnum = DeezNET.Data.Bitrate.MP3_128;
         }
 
         // Add the extension according to bitrateEnum

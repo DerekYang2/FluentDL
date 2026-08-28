@@ -148,6 +148,23 @@ internal partial class QobuzApi
         return str;
     }
 
+    public static bool IsPremium()
+    {
+        if (!IsInitialized || loginResult == null)
+        {
+            return false;
+        }
+        if (loginResult?.User?.Subscription != null)
+        {
+            return true;
+        }
+        else if (loginResult?.User?.Credential?.Parameters?.Source == "household" && loginResult.User.Credential.Parameters?.HiresStreaming == true)
+        {
+            return true;
+        }
+        return false;
+    }
+
     public static async Task GeneralSearch(ObservableCollection<SongSearchObject> itemSource, string query, CancellationToken token, int offset = 0, int limit = 25, bool albumMode = false)
     {
         query = query.Trim(); // Trim the query
@@ -986,6 +1003,11 @@ internal partial class QobuzApi
                 3 => "27",
                 _ => "6" // Flac, 16/44.1 as default
             };
+        }
+        // Force mp3 if no premium
+        if (!IsPremium())
+        {
+            format = "5"; // mp3
         }
 
         // Add the extension
