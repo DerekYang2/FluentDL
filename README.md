@@ -80,6 +80,8 @@ If you have your own credentials and don't need a website downloader:
 See [usage guide wiki](https://github.com/DerekYang2/FluentDL/wiki/Usage-Guide) to learn more.
 
 ## Installation
+
+#### Microsoft Store
 <table>
   <tr>
     <td valign="top">
@@ -94,6 +96,17 @@ See [usage guide wiki](https://github.com/DerekYang2/FluentDL/wiki/Usage-Guide) 
     </td>
   </tr>
 </table>
+
+#### Store CLI (Windows 11 built-in)
+
+Installation: `store install fluentdl`
+
+Update: `store update fluentdl`
+
+#### winget (Windows 10)
+Installation: `winget install --id 9MX44KM97X7X --source msstore --accept-package-agreements --accept-source-agreements`
+
+Update: `winget upgrade --id 9MX44KM97X7X --source msstore --accept-package-agreements`
 
 ## Authentication
 
