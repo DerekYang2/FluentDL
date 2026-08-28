@@ -124,6 +124,7 @@ internal class ApiHelper
         return Regex.Replace(title, pattern, string.Empty, RegexOptions.IgnoreCase | RegexOptions.Compiled).Trim();
     }
 
+    // TODO: This is bad for non-english titles
     public static string PrunePunctuation(string str)
     {
         // Remove all punctuation and whitespace from string, only include alphanumeric characters 
@@ -226,19 +227,45 @@ internal class ApiHelper
 
     public static string EvaluateWildcard(SongSearchObject song, string wildcard)
     {
-        var yearStr = (song.ReleaseDate?.Length ?? 0) >= 4 ? song.ReleaseDate!.Substring(0, 4) : "YYYY";
-        // Replace the wildcard with the song's properties
+        if (song == null) throw new ArgumentNullException(nameof(song));
+        if (wildcard == null) return string.Empty;
+
+        static string SanitizeForPath(string? s)
+        {
+            if (string.IsNullOrEmpty(s)) return string.Empty;
+            return s.Replace('/', '_').Replace('\\', '_');
+        }
+
+        static string FirstArtist(string? artists)
+        {
+            if (string.IsNullOrWhiteSpace(artists)) return string.Empty;
+            var first = artists.Split(',')[0].Trim();
+            return SanitizeForPath(first);
+        }
+
+        var album = SanitizeForPath(song.AlbumName ?? string.Empty);
+        var artistsAll = SanitizeForPath(song.Artists ?? string.Empty);
+        var artistsSorted = SanitizeForPath(GetSortedArtists(song.Artists ?? string.Empty));
+        var id = SanitizeForPath(song.Id ?? string.Empty);
+        var isrc = SanitizeForPath(song.Isrc ?? string.Empty);
+        var position = SanitizeForPath((song.TrackPosition?.ToString() ?? "1"));
+        var date = SanitizeForPath(song.ReleaseDate ?? string.Empty);
+        var yearStr = (song.ReleaseDate?.Length ?? 0) >= 4 ? SanitizeForPath(song.ReleaseDate!.Substring(0, 4)) : "YYYY";
+        var title = SanitizeForPath(song.Title ?? string.Empty);
+        var artistFirst = FirstArtist(song.Artists);
+
         return wildcard
-            .Replace("{album}", song.AlbumName)
-            .Replace("{artist}", song.Artists.Split(",")[0].Trim()) // First artist
-            .Replace("{artists}", song.Artists) // All artists
-            .Replace("{artists_sorted}", GetSortedArtists(song.Artists))
-            .Replace("{id}", song.Id)
-            .Replace("{isrc}", song.Isrc ?? string.Empty) // ISRC, if available
-            .Replace("{position}", song.TrackPosition?.ToString() ?? "1")
-            .Replace("{date}", song.ReleaseDate ?? "")
+            .Replace("{album}", album)
+            .Replace("{artist}", artistFirst)
+            .Replace("{artists}", artistsAll)
+            .Replace("{artists_sorted}", artistsSorted)
+            .Replace("{id}", id)
+            .Replace("{isrc}", isrc)
+            .Replace("{position}", position)
+            .Replace("{date}", date)
             .Replace("{year}", yearStr)
-            .Replace("{title}", song.Title).Trim();
+            .Replace("{title}", title)
+            .Trim();
     }
 
     private static string GetSortedArtists(string? artists)
