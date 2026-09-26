@@ -138,65 +138,6 @@ You do not have re-enter credentials each time because they are stored locally. 
 ### Retrieving Tokens
 See the [authentication wiki](https://github.com/DerekYang2/FluentDL/wiki/Authentication) for a detailed guide. 
 
-## Troubleshooting and logs
-
-Expand **Settings > Diagnostics > Application logs** and select **Open folder**
-to view `fluentdl-YYYYMMDD.log` in a text editor. The folder path is displayed
-in the **Open log folder** card and can be copied.
-Packaged installations store logs in the app's `LocalState\Logs` folder; unpackaged
-runs use `%LOCALAPPDATA%\FluentDL\Logs`. After a crash, open that folder directly
-or reopen the app and use Settings. Each launch has a session ID, and track
-downloads have operation IDs to connect events across asynchronous work.
-
-Important logging is always on: startup, unhandled managed exceptions, download
-outcomes, conversion failures, and queue persistence failures. Turn on **Verbose
-logging** before reproducing a problem to include extra troubleshooting events,
-then turn it off again. This switch takes effect immediately, survives restarts,
-and is included in settings import/export and reset. It does not enable logging
-of raw HTTP requests or every download progress update.
-
-Logs rotate daily and at 5 MB, retaining the latest 10 files. They are written
-without application-level buffering and flushed on normal process exit and
-handled crash paths. Native crashes, forced termination, and disk failures can
-still prevent the final events from being saved. Windows may continue to create
-its own crash event entries; FluentDL no longer writes its own Event Log entries.
-Settings shows a warning if file logging encounters a write error.
-
-Nothing is uploaded automatically. Tokens, cookies, response bodies, and raw
-exception messages are deliberately excluded from these logs. Exceptions retain
-their types, error codes, and method stacks (without source-file paths), including
-inner exceptions. Review any log before sharing it.
-
-### Release builds and symbols
-
-No special packaging mode or bundled PDB files are needed for these managed logs:
-exception types and method names are available in normal Release builds.
-The formatter deliberately requests stacks without file information, so source
-paths and line numbers are omitted even when symbols are present. Optimizations
-can inline methods, so Release stacks may contain fewer frames than Debug stacks.
-
-Keep the matching binaries and portable PDBs for each released version and
-architecture privately if you need to investigate crash dumps. The SDK generates
-portable PDBs by default in Debug and Release; `AppxSymbolPackageEnabled` controls
-an additional packaging artifact, not whether these log messages work.
-Adding source line numbers to the logs later would require both a formatter
-change and matching symbols available at runtime. There is no need to ship a
-Debug build or disable optimization.
-
-For contributors: use `ILogger<T>` in injected services and Serilog's `Log` in
-legacy static code, with constant message templates and safe structured fields.
-The important paths above replace `Debug.WriteLine` rather than writing twice.
-Unmigrated debug writes elsewhere are still debugger-only, not forwarded blindly
-into persistent logs. Avoid logging whole models, settings, request URLs, or
-exception messages as message arguments.
-
-Run the isolated logging tests (no live APIs or WinUI window required) from the
-`FluentDL` project directory:
-
-```powershell
-dotnet test ..\FluentDL.Core.Tests\FluentDL.Core.Tests.csproj
-```
-
 ## Build
 
 Only needed for developers who wish to customize source code.
