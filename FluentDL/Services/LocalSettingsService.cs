@@ -69,8 +69,9 @@ public class LocalSettingsService : ILocalSettingsService
                 }
             }
         }
-        catch (Exception)  // ToObjectAsync might fail on corrupted/incorrect data from import
+        catch (Exception ex)  // ToObjectAsync might fail on corrupted/incorrect data from import
         {
+            Serilog.Log.Warning(ex, "Could not read a saved setting; using its default value");
             if (RuntimeHelper.IsMSIX)
             {
                 if (ApplicationData.Current.LocalSettings.Values.ContainsKey(key))

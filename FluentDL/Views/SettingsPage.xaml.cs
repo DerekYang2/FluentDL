@@ -2,6 +2,7 @@
 using CommunityToolkit.WinUI.Controls;
 using CommunityToolkit.WinUI.Helpers;
 using FluentDL.Contracts.Services;
+using FluentDL.Core.Helpers;
 using FluentDL.Helpers;
 using FluentDL.Models;
 using FluentDL.Services;
@@ -12,6 +13,7 @@ using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Controls.Primitives;
 using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
+using Microsoft.Extensions.Logging;
 using QobuzApiSharp.Service;
 using System.Diagnostics;
 using System.Threading.Tasks;
@@ -29,14 +31,22 @@ public sealed partial class SettingsPage : Page
     private DispatcherQueue dispatcher;
     private DispatcherTimer dispatcherTimer;
     private ILocalSettingsService localSettings;
+    private readonly ILogger<SettingsPage> _logger;
+    private bool _updatingDiagnostics;
 
     public SettingsViewModel ViewModel
     {
         get;
     }
 
-    public SettingsPage()
+    // Frame.Navigate creates pages through their parameterless constructor.
+    public SettingsPage() : this(App.GetService<ILogger<SettingsPage>>())
     {
+    }
+
+    public SettingsPage(ILogger<SettingsPage> logger)
+    {
+        _logger = logger;
         localSettings = App.GetService<ILocalSettingsService>();
 
         ViewModel = App.GetService<SettingsViewModel>();
@@ -165,6 +175,68 @@ public sealed partial class SettingsPage : Page
         SetDeezerAuthInfo(DeezerApi.IsInitialized);
         SetQobuzAuthInfo(QobuzApi.IsInitialized);
         SetSpotifyAuthInfo(SpotifyApi.IsInitialized);
+        await InitializeDiagnosticsAsync();
+    }
+
+    private async Task InitializeDiagnosticsAsync()
+    {
+        _updatingDiagnostics = true;
+        try
+        {
+            var enabled = await localSettings.ReadSettingAsync<bool>(DiagnosticLogging.VerboseSettingKey);
+            App.SetVerboseLogging(enabled);
+            VerboseLoggingToggle.IsOn = enabled;
+            VerboseLoggingToggle.IsEnabled = App.LoggingError is null;
+            LogsFolderText.Text = App.LogDirectory;
+            LoggingStatusBar.Message = App.LoggingError ?? string.Empty;
+            LoggingStatusBar.IsOpen = App.LoggingError is not null;
+        }
+        finally
+        {
+            _updatingDiagnostics = false;
+        }
+    }
+
+    private async void VerboseLoggingToggle_Toggled(object sender, RoutedEventArgs e)
+    {
+        if (_updatingDiagnostics) return;
+        var previous = App.IsVerboseLogging;
+        var enabled = VerboseLoggingToggle.IsOn;
+        VerboseLoggingToggle.IsEnabled = false;
+        try
+        {
+            await localSettings.SaveSettingAsync(DiagnosticLogging.VerboseSettingKey, enabled);
+            App.SetVerboseLogging(enabled);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Could not save verbose logging preference");
+            _updatingDiagnostics = true;
+            VerboseLoggingToggle.IsOn = previous;
+            ShowInfoBar(InfoBarSeverity.Error, "Could not save the logging preference. The previous level is still active.", 5, "Diagnostics");
+        }
+        finally
+        {
+            _updatingDiagnostics = false;
+            VerboseLoggingToggle.IsEnabled = App.LoggingError is null;
+        }
+    }
+
+    private async void OpenLogsFolder_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            var folder = await StorageFolder.GetFolderFromPathAsync(App.LogDirectory);
+            if (!await Windows.System.Launcher.LaunchFolderAsync(folder))
+            {
+                throw new InvalidOperationException("Windows could not open the logs folder.");
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Could not open the logs folder");
+            ShowInfoBar(InfoBarSeverity.Error, "Could not open the logs folder. You can copy the displayed path.", 5, "Diagnostics");
+        }
     }
 
     private void SetDeezerAuthInfo(bool isInitialized)

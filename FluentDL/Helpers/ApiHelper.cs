@@ -9,6 +9,8 @@ using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
+using Serilog;
+using Serilog.Context;
 using BitmapImage = Microsoft.UI.Xaml.Media.Imaging.BitmapImage;
 
 namespace FluentDL.Helpers;
@@ -398,15 +400,41 @@ internal class ApiHelper
 
             // Write lyrics to file
             await File.WriteAllTextAsync(lyricsFilePath, lyrics);
-            Debug.WriteLine($"Lyrics saved to: {lyricsFilePath}");
+            Log.Debug("Lyrics saved");
         }
         catch (Exception ex)
         {
-            Debug.WriteLine($"Failed to download lyrics: {ex.Message}");
+            Log.Warning(ex, "Lyrics download failed");
         }
     }
 
     private static async Task<string> DownloadTrackInternal(SongSearchObject song, string directory, IProgress<ProgressData> progress, ConversionUpdateCallback? callback = default)
+    {
+        using var operation = LogContext.PushProperty("OperationId", Guid.NewGuid().ToString("N"));
+        var timer = Stopwatch.StartNew();
+        Log.Information("Track download started; provider {Provider}", song.Source);
+        try
+        {
+            var path = await DownloadTrackCore(song, directory, progress, callback);
+            if (!string.IsNullOrEmpty(path))
+            {
+                Log.Information("Track download completed in {ElapsedMilliseconds} ms", timer.ElapsedMilliseconds);
+            }
+            return path;
+        }
+        catch (OperationCanceledException ex)
+        {
+            Log.Warning(ex, "Track download interrupted by cancellation or timeout after {ElapsedMilliseconds} ms", timer.ElapsedMilliseconds);
+            throw;
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Track download failed before completion after {ElapsedMilliseconds} ms", timer.ElapsedMilliseconds);
+            throw;
+        }
+    }
+
+    private static async Task<string> DownloadTrackCore(SongSearchObject song, string directory, IProgress<ProgressData> progress, ConversionUpdateCallback? callback)
     {
         // Spotify case (web player songs do not have full metadata)
         if (song.Source == "spotify" && (string.IsNullOrWhiteSpace(song.ReleaseDate) || string.IsNullOrWhiteSpace(song.TrackPosition)))
@@ -541,7 +569,7 @@ internal class ApiHelper
             catch (Exception e)
             {
                 callback?.Invoke(InfoBarSeverity.Error, song, e.Message);
-                Debug.WriteLine("Failed to download song: " + e.Message);
+                Log.Error(e, "YouTube download or post-processing failed");
             }
         }
 
@@ -558,7 +586,7 @@ internal class ApiHelper
             catch (Exception e)
             {
                 callback?.Invoke(InfoBarSeverity.Error, song, e.Message);
-                Debug.WriteLine("Failed to download song: " + e.Message);
+                Log.Error(e, "Deezer download or post-processing failed");
             }
         }
 
@@ -575,7 +603,7 @@ internal class ApiHelper
             catch (Exception e)
             {
                 callback?.Invoke(InfoBarSeverity.Error, song, e.Message);
-                Debug.WriteLine("Failed to download song: " + e.Message);
+                Log.Error(e, "Qobuz download or post-processing failed");
             }
         }
 
@@ -593,13 +621,19 @@ internal class ApiHelper
                 }
 
                 callback?.Invoke(InfoBarSeverity.Error, song); // Null - error
+                Log.Error("Spotify equivalent-track download returned no result");
             } catch (Exception e) 
             {
+                Log.Error(e, "Spotify equivalent-track download or post-processing failed");
                 callback?.Invoke(InfoBarSeverity.Error, song, e.Message);
             }
         }
 
         downloadTcs.SetResult(false);
+        if (song.Source is not ("youtube" or "deezer" or "qobuz" or "spotify"))
+        {
+            Log.Error("Track download failed because its provider is unsupported");
+        }
         return string.Empty;
     }
 
@@ -622,7 +656,7 @@ internal class ApiHelper
             }
             catch (Exception ex)
             {
-                Debug.WriteLine("Error creating subfolder: " + ex.Message);
+                Log.Warning(ex, "Could not create track subfolder; using the original download directory");
             }
         }
 
@@ -753,7 +787,7 @@ internal class ApiHelper
                 }
                 catch (Exception ex)
                 {
-                    Debug.WriteLine("Error downloading track: " + ex.Message);
+                    Log.Error(ex, "Album track could not be downloaded");
                 }
                 finally
                 {
@@ -802,7 +836,7 @@ internal class ApiHelper
             }
             catch (Exception ex)
             {
-                Debug.WriteLine(ex.Message);
+                Log.Warning(ex, "Album cover could not be downloaded");
             }
         });
 #pragma warning restore CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
@@ -925,7 +959,7 @@ internal class ApiHelper
         }
         catch (Exception e)
         {
-            Debug.WriteLine("Error getting redirected URL: " + e.Message);
+            Log.Warning(e, "Could not resolve a redirected provider link");
             return null;
         }
     }
