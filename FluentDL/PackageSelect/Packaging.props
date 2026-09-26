@@ -1,0 +1,10 @@
+<Project>
+  <PropertyGroup>
+    <BaseIntermediateOutputPath>$(MSBuildProjectDirectory)\obj\Packaging\$(FluentDLPackageChannel)\$(Platform)\</BaseIntermediateOutputPath>
+    <BaseOutputPath>$(MSBuildProjectDirectory)\bin\Packaging\$(FluentDLPackageChannel)\$(Platform)\</BaseOutputPath>
+    <DefaultItemExcludes>$(DefaultItemExcludes);$(MSBuildProjectDirectory)\obj\**;$(MSBuildProjectDirectory)\bin\**;$(MSBuildProjectDirectory)\artifacts\**</DefaultItemExcludes>
+  </PropertyGroup>
+  <ItemGroup Condition="'$(MSBuildProjectName)' == 'FluentDL'">
+    <AppxManifest Include="$(FluentDLPackageManifest)" />
+  </ItemGroup>
+</Project>
