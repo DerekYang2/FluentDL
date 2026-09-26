@@ -89,7 +89,7 @@ namespace FluentDL.Services.CustomSpotify
 
             if (!response.IsSuccessStatusCode)
             {
-                throw new HttpRequestException($"Spotify metadata ISRC returned status {(int)response.StatusCode} ({body})");
+                throw new HttpRequestException("Spotify metadata ISRC returned an unsuccessful status.", null, response.StatusCode);
             }
 
             var isrc = ExtractSpotifyMetadataIsrc(body);
@@ -134,7 +134,7 @@ namespace FluentDL.Services.CustomSpotify
 
             if (!response.IsSuccessStatusCode)
             {
-                throw new HttpRequestException($"Soundplate ISRC returned status {(int)response.StatusCode} ({body})");
+                throw new HttpRequestException("Soundplate ISRC returned an unsuccessful status.", null, response.StatusCode);
             }
 
             var isrc = FirstIsrcMatch(body);

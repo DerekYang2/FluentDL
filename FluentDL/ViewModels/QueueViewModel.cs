@@ -207,7 +207,7 @@ public partial class QueueViewModel : ObservableRecipient
         }
         catch (Exception e)
         {
-            Debug.WriteLine("ERROR CREATING STREAM: " + e.Message);
+            Serilog.Log.Warning(e, "Queue image request failed");
             return null;
         }
     }
@@ -299,7 +299,7 @@ public partial class QueueViewModel : ObservableRecipient
                 }
                 catch (Exception ex)
                 {
-                    Debug.WriteLine($"Background image load failed: {ex.Message}");
+                    Serilog.Log.Warning(ex, "Background queue image load failed");
                 }
             });
         } else if (queueObj.Source == "local")
@@ -446,9 +446,10 @@ public partial class QueueViewModel : ObservableRecipient
                     }
                 }
             }
+            Serilog.Log.Information("Queue restored with {ItemCount} items", Source.Count);
         } catch (Exception ex)
         {
-            Debug.WriteLine(ex.ToString());
+            Serilog.Log.Error(ex, "Queue restore failed; some items may be missing");
         }
     }
 }

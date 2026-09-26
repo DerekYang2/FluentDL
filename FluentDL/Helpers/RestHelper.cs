@@ -39,7 +39,7 @@ namespace FluentDL.Helpers
             {
                 try
                 {
-                    Debug.WriteLine("Failed: " + req);
+                    Serilog.Log.Debug(e, "Provider request failed; trying the compatibility retry");
                     req = req.Replace("%28", "").Replace("%29", ""); // Remove brackets, causes issues occasionally for some reason
                     var request = new RestRequest(req);
                     var response = await client.GetAsync(request, token);
@@ -56,8 +56,7 @@ namespace FluentDL.Helpers
                 }
                 catch (Exception e2)
                 {
-                    Debug.WriteLine("Failed again: " + req);
-                    Debug.WriteLine(e2);
+                    Serilog.Log.Error(e2, "Provider request failed after the compatibility retry");
                     return new JsonElement();
                 }
             }

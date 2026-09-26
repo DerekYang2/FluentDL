@@ -3,8 +3,7 @@ using Microsoft.Data.Sqlite;
 using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml.Media.Imaging;
 using SQLitePCL;
-using Swan.Logging;
-using System.Diagnostics;
+using Serilog;
 using System.IO.Compression;
 using System.Runtime.InteropServices.WindowsRuntime;
 using System.Threading.Channels;
@@ -64,9 +63,11 @@ namespace FluentDL.Services
                 await cmd.ExecuteNonQueryAsync();
 
                 StartConsumerTask();
+                Log.Information("Queue database initialized");
                 return null;
             } catch (Exception ex)
             {
+                Log.Error(ex, "Queue database initialization failed");
                 return $"Failed to initialize queue database: {ex.Message}";
             }
         }
@@ -101,11 +102,14 @@ namespace FluentDL.Services
         {
             try
             {
-                _saveQueue.Writer.TryWrite((hash, json, await ConvertStream(stream)));
+                if (!_saveQueue.Writer.TryWrite((hash, json, await ConvertStream(stream))))
+                {
+                    Log.Error("Queue item could not be scheduled for persistence");
+                }
             }
             catch (Exception ex)
             {
-                Debug.WriteLine(ex);
+                Log.Error(ex, "Queue item could not be scheduled for persistence");
             }
         }
 
@@ -121,7 +125,7 @@ namespace FluentDL.Services
                     }
                     catch (Exception ex)
                     {
-                        Debug.WriteLine($"Background save failed: {ex.Message}");
+                        Log.Error(ex, "Background queue-item persistence failed");
                     }
                 }
             }
@@ -147,6 +151,7 @@ namespace FluentDL.Services
             cmd.Parameters.AddWithValue("@t", DateTime.UtcNow.ToString("o"));
 
             await cmd.ExecuteNonQueryAsync(); 
+            Log.Debug("Queue item persisted");
         }
 
         public static async Task<Dictionary<string, string>> LoadQueueJSON()
@@ -194,7 +199,7 @@ namespace FluentDL.Services
             }
             catch (Exception ex)
             {
-                Debug.WriteLine(ex.ToString());
+                Log.Warning(ex, "Cached queue image could not be read");
             }
             return null;
         }
@@ -220,7 +225,7 @@ namespace FluentDL.Services
                     }
                     catch (Exception ex)
                     {
-                        Debug.WriteLine($"Bitmap processing failed for {hash}: {ex.Message}");
+                        Log.Warning(ex, "Cached queue image could not be decoded");
                         tcs.SetResult(null);
                     }
                     finally
@@ -236,7 +241,7 @@ namespace FluentDL.Services
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"Failed to load image stream from DB: {ex.Message}");
+                Log.Warning(ex, "Cached queue image could not be loaded");
                 return null;
             }
         }
@@ -251,10 +256,11 @@ namespace FluentDL.Services
                 await using var cmd = conn.CreateCommand();
                 cmd.CommandText = "DELETE FROM Items;";
                 await cmd.ExecuteNonQueryAsync();
+                Log.Information("Persisted queue cleared");
             }
             catch (Exception ex)
             {
-                Debug.WriteLine(ex.ToString());
+                Log.Error(ex, "Persisted queue could not be cleared");
             }
         }
 
@@ -275,7 +281,7 @@ namespace FluentDL.Services
             }
             catch (Exception ex)
             {
-                Debug.WriteLine(ex.ToString());
+                Log.Error(ex, "Queue item could not be removed from storage");
             }
         }
 

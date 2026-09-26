@@ -13,6 +13,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Windows.Storage.Streams;
+using Serilog;
 
 namespace FluentDL.Services;
 
@@ -50,14 +51,14 @@ internal class FFmpegRunner
                 ffmpegPath = Path.Combine(AppContext.BaseDirectory, "Assets\\ffmpeg\\bin");
             }
 
-            Debug.WriteLine("FFMPEG PATH: " + ffmpegPath);
+            Log.Debug("Configuring FFmpeg");
 
             GlobalFFOptions.Configure(options => options.BinaryFolder = ffmpegPath);
             IsInitialized = true;
         }
         catch (Exception e)
         {
-            Debug.WriteLine(e.Message);
+            Log.Error(e, "FFmpeg configuration failed");
         }
     }
 
@@ -97,7 +98,7 @@ internal class FFmpegRunner
             return await tcs.Task;
         } catch (Exception ex)
         {
-            Debug.WriteLine(ex);
+            Log.Warning(ex, "Spectrogram generation failed");
             return null;
         }
     }
@@ -121,7 +122,7 @@ internal class FFmpegRunner
         }
         catch (Exception ex)
         {
-            Debug.WriteLine(ex);
+            Log.Error(ex, "Spectrogram export failed");
             return false;
         }
     }
@@ -395,7 +396,7 @@ internal class FFmpegRunner
             }
             catch (Exception ex)
             {
-                Debug.WriteLine("CONVERSION TO FLAC FAILED: " + ex.Message);
+                Log.Error(ex, "Audio conversion to {Format} failed", "FLAC");
                 return null;
             }
         }
@@ -437,7 +438,7 @@ internal class FFmpegRunner
             }
             catch (Exception ex)
             {
-                Debug.WriteLine("CONVERSION TO MP3 FAILED: " + ex.Message);
+                Log.Error(ex, "Audio conversion to {Format} failed", "MP3");
                 return null;
             }
         }
@@ -479,7 +480,7 @@ internal class FFmpegRunner
             }
             catch (Exception ex)
             {
-                Debug.WriteLine("CONVERSION TO MP3 FAILED: " + ex.Message);
+                Log.Error(ex, "Audio conversion to {Format} failed", "MP3");
                 return null;
             }
         }
@@ -507,7 +508,7 @@ internal class FFmpegRunner
         }
         catch (Exception e)
         {
-            Debug.WriteLine("CONVERSION USING FDK-AAC FAILED: " + e.Message);
+            Log.Warning(e, "FDK-AAC conversion failed; trying the fallback encoder");
             // Try again with AudioCodec.Aac
             try
             {
@@ -522,7 +523,7 @@ internal class FFmpegRunner
             }
             catch (Exception ex)
             {
-                Debug.WriteLine("CONVERSION TO AAC FAILED: " + ex.Message);
+                Log.Error(ex, "Audio conversion to {Format} failed", "AAC");
                 return null;
             }
         }
@@ -556,7 +557,7 @@ internal class FFmpegRunner
             }
             catch (Exception ex)
             {
-                Debug.WriteLine("CONVERSION TO ALAC FAILED: " + ex.Message);
+                Log.Error(ex, "Audio conversion to {Format} failed", "ALAC");
                 return null;
             }
         }
@@ -583,7 +584,7 @@ internal class FFmpegRunner
         }
         catch (Exception e)
         {
-            Debug.WriteLine("CONVERSION TO VORBIS FAILED: " + e.Message);
+            Log.Error(e, "Audio conversion to {Format} failed", "Vorbis");
             return null;
         }
     }
@@ -609,7 +610,7 @@ internal class FFmpegRunner
         }
         catch (Exception e)
         {
-            Debug.WriteLine("CONVERSION TO VORBIS FAILED: " + e.Message);
+            Log.Error(e, "Audio conversion to {Format} failed", "Vorbis");
             return null;
         }
     }
@@ -635,7 +636,7 @@ internal class FFmpegRunner
         }
         catch (Exception e)
         {
-            Debug.WriteLine("CONVERSION TO OPUS FAILED: " + e.Message);
+            Log.Error(e, "Audio conversion to {Format} failed", "Opus");
             return null;
         }
     }
@@ -677,7 +678,7 @@ internal class FFmpegRunner
             }
             catch (Exception ex)
             {
-                Debug.WriteLine("CONVERSION TO MP3 FAILED: " + ex.Message);
+                Log.Error(ex, "Audio conversion to {Format} failed", "MP3");
                 return null;
             }
         }
@@ -719,7 +720,7 @@ internal class FFmpegRunner
             }
             catch (Exception ex)
             {
-                Debug.WriteLine("CONVERSION TO MP3 FAILED: " + ex.Message);
+                Log.Error(ex, "Audio conversion to {Format} failed", "MP3");
                 return null;
             }
         }
@@ -747,7 +748,7 @@ internal class FFmpegRunner
         }
         catch (Exception e)
         {
-            Debug.WriteLine("CONVERSION TO AAC FAILED: " + e.Message);
+            Log.Warning(e, "FDK-AAC conversion failed; trying the fallback encoder");
             // Try again with AudioCodec.Aac
             try
             {
@@ -762,7 +763,7 @@ internal class FFmpegRunner
             }
             catch (Exception ex)
             {
-                Debug.WriteLine("CONVERSION TO AAC FAILED: " + ex.Message);
+                Log.Error(ex, "Audio conversion to {Format} failed", "AAC");
                 return null;
             }
         }
@@ -786,7 +787,7 @@ internal class FFmpegRunner
         }
         catch (Exception e)
         {
-            Debug.WriteLine("CONVERSION TO ALAC FAILED: " + e.Message);
+            Log.Error(e, "Audio conversion to {Format} failed", "ALAC");
             return null;
         }
     }
@@ -811,7 +812,7 @@ internal class FFmpegRunner
         }
         catch (Exception e)
         {
-            Debug.WriteLine("CONVERSION TO VORBIS FAILED: " + e.Message);
+            Log.Error(e, "Audio conversion to {Format} failed", "Vorbis");
             return null;
         }
     }
@@ -837,7 +838,7 @@ internal class FFmpegRunner
         }
         catch (Exception e)
         {
-            Debug.WriteLine("CONVERSION TO OPUS FAILED: " + e.Message);
+            Log.Error(e, "Audio conversion to {Format} failed", "Opus");
             return null;
         }
     }

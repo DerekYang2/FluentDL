@@ -89,8 +89,8 @@ namespace FluentDL.Services.CustomSpotify
 
                 if (!response.IsSuccessStatusCode)
                 {
-                    _logger.LogError("Token endpoint returned {Status}. Response: {Response}", response.StatusCode, Truncate(responseText));
-                    throw new HttpRequestException($"Upstream returned {response.StatusCode}");
+                    _logger.LogDebug("Token endpoint returned {Status}", response.StatusCode);
+                    throw new HttpRequestException("Client token endpoint returned an unsuccessful status.", null, response.StatusCode);
                 }
 
                 var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
@@ -98,7 +98,7 @@ namespace FluentDL.Services.CustomSpotify
 
                 if (tokenResponse?.granted_token?.token == null)
                 {
-                    _logger.LogError("Token response missing granted_token. Raw: {Response}", Truncate(responseText));
+                    _logger.LogDebug("Token response missing granted_token");
                     throw new InvalidOperationException("Token response missing granted_token");
                 }
 
@@ -116,7 +116,7 @@ namespace FluentDL.Services.CustomSpotify
             }
             catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
             {
-                _logger.LogWarning("Client token request cancelled");
+                _logger.LogDebug("Client token request cancelled");
                 throw;
             }
             catch (Exception ex)
@@ -187,7 +187,7 @@ namespace FluentDL.Services.CustomSpotify
                             if (match.Success)
                             {
                                 spTCookie = match.Groups[1].Value;
-                                _logger.LogDebug("Got sp_t cookie: {Cookie}", spTCookie);
+                                _logger.LogDebug("Received Spotify session cookie");
                                 break;
                             }
                         }
@@ -208,7 +208,7 @@ namespace FluentDL.Services.CustomSpotify
 
             // Step 4: Generate TOTP
             string totp = GenerateSpotifyTotp(serverTimeMs);
-            _logger.LogDebug("Generated TOTP: {Totp} (version: {Version})", totp, _totpVersion);
+            _logger.LogDebug("Generated authentication code using version {Version}", _totpVersion);
 
             // Step 5: Get access token
             string tokenUrl = $"https://open.spotify.com/api/token?reason=init&productType=web-player&totp={totp}&totpServer={totp}&totpVer={_totpVersion}";
@@ -223,8 +223,8 @@ namespace FluentDL.Services.CustomSpotify
 
             if (!tokenResponse.IsSuccessStatusCode)
             {
-                _logger.LogError("Failed to get anonymous access token. Status: {Status}, Response: {Response}", tokenResponse.StatusCode, Truncate(tokenResponseText));
-                throw new HttpRequestException("Failed to fetch anonymous token.");
+                _logger.LogError("Failed to get anonymous access token. Status: {Status}", tokenResponse.StatusCode);
+                throw new HttpRequestException("Failed to fetch anonymous token.", null, tokenResponse.StatusCode);
             }
 
             var tokenOptions = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };

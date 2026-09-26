@@ -1,6 +1,7 @@
 ﻿using FluentDL.Activation;
 using FluentDL.Contracts.Services;
 using FluentDL.Core.Contracts.Services;
+using FluentDL.Core.Helpers;
 using FluentDL.Core.Services;
 using FluentDL.Helpers;
 using FluentDL.Models;
@@ -11,6 +12,7 @@ using FluentDL.ViewModels;
 using FluentDL.Views;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using Microsoft.UI;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
@@ -20,6 +22,10 @@ using System.Diagnostics;
 using System.Text;
 using System.Threading;
 using Windows.Graphics.Display;
+using Serilog;
+using Serilog.Core;
+using Serilog.Events;
+using Windows.Storage;
 
 namespace FluentDL;
 
@@ -50,7 +56,8 @@ public partial class App : Application
     public static WindowEx MainWindow
     {
         get;
-    } = new MainWindow();
+        private set;
+    } = null!;
 
     public static UIElement? AppTitlebar
     {
@@ -58,16 +65,40 @@ public partial class App : Application
         set;
     }
 
-    // Event log
-    private const string SourceName = "Application Error";
-    private const string LogName = "Application";
+    private static readonly LoggingLevelSwitch LogLevel = new(LogEventLevel.Information);
+    public static string LogDirectory { get; private set; } = string.Empty;
+    public static string? LoggingError { get; private set; }
+    public static bool IsVerboseLogging => LogLevel.MinimumLevel == LogEventLevel.Debug;
 
     public App()
     {
+        InitializeLogging();
+        UnhandledException += App_UnhandledException;
+        AppDomain.CurrentDomain.UnhandledException += (_, e) =>
+        {
+            Log.Fatal(e.ExceptionObject as Exception, "Unhandled background exception; terminating: {IsTerminating}", e.IsTerminating);
+            Log.CloseAndFlush();
+        };
+        TaskScheduler.UnobservedTaskException += (_, e) =>
+            Log.Error(e.Exception, "Unobserved background task failure");
+        AppDomain.CurrentDomain.ProcessExit += (_, _) =>
+        {
+            Log.Information("Application process exiting");
+            Log.CloseAndFlush();
+        };
+
         try
         {
+            Log.Information("Application bootstrap starting; OS {OSVersion}, architecture {Architecture}, packaged {IsPackaged}",
+                Environment.OSVersion.Version,
+                System.Runtime.InteropServices.RuntimeInformation.ProcessArchitecture, RuntimeHelper.IsMSIX);
             InitializeComponent();
             Host = Microsoft.Extensions.Hosting.Host.CreateDefaultBuilder().UseContentRoot(AppContext.BaseDirectory)
+                .ConfigureLogging(logging =>
+                {
+                    logging.ClearProviders();
+                    logging.AddSerilog(Log.Logger, dispose: false);
+                })
                 .ConfigureServices((context, services) =>
                 {
                     // Default Activation Handler
@@ -121,51 +152,52 @@ public partial class App : Application
                         context.Configuration.GetSection(nameof(LocalSettingsOptions)));
                 }).Build();
 
+            Log.Information("Application services initialized; version {Version}", SettingsViewModel.GetVersionDescription());
+            MainWindow = new MainWindow();
+            MainWindow.Closed += (_, _) => Log.Information("Main window closing");
             App.GetService<IAppNotificationService>().Initialize();
         } catch (Exception ex)
         {
-            LogException(ex);
+            Log.Fatal(ex, "Application initialization failed");
+            Log.CloseAndFlush();
             throw;
         }
-        UnhandledException += App_UnhandledException;
-        AppDomain.CurrentDomain.UnhandledException += (s, e) =>
-        {
-            var ex = e.ExceptionObject as Exception;
-            Debug.WriteLine($"Non-UI thread exception: {ex}");
-            LogException(ex);
-        };
-        TaskScheduler.UnobservedTaskException += (s, e) =>
-        {
-            Debug.WriteLine($"Non-UI thread exception: {e.Exception}");
-            LogException(e.Exception);
-        };
     }
 
-    public static void LogException(Exception? ex)
+    private static void InitializeLogging()
     {
+        Serilog.Debugging.SelfLog.Enable(_ =>
+        {
+            LoggingError = "Local logging encountered a write error. Check free disk space and folder permissions.";
+            Trace.TraceError(LoggingError);
+        });
+
         try
         {
-            if (ex == null) return;
-            // Create event source if it doesn't exist (requires admin rights)
-            if (!EventLog.SourceExists(SourceName))
-            {
-                EventLog.CreateEventSource(SourceName, LogName);
-            }
-
-            string message = $"Exception: {ex.Message}\nStack Trace:\n{ex.StackTrace}";
-            EventLog.WriteEntry(SourceName, message, EventLogEntryType.Error);
+            var localFolder = RuntimeHelper.IsMSIX
+                ? ApplicationData.Current.LocalFolder.Path
+                : Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "FluentDL");
+            LogDirectory = Path.Combine(localFolder, "Logs");
+            Log.Logger = DiagnosticLogging.CreateLogger(LogDirectory, LogLevel);
         }
-        catch (Exception logEx)
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or System.Security.SecurityException)
         {
-            // Fallback if event log writing fails
-            Debug.WriteLine($"Failed to write to Event Log: {logEx.Message}");
+            LoggingError = "Local logging is unavailable. Check free disk space and folder permissions.";
+            Trace.TraceError("{0} ({1})", LoggingError, ex.GetType().Name);
         }
+    }
+
+    public static void SetVerboseLogging(bool enabled)
+    {
+        if (IsVerboseLogging == enabled) return;
+        LogLevel.MinimumLevel = enabled ? LogEventLevel.Debug : LogEventLevel.Information;
+        Log.Information("Verbose logging {State}", enabled ? "enabled" : "disabled");
     }
 
     private void App_UnhandledException(object sender, Microsoft.UI.Xaml.UnhandledExceptionEventArgs e)
     {
-        Debug.WriteLine(e.Exception.ToString());
-        LogException(e.Exception);
+        Log.Fatal(e.Exception, "Unhandled UI exception; application terminating");
+        Log.CloseAndFlush();
         Environment.Exit(1);
     }
 
@@ -175,6 +207,30 @@ public partial class App : Application
         base.OnLaunched(args);
         // App.GetService<IAppNotificationService>().Show(string.Format("AppNotificationSamplePayload".GetLocalized(), AppContext.BaseDirectory));
 
+        var settings = GetService<ILocalSettingsService>();
+        var verboseLogging = await settings.ReadSettingAsync<bool?>(DiagnosticLogging.VerboseSettingKey);
+        SetVerboseLogging(verboseLogging ?? false);
+        if (verboseLogging is null)
+        {
+            try
+            {
+                await settings.SaveSettingAsync(DiagnosticLogging.VerboseSettingKey, false);
+            }
+            catch (Exception ex)
+            {
+                Log.Warning(ex, "Could not save the default logging preference; important logging remains enabled");
+            }
+        }
         await App.GetService<IActivationService>().ActivateAsync(args);
+        if (LoggingError is not null)
+        {
+            await new ContentDialog
+            {
+                XamlRoot = MainWindow.Content.XamlRoot,
+                Title = "Logging unavailable",
+                Content = LoggingError,
+                CloseButtonText = "Close"
+            }.ShowAsync();
+        }
     }
 }

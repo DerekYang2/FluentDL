@@ -151,8 +151,8 @@ namespace FluentDL.Services.CustomSpotify
                 var responseText = await response.Content.ReadAsStringAsync(cancellationToken);
                 if (!response.IsSuccessStatusCode)
                 {
-                    _logger.LogError("Spotify API query failed with status {Status}. Response: {Response}", response.StatusCode, responseText);
-                    throw new HttpRequestException($"Spotify API query failed with status code {response.StatusCode}");
+                    _logger.LogDebug("Spotify API query failed with status {Status}", response.StatusCode);
+                    throw new HttpRequestException("Spotify API query returned an unsuccessful status.", null, response.StatusCode);
                 }
                 return responseText;
             }

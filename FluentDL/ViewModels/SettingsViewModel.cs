@@ -4,6 +4,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using FluentDL.Contracts.Services;
 using FluentDL.Helpers;
+using FluentDL.Core.Helpers;
 using Microsoft.UI.Xaml;
 using Windows.ApplicationModel;
 using Microsoft.UI.Xaml.Controls;
@@ -123,7 +124,8 @@ public partial class SettingsViewModel : ObservableRecipient
 
     public static async Task SetMissingDefaults() // Similar to SetDefaults, but safer by only setting missing settings
     {  
-        Debug.WriteLine("Setting missing defaults");
+        Serilog.Log.Debug("Initializing missing settings defaults");
+        await SaveSettingsAsyncIfNull<bool?>(DiagnosticLogging.VerboseSettingKey, false);
         await SaveSettingsAsyncIfNull<int?>(CommandThreads, 1);
         await SaveSettingsAsyncIfNull<int?>(ConversionThreads, 3);
         await SaveSettingsAsyncIfNull<int?>(AudioConversionThreads, 6);

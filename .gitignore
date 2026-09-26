@@ -1,6 +1,10 @@
 
 FluentDL.Core/obj/
 FluentDL.Core/bin/
+FluentDL.Core.Tests/obj/
+FluentDL.Core.Tests/bin/
+FluentDL.Core.Tests/TestResults/
+/.vs/CopilotSnapshots/
 /FluentDL/Assets/keys.json
 /FluentDL/Assets/keys.txt
 /FluentDL/PackageSelect/csproj_local.txt

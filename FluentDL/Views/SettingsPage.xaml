@@ -1215,6 +1215,48 @@
                         </StackPanel>
                     </local:SettingsCard>
 
+                    <TextBlock Style="{StaticResource TextBlockSectionStyle}" Text="Diagnostics" />
+                    <local:SettingsExpander
+                        HorizontalContentAlignment="Stretch"
+                        Header="Application logs"
+                        Description="View local logs for startup, crashes and errors.">
+                        <local:SettingsExpander.HeaderIcon>
+                            <FontIcon Glyph="&#xE9D9;" />
+                        </local:SettingsExpander.HeaderIcon>
+                        <local:SettingsExpander.Items>
+                            <local:SettingsCard Header="Open log folder">
+                                <local:SettingsCard.Description>
+                                    <TextBlock
+                                        x:Name="LogsFolderText"
+                                        IsTextSelectionEnabled="True"
+                                        TextWrapping="Wrap" />
+                                </local:SettingsCard.Description>
+                                <Button
+                                    x:Name="OpenLogsFolderButton"
+                                    AutomationProperties.AutomationId="OpenLogsFolderButton"
+                                    Click="OpenLogsFolder_Click"
+                                    Content="Open folder" />
+                            </local:SettingsCard>
+                            <local:SettingsCard
+                                Header="Verbose logging"
+                                Description="Include extra troubleshooting details in logs.">
+                                <ToggleSwitch
+                                    x:Name="VerboseLoggingToggle"
+                                    AutomationProperties.AutomationId="VerboseLoggingToggle"
+                                    AutomationProperties.Name="Verbose logging"
+                                    OffContent="Off"
+                                    OnContent="On"
+                                    Toggled="VerboseLoggingToggle_Toggled" />
+                            </local:SettingsCard>
+                        </local:SettingsExpander.Items>
+                    </local:SettingsExpander>
+                    <InfoBar
+                        x:Name="LoggingStatusBar"
+                        IsClosable="False"
+                        IsOpen="False"
+                        Severity="Error"
+                        Title="Logging unavailable" />
+
                     <!--  ABOUT __________________________________________________________________________________________________  -->
                     <TextBlock Style="{StaticResource TextBlockSectionStyle}" Text="About" />
 

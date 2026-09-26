@@ -6,6 +6,7 @@ using FluentDL.Views;
 
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.Extensions.Logging;
 using System.Diagnostics;
 
 namespace FluentDL.Services;
@@ -15,17 +16,21 @@ public class ActivationService : IActivationService
     private readonly ActivationHandler<LaunchActivatedEventArgs> _defaultHandler;
     private readonly IEnumerable<IActivationHandler> _activationHandlers;
     private readonly IThemeSelectorService _themeSelectorService;
+    private readonly ILogger<ActivationService> _logger;
     private UIElement? _shell = null;
 
-    public ActivationService(ActivationHandler<LaunchActivatedEventArgs> defaultHandler, IEnumerable<IActivationHandler> activationHandlers, IThemeSelectorService themeSelectorService)
+    public ActivationService(ActivationHandler<LaunchActivatedEventArgs> defaultHandler, IEnumerable<IActivationHandler> activationHandlers, IThemeSelectorService themeSelectorService, ILogger<ActivationService> logger)
     {
         _defaultHandler = defaultHandler;
         _activationHandlers = activationHandlers;
         _themeSelectorService = themeSelectorService;
+        _logger = logger;
     }
 
     public async Task ActivateAsync(object activationArgs)
     {
+        var timer = Stopwatch.StartNew();
+        _logger.LogInformation("Application activation started");
         // Show splash screen immediately
         var splashScreen = App.GetService<SplashScreenPage>();
         if (App.MainWindow.Content == null)
@@ -53,6 +58,7 @@ public class ActivationService : IActivationService
 
         // Execute tasks after activation
         await StartupAsync();
+        _logger.LogInformation("Main window activated in {ElapsedMilliseconds} ms", timer.ElapsedMilliseconds);
     }
 
     private async Task HandleActivationAsync(object activationArgs)
@@ -97,12 +103,14 @@ public class ActivationService : IActivationService
             try
             {
                 splashScreen.SetText("Updating yt-dlp ...", rowIdx);
+                _logger.LogInformation("yt-dlp update started");
                 var existingPath = await localSettings.ReadSettingAsync<string>(SettingsViewModel.YtdlpPath);
                 var output = await YoutubeApi.UpdateYtdlpAsync(existingPath);
                 splashScreen.SetText($"Update complete: {output ?? "null"}", rowIdx);
+                _logger.LogInformation("yt-dlp update finished");
             } catch(Exception ex)
             {
-                Debug.WriteLine("Error updating yt-dlp: " + ex.ToString());
+                _logger.LogWarning(ex, "yt-dlp automatic update failed; continuing startup");
                 splashScreen.SetText("ERROR: yt-dlp Update Failed. Please update manually.", rowIdx);
                 await Task.Delay(2000);  // So user can see the message
             }
@@ -121,6 +129,7 @@ public class ActivationService : IActivationService
             //await LocalCommands.Init();
             // Initialize FFMpeg 
             splashScreen.SetText("Initializing FFmpeg ...");
+            _logger.LogDebug("Initializing FFmpeg");
             await FFmpegRunner.Initialize();
 
             //// Initialize environment variables
@@ -148,16 +157,19 @@ public class ActivationService : IActivationService
                     Task.Run(() => {
                         splashScreen.SetText("Initializing Qobuz ...", 0);
                         QobuzApi.Initialize(qobuzId, qobuzToken, qobuzAppId, qobuzAppSecret);
+                        _logger.LogInformation("Provider {Provider} initialization finished; authenticated {IsAuthenticated}", "Qobuz", QobuzApi.IsInitialized);
                         splashScreen.SetText("Qobuz Complete", 0);
                     }),
                     Task.Run(async()=>{
                         splashScreen.SetText("Initializing Spotify ...", 1);
                         await SpotifyApi.Initialize(spotifyClientId, spotifyClientSecret);
+                        _logger.LogInformation("Provider {Provider} initialization finished; authenticated {IsAuthenticated}", "Spotify", SpotifyApi.IsInitialized);
                         splashScreen.SetText("Spotify Complete", 1);
                     }),
                     Task.Run(async()=>{
                         splashScreen.SetText("Initializing Deezer ...", 2);
                         await DeezerApi.InitDeezerClient(deezerArl);                         
+                        _logger.LogInformation("Provider {Provider} initialization finished; authenticated {IsAuthenticated}", "Deezer", DeezerApi.IsInitialized);
                         splashScreen.SetText("Deezer Complete", 2); 
                     }),
                     Task.Run(async()=>{
@@ -176,7 +188,7 @@ public class ActivationService : IActivationService
             }
             catch (TimeoutException)
             {
-                Debug.WriteLine("One or more APIs timed out");
+                _logger.LogWarning("Provider initialization exceeded the 30 second timeout; some startup work may be incomplete");
                 splashScreen.ClearRows();
                 splashScreen.SetText("ERROR: One or more APIs timed out");
                 await Task.Delay(2000);  // So user can see the message
@@ -184,7 +196,7 @@ public class ActivationService : IActivationService
         }
         catch (Exception e)
         {
-            Debug.WriteLine("Initialization error: " + e.ToString());
+            _logger.LogError(e, "Startup initialization failed; continuing with reduced functionality");
             splashScreen.ClearRows();
             splashScreen.SetText($"ERROR: {e.Message}");
             await Task.Delay(2000);  // So user can see the message
@@ -218,9 +230,9 @@ public class ActivationService : IActivationService
                     {
                         file.Delete();
                     }
-                    catch
+                    catch (Exception ex)
                     {
-                        // File might be locked by another process/instance, ignore and move on
+                        Serilog.Log.Debug(ex, "Skipping temporary file cleanup");
                     }
                 }
 
@@ -231,15 +243,15 @@ public class ActivationService : IActivationService
                     {
                         dir.Delete(recursive: true);
                     }
-                    catch
+                    catch (Exception ex)
                     {
-                        // Ignore locked folders
+                        Serilog.Log.Debug(ex, "Skipping temporary folder cleanup");
                     }
                 }
             }
-            catch
+            catch (Exception ex)
             {
-                // Global safeguard to ensure fire-and-forget never throws on app startup
+                Serilog.Log.Warning(ex, "Startup temporary-file cleanup failed");
             }
         });
     }
