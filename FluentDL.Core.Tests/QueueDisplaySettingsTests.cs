@@ -145,32 +145,37 @@ public class QueueDisplaySettingsTests
         settings.VerifyNoOtherCalls();
     }
 
-    [TestMethod]
-    public async Task SetCompactAsync_OnFailureRetainsPreviousLayout_AndAllowsRetry()
+    [DataTestMethod]
+    [DataRow(false)]
+    [DataRow(true)]
+    public async Task SetCompactAsync_OnFailureRetainsPreviousLayout_AndAllowsRetry(bool initial)
     {
         // Arrange
         var settings = new Mock<ILocalSettingsService>(MockBehavior.Strict);
-        settings.SetupSequence(value => value.SaveSettingAsync(QueueDisplaySettings.SettingsKey, true))
+        settings.Setup(value => value.ReadSettingAsync<bool?>(QueueDisplaySettings.SettingsKey)).ReturnsAsync(initial);
+        settings.SetupSequence(value => value.SaveSettingAsync(QueueDisplaySettings.SettingsKey, !initial))
             .ThrowsAsync(new IOException("Save failed")).Returns(Task.CompletedTask);
         var display = new QueueDisplaySettings(settings.Object);
+        await display.LoadAsync();
         var changes = 0;
         display.PropertyChanged += (_, e) => { if (e.PropertyName == nameof(display.IsCompact)) changes++; };
 
         // Act
-        await Assert.ThrowsExceptionAsync<IOException>(() => display.SetCompactAsync(true));
+        await Assert.ThrowsExceptionAsync<IOException>(() => display.SetCompactAsync(!initial));
         var retained = display.IsCompact;
         var changesAfterFailure = changes;
         var canRetry = display.CanChangeLayout;
-        await display.SetCompactAsync(true);
+        await display.SetCompactAsync(!initial);
 
         // Assert
-        Assert.IsFalse(retained);
+        Assert.AreEqual(initial, retained);
         Assert.AreEqual(0, changesAfterFailure);
         Assert.IsTrue(canRetry);
-        Assert.IsTrue(display.IsCompact);
+        Assert.AreEqual(!initial, display.IsCompact);
         Assert.IsTrue(display.CanChangeLayout);
         Assert.AreEqual(1, changes);
-        settings.Verify(value => value.SaveSettingAsync(QueueDisplaySettings.SettingsKey, true), Times.Exactly(2));
+        settings.Verify(value => value.ReadSettingAsync<bool?>(QueueDisplaySettings.SettingsKey), Times.Once);
+        settings.Verify(value => value.SaveSettingAsync(QueueDisplaySettings.SettingsKey, !initial), Times.Exactly(2));
         settings.VerifyNoOtherCalls();
     }
 
@@ -244,6 +249,47 @@ public class QueueDisplaySettingsTests
         settings.Verify(value => value.SaveSettingAsync(QueueDisplaySettings.SettingsKey, true), Times.Once);
         settings.Verify(value => value.SaveSettingAsync(QueueDisplaySettings.SettingsKey, false), Times.Once);
         settings.Verify(value => value.ReadSettingAsync<bool?>(QueueDisplaySettings.SettingsKey), Times.Once);
+        settings.VerifyNoOtherCalls();
+    }
+
+    [DataTestMethod]
+    [DataRow(false)]
+    [DataRow(true)]
+    public async Task SetCompactAsync_FailedSaveDoesNotBlockTheNextQueuedChange(bool next)
+    {
+        // Arrange
+        var save = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var settings = new Mock<ILocalSettingsService>(MockBehavior.Strict);
+        var order = new MockSequence();
+        settings.InSequence(order).Setup(value => value.SaveSettingAsync(QueueDisplaySettings.SettingsKey, true)).Returns(save.Task);
+        settings.InSequence(order).Setup(value => value.SaveSettingAsync(QueueDisplaySettings.SettingsKey, next)).Returns(Task.CompletedTask);
+        var display = new QueueDisplaySettings(settings.Object);
+        var publishedStates = new List<bool>();
+        display.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(display.IsCompact)) publishedStates.Add(display.IsCompact);
+        };
+
+        // Act
+        var first = display.SetCompactAsync(true);
+        var queued = display.SetCompactAsync(next);
+        var wasWaiting = !queued.IsCompleted;
+        save.SetException(new IOException("Save failed"));
+        await Assert.ThrowsExceptionAsync<IOException>(() => first);
+        await queued.WaitAsync(TimeSpan.FromSeconds(5));
+
+        // Assert
+        Assert.IsTrue(wasWaiting);
+        Assert.AreEqual(next, display.IsCompact);
+        Assert.IsTrue(display.CanChangeLayout);
+        CollectionAssert.AreEqual(next ? new[] { true } : Array.Empty<bool>(), publishedStates.ToArray(),
+            "Only successfully persisted changes should be published.");
+        settings.Verify(value => value.SaveSettingAsync(QueueDisplaySettings.SettingsKey, true),
+            Times.Exactly(next ? 2 : 1));
+        if (!next)
+        {
+            settings.Verify(value => value.SaveSettingAsync(QueueDisplaySettings.SettingsKey, false), Times.Once);
+        }
         settings.VerifyNoOtherCalls();
     }
 }

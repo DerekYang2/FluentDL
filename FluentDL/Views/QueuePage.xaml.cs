@@ -219,7 +219,7 @@ public sealed partial class QueuePage : Page
         var grid = (Grid)sender;
         SetCompactColumn(grid, 2, e.NewSize.Width >= 720, new GridLength(1, GridUnitType.Star));
         SetCompactColumn(grid, 3, e.NewSize.Width >= 920, new GridLength(64));
-        SetCompactColumn(grid, 5, e.NewSize.Width >= 480, new GridLength(96));
+        SetCompactColumn(grid, 5, e.NewSize.Width >= 480, (GridLength)Resources["CompactQueueSourceColumnWidth"]);
     }
 
     private static void SetCompactColumn(Grid grid, int column, bool visible, GridLength width)
@@ -263,20 +263,12 @@ public sealed partial class QueuePage : Page
 
     private async void OutputButton_OnClick(object sender, RoutedEventArgs e)
     {
-        // Get the button that was clicked
-        var button = sender as Button;
-
-        if (button != null)
+        if (sender is FrameworkElement { Tag: QueueObject queueObject })
         {
-            // Get the data context of the button (the item in the ListView)
-
-            if (button.DataContext is QueueObject queueObject)
-            {
-                OutputDialog.XamlRoot = this.XamlRoot;
-                OutputMessage.Text = $"Terminal output for track \"{queueObject.Title}\":";
-                OutputTextBox.Document.SetText(Microsoft.UI.Text.TextSetOptions.None, queueObject.ResultString);
-                await OutputDialog.ShowAsync();
-            }
+            OutputDialog.XamlRoot = this.XamlRoot;
+            OutputMessage.Text = $"Terminal output for track \"{queueObject.Title}\":";
+            OutputTextBox.Document.SetText(Microsoft.UI.Text.TextSetOptions.None, queueObject.ResultString);
+            await OutputDialog.ShowAsync();
         }
     }
     

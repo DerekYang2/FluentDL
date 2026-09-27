@@ -398,7 +398,7 @@
                                 Spacing="12">
                                 <Border
                                     Margin="0,-2,0,0"
-                                    Padding="4,0"
+                                    Padding="{StaticResource ExplicitBadgePadding}"
                                     HorizontalAlignment="Right"
                                     VerticalAlignment="Center"
                                     Background="{ThemeResource ExplicitBadgeBackgroundBrush}"
@@ -406,9 +406,12 @@
                                     Visibility="{x:Bind Explicit, Converter={StaticResource VisibilityConverter}}">
                                     <TextBlock
                                         x:Name="ExplicitBadge"
+                                        FontSize="{StaticResource ExplicitBadgeFontSize}"
+                                        FontWeight="SemiBold"
                                         Foreground="{ThemeResource ExplicitBadgeForegroundBrush}"
                                         Style="{ThemeResource CaptionTextBlockStyle}"
-                                        Text="E" />
+                                        Text="E"
+                                        TextLineBounds="Tight" />
                                 </Border>
                                 <Border
                                     Padding="6,2"
@@ -750,7 +753,7 @@
                                                 Spacing="12">
                                                 <Border
                                                     Margin="0,-2,0,0"
-                                                    Padding="4,0"
+                                                    Padding="{StaticResource ExplicitBadgePadding}"
                                                     HorizontalAlignment="Right"
                                                     VerticalAlignment="Center"
                                                     Background="{ThemeResource ExplicitBadgeBackgroundBrush}"
@@ -758,9 +761,12 @@
                                                     Visibility="{x:Bind Song.Explicit, Converter={StaticResource VisibilityConverter}}">
                                                     <TextBlock
                                                         x:Name="ExplicitBadge"
+                                                        FontSize="{StaticResource ExplicitBadgeFontSize}"
+                                                        FontWeight="SemiBold"
                                                         Foreground="{ThemeResource ExplicitBadgeForegroundBrush}"
                                                         Style="{ThemeResource CaptionTextBlockStyle}"
-                                                        Text="E" />
+                                                        Text="E"
+                                                        TextLineBounds="Tight" />
                                                 </Border>
                                             </StackPanel>
 
