@@ -473,12 +473,12 @@
                                     Padding="4,0"
                                     HorizontalAlignment="Right"
                                     VerticalAlignment="Center"
-                                    Background="DarkGray"
+                                    Background="{ThemeResource ExplicitBadgeBackgroundBrush}"
                                     CornerRadius="2"
                                     Visibility="{x:Bind Explicit, Converter={StaticResource VisibilityConverter}}">
                                     <TextBlock
                                         x:Name="ExplicitBadge"
-                                        Foreground="Black"
+                                        Foreground="{ThemeResource ExplicitBadgeForegroundBrush}"
                                         Style="{ThemeResource CaptionTextBlockStyle}"
                                         Text="E" />
                                 </Border>
