@@ -99,14 +99,26 @@ See [usage guide wiki](https://github.com/DerekYang2/FluentDL/wiki/Usage-Guide) 
 
 #### Store CLI (Windows 11 built-in)
 
-Installation: `store install fluentdl`
+Installation: 
+```
+store install fluentdl
+```
 
-Update: `store update fluentdl`
+Update: 
+```
+store update fluentdl
+```
 
 #### winget (Windows 10)
-Installation: `winget install --id 9MX44KM97X7X --source msstore --accept-package-agreements --accept-source-agreements`
+Installation: 
+```
+winget install --id 9MX44KM97X7X --source msstore --accept-package-agreements --accept-source-agreements
+```
 
-Update: `winget upgrade --id 9MX44KM97X7X --source msstore --accept-package-agreements`
+Update: 
+```
+winget upgrade --id 9MX44KM97X7X --source msstore --exact --include-unknown --accept-package-agreements --accept-source-agreements
+```
 
 ## Authentication
 
