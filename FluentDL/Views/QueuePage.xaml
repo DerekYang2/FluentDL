@@ -17,6 +17,7 @@
     NavigationCacheMode="Required"
     mc:Ignorable="d">
     <Page.Resources>
+        <GridLength x:Key="CompactQueueSourceColumnWidth">86</GridLength>
         <helpers:DateToYearConverter x:Key="DateToYearConverter" />
         <helpers:DurationConverter x:Key="DurationConverter" />
         <helpers:DurationConverterShort x:Key="DurationConverterShort" />
@@ -77,6 +78,13 @@
                             Tag="{x:Bind}"
                             Text="Open in File Explorer"
                             Visibility="{x:Bind Source, Converter={StaticResource LocalSourceToVisibilityConverter}}" />
+                        <MenuFlyoutSeparator Visibility="{x:Bind ResultString, Mode=OneWay, Converter={StaticResource PathToVisibilityConverter}}" />
+                        <MenuFlyoutItem
+                            AutomationProperties.AutomationId="CompactQueueOutput"
+                            Click="OutputButton_OnClick"
+                            Tag="{x:Bind}"
+                            Text="View command output"
+                            Visibility="{x:Bind ResultString, Mode=OneWay, Converter={StaticResource PathToVisibilityConverter}}" />
                     </MenuFlyout>
                 </Grid.ContextFlyout>
                 <Grid.ColumnDefinitions>
@@ -85,8 +93,8 @@
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="64" />
                     <ColumnDefinition Width="80" />
-                    <ColumnDefinition Width="96" />
-                    <ColumnDefinition Width="72" />
+                    <ColumnDefinition Width="{StaticResource CompactQueueSourceColumnWidth}" />
+                    <ColumnDefinition Width="32" />
                 </Grid.ColumnDefinitions>
                 <Border
                     Width="44"
@@ -124,7 +132,7 @@
                         </Grid.ColumnDefinitions>
                         <Border
                             Margin="0,0,6,0"
-                            Padding="4,0"
+                            Padding="{StaticResource ExplicitBadgePadding}"
                             VerticalAlignment="Center"
                             Background="{ThemeResource ExplicitBadgeBackgroundBrush}"
                             CornerRadius="2"
@@ -132,9 +140,12 @@
                             Visibility="{x:Bind Explicit, Mode=OneWay, Converter={StaticResource VisibilityConverter}}">
                             <TextBlock
                                 AutomationProperties.Name="Explicit"
+                                FontSize="{StaticResource ExplicitBadgeFontSize}"
+                                FontWeight="SemiBold"
                                 Foreground="{ThemeResource ExplicitBadgeForegroundBrush}"
                                 Style="{ThemeResource CaptionTextBlockStyle}"
-                                Text="E" />
+                                Text="E"
+                                TextLineBounds="Tight" />
                         </Border>
                         <marqueeTextRns:MarqueeText
                             Grid.Column="1"
@@ -186,36 +197,40 @@
                     VerticalAlignment="Center"
                     Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                     Text="{x:Bind Duration, Converter={StaticResource DurationConverterShort}}" />
-                <StackPanel
+                <Grid
                     Grid.Column="6"
-                    HorizontalAlignment="Right"
-                    VerticalAlignment="Center"
-                    Orientation="Horizontal"
-                    Spacing="8">
-                    <Button
-                        MinWidth="32"
-                        MinHeight="32"
-                        Padding="6"
-                        AutomationProperties.AutomationId="CompactQueueOutput"
-                        AutomationProperties.Name="View command output"
-                        Click="OutputButton_OnClick"
-                        Style="{ThemeResource AccentButtonStyle}"
-                        Tag="{x:Bind}"
-                        ToolTipService.ToolTip="View command output"
-                        Visibility="{x:Bind ResultString, Mode=OneWay, Converter={StaticResource PathToVisibilityConverter}}">
-                        <FontIcon FontSize="16" Glyph="&#xE756;" />
-                    </Button>
+                    Width="32"
+                    Height="32"
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Center">
+                    <Grid Visibility="{x:Bind IsRunning, Mode=OneWay, Converter={StaticResource CollapsedConverter}}">
+                        <Button
+                            Width="32"
+                            Height="32"
+                            MinWidth="32"
+                            MinHeight="32"
+                            Padding="4"
+                            AutomationProperties.AutomationId="CompactQueueSpectrogram"
+                            AutomationProperties.Name="Open spectrogram"
+                            Click="OpenSpekButton_Click"
+                            Tag="{x:Bind}"
+                            ToolTipService.ToolTip="Open with Spek"
+                            Visibility="{x:Bind Source, Mode=OneWay, Converter={StaticResource LocalSourceToVisibilityConverter}}">
+                            <FontIcon FontSize="20" Glyph="&#xE9D2;" />
+                        </Button>
+                    </Grid>
                     <ProgressRing
                         Width="24"
                         Height="24"
                         MinWidth="0"
                         MinHeight="0"
+                        HorizontalAlignment="Center"
                         VerticalAlignment="Center"
                         AutomationProperties.AutomationId="CompactQueueProgress"
                         AutomationProperties.Name="Converting track"
                         IsActive="{x:Bind IsRunning, Mode=OneWay}"
                         Visibility="{x:Bind IsRunning, Mode=OneWay, Converter={StaticResource VisibilityConverter}}" />
-                </StackPanel>
+                </Grid>
                 <InfoBadge
                     Width="12"
                     Height="12"
@@ -231,6 +246,7 @@
 
     <Grid>
         <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
@@ -373,13 +389,47 @@
             x:Name="QueueProgress"
             Grid.Row="1"
             Grid.Column="0"
-            Margin="0,8,0,12"
+            Margin="0,8,0,0"
             IsIndeterminate="False"
             Value="0" />
 
+        <Grid
+            x:Name="CompactQueueHeader"
+            Grid.Row="2"
+            Grid.Column="0"
+            MinHeight="36"
+            Margin="12,0,24,8"
+            AutomationProperties.AutomationId="CompactQueueHeader"
+            SizeChanged="CompactQueueGrid_SizeChanged"
+            Visibility="{x:Bind ViewModel.QueueDisplay.IsCompact, Mode=OneWay, Converter={StaticResource VisibilityConverter}}">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="56" />
+                <ColumnDefinition Width="2*" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="64" />
+                <ColumnDefinition Width="80" />
+                <ColumnDefinition Width="{StaticResource CompactQueueSourceColumnWidth}" />
+                <ColumnDefinition Width="32" />
+            </Grid.ColumnDefinitions>
+            <TextBlock Grid.Column="1" Style="{StaticResource CompactQueueHeaderTextStyle}" Text="Title" />
+            <TextBlock Grid.Column="2" Style="{StaticResource CompactQueueHeaderTextStyle}" Text="Album" />
+            <TextBlock Grid.Column="3" Style="{StaticResource CompactQueueHeaderTextStyle}" Text="Year" />
+            <TextBlock
+                Grid.Column="4"
+                Margin="0,0,8,0"
+                HorizontalAlignment="Right"
+                Style="{StaticResource CompactQueueHeaderTextStyle}"
+                Text="Duration" />
+            <Border
+                Grid.ColumnSpan="7"
+                Height="1"
+                VerticalAlignment="Bottom"
+                Background="{ThemeResource ControlStrokeColorDefaultBrush}" />
+        </Grid>
+
         <ListView
             x:Name="CustomListView"
-            Grid.Row="2"
+            Grid.Row="3"
             Grid.Column="0"
             Margin="0,0,0,12"
             Padding="0,0,12,0"
@@ -389,44 +439,6 @@
             CornerRadius="8"
             SelectionChanged="CustomListView_OnSelectionChanged"
             ShowsScrollingPlaceholders="True">
-            <ListView.Header>
-                <Grid
-                    x:Name="CompactQueueHeader"
-                    MinHeight="36"
-                    Margin="12,0,12,8"
-                    AutomationProperties.AutomationId="CompactQueueHeader"
-                    SizeChanged="CompactQueueGrid_SizeChanged"
-                    Visibility="{x:Bind ViewModel.QueueDisplay.IsCompact, Mode=OneWay, Converter={StaticResource VisibilityConverter}}">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="56" />
-                        <ColumnDefinition Width="2*" />
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="64" />
-                        <ColumnDefinition Width="80" />
-                        <ColumnDefinition Width="96" />
-                        <ColumnDefinition Width="72" />
-                    </Grid.ColumnDefinitions>
-                    <TextBlock Grid.Column="1" Style="{StaticResource CompactQueueHeaderTextStyle}" Text="Title" />
-                    <TextBlock Grid.Column="2" Style="{StaticResource CompactQueueHeaderTextStyle}" Text="Album" />
-                    <TextBlock Grid.Column="3" Style="{StaticResource CompactQueueHeaderTextStyle}" Text="Year" />
-                    <TextBlock
-                        Grid.Column="4"
-                        Margin="0,0,8,0"
-                        HorizontalAlignment="Right"
-                        Style="{StaticResource CompactQueueHeaderTextStyle}"
-                        Text="Duration" />
-                    <TextBlock
-                        Grid.Column="5"
-                        Margin="8,0,0,0"
-                        Style="{StaticResource CompactQueueHeaderTextStyle}"
-                        Text="Source" />
-                    <Border
-                        Grid.ColumnSpan="7"
-                        Height="1"
-                        VerticalAlignment="Bottom"
-                        Background="{ThemeResource ControlStrokeColorDefaultBrush}" />
-                </Grid>
-            </ListView.Header>
             <ListView.ItemTemplate>
                 <DataTemplate x:DataType="viewModels:QueueObject">
                     <Grid
@@ -471,17 +483,42 @@
                             RepeatBehavior="Forever"
                             Text="{x:Bind Title}" />
 
-                        <marqueeTextRns:MarqueeText
+                        <Grid
                             Grid.Row="1"
                             Grid.Column="1"
-                            Margin="12,0,0,0"
-                            VerticalAlignment="Center"
-                            Behavior="Looping"
-                            Direction="Left"
-                            FontFamily="Segoe UI Variable Display"
-                            Foreground="{ThemeResource TextFillColorSecondary}"
-                            RepeatBehavior="Forever"
-                            Text="{x:Bind Artists}" />
+                            Margin="12,0,0,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <Border
+                                Margin="0,0,6,0"
+                                Padding="{StaticResource ExplicitBadgePadding}"
+                                VerticalAlignment="Center"
+                                Background="{ThemeResource ExplicitBadgeBackgroundBrush}"
+                                CornerRadius="2"
+                                ToolTipService.ToolTip="Explicit"
+                                Visibility="{x:Bind Explicit, Converter={StaticResource VisibilityConverter}}">
+                                <TextBlock
+                                    x:Name="ExplicitBadge"
+                                    AutomationProperties.Name="Explicit"
+                                    FontSize="{StaticResource ExplicitBadgeFontSize}"
+                                    FontWeight="SemiBold"
+                                    Foreground="{ThemeResource ExplicitBadgeForegroundBrush}"
+                                    Style="{ThemeResource CaptionTextBlockStyle}"
+                                    Text="E"
+                                    TextLineBounds="Tight" />
+                            </Border>
+                            <marqueeTextRns:MarqueeText
+                                Grid.Column="1"
+                                VerticalAlignment="Center"
+                                Behavior="Looping"
+                                Direction="Left"
+                                FontFamily="Segoe UI Variable Display"
+                                Foreground="{ThemeResource TextFillColorSecondary}"
+                                RepeatBehavior="Forever"
+                                Text="{x:Bind Artists}" />
+                        </Grid>
 
                         <StackPanel
                             Grid.Row="2"
@@ -519,20 +556,6 @@
                             Orientation="Horizontal"
                             Spacing="12">
 
-                            <Border
-                                Margin="0,-2,0,0"
-                                Padding="4,0"
-                                HorizontalAlignment="Right"
-                                VerticalAlignment="Center"
-                                Background="{ThemeResource ExplicitBadgeBackgroundBrush}"
-                                CornerRadius="2"
-                                Visibility="{x:Bind Explicit, Converter={StaticResource VisibilityConverter}}">
-                                <TextBlock
-                                    x:Name="ExplicitBadge"
-                                    Foreground="{ThemeResource ExplicitBadgeForegroundBrush}"
-                                    Style="{ThemeResource CaptionTextBlockStyle}"
-                                    Text="E" />
-                            </Border>
                             <Border
                                 Padding="6,2"
                                 HorizontalAlignment="Right"
@@ -672,7 +695,7 @@
 
         <TextBlock
             x:Name="NoItemsText"
-            Grid.Row="2"
+            Grid.Row="3"
             Grid.Column="0"
             Margin="0,-8,0,0"
             HorizontalAlignment="Center"
@@ -683,7 +706,7 @@
         <views:PreviewPane
             x:Name="PreviewPanel"
             Grid.Row="0"
-            Grid.RowSpan="3"
+            Grid.RowSpan="4"
             Grid.Column="1"
             Margin="12,-2,0,12"
             Padding="12"
@@ -693,7 +716,7 @@
         <InfoBar
             x:Name="PageInfoBar"
             Grid.Row="0"
-            Grid.RowSpan="3"
+            Grid.RowSpan="4"
             Grid.Column="0"
             Grid.ColumnSpan="2"
             Margin="12"
@@ -1046,16 +1069,19 @@
                                                         Text="{x:Bind Title}"
                                                         TextTrimming="CharacterEllipsis" />
                                                     <Border
-                                                        Padding="4,0"
+                                                        Padding="{StaticResource ExplicitBadgePadding}"
                                                         VerticalAlignment="Center"
                                                         Background="{ThemeResource ExplicitBadgeBackgroundBrush}"
-                                                        CornerRadius="2">
+                                                        CornerRadius="2"
+                                                        Visibility="{x:Bind Explicit, Converter={StaticResource VisibilityConverter}}">
                                                         <TextBlock
                                                             x:Name="ExplicitBadgeFailed"
+                                                            FontSize="{StaticResource ExplicitBadgeFontSize}"
+                                                            FontWeight="SemiBold"
                                                             Foreground="{ThemeResource ExplicitBadgeForegroundBrush}"
                                                             Style="{ThemeResource CaptionTextBlockStyle}"
                                                             Text="E"
-                                                            Visibility="{x:Bind Explicit, Converter={StaticResource VisibilityConverter}}" />
+                                                            TextLineBounds="Tight" />
                                                     </Border>
                                                 </StackPanel>
                                                 <TextBlock

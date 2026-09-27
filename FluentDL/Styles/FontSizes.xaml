@@ -4,4 +4,6 @@
 
     <x:Double x:Key="MediumFontSize">16</x:Double>
 
+    <x:Double x:Key="ExplicitBadgeFontSize">11</x:Double>
+
 </ResourceDictionary>

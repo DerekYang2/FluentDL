@@ -415,17 +415,42 @@
                                 Text="{x:Bind Title}" />
 
 
-                            <marqueeTextRns:MarqueeText
+                            <Grid
                                 Grid.Row="1"
                                 Grid.Column="1"
-                                Margin="12,0,0,0"
-                                VerticalAlignment="Center"
-                                Behavior="Looping"
-                                Direction="Left"
-                                FontFamily="Segoe UI Variable Display"
-                                Foreground="{ThemeResource TextFillColorSecondary}"
-                                RepeatBehavior="Forever"
-                                Text="{x:Bind Artists}" />
+                                Margin="12,0,0,0">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <Border
+                                    Margin="0,0,6,0"
+                                    Padding="{StaticResource ExplicitBadgePadding}"
+                                    VerticalAlignment="Center"
+                                    Background="{ThemeResource ExplicitBadgeBackgroundBrush}"
+                                    CornerRadius="2"
+                                    ToolTipService.ToolTip="Explicit"
+                                    Visibility="{x:Bind Explicit, Converter={StaticResource VisibilityConverter}}">
+                                    <TextBlock
+                                        x:Name="ExplicitBadge"
+                                        AutomationProperties.Name="Explicit"
+                                        FontSize="{StaticResource ExplicitBadgeFontSize}"
+                                        FontWeight="SemiBold"
+                                        Foreground="{ThemeResource ExplicitBadgeForegroundBrush}"
+                                        Style="{ThemeResource CaptionTextBlockStyle}"
+                                        Text="E"
+                                        TextLineBounds="Tight" />
+                                </Border>
+                                <marqueeTextRns:MarqueeText
+                                    Grid.Column="1"
+                                    VerticalAlignment="Center"
+                                    Behavior="Looping"
+                                    Direction="Left"
+                                    FontFamily="Segoe UI Variable Display"
+                                    Foreground="{ThemeResource TextFillColorSecondary}"
+                                    RepeatBehavior="Forever"
+                                    Text="{x:Bind Artists}" />
+                            </Grid>
 
                             <StackPanel
                                 Grid.Row="2"
@@ -468,20 +493,6 @@
                                 HorizontalAlignment="Right"
                                 Orientation="Horizontal"
                                 Spacing="12">
-                                <Border
-                                    Margin="0,-2,0,0"
-                                    Padding="4,0"
-                                    HorizontalAlignment="Right"
-                                    VerticalAlignment="Center"
-                                    Background="{ThemeResource ExplicitBadgeBackgroundBrush}"
-                                    CornerRadius="2"
-                                    Visibility="{x:Bind Explicit, Converter={StaticResource VisibilityConverter}}">
-                                    <TextBlock
-                                        x:Name="ExplicitBadge"
-                                        Foreground="{ThemeResource ExplicitBadgeForegroundBrush}"
-                                        Style="{ThemeResource CaptionTextBlockStyle}"
-                                        Text="E" />
-                                </Border>
                                 <Border
                                     Padding="6,2"
                                     HorizontalAlignment="Right"
