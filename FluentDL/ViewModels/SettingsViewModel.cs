@@ -5,6 +5,7 @@ using CommunityToolkit.Mvvm.Input;
 using FluentDL.Contracts.Services;
 using FluentDL.Helpers;
 using FluentDL.Core.Helpers;
+using FluentDL.Services;
 using Microsoft.UI.Xaml;
 using Windows.ApplicationModel;
 using Microsoft.UI.Xaml.Controls;
@@ -84,6 +85,8 @@ public partial class SettingsViewModel : ObservableRecipient
 
     private readonly IThemeSelectorService _themeSelectorService;
 
+    public QueueDisplaySettings QueueDisplay { get; }
+
     [ObservableProperty] private ElementTheme _elementTheme;
 
     [ObservableProperty] private string _versionDescription;
@@ -98,9 +101,10 @@ public partial class SettingsViewModel : ObservableRecipient
         get => FluentDL.Services.SpotifyApi.GetCallbackUri();
     }
 
-    public SettingsViewModel(IThemeSelectorService themeSelectorService)
+    public SettingsViewModel(IThemeSelectorService themeSelectorService, QueueDisplaySettings queueDisplay)
     {
         _themeSelectorService = themeSelectorService;
+        QueueDisplay = queueDisplay;
         _elementTheme = _themeSelectorService.Theme;
         _versionDescription = GetVersionDescription();
 
@@ -126,6 +130,7 @@ public partial class SettingsViewModel : ObservableRecipient
     {  
         Serilog.Log.Debug("Initializing missing settings defaults");
         await SaveSettingsAsyncIfNull<bool?>(DiagnosticLogging.VerboseSettingKey, false);
+        await SaveSettingsAsyncIfNull<bool?>(QueueDisplaySettings.SettingsKey, false);
         await SaveSettingsAsyncIfNull<int?>(CommandThreads, 1);
         await SaveSettingsAsyncIfNull<int?>(ConversionThreads, 3);
         await SaveSettingsAsyncIfNull<int?>(AudioConversionThreads, 6);
