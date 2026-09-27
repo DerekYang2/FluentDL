@@ -19,5 +19,8 @@
     <Compile Include="..\FluentDL\Services\QueueDisplaySettings.cs" Link="App\QueueDisplaySettings.cs" />
     <EmbeddedResource Include="..\FluentDL\Views\QueuePage.xaml" LogicalName="QueuePage.xaml" />
     <EmbeddedResource Include="..\FluentDL\Views\SettingsPage.xaml" LogicalName="SettingsPage.xaml" />
+    <EmbeddedResource Include="..\FluentDL\Views\Search.xaml" LogicalName="Search.xaml" />
+    <EmbeddedResource Include="..\FluentDL\Views\LocalExplorerPage.xaml" LogicalName="LocalExplorerPage.xaml" />
+    <EmbeddedResource Include="..\FluentDL\App.xaml" LogicalName="App.xaml" />
   </ItemGroup>
 </Project>

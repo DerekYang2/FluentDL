@@ -219,7 +219,7 @@ public sealed partial class QueuePage : Page
         var grid = (Grid)sender;
         SetCompactColumn(grid, 2, e.NewSize.Width >= 720, new GridLength(1, GridUnitType.Star));
         SetCompactColumn(grid, 3, e.NewSize.Width >= 920, new GridLength(64));
-        SetCompactColumn(grid, 4, e.NewSize.Width >= 480, new GridLength(96));
+        SetCompactColumn(grid, 5, e.NewSize.Width >= 480, new GridLength(96));
     }
 
     private static void SetCompactColumn(Grid grid, int column, bool visible, GridLength width)
