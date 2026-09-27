@@ -21,13 +21,205 @@
         <helpers:DurationConverter x:Key="DurationConverter" />
         <helpers:VisibilityConverter x:Key="VisibilityConverter" />
         <helpers:CollapsedConverter x:Key="CollapsedConverter" />
-        <viewModels:QueueViewModel x:Key="QueueViewModel" />
         <views:PathToVisibilityConverter x:Key="PathToVisibilityConverter" />
         <helpers:NullVisibilityConverter x:Key="NullVisibilityConverter" />
         <helpers:InverseNullVisibilityConverter x:Key="InverseNullVisibilityConverter" />
         <helpers:SourceToColorConverter x:Key="SourceToColorConverter" />
         <helpers:LocalSourceToVisibilityConverter x:Key="LocalSourceToVisibilityConverter" />
         <helpers:StringNullorEmptyVisibilityConverter x:Key="StringNullorEmptyVisibilityConverter" />
+        <Style x:Key="CompactQueueItemStyle" TargetType="ListViewItem">
+            <Setter Property="Padding" Value="12,0" />
+            <Setter Property="MinHeight" Value="0" />
+            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+        </Style>
+        <Style
+            x:Key="CompactQueueHeaderTextStyle"
+            BasedOn="{StaticResource CaptionTextBlockStyle}"
+            TargetType="TextBlock">
+            <Setter Property="Foreground" Value="{ThemeResource TextFillColorSecondaryBrush}" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+        </Style>
+        <DataTemplate x:Key="CompactQueueItemTemplate" x:DataType="viewModels:QueueObject">
+            <Grid
+                MinHeight="44"
+                Margin="0,6,0,6"
+                AutomationProperties.Name="{x:Bind Title}"
+                Background="Transparent"
+                SizeChanged="CompactQueueGrid_SizeChanged">
+                <Grid.ContextFlyout>
+                    <MenuFlyout>
+                        <MenuFlyoutItem
+                            AutomationProperties.AutomationId="CompactQueueCopyLink"
+                            Click="ShareLinkButton_OnClick"
+                            Tag="{x:Bind}"
+                            Text="Copy track link" />
+                        <MenuFlyoutItem
+                            AutomationProperties.AutomationId="CompactQueueDownloadCover"
+                            Click="DownloadCoverButton_OnClick"
+                            Tag="{x:Bind}"
+                            Text="Download cover" />
+                        <MenuFlyoutItem
+                            AutomationProperties.AutomationId="CompactQueueRemove"
+                            Click="RemoveButton_OnClick"
+                            Tag="{x:Bind}"
+                            Text="Remove from queue" />
+                        <MenuFlyoutSeparator Visibility="{x:Bind Source, Converter={StaticResource LocalSourceToVisibilityConverter}}" />
+                        <MenuFlyoutItem
+                            AutomationProperties.AutomationId="CompactQueueOpenSpek"
+                            Click="OpenSpekButton_Click"
+                            Tag="{x:Bind}"
+                            Text="Open with Spek"
+                            Visibility="{x:Bind Source, Converter={StaticResource LocalSourceToVisibilityConverter}}" />
+                        <MenuFlyoutItem
+                            AutomationProperties.AutomationId="CompactQueueOpenLocal"
+                            Click="OpenLocalButton_Click"
+                            Tag="{x:Bind}"
+                            Text="Open in File Explorer"
+                            Visibility="{x:Bind Source, Converter={StaticResource LocalSourceToVisibilityConverter}}" />
+                    </MenuFlyout>
+                </Grid.ContextFlyout>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="56" />
+                    <ColumnDefinition Width="2*" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="64" />
+                    <ColumnDefinition Width="96" />
+                    <ColumnDefinition Width="56" />
+                    <ColumnDefinition Width="72" />
+                </Grid.ColumnDefinitions>
+                <Border
+                    Width="44"
+                    Height="44"
+                    HorizontalAlignment="Left"
+                    VerticalAlignment="Center"
+                    CornerRadius="4"
+                    Visibility="{x:Bind LocalBitmapImage, Mode=OneWay, Converter={StaticResource NullVisibilityConverter}}">
+                    <Border.Background>
+                        <ImageBrush ImageSource="{x:Bind LocalBitmapImage, Mode=OneWay}" Stretch="UniformToFill" />
+                    </Border.Background>
+                </Border>
+                <Grid
+                    Grid.Column="1"
+                    Margin="0,0,16,0"
+                    VerticalAlignment="Center"
+                    ColumnSpacing="8"
+                    RowSpacing="2">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <TextBlock
+                        VerticalAlignment="Center"
+                        FontWeight="SemiBold"
+                        Text="{x:Bind Title}"
+                        TextTrimming="CharacterEllipsis"
+                        ToolTipService.ToolTip="{x:Bind Title}" />
+                    <TextBlock
+                        Grid.ColumnSpan="2"
+                        Grid.Row="1"
+                        VerticalAlignment="Center"
+                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                        Style="{ThemeResource CaptionTextBlockStyle}"
+                        Text="{x:Bind Artists}"
+                        TextTrimming="CharacterEllipsis"
+                        ToolTipService.ToolTip="{x:Bind Artists}" />
+                    <Border
+                        Grid.Column="1"
+                        Padding="4,0"
+                        VerticalAlignment="Center"
+                        Background="{ThemeResource ControlStrongFillColorDefaultBrush}"
+                        CornerRadius="2"
+                        ToolTipService.ToolTip="Explicit"
+                        Visibility="{x:Bind Explicit, Converter={StaticResource VisibilityConverter}}">
+                        <TextBlock
+                            AutomationProperties.Name="Explicit"
+                            Style="{ThemeResource CaptionTextBlockStyle}"
+                            Text="E" />
+                    </Border>
+                </Grid>
+                <TextBlock
+                    Grid.Column="2"
+                    Margin="0,0,16,0"
+                    VerticalAlignment="Center"
+                    Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                    Text="{x:Bind AlbumName}"
+                    TextTrimming="CharacterEllipsis"
+                    ToolTipService.ToolTip="{x:Bind AlbumName}" />
+                <TextBlock
+                    Grid.Column="3"
+                    Margin="0,0,12,0"
+                    VerticalAlignment="Center"
+                    Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                    Text="{x:Bind ReleaseDate, Converter={StaticResource DateToYearConverter}}" />
+                <Border
+                    Grid.Column="4"
+                    Margin="0,0,12,0"
+                    Padding="6,2"
+                    HorizontalAlignment="Left"
+                    VerticalAlignment="Center"
+                    Background="{ThemeResource LayerOnMicaBaseAltFillColorSecondaryBrush}"
+                    CornerRadius="2">
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                        <Ellipse
+                            Width="8"
+                            Height="8"
+                            VerticalAlignment="Center"
+                            Fill="{x:Bind Source, Converter={StaticResource SourceToColorConverter}}" />
+                        <TextBlock Style="{ThemeResource CaptionTextBlockStyle}" Text="{x:Bind Source}" />
+                    </StackPanel>
+                </Border>
+                <TextBlock
+                    Grid.Column="5"
+                    Margin="0,0,8,0"
+                    HorizontalAlignment="Right"
+                    VerticalAlignment="Center"
+                    Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                    Text="{x:Bind Duration, Converter={StaticResource DurationConverter}}" />
+                <StackPanel
+                    Grid.Column="6"
+                    HorizontalAlignment="Right"
+                    VerticalAlignment="Center"
+                    Orientation="Horizontal"
+                    Spacing="8">
+                    <Button
+                        MinWidth="32"
+                        MinHeight="32"
+                        Padding="6"
+                        AutomationProperties.AutomationId="CompactQueueOutput"
+                        AutomationProperties.Name="View command output"
+                        Click="OutputButton_OnClick"
+                        Style="{ThemeResource AccentButtonStyle}"
+                        Tag="{x:Bind}"
+                        ToolTipService.ToolTip="View command output"
+                        Visibility="{x:Bind ResultString, Mode=OneWay, Converter={StaticResource PathToVisibilityConverter}}">
+                        <FontIcon FontSize="16" Glyph="&#xE756;" />
+                    </Button>
+                    <ProgressRing
+                        Width="24"
+                        Height="24"
+                        MinWidth="0"
+                        MinHeight="0"
+                        VerticalAlignment="Center"
+                        AutomationProperties.AutomationId="CompactQueueProgress"
+                        AutomationProperties.Name="Converting track"
+                        IsActive="{x:Bind IsRunning, Mode=OneWay}"
+                        Visibility="{x:Bind IsRunning, Mode=OneWay, Converter={StaticResource VisibilityConverter}}" />
+                </StackPanel>
+                <InfoBadge
+                    Width="12"
+                    Height="12"
+                    Margin="-4,-4,0,0"
+                    HorizontalAlignment="Left"
+                    VerticalAlignment="Top"
+                    AutomationProperties.Name="Conversion result"
+                    Background="{x:Bind ConvertBadgeColor, Mode=OneWay}"
+                    ToolTipService.ToolTip="Conversion result. View command output for details." />
+            </Grid>
+        </DataTemplate>
     </Page.Resources>
 
     <Grid>
@@ -41,6 +233,21 @@
             <ColumnDefinition Width="Auto" />
         </Grid.ColumnDefinitions>
         <controls1:DockPanel Grid.Row="0" Grid.Column="0">
+            <ToggleButton
+                x:Name="CompactQueueButton"
+                MinWidth="32"
+                MinHeight="32"
+                Margin="0,0,4,0"
+                Padding="8"
+                VerticalAlignment="Center"
+                AutomationProperties.AutomationId="CompactQueueButton"
+                AutomationProperties.Name="Compact queue"
+                Click="CompactQueueButton_Click"
+                IsChecked="{x:Bind ViewModel.QueueDisplay.IsCompact, Mode=OneWay}"
+                IsEnabled="{x:Bind ViewModel.QueueDisplay.CanChangeLayout, Mode=OneWay}"
+                ToolTipService.ToolTip="Compact queue (also saved in Settings)">
+                <FontIcon FontSize="16" Glyph="&#xE8FD;" />
+            </ToggleButton>
             <Button
                 x:Name="CountTextButton"
                 Margin="0,0,0,0"
@@ -168,9 +375,44 @@
             Padding="0,0,12,0"
             BorderBrush="{ThemeResource ControlStrongStrokeColorDefaultBrush}"
             BorderThickness="0"
+            ContextRequested="CustomListView_ContextRequested"
             CornerRadius="8"
             SelectionChanged="CustomListView_OnSelectionChanged"
             ShowsScrollingPlaceholders="True">
+            <ListView.Header>
+                <Grid
+                    x:Name="CompactQueueHeader"
+                    MinHeight="36"
+                    Margin="12,0,12,8"
+                    AutomationProperties.AutomationId="CompactQueueHeader"
+                    SizeChanged="CompactQueueGrid_SizeChanged"
+                    Visibility="{x:Bind ViewModel.QueueDisplay.IsCompact, Mode=OneWay, Converter={StaticResource VisibilityConverter}}">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="56" />
+                        <ColumnDefinition Width="2*" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="64" />
+                        <ColumnDefinition Width="96" />
+                        <ColumnDefinition Width="56" />
+                        <ColumnDefinition Width="72" />
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Grid.Column="1" Style="{StaticResource CompactQueueHeaderTextStyle}" Text="Title" />
+                    <TextBlock Grid.Column="2" Style="{StaticResource CompactQueueHeaderTextStyle}" Text="Album" />
+                    <TextBlock Grid.Column="3" Style="{StaticResource CompactQueueHeaderTextStyle}" Text="Year" />
+                    <TextBlock Grid.Column="4" Style="{StaticResource CompactQueueHeaderTextStyle}" Text="Source" />
+                    <TextBlock
+                        Grid.Column="5"
+                        Margin="0,0,8,0"
+                        HorizontalAlignment="Right"
+                        Style="{StaticResource CompactQueueHeaderTextStyle}"
+                        Text="Duration" />
+                    <Border
+                        Grid.ColumnSpan="7"
+                        Height="1"
+                        VerticalAlignment="Bottom"
+                        Background="{ThemeResource ControlStrokeColorDefaultBrush}" />
+                </Grid>
+            </ListView.Header>
             <ListView.ItemTemplate>
                 <DataTemplate x:DataType="viewModels:QueueObject">
                     <Grid
@@ -323,7 +565,7 @@
                                     Click="ShareLinkButton_OnClick"
                                     Tag="{Binding}"
                                     ToolTipService.ToolTip="Copy track link"
-                                    Visibility="{x:Bind ShareVisibility}">
+                                    Visibility="{x:Bind ShareVisibility, Mode=OneWay}">
                                     <FontIcon FontSize="20" Glyph="&#xE71B;" />
                                 </Button>
                                 <Button
@@ -334,7 +576,7 @@
                                     Click="DownloadCoverButton_OnClick"
                                     Tag="{Binding}"
                                     ToolTipService.ToolTip="Download cover"
-                                    Visibility="{x:Bind DownloadCoverVisibility}">
+                                    Visibility="{x:Bind DownloadCoverVisibility, Mode=OneWay}">
                                     <FontIcon FontSize="20" Glyph="&#xEE71;" />
                                 </Button>
                                 <Button
@@ -345,7 +587,7 @@
                                     Click="RemoveButton_OnClick"
                                     Tag="{Binding}"
                                     ToolTipService.ToolTip="Remove from queue"
-                                    Visibility="{x:Bind RemoveVisibility}">
+                                    Visibility="{x:Bind RemoveVisibility, Mode=OneWay}">
                                     <FontIcon FontSize="20" Glyph="&#xECC9;" />
                                 </Button>
 

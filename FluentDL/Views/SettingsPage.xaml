@@ -1065,6 +1065,23 @@
                         </local:SettingsExpander.Items>
                     </local:SettingsExpander>
 
+                    <local:SettingsCard
+                        Header="Compact queue"
+                        Description="Show smaller queue rows without shortcut buttons. Also available on the Queue page.">
+                        <local:SettingsCard.HeaderIcon>
+                            <FontIcon Glyph="&#xE8FD;" />
+                        </local:SettingsCard.HeaderIcon>
+                        <ToggleSwitch
+                            x:Name="CompactQueueToggle"
+                            AutomationProperties.AutomationId="CompactQueueToggle"
+                            AutomationProperties.Name="Compact queue"
+                            IsEnabled="{x:Bind ViewModel.QueueDisplay.CanChangeLayout, Mode=OneWay}"
+                            IsOn="{x:Bind ViewModel.QueueDisplay.IsCompact, Mode=OneWay}"
+                            OffContent=""
+                            OnContent=""
+                            Toggled="CompactQueueToggle_Toggled" />
+                    </local:SettingsCard>
+
                     <local:SettingsExpander
                         x:Name="ShortcutButtonExpander"
                         HorizontalContentAlignment="Stretch"
@@ -1147,7 +1164,7 @@
                                 x:Name="QueuePageShortcuts"
                                 HorizontalContentAlignment="Left"
                                 ContentAlignment="Vertical"
-                                Description="Enabled shortcut buttons for Queue"
+                                Description="Shortcut buttons shown in the standard queue layout"
                                 Header="Queue Page">
                                 <local:SettingsCard.HeaderIcon>
                                     <FontIcon Glyph="&#xE9D5;" />

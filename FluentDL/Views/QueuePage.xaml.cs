@@ -1,5 +1,6 @@
 ﻿using System.Collections.Concurrent;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Globalization;
 using System.Text.RegularExpressions;
@@ -10,6 +11,7 @@ using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Data;
+using Microsoft.UI.Xaml.Input;
 using FluentDL.Contracts.Services;
 using FluentDL.Helpers;
 using FluentDL.Models;
@@ -35,6 +37,8 @@ public sealed partial class QueuePage : Page
 {
     private sealed record BackupOption(string DisplayName, FileInfo? File);
     private const string BackupFileSuffix = ".zip";
+    private readonly DataTemplate _regularQueueItemTemplate;
+    private readonly Style? _regularQueueItemContainerStyle;
     public delegate void QueueRunCallback(InfoBarSeverity severity, string message);
 
     // Create callback
@@ -79,6 +83,8 @@ public sealed partial class QueuePage : Page
     {
         ViewModel = App.GetService<QueueViewModel>();
         InitializeComponent();
+        _regularQueueItemTemplate = CustomListView.ItemTemplate;
+        _regularQueueItemContainerStyle = CustomListView.ItemContainerStyle;
         dispatcherQueue = DispatcherQueue.GetForCurrentThread();
         dispatcherTimer = new DispatcherTimer();
         dispatcherTimer.Tick += DispatcherTimer_Tick;
@@ -141,6 +147,17 @@ public sealed partial class QueuePage : Page
     protected async override void OnNavigatedTo(NavigationEventArgs e)
     {
         OnQueueSourceChange();
+        ViewModel.QueueDisplay.PropertyChanged += QueueDisplay_PropertyChanged;
+        try
+        {
+            await ViewModel.QueueDisplay.LoadAsync();
+            ApplyQueueLayout();
+        }
+        catch (Exception ex)
+        {
+            Serilog.Log.Error(ex, "Could not load the queue display preference");
+            ShowInfoBar(InfoBarSeverity.Error, "Could not load the queue display preference.", 5);
+        }
 
         // Get the selected item
         var selectedSong = (SongSearchObject)CustomListView.SelectedItem;
@@ -162,8 +179,86 @@ public sealed partial class QueuePage : Page
 
     protected override void OnNavigatedFrom(NavigationEventArgs e)
     {
+        ViewModel.QueueDisplay.PropertyChanged -= QueueDisplay_PropertyChanged;
         // Clear preview 
         PreviewPanel.Clear();
+    }
+
+    private void QueueDisplay_PropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(QueueDisplaySettings.IsCompact))
+        {
+            ApplyQueueLayout();
+        }
+    }
+
+    private void ApplyQueueLayout()
+    {
+        var template = ViewModel.QueueDisplay.IsCompact
+            ? (DataTemplate)Resources["CompactQueueItemTemplate"]
+            : _regularQueueItemTemplate;
+        if (CustomListView.ItemTemplate != template)
+        {
+            var firstVisibleIndex = (CustomListView.ItemsPanelRoot as ItemsStackPanel)?.FirstVisibleIndex ?? -1;
+            var anchor = firstVisibleIndex > 0 && firstVisibleIndex < CustomListView.Items.Count
+                ? CustomListView.Items[firstVisibleIndex]
+                : null;
+            CustomListView.ItemContainerStyle = ViewModel.QueueDisplay.IsCompact
+                ? (Style)Resources["CompactQueueItemStyle"]
+                : _regularQueueItemContainerStyle;
+            CustomListView.ItemTemplate = template;
+            if (anchor is not null)
+            {
+                CustomListView.ScrollIntoView(anchor, ScrollIntoViewAlignment.Leading);
+            }
+        }
+    }
+
+    private void CompactQueueGrid_SizeChanged(object sender, SizeChangedEventArgs e)
+    {
+        var grid = (Grid)sender;
+        SetCompactColumn(grid, 2, e.NewSize.Width >= 720, new GridLength(1, GridUnitType.Star));
+        SetCompactColumn(grid, 3, e.NewSize.Width >= 920, new GridLength(64));
+        SetCompactColumn(grid, 4, e.NewSize.Width >= 480, new GridLength(96));
+    }
+
+    private static void SetCompactColumn(Grid grid, int column, bool visible, GridLength width)
+    {
+        grid.ColumnDefinitions[column].Width = visible ? width : new GridLength(0);
+        foreach (var child in grid.Children)
+        {
+            if (child is FrameworkElement element && Grid.GetColumn(element) == column)
+            {
+                element.Visibility = visible ? Visibility.Visible : Visibility.Collapsed;
+            }
+        }
+    }
+
+    private void CustomListView_ContextRequested(UIElement sender, ContextRequestedEventArgs e)
+    {
+        if (!ViewModel.QueueDisplay.IsCompact || e.TryGetPosition(CustomListView, out _)) return;
+        if (CustomListView.SelectedItem is not null
+            && CustomListView.ContainerFromItem(CustomListView.SelectedItem) is ListViewItem container
+            && container.ContentTemplateRoot is FrameworkElement row
+            && row.ContextFlyout is not null)
+        {
+            row.ContextFlyout.ShowAt(container);
+            e.Handled = true;
+        }
+    }
+
+    private async void CompactQueueButton_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            await ViewModel.QueueDisplay.SetCompactAsync(CompactQueueButton.IsChecked == true);
+        }
+        catch (Exception ex)
+        {
+            Serilog.Log.Error(ex, "Could not save the queue display preference");
+            CompactQueueButton.IsChecked = ViewModel.QueueDisplay.IsCompact;
+            ShowInfoBar(InfoBarSeverity.Error, "Could not save the queue display preference. The previous layout is still active.", 5);
+        }
     }
 
     private async void OutputButton_OnClick(object sender, RoutedEventArgs e)
@@ -229,7 +324,7 @@ public sealed partial class QueuePage : Page
 
     private void ShareLinkButton_OnClick(object sender, RoutedEventArgs e)
     {
-        var button = sender as Button;
+        var button = sender as FrameworkElement;
         var song = button?.Tag as SongSearchObject;
 
         CopySongLink(song);
@@ -237,7 +332,7 @@ public sealed partial class QueuePage : Page
 
     private async void DownloadCoverButton_OnClick(object sender, RoutedEventArgs e)
     {
-        var button = sender as Button;
+        var button = sender as FrameworkElement;
         var song = button?.Tag as SongSearchObject;
 
         await DownloadSongCover(song);
@@ -245,7 +340,7 @@ public sealed partial class QueuePage : Page
 
     private async void RemoveButton_OnClick(object sender, RoutedEventArgs e)
     {
-        var button = sender as Button;
+        var button = sender as FrameworkElement;
         var song = button?.Tag as SongSearchObject;
 
         await RemoveSongFromQueue(song);
@@ -253,7 +348,7 @@ public sealed partial class QueuePage : Page
 
     private void OpenLocalButton_Click(object sender, RoutedEventArgs e)
     {
-        var button = sender as Button;
+        var button = sender as FrameworkElement;
         var song = button?.Tag as SongSearchObject;
 
         if (song != null)
@@ -265,7 +360,7 @@ public sealed partial class QueuePage : Page
 
     private async void OpenSpekButton_Click(object sender, RoutedEventArgs e)
     {
-        var button = sender as Button;
+        var button = sender as FrameworkElement;
         var song = button?.Tag as SongSearchObject;
         if (song == null || song.Source != "local" || !File.Exists(song.Id))  // SongSearchObject.id for local tracks is the file path
         {
