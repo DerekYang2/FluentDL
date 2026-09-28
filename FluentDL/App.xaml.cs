@@ -93,6 +93,9 @@ public partial class App : Application
                 Environment.OSVersion.Version,
                 System.Runtime.InteropServices.RuntimeInformation.ProcessArchitecture, RuntimeHelper.IsMSIX);
             InitializeComponent();
+#if DEBUG
+            DebugSettings.LayoutCycleTracingLevel = LayoutCycleTracingLevel.High;
+#endif
             Host = Microsoft.Extensions.Hosting.Host.CreateDefaultBuilder().UseContentRoot(AppContext.BaseDirectory)
                 .ConfigureLogging(logging =>
                 {
@@ -191,6 +194,14 @@ public partial class App : Application
     {
         if (IsVerboseLogging == enabled) return;
         LogLevel.MinimumLevel = enabled ? LogEventLevel.Debug : LogEventLevel.Information;
+#if !DEBUG
+        if (Current is App app)
+        {
+            app.DebugSettings.LayoutCycleTracingLevel = enabled
+                ? LayoutCycleTracingLevel.High
+                : LayoutCycleTracingLevel.None;
+        }
+#endif
         Log.Information("Verbose logging {State}", enabled ? "enabled" : "disabled");
     }
 
