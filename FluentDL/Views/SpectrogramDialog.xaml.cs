@@ -4,7 +4,8 @@ using FluentDL.Helpers;
 using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
-using Serilog;
+using Microsoft.UI.Xaml.Media.Imaging;
+using System.Diagnostics;
 using System.IO;
 
 // To learn more about WinUI, the WinUI project structure,
@@ -14,12 +15,13 @@ namespace FluentDL.Views
 {
     public sealed partial class SpectrogramDialog : UserControl
     {
-        private bool _isOpen;
+        private int _isApplyingZoom = 0;
         private string? _selectedFilePath;
 
         public SpectrogramDialog()
         {
             InitializeComponent();
+            SpectrogramScrollView.SizeChanged += async (s, e) => await SetZoomDefault();
         }
 
         public async Task OpenSpectrogramDialog(SongSearchObject? selectedSong, DispatcherQueue dispatcher, XamlRoot xamlRoot)
@@ -51,42 +53,44 @@ namespace FluentDL.Views
                 });
             }
         }
-        private void Dialog_Opened(ContentDialog sender, ContentDialogOpenedEventArgs args)
+        public async Task SetZoomDefault()
         {
-            _isOpen = true;
-            ResetZoom();
-        }
-
-        private void Dialog_Closed(ContentDialog sender, ContentDialogClosedEventArgs args)
-        {
-            _isOpen = false;
-        }
-
-        private void SpectrogramScrollView_SizeChanged(object sender, SizeChangedEventArgs args)
-        {
-            if (_isOpen)
+            try
             {
-                Log.Debug(
-                    "Spectrogram resized; control {ControlWidth}x{ControlHeight}, image {ImageWidth}x{ImageHeight}, zoom {ZoomFactor}",
-                    args.NewSize.Width, args.NewSize.Height,
-                    SpectrogramImage.ActualWidth, SpectrogramImage.ActualHeight,
-                    SpectrogramScrollView.ZoomFactor);
+                var measuredHeight = SpectrogramScrollView.ActualHeight;
+                var measuredWidth = SpectrogramScrollView.ActualWidth;
+
+                double vpH = measuredHeight;
+                double vpW = measuredWidth;
+                var imgW = (SpectrogramImage.Source as BitmapImage)?.PixelWidth;
+                var imgH = (SpectrogramImage.Source as BitmapImage)?.PixelHeight;
+                if (imgH != null && imgW != null)
+                {
+                    if (Interlocked.CompareExchange(ref _isApplyingZoom, 1, 0) != 0) return;
+
+                    double heightRatio = measuredHeight / measuredWidth;  // Height = X * Width
+                    double imgTargetH = Math.Floor(heightRatio * (double)imgW) - 1;
+                    double scale_factor = imgTargetH / (double)imgH;
+                    SpectrogramScrollView.ZoomTo((float)scale_factor, null);
+                    await Task.Delay(100);
+                }
+
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Failed to set zoom: {ex.Message}");
+                SpectrogramScrollView.ZoomTo(1f, null);
+            }
+            finally
+            {
+                Interlocked.Exchange(ref _isApplyingZoom, 0);
             }
         }
 
-        private void ResetZoom()
-        {
-            if (Math.Abs(SpectrogramScrollView.ZoomFactor - 1f) < 0.0001f) return;
-
-            Log.Debug("Resetting spectrogram zoom from {ZoomFactor} to 1", SpectrogramScrollView.ZoomFactor);
-            SpectrogramScrollView.ZoomTo(1f, null,
-                new ScrollingZoomOptions(ScrollingAnimationMode.Disabled, ScrollingSnapPointsMode.Ignore));
-        }
-
-        private void SpectrogramDialog_SecondaryButtonClick(ContentDialog sender, ContentDialogButtonClickEventArgs args)
+        private async void SpectrogramDialog_SecondaryButtonClick(ContentDialog sender, ContentDialogButtonClickEventArgs args)
         {
             args.Cancel = true;
-            ResetZoom();
+            await SetZoomDefault();
         }
 
         private async void SpectrogramDialog_PrimaryButtonClick(ContentDialog sender, ContentDialogButtonClickEventArgs args)

@@ -12,11 +12,8 @@
     <ContentDialog
         x:Name="Dialog"
         Title="View Spectrogram"
-        Closed="Dialog_Closed"
         CloseButtonText="Close"
-        FullSizeDesired="False"
         IsSecondaryButtonEnabled="True"
-        Opened="Dialog_Opened"
         PrimaryButtonClick="SpectrogramDialog_PrimaryButtonClick"
         PrimaryButtonText="Save Image"
         SecondaryButtonClick="SpectrogramDialog_SecondaryButtonClick"
@@ -72,11 +69,9 @@
                 Background="Black"
                 BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
                 BorderThickness="1"
-                ContentOrientation="None"
                 CornerRadius="8"
                 HorizontalScrollBarVisibility="Visible"
                 HorizontalScrollMode="Auto"
-                SizeChanged="SpectrogramScrollView_SizeChanged"
                 VerticalScrollBarVisibility="Visible"
                 VerticalScrollMode="Auto"
                 ZoomMode="Enabled">
