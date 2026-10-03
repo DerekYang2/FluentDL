@@ -218,9 +218,16 @@
             x:Name="QueueProgress"
             Grid.Row="1"
             Grid.Column="0"
-            Margin="0,8,0,12"
+            Margin="0,8,0,0"
             IsIndeterminate="False"
             Value="0" />
+
+        <!--  Row 2 holds the compact header, or a 12 px gap above the standard list.  -->
+        <Border
+            Grid.Row="2"
+            Grid.Column="0"
+            Height="12"
+            Visibility="{x:Bind ViewModel.QueueDisplay.IsCompact, Mode=OneWay, Converter={StaticResource CollapsedConverter}}" />
 
         <views:CompactQueueHeader
             Grid.Row="2"
