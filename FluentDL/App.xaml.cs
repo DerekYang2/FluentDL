@@ -93,9 +93,7 @@ public partial class App : Application
                 Environment.OSVersion.Version,
                 System.Runtime.InteropServices.RuntimeInformation.ProcessArchitecture, RuntimeHelper.IsMSIX);
             InitializeComponent();
-#if DEBUG
-            DebugSettings.LayoutCycleTracingLevel = LayoutCycleTracingLevel.High;
-#endif
+            ApplyLayoutCycleTracing(IsVerboseLogging);
             Host = Microsoft.Extensions.Hosting.Host.CreateDefaultBuilder().UseContentRoot(AppContext.BaseDirectory)
                 .ConfigureLogging(logging =>
                 {
@@ -195,15 +193,19 @@ public partial class App : Application
     {
         if (IsVerboseLogging == enabled) return;
         LogLevel.MinimumLevel = enabled ? LogEventLevel.Debug : LogEventLevel.Information;
-#if !DEBUG
-        if (Current is App app)
-        {
-            app.DebugSettings.LayoutCycleTracingLevel = enabled
-                ? LayoutCycleTracingLevel.High
-                : LayoutCycleTracingLevel.None;
-        }
-#endif
+        (Current as App)?.ApplyLayoutCycleTracing(enabled);
         Log.Information("Verbose logging {State}", enabled ? "enabled" : "disabled");
+    }
+
+    // WinUI writes layout-cycle traces to an attached native debugger (turn on native code debugging
+    // in Visual Studio) or to a capture tool such as Sysinternals DebugView, not to the Serilog files.
+    private void ApplyLayoutCycleTracing(bool verboseLogging)
+    {
+#if DEBUG
+        DebugSettings.LayoutCycleTracingLevel = LayoutCycleTracingLevel.High;
+#else
+        DebugSettings.LayoutCycleTracingLevel = verboseLogging ? LayoutCycleTracingLevel.High : LayoutCycleTracingLevel.None;
+#endif
     }
 
     private void App_UnhandledException(object sender, Microsoft.UI.Xaml.UnhandledExceptionEventArgs e)
