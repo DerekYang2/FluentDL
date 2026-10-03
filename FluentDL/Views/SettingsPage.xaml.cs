@@ -198,21 +198,6 @@ public sealed partial class SettingsPage : Page
         }
     }
 
-    private async void CompactQueueToggle_Toggled(object sender, RoutedEventArgs e)
-    {
-        if (CompactQueueToggle.IsOn == ViewModel.QueueDisplay.IsCompact) return;
-        try
-        {
-            await ViewModel.QueueDisplay.SetCompactAsync(CompactQueueToggle.IsOn);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Could not save the queue display preference");
-            CompactQueueToggle.IsOn = ViewModel.QueueDisplay.IsCompact;
-            ShowInfoBar(InfoBarSeverity.Error, "Could not save the queue display preference. The previous layout is still active.", 5, "Queue display");
-        }
-    }
-
     private async void VerboseLoggingToggle_Toggled(object sender, RoutedEventArgs e)
     {
         if (_updatingDiagnostics) return;

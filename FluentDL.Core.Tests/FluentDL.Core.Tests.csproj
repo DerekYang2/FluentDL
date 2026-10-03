@@ -18,7 +18,6 @@
     <EmbeddedResource Include="..\FluentDL\Views\QueuePage.xaml" LogicalName="QueuePage.xaml" />
     <EmbeddedResource Include="..\FluentDL\Views\CompactQueueRow.xaml" LogicalName="CompactQueueRow.xaml" />
     <EmbeddedResource Include="..\FluentDL\Views\ExplicitBadge.xaml" LogicalName="ExplicitBadge.xaml" />
-    <EmbeddedResource Include="..\FluentDL\Views\SettingsPage.xaml" LogicalName="SettingsPage.xaml" />
     <EmbeddedResource Include="..\FluentDL\Views\Search.xaml" LogicalName="Search.xaml" />
     <EmbeddedResource Include="..\FluentDL\Views\LocalExplorerPage.xaml" LogicalName="LocalExplorerPage.xaml" />
   </ItemGroup>
