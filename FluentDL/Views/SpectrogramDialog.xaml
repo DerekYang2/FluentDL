@@ -12,7 +12,9 @@
     <ContentDialog
         x:Name="Dialog"
         Title="View Spectrogram"
+        Closed="Dialog_Closed"
         CloseButtonText="Close"
+        FullSizeDesired="False"
         IsSecondaryButtonEnabled="True"
         Opened="Dialog_Opened"
         PrimaryButtonClick="SpectrogramDialog_PrimaryButtonClick"
