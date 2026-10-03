@@ -12,7 +12,7 @@
             <Setter Property="VerticalAlignment" Value="Center" />
         </Style>
     </UserControl.Resources>
-    <Grid MinHeight="24">
+    <Grid MinHeight="36">
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="{x:Bind Columns.ArtworkWidth}" />
             <ColumnDefinition Width="{x:Bind Columns.TitleWidth}" />
