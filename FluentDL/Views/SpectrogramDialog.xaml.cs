@@ -5,6 +5,7 @@ using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Serilog;
+using Serilog.Events;
 using System.IO;
 
 // To learn more about WinUI, the WinUI project structure,
@@ -14,7 +15,6 @@ namespace FluentDL.Views
 {
     public sealed partial class SpectrogramDialog : UserControl
     {
-        private bool _isOpen;
         private string? _selectedFilePath;
 
         public SpectrogramDialog()
@@ -53,34 +53,24 @@ namespace FluentDL.Views
         }
         private void Dialog_Opened(ContentDialog sender, ContentDialogOpenedEventArgs args)
         {
-            _isOpen = true;
             ResetZoom();
-        }
-
-        private void Dialog_Closed(ContentDialog sender, ContentDialogClosedEventArgs args)
-        {
-            _isOpen = false;
         }
 
         private void SpectrogramScrollView_SizeChanged(object sender, SizeChangedEventArgs args)
         {
-            if (_isOpen)
-            {
-                Log.Debug(
-                    "Spectrogram resized; control {ControlWidth}x{ControlHeight}, image {ImageWidth}x{ImageHeight}, zoom {ZoomFactor}",
-                    args.NewSize.Width, args.NewSize.Height,
-                    SpectrogramImage.ActualWidth, SpectrogramImage.ActualHeight,
-                    SpectrogramScrollView.ZoomFactor);
-            }
+            if (!Log.IsEnabled(LogEventLevel.Debug)) return;
+
+            Log.Debug(
+                "Spectrogram resized; control {ControlWidth}x{ControlHeight}, image {ImageWidth}x{ImageHeight}, zoom {ZoomFactor}",
+                args.NewSize.Width, args.NewSize.Height,
+                SpectrogramImage.ActualWidth, SpectrogramImage.ActualHeight,
+                SpectrogramScrollView.ZoomFactor);
         }
 
         private void ResetZoom()
         {
-            if (Math.Abs(SpectrogramScrollView.ZoomFactor - 1f) < 0.0001f) return;
-
             Log.Debug("Resetting spectrogram zoom from {ZoomFactor} to 1", SpectrogramScrollView.ZoomFactor);
-            SpectrogramScrollView.ZoomTo(1f, null,
-                new ScrollingZoomOptions(ScrollingAnimationMode.Disabled, ScrollingSnapPointsMode.Ignore));
+            SpectrogramScrollView.ZoomTo(1f, null, new ScrollingZoomOptions(ScrollingAnimationMode.Disabled));
         }
 
         private void SpectrogramDialog_SecondaryButtonClick(ContentDialog sender, ContentDialogButtonClickEventArgs args)
