@@ -1,5 +1,6 @@
 ﻿using CommunityToolkit.Labs.WinUI.MarqueeTextRns;
 using FluentDL.Contracts.Services;
+using FluentDL.Core.Contracts.Services;
 using FluentDL.Helpers;
 using FluentDL.Models;
 using FluentDL.Services;

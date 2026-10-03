@@ -1,0 +1,19 @@
+<UserControl
+    x:Class="FluentDL.Views.ExplicitBadge"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <Border
+        Padding="{StaticResource ExplicitBadgePadding}"
+        Background="{ThemeResource ExplicitBadgeBackgroundBrush}"
+        CornerRadius="2"
+        ToolTipService.ToolTip="Explicit">
+        <TextBlock
+            AutomationProperties.Name="Explicit"
+            FontSize="{StaticResource ExplicitBadgeFontSize}"
+            FontWeight="SemiBold"
+            Foreground="{ThemeResource ExplicitBadgeForegroundBrush}"
+            Style="{ThemeResource CaptionTextBlockStyle}"
+            Text="E"
+            TextLineBounds="Tight" />
+    </Border>
+</UserControl>

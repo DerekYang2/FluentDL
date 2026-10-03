@@ -1,4 +1,5 @@
 ﻿using FluentDL.Contracts.Services;
+using FluentDL.Core.Contracts.Services;
 using FluentDL.Helpers;
 
 using Microsoft.UI.Xaml;

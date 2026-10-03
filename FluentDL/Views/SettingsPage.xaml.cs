@@ -2,6 +2,7 @@
 using CommunityToolkit.WinUI.Controls;
 using CommunityToolkit.WinUI.Helpers;
 using FluentDL.Contracts.Services;
+using FluentDL.Core.Contracts.Services;
 using FluentDL.Core.Helpers;
 using FluentDL.Helpers;
 using FluentDL.Models;
@@ -65,16 +66,6 @@ public sealed partial class SettingsPage : Page
 
     private async Task InitializeAsync()
     {
-        try
-        {
-            await ViewModel.QueueDisplay.LoadAsync();
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Could not load the queue display preference");
-            ShowInfoBar(InfoBarSeverity.Error, "Could not load the queue display preference.", 5, "Queue display");
-        }
-
         // Set sliders
         // Initial values
         ConversionThreadsCard.Description = $"{(int)Math.Round(ConversionThreadsSlider.Value)} threads";
@@ -209,7 +200,7 @@ public sealed partial class SettingsPage : Page
 
     private async void CompactQueueToggle_Toggled(object sender, RoutedEventArgs e)
     {
-        if (CompactQueueToggle.IsOn == ViewModel.QueueDisplay.IsCompact || !ViewModel.QueueDisplay.CanChangeLayout) return;
+        if (CompactQueueToggle.IsOn == ViewModel.QueueDisplay.IsCompact) return;
         try
         {
             await ViewModel.QueueDisplay.SetCompactAsync(CompactQueueToggle.IsOn);
@@ -1004,6 +995,7 @@ public sealed partial class SettingsPage : Page
                 {
                     string? result = await localSettings.ImportSettingsAsync(content);
                     await SettingsViewModel.SetMissingDefaults();  // Fills in any null/improper values with defaults
+                    await ViewModel.QueueDisplay.LoadAsync();
                     await InitializeAsync();
 
                     if (string.IsNullOrEmpty(result))  // No error message
@@ -1047,6 +1039,7 @@ public sealed partial class SettingsPage : Page
         try
         {
             await SettingsViewModel.ResetSettings();
+            await ViewModel.QueueDisplay.LoadAsync();
             await InitializeAsync();
             ShowInfoBar(InfoBarSeverity.Success, "You may need to restart the application for all changes to apply.", seconds: 3, title: "Reset Successful");
         }

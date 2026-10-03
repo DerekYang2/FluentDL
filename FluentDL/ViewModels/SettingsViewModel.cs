@@ -3,6 +3,8 @@ using System.Windows.Input;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using FluentDL.Contracts.Services;
+using FluentDL.Core.Services;
+using FluentDL.Core.Contracts.Services;
 using FluentDL.Helpers;
 using FluentDL.Core.Helpers;
 using FluentDL.Services;
@@ -182,7 +184,7 @@ public partial class SettingsViewModel : ObservableRecipient
         await SaveSettingsAsyncIfNull<string?>(LyricsDirectory, ""); // Empty means same directory as track
         await SaveSettingsAsyncIfNull<bool?>(AutoBackupEnabled, true);
         await SaveSettingsAsyncIfNull<int?>(BackupRetentionCount, 5);
-        await localSettings.SaveSettingAsync(FirstRun, false);  // Set first run to false
+        await SaveSettingsAsyncIfNull<bool?>(FirstRun, false);
     }
 
     public static async Task ResetSettings()

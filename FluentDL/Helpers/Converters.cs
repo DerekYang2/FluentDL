@@ -1,5 +1,6 @@
 ﻿using ABI.Microsoft.UI.Xaml;
 using AngleSharp.Dom;
+using FluentDL.Core.Helpers;
 using FluentDL.Models;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Data;
@@ -44,31 +45,11 @@ internal class DateVerboseConverter : IValueConverter
 
 internal class DurationConverter : IValueConverter
 {
-    // Converts seconds to H hr, M min, S sec
+    // Converts a duration to H hr, M min, S sec
     public object Convert(object? value, Type targetType, object parameter, string language)
     {
-        int? seconds = null;
-        if (value is string valstr)
-        {
-            if (string.IsNullOrWhiteSpace(valstr)) return "";
-
-            if (int.TryParse(valstr, out int result))
-            {
-                seconds = result;
-            }
-        }
-        else if (value is int valint)
-        {
-            seconds = valint;
-        }
-
-        if (seconds != null)
-        {
-            TimeSpan ts = TimeSpan.FromSeconds((int)seconds);
-            return (ts.Hours > 0 ? ts.Hours + " hr " : "") + (ts.Minutes > 0 ? ts.Minutes + " min " : "") + ts.Seconds + " sec";
-        }
-
-        return "";
+        if (!DurationParser.TryParse(value, out var ts)) return "";
+        return (ts.Hours > 0 ? ts.Hours + " hr " : "") + (ts.Minutes > 0 ? ts.Minutes + " min " : "") + ts.Seconds + " sec";
     }
 
     public object ConvertBack(object value, Type targetType, object parameter, string language)
@@ -79,34 +60,11 @@ internal class DurationConverter : IValueConverter
 
 internal class DurationConverterShort : IValueConverter
 {
-    // Converts seconds to H hr, M min, S sec
+    // Converts a duration to H:MM:SS, or M:SS when under an hour
     public object Convert(object? value, Type targetType, object parameter, string language)
     {
-        int? seconds = null;
-        if (value is string valstr)
-        {
-            if (string.IsNullOrWhiteSpace(valstr)) return "";
-
-            if (int.TryParse(valstr, out int result))
-            {
-                seconds = result;
-            }
-        }
-        else if (value is int valint)
-        {
-            seconds = valint;
-        }
-
-        if (seconds != null)
-        {
-            TimeSpan ts = TimeSpan.FromSeconds((int)seconds);
-            if (ts.Hours > 0)
-                return $"{ts.Hours}:{ts.Minutes:D2}:{ts.Seconds:D2}";
-            else 
-                return $"{ts.Minutes}:{ts.Seconds:D2}";
-        }
-
-        return "";
+        if (!DurationParser.TryParse(value, out var ts)) return "";
+        return ts.Hours > 0 ? $"{ts.Hours}:{ts.Minutes:D2}:{ts.Seconds:D2}" : $"{ts.Minutes}:{ts.Seconds:D2}";
     }
 
     public object ConvertBack(object value, Type targetType, object parameter, string language)

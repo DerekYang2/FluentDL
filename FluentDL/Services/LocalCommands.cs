@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using FluentDL.Contracts.Services;
+using FluentDL.Core.Contracts.Services;
 using Windows.Storage;
 
 namespace FluentDL.Services

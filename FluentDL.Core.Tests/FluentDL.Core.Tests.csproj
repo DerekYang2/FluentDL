@@ -15,9 +15,9 @@
     <ProjectReference Include="..\FluentDL.Core\FluentDL.Core.csproj" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="..\FluentDL\Contracts\Services\ILocalSettingsService.cs" Link="App\ILocalSettingsService.cs" />
-    <Compile Include="..\FluentDL\Services\QueueDisplaySettings.cs" Link="App\QueueDisplaySettings.cs" />
     <EmbeddedResource Include="..\FluentDL\Views\QueuePage.xaml" LogicalName="QueuePage.xaml" />
+    <EmbeddedResource Include="..\FluentDL\Views\CompactQueueRow.xaml" LogicalName="CompactQueueRow.xaml" />
+    <EmbeddedResource Include="..\FluentDL\Views\ExplicitBadge.xaml" LogicalName="ExplicitBadge.xaml" />
     <EmbeddedResource Include="..\FluentDL\Views\SettingsPage.xaml" LogicalName="SettingsPage.xaml" />
     <EmbeddedResource Include="..\FluentDL\Views\Search.xaml" LogicalName="Search.xaml" />
     <EmbeddedResource Include="..\FluentDL\Views\LocalExplorerPage.xaml" LogicalName="LocalExplorerPage.xaml" />

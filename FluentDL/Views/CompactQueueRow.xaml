@@ -1,0 +1,168 @@
+<UserControl
+    x:Class="FluentDL.Views.CompactQueueRow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:helpers="using:FluentDL.Helpers"
+    xmlns:marqueeTextRns="using:CommunityToolkit.Labs.WinUI.MarqueeTextRns"
+    xmlns:views="using:FluentDL.Views">
+    <UserControl.Resources>
+        <helpers:DateToYearConverter x:Key="DateToYearConverter" />
+        <helpers:DurationConverterShort x:Key="DurationConverterShort" />
+        <helpers:VisibilityConverter x:Key="VisibilityConverter" />
+        <helpers:CollapsedConverter x:Key="CollapsedConverter" />
+        <helpers:NullVisibilityConverter x:Key="NullVisibilityConverter" />
+        <helpers:SourceToColorConverter x:Key="SourceToColorConverter" />
+        <helpers:LocalSourceToVisibilityConverter x:Key="LocalSourceToVisibilityConverter" />
+    </UserControl.Resources>
+    <!--  Bindings use OneWay because recycled rows receive a new Item.  -->
+    <Grid
+        MinHeight="44"
+        Margin="0,6,0,6"
+        AutomationProperties.Name="{x:Bind Item.Title, Mode=OneWay}"
+        Background="Transparent">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="{x:Bind Columns.ArtworkWidth}" />
+            <ColumnDefinition Width="{x:Bind Columns.TitleWidth}" />
+            <ColumnDefinition Width="{x:Bind Columns.AlbumWidth, Mode=OneWay}" />
+            <ColumnDefinition Width="{x:Bind Columns.YearWidth, Mode=OneWay}" />
+            <ColumnDefinition Width="{x:Bind Columns.DurationWidth}" />
+            <ColumnDefinition Width="{x:Bind Columns.SourceWidth, Mode=OneWay}" />
+            <ColumnDefinition Width="{x:Bind Columns.ActionWidth}" />
+        </Grid.ColumnDefinitions>
+        <Border
+            Width="44"
+            Height="44"
+            HorizontalAlignment="Left"
+            VerticalAlignment="Center"
+            CornerRadius="4"
+            Visibility="{x:Bind Item.LocalBitmapImage, Mode=OneWay, Converter={StaticResource NullVisibilityConverter}}">
+            <Border.Background>
+                <ImageBrush ImageSource="{x:Bind Item.LocalBitmapImage, Mode=OneWay}" Stretch="UniformToFill" />
+            </Border.Background>
+        </Border>
+        <Grid
+            Grid.Column="1"
+            Margin="0,0,16,0"
+            VerticalAlignment="Center"
+            RowSpacing="2">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+            <marqueeTextRns:MarqueeText
+                VerticalAlignment="Center"
+                Behavior="Looping"
+                Direction="Left"
+                FontFamily="Segoe UI Variable Display"
+                FontWeight="SemiBold"
+                RepeatBehavior="Forever"
+                Text="{x:Bind Item.Title, Mode=OneWay}"
+                ToolTipService.ToolTip="{x:Bind Item.Title, Mode=OneWay}" />
+            <Grid Grid.Row="1">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <views:ExplicitBadge
+                    Margin="0,0,6,0"
+                    VerticalAlignment="Center"
+                    Visibility="{x:Bind Item.Explicit, Mode=OneWay, Converter={StaticResource VisibilityConverter}}" />
+                <marqueeTextRns:MarqueeText
+                    Grid.Column="1"
+                    VerticalAlignment="Center"
+                    Behavior="Looping"
+                    Direction="Left"
+                    FontFamily="Segoe UI Variable Display"
+                    Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                    RepeatBehavior="Forever"
+                    Text="{x:Bind Item.Artists, Mode=OneWay}"
+                    ToolTipService.ToolTip="{x:Bind Item.Artists, Mode=OneWay}" />
+            </Grid>
+        </Grid>
+        <TextBlock
+            Grid.Column="2"
+            Margin="0,0,16,0"
+            VerticalAlignment="Center"
+            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+            Text="{x:Bind Item.AlbumName, Mode=OneWay}"
+            TextTrimming="CharacterEllipsis"
+            ToolTipService.ToolTip="{x:Bind Item.AlbumName, Mode=OneWay}"
+            Visibility="{x:Bind Columns.AlbumVisibility, Mode=OneWay}" />
+        <TextBlock
+            Grid.Column="3"
+            Margin="0,0,12,0"
+            VerticalAlignment="Center"
+            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+            Text="{x:Bind Item.ReleaseDate, Mode=OneWay, Converter={StaticResource DateToYearConverter}}"
+            Visibility="{x:Bind Columns.YearVisibility, Mode=OneWay}" />
+        <TextBlock
+            Grid.Column="4"
+            Margin="0,0,8,0"
+            HorizontalAlignment="Right"
+            VerticalAlignment="Center"
+            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+            Text="{x:Bind Item.Duration, Mode=OneWay, Converter={StaticResource DurationConverterShort}}" />
+        <Border
+            Grid.Column="5"
+            Margin="8,0,0,0"
+            Padding="6,2"
+            HorizontalAlignment="Left"
+            VerticalAlignment="Center"
+            Background="{ThemeResource LayerOnMicaBaseAltFillColorSecondaryBrush}"
+            CornerRadius="2"
+            Visibility="{x:Bind Columns.SourceVisibility, Mode=OneWay}">
+            <StackPanel Orientation="Horizontal" Spacing="6">
+                <Ellipse
+                    Width="8"
+                    Height="8"
+                    VerticalAlignment="Center"
+                    Fill="{x:Bind Item.Source, Mode=OneWay, Converter={StaticResource SourceToColorConverter}}" />
+                <TextBlock Style="{ThemeResource CaptionTextBlockStyle}" Text="{x:Bind Item.Source, Mode=OneWay}" />
+            </StackPanel>
+        </Border>
+        <Grid
+            Grid.Column="6"
+            Width="32"
+            Height="32"
+            HorizontalAlignment="Center"
+            VerticalAlignment="Center">
+            <Grid Visibility="{x:Bind Item.IsRunning, Mode=OneWay, Converter={StaticResource CollapsedConverter}}">
+                <Button
+                    Width="32"
+                    Height="32"
+                    MinWidth="32"
+                    MinHeight="32"
+                    Padding="4"
+                    AutomationProperties.AutomationId="CompactQueueSpectrogram"
+                    AutomationProperties.Name="Open spectrogram"
+                    Click="SpectrogramButton_Click"
+                    Tag="{x:Bind Item, Mode=OneWay}"
+                    ToolTipService.ToolTip="Open with Spek"
+                    Visibility="{x:Bind Item.Source, Mode=OneWay, Converter={StaticResource LocalSourceToVisibilityConverter}}">
+                    <FontIcon FontSize="20" Glyph="&#xE9D2;" />
+                </Button>
+            </Grid>
+            <ProgressRing
+                Width="24"
+                Height="24"
+                MinWidth="0"
+                MinHeight="0"
+                HorizontalAlignment="Center"
+                VerticalAlignment="Center"
+                AutomationProperties.AutomationId="CompactQueueProgress"
+                AutomationProperties.Name="Converting track"
+                IsActive="{x:Bind Item.IsRunning, Mode=OneWay}"
+                Visibility="{x:Bind Item.IsRunning, Mode=OneWay, Converter={StaticResource VisibilityConverter}}" />
+        </Grid>
+        <InfoBadge
+            Width="12"
+            Height="12"
+            Margin="-4,-4,0,0"
+            HorizontalAlignment="Left"
+            VerticalAlignment="Top"
+            AutomationProperties.Name="Conversion result"
+            Background="{x:Bind Item.ConvertBadgeColor, Mode=OneWay}"
+            ToolTipService.ToolTip="Conversion result. View command output for details."
+            Visibility="{x:Bind Item.ConvertBadgeVisibility, Mode=OneWay}" />
+    </Grid>
+</UserControl>

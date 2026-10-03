@@ -1,5 +1,6 @@
 using FluentDL.Models;
 using FluentDL.Contracts.Services;
+using FluentDL.Core.Contracts.Services;
 using FluentDL.ViewModels;
 using System.Diagnostics;
 using System.Net.Http.Json;
