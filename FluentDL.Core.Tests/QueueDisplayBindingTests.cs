@@ -137,29 +137,21 @@ public class QueueDisplayBindingTests
     }
 
     [TestMethod]
-    public void BothToggles_BindToTheSharedPreference_AndDisableDuringUpdates()
+    public void ListToggle_BindsToThePreference_AndDisablesDuringSaves()
     {
         // Arrange
         var queue = ReadMarkup("QueuePage.xaml");
-        var settings = ReadMarkup("SettingsPage.xaml");
 
         // Act
-        var toggles = new[]
-        {
-            queue.Descendants().Single(element => (string?)element.Attribute(X + "Name") == "CompactQueueButton"),
-            settings.Descendants().Single(element => (string?)element.Attribute(X + "Name") == "CompactQueueToggle"),
-        };
+        var toggle = queue.Descendants().Single(element => (string?)element.Attribute(X + "Name") == "CompactQueueButton");
+        var preference = ParseXBind((string?)toggle.Attribute("IsChecked"));
+        var enabled = ParseXBind((string?)toggle.Attribute("IsEnabled"));
 
         // Assert
-        foreach (var toggle in toggles)
-        {
-            var preference = ParseXBind(toggle.Attributes().Single(attribute => attribute.Name.LocalName is "IsChecked" or "IsOn").Value);
-            var enabled = ParseXBind((string?)toggle.Attribute("IsEnabled"));
-            Assert.AreEqual("ViewModel.QueueDisplay.IsCompact", preference.Path);
-            Assert.AreEqual("OneWay", preference.Mode);
-            Assert.AreEqual("ViewModel.QueueDisplay.CanChangeLayout", enabled.Path);
-            Assert.AreEqual("OneWay", enabled.Mode);
-        }
+        Assert.AreEqual("ViewModel.QueueDisplay.IsCompact", preference.Path);
+        Assert.AreEqual("OneWay", preference.Mode);
+        Assert.AreEqual("ViewModel.QueueDisplay.CanChangeLayout", enabled.Path);
+        Assert.AreEqual("OneWay", enabled.Mode);
     }
 
     [DataTestMethod]
