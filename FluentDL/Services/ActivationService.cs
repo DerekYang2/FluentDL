@@ -1,5 +1,7 @@
 ﻿using FluentDL.Activation;
 using FluentDL.Contracts.Services;
+using FluentDL.Core.Services;
+using FluentDL.Core.Contracts.Services;
 using FluentDL.Helpers;
 using FluentDL.ViewModels;
 using FluentDL.Views;
@@ -121,9 +123,17 @@ public class ActivationService : IActivationService
     {
         try
         {
-            if (await SettingsViewModel.GetSetting<bool?>(SettingsViewModel.FirstRun) ?? true)
+            try
+            {
+                // Runs on every launch so settings added by an update also get their defaults.
                 await SettingsViewModel.SetMissingDefaults();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Could not save missing setting defaults; continuing startup");
+            }
 
+            await App.GetService<QueueDisplaySettings>().LoadAsync();
             await QueueViewModel.UpdateShortcutVisibility();
             // Fetch previous command list
             //await LocalCommands.Init();

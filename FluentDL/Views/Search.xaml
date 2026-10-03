@@ -423,24 +423,10 @@
                                     <ColumnDefinition Width="Auto" />
                                     <ColumnDefinition Width="*" />
                                 </Grid.ColumnDefinitions>
-                                <Border
+                                <views:ExplicitBadge
                                     Margin="0,0,6,0"
-                                    Padding="{StaticResource ExplicitBadgePadding}"
                                     VerticalAlignment="Center"
-                                    Background="{ThemeResource ExplicitBadgeBackgroundBrush}"
-                                    CornerRadius="2"
-                                    ToolTipService.ToolTip="Explicit"
-                                    Visibility="{x:Bind Explicit, Converter={StaticResource VisibilityConverter}}">
-                                    <TextBlock
-                                        x:Name="ExplicitBadge"
-                                        AutomationProperties.Name="Explicit"
-                                        FontSize="{StaticResource ExplicitBadgeFontSize}"
-                                        FontWeight="SemiBold"
-                                        Foreground="{ThemeResource ExplicitBadgeForegroundBrush}"
-                                        Style="{ThemeResource CaptionTextBlockStyle}"
-                                        Text="E"
-                                        TextLineBounds="Tight" />
-                                </Border>
+                                    Visibility="{x:Bind Explicit, Converter={StaticResource VisibilityConverter}}" />
                                 <marqueeTextRns:MarqueeText
                                     Grid.Column="1"
                                     VerticalAlignment="Center"

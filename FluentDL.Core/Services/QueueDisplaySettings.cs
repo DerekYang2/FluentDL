@@ -1,7 +1,7 @@
 using System.ComponentModel;
-using FluentDL.Contracts.Services;
+using FluentDL.Core.Contracts.Services;
 
-namespace FluentDL.Services;
+namespace FluentDL.Core.Services;
 
 public sealed class QueueDisplaySettings : INotifyPropertyChanged
 {
@@ -26,19 +26,12 @@ public sealed class QueueDisplaySettings : INotifyPropertyChanged
     public async Task LoadAsync()
     {
         await _updateLock.WaitAsync();
-        SetUpdating(true);
         try
         {
-            var saved = await _settings.ReadSettingAsync<bool?>(SettingsKey);
-            if (saved is null)
-            {
-                await _settings.SaveSettingAsync(SettingsKey, false);
-            }
-            Apply(saved ?? false);
+            Apply(await _settings.ReadSettingAsync<bool?>(SettingsKey) ?? false);
         }
         finally
         {
-            SetUpdating(false);
             _updateLock.Release();
         }
     }

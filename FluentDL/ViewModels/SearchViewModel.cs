@@ -1,5 +1,6 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using FluentDL.Contracts.Services;
+using FluentDL.Core.Contracts.Services;
 using Microsoft.UI.Xaml;
 
 namespace FluentDL.ViewModels;

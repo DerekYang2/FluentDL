@@ -13,6 +13,7 @@ using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Data;
 using Microsoft.UI.Xaml.Input;
 using FluentDL.Contracts.Services;
+using FluentDL.Core.Services;
 using FluentDL.Helpers;
 using FluentDL.Models;
 using Microsoft.UI.Xaml.Media;
@@ -85,6 +86,9 @@ public sealed partial class QueuePage : Page
         InitializeComponent();
         _regularQueueItemTemplate = CustomListView.ItemTemplate;
         _regularQueueItemContainerStyle = CustomListView.ItemContainerStyle;
+        // The page is cached and the preference loads at startup, so one subscription keeps the layout current.
+        ViewModel.QueueDisplay.PropertyChanged += QueueDisplay_PropertyChanged;
+        ApplyQueueLayout();
         dispatcherQueue = DispatcherQueue.GetForCurrentThread();
         dispatcherTimer = new DispatcherTimer();
         dispatcherTimer.Tick += DispatcherTimer_Tick;
@@ -147,17 +151,6 @@ public sealed partial class QueuePage : Page
     protected async override void OnNavigatedTo(NavigationEventArgs e)
     {
         OnQueueSourceChange();
-        ViewModel.QueueDisplay.PropertyChanged += QueueDisplay_PropertyChanged;
-        try
-        {
-            await ViewModel.QueueDisplay.LoadAsync();
-            ApplyQueueLayout();
-        }
-        catch (Exception ex)
-        {
-            Serilog.Log.Error(ex, "Could not load the queue display preference");
-            ShowInfoBar(InfoBarSeverity.Error, "Could not load the queue display preference.", 5);
-        }
 
         // Get the selected item
         var selectedSong = (SongSearchObject)CustomListView.SelectedItem;
@@ -179,7 +172,6 @@ public sealed partial class QueuePage : Page
 
     protected override void OnNavigatedFrom(NavigationEventArgs e)
     {
-        ViewModel.QueueDisplay.PropertyChanged -= QueueDisplay_PropertyChanged;
         // Clear preview 
         PreviewPanel.Clear();
     }
@@ -214,37 +206,45 @@ public sealed partial class QueuePage : Page
         }
     }
 
-    private void CompactQueueGrid_SizeChanged(object sender, SizeChangedEventArgs e)
-    {
-        var grid = (Grid)sender;
-        SetCompactColumn(grid, 2, e.NewSize.Width >= 720, new GridLength(1, GridUnitType.Star));
-        SetCompactColumn(grid, 3, e.NewSize.Width >= 920, new GridLength(64));
-        SetCompactColumn(grid, 5, e.NewSize.Width >= 480, (GridLength)Resources["CompactQueueSourceColumnWidth"]);
-    }
-
-    private static void SetCompactColumn(Grid grid, int column, bool visible, GridLength width)
-    {
-        grid.ColumnDefinitions[column].Width = visible ? width : new GridLength(0);
-        foreach (var child in grid.Children)
-        {
-            if (child is FrameworkElement element && Grid.GetColumn(element) == column)
-            {
-                element.Visibility = visible ? Visibility.Visible : Visibility.Collapsed;
-            }
-        }
-    }
-
     private void CustomListView_ContextRequested(UIElement sender, ContextRequestedEventArgs e)
     {
-        if (!ViewModel.QueueDisplay.IsCompact || e.TryGetPosition(CustomListView, out _)) return;
-        if (CustomListView.SelectedItem is not null
-            && CustomListView.ContainerFromItem(CustomListView.SelectedItem) is ListViewItem container
-            && container.ContentTemplateRoot is FrameworkElement row
-            && row.ContextFlyout is not null)
+        if (!ViewModel.QueueDisplay.IsCompact) return;
+        // Mouse requests start inside the row and keyboard requests start on the focused item,
+        // so both resolve to the row that asked rather than the selected one.
+        var container = FindQueueItemContainer(e.OriginalSource as DependencyObject);
+        if (container is null || CustomListView.ItemFromContainer(container) is not QueueObject song) return;
+
+        foreach (var item in CompactQueueRowMenu.Items)
         {
-            row.ContextFlyout.ShowAt(container);
-            e.Handled = true;
+            item.Tag = song;
         }
+        var localVisibility = song.Source == "local" ? Visibility.Visible : Visibility.Collapsed;
+        CompactQueueLocalSeparator.Visibility = localVisibility;
+        CompactQueueOpenSpekItem.Visibility = localVisibility;
+        CompactQueueOpenLocalItem.Visibility = localVisibility;
+        var outputVisibility = song.ResultString is null ? Visibility.Collapsed : Visibility.Visible;
+        CompactQueueOutputSeparator.Visibility = outputVisibility;
+        CompactQueueOutputItem.Visibility = outputVisibility;
+
+        if (e.TryGetPosition(container, out var position))
+        {
+            CompactQueueRowMenu.ShowAt(container, new Microsoft.UI.Xaml.Controls.Primitives.FlyoutShowOptions { Position = position });
+        }
+        else
+        {
+            CompactQueueRowMenu.ShowAt(container);
+        }
+        e.Handled = true;
+    }
+
+    private ListViewItem? FindQueueItemContainer(DependencyObject? element)
+    {
+        while (element is not null && element != CustomListView)
+        {
+            if (element is ListViewItem container) return container;
+            element = VisualTreeHelper.GetParent(element);
+        }
+        return null;
     }
 
     private async void CompactQueueButton_Click(object sender, RoutedEventArgs e)
@@ -430,15 +430,18 @@ public sealed partial class QueuePage : Page
             }
             else
             {
-                try
+                coverBytes = null;
+                var coverUri = GetCoverUri(songObj);
+                if (coverUri != null)
                 {
-                    var bitmapImg = PreviewPanel.GetImage();
-                    coverBytes = await new HttpClient().GetByteArrayAsync(bitmapImg?.UriSource);
-                }
-                catch (Exception ex)
-                {
-                    Debug.WriteLine(ex.Message);
-                    return;
+                    try
+                    {
+                        coverBytes = await new HttpClient().GetByteArrayAsync(coverUri);
+                    }
+                    catch (Exception ex)
+                    {
+                        Serilog.Log.Warning(ex, "Cover download failed");
+                    }
                 }
             }
 
@@ -453,6 +456,21 @@ public sealed partial class QueuePage : Page
         }
 
         //await DeezerApi.DownloadTrack(await DeezerApi.GetTrack(PreviewPanel.GetSong().Id), "E:\\Other Downloads\\test");
+    }
+
+    // The preview loads a larger cover than the queue thumbnail, so use it when it shows this track.
+    private Uri? GetCoverUri(SongSearchObject song)
+    {
+        if (PreviewPanel.GetSong() is { } shown && shown.Id == song.Id && shown.Source == song.Source
+            && PreviewPanel.GetImage()?.UriSource is { } previewUri)
+        {
+            return previewUri;
+        }
+
+        return Uri.TryCreate(song.ImageLocation, UriKind.Absolute, out var location)
+            && (location.Scheme == Uri.UriSchemeHttp || location.Scheme == Uri.UriSchemeHttps)
+                ? location
+                : null;
     }
 
     private async void CustomListView_OnSelectionChanged(object sender, SelectionChangedEventArgs e)

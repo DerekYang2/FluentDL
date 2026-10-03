@@ -211,17 +211,6 @@ public partial class App : Application
         var settings = GetService<ILocalSettingsService>();
         var verboseLogging = await settings.ReadSettingAsync<bool?>(DiagnosticLogging.VerboseSettingKey);
         SetVerboseLogging(verboseLogging ?? false);
-        if (verboseLogging is null)
-        {
-            try
-            {
-                await settings.SaveSettingAsync(DiagnosticLogging.VerboseSettingKey, false);
-            }
-            catch (Exception ex)
-            {
-                Log.Warning(ex, "Could not save the default logging preference; important logging remains enabled");
-            }
-        }
         await App.GetService<IActivationService>().ActivateAsync(args);
         if (LoggingError is not null)
         {

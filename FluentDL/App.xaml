@@ -7,7 +7,7 @@
             <ResourceDictionary.ThemeDictionaries>
                 <ResourceDictionary x:Key="Light">
                     <SolidColorBrush x:Key="ExplicitBadgeBackgroundBrush" Color="#A19FA4" />
-                    <SolidColorBrush x:Key="ExplicitBadgeForegroundBrush" Color="White" />
+                    <SolidColorBrush x:Key="ExplicitBadgeForegroundBrush" Color="Black" />
                 </ResourceDictionary>
                 <ResourceDictionary x:Key="Dark">
                     <SolidColorBrush x:Key="ExplicitBadgeBackgroundBrush" Color="#A19FA4" />

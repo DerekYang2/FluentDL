@@ -17,7 +17,6 @@
     NavigationCacheMode="Required"
     mc:Ignorable="d">
     <Page.Resources>
-        <GridLength x:Key="CompactQueueSourceColumnWidth">86</GridLength>
         <helpers:DateToYearConverter x:Key="DateToYearConverter" />
         <helpers:DurationConverter x:Key="DurationConverter" />
         <helpers:DurationConverterShort x:Key="DurationConverterShort" />
@@ -29,219 +28,49 @@
         <helpers:SourceToColorConverter x:Key="SourceToColorConverter" />
         <helpers:LocalSourceToVisibilityConverter x:Key="LocalSourceToVisibilityConverter" />
         <helpers:StringNullorEmptyVisibilityConverter x:Key="StringNullorEmptyVisibilityConverter" />
-        <Style x:Key="CompactQueueItemStyle" TargetType="ListViewItem">
+        <Style
+            x:Key="CompactQueueItemStyle"
+            BasedOn="{StaticResource DefaultListViewItemStyle}"
+            TargetType="ListViewItem">
             <Setter Property="Padding" Value="12,0" />
             <Setter Property="MinHeight" Value="0" />
             <Setter Property="HorizontalContentAlignment" Value="Stretch" />
         </Style>
-        <Style
-            x:Key="CompactQueueHeaderTextStyle"
-            BasedOn="{StaticResource CaptionTextBlockStyle}"
-            TargetType="TextBlock">
-            <Setter Property="Foreground" Value="{ThemeResource TextFillColorSecondaryBrush}" />
-            <Setter Property="VerticalAlignment" Value="Center" />
-        </Style>
         <DataTemplate x:Key="CompactQueueItemTemplate" x:DataType="viewModels:QueueObject">
-            <Grid
-                MinHeight="44"
-                Margin="0,6,0,6"
-                AutomationProperties.Name="{x:Bind Title}"
-                Background="Transparent"
-                SizeChanged="CompactQueueGrid_SizeChanged">
-                <Grid.ContextFlyout>
-                    <MenuFlyout>
-                        <MenuFlyoutItem
-                            AutomationProperties.AutomationId="CompactQueueCopyLink"
-                            Click="ShareLinkButton_OnClick"
-                            Tag="{x:Bind}"
-                            Text="Copy track link" />
-                        <MenuFlyoutItem
-                            AutomationProperties.AutomationId="CompactQueueDownloadCover"
-                            Click="DownloadCoverButton_OnClick"
-                            Tag="{x:Bind}"
-                            Text="Download cover" />
-                        <MenuFlyoutItem
-                            AutomationProperties.AutomationId="CompactQueueRemove"
-                            Click="RemoveButton_OnClick"
-                            Tag="{x:Bind}"
-                            Text="Remove from queue" />
-                        <MenuFlyoutSeparator Visibility="{x:Bind Source, Converter={StaticResource LocalSourceToVisibilityConverter}}" />
-                        <MenuFlyoutItem
-                            AutomationProperties.AutomationId="CompactQueueOpenSpek"
-                            Click="OpenSpekButton_Click"
-                            Tag="{x:Bind}"
-                            Text="Open with Spek"
-                            Visibility="{x:Bind Source, Converter={StaticResource LocalSourceToVisibilityConverter}}" />
-                        <MenuFlyoutItem
-                            AutomationProperties.AutomationId="CompactQueueOpenLocal"
-                            Click="OpenLocalButton_Click"
-                            Tag="{x:Bind}"
-                            Text="Open in File Explorer"
-                            Visibility="{x:Bind Source, Converter={StaticResource LocalSourceToVisibilityConverter}}" />
-                        <MenuFlyoutSeparator Visibility="{x:Bind ResultString, Mode=OneWay, Converter={StaticResource PathToVisibilityConverter}}" />
-                        <MenuFlyoutItem
-                            AutomationProperties.AutomationId="CompactQueueOutput"
-                            Click="OutputButton_OnClick"
-                            Tag="{x:Bind}"
-                            Text="View command output"
-                            Visibility="{x:Bind ResultString, Mode=OneWay, Converter={StaticResource PathToVisibilityConverter}}" />
-                    </MenuFlyout>
-                </Grid.ContextFlyout>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="56" />
-                    <ColumnDefinition Width="2*" />
-                    <ColumnDefinition Width="*" />
-                    <ColumnDefinition Width="64" />
-                    <ColumnDefinition Width="80" />
-                    <ColumnDefinition Width="{StaticResource CompactQueueSourceColumnWidth}" />
-                    <ColumnDefinition Width="32" />
-                </Grid.ColumnDefinitions>
-                <Border
-                    Width="44"
-                    Height="44"
-                    HorizontalAlignment="Left"
-                    VerticalAlignment="Center"
-                    CornerRadius="4"
-                    Visibility="{x:Bind LocalBitmapImage, Mode=OneWay, Converter={StaticResource NullVisibilityConverter}}">
-                    <Border.Background>
-                        <ImageBrush ImageSource="{x:Bind LocalBitmapImage, Mode=OneWay}" Stretch="UniformToFill" />
-                    </Border.Background>
-                </Border>
-                <Grid
-                    Grid.Column="1"
-                    Margin="0,0,16,0"
-                    VerticalAlignment="Center"
-                    RowSpacing="2">
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto" />
-                        <RowDefinition Height="Auto" />
-                    </Grid.RowDefinitions>
-                    <marqueeTextRns:MarqueeText
-                        VerticalAlignment="Center"
-                        Behavior="Looping"
-                        Direction="Left"
-                        FontFamily="Segoe UI Variable Display"
-                        FontWeight="SemiBold"
-                        RepeatBehavior="Forever"
-                        Text="{x:Bind Title, Mode=OneWay}"
-                        ToolTipService.ToolTip="{x:Bind Title}" />
-                    <Grid Grid.Row="1">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="Auto" />
-                            <ColumnDefinition Width="*" />
-                        </Grid.ColumnDefinitions>
-                        <Border
-                            Margin="0,0,6,0"
-                            Padding="{StaticResource ExplicitBadgePadding}"
-                            VerticalAlignment="Center"
-                            Background="{ThemeResource ExplicitBadgeBackgroundBrush}"
-                            CornerRadius="2"
-                            ToolTipService.ToolTip="Explicit"
-                            Visibility="{x:Bind Explicit, Mode=OneWay, Converter={StaticResource VisibilityConverter}}">
-                            <TextBlock
-                                AutomationProperties.Name="Explicit"
-                                FontSize="{StaticResource ExplicitBadgeFontSize}"
-                                FontWeight="SemiBold"
-                                Foreground="{ThemeResource ExplicitBadgeForegroundBrush}"
-                                Style="{ThemeResource CaptionTextBlockStyle}"
-                                Text="E"
-                                TextLineBounds="Tight" />
-                        </Border>
-                        <marqueeTextRns:MarqueeText
-                            Grid.Column="1"
-                            VerticalAlignment="Center"
-                            Behavior="Looping"
-                            Direction="Left"
-                            FontFamily="Segoe UI Variable Display"
-                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                            RepeatBehavior="Forever"
-                            Text="{x:Bind Artists, Mode=OneWay}"
-                            ToolTipService.ToolTip="{x:Bind Artists}" />
-                    </Grid>
-                </Grid>
-                <TextBlock
-                    Grid.Column="2"
-                    Margin="0,0,16,0"
-                    VerticalAlignment="Center"
-                    Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                    Text="{x:Bind AlbumName}"
-                    TextTrimming="CharacterEllipsis"
-                    ToolTipService.ToolTip="{x:Bind AlbumName}" />
-                <TextBlock
-                    Grid.Column="3"
-                    Margin="0,0,12,0"
-                    VerticalAlignment="Center"
-                    Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                    Text="{x:Bind ReleaseDate, Converter={StaticResource DateToYearConverter}}" />
-                <Border
-                    Grid.Column="5"
-                    Margin="8,0,0,0"
-                    Padding="6,2"
-                    HorizontalAlignment="Left"
-                    VerticalAlignment="Center"
-                    Background="{ThemeResource LayerOnMicaBaseAltFillColorSecondaryBrush}"
-                    CornerRadius="2">
-                    <StackPanel Orientation="Horizontal" Spacing="6">
-                        <Ellipse
-                            Width="8"
-                            Height="8"
-                            VerticalAlignment="Center"
-                            Fill="{x:Bind Source, Converter={StaticResource SourceToColorConverter}}" />
-                        <TextBlock Style="{ThemeResource CaptionTextBlockStyle}" Text="{x:Bind Source}" />
-                    </StackPanel>
-                </Border>
-                <TextBlock
-                    Grid.Column="4"
-                    Margin="0,0,8,0"
-                    HorizontalAlignment="Right"
-                    VerticalAlignment="Center"
-                    Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                    Text="{x:Bind Duration, Converter={StaticResource DurationConverterShort}}" />
-                <Grid
-                    Grid.Column="6"
-                    Width="32"
-                    Height="32"
-                    HorizontalAlignment="Center"
-                    VerticalAlignment="Center">
-                    <Grid Visibility="{x:Bind IsRunning, Mode=OneWay, Converter={StaticResource CollapsedConverter}}">
-                        <Button
-                            Width="32"
-                            Height="32"
-                            MinWidth="32"
-                            MinHeight="32"
-                            Padding="4"
-                            AutomationProperties.AutomationId="CompactQueueSpectrogram"
-                            AutomationProperties.Name="Open spectrogram"
-                            Click="OpenSpekButton_Click"
-                            Tag="{x:Bind}"
-                            ToolTipService.ToolTip="Open with Spek"
-                            Visibility="{x:Bind Source, Mode=OneWay, Converter={StaticResource LocalSourceToVisibilityConverter}}">
-                            <FontIcon FontSize="20" Glyph="&#xE9D2;" />
-                        </Button>
-                    </Grid>
-                    <ProgressRing
-                        Width="24"
-                        Height="24"
-                        MinWidth="0"
-                        MinHeight="0"
-                        HorizontalAlignment="Center"
-                        VerticalAlignment="Center"
-                        AutomationProperties.AutomationId="CompactQueueProgress"
-                        AutomationProperties.Name="Converting track"
-                        IsActive="{x:Bind IsRunning, Mode=OneWay}"
-                        Visibility="{x:Bind IsRunning, Mode=OneWay, Converter={StaticResource VisibilityConverter}}" />
-                </Grid>
-                <InfoBadge
-                    Width="12"
-                    Height="12"
-                    Margin="-4,-4,0,0"
-                    HorizontalAlignment="Left"
-                    VerticalAlignment="Top"
-                    AutomationProperties.Name="Conversion result"
-                    Background="{x:Bind ConvertBadgeColor, Mode=OneWay}"
-                    ToolTipService.ToolTip="Conversion result. View command output for details." />
-            </Grid>
+            <views:CompactQueueRow Item="{x:Bind}" SpectrogramClick="OpenSpekButton_Click" />
         </DataTemplate>
+        <!--  One menu shared by every compact row. CustomListView_ContextRequested points it at the requested row.  -->
+        <MenuFlyout x:Name="CompactQueueRowMenu">
+            <MenuFlyoutItem
+                AutomationProperties.AutomationId="CompactQueueCopyLink"
+                Click="ShareLinkButton_OnClick"
+                Text="Copy track link" />
+            <MenuFlyoutItem
+                AutomationProperties.AutomationId="CompactQueueDownloadCover"
+                Click="DownloadCoverButton_OnClick"
+                Text="Download cover" />
+            <MenuFlyoutItem
+                AutomationProperties.AutomationId="CompactQueueRemove"
+                Click="RemoveButton_OnClick"
+                Text="Remove from queue" />
+            <MenuFlyoutSeparator x:Name="CompactQueueLocalSeparator" />
+            <MenuFlyoutItem
+                x:Name="CompactQueueOpenSpekItem"
+                AutomationProperties.AutomationId="CompactQueueOpenSpek"
+                Click="OpenSpekButton_Click"
+                Text="Open with Spek" />
+            <MenuFlyoutItem
+                x:Name="CompactQueueOpenLocalItem"
+                AutomationProperties.AutomationId="CompactQueueOpenLocal"
+                Click="OpenLocalButton_Click"
+                Text="Open in File Explorer" />
+            <MenuFlyoutSeparator x:Name="CompactQueueOutputSeparator" />
+            <MenuFlyoutItem
+                x:Name="CompactQueueOutputItem"
+                AutomationProperties.AutomationId="CompactQueueOutput"
+                Click="OutputButton_OnClick"
+                Text="View command output" />
+        </MenuFlyout>
     </Page.Resources>
 
     <Grid>
@@ -264,7 +93,7 @@
                 Padding="8,4"
                 VerticalAlignment="Center"
                 AutomationProperties.AutomationId="CompactQueueButton"
-                AutomationProperties.Name="Compact queue"
+                AutomationProperties.Name="List layout"
                 Click="CompactQueueButton_Click"
                 IsChecked="{x:Bind ViewModel.QueueDisplay.IsCompact, Mode=OneWay}"
                 IsEnabled="{x:Bind ViewModel.QueueDisplay.CanChangeLayout, Mode=OneWay}"
@@ -389,43 +218,16 @@
             x:Name="QueueProgress"
             Grid.Row="1"
             Grid.Column="0"
-            Margin="0,8,0,0"
+            Margin="0,8,0,12"
             IsIndeterminate="False"
             Value="0" />
 
-        <Grid
-            x:Name="CompactQueueHeader"
+        <views:CompactQueueHeader
             Grid.Row="2"
             Grid.Column="0"
-            MinHeight="36"
             Margin="12,0,24,8"
             AutomationProperties.AutomationId="CompactQueueHeader"
-            SizeChanged="CompactQueueGrid_SizeChanged"
-            Visibility="{x:Bind ViewModel.QueueDisplay.IsCompact, Mode=OneWay, Converter={StaticResource VisibilityConverter}}">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="56" />
-                <ColumnDefinition Width="2*" />
-                <ColumnDefinition Width="*" />
-                <ColumnDefinition Width="64" />
-                <ColumnDefinition Width="80" />
-                <ColumnDefinition Width="{StaticResource CompactQueueSourceColumnWidth}" />
-                <ColumnDefinition Width="32" />
-            </Grid.ColumnDefinitions>
-            <TextBlock Grid.Column="1" Style="{StaticResource CompactQueueHeaderTextStyle}" Text="Title" />
-            <TextBlock Grid.Column="2" Style="{StaticResource CompactQueueHeaderTextStyle}" Text="Album" />
-            <TextBlock Grid.Column="3" Style="{StaticResource CompactQueueHeaderTextStyle}" Text="Year" />
-            <TextBlock
-                Grid.Column="4"
-                Margin="0,0,8,0"
-                HorizontalAlignment="Right"
-                Style="{StaticResource CompactQueueHeaderTextStyle}"
-                Text="Duration" />
-            <Border
-                Grid.ColumnSpan="7"
-                Height="1"
-                VerticalAlignment="Bottom"
-                Background="{ThemeResource ControlStrokeColorDefaultBrush}" />
-        </Grid>
+            Visibility="{x:Bind ViewModel.QueueDisplay.IsCompact, Mode=OneWay, Converter={StaticResource VisibilityConverter}}" />
 
         <ListView
             x:Name="CustomListView"
@@ -491,24 +293,10 @@
                                 <ColumnDefinition Width="Auto" />
                                 <ColumnDefinition Width="*" />
                             </Grid.ColumnDefinitions>
-                            <Border
+                            <views:ExplicitBadge
                                 Margin="0,0,6,0"
-                                Padding="{StaticResource ExplicitBadgePadding}"
                                 VerticalAlignment="Center"
-                                Background="{ThemeResource ExplicitBadgeBackgroundBrush}"
-                                CornerRadius="2"
-                                ToolTipService.ToolTip="Explicit"
-                                Visibility="{x:Bind Explicit, Converter={StaticResource VisibilityConverter}}">
-                                <TextBlock
-                                    x:Name="ExplicitBadge"
-                                    AutomationProperties.Name="Explicit"
-                                    FontSize="{StaticResource ExplicitBadgeFontSize}"
-                                    FontWeight="SemiBold"
-                                    Foreground="{ThemeResource ExplicitBadgeForegroundBrush}"
-                                    Style="{ThemeResource CaptionTextBlockStyle}"
-                                    Text="E"
-                                    TextLineBounds="Tight" />
-                            </Border>
+                                Visibility="{x:Bind Explicit, Converter={StaticResource VisibilityConverter}}" />
                             <marqueeTextRns:MarqueeText
                                 Grid.Column="1"
                                 VerticalAlignment="Center"
@@ -602,7 +390,7 @@
                                     Click="ShareLinkButton_OnClick"
                                     Tag="{Binding}"
                                     ToolTipService.ToolTip="Copy track link"
-                                    Visibility="{x:Bind ShareVisibility, Mode=OneWay}">
+                                    Visibility="{x:Bind viewModels:QueueShortcuts.Shared.ShareVisibility, Mode=OneWay}">
                                     <FontIcon FontSize="20" Glyph="&#xE71B;" />
                                 </Button>
                                 <Button
@@ -613,7 +401,7 @@
                                     Click="DownloadCoverButton_OnClick"
                                     Tag="{Binding}"
                                     ToolTipService.ToolTip="Download cover"
-                                    Visibility="{x:Bind DownloadCoverVisibility, Mode=OneWay}">
+                                    Visibility="{x:Bind viewModels:QueueShortcuts.Shared.DownloadCoverVisibility, Mode=OneWay}">
                                     <FontIcon FontSize="20" Glyph="&#xEE71;" />
                                 </Button>
                                 <Button
@@ -624,7 +412,7 @@
                                     Click="RemoveButton_OnClick"
                                     Tag="{Binding}"
                                     ToolTipService.ToolTip="Remove from queue"
-                                    Visibility="{x:Bind RemoveVisibility, Mode=OneWay}">
+                                    Visibility="{x:Bind viewModels:QueueShortcuts.Shared.RemoveVisibility, Mode=OneWay}">
                                     <FontIcon FontSize="20" Glyph="&#xECC9;" />
                                 </Button>
 
@@ -686,7 +474,8 @@
                             Margin="-6,-6,0,0"
                             HorizontalAlignment="Left"
                             VerticalAlignment="Top"
-                            Background="{x:Bind ConvertBadgeColor, Mode=OneWay}" />
+                            Background="{x:Bind ConvertBadgeColor, Mode=OneWay}"
+                            Visibility="{x:Bind ConvertBadgeVisibility, Mode=OneWay}" />
 
                     </Grid>
                 </DataTemplate>
@@ -1068,21 +857,7 @@
                                                         Style="{ThemeResource BodyStrongTextBlockStyle}"
                                                         Text="{x:Bind Title}"
                                                         TextTrimming="CharacterEllipsis" />
-                                                    <Border
-                                                        Padding="{StaticResource ExplicitBadgePadding}"
-                                                        VerticalAlignment="Center"
-                                                        Background="{ThemeResource ExplicitBadgeBackgroundBrush}"
-                                                        CornerRadius="2"
-                                                        Visibility="{x:Bind Explicit, Converter={StaticResource VisibilityConverter}}">
-                                                        <TextBlock
-                                                            x:Name="ExplicitBadgeFailed"
-                                                            FontSize="{StaticResource ExplicitBadgeFontSize}"
-                                                            FontWeight="SemiBold"
-                                                            Foreground="{ThemeResource ExplicitBadgeForegroundBrush}"
-                                                            Style="{ThemeResource CaptionTextBlockStyle}"
-                                                            Text="E"
-                                                            TextLineBounds="Tight" />
-                                                    </Border>
+                                                    <views:ExplicitBadge VerticalAlignment="Center" Visibility="{x:Bind Explicit, Converter={StaticResource VisibilityConverter}}" />
                                                 </StackPanel>
                                                 <TextBlock
                                                     FontFamily="Segoe UI Variable Display"

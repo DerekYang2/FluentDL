@@ -396,23 +396,11 @@
                                 HorizontalAlignment="Right"
                                 Orientation="Horizontal"
                                 Spacing="12">
-                                <Border
+                                <views:ExplicitBadge
                                     Margin="0,-2,0,0"
-                                    Padding="{StaticResource ExplicitBadgePadding}"
                                     HorizontalAlignment="Right"
                                     VerticalAlignment="Center"
-                                    Background="{ThemeResource ExplicitBadgeBackgroundBrush}"
-                                    CornerRadius="2"
-                                    Visibility="{x:Bind Explicit, Converter={StaticResource VisibilityConverter}}">
-                                    <TextBlock
-                                        x:Name="ExplicitBadge"
-                                        FontSize="{StaticResource ExplicitBadgeFontSize}"
-                                        FontWeight="SemiBold"
-                                        Foreground="{ThemeResource ExplicitBadgeForegroundBrush}"
-                                        Style="{ThemeResource CaptionTextBlockStyle}"
-                                        Text="E"
-                                        TextLineBounds="Tight" />
-                                </Border>
+                                    Visibility="{x:Bind Explicit, Converter={StaticResource VisibilityConverter}}" />
                                 <Border
                                     Padding="6,2"
                                     HorizontalAlignment="Right"
@@ -751,23 +739,11 @@
                                                 HorizontalAlignment="Right"
                                                 Orientation="Horizontal"
                                                 Spacing="12">
-                                                <Border
+                                                <views:ExplicitBadge
                                                     Margin="0,-2,0,0"
-                                                    Padding="{StaticResource ExplicitBadgePadding}"
                                                     HorizontalAlignment="Right"
                                                     VerticalAlignment="Center"
-                                                    Background="{ThemeResource ExplicitBadgeBackgroundBrush}"
-                                                    CornerRadius="2"
-                                                    Visibility="{x:Bind Song.Explicit, Converter={StaticResource VisibilityConverter}}">
-                                                    <TextBlock
-                                                        x:Name="ExplicitBadge"
-                                                        FontSize="{StaticResource ExplicitBadgeFontSize}"
-                                                        FontWeight="SemiBold"
-                                                        Foreground="{ThemeResource ExplicitBadgeForegroundBrush}"
-                                                        Style="{ThemeResource CaptionTextBlockStyle}"
-                                                        Text="E"
-                                                        TextLineBounds="Tight" />
-                                                </Border>
+                                                    Visibility="{x:Bind Song.Explicit, Converter={StaticResource VisibilityConverter}}" />
                                             </StackPanel>
 
                                             <StackPanel

@@ -1,4 +1,4 @@
-﻿namespace FluentDL.Contracts.Services;
+﻿namespace FluentDL.Core.Contracts.Services;
 
 public interface ILocalSettingsService
 {

@@ -1,5 +1,7 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using FluentDL.Contracts.Services;
+using FluentDL.Core.Services;
+using FluentDL.Core.Contracts.Services;
 using FluentDL.Core.Helpers;
 using FluentDL.Models;
 using FluentDL.Services;
@@ -67,56 +69,15 @@ public class QueueObject : SongSearchObject, INotifyPropertyChanged
             {
                 _convertBadgeColor = value;
                 OnPropertyChanged();
+                OnPropertyChanged(nameof(ConvertBadgeVisibility));
             }
         }
     }
 
     [JsonIgnore]
-    private Visibility _shareVisibility = Visibility.Collapsed;
+    public Visibility ConvertBadgeVisibility => _convertBadgeColor.Color.A == 0 ? Visibility.Collapsed : Visibility.Visible;
 
-    [JsonIgnore]
-    public Visibility ShareVisibility
-    {
-        get => _shareVisibility;
-        set
-        {
-            if (_shareVisibility == value) return;
-            _shareVisibility = value;
-            OnPropertyChanged();
-        }
-    }
-
-    [JsonIgnore]
-    private Visibility _downloadCoverVisibility = Visibility.Collapsed;
-
-    [JsonIgnore]
-    public Visibility DownloadCoverVisibility
-    {
-        get => _downloadCoverVisibility;
-        set
-        {
-            if (_downloadCoverVisibility == value) return;
-            _downloadCoverVisibility = value;
-            OnPropertyChanged();
-        }
-    }
-
-    [JsonIgnore]
-    private Visibility _removeVisibility = Visibility.Collapsed;
-
-    [JsonIgnore]
-    public Visibility RemoveVisibility
-    {
-        get => _removeVisibility;
-        set
-        {
-            if (_removeVisibility == value) return;
-            _removeVisibility = value;
-            OnPropertyChanged();
-        }
-    }
-
-    public QueueObject(SongSearchObject song, Visibility ShareVisibility, Visibility DownloadCoverVisibility, Visibility RemoveVisibility) 
+    public QueueObject(SongSearchObject song)
     {
         Title = song.Title;
         ImageLocation = song.ImageLocation;
@@ -134,10 +95,6 @@ public class QueueObject : SongSearchObject, INotifyPropertyChanged
         LocalBitmapImage = song.LocalBitmapImage;
         Isrc = song.Isrc;
         QueueCounter = song.QueueCounter;
-
-        this.ShareVisibility = ShareVisibility;
-        this.DownloadCoverVisibility = DownloadCoverVisibility;
-        this.RemoveVisibility = RemoveVisibility;
     }
 }
 
@@ -201,11 +158,6 @@ public partial class QueueViewModel : ObservableRecipient
     private static HashSet<string> trackSet = new HashSet<string>();
 
 
-    public static Visibility ShareVisibility = Visibility.Collapsed;
-    public static Visibility DownloadCoverVisibility = Visibility.Collapsed;
-    public static Visibility RemoveVisibility = Visibility.Collapsed;
-
-
     public QueueDisplaySettings QueueDisplay { get; }
 
     public QueueViewModel(QueueDisplaySettings queueDisplay)
@@ -216,15 +168,10 @@ public partial class QueueViewModel : ObservableRecipient
     }
 
     public static async Task UpdateShortcutVisibility() {
-        ShareVisibility = await localSettings.ReadSettingAsync<bool?>(SettingsViewModel.QueueShareChecked) == true ? Visibility.Visible : Visibility.Collapsed;
-        DownloadCoverVisibility = await localSettings.ReadSettingAsync<bool?>(SettingsViewModel.QueueDownloadCoverChecked) == true ? Visibility.Visible : Visibility.Collapsed;
-        RemoveVisibility = await localSettings.ReadSettingAsync<bool?>(SettingsViewModel.QueueRemoveChecked) == true ? Visibility.Visible : Visibility.Collapsed;
-        foreach (var song in Source)
-        {
-            song.ShareVisibility = ShareVisibility;
-            song.DownloadCoverVisibility = DownloadCoverVisibility;
-            song.RemoveVisibility = RemoveVisibility;
-        }
+        var shortcuts = QueueShortcuts.Shared;
+        shortcuts.ShareVisibility = await localSettings.ReadSettingAsync<bool?>(SettingsViewModel.QueueShareChecked) == true ? Visibility.Visible : Visibility.Collapsed;
+        shortcuts.DownloadCoverVisibility = await localSettings.ReadSettingAsync<bool?>(SettingsViewModel.QueueDownloadCoverChecked) == true ? Visibility.Visible : Visibility.Collapsed;
+        shortcuts.RemoveVisibility = await localSettings.ReadSettingAsync<bool?>(SettingsViewModel.QueueRemoveChecked) == true ? Visibility.Visible : Visibility.Collapsed;
     }
 
     public static async Task<Stream?> GetStreamFromUrl(string? uri)
@@ -272,7 +219,7 @@ public partial class QueueViewModel : ObservableRecipient
 
     public static async Task<QueueObject?> CreateQueueObject(SongSearchObject song, int? queueCounter)
     {
-        var queueObj = new QueueObject(song, ShareVisibility, DownloadCoverVisibility, RemoveVisibility)
+        var queueObj = new QueueObject(song)
         {
             QueueCounter = queueCounter
         };
@@ -302,7 +249,7 @@ public partial class QueueViewModel : ObservableRecipient
         }
 
         var hash = GetHash(song);
-        var queueObj = new QueueObject(song, ShareVisibility, DownloadCoverVisibility, RemoveVisibility);
+        var queueObj = new QueueObject(song);
         queueObj.QueueCounter ??= GetNextOrderCounter();  // Only set order if new addition
         Source.Add(queueObj);
         trackSet.Add(hash);

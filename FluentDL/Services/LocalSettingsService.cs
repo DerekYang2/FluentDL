@@ -24,6 +24,7 @@ public class LocalSettingsService : ILocalSettingsService
     private readonly string _localsettingsFile;
 
     private IDictionary<string, object> _settings;
+    private readonly SemaphoreSlim _fileLock = new(1, 1);
 
     private bool _isInitialized;
 
@@ -93,11 +94,27 @@ public class LocalSettingsService : ILocalSettingsService
         }
         else
         {
+            var json = await Json.StringifyAsync(value);
+            await UpdateFileAsync(settings => settings[key] = json);
+        }
+    }
+
+    // Write an updated copy and only then replace the in-memory settings, so a failed write leaves
+    // memory matching the file. The lock keeps overlapping saves from dropping each other's changes.
+    private async Task UpdateFileAsync(Action<IDictionary<string, object>> update)
+    {
+        await _fileLock.WaitAsync();
+        try
+        {
             await InitializeAsync();
-
-            _settings[key] = await Json.StringifyAsync(value);
-
-            await Task.Run(() => _fileService.Save(_applicationDataFolder, _localsettingsFile, _settings));
+            var updated = new Dictionary<string, object>(_settings);
+            update(updated);
+            await Task.Run(() => _fileService.Save(_applicationDataFolder, _localsettingsFile, updated));
+            _settings = updated;
+        }
+        finally
+        {
+            _fileLock.Release();
         }
     }
 
@@ -157,12 +174,13 @@ public class LocalSettingsService : ILocalSettingsService
             }
             else
             {
-                await InitializeAsync();
-                foreach (var item in importedSettings)
+                await UpdateFileAsync(settings =>
                 {
-                    _settings[item.Key] = item.Value;
-                }
-                await Task.Run(() => _fileService.Save(_applicationDataFolder, _localsettingsFile, _settings));
+                    foreach (var item in importedSettings)
+                    {
+                        settings[item.Key] = item.Value;
+                    }
+                });
             }
             return null;
         } catch (Exception ex)
@@ -179,8 +197,7 @@ public class LocalSettingsService : ILocalSettingsService
         }
         else
         {
-            _settings.Clear();
-            await Task.Run(() => _fileService.Save(_applicationDataFolder, _localsettingsFile, _settings));
+            await UpdateFileAsync(settings => settings.Clear());
         }
     }
 }
