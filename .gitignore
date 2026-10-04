@@ -3,8 +3,6 @@ FluentDL.Core/obj/
 FluentDL.Core/bin/
 /FluentDL/Assets/keys.json
 /FluentDL/Assets/keys.txt
-/FluentDL/PackageSelect/__pycache__/
-/FluentDL/PackageSelect/*.tmp
 /FluentDL/artifacts/
 /FluentDL/bin/
 /FluentDL/obj/
