@@ -92,7 +92,7 @@ public sealed partial class Search : Page
     public delegate void UrlStatusUpdateCallback(InfoBarSeverity severity, string message, int duration = 2); // Callback for url status update (for infobars)
 
     private ObservableCollection<SongSearchObject> originalList;
-    private bool updateNotificationGiven = false;
+    private static bool updateCheckDone;
     private CancellationTokenSource cancellationTokenSource;
     private DispatcherQueue dispatcher;
     private DispatcherTimer dispatcherTimer;
@@ -171,13 +171,15 @@ public sealed partial class Search : Page
         await InitializeSource();  // Update source button color
 
         //ResultsIcon.Loaded += (s, e) => InitAnimation();
-        // Infobar message for possible new version
-        if (!updateNotificationGiven && await ViewModel.GetNotifyUpdate()) {
+        // Infobar message for possible new version. Check once per launch, even when the check fails. The flag is
+        // set before the first await, so another Loaded event can't start a second check.
+        var checkForUpdate = !updateCheckDone;
+        updateCheckDone = true;
+        if (checkForUpdate && await ViewModel.GetNotifyUpdate()) {
             try 
             {
-                var latestRelease = await GithubAPI.GetLatestRelease() ?? "";
-                var currentVersion = SettingsViewModel.GetVersionDescription();
-                if (latestRelease.CompareTo(currentVersion) > 0)  // Latest version is lexicographically greater
+                var latestRelease = await GithubAPI.GetLatestRelease();
+                if (latestRelease != null && latestRelease > Version.Parse(SettingsViewModel.GetVersionDescription()))
                 {  
                     ShowInfoBar(InfoBarSeverity.Informational, $"New version available: <a href='https://github.com/derekyang2/fluentdl/releases'>FluentDL {latestRelease}</a>", 5, 
                                 buttonText: "Don't Show Again", 
@@ -187,11 +189,10 @@ public sealed partial class Search : Page
                                     ForceHideInfoBar();
                                 });
                 }
-                updateNotificationGiven = true;
             }
             catch (Exception ex)
             {
-                Debug.WriteLine("Failed to fetch latest release version: " + ex);
+                Serilog.Log.Debug(ex, "Could not check GitHub for a newer FluentDL release");
             }
         }
     }
