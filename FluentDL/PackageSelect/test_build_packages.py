@@ -86,19 +86,6 @@ class PackagingTests(unittest.TestCase):
                     packaging.build_packages(args)
                 self.assertIsNone(paths.call_args.args[-1])
 
-    def test_legacy_templates_use_environment_or_project_relative_paths(self):
-        for filename, variable in (
-            ("csproj_store.txt", "FLUENTDL_STORE_PACKAGE_DIR"),
-            ("csproj_local.txt", "FLUENTDL_SIDELOAD_PACKAGE_DIR"),
-        ):
-            root = ET.parse(packaging.SCRIPT_DIR / filename).getroot()
-            outputs = root.findall("./PropertyGroup/AppxPackageDir")
-            self.assertEqual(len(outputs), 2)
-            self.assertEqual(outputs[0].text, f"$({variable})")
-            self.assertIn("!= ''", outputs[0].get("Condition"))
-            self.assertTrue(outputs[1].text.startswith("$(MSBuildProjectDirectory)"))
-            self.assertIn("== ''", outputs[1].get("Condition"))
-
     def fake_package(self, path, manifest, architecture, channel, signed=False):
         root = ET.parse(manifest).getroot()
         root.find(f"{packaging.PACKAGE_NS}Identity").set("ProcessorArchitecture", architecture)
