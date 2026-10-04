@@ -156,33 +156,3 @@ See the [authentication wiki](https://github.com/DerekYang2/FluentDL/wiki/Authen
 Only needed for developers who wish to customize source code.
 
 To build and run the project on Visual Studio, see [development wiki](https://github.com/DerekYang2/FluentDL/wiki/Development).
-
-### Packaging releases
-
-From the `FluentDL` project directory, with Python 3.10+ and Visual Studio's
-Windows SDK and WinUI/MSIX build tools:
-
-```powershell
-python .\PackageSelect\build_packages.py --version 3.8.0.0
-```
-
-This builds Store/Sideload packages for x64 and ARM64 under `artifacts\<version>`.
-Store outputs are unsigned `.msix` files for Partner Center; sideload outputs
-are ZIPs containing the self-contained MSIX and installers. Source manifests and
-project files are not replaced. Store versions must end in `.0`.
-
-Sandbox copying is optional. Set `FLUENTDL_SANDBOX_SHARE` to your existing shared
-folder, or pass `--sandbox-share`. Only unpacked sideload folders are staged;
-`--no-sandbox` disables staging even when a share is configured.
-
-Use `--output` / `FLUENTDL_PACKAGE_OUTPUT` for a different artifact root, and
-`--msbuild` / `FLUENTDL_MSBUILD` to override Visual Studio auto-detection.
-Command-line options take precedence. Use `--overwrite` to replace matching
-outputs from a previous run; unrelated files are left alone.
-
-See [packaging instructions](FluentDL/PackageSelect/README.md) for persistent
-user-local settings, output details, installation, and legacy configuration tools.
-
-```powershell
-python -m unittest discover -s .\PackageSelect -p "test_*.py"
-```
