@@ -660,7 +660,12 @@ internal class ApiHelper
             }
         }
 
-        return await DownloadTrackInternal(song, directory, progress, callback);
+        var path = await DownloadTrackInternal(song, directory, progress, callback);
+        if (!string.IsNullOrEmpty(path))
+        {
+            await ReplayGainDownloads.TagTrackAsync(path);
+        }
+        return path;
     }
 
     public static async Task<List<string>> DownloadAlbum(AlbumSearchObject album, string directory, IProgress<ProgressData> progress, ConversionUpdateCallback? callback = default)
@@ -797,6 +802,11 @@ internal class ApiHelper
             }));
         }
         await Task.WhenAll(allTasks);
+
+        // The album's tracks are tagged together, so album gain can use all of them. TrackList can be shorter than
+        // the album when a track couldn't be looked up, so the album's own track count decides if it's complete.
+        var albumTrackCount = Math.Max(album.TracksCount, album.TrackList.Count);
+        await ReplayGainDownloads.TagAlbumAsync(downloadPaths.ToList(), complete: downloadPaths.Count >= albumTrackCount);
 
         // Download cover if subfolder, fire and forget
 #pragma warning disable CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed

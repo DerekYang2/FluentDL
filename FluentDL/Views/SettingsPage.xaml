@@ -705,6 +705,60 @@
                         </local:SettingsExpander.Items>
                     </local:SettingsExpander>
 
+                    <local:SettingsExpander
+                        x:Name="ReplayGainExpander"
+                        HorizontalContentAlignment="Stretch"
+                        Header="ReplayGain">
+                        <local:SettingsExpander.Description>
+                            <TextBlock>
+                                Write ReplayGain tags so players can play every track at the same loudness.&#32;<Hyperlink NavigateUri="https://github.com/DerekYang2/FluentDL/wiki/ReplayGain">Learn more</Hyperlink></TextBlock>
+                        </local:SettingsExpander.Description>
+                        <local:SettingsExpander.HeaderIcon>
+                            <FontIcon Glyph="&#xF4C3;" />
+                        </local:SettingsExpander.HeaderIcon>
+                        <local:SettingsExpander.Items>
+                            <local:SettingsCard Description="Write track gain to each track after it downloads" Header="Tag Downloads">
+                                <ToggleSwitch
+                                    x:Name="ReplayGainAutoToggle"
+                                    OffContent=""
+                                    OnContent=""
+                                    Toggled="ReplayGainAutoToggle_Toggled" />
+                            </local:SettingsCard>
+                            <local:SettingsCard
+                                x:Name="ReplayGainAlbumCard"
+                                Description="Also write album gain for whole albums downloaded from Search, but not for albums added to the queue"
+                                Header="Album Gain for Album Downloads">
+                                <ToggleSwitch
+                                    x:Name="ReplayGainAlbumToggle"
+                                    OffContent=""
+                                    OnContent=""
+                                    Toggled="ReplayGainAlbumToggle_Toggled" />
+                            </local:SettingsCard>
+                            <local:SettingsCard
+                                x:Name="ReplayGainOffsetCard"
+                                Description="Shift every calculated gain by 0.0 dB"
+                                Header="Gain Adjustment">
+                                <Slider
+                                    x:Name="ReplayGainOffsetSlider"
+                                    Width="500"
+                                    LostFocus="ReplayGainOffsetSlider_OnLostFocus"
+                                    Maximum="6"
+                                    Minimum="-9"
+                                    SnapsTo="StepValues"
+                                    StepFrequency="0.5"
+                                    TickFrequency="1"
+                                    TickPlacement="Outside" />
+                            </local:SettingsCard>
+                            <local:SettingsCard Description="Lower positive gains that would push a track past full scale" Header="Prevent Clipping">
+                                <ToggleSwitch
+                                    x:Name="ReplayGainClipToggle"
+                                    OffContent=""
+                                    OnContent=""
+                                    Toggled="ReplayGainClipToggle_Toggled" />
+                            </local:SettingsCard>
+                        </local:SettingsExpander.Items>
+                    </local:SettingsExpander>
+
                     <!--  Auth SETTINGS __________________________________________________________________________________________________  -->
                     <TextBlock Style="{StaticResource TextBlockSectionStyle}" Text="Authentication" />
 

@@ -165,6 +165,7 @@ public sealed partial class LocalExplorerPage : Page
         AnimationHelper.AttachScaleAnimation(ClearButton, ClearButtonIcon);
         AnimationHelper.AttachScaleAnimation(AddToQueueButton, ResultsIcon);
         AnimationHelper.AttachScaleAnimation(LyricsDialogOpenButton, LyricsDialogOpenIcon);
+        AnimationHelper.AttachScaleAnimation(ReplayGainDialogOpenButton, ReplayGainDialogOpenIcon);
         AnimationHelper.AttachScaleAnimation(ConvertDialogOpenButton, ConvertDialogOpenIcon);
         AnimationHelper.AttachScaleAnimation(SelectOutputButton, SelectOutputIcon);
     }
@@ -1251,5 +1252,12 @@ public sealed partial class LocalExplorerPage : Page
             Debug.WriteLine($"Failed to save lyrics: {ex.Message}");
             return null;
         }
+    }
+
+    // ReplayGain dialog related methods ------------------------------------------------
+
+    private async void ReplayGainDialogOpenButton_OnClick(object sender, RoutedEventArgs e)
+    {
+        await ReplayGainDialog.ShowAsync(LocalExplorerViewModel.OriginalList.ToList(), XamlRoot, PreviewPanel.ClearMediaPlayerSource);
     }
 }

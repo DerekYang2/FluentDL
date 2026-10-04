@@ -1,0 +1,268 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<UserControl
+    x:Class="FluentDL.Views.ReplayGainDialog"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:helpers="using:FluentDL.Helpers"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:views="using:FluentDL.Views"
+    mc:Ignorable="d">
+    <UserControl.Resources>
+        <helpers:NullVisibilityConverter x:Key="NullVisibilityConverter" />
+    </UserControl.Resources>
+    <ContentDialog
+        x:Name="Dialog"
+        Title="ReplayGain"
+        CloseButtonText="Close"
+        Closing="Dialog_Closing"
+        IsPrimaryButtonEnabled="True"
+        IsSecondaryButtonEnabled="False"
+        PrimaryButtonClick="Dialog_PrimaryButtonClick"
+        PrimaryButtonStyle="{ThemeResource AccentButtonStyle}"
+        PrimaryButtonText="Analyze"
+        SecondaryButtonClick="Dialog_SecondaryButtonClick"
+        SecondaryButtonText="Cancel">
+        <ContentDialog.Resources>
+            <x:Double x:Key="ContentDialogMaxWidth">1000</x:Double>
+        </ContentDialog.Resources>
+        <StackPanel Width="760" Spacing="12">
+            <InfoBar
+                x:Name="Info"
+                HorizontalAlignment="Stretch"
+                VerticalAlignment="Bottom"
+                HorizontalContentAlignment="Stretch"
+                IsClosable="False"
+                IsOpen="True"
+                Severity="Informational">
+                <InfoBar.OpacityTransition>
+                    <ScalarTransition Duration="0:0:0.25" />
+                </InfoBar.OpacityTransition>
+                <InfoBar.Content>
+                    <Grid VerticalAlignment="Center">
+                        <TextBlock
+                            x:Name="InfoText"
+                            Margin="0,0,12,0"
+                            TextWrapping="Wrap" />
+                        <ProgressBar
+                            x:Name="InfoProgress"
+                            Margin="0,0,12,-8"
+                            HorizontalAlignment="Stretch"
+                            VerticalAlignment="Bottom"
+                            IsIndeterminate="True"
+                            Visibility="Collapsed" />
+                    </Grid>
+                </InfoBar.Content>
+            </InfoBar>
+
+            <Grid ColumnSpacing="32">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <StackPanel>
+                    <CheckBox
+                        x:Name="TrackCheckBox"
+                        Click="Option_Changed"
+                        Content="Write track gain"
+                        IsChecked="True"
+                        ToolTipService.ToolTip="Each track gets its own gain, so every track plays at the same loudness. Best for shuffle and playlists." />
+                    <CheckBox
+                        x:Name="AlbumCheckBox"
+                        Click="Option_Changed"
+                        Content="Write album gain"
+                        IsChecked="True"
+                        ToolTipService.ToolTip="Every track on an album gets the same gain. This keeps the volume differences within the album." />
+                    <CheckBox
+                        x:Name="SingleAlbumCheckBox"
+                        Margin="28,0,0,0"
+                        Click="Option_Changed"
+                        Content="Treat all tracks as one album"
+                        ToolTipService.ToolTip="Give every track in the list the same album gain. Otherwise tracks are grouped by their album and album artist tags." />
+                    <CheckBox
+                        x:Name="ClipCheckBox"
+                        Click="Option_Changed"
+                        Content="Lower gains that would clip"
+                        ToolTipService.ToolTip="Lower a positive gain just enough to keep the track's loudest point at full scale. Leave this off if your player prevents clipping." />
+                </StackPanel>
+                <StackPanel Grid.Column="1" Spacing="4">
+                    <TextBlock x:Name="OffsetText" Text="Gain adjustment: 0.0 dB" />
+                    <Slider
+                        x:Name="OffsetSlider"
+                        Maximum="6"
+                        Minimum="-9"
+                        SnapsTo="StepValues"
+                        StepFrequency="0.5"
+                        TickFrequency="1"
+                        TickPlacement="Outside"
+                        ValueChanged="OffsetSlider_ValueChanged" />
+                    <TextBlock
+                        Foreground="{ThemeResource TextFillColorSecondary}"
+                        Style="{ThemeResource CaptionTextBlockStyle}"
+                        Text="Absolute offset: shifts every calculated gain."
+                        TextWrapping="Wrap" />
+                </StackPanel>
+            </Grid>
+
+            <ToggleSwitch
+                x:Name="SkipToggle"
+                OffContent="Skip tracks that already have ReplayGain tags"
+                OnContent="Skip tracks that already have ReplayGain tags"
+                Toggled="Option_Changed"
+                ToolTipService.ToolTip="Tracks that already have every tag you're writing aren't analyzed again. With album gain, an album is skipped only if all of its tracks have the tags." />
+
+            <StackPanel>
+                <TextBlock
+                    Margin="0,0,0,8"
+                    Foreground="{ThemeResource TextFillColorSecondary}"
+                    Style="{ThemeResource CaptionTextBlockStyle}"
+                    Text="Results" />
+                <Border
+                    Padding="4,8,4,8"
+                    Background="{ThemeResource CardBackgroundFillColorSecondaryBrush}"
+                    BorderBrush="{ThemeResource ControlStrongStrokeColorDefaultBrush}"
+                    CornerRadius="4">
+                    <Grid>
+                        <ListView
+                            x:Name="ResultsList"
+                            Height="300"
+                            Padding="2,0,12,0"
+                            Background="Transparent"
+                            BorderThickness="0"
+                            CornerRadius="4"
+                            SelectionMode="None">
+                            <ListView.Header>
+                                <Grid Margin="12,0,12,4">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="40" />
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="100" />
+                                        <ColumnDefinition Width="120" />
+                                        <ColumnDefinition Width="120" />
+                                        <ColumnDefinition Width="32" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock
+                                        Grid.ColumnSpan="2"
+                                        Foreground="{ThemeResource TextFillColorSecondary}"
+                                        Style="{ThemeResource CaptionTextBlockStyle}"
+                                        Text="Track" />
+                                    <TextBlock
+                                        Grid.Column="2"
+                                        HorizontalAlignment="Right"
+                                        Foreground="{ThemeResource TextFillColorSecondary}"
+                                        Style="{ThemeResource CaptionTextBlockStyle}"
+                                        Text="Loudness"
+                                        ToolTipService.ToolTip="How loud the track sounds on average, in LUFS. Closer to 0 is louder. ReplayGain brings tracks to -18 LUFS, plus the gain adjustment." />
+                                    <TextBlock
+                                        Grid.Column="3"
+                                        HorizontalAlignment="Right"
+                                        Foreground="{ThemeResource TextFillColorSecondary}"
+                                        Style="{ThemeResource CaptionTextBlockStyle}"
+                                        Text="Track gain" />
+                                    <TextBlock
+                                        Grid.Column="4"
+                                        HorizontalAlignment="Right"
+                                        Foreground="{ThemeResource TextFillColorSecondary}"
+                                        Style="{ThemeResource CaptionTextBlockStyle}"
+                                        Text="Album gain" />
+                                </Grid>
+                            </ListView.Header>
+                            <ListView.ItemTemplate>
+                                <DataTemplate x:DataType="views:ReplayGainRow">
+                                    <Grid
+                                        Height="48"
+                                        Margin="0,4"
+                                        AutomationProperties.Name="{x:Bind Song.Title}">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="40" />
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="100" />
+                                            <ColumnDefinition Width="120" />
+                                            <ColumnDefinition Width="120" />
+                                            <ColumnDefinition Width="32" />
+                                        </Grid.ColumnDefinitions>
+                                        <!--  The thumbnail Local Explorer already loaded for this track, so nothing is decoded again.  -->
+                                        <Border
+                                            Width="40"
+                                            Height="40"
+                                            VerticalAlignment="Center"
+                                            CornerRadius="4">
+                                            <Border.Background>
+                                                <ImageBrush ImageSource="{x:Bind Song.LocalBitmapImage, Mode=OneWay}" Stretch="UniformToFill" />
+                                            </Border.Background>
+                                        </Border>
+                                        <StackPanel
+                                            Grid.Column="1"
+                                            Margin="12,0,12,0"
+                                            VerticalAlignment="Center">
+                                            <TextBlock
+                                                FontSize="14"
+                                                FontWeight="SemiBold"
+                                                MaxLines="1"
+                                                Text="{x:Bind Song.Title}"
+                                                TextTrimming="CharacterEllipsis" />
+                                            <TextBlock
+                                                FontSize="12"
+                                                MaxLines="1"
+                                                Opacity="0.7"
+                                                Text="{x:Bind Song.Artists}"
+                                                TextTrimming="CharacterEllipsis" />
+                                        </StackPanel>
+                                        <TextBlock
+                                            Grid.Column="2"
+                                            HorizontalAlignment="Right"
+                                            VerticalAlignment="Center"
+                                            Opacity="0.8"
+                                            Text="{x:Bind Loudness}" />
+                                        <StackPanel
+                                            Grid.Column="3"
+                                            HorizontalAlignment="Right"
+                                            VerticalAlignment="Center">
+                                            <TextBlock HorizontalAlignment="Right" Text="{x:Bind TrackGain}" />
+                                            <TextBlock
+                                                HorizontalAlignment="Right"
+                                                FontSize="12"
+                                                Opacity="0.7"
+                                                Text="{x:Bind CurrentTrackGain}"
+                                                Visibility="{x:Bind CurrentTrackGain, Converter={StaticResource NullVisibilityConverter}}" />
+                                        </StackPanel>
+                                        <StackPanel
+                                            Grid.Column="4"
+                                            HorizontalAlignment="Right"
+                                            VerticalAlignment="Center">
+                                            <TextBlock HorizontalAlignment="Right" Text="{x:Bind AlbumGain}" />
+                                            <TextBlock
+                                                HorizontalAlignment="Right"
+                                                FontSize="12"
+                                                Opacity="0.7"
+                                                Text="{x:Bind CurrentAlbumGain}"
+                                                Visibility="{x:Bind CurrentAlbumGain, Converter={StaticResource NullVisibilityConverter}}" />
+                                        </StackPanel>
+                                        <FontIcon
+                                            Grid.Column="5"
+                                            HorizontalAlignment="Right"
+                                            VerticalAlignment="Center"
+                                            FontSize="16"
+                                            Foreground="{ThemeResource SystemFillColorCautionBrush}"
+                                            Glyph="&#xE7BA;"
+                                            ToolTipService.ToolTip="{x:Bind Warning}"
+                                            Visibility="{x:Bind Warning, Converter={StaticResource NullVisibilityConverter}}" />
+                                    </Grid>
+                                </DataTemplate>
+                            </ListView.ItemTemplate>
+                        </ListView>
+
+                        <TextBlock
+                            x:Name="NoResultsText"
+                            Margin="0,-8,0,0"
+                            HorizontalAlignment="Center"
+                            VerticalAlignment="Center"
+                            Visibility="Visible">
+                            No tracks analyzed.
+                        </TextBlock>
+                    </Grid>
+                </Border>
+            </StackPanel>
+        </StackPanel>
+    </ContentDialog>
+</UserControl>

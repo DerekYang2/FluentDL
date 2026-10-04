@@ -1,6 +1,7 @@
 ﻿using CommunityToolkit.Labs.WinUI.MarqueeTextRns;
 using FluentDL.Contracts.Services;
 using FluentDL.Core.Contracts.Services;
+using FluentDL.Core.ReplayGain;
 using FluentDL.Helpers;
 using FluentDL.Models;
 using FluentDL.Services;
@@ -466,7 +467,7 @@ namespace FluentDL.Views
                 if (trackInfoObj is MetadataObject metadata)
                 {
                     RankRatingControl.Visibility = Visibility.Collapsed;
-                    PreviewInfoControl2.ItemsSource = PreviewInfoControl.ItemsSource = new ObservableCollection<TrackDetail> // Set the details list
+                    var details = new ObservableCollection<TrackDetail>
                     {
                         new() { Label = "Contributing Artists", Value = selectedSong.Artists },
                         new() { Label = "Album", Value = selectedSong.AlbumName },
@@ -481,8 +482,10 @@ namespace FluentDL.Views
                         new() { Label = "Channels", Value = metadata.AudioChannels.ToString() },
                         new() { Label = "Sample rate", Value = metadata.AudioSampleRate + " Hz" },
                         new() { Label = "Bit depth", Value = metadata.BitsPerSample + " bit" },
-                        new() { Label = "Location", Value = selectedSong.Id }
                     };
+                    AddReplayGainDetails(details, selectedSong.Id);
+                    details.Add(new() { Label = "Location", Value = selectedSong.Id });
+                    PreviewInfoControl2.ItemsSource = PreviewInfoControl.ItemsSource = details; // Set the details list
                     SetPlayerSource(selectedSong.Id);
                     var byteBuffer = metadata.GetAlbumArt();
 
@@ -500,6 +503,21 @@ namespace FluentDL.Views
                 {
                     throw new Exception("Metadata object is null");
                 }
+            }
+        }
+
+        // Read from the file each time, because MetadataObject is cached and ReplayGain tags may have been written since.
+        private static void AddReplayGainDetails(ICollection<TrackDetail> details, string path)
+        {
+            try
+            {
+                var tags = ReplayGainScanner.ReadTags(path);
+                if (tags.TrackGain is { } trackGain) details.Add(new() { Label = "Track gain", Value = ReplayGainMath.FormatGain(trackGain) });
+                if (tags.AlbumGain is { } albumGain) details.Add(new() { Label = "Album gain", Value = ReplayGainMath.FormatGain(albumGain) });
+            }
+            catch (Exception e)
+            {
+                Serilog.Log.Debug(e, "Could not read ReplayGain tags for the preview");
             }
         }
 
