@@ -34,6 +34,8 @@
   </PropertyGroup>
   <ItemGroup>
     <None Remove="Views\SpectrogramDialog.xaml" />
+    <!-- PackageSelect\BuildPackages.cs is a standalone 'dotnet run' script, not part of the app. -->
+    <Compile Remove="PackageSelect\**" />
   </ItemGroup>
   <ItemGroup>
     <Manifest Include="$(ApplicationManifest)" />
