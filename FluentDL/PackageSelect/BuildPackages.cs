@@ -1,7 +1,6 @@
 // Builds FluentDL's Store MSIX files and sideload release ZIPs for x64 and ARM64.
-// Run from the FluentDL project folder with the .NET 10 SDK or later:
-//   dotnet run --file .\PackageSelect\BuildPackages.cs -- --version 3.8.0.0
-// See https://github.com/DerekYang2/FluentDL/wiki/Packaging for every option.
+// Start it with build_packages.cmd in this folder: double-click it for prompts, or pass options.
+// It needs the .NET 10 SDK or later. See https://github.com/DerekYang2/FluentDL/wiki/Packaging.
 
 using System.Diagnostics;
 using System.IO.Compression;
@@ -27,9 +26,12 @@ static class Packager
     const string Help = """
         Builds FluentDL's Store MSIX files and sideload release ZIPs.
 
-        Usage: dotnet run --file .\PackageSelect\BuildPackages.cs -- --version <version> [options]
+        Usage: build_packages.cmd [options]
+           or: dotnet run --file .\PackageSelect\BuildPackages.cs -- [options]
 
-          --version <a.b.c.d>       Package version, for example 3.8.0.0. Required.
+        With no options, the script asks for each setting and shows the matching command.
+
+          --version <a.b.c.d>       Package version, for example 3.8.0.0. Required with other options.
           --channel <name>          All (default), Store or Sideload.
           --architecture <name>     All (default), x64 or arm64.
           --output <folder>         Artifact root. Default: FLUENTDL_PACKAGE_OUTPUT, or artifacts in the project folder.
@@ -44,20 +46,20 @@ static class Packager
 
     public static int Run(string[] args)
     {
-        Console.CancelKeyPress += (_, e) =>
-        {
-            // MSBuild gets the same Ctrl+C and stops; the build loop then cleans up and exits.
-            e.Cancel = true;
-            cancelled = true;
-        };
         try
         {
-            var options = Parse(args);
+            var options = args.Length == 0 ? Prompt() : Parse(args);
             if (options is null)
             {
                 Console.WriteLine(Help);
                 return 0;
             }
+            Console.CancelKeyPress += (_, e) =>
+            {
+                // MSBuild gets the same Ctrl+C and stops; the build loop then cleans up and exits.
+                e.Cancel = true;
+                cancelled = true;
+            };
             Build(options);
             Console.WriteLine();
             Console.WriteLine("Packaging complete.");
@@ -142,6 +144,123 @@ static class Packager
             : throw new UsageException($"{option} must be All, {string.Join(" or ", allowed)}; got {value}.");
     }
 
+    static Options Prompt()
+    {
+        Console.WriteLine("FluentDL release packaging. Press Enter to accept the value in brackets.");
+        Console.WriteLine();
+
+        var channels = Choose(AskChoice("Channel", ["All", .. Channels]), Channels, "--channel");
+        var architectures = Choose(AskChoice("Architecture", ["All", .. Architectures]), Architectures, "--architecture");
+        var version = Ask("Package version", CurrentVersion(), value =>
+        {
+            try { CheckVersion(value); }
+            catch (UsageException e) { return e.Message; }
+            return channels.Contains("Store") && !value.EndsWith(".0") ? "Store versions must end in .0." : null;
+        });
+
+        string? sandbox = null;
+        if (channels.Contains("Sideload"))
+        {
+            var configured = EnvironmentPath("FLUENTDL_SANDBOX_SHARE");
+            if (configured is not null)
+            {
+                sandbox = AskYesNo($"Copy sideload builds to the sandbox share {configured}?", true) ? Path.GetFullPath(configured) : null;
+            }
+            else
+            {
+                var folder = Ask("Windows Sandbox share folder, or blank to skip", "",
+                    value => value.Length == 0 || Directory.Exists(value) ? null : "That folder doesn't exist.");
+                sandbox = folder.Length == 0 ? null : Path.GetFullPath(folder);
+            }
+        }
+
+        var output = Path.GetFullPath(EnvironmentPath("FLUENTDL_PACKAGE_OUTPUT") ?? Path.Combine(ProjectDir, "artifacts"));
+        var options = new Options(version, channels, architectures, output, sandbox, EnvironmentPath("FLUENTDL_MSBUILD"), Overwrite: false);
+        var existing = OutputPaths(options).Where(File.Exists).ToList();
+        if (existing.Count > 0)
+        {
+            Console.WriteLine($"{existing.Count} output file(s) from an earlier build already exist, including {existing[0]}.");
+            if (!AskYesNo("Replace them?", false)) throw new OperationCanceledException();
+            options = options with { Overwrite = true };
+        }
+
+        Console.WriteLine();
+        Console.WriteLine($"Output folder: {output}");
+        Console.WriteLine($"Same as running: {CommandLine(options)}");
+        if (!AskYesNo("Build now?", true)) throw new OperationCanceledException();
+        return options;
+    }
+
+    // A null fallback makes the answer required. An empty fallback allows a blank answer.
+    static string Ask(string question, string? fallback, Func<string, string?> validate)
+    {
+        while (true)
+        {
+            Console.Write(string.IsNullOrEmpty(fallback) ? $"{question}: " : $"{question} [{fallback}]: ");
+            var answer = (Console.ReadLine() ?? throw new OperationCanceledException()).Trim();
+            if (answer.Length == 0) answer = fallback ?? "";
+            var error = answer.Length == 0
+                ? (fallback is null ? "An answer is required." : null)
+                : validate(answer);
+            if (error is null) return answer;
+            Console.WriteLine($"  {error}");
+        }
+    }
+
+    static string AskChoice(string question, string[] choices)
+    {
+        Console.WriteLine($"{question}:");
+        for (var i = 0; i < choices.Length; i++) Console.WriteLine($"  {i + 1}. {choices[i]}");
+        var answer = Ask("Choose", "1", value =>
+            (int.TryParse(value, out var number) && number >= 1 && number <= choices.Length)
+            || choices.Any(choice => choice.Equals(value, StringComparison.OrdinalIgnoreCase))
+                ? null
+                : $"Enter a number from 1 to {choices.Length}.");
+        return int.TryParse(answer, out var index) ? choices[index - 1] : answer;
+    }
+
+    static bool AskYesNo(string question, bool fallback)
+    {
+        while (true)
+        {
+            Console.Write($"{question} [{(fallback ? "Y/n" : "y/N")}]: ");
+            var answer = (Console.ReadLine() ?? throw new OperationCanceledException()).Trim().ToLowerInvariant();
+            if (answer.Length == 0) return fallback;
+            if (answer is "y" or "yes") return true;
+            if (answer is "n" or "no") return false;
+            Console.WriteLine("  Answer y or n.");
+        }
+    }
+
+    static string? CurrentVersion()
+    {
+        try
+        {
+            return (string?)XDocument.Load(Path.Combine(ProjectDir, "Package.appxmanifest"))
+                .Root?.Element(PackageNs + "Identity")?.Attribute("Version");
+        }
+        catch (Exception e) when (e is IOException or XmlException)
+        {
+            return null;
+        }
+    }
+
+    static string CommandLine(Options options)
+    {
+        static string Quote(string value) => value.Contains(' ') ? $"\"{value}\"" : value;
+        var parts = new List<string> { "build_packages.cmd", "--version", options.Version };
+        if (options.Channels.Length == 1) parts.AddRange(["--channel", options.Channels[0]]);
+        if (options.Architectures.Length == 1) parts.AddRange(["--architecture", options.Architectures[0]]);
+        if (options.Channels.Contains("Sideload"))
+        {
+            var configured = EnvironmentPath("FLUENTDL_SANDBOX_SHARE");
+            if (options.Sandbox is null && configured is not null) parts.Add("--no-sandbox");
+            else if (options.Sandbox is not null && configured is null) parts.AddRange(["--sandbox-share", Quote(options.Sandbox)]);
+        }
+        if (options.Overwrite) parts.Add("--overwrite");
+        return string.Join(' ', parts);
+    }
+
     static void CheckVersion(string version)
     {
         if (!Regex.IsMatch(version, @"^(0|[1-9][0-9]*)(\.(0|[1-9][0-9]*)){3}$"))
@@ -217,6 +336,7 @@ static class Packager
 
         var packageDir = Path.Combine(variant, "AppPackages");
         var log = Path.Combine(logDir, $"{channel}-{architecture}.log");
+        Console.WriteLine($"Building takes about a minute. The console shows errors only; the full build output goes to {log}");
         var exitCode = RunBuild(tool, channel, architecture, manifest, appManifest, packageDir, log);
         ThrowIfCancelled();
         if (exitCode != 0) throw new InvalidOperationException($"{channel}/{architecture} build failed ({exitCode}). See {log}");
@@ -294,7 +414,7 @@ static class Packager
         var start = new ProcessStartInfo(tool.FileName) { UseShellExecute = false, WorkingDirectory = ProjectDir };
         foreach (var argument in tool.Prefix) start.ArgumentList.Add(argument);
         start.ArgumentList.Add(Path.Combine(ProjectDir, "FluentDL.csproj"));
-        foreach (var argument in new[] { "-nologo", "-restore", "-t:Build", "-verbosity:minimal", "-nr:false", $"-flp:LogFile={log};Verbosity=normal;Encoding=UTF-8" })
+        foreach (var argument in new[] { "-nologo", "-restore", "-t:Build", "-verbosity:minimal", "-clp:ErrorsOnly", "-nr:false", $"-flp:LogFile={log};Verbosity=normal;Encoding=UTF-8" })
             start.ArgumentList.Add(argument);
         foreach (var (key, value) in properties) start.ArgumentList.Add($"-p:{key}={value}");
 
