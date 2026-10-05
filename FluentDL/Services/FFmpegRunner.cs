@@ -11,6 +11,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Windows.Storage.Streams;
 using Serilog;
@@ -46,19 +47,70 @@ internal class FFmpegRunner
         try
         {
             var ffmpegPath = await SettingsViewModel.GetSetting<string?>(SettingsViewModel.FFmpegPath) ?? string.Empty;
+            var source = "custom folder";
             if (!Directory.Exists(ffmpegPath))
             {
                 ffmpegPath = Path.Combine(AppContext.BaseDirectory, "Assets\\ffmpeg\\bin");
+                source = "bundled";
             }
 
             Log.Debug("Configuring FFmpeg");
 
             GlobalFFOptions.Configure(options => options.BinaryFolder = ffmpegPath);
             IsInitialized = true;
+            // Not awaited, so a slow first start of ffmpeg doesn't hold up startup or the settings page.
+            _ = Task.Run(() => LogVersionAsync(ffmpegPath, source));
         }
         catch (Exception e)
         {
             Log.Error(e, "FFmpeg configuration failed");
+        }
+    }
+
+    // Starts ffmpeg once and logs its version, so the log shows whether conversions and spectrograms can work.
+    // A failure is only logged, because FluentDL doesn't need ffmpeg until it converts audio or draws a spectrogram.
+    private static async Task LogVersionAsync(string folder, string source)
+    {
+        try
+        {
+            using var process = new Process
+            {
+                StartInfo = new ProcessStartInfo(Path.Combine(folder, "ffmpeg.exe"), "-version")
+                {
+                    UseShellExecute = false,
+                    CreateNoWindow = true,
+                    RedirectStandardOutput = true,
+                },
+            };
+            process.Start();
+
+            string output;
+            using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(30));
+            try
+            {
+                output = await process.StandardOutput.ReadToEndAsync(timeout.Token);
+                await process.WaitForExitAsync(timeout.Token);
+            }
+            catch (OperationCanceledException)
+            {
+                try { process.Kill(entireProcessTree: true); } catch (InvalidOperationException) { }
+                Log.Warning("FFmpeg unavailable ({Source}): no answer within 30 seconds", source);
+                return;
+            }
+
+            if (process.ExitCode != 0)
+            {
+                Log.Warning("FFmpeg unavailable ({Source}): exited with code {ExitCode}", source, process.ExitCode);
+                return;
+            }
+
+            // The first line looks like "ffmpeg version N-116752-g507c2a577-2024-08-19-nonfree Copyright (c) ...".
+            var match = Regex.Match(output, @"^ffmpeg version (\S+)");
+            Log.Information("FFmpeg ready; version {Version} ({Source})", match.Success ? match.Groups[1].Value : "unknown", source);
+        }
+        catch (Exception e)
+        {
+            Log.Warning(e, "FFmpeg unavailable ({Source}); converting audio and spectrograms won't work", source);
         }
     }
 

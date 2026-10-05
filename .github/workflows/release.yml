@@ -69,6 +69,7 @@ jobs:
       STORE: ${{ endsWith(needs.version.outputs.version, '.0') }}
     steps:
       - uses: actions/checkout@v4
+      - uses: ./.github/actions/lfs-pull
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: 10.0.x

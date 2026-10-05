@@ -1,0 +1,25 @@
+name: Pull Git LFS files
+description: >
+  Checks out the repository's Git LFS files, such as ffmpeg.exe, which actions/checkout leaves as small pointer files.
+  The files come from the Actions cache when it has them, so most runs use none of the account's LFS bandwidth.
+runs:
+  using: composite
+  steps:
+    - name: List the LFS files
+      shell: bash
+      run: git lfs ls-files --long | cut -d ' ' -f1 | sort > .lfs-ids
+    - uses: actions/cache@v4
+      with:
+        path: .git/lfs/objects
+        key: lfs-${{ hashFiles('.lfs-ids') }}
+        enableCrossOsArchive: true
+    - name: Check out the LFS files
+      shell: bash
+      run: |
+        git lfs pull
+        # git lfs ls-files marks a file that is still only a pointer with "-" instead of "*".
+        if git lfs ls-files | grep -q ' - '; then
+          git lfs ls-files
+          echo "::error::Some Git LFS files are still pointer files."
+          exit 1
+        fi

@@ -17,6 +17,7 @@ jobs:
     runs-on: ${{ matrix.runner }}
     steps:
       - uses: actions/checkout@v4
+      - uses: ./.github/actions/lfs-pull
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: 10.0.x
@@ -52,6 +53,7 @@ jobs:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: ./.github/actions/lfs-pull
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: 10.0.x
