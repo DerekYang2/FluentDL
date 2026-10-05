@@ -57,11 +57,11 @@ jobs:
           dotnet-version: 10.0.x
       - name: Build the package
         working-directory: FluentDL
-        run: dotnet run --file PackageSelect/BuildPackages.cs -- --version 0.0.0.1 --channel Sideload --architecture arm64 --no-sandbox --output "${{ runner.temp }}/packages"
+        run: dotnet run --file PackageSelect/BuildPackages.cs -- --version 1.0.0.0 --channel Sideload --architecture arm64 --no-sandbox --output "${{ runner.temp }}/packages"
       - uses: actions/upload-artifact@v4
         with:
           name: sideload-arm64
-          path: ${{ runner.temp }}/packages/0.0.0.1/Sideload/FluentDL_0.0.0.1_arm64.zip
+          path: ${{ runner.temp }}/packages/1.0.0.0/Sideload/FluentDL_1.0.0.0_arm64.zip
 
   launch-arm64:
     name: ARM64 launch
@@ -76,7 +76,7 @@ jobs:
       - name: Install and start FluentDL
         shell: powershell
         run: |
-          Expand-Archive package/FluentDL_0.0.0.1_arm64.zip -DestinationPath package/unzipped
+          Expand-Archive package/FluentDL_1.0.0.0_arm64.zip -DestinationPath package/unzipped
           $msix = Get-ChildItem package/unzipped -Recurse -Filter *.msix | Select-Object -First 1
           ./.github/scripts/Test-AppLaunch.ps1 -Package $msix.FullName -Architecture Arm64 -Output launch-results
       - name: Upload the log and screenshot
