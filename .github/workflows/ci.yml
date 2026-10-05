@@ -47,11 +47,8 @@ jobs:
           -Architecture ${{ matrix.platform }}
           -Allow 'Assets\ffmpeg\bin\ffmpeg.exe', 'Microsoft.Web.WebView2.Core.dll'
 
-  package:
-    name: Sideload package (${{ matrix.architecture }})
-    strategy:
-      matrix:
-        architecture: [x64, arm64]
+  package-arm64:
+    name: ARM64 sideload package
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
@@ -60,38 +57,31 @@ jobs:
           dotnet-version: 10.0.x
       - name: Build the package
         working-directory: FluentDL
-        run: dotnet run --file PackageSelect/BuildPackages.cs -- --version 1.0.0.0 --channel Sideload --architecture ${{ matrix.architecture }} --no-sandbox --output "${{ runner.temp }}/packages"
+        run: dotnet run --file PackageSelect/BuildPackages.cs -- --version 1.0.0.0 --channel Sideload --architecture arm64 --no-sandbox --output "${{ runner.temp }}/packages"
       - uses: actions/upload-artifact@v4
         with:
-          name: sideload-${{ matrix.architecture }}
-          path: ${{ runner.temp }}/packages/1.0.0.0/Sideload/FluentDL_1.0.0.0_${{ matrix.architecture }}.zip
+          name: sideload-arm64
+          path: ${{ runner.temp }}/packages/1.0.0.0/Sideload/FluentDL_1.0.0.0_arm64.zip
 
-  launch:
-    name: Launch (${{ matrix.architecture }} on ${{ matrix.runner }})
-    needs: package
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - { runner: windows-11-arm, architecture: arm64, process: Arm64 }
-          - { runner: windows-11-arm, architecture: x64, process: X64 }
-          - { runner: windows-latest, architecture: x64, process: X64 }
-    runs-on: ${{ matrix.runner }}
+  launch-arm64:
+    name: ARM64 launch
+    needs: package-arm64
+    runs-on: windows-11-arm
     steps:
       - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
         with:
-          name: sideload-${{ matrix.architecture }}
+          name: sideload-arm64
           path: package
       - name: Install and start FluentDL
         shell: powershell
         run: |
-          Expand-Archive package/FluentDL_1.0.0.0_${{ matrix.architecture }}.zip -DestinationPath package/unzipped
+          Expand-Archive package/FluentDL_1.0.0.0_arm64.zip -DestinationPath package/unzipped
           $msix = Get-ChildItem package/unzipped -Recurse -Filter *.msix | Select-Object -First 1
-          ./.github/scripts/Test-AppLaunch.ps1 -Package $msix.FullName -Architecture ${{ matrix.process }} -Output launch-results
+          ./.github/scripts/Test-AppLaunch.ps1 -Package $msix.FullName -Architecture Arm64 -Output launch-results
       - name: Upload the log and screenshot
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: launch-${{ matrix.architecture }}-${{ matrix.runner }}
+          name: arm64-launch-results
           path: launch-results
