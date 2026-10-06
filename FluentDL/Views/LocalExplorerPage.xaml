@@ -29,6 +29,7 @@
     <Grid x:Name="ContentArea">
         <!--  Spectrogram dialog  -->
         <views:SpectrogramDialog x:Name="SpectrogramDialog" />
+        <views:ReplayGainDialog x:Name="ReplayGainDialog" />
         <!--  Metadata dialog  -->
         <ContentDialog
             x:Name="MetadataDialog"
@@ -195,6 +196,20 @@
                                 FontSize="16"
                                 Glyph="&#xED1E;" />
                             <TextBlock Text="Lyrics" />
+                        </StackPanel>
+                    </Button>
+                    <Button
+                        x:Name="ReplayGainDialogOpenButton"
+                        VerticalAlignment="Center"
+                        Click="ReplayGainDialogOpenButton_OnClick"
+                        ToolTipService.ToolTip="Write ReplayGain tags to local tracks">
+                        <StackPanel Orientation="Horizontal">
+                            <FontIcon
+                                x:Name="ReplayGainDialogOpenIcon"
+                                Margin="0,0,8,0"
+                                FontSize="16"
+                                Glyph="&#xF4C3;" />
+                            <TextBlock Text="ReplayGain" />
                         </StackPanel>
                     </Button>
                     <Button

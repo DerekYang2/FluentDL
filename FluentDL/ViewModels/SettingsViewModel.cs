@@ -77,6 +77,13 @@ public partial class SettingsViewModel : ObservableRecipient
         AutoBackupEnabled = "auto_backup_enabled",
         BackupRetentionCount = "backup_retention_count";
 
+    // ReplayGain settings
+    public static readonly string
+        ReplayGainAutoApply = "replaygain_auto_apply",
+        ReplayGainAlbumDownloads = "replaygain_album_downloads",
+        ReplayGainOffset = "replaygain_offset",
+        ReplayGainPreventClipping = "replaygain_prevent_clipping";
+
     // Naming settings
     public static readonly string
         SubfolderWildcard = "subfolder_wildcard",
@@ -184,6 +191,10 @@ public partial class SettingsViewModel : ObservableRecipient
         await SaveSettingsAsyncIfNull<string?>(LyricsDirectory, ""); // Empty means same directory as track
         await SaveSettingsAsyncIfNull<bool?>(AutoBackupEnabled, true);
         await SaveSettingsAsyncIfNull<int?>(BackupRetentionCount, 5);
+        await SaveSettingsAsyncIfNull<bool?>(ReplayGainAutoApply, false);
+        await SaveSettingsAsyncIfNull<bool?>(ReplayGainAlbumDownloads, false);
+        await SaveSettingsAsyncIfNull<double?>(ReplayGainOffset, 0.0);
+        await SaveSettingsAsyncIfNull<bool?>(ReplayGainPreventClipping, false);
         await SaveSettingsAsyncIfNull<bool?>(FirstRun, false);
     }
 

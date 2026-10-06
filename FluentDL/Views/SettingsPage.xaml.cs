@@ -89,11 +89,21 @@ public sealed partial class SettingsPage : Page
         {
             BackupRetentionCard.Description = $"Keep the latest {Math.Round(BackupRetentionSlider.Value)} backups";
         };
+        ReplayGainOffsetSlider.ValueChanged += (s, e) =>
+        {
+            ReplayGainOffsetCard.Description = ReplayGainOffsetDescription(ReplayGainOffsetSlider.Value);
+        };
 
         CommandThreadsSlider.Value = await localSettings.ReadSettingAsync<int?>(SettingsViewModel.CommandThreads) ?? 1;
         ConversionThreadsSlider.Value = await localSettings.ReadSettingAsync<int?>(SettingsViewModel.ConversionThreads) ?? 3;
         AudioConversionThreadsSlider.Value = await localSettings.ReadSettingAsync<int?>(SettingsViewModel.AudioConversionThreads) ?? 6;
         BackupRetentionSlider.Value = await localSettings.ReadSettingAsync<int?>(SettingsViewModel.BackupRetentionCount) ?? 5;
+        ReplayGainOffsetSlider.Value = await localSettings.ReadSettingAsync<double?>(SettingsViewModel.ReplayGainOffset) ?? 0;
+        ReplayGainOffsetCard.Description = ReplayGainOffsetDescription(ReplayGainOffsetSlider.Value);
+        ReplayGainAutoToggle.IsOn = await localSettings.ReadSettingAsync<bool>(SettingsViewModel.ReplayGainAutoApply);
+        ReplayGainAlbumToggle.IsOn = await localSettings.ReadSettingAsync<bool>(SettingsViewModel.ReplayGainAlbumDownloads);
+        ReplayGainAlbumCard.IsEnabled = ReplayGainAutoToggle.IsOn;
+        ReplayGainClipToggle.IsOn = await localSettings.ReadSettingAsync<bool>(SettingsViewModel.ReplayGainPreventClipping);
 
         // Set quality combo boxes (default flac)
         DeezerQualityComboBox.SelectedIndex = await localSettings.ReadSettingAsync<int?>(SettingsViewModel.DeezerQuality) ?? 2;
@@ -629,6 +639,29 @@ public sealed partial class SettingsPage : Page
 
         var value = (int)slider.Value;
         await localSettings.SaveSettingAsync(SettingsViewModel.BackupRetentionCount, value);
+    }
+
+    private async void ReplayGainOffsetSlider_OnLostFocus(object sender, RoutedEventArgs e)
+    {
+        await localSettings.SaveSettingAsync(SettingsViewModel.ReplayGainOffset, ReplayGainOffsetSlider.Value);
+    }
+
+    private static string ReplayGainOffsetDescription(double offset) => $"Shift every calculated gain by {offset:+0.0;-0.0;0.0} dB";
+
+    private async void ReplayGainAutoToggle_Toggled(object sender, RoutedEventArgs e)
+    {
+        ReplayGainAlbumCard.IsEnabled = ReplayGainAutoToggle.IsOn;
+        await localSettings.SaveSettingAsync(SettingsViewModel.ReplayGainAutoApply, ReplayGainAutoToggle.IsOn);
+    }
+
+    private async void ReplayGainAlbumToggle_Toggled(object sender, RoutedEventArgs e)
+    {
+        await localSettings.SaveSettingAsync(SettingsViewModel.ReplayGainAlbumDownloads, ReplayGainAlbumToggle.IsOn);
+    }
+
+    private async void ReplayGainClipToggle_Toggled(object sender, RoutedEventArgs e)
+    {
+        await localSettings.SaveSettingAsync(SettingsViewModel.ReplayGainPreventClipping, ReplayGainClipToggle.IsOn);
     }
 
     private async void Search_OnChecked(object sender, RoutedEventArgs e)
