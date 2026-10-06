@@ -1,0 +1,172 @@
+name: Release
+
+# Builds the x64 and ARM64 sideload ZIPs and attaches them to a draft GitHub release. Review the draft under
+# Releases, edit its notes and publish it; nothing is public until then. For versions ending in .0, it also builds the
+# x64 and ARM64 Store MSIX files, which you download from the run's page and upload in Partner Center. Start it by
+# pushing a version tag such as 3.9.0.0, or from the Actions tab with "Run workflow". The version must match
+# Package.appxmanifest and app.manifest in the code being released.
+on:
+  push:
+    tags: ['[0-9]*.[0-9]*.[0-9]*.[0-9]*']
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Version to release, such as 3.9.0.0. Publishing the draft creates this tag on the chosen branch.
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  version:
+    name: Version
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: version
+        name: Check the version against the manifests
+        env:
+          VERSION: ${{ github.event_name == 'push' && github.ref_name || inputs.version }}
+        run: |
+          if [[ ! "$VERSION" =~ ^[1-9][0-9]*\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::'$VERSION' isn't a version like 3.9.0.0."
+            exit 1
+          fi
+
+          # The release must match the version in the code, so a forgotten bump or a typo in the tag stops here.
+          read -r package app <<< "$(python3 -c '
+          import xml.etree.ElementTree as ET
+          print(ET.parse("FluentDL/Package.appxmanifest").getroot().find("{*}Identity").get("Version"),
+                ET.parse("FluentDL/app.manifest").getroot().find("{*}assemblyIdentity").get("version"))
+          ')"
+          failed=
+          if [[ "$package" != "$VERSION" ]]; then
+            echo "::error::FluentDL/Package.appxmanifest says $package, but this release is $VERSION."
+            failed=1
+          fi
+          if [[ "$app" != "$VERSION" ]]; then
+            echo "::error::FluentDL/app.manifest says $app, but this release is $VERSION."
+            failed=1
+          fi
+          if [[ -n "$failed" ]]; then
+            echo "::error::Set both manifests to the release version, or release the version they already have."
+            exit 1
+          fi
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+  package:
+    name: Packages (${{ matrix.architecture }})
+    needs: version
+    strategy:
+      matrix:
+        architecture: [x64, arm64]
+    runs-on: windows-latest
+    env:
+      VERSION: ${{ needs.version.outputs.version }}
+      # The Store reserves the last part of the version, so only versions ending in .0 get Store packages.
+      STORE: ${{ endsWith(needs.version.outputs.version, '.0') }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/lfs-pull
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+      - name: Build the packages
+        working-directory: FluentDL
+        run: |
+          $channel = 'All'
+          if ($env:STORE -ne 'true') {
+            $channel = 'Sideload'
+            Write-Host "::notice::$env:VERSION doesn't end in .0, so this release has no Store packages."
+          }
+          dotnet run --file PackageSelect/BuildPackages.cs -- --version $env:VERSION --channel $channel --architecture ${{ matrix.architecture }} --no-sandbox --output "${{ runner.temp }}/packages"
+      # archive: false stores each file as it is, under the file's name, instead of inside another ZIP.
+      - uses: actions/upload-artifact@v7
+        with:
+          path: ${{ runner.temp }}/packages/${{ env.VERSION }}/Sideload/FluentDL_${{ env.VERSION }}_${{ matrix.architecture }}.zip
+          archive: false
+          if-no-files-found: error
+      - if: env.STORE == 'true'
+        uses: actions/upload-artifact@v7
+        with:
+          path: ${{ runner.temp }}/packages/${{ env.VERSION }}/Store/${{ matrix.architecture }}/FluentDL_${{ env.VERSION }}_${{ matrix.architecture }}.msix
+          archive: false
+          if-no-files-found: error
+
+  launch:
+    name: Launch (${{ matrix.architecture }})
+    needs: [version, package]
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - architecture: x64
+            runner: windows-latest
+          - architecture: arm64
+            runner: windows-11-arm
+    runs-on: ${{ matrix.runner }}
+    env:
+      VERSION: ${{ needs.version.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v8
+        with:
+          name: FluentDL_${{ env.VERSION }}_${{ matrix.architecture }}.zip
+          path: package
+          skip-decompress: true
+      - name: Install and start FluentDL
+        shell: powershell
+        run: |
+          Expand-Archive "package/FluentDL_$($env:VERSION)_${{ matrix.architecture }}.zip" -DestinationPath package/unzipped
+          $msix = Get-ChildItem package/unzipped -Recurse -Filter *.msix | Select-Object -First 1
+          ./.github/scripts/Test-AppLaunch.ps1 -Package $msix.FullName -Architecture ${{ matrix.architecture }} -Output launch-results
+      - name: Upload the launch results
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: ${{ matrix.architecture }}-launch-results
+          path: launch-results
+
+  release:
+    name: Draft release
+    needs: [version, package, launch]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+      VERSION: ${{ needs.version.outputs.version }}
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: FluentDL_*.zip
+          path: packages
+          merge-multiple: true
+          skip-decompress: true
+      - name: Create the draft release, or replace a draft's ZIPs
+        run: |
+          zips=("packages/FluentDL_${VERSION}_x64.zip" "packages/FluentDL_${VERSION}_arm64.zip")
+          for zip in "${zips[@]}"; do
+            if [[ ! -f "$zip" ]]; then
+              echo "::error::$zip wasn't downloaded. The packages folder has: $(ls packages | tr '\n' ' ')"
+              exit 1
+            fi
+          done
+
+          if draft=$(gh release view "$VERSION" --json isDraft --jq .isDraft 2>/dev/null); then
+            if [[ "$draft" != "true" ]]; then
+              echo "::error::Release $VERSION is already published, so its files weren't replaced."
+              exit 1
+            fi
+            gh release upload "$VERSION" "${zips[@]}" --clobber
+          else
+            gh release create "$VERSION" "${zips[@]}" --draft --title "$VERSION" --generate-notes --target "$GITHUB_SHA"
+          fi
+          echo "Draft release $VERSION: $(gh release view "$VERSION" --json url --jq .url)" >> "$GITHUB_STEP_SUMMARY"
+          if [[ "$VERSION" == *.0 ]]; then
+            echo "" >> "$GITHUB_STEP_SUMMARY"
+            echo "Store packages for Partner Center: download FluentDL_${VERSION}_x64.msix and FluentDL_${VERSION}_arm64.msix from Artifacts below." >> "$GITHUB_STEP_SUMMARY"
+          fi

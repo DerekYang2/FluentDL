@@ -17,6 +17,7 @@ jobs:
     runs-on: ${{ matrix.runner }}
     steps:
       - uses: actions/checkout@v4
+      - uses: ./.github/actions/lfs-pull
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: 10.0.x
@@ -47,41 +48,70 @@ jobs:
           -Architecture ${{ matrix.platform }}
           -Allow 'Assets\ffmpeg\bin\ffmpeg.exe', 'Microsoft.Web.WebView2.Core.dll'
 
-  package-arm64:
-    name: ARM64 sideload package
+  package:
+    name: Sideload package (${{ matrix.architecture }})
+    strategy:
+      fail-fast: false
+      matrix:
+        architecture: [x64, arm64]
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: ./.github/actions/lfs-pull
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: 10.0.x
+      # Test packages take the manifest's version with this run's number as the last part, such as 3.8.0.57, so
+      # About shows which run built them and they install as an upgrade over a sideloaded release.
+      - name: Choose the test version
+        run: |
+          $parts = ([xml](Get-Content FluentDL/Package.appxmanifest)).Package.Identity.Version.Split('.')
+          "VERSION=$($parts[0]).$($parts[1]).$($parts[2]).${{ github.run_number }}" >> $env:GITHUB_ENV
       - name: Build the package
         working-directory: FluentDL
-        run: dotnet run --file PackageSelect/BuildPackages.cs -- --version 1.0.0.0 --channel Sideload --architecture arm64 --no-sandbox --output "${{ runner.temp }}/packages"
-      - uses: actions/upload-artifact@v4
+        run: dotnet run --file PackageSelect/BuildPackages.cs -- --version $env:VERSION --channel Sideload --architecture ${{ matrix.architecture }} --no-sandbox --output "${{ runner.temp }}/packages"
+      # archive: false stores the ZIP as it is, so the run page offers FluentDL_<version>_<arch>.zip instead of a ZIP
+      # inside another ZIP. The artifact takes the file's name.
+      - uses: actions/upload-artifact@v7
         with:
-          name: sideload-arm64
-          path: ${{ runner.temp }}/packages/1.0.0.0/Sideload/FluentDL_1.0.0.0_arm64.zip
+          path: ${{ runner.temp }}/packages/${{ env.VERSION }}/Sideload/FluentDL_${{ env.VERSION }}_${{ matrix.architecture }}.zip
+          archive: false
+          if-no-files-found: error
+          retention-days: 14
 
-  launch-arm64:
-    name: ARM64 launch
-    needs: package-arm64
-    runs-on: windows-11-arm
+  launch:
+    name: Launch (${{ matrix.architecture }})
+    needs: package
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - architecture: x64
+            runner: windows-latest
+          - architecture: arm64
+            runner: windows-11-arm
+    runs-on: ${{ matrix.runner }}
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/download-artifact@v4
+      # skip-decompress keeps the ZIP as it is, the same way the release job downloads it.
+      - uses: actions/download-artifact@v8
         with:
-          name: sideload-arm64
+          pattern: FluentDL_*_${{ matrix.architecture }}.zip
           path: package
+          merge-multiple: true
+          skip-decompress: true
       - name: Install and start FluentDL
         shell: powershell
         run: |
-          Expand-Archive package/FluentDL_1.0.0.0_arm64.zip -DestinationPath package/unzipped
+          $zip = Get-ChildItem package -Filter 'FluentDL_*_${{ matrix.architecture }}.zip' | Select-Object -First 1
+          if (-not $zip) { throw "No FluentDL ZIP was downloaded. The package folder has: $((Get-ChildItem package).Name -join ', ')" }
+          Expand-Archive $zip.FullName -DestinationPath package/unzipped
           $msix = Get-ChildItem package/unzipped -Recurse -Filter *.msix | Select-Object -First 1
-          ./.github/scripts/Test-AppLaunch.ps1 -Package $msix.FullName -Architecture Arm64 -Output launch-results
-      - name: Upload the log and screenshot
+          ./.github/scripts/Test-AppLaunch.ps1 -Package $msix.FullName -Architecture ${{ matrix.architecture }} -Output launch-results
+      - name: Upload the launch results
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
-          name: arm64-launch-results
+          name: ${{ matrix.architecture }}-launch-results
           path: launch-results
+          retention-days: 14
