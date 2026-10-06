@@ -1,14 +1,11 @@
 # Installs a FluentDL sideload package, starts it, and checks from its log that it started packaged on the expected
-# architecture and reached activation. The log, crash events and a screenshot go to the output folder.
-#
-# GitHub-hosted runners can't open a WinUI window: x64 and ARM64 builds both crash in the Windows App SDK when they
-# create it, with exception 0xc000027b, although the same builds run on real PCs. So the window isn't required here,
-# and a crash after activation is reported as a warning.
+# architecture and finished activating its main window. The log, crash events and a screenshot go to the output folder.
 param(
     [Parameter(Mandatory)] [string] $Package,
     [ValidateSet('Arm64', 'X64')] [string] $Architecture = 'Arm64',
     [string] $Output = 'launch-results',
-    [int] $Seconds = 30
+    # Startup waits up to 30 seconds for the music services, so the main window can take a while.
+    [int] $Seconds = 90
 )
 
 $ErrorActionPreference = 'Stop'
@@ -17,10 +14,20 @@ New-Item -ItemType Directory -Force $Output | Out-Null
 Add-AppxPackage -Path $Package -AllowUnsigned
 $installed = Get-AppxPackage -Name DerekYang2.FluentDL
 Write-Host "Installed $($installed.PackageFullName)"
+$logs = Join-Path $env:LOCALAPPDATA "Packages\$($installed.PackageFamilyName)\LocalState\Logs"
+function Read-Log { (Get-ChildItem $logs -Filter *.log -ErrorAction SilentlyContinue | Get-Content -Raw) -join "`n" }
+
 $started = Get-Date
 Start-Process "shell:AppsFolder\$($installed.PackageFamilyName)!App"
-Start-Sleep -Seconds $Seconds
+do {
+    Start-Sleep -Seconds 2
+    $text = Read-Log
+    $running = [bool](Get-Process FluentDL -ErrorAction SilentlyContinue)
+    $elapsed = ((Get-Date) - $started).TotalSeconds
+} until ($text -match 'Main window activated' -or ($elapsed -gt 10 -and -not $running) -or $elapsed -gt $Seconds)
 
+# Give a crash right after activation time to happen.
+if ($running) { Start-Sleep -Seconds 5 }
 $process = Get-Process FluentDL -ErrorAction SilentlyContinue
 
 Add-Type -AssemblyName System.Windows.Forms, System.Drawing
@@ -29,9 +36,8 @@ $bitmap = New-Object System.Drawing.Bitmap $bounds.Width, $bounds.Height
 [System.Drawing.Graphics]::FromImage($bitmap).CopyFromScreen($bounds.Location, [System.Drawing.Point]::Empty, $bounds.Size)
 $bitmap.Save((Join-Path $Output 'screenshot.png'))
 
-$logs = Join-Path $env:LOCALAPPDATA "Packages\$($installed.PackageFamilyName)\LocalState\Logs"
 Copy-Item (Join-Path $logs '*') $Output -ErrorAction SilentlyContinue
-$text = (Get-ChildItem $logs -Filter *.log -ErrorAction SilentlyContinue | Get-Content -Raw) -join "`n"
+$text = Read-Log
 Write-Host $text
 
 # A native crash doesn't reach FluentDL's log, but Windows records it in the Application event log.
@@ -43,15 +49,10 @@ $process | Stop-Process -Force -ErrorAction SilentlyContinue
 $problems = @()
 # Serilog writes the architecture in quotes and the flag in lower case: architecture "Arm64", packaged true.
 if ($text -notmatch "architecture `"?$Architecture`"?, packaged true") { $problems += "The log doesn't say FluentDL started packaged on $Architecture." }
-if ($text -notmatch 'Application activation started') { $problems += "FluentDL stopped before activation." }
+if ($text -notmatch 'Main window activated') { $problems += "FluentDL didn't finish activating its main window within $Seconds seconds." }
+if (-not $process) { $problems += "FluentDL wasn't running at the end of the check. See events.txt for a crash." }
 if ($problems.Count -gt 0) {
     $problems | ForEach-Object { Write-Host "::error::$_" }
     exit 1
 }
-
-if ($process) {
-    Write-Host "FluentDL started packaged on $Architecture and was still running after $Seconds seconds."
-}
-else {
-    Write-Host "::warning::FluentDL started packaged on $Architecture and reached activation, then stopped when it created its window. Hosted runners can't open WinUI windows; see events.txt."
-}
+Write-Host "FluentDL started packaged on $Architecture, activated its main window and was still running."

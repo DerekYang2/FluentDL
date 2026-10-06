@@ -155,8 +155,6 @@ public partial class App : Application
                 }).Build();
 
             Log.Information("Application services initialized; version {Version}", SettingsViewModel.GetVersionDescription());
-            MainWindow = new MainWindow();
-            MainWindow.Closed += (_, _) => Log.Information("Main window closing");
             App.GetService<IAppNotificationService>().Initialize();
         } catch (Exception ex)
         {
@@ -218,22 +216,37 @@ public partial class App : Application
 
     protected async override void OnLaunched(LaunchActivatedEventArgs args)
     {
-        base.OnLaunched(args);
-        // App.GetService<IAppNotificationService>().Show(string.Format("AppNotificationSamplePayload".GetLocalized(), AppContext.BaseDirectory));
-
-        var settings = GetService<ILocalSettingsService>();
-        var verboseLogging = await settings.ReadSettingAsync<bool?>(DiagnosticLogging.VerboseSettingKey);
-        SetVerboseLogging(verboseLogging ?? false);
-        await App.GetService<IActivationService>().ActivateAsync(args);
-        if (LoggingError is not null)
+        try
         {
-            await new ContentDialog
+            base.OnLaunched(args);
+            // App.GetService<IAppNotificationService>().Show(string.Format("AppNotificationSamplePayload".GetLocalized(), AppContext.BaseDirectory));
+
+            // Create the window here, not in the constructor. WinUI can start OnLaunched while the constructor is still
+            // creating the window, and activation then finds MainWindow null.
+            MainWindow = new MainWindow();
+            MainWindow.Closed += (_, _) => Log.Information("Main window closing");
+
+            var settings = GetService<ILocalSettingsService>();
+            var verboseLogging = await settings.ReadSettingAsync<bool?>(DiagnosticLogging.VerboseSettingKey);
+            SetVerboseLogging(verboseLogging ?? false);
+            await App.GetService<IActivationService>().ActivateAsync(args);
+            if (LoggingError is not null)
             {
-                XamlRoot = MainWindow.Content.XamlRoot,
-                Title = "Logging unavailable",
-                Content = LoggingError,
-                CloseButtonText = "Close"
-            }.ShowAsync();
+                await new ContentDialog
+                {
+                    XamlRoot = MainWindow.Content.XamlRoot,
+                    Title = "Logging unavailable",
+                    Content = LoggingError,
+                    CloseButtonText = "Close"
+                }.ShowAsync();
+            }
+        }
+        catch (Exception ex)
+        {
+            // OnLaunched is async void, so this exception ends the app without reaching App_UnhandledException.
+            Log.Fatal(ex, "Application launch failed");
+            Log.CloseAndFlush();
+            throw;
         }
     }
 }
