@@ -139,6 +139,7 @@
                                         <ColumnDefinition Width="100" />
                                         <ColumnDefinition Width="120" />
                                         <ColumnDefinition Width="120" />
+                                        <ColumnDefinition Width="84" />
                                         <ColumnDefinition Width="32" />
                                     </Grid.ColumnDefinitions>
                                     <TextBlock
@@ -165,6 +166,13 @@
                                         Foreground="{ThemeResource TextFillColorSecondary}"
                                         Style="{ThemeResource CaptionTextBlockStyle}"
                                         Text="Album gain" />
+                                    <TextBlock
+                                        Grid.Column="5"
+                                        HorizontalAlignment="Center"
+                                        Foreground="{ThemeResource TextFillColorSecondary}"
+                                        Style="{ThemeResource CaptionTextBlockStyle}"
+                                        Text="Status"
+                                        ToolTipService.ToolTip="What Write tags does to each file. New: the file has no ReplayGain tags yet. Update: some of its values change. Up to date: it already has these values. Hover over a badge for details." />
                                 </Grid>
                             </ListView.Header>
                             <ListView.ItemTemplate>
@@ -179,6 +187,7 @@
                                             <ColumnDefinition Width="100" />
                                             <ColumnDefinition Width="120" />
                                             <ColumnDefinition Width="120" />
+                                            <ColumnDefinition Width="84" />
                                             <ColumnDefinition Width="32" />
                                         </Grid.ColumnDefinitions>
                                         <!--  The thumbnail Local Explorer already loaded for this track, so nothing is decoded again.  -->
@@ -238,8 +247,48 @@
                                                 Text="{x:Bind CurrentAlbumGain}"
                                                 Visibility="{x:Bind CurrentAlbumGain, Converter={StaticResource NullVisibilityConverter}}" />
                                         </StackPanel>
-                                        <FontIcon
+                                        <!--  What Write tags does to this file, styled like the app's other badges. The theme brushes keep the colors readable in light and dark mode.  -->
+                                        <Grid
                                             Grid.Column="5"
+                                            HorizontalAlignment="Center"
+                                            VerticalAlignment="Center"
+                                            ToolTipService.ToolTip="{x:Bind StatusTip}">
+                                            <Border
+                                                Padding="6,2"
+                                                Background="{ThemeResource SystemFillColorSuccessBackgroundBrush}"
+                                                CornerRadius="2"
+                                                Visibility="{x:Bind NewVisibility}">
+                                                <TextBlock
+                                                    Margin="0,-2,0,0"
+                                                    Foreground="{ThemeResource SystemFillColorSuccessBrush}"
+                                                    Style="{ThemeResource CaptionTextBlockStyle}"
+                                                    Text="New" />
+                                            </Border>
+                                            <Border
+                                                Padding="6,2"
+                                                Background="{ThemeResource SystemFillColorCautionBackgroundBrush}"
+                                                CornerRadius="2"
+                                                Visibility="{x:Bind UpdateVisibility}">
+                                                <TextBlock
+                                                    Margin="0,-2,0,0"
+                                                    Foreground="{ThemeResource SystemFillColorCautionBrush}"
+                                                    Style="{ThemeResource CaptionTextBlockStyle}"
+                                                    Text="Update" />
+                                            </Border>
+                                            <Border
+                                                Padding="6,2"
+                                                Background="{ThemeResource LayerOnMicaBaseAltFillColorSecondaryBrush}"
+                                                CornerRadius="2"
+                                                Visibility="{x:Bind UpToDateVisibility}">
+                                                <TextBlock
+                                                    Margin="0,-2,0,0"
+                                                    Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                                    Style="{ThemeResource CaptionTextBlockStyle}"
+                                                    Text="Up to date" />
+                                            </Border>
+                                        </Grid>
+                                        <FontIcon
+                                            Grid.Column="6"
                                             HorizontalAlignment="Right"
                                             VerticalAlignment="Center"
                                             FontSize="16"

@@ -9,10 +9,14 @@ using Microsoft.UI.Xaml.Controls.Primitives;
 
 namespace FluentDL.Views;
 
+// What Write tags would do to a row's file. Rows get a status once the analysis is complete, because album values
+// can change it until then.
+public enum WriteStatus { None, New, Update, UpToDate }
+
 // One row in the ReplayGain dialog, with values already formatted for display. Order is the track's place in
-// Local Explorer, which keeps rows sorted as they arrive. The Current values are the file's existing gains, set
-// only when writing would change them. It's a class with read-only properties because the XAML compiler can't
-// generate code for a record's init-only properties.
+// Local Explorer, which keeps rows sorted as they arrive. On an Update row, the Current values are the file's
+// existing gains that writing would change, or "none" for a gain the file doesn't have. It's a class with read-only
+// properties because the XAML compiler can't generate code for a record's init-only properties.
 public sealed class ReplayGainRow(
     SongSearchObject song,
     int order,
@@ -21,8 +25,12 @@ public sealed class ReplayGainRow(
     string albumGain,
     string? warning,
     string? currentTrackGain,
-    string? currentAlbumGain)
+    string? currentAlbumGain,
+    WriteStatus status = WriteStatus.None,
+    string? statusTip = null)
 {
+    public const string UpToDateTip = "This file already has these values, so Write tags leaves it unchanged.";
+
     public SongSearchObject Song { get; } = song;
     public int Order { get; } = order;
     public string Loudness { get; } = loudness;
@@ -31,12 +39,17 @@ public sealed class ReplayGainRow(
     public string? Warning { get; } = warning;
     public string? CurrentTrackGain { get; } = currentTrackGain;
     public string? CurrentAlbumGain { get; } = currentAlbumGain;
+    public WriteStatus Status { get; } = status;
+    public string? StatusTip { get; } = statusTip;
+    public Visibility NewVisibility => Status == WriteStatus.New ? Visibility.Visible : Visibility.Collapsed;
+    public Visibility UpdateVisibility => Status == WriteStatus.Update ? Visibility.Visible : Visibility.Collapsed;
+    public Visibility UpToDateVisibility => Status == WriteStatus.UpToDate ? Visibility.Visible : Visibility.Collapsed;
 
-    // After a successful write the file has the new gains, so there's no different Current value to show.
-    public ReplayGainRow Written() => new(Song, Order, Loudness, TrackGain, AlbumGain, Warning, null, null);
+    // After a successful write the file has the new gains, so the row is up to date.
+    public ReplayGainRow Written() => new(Song, Order, Loudness, TrackGain, AlbumGain, Warning, null, null, WriteStatus.UpToDate, UpToDateTip);
 
     public ReplayGainRow WithNote(string note) =>
-        new(Song, Order, Loudness, TrackGain, AlbumGain, Warning is null ? note : $"{note}\n{Warning}", CurrentTrackGain, CurrentAlbumGain);
+        new(Song, Order, Loudness, TrackGain, AlbumGain, Warning is null ? note : $"{note}\n{Warning}", CurrentTrackGain, CurrentAlbumGain, Status, StatusTip);
 }
 
 // Measures the tracks in Local Explorer and writes their ReplayGain tags. Analyze fills in the results, Write tags
@@ -221,7 +234,7 @@ public sealed partial class ReplayGainDialog : UserControl
         if (result.Failures.Count > 0) summary += $" {result.Failures.Count} could not be read.";
         if (withoutAlbumGain > 0) summary += $" {withoutAlbumGain} got no album gain, because a track on their album could not be read.";
         if (lowered + clipping + result.Failures.Count + withoutAlbumGain > 0) summary += " Hover over a warning icon for details.";
-        if (unchanged > 0) summary += $" {unchanged} already have these values and won't be rewritten.";
+        if (unchanged > 0) summary += $" {unchanged} are up to date and won't be rewritten.";
         if (toWrite > 0) summary += " Select Write tags to save the gains.";
         else if (result.Results.Count > 0) summary += " There's nothing to write.";
         return summary;
@@ -269,7 +282,7 @@ public sealed partial class ReplayGainDialog : UserControl
         var summary = stopped
             ? $"Stopped after writing ReplayGain tags to <b>{written} of {toWrite.Count}</b> tracks."
             : $"Wrote ReplayGain tags to <b>{written} of {toWrite.Count}</b> tracks.";
-        if (unchanged > 0) summary += $" {unchanged} already had these values.";
+        if (unchanged > 0) summary += $" {unchanged} were already up to date.";
         if (failed > 0) summary += " Hover over a warning icon for details.";
         SetInfo(failed > 0 ? InfoBarSeverity.Warning : stopped ? InfoBarSeverity.Informational : InfoBarSeverity.Success, summary);
     }
@@ -314,11 +327,20 @@ public sealed partial class ReplayGainDialog : UserControl
         Rows[position] = error is null ? row.Written() : row.WithNote($"Could not write tags: {error}");
     }
 
-    // albumDone says whether album values have been calculated. Before then, every row has track values only.
+    // albumDone says whether album values have been calculated. Before then, every row has track values only and no
+    // status, since album values can still change what Write tags does.
     private static ReplayGainRow CreateRow(SongSearchObject song, int index, ReplayGainResult result, ReplayGainOptions options, bool albumDone)
     {
         var trackGain = options.TrackGain ? ReplayGainMath.FormatGain(result.TrackGain) : "";
         var albumGain = options.AlbumGain && result.AlbumGain is { } gain ? ReplayGainMath.FormatGain(gain) : "";
+        // The same comparison WriteTags makes, so the status can't disagree with what gets written.
+        var changes = albumDone ? ReplayGainScanner.Changes(result, options) : [];
+        var status = !albumDone ? WriteStatus.None
+            : changes.Count == 0 ? WriteStatus.UpToDate
+            : result.Existing is null or { TrackGain: null, TrackPeak: null, AlbumGain: null, AlbumPeak: null } ? WriteStatus.New
+            : WriteStatus.Update;
+        // A new file's Current values would all be "none", which the New badge already says.
+        var showCurrent = status == WriteStatus.Update;
         return new ReplayGainRow(
             song,
             index,
@@ -326,16 +348,45 @@ public sealed partial class ReplayGainDialog : UserControl
             trackGain,
             albumGain,
             Notes(result, options, albumDone),
-            CurrentGain(result.Existing?.TrackGain, trackGain),
-            CurrentGain(result.Existing?.AlbumGain, albumGain));
+            showCurrent ? CurrentGain(changes, ReplayGainValue.TrackGain) : null,
+            showCurrent ? CurrentGain(changes, ReplayGainValue.AlbumGain) : null,
+            status,
+            StatusTip(status, changes));
     }
 
     private static ReplayGainRow FailedRow(SongSearchObject song, int index, ReplayGainFailure failure) =>
         new(song, index, "", "", "", $"Could not analyze: {failure.Message}", null, null);
 
-    // The file's existing gain, shown only when writing the new one would change it.
-    private static string? CurrentGain(double? existing, string newGain) =>
-        existing is { } value && newGain != "" && ReplayGainMath.FormatGain(value) != newGain ? $"Current: {ReplayGainMath.FormatGain(value)}" : null;
+    // The file's existing value for a gain that writing would change, or "none" if the file doesn't have that gain.
+    private static string? CurrentGain(List<ReplayGainChange> changes, ReplayGainValue gain) =>
+        changes.FirstOrDefault(change => change.Value == gain) is { } change
+            ? $"Current: {(change.Current is { } value ? ReplayGainMath.FormatGain(value) : "none")}"
+            : null;
+
+    private static string? StatusTip(WriteStatus status, List<ReplayGainChange> changes) => status switch
+    {
+        WriteStatus.New => "This file has no ReplayGain tags. Write tags adds them.",
+        WriteStatus.Update => "Write tags will update this file:\n" + string.Join("\n", changes.Select(Describe)),
+        WriteStatus.UpToDate => ReplayGainRow.UpToDateTip,
+        _ => null,
+    };
+
+    // Such as "Changes track gain from +2.98 dB to +3.21 dB" or "Adds album peak 0.991100". Peaks are shown the
+    // way tags store them, as linear values with six decimals.
+    private static string Describe(ReplayGainChange change)
+    {
+        var (name, isGain) = change.Value switch
+        {
+            ReplayGainValue.TrackGain => ("track gain", true),
+            ReplayGainValue.TrackPeak => ("track peak", false),
+            ReplayGainValue.AlbumGain => ("album gain", true),
+            _ => ("album peak", false),
+        };
+        string Show(double value) => isGain ? ReplayGainMath.FormatGain(value) : value.ToString("0.000000");
+        return change.Current is { } current
+            ? $"Changes {name} from {Show(current)} to {Show(change.New)}"
+            : $"Adds {name} {Show(change.New)}";
+    }
 
     private static string? Notes(ReplayGainResult result, ReplayGainOptions options, bool albumDone)
     {

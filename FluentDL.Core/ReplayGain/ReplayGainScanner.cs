@@ -272,17 +272,31 @@ public static class ReplayGainScanner
         file.Save();
     }
 
-    // True when the file's tags before the scan already hold the values WriteTags would write. Values are
-    // compared as tag text, which keeps two decimals for gains and six for peaks.
-    public static bool HasTags(ReplayGainResult result, ReplayGainOptions options)
+    // The values WriteTags would add or change, compared as tag text, which keeps two decimals for gains and six for
+    // peaks. Empty when the file's tags before the scan already hold every value the options ask for.
+    public static List<ReplayGainChange> Changes(ReplayGainResult result, ReplayGainOptions options)
     {
-        if (result.Existing is not { } tags) return false;
-        if (options.TrackGain && !(SameText(tags.TrackGain, result.TrackGain, GainFormat) && SameText(tags.TrackPeak, result.TrackPeak, PeakFormat)))
-            return false;
-        if (options.AlbumGain && result.AlbumGain is { } albumGain
-            && !(SameText(tags.AlbumGain, albumGain, GainFormat) && SameText(tags.AlbumPeak, result.AlbumPeak!.Value, PeakFormat)))
-            return false;
-        return true;
+        var tags = result.Existing ?? NoTags;
+        var changes = new List<ReplayGainChange>();
+        if (options.TrackGain)
+        {
+            AddIfChanged(changes, ReplayGainValue.TrackGain, tags.TrackGain, result.TrackGain, GainFormat);
+            AddIfChanged(changes, ReplayGainValue.TrackPeak, tags.TrackPeak, result.TrackPeak, PeakFormat);
+        }
+        if (options.AlbumGain && result.AlbumGain is { } albumGain)
+        {
+            AddIfChanged(changes, ReplayGainValue.AlbumGain, tags.AlbumGain, albumGain, GainFormat);
+            AddIfChanged(changes, ReplayGainValue.AlbumPeak, tags.AlbumPeak, result.AlbumPeak!.Value, PeakFormat);
+        }
+        return changes;
+    }
+
+    // True when the file's tags before the scan already hold the values WriteTags would write.
+    public static bool HasTags(ReplayGainResult result, ReplayGainOptions options) => Changes(result, options).Count == 0;
+
+    private static void AddIfChanged(List<ReplayGainChange> changes, ReplayGainValue value, double? current, double next, string format)
+    {
+        if (!SameText(current, next, format)) changes.Add(new ReplayGainChange(value, current, next));
     }
 
     // The formats TagLib uses when it writes ReplayGain values.

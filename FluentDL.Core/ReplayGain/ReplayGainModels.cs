@@ -35,6 +35,12 @@ public sealed record ReplayGainFailure(string Path, string Message);
 // ReplayGain values already in a file's tags. A value the file doesn't have is null.
 public sealed record ReplayGainTagValues(double? TrackGain, double? TrackPeak, double? AlbumGain, double? AlbumPeak);
 
+public enum ReplayGainValue { TrackGain, TrackPeak, AlbumGain, AlbumPeak }
+
+// A value that writing a result would add or change. Current is the file's value before the scan, or null if the
+// file doesn't have it.
+public sealed record ReplayGainChange(ReplayGainValue Value, double? Current, double New);
+
 // Sent once Total is known, then each time a track finishes. Total leaves out skipped tracks. Track holds that
 // track's own values, without album values, which only exist once the whole scan is done. Failure is set
 // instead if the track couldn't be measured.
