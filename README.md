@@ -32,7 +32,7 @@
 ## About
 FluentDL is a Fluent UI desktop app for finding, matching, and downloading lossless audio (FLAC) at high speeds. 
 
-It automatically matches tracks across streaming services, gives you fine‑grained control over matches, and includes tools for format conversion, metadata editing, and quality inspection. 
+It automatically matches tracks across streaming services, gives you fine‑grained control over matches, and includes format conversion, lyrics, loudness normalization, metadata editing, and quality inspection. 
 
 FluentDL supports Deezer, Qobuz, Spotify, and YouTube.
 
@@ -61,6 +61,8 @@ If you have your own credentials and don't need a website downloader:
         <li>Edit file metadata, including option to change cover art</li>
         <li>View file spectrogram to determine true lossless/quality</li>
         <li>Convert between flac, mp3, aac, alac, vorbis, opus with specific bitrate or VBR</li>
+		<li>Run ReplayGain 2.0 with various settings</li>
+		<li>Search, preview, and download lyrics files (.lrc)</li>
       </ul>
     </td>
   </tr>
