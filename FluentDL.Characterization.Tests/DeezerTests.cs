@@ -14,10 +14,11 @@ public class DeezerTests
     public Task Search() => Snapshot.MatchLive("Deezer.Search", async () =>
     {
         var token = CancellationToken.None;
+        var tracks = await Live.Collect(items => DeezerApi.GeneralSearch(items, "daft punk get lucky", token, 0, 5));
         return new
         {
-            Tracks = await Live.Collect(items => DeezerApi.GeneralSearch(items, "daft punk get lucky", token, 0, 5)),
-            TracksSecondPage = await Live.Collect(items => DeezerApi.GeneralSearch(items, "daft punk get lucky", token, 5, 5)),
+            Tracks = tracks,
+            TracksSecondPage = await Live.CollectNextPage(items => DeezerApi.GeneralSearch(items, "daft punk get lucky", token, 5, 5), tracks),
             Albums = await Live.Collect(items => DeezerApi.GeneralSearch(items, "random access memories", token, 0, 3, albumMode: true)),
             AdvancedArtistTrack = await Live.Collect(items => DeezerApi.AdvancedSearch(items, "Daft Punk", "Get Lucky", "", token, 0, 5)),
             AdvancedAll = await Live.Collect(items => DeezerApi.AdvancedSearch(items, "Daft Punk", "Get Lucky", "Random Access Memories", token, 0, 5)),

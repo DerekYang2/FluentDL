@@ -75,78 +75,8 @@
     "Error": null
   },
   "TracksSecondPage": {
-    "Items": [
-      {
-        "Source": "qobuz",
-        "Id": "174930811",
-        "Title": "Get Lucky (Daft Punk)",
-        "Artists": "Charlie Parra Del Riego",
-        "AlbumName": "Rock and Pop hits go metal",
-        "Isrc": "USE830935506",
-        "Duration": "222",
-        "ReleaseDate": "2014-09-30",
-        "Explicit": false,
-        "TrackPosition": "4",
-        "ImageLocation": "https://static.qobuz.com/images/covers/nc/8r/kp9o66ifx8rnc_230.jpg",
-        "AdditionalFieldKeys": []
-      },
-      {
-        "Source": "qobuz",
-        "Id": "159974222",
-        "Title": "Get Lucky [Originally Performed By Daft Punk and Pharrell Williams] (Bossa Nova Version)",
-        "Artists": "Bossa Chill Out",
-        "AlbumName": "Bossa Lounge Hit Covers",
-        "Isrc": "FR0W62314617",
-        "Duration": "272",
-        "ReleaseDate": "2022-06-19",
-        "Explicit": false,
-        "TrackPosition": "4",
-        "ImageLocation": "https://static.qobuz.com/images/covers/1a/rn/mbjzjf9jwrn1a_230.jpg",
-        "AdditionalFieldKeys": []
-      },
-      {
-        "Source": "qobuz",
-        "Id": "164585926",
-        "Title": "Get Lucky",
-        "Artists": "Daft Punk Experience, Zico Oliveira",
-        "AlbumName": "Get Lucky",
-        "Isrc": "BXCPT2000157",
-        "Duration": "204",
-        "ReleaseDate": "2022-07-06",
-        "Explicit": false,
-        "TrackPosition": "1",
-        "ImageLocation": "https://static.qobuz.com/images/covers/9a/ym/w039djmpjym9a_230.jpg",
-        "AdditionalFieldKeys": []
-      },
-      {
-        "Source": "qobuz",
-        "Id": "82331608",
-        "Title": "Get Lucky (A Tribute to Daft Punk)",
-        "Artists": "Live Airplay",
-        "AlbumName": "Get Lucky (A Tribute to Daft Punk)",
-        "Isrc": "GB5L61222501",
-        "Duration": "248",
-        "ReleaseDate": "2013-05-11",
-        "Explicit": false,
-        "TrackPosition": "1",
-        "ImageLocation": "https://static.qobuz.com/images/covers/tb/36/meev67xvo36tb_230.jpg",
-        "AdditionalFieldKeys": []
-      },
-      {
-        "Source": "qobuz",
-        "Id": "78160582",
-        "Title": "Get Lucky (Originally Performed by Daft Punk) (Karaoke Edit)",
-        "Artists": "Jayden Anthony, Pharrell Williams",
-        "AlbumName": "We're Up All Night to Get Lucky",
-        "Isrc": "QMFMG1393357",
-        "Duration": "247",
-        "ReleaseDate": "2013-09-13",
-        "Explicit": false,
-        "TrackPosition": "3",
-        "ImageLocation": "https://static.qobuz.com/images/covers/vb/0y/ychgu35wz0yvb_230.jpg",
-        "AdditionalFieldKeys": []
-      }
-    ],
+    "Count": 5,
+    "RepeatsFirstPage": false,
     "Error": null
   },
   "Albums": {

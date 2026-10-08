@@ -19,10 +19,11 @@ public class SpotifyWebPlayerTests
     public Task Search() => Snapshot.MatchLive("SpotifyWeb.Search", async () =>
     {
         var token = CancellationToken.None;
+        var tracks = await Live.Collect(items => SpotifyApi.GeneralSearch(items, "daft punk get lucky", token, 0, 5));
         return new
         {
-            Tracks = await Live.Collect(items => SpotifyApi.GeneralSearch(items, "daft punk get lucky", token, 0, 5)),
-            TracksSecondPage = await Live.Collect(items => SpotifyApi.GeneralSearch(items, "daft punk get lucky", token, 5, 5)),
+            Tracks = tracks,
+            TracksSecondPage = await Live.CollectNextPage(items => SpotifyApi.GeneralSearch(items, "daft punk get lucky", token, 5, 5), tracks),
             AlbumMode = await Live.Collect(items => SpotifyApi.GeneralSearch(items, "random access memories", token, 0, 3, albumMode: true)),
             Advanced = await Live.Collect(items => SpotifyApi.AdvancedSearch(items, "Daft Punk", "Get Lucky", "", token, 0, 5)),
         };

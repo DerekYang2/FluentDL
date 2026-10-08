@@ -502,97 +502,13 @@
     "LinkType": "Label",
     "Id": "4592",
     "Result": {
-      "Items": [
-        {
-          "Album": {
-            "Source": "qobuz",
-            "Id": "wk7jwfursjl7m",
-            "Title": "Fantasize",
-            "Artists": "Chloe Qisha",
-            "AlbumName": "Fantasize",
-            "Isrc": "0196874627907",
-            "Duration": "1611",
-            "ReleaseDate": "2026-10-30",
-            "Explicit": false,
-            "TrackPosition": "1",
-            "ImageLocation": "https://static.qobuz.com/images/covers/7m/jl/wk7jwfursjl7m_230.jpg",
-            "AdditionalFieldKeys": []
-          },
-          "TracksCount": 9,
-          "TrackList": null
-        },
-        {
-          "Album": {
-            "Source": "qobuz",
-            "Id": "fgg073fi8saja",
-            "Title": "Queen Budapest",
-            "Artists": "Queen",
-            "AlbumName": "Queen Budapest",
-            "Isrc": "0196874612422",
-            "Duration": "6393",
-            "ReleaseDate": "2026-10-30",
-            "Explicit": false,
-            "TrackPosition": "1",
-            "ImageLocation": "https://static.qobuz.com/images/covers/ja/sa/fgg073fi8saja_230.jpg",
-            "AdditionalFieldKeys": []
-          },
-          "TracksCount": 27,
-          "TrackList": null
-        },
-        {
-          "Album": {
-            "Source": "qobuz",
-            "Id": "x0r18pczrgu8y",
-            "Title": "L'Heure Bleue",
-            "Artists": "Johnny Jane",
-            "AlbumName": "L'Heure Bleue",
-            "Isrc": "0196874583227",
-            "Duration": "2928",
-            "ReleaseDate": "2026-10-30",
-            "Explicit": true,
-            "TrackPosition": "1",
-            "ImageLocation": "https://static.qobuz.com/images/covers/8y/gu/x0r18pczrgu8y_230.jpg",
-            "AdditionalFieldKeys": []
-          },
-          "TracksCount": 13,
-          "TrackList": null
-        },
-        {
-          "Album": {
-            "Source": "qobuz",
-            "Id": "xcee0713fwzry",
-            "Title": "TU",
-            "Artists": "gixnmah",
-            "AlbumName": "TU",
-            "Isrc": "0196874765128",
-            "Duration": "164",
-            "ReleaseDate": "2026-10-02",
-            "Explicit": false,
-            "TrackPosition": "1",
-            "ImageLocation": "https://static.qobuz.com/images/covers/ry/wz/xcee0713fwzry_230.jpg",
-            "AdditionalFieldKeys": []
-          },
-          "TracksCount": 1,
-          "TrackList": null
-        },
-        {
-          "Album": {
-            "Source": "qobuz",
-            "Id": "wmwzaon9l5b5v",
-            "Title": "Hamilton Honey: Part 2",
-            "Artists": "Presley Haile",
-            "AlbumName": "Hamilton Honey: Part 2",
-            "Isrc": "0196874772720",
-            "Duration": "1013",
-            "ReleaseDate": "2026-10-02",
-            "Explicit": false,
-            "TrackPosition": "1",
-            "ImageLocation": "https://static.qobuz.com/images/covers/5v/5b/wmwzaon9l5b5v_230.jpg",
-            "AdditionalFieldKeys": []
-          },
-          "TracksCount": 5,
-          "TrackList": null
-        }
+      "Count": 5,
+      "Sources": [
+        "qobuz"
+      ],
+      "AllHaveIdAndTitle": true,
+      "Types": [
+        "AlbumSearchObject"
       ],
       "Error": null
     },

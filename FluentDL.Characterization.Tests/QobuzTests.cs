@@ -1,4 +1,6 @@
+using System.Collections.ObjectModel;
 using FluentDL.Characterization.Tests.Infrastructure;
+using FluentDL.Models;
 using FluentDL.Services;
 
 namespace FluentDL.Characterization.Tests;
@@ -14,10 +16,11 @@ public class QobuzTests
     public Task Search() => Snapshot.MatchLive("Qobuz.Search", async () =>
     {
         var token = CancellationToken.None;
+        var tracks = await Live.Collect(items => QobuzApi.GeneralSearch(items, "daft punk get lucky", token, 0, 5));
         return new
         {
-            Tracks = await Live.Collect(items => QobuzApi.GeneralSearch(items, "daft punk get lucky", token, 0, 5)),
-            TracksSecondPage = await Live.Collect(items => QobuzApi.GeneralSearch(items, "daft punk get lucky", token, 5, 5)),
+            Tracks = tracks,
+            TracksSecondPage = await Live.CollectNextPage(items => QobuzApi.GeneralSearch(items, "daft punk get lucky", token, 5, 5), tracks),
             Albums = await Live.Collect(items => QobuzApi.GeneralSearch(items, "random access memories", token, 0, 3, albumMode: true)),
             AdvancedArtistTrack = await Live.Collect(items => QobuzApi.AdvancedSearch(items, "Daft Punk", "Get Lucky", "", token, 0, 5)),
             AdvancedAll = await Live.Collect(items => QobuzApi.AdvancedSearch(items, "Daft Punk", "Get Lucky", "Random Access Memories", token, 0, 5)),
@@ -80,15 +83,18 @@ public class QobuzTests
             rows.Add(new { Url = url, AlbumMode = albumMode, Result = result, Status = log.Messages });
         }
 
-        foreach (var url in new[]
+        foreach (var (url, newestFirst) in new[]
         {
-            $"https://www.qobuz.com/us-en/label/columbia/download-streaming-albums/{Fixtures.QobuzLabelId}",
-            $"https://www.qobuz.com/us-en/interpreter/daft-punk/{Fixtures.QobuzArtistId}",
+            // A label lists its newest albums first, so new releases change the list: pin the count and layout only.
+            ($"https://www.qobuz.com/us-en/label/columbia/download-streaming-albums/{Fixtures.QobuzLabelId}", true),
+            ($"https://www.qobuz.com/us-en/interpreter/daft-punk/{Fixtures.QobuzArtistId}", false),
         })
         {
             var isLabelOrArtist = QobuzApi.IsLinkLabelOrArtist(url, out var linkType, out var id);
             var log = new Live.StatusLog();
-            var result = await Live.Collect(items => QobuzApi.AddTracksFromLabelOrArtist(items, url, CancellationToken.None, log.Callback, 0, 5, albumMode: true));
+            Func<ObservableCollection<SongSearchObject>, Task> fill =
+                items => QobuzApi.AddTracksFromLabelOrArtist(items, url, CancellationToken.None, log.Callback, 0, 5, albumMode: true);
+            var result = newestFirst ? await Live.CollectShapeOnly(fill) : await Live.Collect(fill);
             rows.Add(new { Url = url, IsLabelOrArtist = isLabelOrArtist, LinkType = linkType.ToString(), Id = id, Result = result, Status = log.Messages });
         }
         return rows;

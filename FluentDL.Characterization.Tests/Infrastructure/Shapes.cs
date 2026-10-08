@@ -54,5 +54,8 @@ internal static class ShapeExtensions
     public static object?[] ToShapes(this IEnumerable<SongSearchObject> items) => items.Select(ToShape).ToArray();
 }
 
-/// <summary>One callback the source code reported, such as an info bar message or a conversion badge.</summary>
+/// <summary>One item the source code reported, such as an info bar message or a conversion badge.</summary>
 internal sealed record Reported(string Severity, string Message);
+
+/// <summary>The items a search or link import added, or the exception it stopped with.</summary>
+internal sealed record Collected(object?[] Items, string? Error);
