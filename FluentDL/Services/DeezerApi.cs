@@ -1,6 +1,7 @@
 using CommunityToolkit.WinUI.UI.Animations;
 using DeezNET;
 using DeezNET.Data;
+using FluentDL.Core.Matching;
 using FluentDL.Helpers;
 using FluentDL.Models;
 using FluentDL.ViewModels;
@@ -171,46 +172,10 @@ internal class DeezerApi
         }
     }
 
-    public static string PruneTitle(string title)
-    {
-        var titlePruned = title.ToLower().Trim();
+    // Moved to FluentDL.Core.Matching.TitleNormalizer. These wrappers keep existing callers unchanged.
+    public static string PruneTitle(string title) => TitleNormalizer.Compact(title);
 
-        titlePruned = ApiHelper.PruneFeaturing(titlePruned);
-        // Remove punctuation that may cause inconsistency
-        titlePruned = titlePruned.Replace(" ", "").Replace("(", "").Replace(")", "").Replace("-", "").Replace(".", "").Replace("[", "").Replace("]", "").Replace("—", "").Replace("'", "").Replace("\"", "");
-
-        // Remove non ascii and replaced accented with normal
-        titlePruned = ApiHelper.EnforceAscii(titlePruned);
-        return titlePruned.Trim();
-    }
-
-    public static string PruneTitleSearch(string title)
-    {
-        var titlePruned = title.ToLower().Trim();
-        titlePruned = titlePruned.Replace("-", " ").Replace("—", "").Replace("[", "").Replace("]", ""); // Replace strange chars
-
-        // Remove (feat. X) from the title
-        var index = titlePruned.IndexOf("(feat.");
-        if (index != -1)
-        {
-            var closingIndex = titlePruned.IndexOf(")", index);
-            titlePruned = titlePruned.Remove(index, closingIndex - index + 1);
-        }
-
-        // Remove (ft. X) from the title
-        var index2 = titlePruned.IndexOf("(ft.");
-        if (index2 != -1)
-        {
-            var closingIndex = titlePruned.IndexOf(")", index2);
-            titlePruned = titlePruned.Remove(index2, closingIndex - index2 + 1);
-        }
-
-        // Remove (radio edit) and radio edit from the title
-        titlePruned = titlePruned.Replace("(radio edit)", "").Replace("radio edit", "");
-        // Remove duplicate spaces
-        titlePruned = Regex.Replace(titlePruned, @"\s+", " ");
-        return ApiHelper.EnforceAscii(titlePruned).Trim();
-    }
+    public static string PruneTitleSearch(string title) => TitleNormalizer.ForSearchQuery(title);
 
     public static async Task GeneralSearch(ObservableCollection<SongSearchObject> itemSource, string query, CancellationToken token, int offset = 0, int limit = 25, bool albumMode = false)
     {

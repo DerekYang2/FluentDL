@@ -1,4 +1,5 @@
-﻿using FluentDL.Helpers;
+﻿using FluentDL.Core.Matching;
+using FluentDL.Helpers;
 using FluentDL.Models;
 using FluentDL.Views;
 using Microsoft.UI.Xaml.Controls;
@@ -516,8 +517,8 @@ namespace FluentDL.Services
             foreach (var result in results)
             {
                 var videoAuthor = result.Author.ChannelTitle.ToLower();
-                var pruneTitle = DeezerApi.PruneTitle(result.Title);
-                var songTitle = DeezerApi.PruneTitle(song.Title);
+                var pruneTitle = TitleNormalizer.Compact(result.Title);
+                var songTitle = TitleNormalizer.Compact(song.Title);
 
                 if (pruneTitle.Contains(songTitle))
                 {
@@ -548,8 +549,8 @@ namespace FluentDL.Services
             // Pass 3
             foreach (var result in results)
             {
-                var pruneTitle = DeezerApi.PruneTitle(result.Title);
-                var songTitle = DeezerApi.PruneTitle(song.Title);
+                var pruneTitle = TitleNormalizer.Compact(result.Title);
+                var songTitle = TitleNormalizer.Compact(song.Title);
 
                 bool containsOneArtist = false;
                 foreach (var artist in artists)
@@ -570,8 +571,8 @@ namespace FluentDL.Services
             // Pass 4
             foreach (var result in results)
             {
-                var pruneTitle = DeezerApi.PruneTitle(result.Title);
-                var songTitle = DeezerApi.PruneTitle(song.Title);
+                var pruneTitle = TitleNormalizer.Compact(result.Title);
+                var songTitle = TitleNormalizer.Compact(song.Title);
 
                 bool containsOneArtist = false;
                 foreach (var artist in artists)
@@ -592,8 +593,8 @@ namespace FluentDL.Services
             // Pass 5
             foreach (var result in results)
             {
-                var pruneTitle = DeezerApi.PruneTitle(result.Title);
-                var songTitle = DeezerApi.PruneTitle(song.Title);
+                var pruneTitle = TitleNormalizer.Compact(result.Title);
+                var songTitle = TitleNormalizer.Compact(song.Title);
                 if (pruneTitle.Contains(songTitle) && result.Title.ToLower().Contains("audio"))
                 {
                     return result;
@@ -604,8 +605,8 @@ namespace FluentDL.Services
             // Pass 6
             foreach (var result in results)
             {
-                var pruneTitle = DeezerApi.PruneTitle(result.Title);
-                var songTitle = DeezerApi.PruneTitle(song.Title);
+                var pruneTitle = TitleNormalizer.Compact(result.Title);
+                var songTitle = TitleNormalizer.Compact(song.Title);
                 if (pruneTitle.Contains(songTitle))
                 {
                     return result;

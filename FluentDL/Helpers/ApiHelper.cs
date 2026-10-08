@@ -1,4 +1,5 @@
-﻿using FluentDL.Models;
+﻿using FluentDL.Core.Matching;
+using FluentDL.Models;
 using FluentDL.Services;
 using FluentDL.ViewModels;
 using FluentDL.Views;
@@ -65,86 +66,16 @@ internal class ApiHelper
     private static HttpClient client = new HttpClient();
     private static HttpClient clientNoRedir = new HttpClient(new HttpClientHandler { AllowAutoRedirect = false }, true);
 
-    public static bool IsSubstring(string str, string str2)
-    {
-        str = PrunePunctuation(str).ToLower();
-        str2 = PrunePunctuation(str2).ToLower();
-        // If either is empty, return false
-        if (string.IsNullOrEmpty(str) || string.IsNullOrEmpty(str2))
-        {
-            return false;
-        }
+    // The string helpers below live in FluentDL.Core.Matching. These wrappers keep existing callers unchanged.
+    public static bool IsSubstring(string str, string str2) => FuzzyMatch.IsSubstring(str, str2);
 
-        return str.Contains(str2) || str2.Contains(str);
-    }
+    public static string PruneTitle(string title) => TitleNormalizer.CompactLegacy(title);
 
-    public static string PruneTitle(string title)
-    {
-        var titlePruned = title.ToLower().Trim();
+    public static string PruneFeaturing(string? title) => TextNormalization.PruneFeaturing(title);
 
-        // Remove (feat. X) from the title
-        var index = titlePruned.IndexOf("(feat.");
-        if (index != -1)
-        {
-            var closingIndex = titlePruned.IndexOf(")", index);
-            titlePruned = titlePruned.Remove(index, closingIndex - index + 1);
-        }
+    public static string PrunePunctuation(string str) => TextNormalization.PrunePunctuation(str);
 
-        // Remove (ft. X) from the title
-        var index2 = titlePruned.IndexOf("(ft.");
-        if (index2 != -1)
-        {
-            var closingIndex = titlePruned.IndexOf(")", index2);
-            titlePruned = titlePruned.Remove(index2, closingIndex - index2 + 1);
-        }
-
-        // Remove (with X) from the title
-        var index3 = titlePruned.IndexOf("(with");
-        if (index3 != -1)
-        {
-            var closingIndex = titlePruned.IndexOf(")", index3);
-            titlePruned = titlePruned.Remove(index3, closingIndex - index3 + 1);
-        }
-
-        // Remove punctuation that may cause inconsistency
-        titlePruned = titlePruned.Replace(" ", "").Replace("(", "").Replace(")", "").Replace("-", "").Replace(".", "").Replace("[", "").Replace("]", "").Replace("—", "").Replace("'", "").Replace("\"", "");
-
-        // Remove non ascii and replaced accented with normal
-        titlePruned = ApiHelper.EnforceAscii(titlePruned);
-        return titlePruned.Trim();
-    }
-
-    public static string PruneFeaturing(string? title)
-    {
-        if (string.IsNullOrWhiteSpace(title))
-            return string.Empty;
-
-        // Pattern: Matches a space, then brackets containing feat/ft/featuring, any text, and closing bracket.
-        // The \s* at the start ensures we don't leave a trailing space behind.
-        string pattern = @"\s*\((?:feat|ft|featuring|with)\.?\s+.*?\)";
-
-        return Regex.Replace(title, pattern, string.Empty, RegexOptions.IgnoreCase | RegexOptions.Compiled).Trim();
-    }
-
-    // TODO: This is bad for non-english titles
-    public static string PrunePunctuation(string str)
-    {
-        // Remove all punctuation and whitespace from string, only include alphanumeric characters 
-        return Regex.Replace(PruneFeaturing(str), @"[^a-zA-Z0-9]", string.Empty);
-    }
-
-    public static bool CloseMatch(string str1, string str2)
-    {
-        str1 = ApiHelper.PruneFeaturing(str1).ToLower();
-        str2 = ApiHelper.PruneFeaturing(str2).ToLower();
-        var keywords = new[] { "remix", "edit", "live", "version", "remaster", "instrumental", "acoustic" };
-        // XOR keywords (must both contain or both don't contain)
-        if (keywords.Any(s => str1.Contains(s) ^ str2.Contains(s)))
-        {
-            return false;
-        }
-        return ApiHelper.IsSubstring(str1.ToLower(), str2.ToLower());
-    }
+    public static bool CloseMatch(string str1, string str2) => FuzzyMatch.CloseMatch(str1, str2);
 
     // Convert illegal filename characters to an underscore
     public static string GetSafeFilename(string filename)
@@ -898,45 +829,7 @@ internal class ApiHelper
         return null;
     }
 
-    public static int CalcLevenshteinDistance(string a, string b)
-    {
-        if (string.IsNullOrEmpty(a) && string.IsNullOrEmpty(b))
-        {
-            return 0;
-        }
-
-        if (string.IsNullOrEmpty(a))
-        {
-            return b.Length;
-        }
-
-        if (string.IsNullOrEmpty(b))
-        {
-            return a.Length;
-        }
-
-        int lengthA = a.Length;
-        int lengthB = b.Length;
-        var distances = new int[lengthA + 1, lengthB + 1];
-
-        for (int i = 0; i <= lengthA; distances[i, 0] = i++) ;
-        for (int j = 0; j <= lengthB; distances[0, j] = j++) ;
-
-        for (int i = 1; i <= lengthA; i++)
-        {
-            for (int j = 1; j <= lengthB; j++)
-            {
-                int cost = b[j - 1] == a[i - 1] ? 0 : 1;
-
-                distances[i, j] = Math.Min(
-                    Math.Min(distances[i - 1, j] + 1, distances[i, j - 1] + 1),
-                    distances[i - 1, j - 1] + cost
-                );
-            }
-        }
-
-        return distances[lengthA, lengthB];
-    }
+    public static int CalcLevenshteinDistance(string a, string b) => FuzzyMatch.LevenshteinDistance(a, b);
 
     public static async Task<Uri?> GetRedirectedUrlAsync(Uri uri, CancellationToken cancellationToken = default)
     {
@@ -974,32 +867,9 @@ internal class ApiHelper
         }
     }
 
-    public static string RemoveDiacritics(string text)
-    {
-        var normalizedString = text.Normalize(NormalizationForm.FormD);
-        var stringBuilder = new StringBuilder(capacity: normalizedString.Length);
+    public static string RemoveDiacritics(string text) => TextNormalization.RemoveDiacritics(text);
 
-        for (int i = 0; i < normalizedString.Length; i++)
-        {
-            char c = normalizedString[i];
-            var unicodeCategory = CharUnicodeInfo.GetUnicodeCategory(c);
-            if (unicodeCategory != UnicodeCategory.NonSpacingMark)
-            {
-                stringBuilder.Append(c);
-            }
-        }
-
-        return stringBuilder
-            .ToString()
-            .Normalize(NormalizationForm.FormC);
-    }
-
-    public static string EnforceAscii(string text)
-    {
-        var result = ApiHelper.RemoveDiacritics(text);
-        result = Regex.Replace(result, @"[^\u0000-\u007F]+", string.Empty);
-        return result;
-    }
+    public static string EnforceAscii(string text) => TextNormalization.EnforceAscii(text);
 
     public static string FormatDateTimeOffset(DateTimeOffset? dateTimeOffset)
     {
