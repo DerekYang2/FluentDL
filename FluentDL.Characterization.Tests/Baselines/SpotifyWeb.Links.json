@@ -1,0 +1,70 @@
+[
+  {
+    "Url": "https://open.spotify.com/track/69kOkLUCkxIZYexIgSG8rq",
+    "Result": {
+      "Items": [
+        {
+          "Source": "spotify",
+          "Id": "69kOkLUCkxIZYexIgSG8rq",
+          "Title": "Get Lucky (feat. Pharrell Williams and Nile Rodgers)",
+          "Artists": "Daft Punk, Pharrell Williams, Nile Rodgers",
+          "AlbumName": "Random Access Memories",
+          "Isrc": "",
+          "Duration": "370",
+          "ReleaseDate": "2013-05-19",
+          "Explicit": false,
+          "TrackPosition": "8",
+          "ImageLocation": "https://i.scdn.co/image/ab67616d00001e029b9b36b0e22870b9f542d937",
+          "AdditionalFieldKeys": [
+            "preview_url"
+          ]
+        }
+      ],
+      "Error": null
+    },
+    "Status": [
+      {
+        "Severity": "Success",
+        "Message": "<b>Spotify</b>   Loaded track <a href='https://open.spotify.com/track/69kOkLUCkxIZYexIgSG8rq'>Get Lucky (feat. Pharrell Williams and Nile Rodgers)</a>"
+      }
+    ]
+  },
+  {
+    "Url": "https://open.spotify.com/track/69kOkLUCkxIZYexIgSG8rq?si=abc123",
+    "Result": {
+      "Items": [
+        {
+          "Source": "spotify",
+          "Id": "69kOkLUCkxIZYexIgSG8rq",
+          "Title": "Get Lucky (feat. Pharrell Williams and Nile Rodgers)",
+          "Artists": "Daft Punk, Pharrell Williams, Nile Rodgers",
+          "AlbumName": "Random Access Memories",
+          "Isrc": "",
+          "Duration": "370",
+          "ReleaseDate": "2013-05-19",
+          "Explicit": false,
+          "TrackPosition": "8",
+          "ImageLocation": "https://i.scdn.co/image/ab67616d00001e029b9b36b0e22870b9f542d937",
+          "AdditionalFieldKeys": [
+            "preview_url"
+          ]
+        }
+      ],
+      "Error": null
+    },
+    "Status": [
+      {
+        "Severity": "Success",
+        "Message": "<b>Spotify</b>   Loaded track <a href='https://open.spotify.com/track/69kOkLUCkxIZYexIgSG8rq?si=abc123'>Get Lucky (feat. Pharrell Williams and Nile Rodgers)</a>"
+      }
+    ]
+  },
+  {
+    "Url": "https://open.spotify.com/album/4m2880jivSbbyEGAKfITCa",
+    "Result": {
+      "Items": [],
+      "Error": "throws NullReferenceException"
+    },
+    "Status": []
+  }
+]

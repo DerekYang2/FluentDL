@@ -47,6 +47,9 @@
     <ProjectReference Include="..\FluentDL.Core\FluentDL.Core.csproj" />
   </ItemGroup>
   <ItemGroup>
+    <InternalsVisibleTo Include="FluentDL.Characterization.Tests" />
+  </ItemGroup>
+  <ItemGroup>
     <Page Update="Helpers\CustomPasswordBox.xaml">
       <Generator>MSBuild:Compile</Generator>
     </Page>

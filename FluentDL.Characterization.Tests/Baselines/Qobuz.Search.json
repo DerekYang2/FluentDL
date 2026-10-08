@@ -1,0 +1,427 @@
+{
+  "Tracks": {
+    "Items": [
+      {
+        "Source": "qobuz",
+        "Id": "8767428",
+        "Title": "Get Lucky (Radio Edit - feat. Pharrell Williams and Nile Rodgers)",
+        "Artists": "Daft Punk ft. Pharrell Williams",
+        "AlbumName": "Get Lucky",
+        "Isrc": "USQX91300809",
+        "Duration": "247",
+        "ReleaseDate": "2013-04-19",
+        "Explicit": false,
+        "TrackPosition": "1",
+        "ImageLocation": "https://static.qobuz.com/images/covers/42/34/0886443973442_230.jpg",
+        "AdditionalFieldKeys": []
+      },
+      {
+        "Source": "qobuz",
+        "Id": "10137214",
+        "Title": "Get Lucky (Daft Punk Remix)",
+        "Artists": "Daft Punk feat. Pharrell Williams",
+        "AlbumName": "Get Lucky",
+        "Isrc": "USQX91301322",
+        "Duration": "632",
+        "ReleaseDate": "2013-07-03",
+        "Explicit": false,
+        "TrackPosition": "1",
+        "ImageLocation": "https://static.qobuz.com/images/covers/06/90/0886444079006_230.jpg",
+        "AdditionalFieldKeys": []
+      },
+      {
+        "Source": "qobuz",
+        "Id": "176553247",
+        "Title": "Get Lucky (Originally performed by Daft Punk ft. Pharrell Wiliams)",
+        "Artists": "Chiptune Radio",
+        "AlbumName": "2014 Smash Bits, Vol. 1",
+        "Isrc": "USE830933405",
+        "Duration": "239",
+        "ReleaseDate": "2014-08-20",
+        "Explicit": false,
+        "TrackPosition": "3",
+        "ImageLocation": "https://static.qobuz.com/images/covers/sa/l8/uuhesv3yul8sa_230.jpg",
+        "AdditionalFieldKeys": []
+      },
+      {
+        "Source": "qobuz",
+        "Id": "378178373",
+        "Title": "Get Lucky (Originally performed by Daft Punk)",
+        "Artists": "Lowland",
+        "AlbumName": "Classical Trancelations 3",
+        "Isrc": "NLF711913449",
+        "Duration": "290",
+        "ReleaseDate": "2019-12-20",
+        "Explicit": false,
+        "TrackPosition": "11",
+        "ImageLocation": "https://static.qobuz.com/images/covers/gw/80/pfoc00yh180gw_230.jpg",
+        "AdditionalFieldKeys": []
+      },
+      {
+        "Source": "qobuz",
+        "Id": "298847372",
+        "Title": "Daft Punk x Pharrell Williams, Nile Rodgers (Get Lucky) (Amapiano Revisit)",
+        "Artists": "RhikZ",
+        "AlbumName": "Daft Punk x Pharrell Williams, Nile Rodgers (Get Lucky) ",
+        "Isrc": "QZWFW2449596",
+        "Duration": "448",
+        "ReleaseDate": "2024-06-12",
+        "Explicit": false,
+        "TrackPosition": "1",
+        "ImageLocation": "https://static.qobuz.com/images/covers/va/z7/jkyachu3ez7va_230.jpg",
+        "AdditionalFieldKeys": []
+      }
+    ],
+    "Error": null
+  },
+  "TracksSecondPage": {
+    "Items": [
+      {
+        "Source": "qobuz",
+        "Id": "174930811",
+        "Title": "Get Lucky (Daft Punk)",
+        "Artists": "Charlie Parra Del Riego",
+        "AlbumName": "Rock and Pop hits go metal",
+        "Isrc": "USE830935506",
+        "Duration": "222",
+        "ReleaseDate": "2014-09-30",
+        "Explicit": false,
+        "TrackPosition": "4",
+        "ImageLocation": "https://static.qobuz.com/images/covers/nc/8r/kp9o66ifx8rnc_230.jpg",
+        "AdditionalFieldKeys": []
+      },
+      {
+        "Source": "qobuz",
+        "Id": "159974222",
+        "Title": "Get Lucky [Originally Performed By Daft Punk and Pharrell Williams] (Bossa Nova Version)",
+        "Artists": "Bossa Chill Out",
+        "AlbumName": "Bossa Lounge Hit Covers",
+        "Isrc": "FR0W62314617",
+        "Duration": "272",
+        "ReleaseDate": "2022-06-19",
+        "Explicit": false,
+        "TrackPosition": "4",
+        "ImageLocation": "https://static.qobuz.com/images/covers/1a/rn/mbjzjf9jwrn1a_230.jpg",
+        "AdditionalFieldKeys": []
+      },
+      {
+        "Source": "qobuz",
+        "Id": "164585926",
+        "Title": "Get Lucky",
+        "Artists": "Daft Punk Experience, Zico Oliveira",
+        "AlbumName": "Get Lucky",
+        "Isrc": "BXCPT2000157",
+        "Duration": "204",
+        "ReleaseDate": "2022-07-06",
+        "Explicit": false,
+        "TrackPosition": "1",
+        "ImageLocation": "https://static.qobuz.com/images/covers/9a/ym/w039djmpjym9a_230.jpg",
+        "AdditionalFieldKeys": []
+      },
+      {
+        "Source": "qobuz",
+        "Id": "82331608",
+        "Title": "Get Lucky (A Tribute to Daft Punk)",
+        "Artists": "Live Airplay",
+        "AlbumName": "Get Lucky (A Tribute to Daft Punk)",
+        "Isrc": "GB5L61222501",
+        "Duration": "248",
+        "ReleaseDate": "2013-05-11",
+        "Explicit": false,
+        "TrackPosition": "1",
+        "ImageLocation": "https://static.qobuz.com/images/covers/tb/36/meev67xvo36tb_230.jpg",
+        "AdditionalFieldKeys": []
+      },
+      {
+        "Source": "qobuz",
+        "Id": "78160582",
+        "Title": "Get Lucky (Originally Performed by Daft Punk) (Karaoke Edit)",
+        "Artists": "Jayden Anthony, Pharrell Williams",
+        "AlbumName": "We're Up All Night to Get Lucky",
+        "Isrc": "QMFMG1393357",
+        "Duration": "247",
+        "ReleaseDate": "2013-09-13",
+        "Explicit": false,
+        "TrackPosition": "3",
+        "ImageLocation": "https://static.qobuz.com/images/covers/vb/0y/ychgu35wz0yvb_230.jpg",
+        "AdditionalFieldKeys": []
+      }
+    ],
+    "Error": null
+  },
+  "Albums": {
+    "Items": [
+      {
+        "Album": {
+          "Source": "qobuz",
+          "Id": "0886443927087",
+          "Title": "Random Access Memories",
+          "Artists": "Daft Punk",
+          "AlbumName": "Random Access Memories",
+          "Isrc": "0886443927087",
+          "Duration": "4470",
+          "ReleaseDate": "2023-11-17",
+          "Explicit": false,
+          "TrackPosition": "1",
+          "ImageLocation": "https://static.qobuz.com/images/covers/87/70/0886443927087_230.jpg",
+          "AdditionalFieldKeys": []
+        },
+        "TracksCount": 13,
+        "TrackList": null
+      },
+      {
+        "Album": {
+          "Source": "qobuz",
+          "Id": "apk748lfvcgxb",
+          "Title": "Random Access Memories",
+          "Artists": "Daft Punk",
+          "AlbumName": "Random Access Memories",
+          "Isrc": "0196589921154",
+          "Duration": "6599",
+          "ReleaseDate": "2013-05-20",
+          "Explicit": false,
+          "TrackPosition": "1",
+          "ImageLocation": "https://static.qobuz.com/images/covers/xb/cg/apk748lfvcgxb_230.jpg",
+          "AdditionalFieldKeys": []
+        },
+        "TracksCount": 22,
+        "TrackList": null
+      },
+      {
+        "Album": {
+          "Source": "qobuz",
+          "Id": "0027297115859",
+          "Title": "Vitamin String Quartet Performs Daft Punk's Random Access Memories",
+          "Artists": "Vitamin String Quartet",
+          "AlbumName": "Vitamin String Quartet Performs Daft Punk's Random Access Memories",
+          "Isrc": "0027297115859",
+          "Duration": "2744",
+          "ReleaseDate": "2016-04-22",
+          "Explicit": false,
+          "TrackPosition": "1",
+          "ImageLocation": "https://static.qobuz.com/images/covers/59/58/0027297115859_230.jpg",
+          "AdditionalFieldKeys": []
+        },
+        "TracksCount": 13,
+        "TrackList": null
+      }
+    ],
+    "Error": null
+  },
+  "AdvancedArtistTrack": {
+    "Items": [
+      {
+        "Source": "qobuz",
+        "Id": "8767428",
+        "Title": "Get Lucky (Radio Edit - feat. Pharrell Williams and Nile Rodgers)",
+        "Artists": "Daft Punk ft. Pharrell Williams",
+        "AlbumName": "Get Lucky",
+        "Isrc": "USQX91300809",
+        "Duration": "247",
+        "ReleaseDate": "2013-04-19",
+        "Explicit": false,
+        "TrackPosition": "1",
+        "ImageLocation": "https://static.qobuz.com/images/covers/42/34/0886443973442_230.jpg",
+        "AdditionalFieldKeys": []
+      },
+      {
+        "Source": "qobuz",
+        "Id": "10137214",
+        "Title": "Get Lucky (Daft Punk Remix)",
+        "Artists": "Daft Punk feat. Pharrell Williams",
+        "AlbumName": "Get Lucky",
+        "Isrc": "USQX91301322",
+        "Duration": "632",
+        "ReleaseDate": "2013-07-03",
+        "Explicit": false,
+        "TrackPosition": "1",
+        "ImageLocation": "https://static.qobuz.com/images/covers/06/90/0886444079006_230.jpg",
+        "AdditionalFieldKeys": []
+      }
+    ],
+    "Error": null
+  },
+  "AdvancedAll": {
+    "Items": [
+      {
+        "Source": "qobuz",
+        "Id": "9140031",
+        "Title": "Get Lucky (feat. Pharrell Williams and Nile Rodgers)",
+        "Artists": "Daft Punk feat. Pharrell Williams",
+        "AlbumName": "Random Access Memories",
+        "Isrc": "USQX91300108",
+        "Duration": "369",
+        "ReleaseDate": "2023-11-17",
+        "Explicit": false,
+        "TrackPosition": "8",
+        "ImageLocation": "https://static.qobuz.com/images/covers/87/70/0886443927087_230.jpg",
+        "AdditionalFieldKeys": []
+      },
+      {
+        "Source": "qobuz",
+        "Id": "209446467",
+        "Title": "Get Lucky (feat. Pharrell Williams and Nile Rodgers)",
+        "Artists": "Daft Punk, NILE RODGERS, Pharrell Williams",
+        "AlbumName": "Random Access Memories",
+        "Isrc": "USQX91300108",
+        "Duration": "369",
+        "ReleaseDate": "2013-05-20",
+        "Explicit": false,
+        "TrackPosition": "8",
+        "ImageLocation": "https://static.qobuz.com/images/covers/xb/cg/apk748lfvcgxb_230.jpg",
+        "AdditionalFieldKeys": []
+      }
+    ],
+    "Error": null
+  },
+  "AdvancedArtistOnly": {
+    "Items": [
+      {
+        "Source": "qobuz",
+        "Id": "11328025",
+        "Title": "Wake Me Up (Radio Edit)",
+        "Artists": "Avicii",
+        "AlbumName": "True",
+        "Isrc": "SEUM71301326",
+        "Duration": "246",
+        "ReleaseDate": "2013-09-16",
+        "Explicit": false,
+        "TrackPosition": "1",
+        "ImageLocation": "https://static.qobuz.com/images/covers/34/13/0060253751334_230.jpg",
+        "AdditionalFieldKeys": []
+      },
+      {
+        "Source": "qobuz",
+        "Id": "20673098",
+        "Title": "The Nights",
+        "Artists": "Avicii",
+        "AlbumName": "The Days / Nights",
+        "Isrc": "CH3131340464",
+        "Duration": "176",
+        "ReleaseDate": "2014-01-01",
+        "Explicit": false,
+        "TrackPosition": "2",
+        "ImageLocation": "https://static.qobuz.com/images/covers/54/51/0060254715154_230.jpg",
+        "AdditionalFieldKeys": []
+      },
+      {
+        "Source": "qobuz",
+        "Id": "8632878",
+        "Title": "Levels (Radio Edit)",
+        "Artists": "Avicii",
+        "AlbumName": "Levels",
+        "Isrc": "SEUM71100962",
+        "Duration": "199",
+        "ReleaseDate": "2011-01-01",
+        "Explicit": false,
+        "TrackPosition": "1",
+        "ImageLocation": "https://static.qobuz.com/images/covers/34/95/0060252789534_230.jpg",
+        "AdditionalFieldKeys": []
+      },
+      {
+        "Source": "qobuz",
+        "Id": "11328027",
+        "Title": "Hey Brother",
+        "Artists": "Avicii",
+        "AlbumName": "True",
+        "Isrc": "CH3131340084",
+        "Duration": "254",
+        "ReleaseDate": "2013-09-16",
+        "Explicit": false,
+        "TrackPosition": "3",
+        "ImageLocation": "https://static.qobuz.com/images/covers/34/13/0060253751334_230.jpg",
+        "AdditionalFieldKeys": []
+      },
+      {
+        "Source": "qobuz",
+        "Id": "27236281",
+        "Title": "Waiting For Love",
+        "Artists": "Avicii",
+        "AlbumName": "Stories (Deluxe Version)",
+        "Isrc": "CHB701400134",
+        "Duration": "230",
+        "ReleaseDate": "2015-10-02",
+        "Explicit": false,
+        "TrackPosition": "1",
+        "ImageLocation": "https://static.qobuz.com/images/covers/37/07/0060254760737_230.jpg",
+        "AdditionalFieldKeys": []
+      }
+    ],
+    "Error": null
+  },
+  "AdvancedTrackOnly": {
+    "Items": [
+      {
+        "Source": "qobuz",
+        "Id": "8632878",
+        "Title": "Levels (Radio Edit)",
+        "Artists": "Avicii",
+        "AlbumName": "Levels",
+        "Isrc": "SEUM71100962",
+        "Duration": "199",
+        "ReleaseDate": "2011-01-01",
+        "Explicit": false,
+        "TrackPosition": "1",
+        "ImageLocation": "https://static.qobuz.com/images/covers/34/95/0060252789534_230.jpg",
+        "AdditionalFieldKeys": []
+      },
+      {
+        "Source": "qobuz",
+        "Id": "8632879",
+        "Title": "Levels (Original Version)",
+        "Artists": "Avicii",
+        "AlbumName": "Levels",
+        "Isrc": "SEUM71100961",
+        "Duration": "338",
+        "ReleaseDate": "2011-01-01",
+        "Explicit": false,
+        "TrackPosition": "2",
+        "ImageLocation": "https://static.qobuz.com/images/covers/34/95/0060252789534_230.jpg",
+        "AdditionalFieldKeys": []
+      },
+      {
+        "Source": "qobuz",
+        "Id": "329362613",
+        "Title": "Levels (Radio Edit)",
+        "Artists": "Avicii",
+        "AlbumName": "Avicii Forever",
+        "Isrc": "SEUM71100962",
+        "Duration": "201",
+        "ReleaseDate": "2025-05-16",
+        "Explicit": false,
+        "TrackPosition": "2",
+        "ImageLocation": "https://static.qobuz.com/images/covers/3b/vc/vghzn2881vc3b_230.jpg",
+        "AdditionalFieldKeys": []
+      },
+      {
+        "Source": "qobuz",
+        "Id": "297053537",
+        "Title": "Levels",
+        "Artists": "BigXthaPlug",
+        "AlbumName": "AMAR",
+        "Isrc": "QZL382302245",
+        "Duration": "157",
+        "ReleaseDate": "2023-02-10",
+        "Explicit": false,
+        "TrackPosition": "11",
+        "ImageLocation": "https://static.qobuz.com/images/covers/oc/mx/q0q4miesomxoc_230.jpg",
+        "AdditionalFieldKeys": []
+      },
+      {
+        "Source": "qobuz",
+        "Id": "44889578",
+        "Title": "Levels",
+        "Artists": "Nick Jonas",
+        "AlbumName": "Nick Jonas X2",
+        "Isrc": "USUM71512568",
+        "Duration": "166",
+        "ReleaseDate": "2014-11-10",
+        "Explicit": false,
+        "TrackPosition": "15",
+        "ImageLocation": "https://static.qobuz.com/images/covers/98/95/0060254769598_230.jpg",
+        "AdditionalFieldKeys": []
+      }
+    ],
+    "Error": null
+  }
+}

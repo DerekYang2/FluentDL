@@ -1,0 +1,32 @@
+[
+  {
+    "Source": "deezer",
+    "Track": "https://www.deezer.com/track/ID123",
+    "Album": "https://www.deezer.com/album/ID123"
+  },
+  {
+    "Source": "qobuz",
+    "Track": "https://open.qobuz.com/track/ID123",
+    "Album": "https://open.qobuz.com/album/ID123"
+  },
+  {
+    "Source": "spotify",
+    "Track": "https://open.spotify.com/track/ID123",
+    "Album": "https://open.spotify.com/album/ID123"
+  },
+  {
+    "Source": "youtube",
+    "Track": "https://www.youtube.com/watch?v=ID123",
+    "Album": "https://music.youtube.com/playlist?list=ID123"
+  },
+  {
+    "Source": "local",
+    "Track": "ID123",
+    "Album": "ID123"
+  },
+  {
+    "Source": "unknown",
+    "Track": "",
+    "Album": ""
+  }
+]

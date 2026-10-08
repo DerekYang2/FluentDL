@@ -1,0 +1,41 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!--
+    Characterization tests: call the real source code in the WinUI app project against the live APIs,
+    so behavior can be compared before and after each refactor phase. See plan note "Phase 0 - Safety net".
+  -->
+  <PropertyGroup>
+    <TargetFramework>net10.0-windows10.0.22621.0</TargetFramework>
+    <TargetPlatformMinVersion>10.0.17763.0</TargetPlatformMinVersion>
+    <Platforms>x64</Platforms>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+    <!-- The app is a self-contained WinExe; the tests only load its assembly. -->
+    <ValidateExecutableReferencesMatchSelfContained>false</ValidateExecutableReferencesMatchSelfContained>
+    <!-- The Windows App SDK targets come in through the app reference. EnableMsixTooling points them at the
+         packaging tasks shipped in the NuGet package (the dotnet CLI has no Visual Studio copy), and the test
+         host needs no resource index. -->
+    <EnableMsixTooling>true</EnableMsixTooling>
+    <AppxGeneratePriEnabled>false</AppxGeneratePriEnabled>
+    <ShouldComputeInputPris>false</ShouldComputeInputPris>
+    <!-- FluentDL.dll runs a Windows App SDK deployment check when it loads, and that needs the runtime.
+         The app gets it from its MSIX package. The test host is unpackaged, so it bootstraps the runtime
+         first, from its own module initializer. -->
+    <WindowsPackageType>None</WindowsPackageType>
+    <WindowsAppSdkDeploymentManagerInitialize>false</WindowsAppSdkDeploymentManagerInitialize>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.12.0" />
+    <PackageReference Include="MSTest.TestAdapter" Version="3.6.4" />
+    <PackageReference Include="MSTest.TestFramework" Version="3.6.4" />
+    <!--
+      FluentDL.dll normally runs a Windows App SDK deployment check when it loads, and that check needs MSIX
+      package identity, which a test host never has. Build a separate copy of the app for the tests with that
+      check off, in its own bin/obj folders so the normal app build is untouched.
+    -->
+    <ProjectReference Include="..\FluentDL\FluentDL.csproj"
+                      AdditionalProperties="WindowsAppSdkDeploymentManagerInitialize=false;IntermediateOutputPath=obj\characterization\;OutputPath=bin\characterization\" />
+  </ItemGroup>
+</Project>

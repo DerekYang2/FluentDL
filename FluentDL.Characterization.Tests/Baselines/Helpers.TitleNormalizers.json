@@ -1,0 +1,252 @@
+[
+  {
+    "Input": "Get Lucky (feat. Pharrell Williams and Nile Rodgers)",
+    "ApiHelper_PruneTitle": "getlucky",
+    "ApiHelper_PruneFeaturing": "Get Lucky",
+    "ApiHelper_PrunePunctuation": "GetLucky",
+    "ApiHelper_EnforceAscii": "Get Lucky (feat. Pharrell Williams and Nile Rodgers)",
+    "ApiHelper_RemoveDiacritics": "Get Lucky (feat. Pharrell Williams and Nile Rodgers)",
+    "DeezerApi_PruneTitle": "getlucky",
+    "DeezerApi_PruneTitleSearch": "get lucky"
+  },
+  {
+    "Input": "Get Lucky (Radio Edit - feat. Pharrell Williams and Nile Rodgers)",
+    "ApiHelper_PruneTitle": "getluckyradioeditfeatpharrellwilliamsandnilerodgers",
+    "ApiHelper_PruneFeaturing": "Get Lucky (Radio Edit - feat. Pharrell Williams and Nile Rodgers)",
+    "ApiHelper_PrunePunctuation": "GetLuckyRadioEditfeatPharrellWilliamsandNileRodgers",
+    "ApiHelper_EnforceAscii": "Get Lucky (Radio Edit - feat. Pharrell Williams and Nile Rodgers)",
+    "ApiHelper_RemoveDiacritics": "Get Lucky (Radio Edit - feat. Pharrell Williams and Nile Rodgers)",
+    "DeezerApi_PruneTitle": "getluckyradioeditfeatpharrellwilliamsandnilerodgers",
+    "DeezerApi_PruneTitleSearch": "get lucky ( feat. pharrell williams and nile rodgers)"
+  },
+  {
+    "Input": "Get Lucky (ft. Pharrell)",
+    "ApiHelper_PruneTitle": "getlucky",
+    "ApiHelper_PruneFeaturing": "Get Lucky",
+    "ApiHelper_PrunePunctuation": "GetLucky",
+    "ApiHelper_EnforceAscii": "Get Lucky (ft. Pharrell)",
+    "ApiHelper_RemoveDiacritics": "Get Lucky (ft. Pharrell)",
+    "DeezerApi_PruneTitle": "getlucky",
+    "DeezerApi_PruneTitleSearch": "get lucky"
+  },
+  {
+    "Input": "Stay (with Justin Bieber)",
+    "ApiHelper_PruneTitle": "stay",
+    "ApiHelper_PruneFeaturing": "Stay",
+    "ApiHelper_PrunePunctuation": "Stay",
+    "ApiHelper_EnforceAscii": "Stay (with Justin Bieber)",
+    "ApiHelper_RemoveDiacritics": "Stay (with Justin Bieber)",
+    "DeezerApi_PruneTitle": "stay",
+    "DeezerApi_PruneTitleSearch": "stay (with justin bieber)"
+  },
+  {
+    "Input": "Song (Featuring Someone)",
+    "ApiHelper_PruneTitle": "songfeaturingsomeone",
+    "ApiHelper_PruneFeaturing": "Song",
+    "ApiHelper_PrunePunctuation": "Song",
+    "ApiHelper_EnforceAscii": "Song (Featuring Someone)",
+    "ApiHelper_RemoveDiacritics": "Song (Featuring Someone)",
+    "DeezerApi_PruneTitle": "song",
+    "DeezerApi_PruneTitleSearch": "song (featuring someone)"
+  },
+  {
+    "Input": "Levels - Radio Edit",
+    "ApiHelper_PruneTitle": "levelsradioedit",
+    "ApiHelper_PruneFeaturing": "Levels - Radio Edit",
+    "ApiHelper_PrunePunctuation": "LevelsRadioEdit",
+    "ApiHelper_EnforceAscii": "Levels - Radio Edit",
+    "ApiHelper_RemoveDiacritics": "Levels - Radio Edit",
+    "DeezerApi_PruneTitle": "levelsradioedit",
+    "DeezerApi_PruneTitleSearch": "levels"
+  },
+  {
+    "Input": "Levels (Skrillex Remix)",
+    "ApiHelper_PruneTitle": "levelsskrillexremix",
+    "ApiHelper_PruneFeaturing": "Levels (Skrillex Remix)",
+    "ApiHelper_PrunePunctuation": "LevelsSkrillexRemix",
+    "ApiHelper_EnforceAscii": "Levels (Skrillex Remix)",
+    "ApiHelper_RemoveDiacritics": "Levels (Skrillex Remix)",
+    "DeezerApi_PruneTitle": "levelsskrillexremix",
+    "DeezerApi_PruneTitleSearch": "levels (skrillex remix)"
+  },
+  {
+    "Input": "Come Together - Remastered 2009",
+    "ApiHelper_PruneTitle": "cometogetherremastered2009",
+    "ApiHelper_PruneFeaturing": "Come Together - Remastered 2009",
+    "ApiHelper_PrunePunctuation": "ComeTogetherRemastered2009",
+    "ApiHelper_EnforceAscii": "Come Together - Remastered 2009",
+    "ApiHelper_RemoveDiacritics": "Come Together - Remastered 2009",
+    "DeezerApi_PruneTitle": "cometogetherremastered2009",
+    "DeezerApi_PruneTitleSearch": "come together remastered 2009"
+  },
+  {
+    "Input": "Yesterday [Remastered 2015]",
+    "ApiHelper_PruneTitle": "yesterdayremastered2015",
+    "ApiHelper_PruneFeaturing": "Yesterday [Remastered 2015]",
+    "ApiHelper_PrunePunctuation": "YesterdayRemastered2015",
+    "ApiHelper_EnforceAscii": "Yesterday [Remastered 2015]",
+    "ApiHelper_RemoveDiacritics": "Yesterday [Remastered 2015]",
+    "DeezerApi_PruneTitle": "yesterdayremastered2015",
+    "DeezerApi_PruneTitleSearch": "yesterday remastered 2015"
+  },
+  {
+    "Input": "Halo",
+    "ApiHelper_PruneTitle": "halo",
+    "ApiHelper_PruneFeaturing": "Halo",
+    "ApiHelper_PrunePunctuation": "Halo",
+    "ApiHelper_EnforceAscii": "Halo",
+    "ApiHelper_RemoveDiacritics": "Halo",
+    "DeezerApi_PruneTitle": "halo",
+    "DeezerApi_PruneTitleSearch": "halo"
+  },
+  {
+    "Input": "Beyoncé",
+    "ApiHelper_PruneTitle": "beyonce",
+    "ApiHelper_PruneFeaturing": "Beyoncé",
+    "ApiHelper_PrunePunctuation": "Beyonc",
+    "ApiHelper_EnforceAscii": "Beyonce",
+    "ApiHelper_RemoveDiacritics": "Beyonce",
+    "DeezerApi_PruneTitle": "beyonce",
+    "DeezerApi_PruneTitleSearch": "beyonce"
+  },
+  {
+    "Input": "Hoppípolla",
+    "ApiHelper_PruneTitle": "hoppipolla",
+    "ApiHelper_PruneFeaturing": "Hoppípolla",
+    "ApiHelper_PrunePunctuation": "Hopppolla",
+    "ApiHelper_EnforceAscii": "Hoppipolla",
+    "ApiHelper_RemoveDiacritics": "Hoppipolla",
+    "DeezerApi_PruneTitle": "hoppipolla",
+    "DeezerApi_PruneTitleSearch": "hoppipolla"
+  },
+  {
+    "Input": "Sigur Rós",
+    "ApiHelper_PruneTitle": "sigurros",
+    "ApiHelper_PruneFeaturing": "Sigur Rós",
+    "ApiHelper_PrunePunctuation": "SigurRs",
+    "ApiHelper_EnforceAscii": "Sigur Ros",
+    "ApiHelper_RemoveDiacritics": "Sigur Ros",
+    "DeezerApi_PruneTitle": "sigurros",
+    "DeezerApi_PruneTitleSearch": "sigur ros"
+  },
+  {
+    "Input": "夜に駆ける",
+    "ApiHelper_PruneTitle": "",
+    "ApiHelper_PruneFeaturing": "夜に駆ける",
+    "ApiHelper_PrunePunctuation": "",
+    "ApiHelper_EnforceAscii": "",
+    "ApiHelper_RemoveDiacritics": "夜に駆ける",
+    "DeezerApi_PruneTitle": "",
+    "DeezerApi_PruneTitleSearch": ""
+  },
+  {
+    "Input": "Cello Suite No. 1 in G Major, BWV 1007: I. Prélude",
+    "ApiHelper_PruneTitle": "cellosuiteno1ingmajor,bwv1007:iprelude",
+    "ApiHelper_PruneFeaturing": "Cello Suite No. 1 in G Major, BWV 1007: I. Prélude",
+    "ApiHelper_PrunePunctuation": "CelloSuiteNo1inGMajorBWV1007IPrlude",
+    "ApiHelper_EnforceAscii": "Cello Suite No. 1 in G Major, BWV 1007: I. Prelude",
+    "ApiHelper_RemoveDiacritics": "Cello Suite No. 1 in G Major, BWV 1007: I. Prelude",
+    "DeezerApi_PruneTitle": "cellosuiteno1ingmajor,bwv1007:iprelude",
+    "DeezerApi_PruneTitleSearch": "cello suite no. 1 in g major, bwv 1007: i. prelude"
+  },
+  {
+    "Input": "Mr. Brightside",
+    "ApiHelper_PruneTitle": "mrbrightside",
+    "ApiHelper_PruneFeaturing": "Mr. Brightside",
+    "ApiHelper_PrunePunctuation": "MrBrightside",
+    "ApiHelper_EnforceAscii": "Mr. Brightside",
+    "ApiHelper_RemoveDiacritics": "Mr. Brightside",
+    "DeezerApi_PruneTitle": "mrbrightside",
+    "DeezerApi_PruneTitleSearch": "mr. brightside"
+  },
+  {
+    "Input": "Don't Stop Me Now",
+    "ApiHelper_PruneTitle": "dontstopmenow",
+    "ApiHelper_PruneFeaturing": "Don't Stop Me Now",
+    "ApiHelper_PrunePunctuation": "DontStopMeNow",
+    "ApiHelper_EnforceAscii": "Don't Stop Me Now",
+    "ApiHelper_RemoveDiacritics": "Don't Stop Me Now",
+    "DeezerApi_PruneTitle": "dontstopmenow",
+    "DeezerApi_PruneTitleSearch": "don't stop me now"
+  },
+  {
+    "Input": "\"Quoted\" Title",
+    "ApiHelper_PruneTitle": "quotedtitle",
+    "ApiHelper_PruneFeaturing": "\"Quoted\" Title",
+    "ApiHelper_PrunePunctuation": "QuotedTitle",
+    "ApiHelper_EnforceAscii": "\"Quoted\" Title",
+    "ApiHelper_RemoveDiacritics": "\"Quoted\" Title",
+    "DeezerApi_PruneTitle": "quotedtitle",
+    "DeezerApi_PruneTitleSearch": "\"quoted\" title"
+  },
+  {
+    "Input": "Under — Pressure",
+    "ApiHelper_PruneTitle": "underpressure",
+    "ApiHelper_PruneFeaturing": "Under — Pressure",
+    "ApiHelper_PrunePunctuation": "UnderPressure",
+    "ApiHelper_EnforceAscii": "Under  Pressure",
+    "ApiHelper_RemoveDiacritics": "Under — Pressure",
+    "DeezerApi_PruneTitle": "underpressure",
+    "DeezerApi_PruneTitleSearch": "under pressure"
+  },
+  {
+    "Input": "",
+    "ApiHelper_PruneTitle": "",
+    "ApiHelper_PruneFeaturing": "",
+    "ApiHelper_PrunePunctuation": "",
+    "ApiHelper_EnforceAscii": "",
+    "ApiHelper_RemoveDiacritics": "",
+    "DeezerApi_PruneTitle": "",
+    "DeezerApi_PruneTitleSearch": ""
+  },
+  {
+    "Input": "   ",
+    "ApiHelper_PruneTitle": "",
+    "ApiHelper_PruneFeaturing": "",
+    "ApiHelper_PrunePunctuation": "",
+    "ApiHelper_EnforceAscii": "   ",
+    "ApiHelper_RemoveDiacritics": "   ",
+    "DeezerApi_PruneTitle": "",
+    "DeezerApi_PruneTitleSearch": ""
+  },
+  {
+    "Input": "(",
+    "ApiHelper_PruneTitle": "",
+    "ApiHelper_PruneFeaturing": "(",
+    "ApiHelper_PrunePunctuation": "",
+    "ApiHelper_EnforceAscii": "(",
+    "ApiHelper_RemoveDiacritics": "(",
+    "DeezerApi_PruneTitle": "",
+    "DeezerApi_PruneTitleSearch": "("
+  },
+  {
+    "Input": "Unclosed (feat. Someone",
+    "ApiHelper_PruneTitle": "throws ArgumentOutOfRangeException",
+    "ApiHelper_PruneFeaturing": "Unclosed (feat. Someone",
+    "ApiHelper_PrunePunctuation": "UnclosedfeatSomeone",
+    "ApiHelper_EnforceAscii": "Unclosed (feat. Someone",
+    "ApiHelper_RemoveDiacritics": "Unclosed (feat. Someone",
+    "DeezerApi_PruneTitle": "unclosedfeatsomeone",
+    "DeezerApi_PruneTitleSearch": "throws ArgumentOutOfRangeException"
+  },
+  {
+    "Input": "Unclosed (ft. Someone",
+    "ApiHelper_PruneTitle": "throws ArgumentOutOfRangeException",
+    "ApiHelper_PruneFeaturing": "Unclosed (ft. Someone",
+    "ApiHelper_PrunePunctuation": "UnclosedftSomeone",
+    "ApiHelper_EnforceAscii": "Unclosed (ft. Someone",
+    "ApiHelper_RemoveDiacritics": "Unclosed (ft. Someone",
+    "DeezerApi_PruneTitle": "unclosedftsomeone",
+    "DeezerApi_PruneTitleSearch": "throws ArgumentOutOfRangeException"
+  },
+  {
+    "Input": "Unclosed (with Someone",
+    "ApiHelper_PruneTitle": "throws ArgumentOutOfRangeException",
+    "ApiHelper_PruneFeaturing": "Unclosed (with Someone",
+    "ApiHelper_PrunePunctuation": "UnclosedwithSomeone",
+    "ApiHelper_EnforceAscii": "Unclosed (with Someone",
+    "ApiHelper_RemoveDiacritics": "Unclosed (with Someone",
+    "DeezerApi_PruneTitle": "unclosedwithsomeone",
+    "DeezerApi_PruneTitleSearch": "unclosed (with someone"
+  }
+]

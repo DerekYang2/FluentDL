@@ -1,0 +1,203 @@
+{
+  "Tracks": {
+    "Items": [
+      {
+        "Source": "spotify",
+        "Id": "69kOkLUCkxIZYexIgSG8rq",
+        "Title": "Get Lucky (feat. Pharrell Williams and Nile Rodgers)",
+        "Artists": "Daft Punk, Pharrell Williams, Nile Rodgers",
+        "AlbumName": "Random Access Memories",
+        "Isrc": "",
+        "Duration": "370",
+        "ReleaseDate": "",
+        "Explicit": false,
+        "TrackPosition": "1",
+        "ImageLocation": "https://i.scdn.co/image/ab67616d00001e029b9b36b0e22870b9f542d937",
+        "AdditionalFieldKeys": []
+      },
+      {
+        "Source": "spotify",
+        "Id": "2Foc5Q5nqNiosCNqttzHof",
+        "Title": "Get Lucky (Radio Edit) [feat. Pharrell Williams and Nile Rodgers]",
+        "Artists": "Daft Punk, Pharrell Williams, Nile Rodgers",
+        "AlbumName": "Get Lucky (Radio Edit) [feat. Pharrell Williams and Nile Rodgers]",
+        "Isrc": "",
+        "Duration": "248",
+        "ReleaseDate": "",
+        "Explicit": false,
+        "TrackPosition": "1",
+        "ImageLocation": "https://i.scdn.co/image/ab67616d00001e0219a88dd5c7118e87d7b1619e",
+        "AdditionalFieldKeys": []
+      },
+      {
+        "Source": "spotify",
+        "Id": "78NwNb2BPO7OKDYYRWB1WT",
+        "Title": "Get Lucky - Daft Punk Remix",
+        "Artists": "Daft Punk, Pharrell Williams, Nile Rodgers, Florian Lagatta",
+        "AlbumName": "Get Lucky (Daft Punk Remix) (feat. Pharrell Williams & Nile Rodgers)",
+        "Isrc": "",
+        "Duration": "633",
+        "ReleaseDate": "",
+        "Explicit": false,
+        "TrackPosition": "1",
+        "ImageLocation": "https://i.scdn.co/image/ab67616d00001e02581fe8d3767d1ca73284b70a",
+        "AdditionalFieldKeys": []
+      },
+      {
+        "Source": "spotify",
+        "Id": "77DRzu7ERs0TX3roZcre7Q",
+        "Title": "euphoria",
+        "Artists": "Kendrick Lamar",
+        "AlbumName": "euphoria",
+        "Isrc": "",
+        "Duration": "384",
+        "ReleaseDate": "",
+        "Explicit": false,
+        "TrackPosition": "1",
+        "ImageLocation": "https://i.scdn.co/image/ab67616d00001e02bdc727cfc07ddbabf925bb2f",
+        "AdditionalFieldKeys": []
+      },
+      {
+        "Source": "spotify",
+        "Id": "5yK37zazHUe3WxEvymZs20",
+        "Title": "Bad Idea (feat. Chance the Rapper)",
+        "Artists": "Cordae, Chance the Rapper",
+        "AlbumName": "The Lost Boy",
+        "Isrc": "",
+        "Duration": "235",
+        "ReleaseDate": "",
+        "Explicit": false,
+        "TrackPosition": "1",
+        "ImageLocation": "https://i.scdn.co/image/ab67616d00001e02ac04ed4a2e41482600f53fde",
+        "AdditionalFieldKeys": []
+      }
+    ],
+    "Error": null
+  },
+  "TracksSecondPage": {
+    "Items": [
+      {
+        "Source": "spotify",
+        "Id": "2olIQt0rL0hOHau1SJ4xf2",
+        "Title": "Get Lucky (feat. Pharrell Williams and Nile Rodgers)",
+        "Artists": "Daft Punk, Pharrell Williams, Nile Rodgers",
+        "AlbumName": "Random Access Memories (10th Anniversary Edition)",
+        "Isrc": "",
+        "Duration": "370",
+        "ReleaseDate": "",
+        "Explicit": false,
+        "TrackPosition": "1",
+        "ImageLocation": "https://i.scdn.co/image/ab67616d00001e027a311579a8814f7683f25a17",
+        "AdditionalFieldKeys": []
+      },
+      {
+        "Source": "spotify",
+        "Id": "1pKYYY0dkg23sQQXi0Q5zN",
+        "Title": "Around the World",
+        "Artists": "Daft Punk",
+        "AlbumName": "Homework",
+        "Isrc": "",
+        "Duration": "430",
+        "ReleaseDate": "",
+        "Explicit": false,
+        "TrackPosition": "1",
+        "ImageLocation": "https://i.scdn.co/image/ab67616d00001e028ac778cc7d88779f74d33311",
+        "AdditionalFieldKeys": []
+      },
+      {
+        "Source": "spotify",
+        "Id": "66xHyI6ITToQPm7PdOzIyn",
+        "Title": "Get Lucky (feat. Pharrell Williams and Nile Rodgers)",
+        "Artists": "Daft Punk, Pharrell Williams, Nile Rodgers",
+        "AlbumName": "Random Access Memories",
+        "Isrc": "",
+        "Duration": "370",
+        "ReleaseDate": "",
+        "Explicit": false,
+        "TrackPosition": "1",
+        "ImageLocation": "https://i.scdn.co/image/ab67616d00001e024d22198f946d9b32f25fc263",
+        "AdditionalFieldKeys": []
+      },
+      {
+        "Source": "spotify",
+        "Id": "4m0dHFvHgmmdoTvYb7Enm8",
+        "Title": "Get Lucky",
+        "Artists": "Ali Brustofski",
+        "AlbumName": "Get Lucky",
+        "Isrc": "",
+        "Duration": "211",
+        "ReleaseDate": "",
+        "Explicit": false,
+        "TrackPosition": "1",
+        "ImageLocation": "https://i.scdn.co/image/ab67616d00001e021414d26fb9973d1eafa0251d",
+        "AdditionalFieldKeys": []
+      },
+      {
+        "Source": "spotify",
+        "Id": "023YrpD0YTWrFsxOl8ZnHg",
+        "Title": "My Buddy",
+        "Artists": "Deuce",
+        "AlbumName": "Invincible",
+        "Isrc": "",
+        "Duration": "294",
+        "ReleaseDate": "",
+        "Explicit": false,
+        "TrackPosition": "1",
+        "ImageLocation": "https://i.scdn.co/image/ab67616d00001e0211ecca6bd4e5576dbf694e6c",
+        "AdditionalFieldKeys": []
+      }
+    ],
+    "Error": null
+  },
+  "AlbumMode": {
+    "Items": [
+      {
+        "Source": "spotify",
+        "Id": "69kOkLUCkxIZYexIgSG8rq",
+        "Title": "Get Lucky (feat. Pharrell Williams and Nile Rodgers)",
+        "Artists": "Daft Punk, Pharrell Williams, Nile Rodgers",
+        "AlbumName": "Random Access Memories",
+        "Isrc": "",
+        "Duration": "370",
+        "ReleaseDate": "",
+        "Explicit": false,
+        "TrackPosition": "1",
+        "ImageLocation": "https://i.scdn.co/image/ab67616d00001e029b9b36b0e22870b9f542d937",
+        "AdditionalFieldKeys": []
+      },
+      {
+        "Source": "spotify",
+        "Id": "7oaEjLP2dTJLJsITbAxTOz",
+        "Title": "Touch (feat. Paul Williams)",
+        "Artists": "Daft Punk, Paul Williams",
+        "AlbumName": "Random Access Memories",
+        "Isrc": "",
+        "Duration": "499",
+        "ReleaseDate": "",
+        "Explicit": false,
+        "TrackPosition": "1",
+        "ImageLocation": "https://i.scdn.co/image/ab67616d00001e029b9b36b0e22870b9f542d937",
+        "AdditionalFieldKeys": []
+      },
+      {
+        "Source": "spotify",
+        "Id": "0IedgQjjJ8Ad4B3UDQ5Lyn",
+        "Title": "Fragments of Time (feat. Todd Edwards)",
+        "Artists": "Daft Punk, Todd Edwards",
+        "AlbumName": "Random Access Memories",
+        "Isrc": "",
+        "Duration": "280",
+        "ReleaseDate": "",
+        "Explicit": false,
+        "TrackPosition": "1",
+        "ImageLocation": "https://i.scdn.co/image/ab67616d00001e029b9b36b0e22870b9f542d937",
+        "AdditionalFieldKeys": []
+      }
+    ],
+    "Error": null
+  },
+  "Advanced": {
+    "Items": [],
+    "Error": null
+  }
+}

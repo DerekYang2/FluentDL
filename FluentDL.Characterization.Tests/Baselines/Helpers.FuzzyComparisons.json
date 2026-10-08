@@ -1,0 +1,142 @@
+[
+  {
+    "A": "Get Lucky",
+    "B": "Get Lucky (feat. Pharrell Williams)",
+    "CloseMatch": true,
+    "IsSubstring": true,
+    "Levenshtein": 26
+  },
+  {
+    "A": "Get Lucky (feat. Pharrell Williams)",
+    "B": "Get Lucky",
+    "CloseMatch": true,
+    "IsSubstring": true,
+    "Levenshtein": 26
+  },
+  {
+    "A": "Levels",
+    "B": "Levels (Skrillex Remix)",
+    "CloseMatch": false,
+    "IsSubstring": true,
+    "Levenshtein": 17
+  },
+  {
+    "A": "Levels (Skrillex Remix)",
+    "B": "Levels",
+    "CloseMatch": false,
+    "IsSubstring": true,
+    "Levenshtein": 17
+  },
+  {
+    "A": "Levels - Radio Edit",
+    "B": "Levels (Radio Edit)",
+    "CloseMatch": true,
+    "IsSubstring": true,
+    "Levenshtein": 3
+  },
+  {
+    "A": "Levels (Radio Edit)",
+    "B": "Levels - Radio Edit",
+    "CloseMatch": true,
+    "IsSubstring": true,
+    "Levenshtein": 3
+  },
+  {
+    "A": "Black Eyed Peas",
+    "B": "The Black Eyed Peas",
+    "CloseMatch": true,
+    "IsSubstring": true,
+    "Levenshtein": 4
+  },
+  {
+    "A": "The Black Eyed Peas",
+    "B": "Black Eyed Peas",
+    "CloseMatch": true,
+    "IsSubstring": true,
+    "Levenshtein": 4
+  },
+  {
+    "A": "Beyoncé",
+    "B": "Beyonce",
+    "CloseMatch": true,
+    "IsSubstring": true,
+    "Levenshtein": 1
+  },
+  {
+    "A": "Beyonce",
+    "B": "Beyoncé",
+    "CloseMatch": true,
+    "IsSubstring": true,
+    "Levenshtein": 1
+  },
+  {
+    "A": "Halo",
+    "B": "Halo (Live)",
+    "CloseMatch": false,
+    "IsSubstring": true,
+    "Levenshtein": 7
+  },
+  {
+    "A": "Halo (Live)",
+    "B": "Halo",
+    "CloseMatch": false,
+    "IsSubstring": true,
+    "Levenshtein": 7
+  },
+  {
+    "A": "Random Access Memories",
+    "B": "Random Access Memories (10th Anniversary Edition)",
+    "CloseMatch": false,
+    "IsSubstring": true,
+    "Levenshtein": 27
+  },
+  {
+    "A": "Random Access Memories (10th Anniversary Edition)",
+    "B": "Random Access Memories",
+    "CloseMatch": false,
+    "IsSubstring": true,
+    "Levenshtein": 27
+  },
+  {
+    "A": "夜に駆ける",
+    "B": "Yoru ni Kakeru",
+    "CloseMatch": false,
+    "IsSubstring": false,
+    "Levenshtein": 14
+  },
+  {
+    "A": "Yoru ni Kakeru",
+    "B": "夜に駆ける",
+    "CloseMatch": false,
+    "IsSubstring": false,
+    "Levenshtein": 14
+  },
+  {
+    "A": "",
+    "B": "Something",
+    "CloseMatch": false,
+    "IsSubstring": false,
+    "Levenshtein": 9
+  },
+  {
+    "A": "Something",
+    "B": "",
+    "CloseMatch": false,
+    "IsSubstring": false,
+    "Levenshtein": 9
+  },
+  {
+    "A": "Daft Punk",
+    "B": "daft punk",
+    "CloseMatch": true,
+    "IsSubstring": true,
+    "Levenshtein": 2
+  },
+  {
+    "A": "daft punk",
+    "B": "Daft Punk",
+    "CloseMatch": true,
+    "IsSubstring": true,
+    "Levenshtein": 2
+  }
+]

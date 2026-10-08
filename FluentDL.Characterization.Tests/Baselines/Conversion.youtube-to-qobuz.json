@@ -1,0 +1,288 @@
+[
+  {
+    "Key": "get-lucky-album",
+    "OriginId": "4D7u5KF7SP8",
+    "OriginIsrc": null,
+    "Result": {
+      "Source": "qobuz",
+      "Id": "9140031",
+      "Title": "Get Lucky (feat. Pharrell Williams and Nile Rodgers)",
+      "Artists": "Daft Punk feat. Pharrell Williams",
+      "AlbumName": "Random Access Memories",
+      "Isrc": "USQX91300108",
+      "Duration": "369",
+      "ReleaseDate": "2023-11-17",
+      "Explicit": false,
+      "TrackPosition": "8",
+      "ImageLocation": "https://static.qobuz.com/images/covers/87/70/0886443927087_230.jpg",
+      "AdditionalFieldKeys": []
+    },
+    "Callbacks": [
+      {
+        "Severity": "Warning",
+        "Song": {
+          "Source": "qobuz",
+          "Id": "9140031",
+          "Title": "Get Lucky (feat. Pharrell Williams and Nile Rodgers)",
+          "Artists": "Daft Punk feat. Pharrell Williams",
+          "AlbumName": "Random Access Memories",
+          "Isrc": "USQX91300108",
+          "Duration": "369",
+          "ReleaseDate": "2023-11-17",
+          "Explicit": false,
+          "TrackPosition": "8",
+          "ImageLocation": "https://static.qobuz.com/images/covers/87/70/0886443927087_230.jpg",
+          "AdditionalFieldKeys": []
+        },
+        "Location": null
+      }
+    ]
+  },
+  {
+    "Key": "get-lucky-radio-edit",
+    "OriginId": "Rgrt_8mXrK8",
+    "OriginIsrc": null,
+    "Result": {
+      "Source": "qobuz",
+      "Id": "8767428",
+      "Title": "Get Lucky (Radio Edit - feat. Pharrell Williams and Nile Rodgers)",
+      "Artists": "Daft Punk ft. Pharrell Williams",
+      "AlbumName": "Get Lucky",
+      "Isrc": "USQX91300809",
+      "Duration": "247",
+      "ReleaseDate": "2013-04-19",
+      "Explicit": false,
+      "TrackPosition": "1",
+      "ImageLocation": "https://static.qobuz.com/images/covers/42/34/0886443973442_230.jpg",
+      "AdditionalFieldKeys": []
+    },
+    "Callbacks": [
+      {
+        "Severity": "Warning",
+        "Song": {
+          "Source": "qobuz",
+          "Id": "8767428",
+          "Title": "Get Lucky (Radio Edit - feat. Pharrell Williams and Nile Rodgers)",
+          "Artists": "Daft Punk ft. Pharrell Williams",
+          "AlbumName": "Get Lucky",
+          "Isrc": "USQX91300809",
+          "Duration": "247",
+          "ReleaseDate": "2013-04-19",
+          "Explicit": false,
+          "TrackPosition": "1",
+          "ImageLocation": "https://static.qobuz.com/images/covers/42/34/0886443973442_230.jpg",
+          "AdditionalFieldKeys": []
+        },
+        "Location": null
+      }
+    ]
+  },
+  {
+    "Key": "beyonce-halo",
+    "OriginId": "-3Wt6wwlmC8",
+    "OriginIsrc": null,
+    "Result": {
+      "Source": "qobuz",
+      "Id": "460985",
+      "Title": "Halo",
+      "Artists": "Beyoncé",
+      "AlbumName": "I AM...SASHA FIERCE",
+      "Isrc": "USSM10804556",
+      "Duration": "261",
+      "ReleaseDate": "2008-11-18",
+      "Explicit": false,
+      "TrackPosition": "2",
+      "ImageLocation": "https://static.qobuz.com/images/covers/42/84/0888880798442_230.jpg",
+      "AdditionalFieldKeys": []
+    },
+    "Callbacks": [
+      {
+        "Severity": "Warning",
+        "Song": {
+          "Source": "qobuz",
+          "Id": "460985",
+          "Title": "Halo",
+          "Artists": "Beyoncé",
+          "AlbumName": "I AM...SASHA FIERCE",
+          "Isrc": "USSM10804556",
+          "Duration": "261",
+          "ReleaseDate": "2008-11-18",
+          "Explicit": false,
+          "TrackPosition": "2",
+          "ImageLocation": "https://static.qobuz.com/images/covers/42/84/0888880798442_230.jpg",
+          "AdditionalFieldKeys": []
+        },
+        "Location": null
+      }
+    ]
+  },
+  {
+    "Key": "yoasobi-yoru-ni-kakeru",
+    "OriginId": "by4SYYWlhEs",
+    "OriginIsrc": null,
+    "Result": null,
+    "Callbacks": [
+      {
+        "Severity": "Error",
+        "Song": {
+          "Source": "youtube",
+          "Id": "by4SYYWlhEs",
+          "Title": "夜に駆ける",
+          "Artists": "YOASOBI",
+          "AlbumName": "夜に駆ける",
+          "Isrc": null,
+          "Duration": "261",
+          "ReleaseDate": "2019-12-14",
+          "Explicit": false,
+          "TrackPosition": "1",
+          "ImageLocation": "https://yt3.googleusercontent.com/-smFMOtNB5Zu8EINwbq_FQUXbBp2mguY2-w0MLxcVU0-osix9gV6IF3IuIBkeWlhck8RBQ9shgKCfDw=w544-h544-l90-rj",
+          "AdditionalFieldKeys": []
+        },
+        "Location": null
+      }
+    ]
+  },
+  {
+    "Key": "avicii-levels-original",
+    "OriginId": "wDuoOapZ9Z0",
+    "OriginIsrc": null,
+    "Result": {
+      "Source": "qobuz",
+      "Id": "8632878",
+      "Title": "Levels (Radio Edit)",
+      "Artists": "Avicii",
+      "AlbumName": "Levels",
+      "Isrc": "SEUM71100962",
+      "Duration": "199",
+      "ReleaseDate": "2011-01-01",
+      "Explicit": false,
+      "TrackPosition": "1",
+      "ImageLocation": "https://static.qobuz.com/images/covers/34/95/0060252789534_230.jpg",
+      "AdditionalFieldKeys": []
+    },
+    "Callbacks": [
+      {
+        "Severity": "Warning",
+        "Song": {
+          "Source": "qobuz",
+          "Id": "8632878",
+          "Title": "Levels (Radio Edit)",
+          "Artists": "Avicii",
+          "AlbumName": "Levels",
+          "Isrc": "SEUM71100962",
+          "Duration": "199",
+          "ReleaseDate": "2011-01-01",
+          "Explicit": false,
+          "TrackPosition": "1",
+          "ImageLocation": "https://static.qobuz.com/images/covers/34/95/0060252789534_230.jpg",
+          "AdditionalFieldKeys": []
+        },
+        "Location": null
+      }
+    ]
+  },
+  {
+    "Key": "avicii-levels-skrillex-remix",
+    "OriginId": "u6cdQFpP88w",
+    "OriginIsrc": null,
+    "Result": {
+      "Source": "qobuz",
+      "Id": "8636159",
+      "Title": "Levels (Skrillex Remix)",
+      "Artists": "Avicii",
+      "AlbumName": "Levels",
+      "Isrc": "SEUM71101146",
+      "Duration": "281",
+      "ReleaseDate": "2011-12-16",
+      "Explicit": false,
+      "TrackPosition": "1",
+      "ImageLocation": "https://static.qobuz.com/images/covers/75/31/0060252793175_230.jpg",
+      "AdditionalFieldKeys": []
+    },
+    "Callbacks": [
+      {
+        "Severity": "Warning",
+        "Song": {
+          "Source": "qobuz",
+          "Id": "8636159",
+          "Title": "Levels (Skrillex Remix)",
+          "Artists": "Avicii",
+          "AlbumName": "Levels",
+          "Isrc": "SEUM71101146",
+          "Duration": "281",
+          "ReleaseDate": "2011-12-16",
+          "Explicit": false,
+          "TrackPosition": "1",
+          "ImageLocation": "https://static.qobuz.com/images/covers/75/31/0060252793175_230.jpg",
+          "AdditionalFieldKeys": []
+        },
+        "Location": null
+      }
+    ]
+  },
+  {
+    "Key": "yo-yo-ma-bwv1007-prelude",
+    "OriginId": "noW9fM9vgJs",
+    "OriginIsrc": null,
+    "Result": {
+      "Source": "qobuz",
+      "Id": "57156898",
+      "Title": "I. Prélude",
+      "Artists": "Yo-Yo Ma",
+      "AlbumName": "Cello Suiten No. 1,5 & 6",
+      "Isrc": "USSM18200515",
+      "Duration": "152",
+      "ReleaseDate": "2001-10-01",
+      "Explicit": false,
+      "TrackPosition": "1",
+      "ImageLocation": "https://static.qobuz.com/images/covers/ja/m7/id3y8yb4tm7ja_230.jpg",
+      "AdditionalFieldKeys": []
+    },
+    "Callbacks": [
+      {
+        "Severity": "Warning",
+        "Song": {
+          "Source": "qobuz",
+          "Id": "57156898",
+          "Title": "I. Prélude",
+          "Artists": "Yo-Yo Ma",
+          "AlbumName": "Cello Suiten No. 1,5 & 6",
+          "Isrc": "USSM18200515",
+          "Duration": "152",
+          "ReleaseDate": "2001-10-01",
+          "Explicit": false,
+          "TrackPosition": "1",
+          "ImageLocation": "https://static.qobuz.com/images/covers/ja/m7/id3y8yb4tm7ja_230.jpg",
+          "AdditionalFieldKeys": []
+        },
+        "Location": null
+      }
+    ]
+  },
+  {
+    "Key": "youtube-only-me-at-the-zoo",
+    "OriginId": "jNQXAC9IVRw",
+    "OriginIsrc": null,
+    "Result": null,
+    "Callbacks": [
+      {
+        "Severity": "Error",
+        "Song": {
+          "Source": "youtube",
+          "Id": "jNQXAC9IVRw",
+          "Title": "Me at the zoo",
+          "Artists": "jawed",
+          "AlbumName": "Me at the zoo",
+          "Isrc": null,
+          "Duration": "19",
+          "ReleaseDate": "2005-04-23",
+          "Explicit": false,
+          "TrackPosition": "1",
+          "ImageLocation": "https://i.ytimg.com/vi/jNQXAC9IVRw/hqdefault.jpg?sqp=-oaymwExCJADEOABSFryq4qpAyMIARUAAIhCGAHwAQH4Ab4CgALwAYoCDAgAEAEYVSBZKGUwDw==&rs=AOn4CLAWuWkIqRJl-WjJyHNrmvFb-77q5w",
+          "AdditionalFieldKeys": []
+        },
+        "Location": null
+      }
+    ]
+  }
+]

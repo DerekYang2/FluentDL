@@ -4,6 +4,10 @@ FluentDL.Core/bin/
 FluentDL.Core.Tests/obj/
 FluentDL.Core.Tests/bin/
 FluentDL.Core.Tests/TestResults/
+FluentDL.Characterization.Tests/obj/
+FluentDL.Characterization.Tests/bin/
+FluentDL.Characterization.Tests/TestResults/
+FluentDL.Characterization.Tests/Baselines/*.actual.json
 /.vs/CopilotSnapshots/
 /FluentDL/Assets/keys.json
 /FluentDL/Assets/keys.txt

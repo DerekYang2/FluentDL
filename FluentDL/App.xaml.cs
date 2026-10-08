@@ -17,7 +17,6 @@ using Microsoft.UI;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
-using Microsoft.WindowsAppSDK.Runtime.Packages;
 using System.Diagnostics;
 using System.Text;
 using System.Threading;
