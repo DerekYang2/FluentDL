@@ -30,6 +30,7 @@
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.12.0" />
     <PackageReference Include="MSTest.TestAdapter" Version="3.6.4" />
     <PackageReference Include="MSTest.TestFramework" Version="3.6.4" />
+    <PackageReference Include="FlaUI.UIA3" Version="5.0.0" />
     <!--
       FluentDL.dll normally runs a Windows App SDK deployment check when it loads, and that check needs MSIX
       package identity, which a test host never has. Build a separate copy of the app for the tests with that

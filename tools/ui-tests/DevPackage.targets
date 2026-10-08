@@ -1,0 +1,38 @@
+<Project>
+  <!--
+    Gives a FluentDL build a separate package identity, so UI tests can install it next to the real app without
+    touching the real app's settings, queue or backups. Nothing imports this file by default:
+    tools/ui-tests/Install-DevPackage.ps1 passes it as CustomAfterMicrosoftCommonTargets. FluentDL.csproj and
+    Package.appxmanifest stay unchanged.
+  -->
+  <PropertyGroup Condition="'$(MSBuildProjectName)' == 'FluentDL'">
+    <FluentDLDevManifest>$(MSBuildProjectDirectory)\$(IntermediateOutputPath)Package.Dev.appxmanifest</FluentDLDevManifest>
+    <FluentDLDevNamespaces>
+      &lt;Namespace Prefix="m" Uri="http://schemas.microsoft.com/appx/manifest/foundation/windows10" /&gt;
+      &lt;Namespace Prefix="mp" Uri="http://schemas.microsoft.com/appx/2014/phone/manifest" /&gt;
+      &lt;Namespace Prefix="com" Uri="http://schemas.microsoft.com/appx/manifest/com/windows10" /&gt;
+      &lt;Namespace Prefix="desktop" Uri="http://schemas.microsoft.com/appx/manifest/desktop/windows10" /&gt;
+    </FluentDLDevNamespaces>
+    <!-- Fixed values, so reinstalling a dev build updates the same dev package. -->
+    <FluentDLDevToastClsid>5b0e7c41-9a6d-4f2e-8c3b-1d7a2f9e6c58</FluentDLDevToastClsid>
+    <FluentDLDevPhoneProductId>8e2f4a17-3c5b-4d9e-a061-7b9c2e4f1a3d</FluentDLDevPhoneProductId>
+  </PropertyGroup>
+
+  <Target Name="FluentDLUseDevManifest" BeforeTargets="PrepareForBuild" Condition="'$(MSBuildProjectName)' == 'FluentDL'">
+    <Copy SourceFiles="@(AppxManifest)" DestinationFiles="$(FluentDLDevManifest)" />
+    <XmlPoke XmlInputPath="$(FluentDLDevManifest)" Namespaces="$(FluentDLDevNamespaces)"
+             Query="/m:Package/m:Identity/@Name" Value="DerekYang2.FluentDL.Dev" />
+    <XmlPoke XmlInputPath="$(FluentDLDevManifest)" Namespaces="$(FluentDLDevNamespaces)"
+             Query="/m:Package/m:Properties/m:DisplayName" Value="FluentDL (Dev)" />
+    <XmlPoke XmlInputPath="$(FluentDLDevManifest)" Namespaces="$(FluentDLDevNamespaces)"
+             Query="/m:Package/mp:PhoneIdentity/@PhoneProductId" Value="$(FluentDLDevPhoneProductId)" />
+    <XmlPoke XmlInputPath="$(FluentDLDevManifest)" Namespaces="$(FluentDLDevNamespaces)"
+             Query="//desktop:ToastNotificationActivation/@ToastActivatorCLSID" Value="$(FluentDLDevToastClsid)" />
+    <XmlPoke XmlInputPath="$(FluentDLDevManifest)" Namespaces="$(FluentDLDevNamespaces)"
+             Query="//com:ExeServer/com:Class/@Id" Value="$(FluentDLDevToastClsid)" />
+    <ItemGroup>
+      <AppxManifest Remove="@(AppxManifest)" />
+      <AppxManifest Include="$(FluentDLDevManifest)" SubType="Designer" />
+    </ItemGroup>
+  </Target>
+</Project>
