@@ -29,12 +29,30 @@ public class ConversionTests
     [DataRow("youtube", "spotify")]
     public async Task Convert(string origin, string target)
     {
-        await SignInAsync(origin);
-        await SignInAsync(target);
+        await RunAsync($"Conversion.{origin}-to-{target}", origin, target, spotifyOfficial: false);
+    }
+
+    // Spotify with a client id and secret takes different paths: its tracks carry an ISRC, and converting to Spotify
+    // searches by ISRC first (bug 3: when the ISRC search finds nothing, it never falls back to metadata).
+    [TestMethod]
+    [DataRow("deezer", "spotify")]
+    [DataRow("qobuz", "spotify")]
+    [DataRow("spotify", "deezer")]
+    [DataRow("spotify", "qobuz")]
+    [DataRow("spotify", "youtube")]
+    public async Task ConvertWithSpotifyOfficial(string origin, string target)
+    {
+        await RunAsync($"ConversionSpotifyOfficial.{origin}-to-{target}", origin, target, spotifyOfficial: true);
+    }
+
+    private static async Task RunAsync(string baselineName, string origin, string target, bool spotifyOfficial)
+    {
+        await SignInAsync(origin, spotifyOfficial);
+        await SignInAsync(target, spotifyOfficial);
 
         if (!Fixtures.Tracks.Any(f => OriginId(f, origin) != null)) Assert.Inconclusive($"No fixture has a {origin} id yet.");
 
-        await Snapshot.MatchLive($"Conversion.{origin}-to-{target}", async () =>
+        await Snapshot.MatchLive(baselineName, async () =>
         {
             var rows = new List<object>();
             foreach (var fixture in Fixtures.Tracks)
@@ -65,11 +83,11 @@ public class ConversionTests
         _ => fixture.YoutubeId,
     };
 
-    private static Task SignInAsync(string source) => source switch
+    private static Task SignInAsync(string source, bool spotifyOfficial) => source switch
     {
         "deezer" => LiveSources.EnsureDeezerAsync(),
         "qobuz" => LiveSources.EnsureQobuzAsync(),
-        "spotify" => LiveSources.EnsureSpotifyWebPlayerAsync(),
+        "spotify" => spotifyOfficial ? LiveSources.EnsureSpotifyOfficialAsync() : LiveSources.EnsureSpotifyWebPlayerAsync(),
         _ => LiveSources.EnsureYoutubeMusicAvailableAsync(),
     };
 

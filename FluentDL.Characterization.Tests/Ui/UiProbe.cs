@@ -31,9 +31,23 @@ public class UiProbe
         Console.WriteLine($"Wrote {path}");
     }
 
-    private static void Dump(AutomationElement element, StringBuilder builder, int depth)
+    private static void Dump(AutomationElement element, StringBuilder builder, int depth) => DumpTree(element, builder, depth, 25);
+
+    /// <summary>Checks that the test host can write the dev app's settings store. Does not launch the app.</summary>
+    [TestMethod]
+    public void SeedSettingsReachesTheDevApp()
     {
-        if (depth > 25) return;
+        DevApp.SeedSettings(new Dictionary<string, string> { ["ui_test_probe"] = "ok" });
+        var data = Windows.Management.Core.ApplicationDataManager.CreateForPackageFamily(
+            DevApp.FindAumid().Split('!')[0]);
+        Assert.AreEqual("\"ok\"", data.LocalSettings.Values["ui_test_probe"]);
+        data.LocalSettings.Values.Remove("ui_test_probe");
+    }
+
+    /// <summary>Appends an element's UI Automation subtree (type, AutomationId, name, class) to a builder.</summary>
+    internal static void DumpTree(AutomationElement element, StringBuilder builder, int depth, int maxDepth)
+    {
+        if (depth > maxDepth) return;
         string id = "", name = "", cls = "", type = "";
         try { id = element.Properties.AutomationId.ValueOrDefault ?? ""; } catch { }
         try { name = element.Properties.Name.ValueOrDefault ?? ""; } catch { }
@@ -44,6 +58,6 @@ public class UiProbe
 
         AutomationElement[] children;
         try { children = element.FindAllChildren(); } catch { return; }
-        foreach (var child in children) Dump(child, builder, depth + 1);
+        foreach (var child in children) DumpTree(child, builder, depth + 1, maxDepth);
     }
 }

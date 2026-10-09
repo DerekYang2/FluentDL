@@ -34,13 +34,33 @@ internal sealed class DevApp : IDisposable
 
     public static string FindAumid()
     {
+        var package = FindPackage();
+        return $"{package.Id.FamilyName}!App";
+    }
+
+    private static Windows.ApplicationModel.Package FindPackage()
+    {
         var package = new PackageManager().FindPackagesForUser(string.Empty)
             .FirstOrDefault(p => p.Id.Name == PackageName);
         if (package == null)
         {
             Assert.Inconclusive($"{PackageName} is not installed. Run tools/ui-tests/Install-DevPackage.ps1 first.");
         }
-        return $"{package!.Id.FamilyName}!App";
+        return package!;
+    }
+
+    /// <summary>
+    /// Writes settings into the dev app's own settings store while it is closed, in the same format the app's
+    /// LocalSettingsService writes (each value JSON-serialized with Newtonsoft). Used to sign the dev app in to
+    /// Qobuz and Deezer, which search needs.
+    /// </summary>
+    public static void SeedSettings(IReadOnlyDictionary<string, string> settings)
+    {
+        var data = Windows.Management.Core.ApplicationDataManager.CreateForPackageFamily(FindPackage().Id.FamilyName);
+        foreach (var (key, value) in settings)
+        {
+            data.LocalSettings.Values[key] = Newtonsoft.Json.JsonConvert.SerializeObject(value);
+        }
     }
 
     /// <summary>Launches the dev app and waits for its main window. Startup can wait up to 30 s for the music services.</summary>

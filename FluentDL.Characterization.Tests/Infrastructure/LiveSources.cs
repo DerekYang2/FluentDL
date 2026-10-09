@@ -71,25 +71,64 @@ internal static class LiveSources
     /// <summary>
     /// Puts SpotifyApi in web player mode. In the app, SpotifyApi.Initialize gets these services from
     /// App.GetService, which needs the running WinUI app, so the test builds them and sets the same
-    /// private fields that the web player branch of Initialize sets.
+    /// private fields that the web player branch of Initialize sets. It also clears the official client, which the
+    /// app never sets in this mode (bug 9), in case an official-mode test ran first in the same process.
     /// </summary>
     public static async Task EnsureSpotifyWebPlayerAsync()
     {
-        await RunOnceAsync(() => spotifyTried, () => spotifyTried = true, async () =>
+        await Gate.WaitAsync();
+        try
         {
-            var tokens = new ClientTokenService(new HttpClient(), NullLogger<ClientTokenService>.Instance, new MemoryCache(new MemoryCacheOptions()));
-            var web = new SpotifyWebService(new HttpClient(), tokens, NullLogger<SpotifyWebService>.Instance);
-            var isrc = new SpotifyISRCService(new HttpClient(), tokens, NullLogger<SpotifyISRCService>.Instance);
+            if (!spotifyTried)
+            {
+                spotifyTried = true;
+                var tokens = new ClientTokenService(new HttpClient(), NullLogger<ClientTokenService>.Instance, new MemoryCache(new MemoryCacheOptions()));
+                spotifyWebService = new SpotifyWebService(new HttpClient(), tokens, NullLogger<SpotifyWebService>.Instance);
+                spotifyIsrcService = new SpotifyISRCService(new HttpClient(), tokens, NullLogger<SpotifyISRCService>.Instance);
+                spotifyWebAuthenticated = await spotifyWebService.IsAuthenticated(10000);
+            }
 
-            SetPrivateStatic("spotifyWebService", web);
-            SetPrivateStatic("spotifyISRCService", isrc);
-            SpotifyApi.IsInitialized = await web.IsAuthenticated(10000);
-        });
+            SetPrivateStatic("spotify", null);
+            SetPrivateStatic("spotifyUser", null);
+            SetPrivateStatic("spotifyWebService", spotifyWebService);
+            SetPrivateStatic("spotifyISRCService", spotifyIsrcService);
+            SpotifyApi.IsInitialized = spotifyWebAuthenticated;
+        }
+        finally
+        {
+            Gate.Release();
+        }
 
         if (!SpotifyApi.IsInitialized) Assert.Inconclusive("Spotify web player authentication failed.");
     }
 
-    private static void SetPrivateStatic(string name, object value)
+    /// <summary>
+    /// Puts SpotifyApi in official API mode with the client id and secret from the secrets file, through the same
+    /// SpotifyApi.Initialize call the app makes. Runs every time, because web player tests switch the mode back.
+    /// </summary>
+    public static async Task EnsureSpotifyOfficialAsync()
+    {
+        var clientId = Secrets.Require("spotify_client_id");
+        var clientSecret = Secrets.Require("spotify_client_secret");
+
+        await Gate.WaitAsync();
+        try
+        {
+            await SpotifyApi.Initialize(clientId, clientSecret);
+        }
+        finally
+        {
+            Gate.Release();
+        }
+
+        if (!SpotifyApi.IsInitialized) Assert.Inconclusive("Spotify did not sign in with the client id and secret from the secrets file.");
+    }
+
+    private static SpotifyWebService? spotifyWebService;
+    private static SpotifyISRCService? spotifyIsrcService;
+    private static bool spotifyWebAuthenticated;
+
+    private static void SetPrivateStatic(string name, object? value)
     {
         var field = typeof(SpotifyApi).GetField(name, BindingFlags.NonPublic | BindingFlags.Static)
             ?? throw new MissingFieldException(nameof(SpotifyApi), name);

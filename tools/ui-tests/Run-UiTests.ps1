@@ -24,7 +24,7 @@ function Invoke-UiTests([switch]$Record) {
     $env:FLUENTDL_UI_TESTS = '1'
     if ($Record) { $env:FLUENTDL_RECORD = '1' }
     try {
-        dotnet test $tests -p:Platform=x64 --nologo -v q --filter 'TestCategory=UI' --logger 'console;verbosity=normal'
+        dotnet test $tests -p:Platform=x64 --nologo -v q --filter 'TestCategory=UI' --logger 'console;verbosity=normal' | Out-Host
         return $LASTEXITCODE
     }
     finally {

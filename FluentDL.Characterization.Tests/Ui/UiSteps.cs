@@ -104,14 +104,32 @@ internal static class UiSteps
 
     public static void Invoke(AutomationElement element) => element.Patterns.Invoke.Pattern.Invoke();
 
-    /// <summary>Types into a text box through UI Automation, then presses Enter with the real keyboard to submit.</summary>
-    public static void TypeAndSubmit(DevApp dev, AutomationElement textBox, string text)
+    /// <summary>
+    /// Saves a screenshot of the app window and its UI Automation tree to %TEMP%\opencode, to see what the app showed
+    /// when a step failed.
+    /// </summary>
+    public static string SaveFailureEvidence(DevApp dev, string name)
     {
-        dev.MainWindow.SetForeground();
-        textBox.Focus();
-        textBox.AsTextBox().Text = text;
-        textBox.Focus();
-        Keyboard.Type(VirtualKeyShort.RETURN);
+        var dir = Path.Combine(Path.GetTempPath(), "opencode", "fluentdl-ui-failures");
+        Directory.CreateDirectory(dir);
+        var stamp = DateTime.Now.ToString("HHmmss");
+        try
+        {
+            FlaUI.Core.Capturing.Capture.Element(dev.MainWindow).ToFile(Path.Combine(dir, $"{stamp}-{name}.png"));
+        }
+        catch
+        {
+        }
+        try
+        {
+            var builder = new System.Text.StringBuilder();
+            UiProbe.DumpTree(dev.MainWindow, builder, 0, 30);
+            File.WriteAllText(Path.Combine(dir, $"{stamp}-{name}.txt"), builder.ToString());
+        }
+        catch
+        {
+        }
+        return dir;
     }
 
     /// <summary>Clicks a ContentDialog's close button ("Close" or "Cancel"); its AutomationId is CloseButton.</summary>

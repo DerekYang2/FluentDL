@@ -44,6 +44,17 @@ internal static class Live
         return new { Count = items.Count, RepeatsFirstPage = items.Any(i => firstIds.Contains(i.Id)), Error = error };
     }
 
+    /// <summary>
+    /// For a search that ignores its limit (bug 17: Spotify official search reads every page). Pins the first
+    /// <paramref name="requested"/> items exactly and whether more than that were loaded, but not the total, which
+    /// changes with the catalog.
+    /// </summary>
+    public static async Task<object?> CollectHead(Func<ObservableCollection<SongSearchObject>, Task> fill, int requested)
+    {
+        var (items, error) = await CollectItems(fill);
+        return new { Head = items.Take(requested).ToShapes(), LoadedMoreThanRequested = items.Count > requested, Error = error };
+    }
+
     /// <summary>For lists that grow over time, such as a label's newest albums: pins the count and the field layout only.</summary>
     public static async Task<object?> CollectShapeOnly(Func<ObservableCollection<SongSearchObject>, Task> fill)
     {
