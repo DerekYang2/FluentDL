@@ -5,7 +5,7 @@ using FluentDL.Models;
 
 namespace FluentDL.Services.Sources;
 
-internal sealed class DeezerSource : ISourceSession, ISearchSource, ILinkSource, IConversionTarget
+internal sealed class DeezerSource : ISourceSession, ISearchSource, ILinkSource, IConversionTarget, ICatalogSource
 {
     public SourceDescriptor Descriptor { get; } = SourceCatalog.Find(SourceIds.Deezer)!;
 
@@ -34,4 +34,24 @@ internal sealed class DeezerSource : ISourceSession, ISearchSource, ILinkSource,
 
     public Task<MatchResult> FindEquivalentAsync(SongSearchObject song, CancellationToken token) =>
         CallbackResults.Match(callback => DeezerApi.GetDeezerTrack(song, token, callback));
+
+    // Search results carry only part of each track, so every track is loaded again.
+    public async Task<List<SongSearchObject>> GetAlbumTracksAsync(AlbumSearchObject album)
+    {
+        List<SongSearchObject> albumTracks = [];
+        var fullAlbumObj = await DeezerApi.GetAlbum(album.Id);
+
+        if (fullAlbumObj != null)
+        {
+            foreach (var t in fullAlbumObj.TrackList ?? [])
+            {
+                var track = await DeezerApi.GetTrack(t.Id);
+                if (track != null)
+                {
+                    albumTracks.Add(track);
+                }
+            }
+        }
+        return albumTracks;
+    }
 }

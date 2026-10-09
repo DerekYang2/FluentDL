@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace FluentDL.Models
 {
-    class AlbumSearchObject : SongSearchObject
+    public class AlbumSearchObject : SongSearchObject
     {
         public int TracksCount { get; set; } = 0;
         public List<SongSearchObject>? TrackList { get; set; } = null;

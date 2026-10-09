@@ -4,7 +4,7 @@ using FluentDL.Models;
 
 namespace FluentDL.Services.Sources;
 
-internal sealed class SpotifySource : ISourceSession, ISearchSource, ILinkSource, IConversionTarget
+internal sealed class SpotifySource : ISourceSession, ISearchSource, ILinkSource, IConversionTarget, ICatalogSource
 {
     public SourceDescriptor Descriptor { get; } = SourceCatalog.Find(SourceIds.Spotify)!;
 
@@ -40,4 +40,19 @@ internal sealed class SpotifySource : ISourceSession, ISearchSource, ILinkSource
 
     public Task<MatchResult> FindEquivalentAsync(SongSearchObject song, CancellationToken token) =>
         CallbackResults.Match(callback => SpotifyApi.GetSpotifyTrack(song, token, callback));
+
+    // The album search result already lists its tracks; each one is loaded in full.
+    public async Task<List<SongSearchObject>> GetAlbumTracksAsync(AlbumSearchObject album)
+    {
+        List<SongSearchObject> albumTracks = [];
+        foreach (var t in album.TrackList ?? [])
+        {
+            var songObj = await SpotifyApi.GetTrack(t.Id);
+            if (songObj != null)
+            {
+                albumTracks.Add(songObj);
+            }
+        }
+        return albumTracks;
+    }
 }

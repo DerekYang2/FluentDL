@@ -5,7 +5,7 @@ using FluentDL.Models;
 namespace FluentDL.Services.Sources;
 
 /// <summary>YouTube needs no sign-in, so it has no session.</summary>
-internal sealed class YoutubeSource : ISearchSource, ILinkSource, IConversionTarget
+internal sealed class YoutubeSource : ISearchSource, ILinkSource, IConversionTarget, ICatalogSource
 {
     public SourceDescriptor Descriptor { get; } = SourceCatalog.Find(SourceIds.YouTube)!;
 
@@ -23,4 +23,7 @@ internal sealed class YoutubeSource : ISearchSource, ILinkSource, IConversionTar
 
     public Task<MatchResult> FindEquivalentAsync(SongSearchObject song, CancellationToken token) =>
         CallbackResults.Match(callback => YoutubeApi.GetYoutubeTrack(song, token, callback));
+
+    // YouTube album results already hold full tracks.
+    public Task<List<SongSearchObject>> GetAlbumTracksAsync(AlbumSearchObject album) => Task.FromResult(album.TrackList ?? []);
 }

@@ -2,9 +2,11 @@ using AngleSharp.Dom;
 using AngleSharp.Text;
 using FluentDL.Core.Sources;
 using FluentDL.Contracts.Services;
+using FluentDL.Contracts.Sources;
 using FluentDL.Helpers;
 using FluentDL.Models;
 using FluentDL.Services;
+using FluentDL.Services.Sources;
 using FluentDL.ViewModels;
 using Microsoft.UI.Dispatching;
 using Microsoft.UI.Text;
@@ -113,6 +115,12 @@ public sealed partial class Search : Page
     public static string SearchSourceToolTip(string displayName) => $"Get search results from {displayName}";
 
     private SourceDescriptor SelectedSearchSource => (SourceDescriptor)SourceRadioButtons.SelectedItem;
+
+    private readonly SourceRegistry sources = App.GetService<SourceRegistry>();
+
+    // An unknown id searches Deezer, as the old switch statements did.
+    private ISearchSource SearchSourceFor(string id) =>
+        sources.TryGet<ISearchSource>(id, out var source) ? source : sources.All<ISearchSource>().First(s => s.Descriptor.Id == SourceIds.Deezer);
 
     private static readonly SemaphoreSlim searchLock = new SemaphoreSlim(1, 1);
 
@@ -519,83 +527,20 @@ public sealed partial class Search : Page
 
                 if (currentSearchMode == SearchMode.Advanced)
                 {
-                    switch (generalSource)
-                    {
-                        case SourceIds.Spotify:
-                            await FluentDL.Services.SpotifyApi.AdvancedSearch(itemSource, advancedArtistName, advancedTrackName, advancedAlbumName, cancellationTokenSource.Token, searchOffset, searchLimit, clearResults: false);
-                            break;
-                        case SourceIds.Qobuz:
-                            await FluentDL.Services.QobuzApi.AdvancedSearch(itemSource, advancedArtistName, advancedTrackName, advancedAlbumName, cancellationTokenSource.Token, searchOffset, searchLimit, clearResults: false);
-                            break;
-                        case SourceIds.YouTube:
-                            await FluentDL.Services.YoutubeApi.AdvancedSearch(itemSource, advancedArtistName, advancedTrackName, advancedAlbumName, cancellationTokenSource.Token, searchOffset, searchLimit, clearResults: false);
-                            break;
-                        default:
-                            await FluentDL.Services.DeezerApi.AdvancedSearch(itemSource, advancedArtistName, advancedTrackName, advancedAlbumName, cancellationTokenSource.Token, searchOffset, searchLimit, clearResults: false);
-                            break;
-                    }
-
+                    var query = new AdvancedQuery(advancedArtistName, advancedTrackName, advancedAlbumName);
+                    await SearchSourceFor(generalSource).AdvancedSearchAsync(itemSource, query, new PageRequest(searchOffset, searchLimit), cancellationTokenSource.Token);
                     searchOffset += searchLimit;
                 }
-                else if (generalQuery.StartsWith("https://open.spotify.com/"))
+                else if (sources.FindLinkHandler(generalQuery) is { } linkSource)
                 {
-                    if (isInitial)
-                    {
-                        bool userLogin = await SettingsViewModel.GetSetting<bool>(SettingsViewModel.SpotifyPlaylistPrompt);
-                        await SpotifyApi.AddTracksFromLink(itemSource, generalQuery, cancellationTokenSource.Token, statusUpdate, userLogin, ViewModel.AlbumMode);
-                        searchOffset = itemSource.Count;
-
-                        /*
-                        var playlistId = generalQuery.Split("/").Last();
-                        //Spotify to deezer conversion
-                        await LoadSpotifyPlaylist(playlistId, cancellationTokenSource.Token);
-                        */
-                    }
-                }
-                else if (generalQuery.StartsWith("https://deezer.page.link/") || generalQuery.StartsWith("https://dzr.page.link/") || generalQuery.StartsWith("https://link.deezer.com/") || System.Text.RegularExpressions.Regex.IsMatch(generalQuery, @"https://www\.deezer\.com(/[^/]+)?/(track|album|playlist)/.*"))
-                {
-                    if (isInitial)
-                    {
-                        await DeezerApi.AddTracksFromLink(itemSource, generalQuery, cancellationTokenSource.Token, statusUpdate, ViewModel.AlbumMode);
-                        searchOffset = itemSource.Count;
-                    }
-                }
-                else if (generalQuery.StartsWith("https://www.qobuz.com/") || generalQuery.StartsWith("https://play.qobuz.com/") || generalQuery.StartsWith("https://open.qobuz.com/"))
-                {
-                    if (QobuzApi.IsLinkLabelOrArtist(generalQuery, out _, out _))
-                    {
-                        await QobuzApi.AddTracksFromLabelOrArtist(itemSource, generalQuery, cancellationTokenSource.Token, statusUpdate, searchOffset, searchLimit, ViewModel.AlbumMode);
-                    } else if (isInitial)
-                    {
-                        await QobuzApi.AddTracksFromLink(itemSource, generalQuery, cancellationTokenSource.Token, statusUpdate, ViewModel.AlbumMode);
-                    }
+                    // Most links load everything on the first page; Qobuz label and artist links load page by page.
+                    var request = new LinkRequest(isInitial, new PageRequest(searchOffset, searchLimit), ViewModel.AlbumMode);
+                    await linkSource.AddFromLinkAsync(itemSource, generalQuery, request, statusUpdate, cancellationTokenSource.Token);
                     searchOffset += searchLimit;
-                }
-                else if (generalQuery.StartsWith("https://www.youtube.com/") || generalQuery.StartsWith("https://youtube.com/") || generalQuery.StartsWith("https://music.youtube.com/"))
-                {
-                    if (isInitial)
-                    {
-                        await YoutubeApi.AddTracksFromLink(itemSource, generalQuery, cancellationTokenSource.Token, statusUpdate, ViewModel.AlbumMode);
-                        searchOffset = itemSource.Count;
-                    }
                 }
                 else
                 {
-                    switch (generalSource)
-                    {
-                        case SourceIds.Qobuz:
-                            await QobuzApi.GeneralSearch(itemSource, generalQuery, cancellationTokenSource.Token, searchOffset, searchLimit, ViewModel.AlbumMode);
-                            break;
-                        case SourceIds.Spotify:
-                            await SpotifyApi.GeneralSearch(itemSource, generalQuery, cancellationTokenSource.Token, searchOffset, searchLimit, ViewModel.AlbumMode);
-                            break;
-                        case SourceIds.YouTube:
-                            await YoutubeApi.GeneralSearch(itemSource, generalQuery, cancellationTokenSource.Token, searchOffset, searchLimit, ViewModel.AlbumMode);
-                            break;
-                        default:
-                            await DeezerApi.GeneralSearch(itemSource, generalQuery, cancellationTokenSource.Token, searchOffset, searchLimit, ViewModel.AlbumMode);
-                            break;
-                    }
+                    await SearchSourceFor(generalSource).SearchAsync(itemSource, generalQuery, new PageRequest(searchOffset, searchLimit), ViewModel.AlbumMode, cancellationTokenSource.Token);
                     searchOffset += searchLimit;
                 }
 
@@ -719,46 +664,7 @@ public sealed partial class Search : Page
             {
                 if (song is AlbumSearchObject album)
                 {
-                    List<SongSearchObject> albumTracks = [];
-
-                    if (album.Source == SourceIds.Qobuz)
-                    {
-                        var albumInternal = await QobuzApi.GetInternalAlbum(album.Id);
-                        albumInternal?.Tracks.Items.ForEach(t => t.Album = albumInternal);
-                        albumTracks = albumInternal?.Tracks.Items.Select(t => QobuzApi.ConvertSongSearchObject(t, albumInternal.Artist?.Name)).ToList() ?? [];
-                    }
-                    else if (album.Source == SourceIds.Deezer)
-                    {
-                        var fullAlbumObj = await DeezerApi.GetAlbum(album.Id);
-
-                        if (fullAlbumObj != null)
-                        {
-                            foreach (var t in fullAlbumObj.TrackList ?? [])
-                            {
-                                var track = await DeezerApi.GetTrack(t.Id);
-                                if (track != null)
-                                {
-                                    albumTracks.Add(track);
-                                }
-                            }
-                        }
-                    }
-                    else if (album.Source == SourceIds.Spotify)
-                    {
-                        foreach (var t in album.TrackList ?? [])
-                        {
-                            var songObj = await SpotifyApi.GetTrack(t.Id);
-                            if (songObj != null)
-                            {
-                                albumTracks.Add(songObj);
-                            }
-                        }
-                    }
-                    else if (album.Source == SourceIds.YouTube)
-                    {
-                        albumTracks = album.TrackList ?? [];
-                    }
-
+                    var albumTracks = await GetAlbumTracksAsync(album);
                     albumTracks.ForEach((song)=>QueueViewModel.Add(song));
                 }
                 else
@@ -911,6 +817,9 @@ public sealed partial class Search : Page
 
 
     // HELPER FUNCTIONS ----------------------------------------------------------------------------------------------------
+    private async Task<List<SongSearchObject>> GetAlbumTracksAsync(AlbumSearchObject album) =>
+        sources.TryGet<ICatalogSource>(album.Source, out var catalog) ? await catalog.GetAlbumTracksAsync(album) : [];
+
     private async Task AddSongToQueue(SongSearchObject? song)
     {
         if (song == null)
@@ -928,45 +837,7 @@ public sealed partial class Search : Page
 
             try
             {
-                List<SongSearchObject> albumTracks = [];
-
-                if (album.Source == SourceIds.Qobuz)
-                {
-                    var albumInternal = await QobuzApi.GetInternalAlbum(album.Id);
-                    albumInternal?.Tracks.Items.ForEach(t => t.Album = albumInternal);
-                    albumTracks = albumInternal?.Tracks.Items.Select(t => QobuzApi.ConvertSongSearchObject(t, albumInternal.Artist?.Name)).ToList() ?? [];
-                }
-                else if (album.Source == SourceIds.Deezer)
-                {
-                    var fullAlbumObj = await DeezerApi.GetAlbum(album.Id);
-
-                    if (fullAlbumObj != null)
-                    {
-                        foreach (var t in fullAlbumObj.TrackList ?? [])
-                        {
-                            var track = await DeezerApi.GetTrack(t.Id);
-                            if (track != null)
-                            {
-                                albumTracks.Add(track);
-                            }
-                        }
-                    }
-                }
-                else if (album.Source == SourceIds.Spotify)
-                {
-                    foreach (var t in album.TrackList ?? [])
-                    {
-                        var songObj = await SpotifyApi.GetTrack(t.Id);
-                        if (songObj != null)
-                        {
-                            albumTracks.Add(songObj);
-                        }
-                    }
-                }
-                else if (album.Source == SourceIds.YouTube)
-                {
-                    albumTracks = album?.TrackList ?? [];
-                }
+                var albumTracks = await GetAlbumTracksAsync(album);
 
                 albumTracks.ForEach((song) => QueueViewModel.Add(song));
 

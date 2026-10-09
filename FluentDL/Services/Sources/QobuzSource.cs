@@ -4,7 +4,7 @@ using FluentDL.Models;
 
 namespace FluentDL.Services.Sources;
 
-internal sealed class QobuzSource : ISourceSession, ISearchSource, ILinkSource, IConversionTarget
+internal sealed class QobuzSource : ISourceSession, ISearchSource, ILinkSource, IConversionTarget, ICatalogSource
 {
     public SourceDescriptor Descriptor { get; } = SourceCatalog.Find(SourceIds.Qobuz)!;
 
@@ -45,4 +45,11 @@ internal sealed class QobuzSource : ISourceSession, ISearchSource, ILinkSource, 
 
     public Task<MatchResult> FindEquivalentAsync(SongSearchObject song, CancellationToken token) =>
         CallbackResults.Match(callback => QobuzApi.GetQobuzTrack(song, token, callback));
+
+    public async Task<List<SongSearchObject>> GetAlbumTracksAsync(AlbumSearchObject album)
+    {
+        var albumInternal = await QobuzApi.GetInternalAlbum(album.Id);
+        albumInternal?.Tracks.Items.ForEach(t => t.Album = albumInternal);
+        return albumInternal?.Tracks.Items.Select(t => QobuzApi.ConvertSongSearchObject(t, albumInternal.Artist?.Name)).ToList() ?? [];
+    }
 }

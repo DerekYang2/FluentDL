@@ -49,6 +49,13 @@ public interface IConversionTarget : ISource
     Task<MatchResult> FindEquivalentAsync(SongSearchObject song, CancellationToken token);
 }
 
+/// <summary>Looking up full items by id.</summary>
+public interface ICatalogSource : ISource
+{
+    /// <summary>The full tracks of an album search result, as the queue needs them. Tracks that fail to load are left out.</summary>
+    Task<List<SongSearchObject>> GetAlbumTracksAsync(AlbumSearchObject album);
+}
+
 public sealed record PageRequest(int Offset, int Limit);
 
 public sealed record AdvancedQuery(string Artist, string Track, string Album);
