@@ -1,0 +1,55 @@
+FFmpeg 9.0.2, audio-only LGPL build for Windows arm64
+
+Libraries: Fraunhofer FDK AAC 2.0.3, LAME 3.100, Opus 1.5.2, libogg 1.3.6, libvorbis 1.3.7, zlib 1.3.2
+FFmpeg source: https://ffmpeg.org/releases/ffmpeg-9.0.2.tar.xz
+FDK AAC source: https://downloads.sourceforge.net/opencore-amr/fdk-aac-2.0.3.tar.gz
+Build scripts: https://github.com/DerekYang2/ffmpeg-audio
+
+Configuration:
+--prefix=/tmp/build/arm64/prefix
+--arch=aarch64
+--target-os=mingw32
+--enable-cross-compile
+--cc=aarch64-w64-mingw32-clang
+--cxx=aarch64-w64-mingw32-clang++
+--ar=llvm-ar
+--ranlib=llvm-ranlib
+--nm=llvm-nm
+--strip=llvm-strip
+--windres=aarch64-w64-mingw32-windres
+--pkg-config=pkg-config
+--pkg-config-flags=--static
+--extra-cflags=-I/tmp/build/arm64/prefix/include
+--extra-ldflags='-L/tmp/build/arm64/prefix/lib
+-static'
+--extra-version=audio
+--disable-everything
+--disable-autodetect
+--disable-network
+--disable-doc
+--disable-debug
+--disable-ffplay
+--disable-ffprobe
+--disable-shared
+--enable-static
+--enable-w32threads
+--enable-zlib
+--enable-libmp3lame
+--enable-libopus
+--enable-libvorbis
+--enable-libfdk-aac
+--enable-protocol='file,pipe'
+--enable-filter='aformat,format,aresample,anull,null,acopy,copy,atrim,trim,asetpts,setpts,scale'
+--enable-demuxer='aa,aac,ac3,aiff,ape,asf,caf,dsf,dts,dtshd,eac3,flac,iff,loas,matroska,mlp,mov,mp3,mpc,mpc8,ogg,tak,truehd,tta,vqf,w64,wav,wv,xwma'
+--enable-decoder='aac,aac_latm,ac3,alac,ape,dca,dsd_lsbf,dsd_lsbf_planar,dsd_msbf,dsd_msbf_planar,eac3,flac,mlp,truehd'
+--enable-decoder='mp1,mp1float,mp2,mp2float,mp3,mp3float,mpc7,mpc8,opus,vorbis,tak,tta,twinvq,wavpack'
+--enable-decoder='wmalossless,wmapro,wmav1,wmav2,wmavoice,sipr,adpcm_ima_wav,adpcm_ms,pcm_*'
+--enable-decoder='mjpeg,png,bmp'
+--enable-parser='aac,aac_latm,ac3,dca,flac,mlp,mpegaudio,opus,vorbis,tak,mjpeg,png'
+--enable-bsf='aac_adtstoasc,null'
+--enable-encoder='flac,alac,aac,libfdk_aac,libmp3lame,libvorbis,libopus,pcm_s16le,pcm_s24le,pcm_s32le,pcm_f32le,png'
+--enable-muxer='flac,mp3,ipod,mp4,mov,ogg,opus,wav,w64,matroska,matroska_audio,webm,adts,null'
+--enable-filter='pan,showspectrumpic'
+--enable-muxer='pcm_f32le,image2,image2pipe'
+--enable-indev=lavfi
+--enable-filter='aevalsrc,sine,anoisesrc,anullsrc,amerge,amix,volume'

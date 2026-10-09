@@ -18,7 +18,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # windows-11-arm runs the tests natively on Arm64, with the bundled x64 ffmpeg.exe under emulation.
+        # windows-11-arm runs the tests natively on Arm64, with the bundled Arm64 ffmpeg.exe.
         runner: [windows-latest, windows-11-arm]
     runs-on: ${{ matrix.runner }}
     steps:
@@ -39,6 +39,8 @@ jobs:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
+      # The architecture check below reads the real ffmpeg.exe, not its LFS pointer.
+      - uses: ./.github/actions/lfs-pull
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: 10.0.x
@@ -46,13 +48,12 @@ jobs:
         run: dotnet build FluentDL/FluentDL.csproj -c Release -p:Platform=${{ matrix.platform }} -p:GenerateAppxPackageOnBuild=false
       - name: Check that the native binaries match the platform
         shell: pwsh
-        # ffmpeg.exe is x64 in every build for now. The WebView2 package copies its x86 Core component into both
-        # builds; the app doesn't load it.
+        # The WebView2 package copies its x86 Core component into both builds; the app doesn't load it.
         run: >
           ./.github/scripts/Test-NativeArchitecture.ps1
           -Folder FluentDL/bin/${{ matrix.platform }}/Release/net10.0-windows10.0.22621.0/win-${{ matrix.platform }}
           -Architecture ${{ matrix.platform }}
-          -Allow 'Assets\ffmpeg\bin\ffmpeg.exe', 'Microsoft.Web.WebView2.Core.dll'
+          -Allow 'Microsoft.Web.WebView2.Core.dll'
 
   package:
     name: Sideload package (${{ matrix.architecture }})
