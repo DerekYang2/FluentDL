@@ -6,7 +6,9 @@ using System.Globalization;
 using System.Text.RegularExpressions;
 using Windows.Storage.Pickers;
 using FluentDL.Core.Sources;
+using FluentDL.Contracts.Sources;
 using FluentDL.Services;
+using FluentDL.Services.Sources;
 using FluentDL.ViewModels;
 using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
@@ -48,6 +50,7 @@ public sealed partial class QueuePage : Page
     private DispatcherQueue dispatcherQueue;
     private DispatcherTimer dispatcherTimer;
     private CancellationTokenSource cancellationTokenSource;
+    private readonly SourceRegistry sources = App.GetService<SourceRegistry>();
 
     // Conversion variables
     private ConcurrentDictionary<SongSearchObject, int> successSource, warningSource, errorSource;
@@ -1097,14 +1100,21 @@ public sealed partial class QueuePage : Page
                         }
                         else
                         {
-                            newSongObj = outputSource switch
+                            var target = sources.TryGet<IConversionTarget>(outputSource, out var found) ? found : throw new Exception("Unspecified output source"); // Should never happen
+                            var match = await target.FindEquivalentAsync(song, token);
+                            switch (match.Kind)
                             {
-                                SourceIds.Deezer => await DeezerApi.GetDeezerTrack(song, token, conversionUpdateCallback),
-                                SourceIds.Qobuz => await QobuzApi.GetQobuzTrack(song, token, conversionUpdateCallback),
-                                SourceIds.Spotify => await SpotifyApi.GetSpotifyTrack(song, token, conversionUpdateCallback),
-                                SourceIds.YouTube => await YoutubeApi.GetYoutubeTrack(song, token, conversionUpdateCallback),
-                                _ => throw new Exception("Unspecified output source") // Should never happen
-                            };
+                                case MatchKind.Exact:
+                                    conversionUpdateCallback(StatusLevel.Success, match.Track!);
+                                    break;
+                                case MatchKind.Close:
+                                    conversionUpdateCallback(StatusLevel.Warning, match.Track!);
+                                    break;
+                                case MatchKind.NotFound:
+                                    conversionUpdateCallback(StatusLevel.Error, song);
+                                    break;
+                            }
+                            newSongObj = match.Track;
                         }
 
                         var tcs = new TaskCompletionSource();
