@@ -1,13 +1,9 @@
-using CommunityToolkit.WinUI.UI.Animations;
 using DeezNET;
 using DeezNET.Data;
 using FluentDL.Core.Sources;
 using FluentDL.Core.Matching;
 using FluentDL.Helpers;
 using FluentDL.Models;
-using FluentDL.ViewModels;
-using FluentDL.Views;
-using Microsoft.UI.Xaml.Controls;
 using RestSharp;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
@@ -15,8 +11,6 @@ using System.Globalization;
 using System.Net;
 using System.Text.Json;
 using System.Text.RegularExpressions;
-using Windows.Devices.PointOfService;
-using Windows.Media.Streaming.Adaptive;
 
 namespace FluentDL.Services;
 
@@ -58,13 +52,13 @@ internal class DeezerApi
 
                     if (soundQualityOptions?.Value<bool>("lossless") ?? false)
                     {
-                        authCallback?.Invoke(InfoBarSeverity.Success, "Log in success: premium account");
+                        authCallback?.Invoke(StatusLevel.Success, "Log in success: premium account");
                         loginString += "\nLossless supported";
                         IsPremium = true;
                     }
                     else
                     {
-                        authCallback?.Invoke(InfoBarSeverity.Success, "Log in success: free account");
+                        authCallback?.Invoke(StatusLevel.Success, "Log in success: free account");
                         loginString += "\nOnly 128 kbps MP3 supported";
                         IsPremium = false;
                     }
@@ -72,13 +66,13 @@ internal class DeezerApi
                 }
                 else
                 {
-                    authCallback?.Invoke(InfoBarSeverity.Error, "Log in failure: ARL invalid");
+                    authCallback?.Invoke(StatusLevel.Error, "Log in failure: ARL invalid");
                 }
             }
             catch (Exception e)
             {
                 Debug.WriteLine(e);
-                authCallback?.Invoke(InfoBarSeverity.Error, "Log in failure: " +  e.Message);
+                authCallback?.Invoke(StatusLevel.Error, "Log in failure: " +  e.Message);
             }
         }
     }
@@ -88,14 +82,14 @@ internal class DeezerApi
         return loginString;
     }
 
-    public static async Task AddTracksFromLink(ObservableCollection<SongSearchObject> list, string url, CancellationToken token, Search.UrlStatusUpdateCallback? statusUpdate, bool albumMode = false)
+    public static async Task AddTracksFromLink(ICollection<SongSearchObject> list, string url, CancellationToken token, UrlStatusUpdateCallback? statusUpdate, bool albumMode = false)
     {
         if (url.StartsWith("https://deezer.page.link/") || url.StartsWith("https://dzr.page.link/") || url.StartsWith("https://link.deezer.com/"))
         {
             url = (await ApiHelper.GetRedirectedUrlAsync(new Uri(url)))?.AbsoluteUri ?? "";
             if (string.IsNullOrEmpty(url))
             {
-                statusUpdate?.Invoke(InfoBarSeverity.Error, "Invalid Deezer URL");
+                statusUpdate?.Invoke(StatusLevel.Error, "Invalid Deezer URL");
                 return;
             }
         }
@@ -119,7 +113,7 @@ internal class DeezerApi
             {
                 list.Add(songObj);
                 // Send message to infobar
-                statusUpdate?.Invoke(InfoBarSeverity.Success, $"<b>Deezer</b>   Loaded track <a href='{url}'>{songObj.Title}</a>");
+                statusUpdate?.Invoke(StatusLevel.Success, $"<b>Deezer</b>   Loaded track <a href='{url}'>{songObj.Title}</a>");
             }
         }
 
@@ -143,7 +137,7 @@ internal class DeezerApi
                 if (albumObj != null)
                 {
                     list.Add(albumObj);
-                    statusUpdate?.Invoke(InfoBarSeverity.Success, $"<b>Deezer</b>   Loaded album <a href='{url}'>{albumObj.Title}</a>");
+                    statusUpdate?.Invoke(StatusLevel.Success, $"<b>Deezer</b>   Loaded album <a href='{url}'>{albumObj.Title}</a>");
                 }
             } else if (DeezerURL.TryParse(url, out var urlData))
             {
@@ -151,13 +145,13 @@ internal class DeezerApi
 
                 // Send message to infobar
                 var listName = await urlData.GetTitle(deezerClient);
-                statusUpdate?.Invoke(InfoBarSeverity.Informational, $"<b>Deezer</b>   Loading {(url.Contains("/album/") ? "album" : "playlist")} <a href='{url}'>{listName}</a>", -1);
+                statusUpdate?.Invoke(StatusLevel.Informational, $"<b>Deezer</b>   Loading {(url.Contains("/album/") ? "album" : "playlist")} <a href='{url}'>{listName}</a>", -1);
 
                 foreach (var trackId in tracksInAlbum)
                 {
                     if (token.IsCancellationRequested) // Stop the search
                     {
-                        statusUpdate?.Invoke(InfoBarSeverity.Warning, $"<b>Deezer</b>   Cancelled loading {(url.Contains("/album/") ? "album" : "playlist")} <a href='{url}'>{listName}</a>");
+                        statusUpdate?.Invoke(StatusLevel.Warning, $"<b>Deezer</b>   Cancelled loading {(url.Contains("/album/") ? "album" : "playlist")} <a href='{url}'>{listName}</a>");
                         return;
                     }
 
@@ -168,7 +162,7 @@ internal class DeezerApi
                     }
                 }
 
-                statusUpdate?.Invoke(InfoBarSeverity.Success, $"<b>Deezer</b>   Loaded {(url.Contains("/album/") ? "album" : "playlist")} <a href='{url}'>{listName}</a>");
+                statusUpdate?.Invoke(StatusLevel.Success, $"<b>Deezer</b>   Loaded {(url.Contains("/album/") ? "album" : "playlist")} <a href='{url}'>{listName}</a>");
             }
         }
     }
@@ -178,7 +172,7 @@ internal class DeezerApi
 
     public static string PruneTitleSearch(string title) => TitleNormalizer.ForSearchQuery(title);
 
-    public static async Task GeneralSearch(ObservableCollection<SongSearchObject> itemSource, string query, CancellationToken token, int offset = 0, int limit = 25, bool albumMode = false)
+    public static async Task GeneralSearch(ICollection<SongSearchObject> itemSource, string query, CancellationToken token, int offset = 0, int limit = 25, bool albumMode = false)
     {
         query = query.Trim(); // Trim the query
         if (string.IsNullOrWhiteSpace(query))
@@ -281,14 +275,14 @@ internal class DeezerApi
 
             if (songObj != null)
             {
-                callback?.Invoke(InfoBarSeverity.Success, songObj);
+                callback?.Invoke(StatusLevel.Success, songObj);
                 return songObj;
             }
         }
 
         if (onlyISRC) // If only ISRC search
         {
-            callback?.Invoke(InfoBarSeverity.Error, song);
+            callback?.Invoke(StatusLevel.Error, song);
             return null;
         }
 
@@ -298,7 +292,7 @@ internal class DeezerApi
 
         if (artists.Count == 0 && trackName.Length == 0 && albumName.Length == 0) // If no search query
         {
-            callback?.Invoke(InfoBarSeverity.Error, song);
+            callback?.Invoke(StatusLevel.Error, song);
             return null;
         }
 
@@ -388,7 +382,7 @@ internal class DeezerApi
                     var fullTrack = await GetTrack(songObj.Id);
                     if (fullTrack != null)
                     {
-                        callback?.Invoke(InfoBarSeverity.Warning, fullTrack);
+                        callback?.Invoke(StatusLevel.Warning, fullTrack);
                         return fullTrack;
                     }
                 }
@@ -407,7 +401,7 @@ internal class DeezerApi
             var fullTrack = await GetTrack(closeMatchObj.Id);
             if (fullTrack != null) // If the track was found
             {
-                callback?.Invoke(InfoBarSeverity.Warning, fullTrack);
+                callback?.Invoke(StatusLevel.Warning, fullTrack);
                 return fullTrack;
             }
         }
@@ -441,16 +435,16 @@ internal class DeezerApi
             var fullTrack = await GetTrack(closeMatchObj.Id);
             if (fullTrack != null) // If the track was found
             {
-                callback?.Invoke(InfoBarSeverity.Warning, fullTrack);
+                callback?.Invoke(StatusLevel.Warning, fullTrack);
                 return fullTrack;
             }
         }
 
-        callback?.Invoke(InfoBarSeverity.Error, song); // No match found
+        callback?.Invoke(StatusLevel.Error, song); // No match found
         return null;
     }
 
-    public static async Task AdvancedSearch(ObservableCollection<SongSearchObject> itemSource, string artistName, string trackName, string albumName, CancellationToken token, int offset = 0, int limit = 25, bool clearResults = true)
+    public static async Task AdvancedSearch(ICollection<SongSearchObject> itemSource, string artistName, string trackName, string albumName, CancellationToken token, int offset = 0, int limit = 25, bool clearResults = true)
     {
         // Trim
         artistName = artistName.Trim();
@@ -699,7 +693,7 @@ internal class DeezerApi
         if (bitrateEnum == null)
         {
             // Get quality based on setting
-            var settingIdx = await SettingsViewModel.GetSetting<int?>(SettingsViewModel.DeezerQuality) ?? 0;
+            var settingIdx = await SourceServices.Settings.ReadSettingAsync<int?>(SettingKeys.DeezerQuality) ?? 0;
             bitrateEnum = settingIdx switch
             {
                 0 => DeezNET.Data.Bitrate.MP3_128,
@@ -723,7 +717,7 @@ internal class DeezerApi
             _ => throw new ArgumentOutOfRangeException("Invalid bitrate enum")
         };
 
-        if (File.Exists(filePath) && await SettingsViewModel.GetSetting<bool>(SettingsViewModel.Overwrite) == false)
+        if (File.Exists(filePath) && await SourceServices.Settings.ReadSettingAsync<bool>(SettingKeys.Overwrite) == false)
         {
             throw new Exception("File already exists");
         }
@@ -741,7 +735,7 @@ internal class DeezerApi
             }
         } catch (Exception e)
         {
-            if (!use128Fallback || (!FFmpegRunner.IsInitialized && bitrateEnum == DeezNET.Data.Bitrate.FLAC))  // Rethrow if not using fallback
+            if (!use128Fallback || (!SourceServices.AudioConverter.IsInitialized && bitrateEnum == DeezNET.Data.Bitrate.FLAC))  // Rethrow if not using fallback
             {
                 throw;
             }
@@ -773,7 +767,7 @@ internal class DeezerApi
         {
             try
             {
-                await FFmpegRunner.ConvertToFlacAsync(filePath, 44100);
+                await SourceServices.AudioConverter.ConvertToFlacAsync(filePath, 44100);
             } catch (Exception e)
             {
                 throw new Exception("Failed to convert to FLAC: " + e.Message);

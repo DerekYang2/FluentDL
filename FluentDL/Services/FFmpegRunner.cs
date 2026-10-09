@@ -1,6 +1,7 @@
 ﻿using FFMpegCore;
 using FFMpegCore.Enums;
 using FFMpegCore.Pipes;
+using FluentDL.Core.Sources;
 using FluentDL.Helpers;
 using FluentDL.ViewModels;
 using Microsoft.UI.Dispatching;
@@ -18,9 +19,15 @@ using Serilog;
 
 namespace FluentDL.Services;
 
-internal class FFmpegRunner
+internal class FFmpegRunner : IAudioConverter
 {
     public static bool IsInitialized = false;
+
+    bool IAudioConverter.IsInitialized => IsInitialized;
+
+    Task IAudioConverter.ConvertToFlacAsync(string initialPath, int samplingRate) => ConvertToFlacAsync(initialPath, samplingRate);
+
+    Task<string?> IAudioConverter.CreateMp3Async(string initialPath, string? outputDirectory) => CreateMp3Async(initialPath, outputDirectory);
 
     private static int NormalizeSpectrogramHeight(int height)
     {

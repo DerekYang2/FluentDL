@@ -90,8 +90,6 @@ public sealed partial class Search : Page
         Advanced
     }
 
-    public delegate void UrlStatusUpdateCallback(InfoBarSeverity severity, string message, int duration = 2); // Callback for url status update (for infobars)
-
     private ObservableCollection<SongSearchObject> originalList;
     private static bool updateCheckDone;
     private CancellationTokenSource cancellationTokenSource;
@@ -499,17 +497,17 @@ public sealed partial class Search : Page
                 // Format of links https://open.spotify.com/playlist/{id}?
                 // OR https://open.spotify.com/playlist/{id}?...
 
-                UrlStatusUpdateCallback statusUpdate = (severity, message, duration) =>
+                UrlStatusUpdateCallback statusUpdate = (level, message, duration) =>
                 {
                     if (duration == -1)
                     {
-                        ShowInfoBarPermanent(severity, message);
+                        ShowInfoBarPermanent(level.ToSeverity(), message);
                         InfobarProgress.Visibility = Visibility.Visible;
                     }
                     else
                     {
                         InfobarProgress.Visibility = Visibility.Collapsed;
-                        ShowInfoBar(severity, message, duration);
+                        ShowInfoBar(level.ToSeverity(), message, duration);
                     }
                 };
 
@@ -1149,17 +1147,17 @@ public sealed partial class Search : Page
                         navService.NavigateTo(typeof(LocalExplorerViewModel).FullName);
                     };
 
-                    if (severity == InfoBarSeverity.Error)
+                    if (severity == StatusLevel.Error)
                     {
-                        ShowInfoBar(severity, $"Error: {location ?? "unspecified"}", 5);
+                        ShowInfoBar(severity.ToSeverity(), $"Error: {location ?? "unspecified"}", 5);
                     }
-                    else if (severity == InfoBarSeverity.Success)
+                    else if (severity == StatusLevel.Success)
                     {
-                        ShowInfoBar(severity, $"Successfully downloaded <a href='{location}'>{songObj.Title}</a>", 10, buttonText: "View Download", onButtonClick: navigateLocalExplorer);
+                        ShowInfoBar(severity.ToSeverity(), $"Successfully downloaded <a href='{location}'>{songObj.Title}</a>", 10, buttonText: "View Download", onButtonClick: navigateLocalExplorer);
                     }
-                    else if (severity == InfoBarSeverity.Warning)
+                    else if (severity == StatusLevel.Warning)
                     {
-                        ShowInfoBar(severity, $"Downloaded a possible equivalent of <a href='{location}'>{songObj.Title}</a>", 10, buttonText: "View Download", onButtonClick: navigateLocalExplorer);
+                        ShowInfoBar(severity.ToSeverity(), $"Downloaded a possible equivalent of <a href='{location}'>{songObj.Title}</a>", 10, buttonText: "View Download", onButtonClick: navigateLocalExplorer);
                     }
                 });
             });

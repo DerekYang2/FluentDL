@@ -1,7 +1,6 @@
 using System.Collections.ObjectModel;
+using FluentDL.Core.Sources;
 using FluentDL.Models;
-using FluentDL.Views;
-using Microsoft.UI.Xaml.Controls;
 
 namespace FluentDL.Characterization.Tests.Infrastructure;
 
@@ -92,22 +91,22 @@ internal static class Live
     public sealed class StatusLog
     {
         public List<Reported> Messages { get; } = [];
-        public Search.UrlStatusUpdateCallback Callback => (severity, message, _) => Messages.Add(new(SeverityName(severity), message));
+        public UrlStatusUpdateCallback Callback => (level, message, _) => Messages.Add(new(SeverityName(level), message));
     }
 
     /// <summary>Records the badges a conversion reports to the Queue page.</summary>
     public sealed class ConversionLog
     {
         public List<object> Calls { get; } = [];
-        public ConversionUpdateCallback Callback => (severity, song, location) => Calls.Add(new { Severity = SeverityName(severity), Song = song.ToShape(), Location = location });
+        public ConversionUpdateCallback Callback => (level, song, location) => Calls.Add(new { Severity = SeverityName(level), Song = song.ToShape(), Location = location });
     }
 
-    public static string SeverityName(InfoBarSeverity severity) => severity switch
+    public static string SeverityName(StatusLevel level) => level switch
     {
-        InfoBarSeverity.Informational => "Informational",
-        InfoBarSeverity.Success => "Success",
-        InfoBarSeverity.Warning => "Warning",
-        InfoBarSeverity.Error => "Error",
-        _ => ((int)severity).ToString(),
+        StatusLevel.Informational => "Informational",
+        StatusLevel.Success => "Success",
+        StatusLevel.Warning => "Warning",
+        StatusLevel.Error => "Error",
+        _ => ((int)level).ToString(),
     };
 }

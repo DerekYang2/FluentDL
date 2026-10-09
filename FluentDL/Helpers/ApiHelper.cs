@@ -17,51 +17,6 @@ using BitmapImage = Microsoft.UI.Xaml.Media.Imaging.BitmapImage;
 
 namespace FluentDL.Helpers;
 
-internal struct ProgressData
-{
-    public long uniqueId;
-    public long? totalBytes;
-    public long? currentBytes;
-    public readonly double? percent
-    {
-        get
-        {
-            if (totalBytes != null && currentBytes != null)
-            {
-                return (double)currentBytes / totalBytes;
-            }
-            return null;
-        }
-    }
-    public double? bps;
-
-    public readonly double PercentRounded()
-    {
-        if (percent == null)
-            return 0;
-        return Math.Round((double)percent * 100d);
-    }
-
-    public readonly double TotalMB()
-    {
-        if (totalBytes == null)
-            return 0;
-        return Math.Round((double)totalBytes / 1024d / 1024d, 1);
-    } 
-    public readonly double CurrentMB()
-    {
-        if (currentBytes == null)
-            return 0;
-        return Math.Round((double)currentBytes / 1024d / 1024d, 1);
-    }
-    public readonly double MBPS()
-    {
-        if (bps == null)
-            return 0;
-        return Math.Round((double)bps / 1024d / 1024d, 1);
-    }
-}
-
 internal class ApiHelper
 {   
     private static HttpClient client = new HttpClient();
@@ -417,7 +372,7 @@ internal class ApiHelper
 
                         await YoutubeApi.UpdateMetadata(m4aLocation, song.Id);
                         downloadTcs.SetResult(true);
-                        callback?.Invoke(InfoBarSeverity.Success, song, m4aLocation);
+                        callback?.Invoke(StatusLevel.Success, song, m4aLocation);
                         return m4aLocation;
                     }
                     finally
@@ -465,7 +420,7 @@ internal class ApiHelper
                     // Finalize Metadata and Return
                     await YoutubeApi.UpdateMetadata(finalLocation, song.Id);
                     downloadTcs.SetResult(true);
-                    callback?.Invoke(InfoBarSeverity.Success, song, finalLocation);
+                    callback?.Invoke(StatusLevel.Success, song, finalLocation);
                     return finalLocation;
                 }
                 finally
@@ -479,7 +434,7 @@ internal class ApiHelper
             }
             catch (Exception e)
             {
-                callback?.Invoke(InfoBarSeverity.Error, song, e.Message);
+                callback?.Invoke(StatusLevel.Error, song, e.Message);
                 Log.Error(e, "YouTube download or post-processing failed");
             }
         }
@@ -491,12 +446,12 @@ internal class ApiHelper
                 var resultPath = await DeezerApi.DownloadTrack(locationNoExt, song, use128Fallback: true, progress: progress);
                 await DeezerApi.UpdateMetadata(resultPath, song.Id);
                 downloadTcs.SetResult(true);
-                callback?.Invoke(InfoBarSeverity.Success, song, resultPath); // Assume success
+                callback?.Invoke(StatusLevel.Success, song, resultPath); // Assume success
                 return resultPath;
             }
             catch (Exception e)
             {
-                callback?.Invoke(InfoBarSeverity.Error, song, e.Message);
+                callback?.Invoke(StatusLevel.Error, song, e.Message);
                 Log.Error(e, "Deezer download or post-processing failed");
             }
         }
@@ -508,12 +463,12 @@ internal class ApiHelper
                 var resultPath = await QobuzApi.DownloadTrack(locationNoExt, song, progress);
                 await QobuzApi.UpdateMetadata(resultPath, song.Id);
                 downloadTcs.SetResult(true);
-                callback?.Invoke(InfoBarSeverity.Success, song, resultPath); // Assume success
+                callback?.Invoke(StatusLevel.Success, song, resultPath); // Assume success
                 return resultPath;
             }
             catch (Exception e)
             {
-                callback?.Invoke(InfoBarSeverity.Error, song, e.Message);
+                callback?.Invoke(StatusLevel.Error, song, e.Message);
                 Log.Error(e, "Qobuz download or post-processing failed");
             }
         }
@@ -531,12 +486,12 @@ internal class ApiHelper
                     return resultPath;
                 }
 
-                callback?.Invoke(InfoBarSeverity.Error, song); // Null - error
+                callback?.Invoke(StatusLevel.Error, song); // Null - error
                 Log.Error("Spotify equivalent-track download returned no result");
             } catch (Exception e) 
             {
                 Log.Error(e, "Spotify equivalent-track download or post-processing failed");
-                callback?.Invoke(InfoBarSeverity.Error, song, e.Message);
+                callback?.Invoke(StatusLevel.Error, song, e.Message);
             }
         }
 
@@ -663,7 +618,7 @@ internal class ApiHelper
         bool allSuccess = true;
         ConversionUpdateCallback conversionCallback = (severity, song, location) =>
         {
-            if (severity != InfoBarSeverity.Success)
+            if (severity != StatusLevel.Success)
             {
                 allSuccess = false;
             }

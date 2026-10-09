@@ -2,9 +2,6 @@ using FluentDL.Core.Sources;
 using FluentDL.Helpers;
 using FluentDL.Models;
 using FluentDL.Services.CustomSpotify;
-using FluentDL.ViewModels;
-using FluentDL.Views;
-using Microsoft.UI.Xaml.Controls;
 using SpotifyAPI.Web;
 using SpotifyAPI.Web.Auth;
 using System.Collections.ObjectModel;
@@ -47,7 +44,7 @@ namespace FluentDL.Services
             return _redirect;
         }
 
-        public static async Task Initialize(string? clientId, string? clientSecret,  Action<InfoBarSeverity, string>? authCallback = null)
+        public static async Task Initialize(string? clientId, string? clientSecret,  AuthenticationCallback? authCallback = null)
         {
             await _lock.WaitAsync();
             try 
@@ -75,7 +72,7 @@ namespace FluentDL.Services
                             IsInitialized = true;
                             spotifyWebService = null;
                             spotifyISRCService = null;
-                            authCallback?.Invoke(InfoBarSeverity.Success, "Using official Spotify API");
+                            authCallback?.Invoke(StatusLevel.Success, "Using official Spotify API");
                             loginString = $"Using official API developer app:\nClient ID: {clientId}";
                             return;
                         }
@@ -93,7 +90,7 @@ namespace FluentDL.Services
                 if (await spotifyWebService.IsAuthenticated(10000))
                 {
                     IsInitialized = true;
-                    authCallback?.Invoke(InfoBarSeverity.Success, "Logged in with Spotify Web Player");
+                    authCallback?.Invoke(StatusLevel.Success, "Logged in with Spotify Web Player");
                     loginString = $"Logged into Spotify Web Player (anonymous)";
                     return;
                 }
@@ -137,11 +134,11 @@ namespace FluentDL.Services
                 //                    IsInitialized = true;
                 //                    if (attemptedCustomIdSecret)
                 //                    {
-                //                        authCallback?.Invoke(InfoBarSeverity.Warning, "User credentials failed — using included instead");
+                //                        authCallback?.Invoke(StatusLevel.Warning, "User credentials failed — using included instead");
                 //                    }
                 //                    else
                 //                    {
-                //                        authCallback?.Invoke(InfoBarSeverity.Success, "Logged in with included credentials");
+                //                        authCallback?.Invoke(StatusLevel.Success, "Logged in with included credentials");
                 //                    }
                 //                    loginString = $"Logged in with included (FluentDL) credentials:\nSelected Client ID: {id[..5] + "..."}";
                 //                    return;
@@ -156,15 +153,15 @@ namespace FluentDL.Services
                 //catch (Exception e)
                 //{
                 //    Debug.WriteLine("Failed to initialize Spotify API: " + e.Message);
-                //    authCallback?.Invoke(InfoBarSeverity.Error, "Failed to initialize: " + e.Message);
+                //    authCallback?.Invoke(StatusLevel.Error, "Failed to initialize: " + e.Message);
                 //}
                 //if (!IsInitialized)
                 //{
-                //    authCallback?.Invoke(InfoBarSeverity.Error, "All credential options failed");
+                //    authCallback?.Invoke(StatusLevel.Error, "All credential options failed");
                 //}
             } catch (Exception ex)
             {
-                authCallback?.Invoke(InfoBarSeverity.Error, "Failed to log into Spotify: " + ex.Message);
+                authCallback?.Invoke(StatusLevel.Error, "Failed to log into Spotify: " + ex.Message);
             } finally
             {
                 _lock.Release();
@@ -261,7 +258,7 @@ namespace FluentDL.Services
 
         // For whatever reason, a request like below throws bad request error
         // REQUEST: artist:"The Beep Test" track:"The Beep Test: 20 Metre (Complete Test)" album:"The Beep Test: The Best 20 Metre and 15 Metre Bleep Test for Personal Fitness & Recruitment Practice to the Police, RAF, Army, Fire Brigade, Royal Air Force, Royal Navy and the Emergency Services"
-        public static async Task AdvancedSearch(ObservableCollection<SongSearchObject> itemSource, string artistName, string trackName, string albumName, CancellationToken token, int offset = 0, int limit = 25, bool clearResults = true)
+        public static async Task AdvancedSearch(ICollection<SongSearchObject> itemSource, string artistName, string trackName, string albumName, CancellationToken token, int offset = 0, int limit = 25, bool clearResults = true)
         {
             // Trim
             artistName = artistName.Trim();
@@ -344,7 +341,7 @@ namespace FluentDL.Services
             }
         }
 
-        public static async Task GeneralSearch(ObservableCollection<SongSearchObject> itemSource, string query, CancellationToken token, int offset = 0, int limit = 25, bool albumMode = false)
+        public static async Task GeneralSearch(ICollection<SongSearchObject> itemSource, string query, CancellationToken token, int offset = 0, int limit = 25, bool albumMode = false)
         {
             query = query.Trim(); // Trim the query
             //limit = Math.Min(limit, 1000);
@@ -816,11 +813,11 @@ namespace FluentDL.Services
             return songs;
         }
 
-        public static async Task AddTracksFromLink(ObservableCollection<SongSearchObject> itemSource, string url, CancellationToken token, Search.UrlStatusUpdateCallback? statusUpdate, bool userLogin, bool albumMode = false)
+        public static async Task AddTracksFromLink(ICollection<SongSearchObject> itemSource, string url, CancellationToken token, UrlStatusUpdateCallback? statusUpdate, bool userLogin, bool albumMode = false)
         {
             if (!IsInitialized)
             {
-                statusUpdate?.Invoke(InfoBarSeverity.Error, "Spotify API not initialized. Go to settings to authenticate.");
+                statusUpdate?.Invoke(StatusLevel.Error, "Spotify API not initialized. Go to settings to authenticate.");
                 return;
             }
 
@@ -835,7 +832,7 @@ namespace FluentDL.Services
             {
                 ISpotifyWebService webServiceInstance = spotifyWebService ?? App.GetService<ISpotifyWebService>();
 
-                statusUpdate?.Invoke(InfoBarSeverity.Informational, $"<b>Spotify</b>   Loading <a href='{url}'>playlist</a>", -1);
+                statusUpdate?.Invoke(StatusLevel.Informational, $"<b>Spotify</b>   Loading <a href='{url}'>playlist</a>", -1);
 
                 // Attempt official API (private or collaborative playlists only)
                 try
@@ -847,18 +844,18 @@ namespace FluentDL.Services
 
                         if (!status || spotifyUser == null)
                         {
-                            statusUpdate?.Invoke(InfoBarSeverity.Error, $"<b>Spotify</b>   Authentication failed. Cannot load playlist <a href='{url}'>{url}</a>");
+                            statusUpdate?.Invoke(StatusLevel.Error, $"<b>Spotify</b>   Authentication failed. Cannot load playlist <a href='{url}'>{url}</a>");
                             return;
                         }
 
                         var playlistName = await GetPlaylistName(id);
                         if (playlistName == null)
                         {
-                            statusUpdate?.Invoke(InfoBarSeverity.Error, $"<b>Spotify</b>   Failed to load playlist <a href='{url}'>{url}</a>");
+                            statusUpdate?.Invoke(StatusLevel.Error, $"<b>Spotify</b>   Failed to load playlist <a href='{url}'>{url}</a>");
                             return;
                         }
 
-                        statusUpdate?.Invoke(InfoBarSeverity.Informational, $"<b>Spotify</b>   Loading playlist <a href='{url}'>{playlistName}</a>", -1);
+                        statusUpdate?.Invoke(StatusLevel.Informational, $"<b>Spotify</b>   Loading playlist <a href='{url}'>{playlistName}</a>", -1);
 
                         var pages = await spotifyUser.Playlists.GetPlaylistItems(id, cancel: token);
                         var allPages = await spotifyUser.PaginateAll(pages, cancellationToken: token);
@@ -870,7 +867,7 @@ namespace FluentDL.Services
                             {
                                 if (token.IsCancellationRequested)
                                 {
-                                    statusUpdate?.Invoke(InfoBarSeverity.Warning, $"<b>Spotify</b>   Cancelled loading playlist <a href='{url}'>{playlistName}</a>");
+                                    statusUpdate?.Invoke(StatusLevel.Warning, $"<b>Spotify</b>   Cancelled loading playlist <a href='{url}'>{playlistName}</a>");
                                     return; // Stop if cancelled
                                 }
 
@@ -881,7 +878,7 @@ namespace FluentDL.Services
                                 }
                             }
                         }
-                        statusUpdate?.Invoke(InfoBarSeverity.Success, $"<b>Spotify</b>   Loaded playlist <a href='{url}'>{playlistName}</a>");
+                        statusUpdate?.Invoke(StatusLevel.Success, $"<b>Spotify</b>   Loaded playlist <a href='{url}'>{playlistName}</a>");
                     }
                     else
                     {
@@ -889,7 +886,7 @@ namespace FluentDL.Services
                         {
                             itemSource.Add(song);
                         }
-                        statusUpdate?.Invoke(InfoBarSeverity.Success, $"<b>Spotify</b>   Loaded <a href='{url}'>playlist</a>");
+                        statusUpdate?.Invoke(StatusLevel.Success, $"<b>Spotify</b>   Loaded <a href='{url}'>playlist</a>");
                     }
                 }
                 catch (Exception ex)
@@ -902,15 +899,15 @@ namespace FluentDL.Services
                             {
                                 itemSource.Add(song);
                             }
-                            statusUpdate?.Invoke(InfoBarSeverity.Warning, $"<b>Spotify</b>   Error: {ex.Message}. Loaded <a href='{url}'>playlist</a> using fallback method.", 10);
+                            statusUpdate?.Invoke(StatusLevel.Warning, $"<b>Spotify</b>   Error: {ex.Message}. Loaded <a href='{url}'>playlist</a> using fallback method.", 10);
                         }
                         catch (Exception ex2)
                         {
-                            statusUpdate?.Invoke(InfoBarSeverity.Error, $"<b>Spotify</b>   Failed to load with both methods. Error 1: {ex.Message} | Error 2: {ex2.Message}", 10);
+                            statusUpdate?.Invoke(StatusLevel.Error, $"<b>Spotify</b>   Failed to load with both methods. Error 1: {ex.Message} | Error 2: {ex2.Message}", 10);
                         }
                     } else
                     {
-                        statusUpdate?.Invoke(InfoBarSeverity.Error, $"<b>Spotify</b>   Failed to load playlist: {ex.Message}", 10);
+                        statusUpdate?.Invoke(StatusLevel.Error, $"<b>Spotify</b>   Failed to load playlist: {ex.Message}", 10);
                     }
                 }
             }
@@ -929,7 +926,7 @@ namespace FluentDL.Services
                     return;
                 }
 
-                statusUpdate?.Invoke(InfoBarSeverity.Informational, $"<b>Spotify</b>   Loading album <a href='{url}'>{album.Name}</a>", -1);
+                statusUpdate?.Invoke(StatusLevel.Informational, $"<b>Spotify</b>   Loading album <a href='{url}'>{album.Name}</a>", -1);
 
                 var pages = album.Tracks;
                 var allPages = await spotify.PaginateAll(pages, cancellationToken: token);
@@ -938,7 +935,7 @@ namespace FluentDL.Services
                 {
                     if (token.IsCancellationRequested)
                     {
-                        statusUpdate?.Invoke(InfoBarSeverity.Warning, $"<b>Spotify</b>   Cancelled loading album <a href='{url}'>{album.Name}</a>");
+                        statusUpdate?.Invoke(StatusLevel.Warning, $"<b>Spotify</b>   Cancelled loading album <a href='{url}'>{album.Name}</a>");
                         return; // Stop if cancelled
                     }
 
@@ -951,7 +948,7 @@ namespace FluentDL.Services
                     }
                 }
 
-                statusUpdate?.Invoke(InfoBarSeverity.Success, $"<b>Spotify</b>   Loaded album <a href='{url}'>{album.Name}</a>");
+                statusUpdate?.Invoke(StatusLevel.Success, $"<b>Spotify</b>   Loaded album <a href='{url}'>{album.Name}</a>");
             }
 
             if (url.StartsWith("https://open.spotify.com/track/")) // Single track, no need to clear item source
@@ -964,7 +961,7 @@ namespace FluentDL.Services
                         if (fullTrack != null)
                         {
                             itemSource.Add(fullTrack);
-                            statusUpdate?.Invoke(InfoBarSeverity.Success, $"<b>Spotify</b>   Loaded track <a href='{url}'>{fullTrack.Title}</a>");
+                            statusUpdate?.Invoke(StatusLevel.Success, $"<b>Spotify</b>   Loaded track <a href='{url}'>{fullTrack.Title}</a>");
                         }
                     }
                     else
@@ -974,12 +971,12 @@ namespace FluentDL.Services
                         if (songObj != null)
                         {
                             itemSource.Add(songObj);
-                            statusUpdate?.Invoke(InfoBarSeverity.Success, $"<b>Spotify</b>   Loaded track <a href='{url}'>{fullTrack.Name}</a>");
+                            statusUpdate?.Invoke(StatusLevel.Success, $"<b>Spotify</b>   Loaded track <a href='{url}'>{fullTrack.Name}</a>");
                         }
                     }
                 } catch (Exception ex)
                 {
-                    statusUpdate?.Invoke(InfoBarSeverity.Error, $"<b>Spotify</b>   Error loading track: {ex.Message}");
+                    statusUpdate?.Invoke(StatusLevel.Error, $"<b>Spotify</b>   Error loading track: {ex.Message}");
                 }
             }
         }
@@ -989,7 +986,7 @@ namespace FluentDL.Services
         {
             if (!IsInitialized)
             {
-                callback?.Invoke(InfoBarSeverity.Error, song);
+                callback?.Invoke(StatusLevel.Error, song);
                 return null;
             }
 
@@ -1047,7 +1044,7 @@ namespace FluentDL.Services
 
                         if (retObj != null) // Update callback with result
                         {
-                            callback?.Invoke(InfoBarSeverity.Success, retObj);
+                            callback?.Invoke(StatusLevel.Success, retObj);
                         }
 
                         return retObj;
@@ -1123,7 +1120,7 @@ namespace FluentDL.Services
                     {
                         if (albumName.ToLower().Replace(" ", "").Equals(songObj.AlbumName.ToLower().Replace(" ", ""))) // If the album name is exact match
                         {
-                            callback?.Invoke(InfoBarSeverity.Warning, songObj);
+                            callback?.Invoke(StatusLevel.Warning, songObj);
                             return songObj; // Return direct match
                         }
 
@@ -1138,7 +1135,7 @@ namespace FluentDL.Services
 
                 if (closeMatchObj != null) // Return the least edit distance album name
                 {
-                    callback?.Invoke(InfoBarSeverity.Warning, closeMatchObj);
+                    callback?.Invoke(StatusLevel.Warning, closeMatchObj);
                     return closeMatchObj;
                 }
             } catch(Exception ex)
@@ -1146,7 +1143,7 @@ namespace FluentDL.Services
                 Debug.WriteLine("failed to get spotify track: " + ex.ToString());
             }
 
-            callback?.Invoke(InfoBarSeverity.Error, song); // Show error with original song object
+            callback?.Invoke(StatusLevel.Error, song); // Show error with original song object
             return null;
         }
 
@@ -1236,7 +1233,7 @@ namespace FluentDL.Services
             // Remove extension if it exists
             filePath = ApiHelper.RemoveExtension(filePath);
             // 0 - mp3, 1 - flac
-            var settingIdx = await SettingsViewModel.GetSetting<int?>(SettingsViewModel.SpotifyQuality);
+            var settingIdx = await SourceServices.Settings.ReadSettingAsync<int?>(SettingKeys.SpotifyQuality);
 
             // Try Deezer first
             SongSearchObject? deezerEquivalent = null;
@@ -1252,7 +1249,7 @@ namespace FluentDL.Services
                     };
 
                     var resultPath = await DeezerApi.DownloadTrack(filePath, deezerEquivalent, bitrateEnum, progress: progress);
-                    callback?.Invoke(InfoBarSeverity.Success, song, resultPath);
+                    callback?.Invoke(StatusLevel.Success, song, resultPath);
                     return resultPath;
                 }
             }
@@ -1268,7 +1265,7 @@ namespace FluentDL.Services
                 if (qobuzEquivalent != null) // Found on Qobuz
                 {
                     var resultPath = await QobuzApi.DownloadTrack(filePath, qobuzEquivalent, progress, settingIdx == 0 ? "5" : " 6"); // mp3 or 16/44.1 flac
-                    callback?.Invoke(InfoBarSeverity.Success, song, resultPath);
+                    callback?.Invoke(StatusLevel.Success, song, resultPath);
                     return resultPath;
                 }
             }
@@ -1289,7 +1286,7 @@ namespace FluentDL.Services
                     };
 
                     var resultPath = await DeezerApi.DownloadTrack(filePath, deezerEquivalent, bitrateEnum, use128Fallback: true, progress: progress);
-                    callback?.Invoke(InfoBarSeverity.Success, song, resultPath);
+                    callback?.Invoke(StatusLevel.Success, song, resultPath);
                     return resultPath;
                 }
                 catch (Exception e)
@@ -1306,12 +1303,12 @@ namespace FluentDL.Services
             var opusLocation = ApiHelper.RemoveExtension(filePath) + ".opus";
             var actualLocation = ApiHelper.RemoveExtension(filePath) + (settingIdx == 0 ? ".mp3" : ".flac");
 
-            if (File.Exists(actualLocation) && await SettingsViewModel.GetSetting<bool>(SettingsViewModel.Overwrite) == false) // If file exists and overwrite is false
+            if (File.Exists(actualLocation) && await SourceServices.Settings.ReadSettingAsync<bool>(SettingKeys.Overwrite) == false) // If file exists and overwrite is false
             {
                 throw new Exception("File already exists");
             }
 
-            if (!FFmpegRunner.IsInitialized)
+            if (!SourceServices.AudioConverter.IsInitialized)
             {
                 throw new Exception("FFmpeg not initialized");
             }
@@ -1323,15 +1320,15 @@ namespace FluentDL.Services
 
             if (settingIdx == 1)
             {
-                await FFmpegRunner.ConvertToFlacAsync(opusLocation); // Convert opus to flac
+                await SourceServices.AudioConverter.ConvertToFlacAsync(opusLocation); // Convert opus to flac
                 convertedLocation = opusLocation.Replace(".opus", ".flac");
             }
             else
             {
-                convertedLocation = await FFmpegRunner.CreateMp3Async(opusLocation);
+                convertedLocation = await SourceServices.AudioConverter.CreateMp3Async(opusLocation);
                 await Task.Run(() => File.Delete(opusLocation));
             }
-            callback?.Invoke(InfoBarSeverity.Warning, song, convertedLocation); // Not perfect match
+            callback?.Invoke(StatusLevel.Warning, song, convertedLocation); // Not perfect match
             return convertedLocation; // Return the converted location
         }
 

@@ -1,9 +1,6 @@
 using FluentDL.Core.Sources;
 using FluentDL.Helpers;
 using FluentDL.Models;
-using FluentDL.ViewModels;
-using FluentDL.Views;
-using Microsoft.UI.Xaml.Controls;
 using QobuzApiSharp.Models.Content;
 using QobuzApiSharp.Models.User;
 using QobuzApiSharp.Service;
@@ -55,7 +52,7 @@ internal partial class QobuzApi
 
                     IsInitialized = true;
                     Debug.WriteLine("Qobuz initialized custom");
-                    authCallback?.Invoke(InfoBarSeverity.Success, "Logged in using custom app ID/secret");
+                    authCallback?.Invoke(StatusLevel.Success, "Logged in using custom app ID/secret");
                 }
                 catch
                 {
@@ -70,7 +67,7 @@ internal partial class QobuzApi
                     apiService = new QobuzApiService();
                     loginResult = apiService.LoginWithToken(userId, AuthToken);
                     IsInitialized = true;
-                    authCallback?.Invoke(InfoBarSeverity.Success, "Logged in using latest app ID/secret");
+                    authCallback?.Invoke(StatusLevel.Success, "Logged in using latest app ID/secret");
                 }
                 catch
                 {
@@ -85,7 +82,7 @@ internal partial class QobuzApi
 
                         IsInitialized = true;
                         Debug.WriteLine("Qobuz initialized (old)");
-                        authCallback?.Invoke(InfoBarSeverity.Success, "Logged in using old app ID/secret");
+                        authCallback?.Invoke(StatusLevel.Success, "Logged in using old app ID/secret");
                     }
                     catch
                     {
@@ -111,7 +108,7 @@ internal partial class QobuzApi
 
         if (!IsInitialized)
         {
-            authCallback?.Invoke(InfoBarSeverity.Error, failMessage ?? "No login methods attempted");
+            authCallback?.Invoke(StatusLevel.Error, failMessage ?? "No login methods attempted");
         }
     }
 
@@ -166,7 +163,7 @@ internal partial class QobuzApi
         return false;
     }
 
-    public static async Task GeneralSearch(ObservableCollection<SongSearchObject> itemSource, string query, CancellationToken token, int offset = 0, int limit = 25, bool albumMode = false)
+    public static async Task GeneralSearch(ICollection<SongSearchObject> itemSource, string query, CancellationToken token, int offset = 0, int limit = 25, bool albumMode = false)
     {
         query = query.Trim(); // Trim the query
         if (string.IsNullOrWhiteSpace(query))
@@ -212,7 +209,7 @@ internal partial class QobuzApi
         return ApiHelper.IsSubstring(str1.ToLower(), str2.ToLower());
     }
 
-    public static async Task AdvancedSearch(ObservableCollection<SongSearchObject> itemSource, string artistName, string trackName, string albumName, CancellationToken token, int offset = 0, int limit = 25, bool clearResults = true)
+    public static async Task AdvancedSearch(ICollection<SongSearchObject> itemSource, string artistName, string trackName, string albumName, CancellationToken token, int offset = 0, int limit = 25, bool clearResults = true)
     {
         // Qobuz doesn't have an advanced search, must be done manually
         artistName = artistName.Trim();
@@ -358,7 +355,7 @@ internal partial class QobuzApi
         }
     }
 
-    public static async Task AddTracksFromLink(ObservableCollection<SongSearchObject> itemSource, string url, CancellationToken token, Search.UrlStatusUpdateCallback? statusUpdate, bool albumMode = false)
+    public static async Task AddTracksFromLink(ICollection<SongSearchObject> itemSource, string url, CancellationToken token, UrlStatusUpdateCallback? statusUpdate, bool albumMode = false)
     {
         var isTrack = url.StartsWith("https://play.qobuz.com/track/") || url.StartsWith("https://open.qobuz.com/track/") || Regex.IsMatch(url, @"https://www\.qobuz\.com(/[^/]+)?/track/.*");
         var isAlbum = url.StartsWith("https://play.qobuz.com/album/") || url.StartsWith("https://open.qobuz.com/album/") || Regex.IsMatch(url, @"https://www\.qobuz\.com(/[^/]+)?/album/.*");
@@ -384,11 +381,11 @@ internal partial class QobuzApi
 
             if (track != null) {
                 itemSource.Add(await Task.Run(() => ConvertSongSearchObject(track)));
-                statusUpdate?.Invoke(InfoBarSeverity.Success, $"<b>Qobuz</b>   Loaded track <a href='{url}'>{GetFullTitle(track)}</a>"); 
+                statusUpdate?.Invoke(StatusLevel.Success, $"<b>Qobuz</b>   Loaded track <a href='{url}'>{GetFullTitle(track)}</a>"); 
             }
             else
             {
-                statusUpdate?.Invoke(InfoBarSeverity.Error, $"<b>Qobuz</b>   Track may not exist or is private.");
+                statusUpdate?.Invoke(StatusLevel.Error, $"<b>Qobuz</b>   Track may not exist or is private.");
             }
         }
         else if (isAlbum)
@@ -408,7 +405,7 @@ internal partial class QobuzApi
 
             if (album != null && album.Tracks != null && album.Tracks.Items.Count > 0)
             {
-                statusUpdate?.Invoke(InfoBarSeverity.Informational, $"<b>Qobuz</b>   Loading album <a href='{url}'>{album.Title}</a>", -1); // Show an informational message
+                statusUpdate?.Invoke(StatusLevel.Informational, $"<b>Qobuz</b>   Loading album <a href='{url}'>{album.Title}</a>", -1); // Show an informational message
 
                 if (albumMode)
                 {
@@ -424,7 +421,7 @@ internal partial class QobuzApi
                     {
                         if (token.IsCancellationRequested)
                         {
-                            statusUpdate?.Invoke(InfoBarSeverity.Warning, $"<b>Qobuz</b>   Cancelled loading album <a href='{url}'>{album.Title}</a>"); // Show a warning message
+                            statusUpdate?.Invoke(StatusLevel.Warning, $"<b>Qobuz</b>   Cancelled loading album <a href='{url}'>{album.Title}</a>"); // Show a warning message
                             return;
                         }
 
@@ -432,11 +429,11 @@ internal partial class QobuzApi
                     }
                 }
 
-                statusUpdate?.Invoke(InfoBarSeverity.Success, $"<b>Qobuz</b>   Loaded album <a href='{url}'>{album.Title}</a>"); // Show a success message
+                statusUpdate?.Invoke(StatusLevel.Success, $"<b>Qobuz</b>   Loaded album <a href='{url}'>{album.Title}</a>"); // Show a success message
             }
             else
             {
-                statusUpdate?.Invoke(InfoBarSeverity.Error, $"<b>Qobuz</b>   Album may not exist or is private.");
+                statusUpdate?.Invoke(StatusLevel.Error, $"<b>Qobuz</b>   Album may not exist or is private.");
             }
         }
         else if (isPlaylist)
@@ -453,14 +450,14 @@ internal partial class QobuzApi
 
             if (playlist?.TrackIds != null && (playlist.TrackIds?.Count ?? 0) > 0)
             {
-                statusUpdate?.Invoke(InfoBarSeverity.Informational, $"<b>Qobuz</b>   Loading playlist <a href='{url}'>{playlist.Name}</a>", -1); // Show an informational message
+                statusUpdate?.Invoke(StatusLevel.Informational, $"<b>Qobuz</b>   Loading playlist <a href='{url}'>{playlist.Name}</a>", -1); // Show an informational message
 
                 int failedCount = 0; // Count of failed tracks
                 foreach (var trackId in playlist?.TrackIds!) // Need to recreate the tracks so they have album objects
                 {
                     if (token.IsCancellationRequested)
                     {
-                        statusUpdate?.Invoke(InfoBarSeverity.Warning, $"<b>Qobuz</b>   Cancelled loading playlist <a href='{url}'>{playlist.Name}</a>"); // Show a warning message
+                        statusUpdate?.Invoke(StatusLevel.Warning, $"<b>Qobuz</b>   Cancelled loading playlist <a href='{url}'>{playlist.Name}</a>"); // Show a warning message
                         return;
                     }
 
@@ -486,16 +483,16 @@ internal partial class QobuzApi
 
                 if (failedCount == 0)
                 {
-                    statusUpdate?.Invoke(InfoBarSeverity.Success, $"<b>Qobuz</b>   Loaded playlist <a href='{url}'>{playlist.Name}</a>"); // Show a success message
+                    statusUpdate?.Invoke(StatusLevel.Success, $"<b>Qobuz</b>   Loaded playlist <a href='{url}'>{playlist.Name}</a>"); // Show a success message
                 }
                 else
                 {
-                    statusUpdate?.Invoke(InfoBarSeverity.Warning, $"<b>Qobuz</b>   Loaded playlist <a href='{url}'>{playlist.Name}</a>, with {failedCount} track{(failedCount > 1 ? "s" : "")} failing to load."); // Show a warning message
+                    statusUpdate?.Invoke(StatusLevel.Warning, $"<b>Qobuz</b>   Loaded playlist <a href='{url}'>{playlist.Name}</a>, with {failedCount} track{(failedCount > 1 ? "s" : "")} failing to load."); // Show a warning message
                 }
             }
             else
             {
-                statusUpdate?.Invoke(InfoBarSeverity.Error, $"<b>Qobuz</b>   Playlist may not exist or is private.");
+                statusUpdate?.Invoke(StatusLevel.Error, $"<b>Qobuz</b>   Playlist may not exist or is private.");
             }
         }
     }
@@ -552,11 +549,11 @@ internal partial class QobuzApi
         return false;
     }
 
-    public static async Task AddTracksFromLabelOrArtist(ObservableCollection<SongSearchObject> itemSource, string url, CancellationToken token, Search.UrlStatusUpdateCallback? statusUpdate, int offset, int limit, bool albumMode = false)
+    public static async Task AddTracksFromLabelOrArtist(ICollection<SongSearchObject> itemSource, string url, CancellationToken token, UrlStatusUpdateCallback? statusUpdate, int offset, int limit, bool albumMode = false)
     {
         if (token.IsCancellationRequested)
         {
-            statusUpdate?.Invoke(InfoBarSeverity.Warning, $"<b>Qobuz</b>   Cancelled loading albums from <a href='{url}'>{url}</a>"); // Show a warning message
+            statusUpdate?.Invoke(StatusLevel.Warning, $"<b>Qobuz</b>   Cancelled loading albums from <a href='{url}'>{url}</a>"); // Show a warning message
             return;
         }
 
@@ -607,7 +604,7 @@ internal partial class QobuzApi
                 }
             } else
             {
-                statusUpdate?.Invoke(InfoBarSeverity.Error, $"<b>Qobuz</b>   Label may not exist or is private.");
+                statusUpdate?.Invoke(StatusLevel.Error, $"<b>Qobuz</b>   Label may not exist or is private.");
             }
 
         }
@@ -646,7 +643,7 @@ internal partial class QobuzApi
             }
             else
             {
-                statusUpdate?.Invoke(InfoBarSeverity.Error, $"<b>Qobuz</b>   Artist may not exist or is private.");
+                statusUpdate?.Invoke(StatusLevel.Error, $"<b>Qobuz</b>   Artist may not exist or is private.");
             }
         }
     }
@@ -678,7 +675,6 @@ internal partial class QobuzApi
             Id = track.Id?.ToString() ?? "",
             TrackPosition = (track.TrackNumber ?? 1).ToString(),
             ImageLocation = track.Album?.Image?.Small ?? "",
-            LocalBitmapImage = null,
             Rank = (track.Album?.Popularity ?? 0).ToString(),
             ReleaseDate = track.ReleaseDateOriginal.GetValueOrDefault().ToString("yyyy-MM-dd"),
             Title = GetFullTitle(track),
@@ -712,7 +708,6 @@ internal partial class QobuzApi
             Id = track.Id.GetValueOrDefault().ToString(),
             TrackPosition = track.TrackNumber.GetValueOrDefault().ToString(),
             ImageLocation = album.Image.Small,
-            LocalBitmapImage = null,
             Rank = (album.Popularity ?? 0).ToString(),
             ReleaseDate = track.ReleaseDateOriginal.GetValueOrDefault().ToString("yyyy-MM-dd"),
             Title = GetFullTitle(track),
@@ -744,7 +739,6 @@ internal partial class QobuzApi
             Id = album.Id.ToString(),
             TrackPosition = "1", // Not applicable for albums
             ImageLocation = album.Image?.Small ?? "",
-            LocalBitmapImage = null,
             Rank = (album.Popularity ?? 0).ToString(),
             ReleaseDate = album.ReleaseDateOriginal.GetValueOrDefault().ToString("yyyy-MM-dd"),
             Title = album.Title,
@@ -820,14 +814,14 @@ internal partial class QobuzApi
             if (foundTrack != null)
             {
                 var retObj = ConvertSongSearchObject(foundTrack);
-                callback?.Invoke(InfoBarSeverity.Success, retObj); // Show a success message
+                callback?.Invoke(StatusLevel.Success, retObj); // Show a success message
                 return retObj;
             }
         }
 
         if (onlyISRC) // If only ISRC is allowed, return null
         {
-            callback?.Invoke(InfoBarSeverity.Error, songObj); // Show an error message with original object
+            callback?.Invoke(StatusLevel.Error, songObj); // Show an error message with original object
             return null;
         }
 
@@ -903,7 +897,7 @@ internal partial class QobuzApi
                         var retObj = await GetTrackAsync(track.Id);
                         if (retObj != null)
                         {
-                            callback?.Invoke(InfoBarSeverity.Warning, retObj); // Not found by ISRC
+                            callback?.Invoke(StatusLevel.Warning, retObj); // Not found by ISRC
                             return retObj;
                         }
                     }
@@ -926,13 +920,13 @@ internal partial class QobuzApi
                 if (performerPrune.Contains(a1) && ApiHelper.PrunePunctuation(trackName.ToLower()).Equals(ApiHelper.PrunePunctuation(GetFullTitle(result).ToLower())))
                 {
                     var retObj = ConvertSongSearchObject(result);
-                    callback?.Invoke(InfoBarSeverity.Warning, retObj); // Not found by ISRC
+                    callback?.Invoke(StatusLevel.Warning, retObj); // Not found by ISRC
                     return retObj;
                 }
             }
         }
 
-        callback?.Invoke(InfoBarSeverity.Error, songObj); // Show an error message with original object
+        callback?.Invoke(StatusLevel.Error, songObj); // Show an error message with original object
         return null;
     }
 
@@ -994,7 +988,7 @@ internal partial class QobuzApi
         if (format == null) // If format is not specified, get it from the settings
         {
             // Get the format from settings
-            var selectedIndex = await SettingsViewModel.GetSetting<int?>(SettingsViewModel.QobuzQuality) ?? 0;
+            var selectedIndex = await SourceServices.Settings.ReadSettingAsync<int?>(SettingKeys.QobuzQuality) ?? 0;
 
             format = selectedIndex switch
             {
@@ -1014,7 +1008,7 @@ internal partial class QobuzApi
         // Add the extension
         filePath += "." + (format == "5" ? "mp3" : "flac"); // Only one format is mp3
 
-        if (System.IO.File.Exists(filePath) && await SettingsViewModel.GetSetting<bool>(SettingsViewModel.Overwrite) == false)
+        if (System.IO.File.Exists(filePath) && await SourceServices.Settings.ReadSettingAsync<bool>(SettingKeys.Overwrite) == false)
         {
             throw new Exception("File already exists");
         }

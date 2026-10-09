@@ -2,8 +2,6 @@
 using FluentDL.Core.Matching;
 using FluentDL.Helpers;
 using FluentDL.Models;
-using FluentDL.Views;
-using Microsoft.UI.Xaml.Controls;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Text.RegularExpressions;
@@ -28,7 +26,7 @@ namespace FluentDL.Services
         {
         }
 
-        public static async Task GeneralSearch(ObservableCollection<SongSearchObject> itemSource, string query, CancellationToken token, int offset = 0, int limit = 25, bool albumMode = false)
+        public static async Task GeneralSearch(ICollection<SongSearchObject> itemSource, string query, CancellationToken token, int offset = 0, int limit = 25, bool albumMode = false)
         {
             query = query.Trim(); // Trim the query
             if (string.IsNullOrWhiteSpace(query))
@@ -104,7 +102,7 @@ namespace FluentDL.Services
             }
         }
 
-        public static async Task AdvancedSearch(ObservableCollection<SongSearchObject> itemSource, string artistName, string trackName, string albumName, CancellationToken token = default, int offset = 0, int limit = 25, bool clearResults = true)
+        public static async Task AdvancedSearch(ICollection<SongSearchObject> itemSource, string artistName, string trackName, string albumName, CancellationToken token = default, int offset = 0, int limit = 25, bool clearResults = true)
         {
             // Youtube doesn't have an advanced search, must be done manually
             if (string.IsNullOrWhiteSpace(artistName) && string.IsNullOrWhiteSpace(trackName) && string.IsNullOrWhiteSpace(albumName))
@@ -353,7 +351,7 @@ namespace FluentDL.Services
             }
         }
 
-        public static async Task AddTracksFromLink(ObservableCollection<SongSearchObject> itemSource, string url, CancellationToken token, Search.UrlStatusUpdateCallback? statusUpdate, bool albumMode = false)
+        public static async Task AddTracksFromLink(ICollection<SongSearchObject> itemSource, string url, CancellationToken token, UrlStatusUpdateCallback? statusUpdate, bool albumMode = false)
         {
             if (url.StartsWith("https://www.youtube.com/watch?") || url.StartsWith("https://youtube.com/watch?")) // Youtube video
             {
@@ -361,7 +359,7 @@ namespace FluentDL.Services
                 var songObj = await ConvertSongSearchObject(video);
                 if (songObj == null)  // Some error occurred
                 {
-                    statusUpdate?.Invoke(InfoBarSeverity.Error, $"<b>YouTube</b>   Error loading track from <a href='{url}'>{url}</a>");
+                    statusUpdate?.Invoke(StatusLevel.Error, $"<b>YouTube</b>   Error loading track from <a href='{url}'>{url}</a>");
                     return;
                 }
 
@@ -369,11 +367,11 @@ namespace FluentDL.Services
 
                 if (video.Description.StartsWith("Provided to YouTube by") && video.Description.Contains("\u2117")) // Song
                 {
-                    statusUpdate?.Invoke(InfoBarSeverity.Success, $"<b>YouTube</b>   Loaded track <a href='{url}'>{songObj.Title}</a>");
+                    statusUpdate?.Invoke(StatusLevel.Success, $"<b>YouTube</b>   Loaded track <a href='{url}'>{songObj.Title}</a>");
                 }
                 else // Video
                 {
-                    statusUpdate?.Invoke(InfoBarSeverity.Success, $"<b>YouTube</b>   Loaded video <a href='{url}'>{songObj.Title}</a>");
+                    statusUpdate?.Invoke(StatusLevel.Success, $"<b>YouTube</b>   Loaded video <a href='{url}'>{songObj.Title}</a>");
                 }
             }
 
@@ -383,7 +381,7 @@ namespace FluentDL.Services
                 var songObj = await ConvertSongSearchObject(video);
                 if (songObj == null)  // Some error occurred
                 {
-                    statusUpdate?.Invoke(InfoBarSeverity.Error, $"<b>YouTube Music</b>   Error loading track from <a href='{url}'>{url}</a>");
+                    statusUpdate?.Invoke(StatusLevel.Error, $"<b>YouTube Music</b>   Error loading track from <a href='{url}'>{url}</a>");
                     return;
                 }
 
@@ -391,11 +389,11 @@ namespace FluentDL.Services
 
                 if (video.Description.StartsWith("Provided to YouTube by") && video.Description.Contains("\u2117")) // Song
                 {
-                    statusUpdate?.Invoke(InfoBarSeverity.Success, $"<b>YouTube Music</b>   Loaded track <a href='{url}'>{songObj.Title}</a>");
+                    statusUpdate?.Invoke(StatusLevel.Success, $"<b>YouTube Music</b>   Loaded track <a href='{url}'>{songObj.Title}</a>");
                 }
                 else // Video
                 {
-                    statusUpdate?.Invoke(InfoBarSeverity.Success, $"<b>YouTube Music</b>   Loaded video <a href='{url}'>{songObj.Title}</a>");
+                    statusUpdate?.Invoke(StatusLevel.Success, $"<b>YouTube Music</b>   Loaded video <a href='{url}'>{songObj.Title}</a>");
                 }
             }
 
@@ -422,7 +420,7 @@ namespace FluentDL.Services
                 }
 
                 // Show a permanent, loading message
-                statusUpdate?.Invoke(InfoBarSeverity.Informational, $"<b>YouTube</b>   Loading playlist <a href='{url}'>{playlistName}</a>", -1);
+                statusUpdate?.Invoke(StatusLevel.Informational, $"<b>YouTube</b>   Loading playlist <a href='{url}'>{playlistName}</a>", -1);
 
                 var failCount = 0;
                 try
@@ -431,7 +429,7 @@ namespace FluentDL.Services
                     {
                         if (token.IsCancellationRequested)
                         {
-                            statusUpdate?.Invoke(InfoBarSeverity.Warning, $"<b>YouTube</b>   Cancelled loading playlist <a href='{url}'>{playlistName}</a>");
+                            statusUpdate?.Invoke(StatusLevel.Warning, $"<b>YouTube</b>   Cancelled loading playlist <a href='{url}'>{playlistName}</a>");
                             return;
                         }
 
@@ -451,23 +449,23 @@ namespace FluentDL.Services
                 {
                     if (token.IsCancellationRequested) // Can crash on cancel
                     {
-                        statusUpdate?.Invoke(InfoBarSeverity.Warning, $"<b>YouTube</b>   Cancelled loading playlist <a href='{url}'>{playlistName}</a>");
+                        statusUpdate?.Invoke(StatusLevel.Warning, $"<b>YouTube</b>   Cancelled loading playlist <a href='{url}'>{playlistName}</a>");
                         return;
                     }
 
                     Debug.WriteLine("Error loading playlist: " + e.Message);
-                    statusUpdate?.Invoke(InfoBarSeverity.Error, $"<b>YouTube</b>   Error loading playlist <a href='{url}'>{playlistName}</a>");
+                    statusUpdate?.Invoke(StatusLevel.Error, $"<b>YouTube</b>   Error loading playlist <a href='{url}'>{playlistName}</a>");
                     return;
                 }
 
                 // Replace the loading message with a result message
                 if (failCount > 0) // If some failed
                 {
-                    statusUpdate?.Invoke(InfoBarSeverity.Warning, $"<b>YouTube</b>   Loaded playlist <a href='{url}'>{playlistName}</a> with {failCount} failed {(failCount == 1 ? "track" : "tracks")}");
+                    statusUpdate?.Invoke(StatusLevel.Warning, $"<b>YouTube</b>   Loaded playlist <a href='{url}'>{playlistName}</a> with {failCount} failed {(failCount == 1 ? "track" : "tracks")}");
                 }
                 else // All loaded successfully
                 {
-                    statusUpdate?.Invoke(InfoBarSeverity.Success, $"<b>YouTube</b>   Loaded playlist <a href='{url}'>{playlistName}</a>");
+                    statusUpdate?.Invoke(StatusLevel.Success, $"<b>YouTube</b>   Loaded playlist <a href='{url}'>{playlistName}</a>");
                 }
             }
         }
@@ -674,7 +672,7 @@ namespace FluentDL.Services
                                     var retObj = await ConvertSongSearchObject(song);
                                     if (retObj != null)
                                     {
-                                        callback?.Invoke(InfoBarSeverity.Warning, retObj); // Not found by ISRC
+                                        callback?.Invoke(StatusLevel.Warning, retObj); // Not found by ISRC
                                         return retObj;
                                     }
                                 }
@@ -710,7 +708,7 @@ namespace FluentDL.Services
                             if (artists.Any(artist => ApiHelper.CloseMatch(artistResult.Name, artist)))
                             {
                                 var retObj = await ConvertSongSearchObject(fullRes);
-                                callback?.Invoke(InfoBarSeverity.Warning, retObj); // Not found by ISRC
+                                callback?.Invoke(StatusLevel.Warning, retObj); // Not found by ISRC
                                 return retObj;
                             }
                         }
@@ -725,17 +723,17 @@ namespace FluentDL.Services
             var searchResult = await GetSearchResult(songObj);
             if (searchResult == null)
             {
-                callback?.Invoke(InfoBarSeverity.Error, songObj);  // Show error badge with original object
+                callback?.Invoke(StatusLevel.Error, songObj);  // Show error badge with original object
                 return null;
             }
 
             var ret = await GetTrack(searchResult.Id);
             if (ret == null) // If not found
             {
-                callback?.Invoke(InfoBarSeverity.Error, songObj);  // Show error badge with original object
+                callback?.Invoke(StatusLevel.Error, songObj);  // Show error badge with original object
                 return null;
             }
-            callback?.Invoke(InfoBarSeverity.Warning, ret); // Not found by ISRC
+            callback?.Invoke(StatusLevel.Warning, ret); // Not found by ISRC
             return ret;
         }
 
@@ -842,7 +840,6 @@ namespace FluentDL.Services
                 Id = ytmSong.Id,
                 ImageLocation = ytmSong.Thumbnails.Last().Url,
                 Isrc = null,
-                LocalBitmapImage = null,
                 Rank = FormatLargeValue(video.Engagement.ViewCount),
                 TrackPosition = "1",
                 ReleaseDate = ApiHelper.FormatDateTimeOffset(video.UploadDate),
@@ -918,7 +915,6 @@ namespace FluentDL.Services
                 Id = ytmSong?.Id ?? video.Id,
                 ImageLocation = imageLocation,
                 Isrc = null,
-                LocalBitmapImage = null,
                 Rank = FormatLargeValue(video.Engagement.ViewCount),
                 TrackPosition = "1",
                 ReleaseDate = ApiHelper.FormatDateTimeOffset(video.UploadDate),
@@ -965,7 +961,6 @@ namespace FluentDL.Services
                 Id = ytmAlbum.Id,
                 ImageLocation = imageLocation,
                 Isrc = null,
-                LocalBitmapImage = null,
                 Rank = "",
                 TrackPosition = "1",
                 ReleaseDate = $"{ytmAlbum.ReleaseYear}-01-01",
@@ -995,7 +990,6 @@ namespace FluentDL.Services
                 Id = song.Id,
                 ImageLocation = imageLocation,
                 Isrc = null,
-                LocalBitmapImage = null,
                 Rank = song.PlaysInfo ?? "",
                 TrackPosition = song.SongNumber?.ToString() ?? "1",
                 ReleaseDate = $"{album.ReleaseYear}-01-01",

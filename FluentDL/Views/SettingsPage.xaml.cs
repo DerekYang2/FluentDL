@@ -4,6 +4,7 @@ using CommunityToolkit.WinUI.Helpers;
 using FluentDL.Contracts.Services;
 using FluentDL.Core.Contracts.Services;
 using FluentDL.Core.Helpers;
+using FluentDL.Core.Sources;
 using FluentDL.Helpers;
 using FluentDL.Models;
 using FluentDL.Services;
@@ -23,8 +24,6 @@ using Windows.Storage.AccessCache;
 using Windows.Storage.Pickers;
 
 namespace FluentDL.Views;
-
-public delegate void AuthenticationCallback(InfoBarSeverity severity, string message); // Callback for conversion updates
 
 // TODO: Set the URL for your privacy policy by updating SettingsPage_PrivacyTermsLink.NavigateUri in Resources.resw.
 public sealed partial class SettingsPage : Page
@@ -309,12 +308,12 @@ public sealed partial class SettingsPage : Page
             return;
         }
 
-        void authCallback(InfoBarSeverity severity, string message)
+        void authCallback(StatusLevel level, string message)
         {
             dispatcher.TryEnqueue(() =>
             {
-                ShowInfoBar(severity, message, 3, "Spotify");
-                SetSpotifyAuthInfo(severity != InfoBarSeverity.Error);
+                ShowInfoBar(level.ToSeverity(), message, 3, "Spotify");
+                SetSpotifyAuthInfo(level != StatusLevel.Error);
             });
         }
 
@@ -325,12 +324,12 @@ public sealed partial class SettingsPage : Page
 
     private async void DeezerUpdateButton_Click(object sender, RoutedEventArgs e)
     {
-        void authCallback(InfoBarSeverity severity, string message)
+        void authCallback(StatusLevel level, string message)
         {
             dispatcher.TryEnqueue(() =>
             {
-                ShowInfoBar(severity, message, 3, "Deezer");
-                SetDeezerAuthInfo(severity != InfoBarSeverity.Error);
+                ShowInfoBar(level.ToSeverity(), message, 3, "Deezer");
+                SetDeezerAuthInfo(level != StatusLevel.Error);
             });
         }
 
@@ -346,12 +345,12 @@ public sealed partial class SettingsPage : Page
         await localSettings.SaveSettingAsync(SettingsViewModel.QobuzAppId, QobuzAppIdInput.Text.Trim());
         await localSettings.SaveSettingAsync(SettingsViewModel.QobuzAppSecret, QobuzAppSecretInput.Text.Trim());
 
-        void authCallback(InfoBarSeverity severity, string message)
+        void authCallback(StatusLevel level, string message)
         {
             dispatcher.TryEnqueue(() =>
             {
-                ShowInfoBar(severity, message, 3, "Qobuz");
-                SetQobuzAuthInfo(severity != InfoBarSeverity.Error);
+                ShowInfoBar(level.ToSeverity(), message, 3, "Qobuz");
+                SetQobuzAuthInfo(level != StatusLevel.Error);
             });
         }
 

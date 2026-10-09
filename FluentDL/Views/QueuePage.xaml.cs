@@ -33,8 +33,6 @@ public partial class PathToVisibilityConverter : IValueConverter
     public object ConvertBack(object value, Type targetType, object parameter, string language) => throw new NotImplementedException();
 }
 
-public delegate void ConversionUpdateCallback(InfoBarSeverity severity, SongSearchObject song, string? location = null); // Callback for conversion updates
-
 public sealed partial class QueuePage : Page
 {
     private sealed record BackupOption(string DisplayName, FileInfo? File);
@@ -1013,17 +1011,17 @@ public sealed partial class QueuePage : Page
         QueueViewModel.ResetConversionResults(); // Clear all badges and results on queue objects
         ViewModel.SuccessCount = ViewModel.WarningCount = ViewModel.ErrorCount = 0; // Reset the counts
 
-        void conversionUpdateCallback(InfoBarSeverity severity, SongSearchObject song, string? location = null)
+        void conversionUpdateCallback(StatusLevel level, SongSearchObject song, string? location = null)
         {
-            switch (severity)
+            switch (level)
             {
-                case InfoBarSeverity.Success:
+                case StatusLevel.Success:
                     successSource.TryAdd(song, 0);
                     break;
-                case InfoBarSeverity.Warning:
+                case StatusLevel.Warning:
                     warningSource.TryAdd(song, 0);
                     break;
-                case InfoBarSeverity.Error:
+                case StatusLevel.Error:
                     errorSource.TryAdd(song, 0);
                     break;
                 default:

@@ -1,0 +1,28 @@
+using FluentDL.Core.Sources;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
+
+namespace FluentDL.Core.Tests;
+
+[TestClass]
+public class SourceServicesTests
+{
+    // Users' saved settings use these keys, so they must not change.
+    [TestMethod]
+    public void SettingKeys_KeepTheSavedNames()
+    {
+        Assert.AreEqual("deezer_quality", SettingKeys.DeezerQuality);
+        Assert.AreEqual("qobuz_quality", SettingKeys.QobuzQuality);
+        Assert.AreEqual("spotify_quality", SettingKeys.SpotifyQuality);
+        Assert.AreEqual("overwrite", SettingKeys.Overwrite);
+    }
+
+    // The app maps StatusLevel to WinUI's InfoBarSeverity, which has the same members in the same order.
+    [TestMethod]
+    public void StatusLevel_MatchesInfoBarSeverity()
+    {
+        CollectionAssert.AreEqual(
+            new[] { "Informational", "Success", "Warning", "Error" },
+            Enum.GetNames<StatusLevel>());
+        CollectionAssert.AreEqual(new[] { 0, 1, 2, 3 }, Enum.GetValues<StatusLevel>().Select(l => (int)l).ToArray());
+    }
+}

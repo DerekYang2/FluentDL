@@ -153,6 +153,8 @@ public partial class App : Application
                         context.Configuration.GetSection(nameof(LocalSettingsOptions)));
                 }).Build();
 
+            FluentDL.Core.Sources.SourceServices.Configure(GetService<ILocalSettingsService>(), new FFmpegRunner());
+
             Log.Information("Application services initialized; version {Version}", SettingsViewModel.GetVersionDescription());
             App.GetService<IAppNotificationService>().Initialize();
         } catch (Exception ex)
