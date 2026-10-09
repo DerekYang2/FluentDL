@@ -7,7 +7,7 @@ They run against a separate **FluentDL (Dev)** package (`DerekYang2.FluentDL.Dev
 ## Requirements
 
 - Windows Developer Mode (Settings > System > For developers). It allows registering an unsigned build folder.
-- Leave the mouse and keyboard alone during a run, about 5 minutes. The tests press Enter in the search box with the real keyboard.
+- The tests use only UI Automation (setting text, invoking buttons, expanding the source picker), never the real mouse or keyboard, so you can keep using the PC. The dev app's window opens on top during a run, about 1 minute. Some controls, such as the search box's button, are only in the raw view of the automation tree; `UiSteps.FindInRawView` finds them.
 
 ## Running
 

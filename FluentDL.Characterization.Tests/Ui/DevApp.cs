@@ -7,7 +7,7 @@ namespace FluentDL.Characterization.Tests.Ui;
 
 /// <summary>
 /// Starts and stops the "FluentDL (Dev)" package that tools/ui-tests/Install-DevPackage.ps1 installs.
-/// UI tests use real mouse and keyboard input, so they only run when FLUENTDL_UI_TESTS=1.
+/// UI tests open a real window on the desktop, so they only run when FLUENTDL_UI_TESTS=1.
 /// </summary>
 internal sealed class DevApp : IDisposable
 {

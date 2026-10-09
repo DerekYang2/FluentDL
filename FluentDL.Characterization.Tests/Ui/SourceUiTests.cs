@@ -117,11 +117,10 @@ public class SourceUiTests
             if (expandCollapse.ExpandCollapseState.Value == ExpandCollapseState.Expanded)
             {
                 expandCollapse.Collapse();
-                Thread.Sleep(300);
+                Thread.Sleep(300 * attempt);
             }
 
-            if (attempt < 3) expandCollapse.Expand();
-            else button.Click();
+            expandCollapse.Expand();
 
             try
             {
@@ -188,8 +187,9 @@ public class SourceUiTests
         return (new { Source = source, Results = resultCount, VisibleSourceBadges = VisibleBadges() }, count);
     }
 
-    // Sets the search text through UI Automation and presses the box's search button, which raises the same
-    // QuerySubmitted event as Enter without needing keyboard focus. Falls back to clicking the box and pressing Enter.
+    // Sets the search text through UI Automation and invokes the box's search button, which raises the same
+    // QuerySubmitted event as Enter. No real mouse or keyboard input, so the test works while someone uses the PC.
+    // The button is only in the raw view of the automation tree.
     private static void SubmitSearch(DevApp dev, string query)
     {
         var searchBox = Find(dev, "SearchBox");
@@ -197,15 +197,9 @@ public class SourceUiTests
             ?? throw new InvalidOperationException("The search box has no text field.");
         textBox.AsTextBox().Text = query;
 
-        var queryButton = TryFind(dev, cf => cf.ByAutomationId("QueryButton"));
-        if (queryButton != null && queryButton.Patterns.Invoke.IsSupported)
-        {
-            Invoke(queryButton);
-            return;
-        }
-
-        textBox.Click();
-        FlaUI.Core.Input.Keyboard.Type(FlaUI.Core.WindowsAPI.VirtualKeyShort.RETURN);
+        var queryButton = FindInRawView(dev, textBox, "QueryButton")
+            ?? throw new InvalidOperationException("The search box has no QueryButton in the raw automation tree.");
+        Invoke(queryButton);
     }
 
     // The Queue page has no checkboxes of its own, so while a dialog is open every checkbox in the tree is the dialog's.

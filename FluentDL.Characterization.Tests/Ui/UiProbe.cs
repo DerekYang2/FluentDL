@@ -33,6 +33,7 @@ public class UiProbe
 
     private static void Dump(AutomationElement element, StringBuilder builder, int depth) => DumpTree(element, builder, depth, 25);
 
+
     /// <summary>Checks that the test host can write the dev app's settings store. Does not launch the app.</summary>
     [TestMethod]
     public void SeedSettingsReachesTheDevApp()

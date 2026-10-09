@@ -43,6 +43,25 @@ internal static class UiSteps
         return found!;
     }
 
+    /// <summary>
+    /// Finds a descendant by AutomationId in the raw view of the automation tree, which includes template parts that
+    /// the default view hides, such as an AutoSuggestBox's QueryButton.
+    /// </summary>
+    public static AutomationElement? FindInRawView(DevApp dev, AutomationElement root, string automationId, int maxDepth = 6)
+    {
+        var walker = dev.Automation.TreeWalkerFactory.GetRawViewWalker();
+        AutomationElement? Search(AutomationElement parent, int depth)
+        {
+            for (var child = walker.GetFirstChild(parent); child != null; child = walker.GetNextSibling(child))
+            {
+                if (child.Properties.AutomationId.ValueOrDefault == automationId) return child;
+                if (depth < maxDepth && Search(child, depth + 1) is { } found) return found;
+            }
+            return null;
+        }
+        return Search(root, 0);
+    }
+
     public static AutomationElement? TryFind(DevApp dev, Func<ConditionFactory, ConditionBase> condition)
     {
         var inWindow = dev.MainWindow.FindFirstDescendant(condition);

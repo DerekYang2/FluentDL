@@ -1,7 +1,8 @@
 <#
 Runs the UI tests (TestCategory=UI) against a freshly installed "FluentDL (Dev)" package.
 
-The tests use the real keyboard, so leave the PC alone while they run (about 5 minutes).
+The tests drive the app only through UI Automation, with no real mouse or keyboard input, so the PC stays usable.
+The dev app's window does open on top while they run (about 1 minute).
 
   .\tools\ui-tests\Run-UiTests.ps1                          # install the dev app from this checkout, compare with the baselines
   .\tools\ui-tests\Run-UiTests.ps1 -BaselineFrom 2cb77c1    # record the baselines from an older commit's app
