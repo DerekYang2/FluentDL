@@ -1,6 +1,7 @@
 using FlaUI.Core;
 using FlaUI.Core.AutomationElements;
 using FlaUI.UIA3;
+using FluentDL.Characterization.Tests.Infrastructure;
 using Windows.Management.Deployment;
 
 namespace FluentDL.Characterization.Tests.Ui;
@@ -62,6 +63,16 @@ internal sealed class DevApp : IDisposable
             data.LocalSettings.Values[key] = Newtonsoft.Json.JsonConvert.SerializeObject(value);
         }
     }
+
+    /// <summary>Saves the Deezer ARL and the Qobuz login from the secrets file. Spotify is left in web player mode.</summary>
+    public static void SeedTestAccounts() => SeedSettings(new Dictionary<string, string>
+    {
+        ["deezer_arl"] = Secrets.Require("deezer_arl"),
+        ["qobuz_id"] = Secrets.Require("qobuz_id"),
+        ["qobuz_token"] = Secrets.Require("qobuz_token"),
+        ["qobuz_app_id"] = Secrets.Require("qobuz_app_id"),
+        ["qobuz_app_secret"] = Secrets.Require("qobuz_app_secret"),
+    });
 
     /// <summary>Launches the dev app and waits for its main window. Startup can wait up to 30 s for the music services.</summary>
     public static DevApp Launch(TimeSpan? timeout = null)

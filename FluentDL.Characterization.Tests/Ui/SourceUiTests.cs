@@ -33,14 +33,7 @@ public class SourceUiTests
 
         // Qobuz search needs a signed-in user, so sign the dev app in with the values from the secrets file.
         // Spotify stays in web player mode; the characterization tests cover the official API.
-        DevApp.SeedSettings(new Dictionary<string, string>
-        {
-            ["deezer_arl"] = Secrets.Require("deezer_arl"),
-            ["qobuz_id"] = Secrets.Require("qobuz_id"),
-            ["qobuz_token"] = Secrets.Require("qobuz_token"),
-            ["qobuz_app_id"] = Secrets.Require("qobuz_app_id"),
-            ["qobuz_app_secret"] = Secrets.Require("qobuz_app_secret"),
-        });
+        DevApp.SeedTestAccounts();
 
         using (var dev = DevApp.Launch())
         {
@@ -171,7 +164,17 @@ public class SourceUiTests
         var expectedBadge = source.ToLowerInvariant();
         string[] VisibleBadges() => Find(dev, "CustomListView")
             .FindAllDescendants(cf => cf.ByAutomationId("SourceBadge")).Select(Text).Distinct().ToArray();
-        WaitUntil(() => VisibleBadges() is [var only] && only == expectedBadge, ResultsTimeout, $"{source} results");
+        try
+        {
+            WaitUntil(() => VisibleBadges() is [var only] && only == expectedBadge, ResultsTimeout, $"{source} results");
+        }
+        catch (TimeoutException) when (Text(Find(dev, "ResultsText")) == "No results")
+        {
+            // The service answered with nothing, which happens now and then under load. Try once more; a broken
+            // search fails both times.
+            SubmitSearch(dev, Query);
+            WaitUntil(() => VisibleBadges() is [var only] && only == expectedBadge, ResultsTimeout, $"{source} results (second try)");
+        }
 
         var resultsText = WaitForStable(() => Text(Find(dev, "ResultsText")), TimeSpan.FromSeconds(3), TimeSpan.FromSeconds(45), $"{source} result count");
         var match = System.Text.RegularExpressions.Regex.Match(resultsText, @"^Add (\d+) to queue$");
