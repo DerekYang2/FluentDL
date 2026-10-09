@@ -14,7 +14,9 @@ public class SpotifyOfficialTests
     [TestInitialize]
     public Task SignIn() => LiveSources.EnsureSpotifyOfficialAsync();
 
+    // About 100 s because of bug 17.
     [TestMethod]
+    [TestCategory("Slow")]
     public Task Search() => Snapshot.MatchLive("SpotifyOfficial.Search", async () =>
     {
         var token = CancellationToken.None;
@@ -22,11 +24,11 @@ public class SpotifyOfficialTests
         // results and the fact that more were loaded are pinned. Page 2's head is skipped, since lower ranks reorder.
         return new
         {
-            Tracks = await Live.CollectHead(items => SpotifyApi.GeneralSearch(items, "daft punk get lucky", token, 0, 5), 5),
-            TracksSecondPage = await Live.CollectHead(items => SpotifyApi.GeneralSearch(items, "daft punk get lucky", token, 5, 5), 0),
-            Albums = await Live.Collect(items => SpotifyApi.GeneralSearch(items, "random access memories", token, 0, 3, albumMode: true)),
-            AdvancedArtistTrack = await Live.Collect(items => SpotifyApi.AdvancedSearch(items, "Daft Punk", "Get Lucky", "", token, 0, 5)),
-            AdvancedAll = await Live.Collect(items => SpotifyApi.AdvancedSearch(items, "Daft Punk", "Get Lucky", "Random Access Memories", token, 0, 5)),
+            Tracks = await Live.CollectHead(items => TestSources.Spotify.SearchAsync(items, "daft punk get lucky", new(0, 5), albumMode: false, token), 5),
+            TracksSecondPage = await Live.CollectHead(items => TestSources.Spotify.SearchAsync(items, "daft punk get lucky", new(5, 5), albumMode: false, token), 0),
+            Albums = await Live.Collect(items => TestSources.Spotify.SearchAsync(items, "random access memories", new(0, 3), albumMode: true, token)),
+            AdvancedArtistTrack = await Live.Collect(items => TestSources.Spotify.AdvancedSearchAsync(items, new("Daft Punk", "Get Lucky", ""), new(0, 5), token)),
+            AdvancedAll = await Live.Collect(items => TestSources.Spotify.AdvancedSearchAsync(items, new("Daft Punk", "Get Lucky", "Random Access Memories"), new(0, 5), token)),
         };
     });
 
@@ -69,7 +71,7 @@ public class SpotifyOfficialTests
         })
         {
             var log = new Live.StatusLog();
-            var result = await Live.Collect(items => SpotifyApi.AddTracksFromLink(items, url, CancellationToken.None, log.Callback, userLogin: false, albumMode));
+            var result = await Live.Collect(items => TestSources.Spotify.AddFromLinkAsync(items, url, new(IsFirstPage: true, new(0, 0), AlbumMode: albumMode), log.Callback, CancellationToken.None));
             rows.Add(new { Url = url, AlbumMode = albumMode, Result = result, Status = log.Messages });
         }
         return rows;

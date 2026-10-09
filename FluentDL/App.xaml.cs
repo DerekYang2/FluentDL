@@ -8,6 +8,7 @@ using FluentDL.Models;
 using FluentDL.Notifications;
 using FluentDL.Services;
 using FluentDL.Services.CustomSpotify;
+using FluentDL.Services.Sources;
 using FluentDL.ViewModels;
 using FluentDL.Views;
 using Microsoft.Extensions.DependencyInjection;
@@ -122,6 +123,12 @@ public partial class App : Application
                     services.AddSingleton<ISampleDataService, SampleDataService>();
                     services.AddSingleton<IFileService, FileService>();
 
+                    // Music sources
+                    services.AddSource<DeezerSource>();
+                    services.AddSource<QobuzSource>();
+                    services.AddSource<SpotifySource>();
+                    services.AddSource<YoutubeSource>();
+                    services.AddSingleton<SourceRegistry>();
                     // Views and ViewModels
                     services.AddTransient<SettingsViewModel>();
                     services.AddTransient<SettingsPage>();

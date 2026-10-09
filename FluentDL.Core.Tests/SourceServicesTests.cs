@@ -14,6 +14,14 @@ public class SourceServicesTests
         Assert.AreEqual("qobuz_quality", SettingKeys.QobuzQuality);
         Assert.AreEqual("spotify_quality", SettingKeys.SpotifyQuality);
         Assert.AreEqual("overwrite", SettingKeys.Overwrite);
+        Assert.AreEqual("deezer_arl", SettingKeys.DeezerArl);
+        Assert.AreEqual("qobuz_id", SettingKeys.QobuzId);
+        Assert.AreEqual("qobuz_token", SettingKeys.QobuzToken);
+        Assert.AreEqual("qobuz_app_id", SettingKeys.QobuzAppId);
+        Assert.AreEqual("qobuz_app_secret", SettingKeys.QobuzAppSecret);
+        Assert.AreEqual("spotify_client_Id", SettingKeys.SpotifyClientId); // capital I, matching users' saved settings
+        Assert.AreEqual("spotify_client_secret", SettingKeys.SpotifyClientSecret);
+        Assert.AreEqual("spotify_playlist_prompt", SettingKeys.SpotifyPlaylistPrompt);
     }
 
     // The app maps StatusLevel to WinUI's InfoBarSeverity, which has the same members in the same order.

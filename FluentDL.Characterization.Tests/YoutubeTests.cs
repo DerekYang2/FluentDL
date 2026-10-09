@@ -5,6 +5,7 @@ namespace FluentDL.Characterization.Tests;
 
 [TestClass]
 [TestCategory("Live")]
+[TestCategory("YouTube")]
 public class YoutubeTests
 {
     [TestInitialize]
@@ -17,9 +18,9 @@ public class YoutubeTests
         var token = CancellationToken.None;
         return new
         {
-            Tracks = await Live.Collect(items => YoutubeApi.GeneralSearch(items, "daft punk get lucky", token, 0, 3)),
-            Albums = await Live.Collect(items => YoutubeApi.GeneralSearch(items, "daft punk random access memories", token, 0, 2, albumMode: true)),
-            AdvancedArtistTrack = await Live.Collect(items => YoutubeApi.AdvancedSearch(items, "Daft Punk", "Get Lucky", "", token, 0, 3)),
+            Tracks = await Live.Collect(items => TestSources.Youtube.SearchAsync(items, "daft punk get lucky", new(0, 3), albumMode: false, token)),
+            Albums = await Live.Collect(items => TestSources.Youtube.SearchAsync(items, "daft punk random access memories", new(0, 2), albumMode: true, token)),
+            AdvancedArtistTrack = await Live.Collect(items => TestSources.Youtube.AdvancedSearchAsync(items, new("Daft Punk", "Get Lucky", ""), new(0, 3), token)),
         };
     });
 
@@ -49,7 +50,7 @@ public class YoutubeTests
         })
         {
             var log = new Live.StatusLog();
-            var result = await Live.Collect(items => YoutubeApi.AddTracksFromLink(items, url, CancellationToken.None, log.Callback));
+            var result = await Live.Collect(items => TestSources.Youtube.AddFromLinkAsync(items, url, new(IsFirstPage: true, new(0, 0), AlbumMode: false), log.Callback, CancellationToken.None));
             rows.Add(new { Url = url, Result = result, Status = log.Messages });
         }
         return rows;

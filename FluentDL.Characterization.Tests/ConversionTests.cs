@@ -1,7 +1,8 @@
 using FluentDL.Characterization.Tests.Infrastructure;
+using FluentDL.Contracts.Sources;
+using FluentDL.Core.Sources;
 using FluentDL.Models;
 using FluentDL.Services;
-using FluentDL.Views;
 
 namespace FluentDL.Characterization.Tests;
 
@@ -14,23 +15,38 @@ namespace FluentDL.Characterization.Tests;
 [TestCategory("Live")]
 public class ConversionTests
 {
+    // One method per target, so tools/Run-LiveTests.ps1 can run the targets in parallel processes. Everything that
+    // calls YouTube is in the YouTube category, which Run-LiveTests.ps1 -Quick skips: YouTube is slow and bot-checks
+    // heavy use.
     [TestMethod]
-    [DataRow("deezer", "qobuz")]
-    [DataRow("deezer", "spotify")]
-    [DataRow("deezer", "youtube")]
-    [DataRow("qobuz", "deezer")]
-    [DataRow("qobuz", "spotify")]
-    [DataRow("qobuz", "youtube")]
-    [DataRow("spotify", "deezer")]
-    [DataRow("spotify", "qobuz")]
-    [DataRow("spotify", "youtube")]
-    [DataRow("youtube", "deezer")]
-    [DataRow("youtube", "qobuz")]
-    [DataRow("youtube", "spotify")]
-    public async Task Convert(string origin, string target)
-    {
-        await RunAsync($"Conversion.{origin}-to-{target}", origin, target, spotifyOfficial: false);
-    }
+    [DataRow("qobuz")]
+    [DataRow("spotify")]
+    public Task ConvertToDeezer(string origin) => RunAsync(origin, "deezer", spotifyOfficial: false);
+
+    [TestMethod]
+    [DataRow("deezer")]
+    [DataRow("spotify")]
+    public Task ConvertToQobuz(string origin) => RunAsync(origin, "qobuz", spotifyOfficial: false);
+
+    [TestMethod]
+    [DataRow("deezer")]
+    [DataRow("qobuz")]
+    public Task ConvertToSpotify(string origin) => RunAsync(origin, "spotify", spotifyOfficial: false);
+
+    [TestMethod]
+    [TestCategory("YouTube")]
+    [DataRow("deezer")]
+    [DataRow("qobuz")]
+    [DataRow("spotify")]
+    public Task ConvertFromYoutube(string target) => RunAsync("youtube", target, spotifyOfficial: false);
+
+    // About a minute per origin: every match makes several YouTube Music requests.
+    [TestMethod]
+    [TestCategory("YouTube")]
+    [DataRow("deezer")]
+    [DataRow("qobuz")]
+    [DataRow("spotify")]
+    public Task ConvertToYoutube(string origin) => RunAsync(origin, "youtube", spotifyOfficial: false);
 
     // Spotify with a client id and secret takes different paths: its tracks carry an ISRC, and converting to Spotify
     // searches by ISRC first (bug 3: when the ISRC search finds nothing, it never falls back to metadata).
@@ -39,14 +55,15 @@ public class ConversionTests
     [DataRow("qobuz", "spotify")]
     [DataRow("spotify", "deezer")]
     [DataRow("spotify", "qobuz")]
-    [DataRow("spotify", "youtube")]
-    public async Task ConvertWithSpotifyOfficial(string origin, string target)
-    {
-        await RunAsync($"ConversionSpotifyOfficial.{origin}-to-{target}", origin, target, spotifyOfficial: true);
-    }
+    public Task ConvertWithSpotifyOfficial(string origin, string target) => RunAsync(origin, target, spotifyOfficial: true);
 
-    private static async Task RunAsync(string baselineName, string origin, string target, bool spotifyOfficial)
+    [TestMethod]
+    [TestCategory("YouTube")]
+    public Task ConvertWithSpotifyOfficialToYoutube() => RunAsync("spotify", "youtube", spotifyOfficial: true);
+
+    private static async Task RunAsync(string origin, string target, bool spotifyOfficial)
     {
+        var baselineName = $"{(spotifyOfficial ? "ConversionSpotifyOfficial" : "Conversion")}.{origin}-to-{target}";
         await SignInAsync(origin, spotifyOfficial);
         await SignInAsync(target, spotifyOfficial);
 
@@ -99,12 +116,30 @@ public class ConversionTests
         _ => await YoutubeApi.GetTrack(id),
     };
 
-    // Same calls as QueuePage.xaml.cs:1140-1147.
-    private static async Task<SongSearchObject?> ConvertAsync(string target, SongSearchObject song, ConversionUpdateCallback callback) => target switch
+    // Through the conversion adapters, the way the queue will call them. The queue's callback is rebuilt from the
+    // MatchResult: a match reports the found track, NotFound reports the original song, NotReported reports nothing.
+    private static async Task<SongSearchObject?> ConvertAsync(string target, SongSearchObject song, ConversionUpdateCallback callback)
     {
-        "deezer" => await DeezerApi.GetDeezerTrack(song, CancellationToken.None, callback),
-        "qobuz" => await QobuzApi.GetQobuzTrack(song, CancellationToken.None, callback),
-        "spotify" => await SpotifyApi.GetSpotifyTrack(song, CancellationToken.None, callback),
-        _ => await YoutubeApi.GetYoutubeTrack(song, CancellationToken.None, callback),
-    };
+        IConversionTarget source = target switch
+        {
+            "deezer" => TestSources.Deezer,
+            "qobuz" => TestSources.Qobuz,
+            "spotify" => TestSources.Spotify,
+            _ => TestSources.Youtube,
+        };
+        var result = await source.FindEquivalentAsync(song, CancellationToken.None);
+        switch (result.Kind)
+        {
+            case MatchKind.Exact:
+                callback(StatusLevel.Success, result.Track!);
+                break;
+            case MatchKind.Close:
+                callback(StatusLevel.Warning, result.Track!);
+                break;
+            case MatchKind.NotFound:
+                callback(StatusLevel.Error, song);
+                break;
+        }
+        return result.Track;
+    }
 }

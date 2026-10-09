@@ -19,13 +19,13 @@ public class SpotifyWebPlayerTests
     public Task Search() => Snapshot.MatchLive("SpotifyWeb.Search", async () =>
     {
         var token = CancellationToken.None;
-        var tracks = await Live.Collect(items => SpotifyApi.GeneralSearch(items, "daft punk get lucky", token, 0, 5));
+        var tracks = await Live.Collect(items => TestSources.Spotify.SearchAsync(items, "daft punk get lucky", new(0, 5), albumMode: false, token));
         return new
         {
             Tracks = tracks,
-            TracksSecondPage = await Live.CollectNextPage(items => SpotifyApi.GeneralSearch(items, "daft punk get lucky", token, 5, 5), tracks),
-            AlbumMode = await Live.Collect(items => SpotifyApi.GeneralSearch(items, "random access memories", token, 0, 3, albumMode: true)),
-            Advanced = await Live.Collect(items => SpotifyApi.AdvancedSearch(items, "Daft Punk", "Get Lucky", "", token, 0, 5)),
+            TracksSecondPage = await Live.CollectNextPage(items => TestSources.Spotify.SearchAsync(items, "daft punk get lucky", new(5, 5), albumMode: false, token), tracks),
+            AlbumMode = await Live.Collect(items => TestSources.Spotify.SearchAsync(items, "random access memories", new(0, 3), albumMode: true, token)),
+            Advanced = await Live.Collect(items => TestSources.Spotify.AdvancedSearchAsync(items, new("Daft Punk", "Get Lucky", ""), new(0, 5), token)),
         };
     });
 
@@ -59,7 +59,7 @@ public class SpotifyWebPlayerTests
         })
         {
             var log = new Live.StatusLog();
-            var result = await Live.Collect(items => SpotifyApi.AddTracksFromLink(items, url, CancellationToken.None, log.Callback, userLogin: false));
+            var result = await Live.Collect(items => TestSources.Spotify.AddFromLinkAsync(items, url, new(IsFirstPage: true, new(0, 0), AlbumMode: false), log.Callback, CancellationToken.None));
             rows.Add(new { Url = url, Result = result, Status = log.Messages });
         }
         return rows;

@@ -7,7 +7,7 @@ using Microsoft.Extensions.Logging.Abstractions;
 namespace FluentDL.Characterization.Tests.Infrastructure;
 
 /// <summary>
-/// Signs the static source classes in once per test run, with the same calls the app makes at startup.
+/// Signs the sources in once per test run, through the same adapters the app registers.
 /// </summary>
 internal static class LiveSources
 {
@@ -51,19 +51,14 @@ internal static class LiveSources
 
     public static async Task EnsureDeezerAsync()
     {
-        await RunOnceAsync(() => deezerTried, () => deezerTried = true, async () =>
-            await DeezerApi.InitDeezerClient(Secrets.Get("deezer_arl")));
+        await RunOnceAsync(() => deezerTried, () => deezerTried = true, () => TestSources.Deezer.ConnectAsync());
 
         if (!DeezerApi.IsInitialized) Assert.Inconclusive("Deezer did not sign in with the ARL from the secrets file.");
     }
 
     public static async Task EnsureQobuzAsync()
     {
-        await RunOnceAsync(() => qobuzTried, () => qobuzTried = true, () =>
-        {
-            QobuzApi.Initialize(Secrets.Get("qobuz_id"), Secrets.Get("qobuz_token"), Secrets.Get("qobuz_app_id"), Secrets.Get("qobuz_app_secret"));
-            return Task.CompletedTask;
-        });
+        await RunOnceAsync(() => qobuzTried, () => qobuzTried = true, () => TestSources.Qobuz.ConnectAsync());
 
         if (!QobuzApi.IsInitialized) Assert.Inconclusive("Qobuz did not sign in with the values from the secrets file.");
     }
@@ -103,18 +98,18 @@ internal static class LiveSources
     }
 
     /// <summary>
-    /// Puts SpotifyApi in official API mode with the client id and secret from the secrets file, through the same
-    /// SpotifyApi.Initialize call the app makes. Runs every time, because web player tests switch the mode back.
+    /// Puts SpotifyApi in official API mode through SpotifySource.ConnectAsync, which reads the client id and secret
+    /// (from the secrets file here). Runs every time, because web player tests switch the mode back.
     /// </summary>
     public static async Task EnsureSpotifyOfficialAsync()
     {
-        var clientId = Secrets.Require("spotify_client_id");
-        var clientSecret = Secrets.Require("spotify_client_secret");
+        Secrets.Require("spotify_client_id");
+        Secrets.Require("spotify_client_secret");
 
         await Gate.WaitAsync();
         try
         {
-            await SpotifyApi.Initialize(clientId, clientSecret);
+            await TestSources.Spotify.ConnectAsync();
         }
         finally
         {

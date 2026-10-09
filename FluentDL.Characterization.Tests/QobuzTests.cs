@@ -16,16 +16,16 @@ public class QobuzTests
     public Task Search() => Snapshot.MatchLive("Qobuz.Search", async () =>
     {
         var token = CancellationToken.None;
-        var tracks = await Live.Collect(items => QobuzApi.GeneralSearch(items, "daft punk get lucky", token, 0, 5));
+        var tracks = await Live.Collect(items => TestSources.Qobuz.SearchAsync(items, "daft punk get lucky", new(0, 5), albumMode: false, token));
         return new
         {
             Tracks = tracks,
-            TracksSecondPage = await Live.CollectNextPage(items => QobuzApi.GeneralSearch(items, "daft punk get lucky", token, 5, 5), tracks),
-            Albums = await Live.Collect(items => QobuzApi.GeneralSearch(items, "random access memories", token, 0, 3, albumMode: true)),
-            AdvancedArtistTrack = await Live.Collect(items => QobuzApi.AdvancedSearch(items, "Daft Punk", "Get Lucky", "", token, 0, 5)),
-            AdvancedAll = await Live.Collect(items => QobuzApi.AdvancedSearch(items, "Daft Punk", "Get Lucky", "Random Access Memories", token, 0, 5)),
-            AdvancedArtistOnly = await Live.Collect(items => QobuzApi.AdvancedSearch(items, "Avicii", "", "", token, 0, 5)),
-            AdvancedTrackOnly = await Live.Collect(items => QobuzApi.AdvancedSearch(items, "", "Levels", "", token, 0, 5)),
+            TracksSecondPage = await Live.CollectNextPage(items => TestSources.Qobuz.SearchAsync(items, "daft punk get lucky", new(5, 5), albumMode: false, token), tracks),
+            Albums = await Live.Collect(items => TestSources.Qobuz.SearchAsync(items, "random access memories", new(0, 3), albumMode: true, token)),
+            AdvancedArtistTrack = await Live.Collect(items => TestSources.Qobuz.AdvancedSearchAsync(items, new("Daft Punk", "Get Lucky", ""), new(0, 5), token)),
+            AdvancedAll = await Live.Collect(items => TestSources.Qobuz.AdvancedSearchAsync(items, new("Daft Punk", "Get Lucky", "Random Access Memories"), new(0, 5), token)),
+            AdvancedArtistOnly = await Live.Collect(items => TestSources.Qobuz.AdvancedSearchAsync(items, new("Avicii", "", ""), new(0, 5), token)),
+            AdvancedTrackOnly = await Live.Collect(items => TestSources.Qobuz.AdvancedSearchAsync(items, new("", "Levels", ""), new(0, 5), token)),
         };
     });
 
@@ -79,7 +79,7 @@ public class QobuzTests
         })
         {
             var log = new Live.StatusLog();
-            var result = await Live.Collect(items => QobuzApi.AddTracksFromLink(items, url, CancellationToken.None, log.Callback, albumMode));
+            var result = await Live.Collect(items => TestSources.Qobuz.AddFromLinkAsync(items, url, new(IsFirstPage: true, new(0, 0), AlbumMode: albumMode), log.Callback, CancellationToken.None));
             rows.Add(new { Url = url, AlbumMode = albumMode, Result = result, Status = log.Messages });
         }
 
@@ -93,7 +93,7 @@ public class QobuzTests
             var isLabelOrArtist = QobuzApi.IsLinkLabelOrArtist(url, out var linkType, out var id);
             var log = new Live.StatusLog();
             Func<ObservableCollection<SongSearchObject>, Task> fill =
-                items => QobuzApi.AddTracksFromLabelOrArtist(items, url, CancellationToken.None, log.Callback, 0, 5, albumMode: true);
+                items => TestSources.Qobuz.AddFromLinkAsync(items, url, new(IsFirstPage: true, new(0, 5), AlbumMode: true), log.Callback, CancellationToken.None);
             var result = newestFirst ? await Live.CollectShapeOnly(fill) : await Live.Collect(fill);
             rows.Add(new { Url = url, IsLabelOrArtist = isLabelOrArtist, LinkType = linkType.ToString(), Id = id, Result = result, Status = log.Messages });
         }

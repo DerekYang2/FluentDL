@@ -14,15 +14,15 @@ public class DeezerTests
     public Task Search() => Snapshot.MatchLive("Deezer.Search", async () =>
     {
         var token = CancellationToken.None;
-        var tracks = await Live.Collect(items => DeezerApi.GeneralSearch(items, "daft punk get lucky", token, 0, 5));
+        var tracks = await Live.Collect(items => TestSources.Deezer.SearchAsync(items, "daft punk get lucky", new(0, 5), albumMode: false, token));
         return new
         {
             Tracks = tracks,
-            TracksSecondPage = await Live.CollectNextPage(items => DeezerApi.GeneralSearch(items, "daft punk get lucky", token, 5, 5), tracks),
-            Albums = await Live.Collect(items => DeezerApi.GeneralSearch(items, "random access memories", token, 0, 3, albumMode: true)),
-            AdvancedArtistTrack = await Live.Collect(items => DeezerApi.AdvancedSearch(items, "Daft Punk", "Get Lucky", "", token, 0, 5)),
-            AdvancedAll = await Live.Collect(items => DeezerApi.AdvancedSearch(items, "Daft Punk", "Get Lucky", "Random Access Memories", token, 0, 5)),
-            AdvancedArtistOnly = await Live.Collect(items => DeezerApi.AdvancedSearch(items, "Avicii", "", "", token, 0, 5)),
+            TracksSecondPage = await Live.CollectNextPage(items => TestSources.Deezer.SearchAsync(items, "daft punk get lucky", new(5, 5), albumMode: false, token), tracks),
+            Albums = await Live.Collect(items => TestSources.Deezer.SearchAsync(items, "random access memories", new(0, 3), albumMode: true, token)),
+            AdvancedArtistTrack = await Live.Collect(items => TestSources.Deezer.AdvancedSearchAsync(items, new("Daft Punk", "Get Lucky", ""), new(0, 5), token)),
+            AdvancedAll = await Live.Collect(items => TestSources.Deezer.AdvancedSearchAsync(items, new("Daft Punk", "Get Lucky", "Random Access Memories"), new(0, 5), token)),
+            AdvancedArtistOnly = await Live.Collect(items => TestSources.Deezer.AdvancedSearchAsync(items, new("Avicii", "", ""), new(0, 5), token)),
         };
     });
 
@@ -61,7 +61,7 @@ public class DeezerTests
         })
         {
             var log = new Live.StatusLog();
-            var result = await Live.Collect(items => DeezerApi.AddTracksFromLink(items, url, CancellationToken.None, log.Callback, albumMode));
+            var result = await Live.Collect(items => TestSources.Deezer.AddFromLinkAsync(items, url, new(IsFirstPage: true, new(0, 0), AlbumMode: albumMode), log.Callback, CancellationToken.None));
             rows.Add(new { Url = url, AlbumMode = albumMode, Result = result, Status = log.Messages });
         }
         return rows;
