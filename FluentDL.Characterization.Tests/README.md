@@ -5,12 +5,19 @@ These tests call the real Deezer, Qobuz, Spotify and YouTube code in the app pro
 ## Running
 
 ```powershell
-# Offline helper tests only (no network, a few seconds)
-dotnet test FluentDL.Characterization.Tests -p:Platform=x64 --filter "TestCategory!=Live"
+# Offline tests only (no network, a few seconds)
+dotnet test FluentDL.Characterization.Tests -p:Platform=x64 --filter "TestCategory!=Live&TestCategory!=UI&TestCategory!=UIProbe"
 
-# Everything, including live API calls (about 8 minutes)
-dotnet test FluentDL.Characterization.Tests -p:Platform=x64
+# Live tests in parallel processes, skipping everything that calls YouTube and the Spotify official search (about 2 minutes)
+tools\live-tests\Run-LiveTests.ps1 -Quick
+
+# All live tests in parallel. Run this before committing a phase.
+tools\live-tests\Run-LiveTests.ps1
 ```
+
+The source classes keep their state in static fields, so one process runs its tests one at a time. The runner starts one process per group of sources instead. The YouTube-heavy tests stay in one group, so YouTube sees a single client. Each group's full output goes to `%TEMP%\opencode\fluentdl-live-tests`.
+
+The live tests call the sources through the same adapters the app registers (`Services/Sources`). `TestSources` gives them an in-memory settings store filled from the secrets file, so `ConnectAsync` signs in with the test credentials.
 
 Live tests read credentials from `%USERPROFILE%\.fluentdl-secrets\hurl.secrets` (`NAME=VALUE` lines). Set `FLUENTDL_SECRETS` to use another path. A test whose credentials are missing ends as Inconclusive.
 
