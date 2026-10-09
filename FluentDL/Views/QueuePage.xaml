@@ -584,46 +584,16 @@
                     Click="ClearSourcesAllCheckBox_Click"
                     Content="Select all"
                     IsThreeState="True" />
-                <CheckBox
-                    x:Name="ClearSourcesDeezerCheckBox"
-                    Margin="12,0,0,0"
-                    Checked="ClearSourceCheckBox_Checked"
-                    Content="Deezer"
-                    IsChecked="True"
-                    Tag="deezer"
-                    Unchecked="ClearSourceCheckBox_Unchecked" />
-                <CheckBox
-                    x:Name="ClearSourcesQobuzCheckBox"
-                    Margin="12,0,0,0"
-                    Checked="ClearSourceCheckBox_Checked"
-                    Content="Qobuz"
-                    IsChecked="True"
-                    Tag="qobuz"
-                    Unchecked="ClearSourceCheckBox_Unchecked" />
-                <CheckBox
-                    x:Name="ClearSourcesSpotifyCheckBox"
-                    Margin="12,0,0,0"
-                    Checked="ClearSourceCheckBox_Checked"
-                    Content="Spotify"
-                    IsChecked="True"
-                    Tag="spotify"
-                    Unchecked="ClearSourceCheckBox_Unchecked" />
-                <CheckBox
-                    x:Name="ClearSourcesYouTubeCheckBox"
-                    Margin="12,0,0,0"
-                    Checked="ClearSourceCheckBox_Checked"
-                    Content="YouTube"
-                    IsChecked="True"
-                    Tag="youtube"
-                    Unchecked="ClearSourceCheckBox_Unchecked" />
-                <CheckBox
-                    x:Name="ClearSourcesLocalCheckBox"
-                    Margin="12,0,0,0"
-                    Checked="ClearSourceCheckBox_Checked"
-                    Content="Local"
-                    IsChecked="True"
-                    Tag="local"
-                    Unchecked="ClearSourceCheckBox_Unchecked" />
+                <ItemsControl ItemsSource="{x:Bind ClearOptions}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="models:SourceOption">
+                            <CheckBox
+                                Margin="12,0,0,0"
+                                Content="{x:Bind DisplayName}"
+                                IsChecked="{x:Bind IsChecked, Mode=TwoWay}" />
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
             </StackPanel>
         </ContentDialog>
 
@@ -687,31 +657,16 @@
                             Foreground="{ThemeResource TextFillColorSecondary}"
                             Style="{ThemeResource CaptionTextBlockStyle}"
                             Text="Input" />
-                        <CheckBox
-                            x:Name="DeezerCheckBox"
-                            Checked="CheckBox_OnChecked"
-                            Content="Deezer"
-                            Unchecked="CheckBox_OnUnchecked" />
-                        <CheckBox
-                            x:Name="QobuzCheckBox"
-                            Checked="CheckBox_OnChecked"
-                            Content="Qobuz"
-                            Unchecked="CheckBox_OnUnchecked" />
-                        <CheckBox
-                            x:Name="SpotifyCheckBox"
-                            Checked="CheckBox_OnChecked"
-                            Content="Spotify"
-                            Unchecked="CheckBox_OnUnchecked" />
-                        <CheckBox
-                            x:Name="YouTubeCheckBox"
-                            Checked="CheckBox_OnChecked"
-                            Content="YouTube"
-                            Unchecked="CheckBox_OnUnchecked" />
-                        <CheckBox
-                            x:Name="LocalCheckBox"
-                            Checked="CheckBox_OnChecked"
-                            Content="Local"
-                            Unchecked="CheckBox_OnUnchecked" />
+                        <ItemsControl ItemsSource="{x:Bind ConversionOptions}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="models:SourceOption">
+                                    <CheckBox
+                                        Content="{x:Bind DisplayName}"
+                                        IsChecked="{x:Bind IsChecked, Mode=TwoWay}"
+                                        IsEnabled="{x:Bind IsEnabled, Mode=OneWay}" />
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
                     </StackPanel>
 
                     <StackPanel Grid.Column="1">

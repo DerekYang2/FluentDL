@@ -1,4 +1,5 @@
-﻿using FluentDL.Core.Matching;
+﻿using FluentDL.Core.Sources;
+using FluentDL.Core.Matching;
 using FluentDL.Helpers;
 using FluentDL.Models;
 using FluentDL.Views;
@@ -836,7 +837,7 @@ namespace FluentDL.Services
                 AlbumName = ytmSong.Album.Name,
                 Artists = artistString,
                 Duration = ytmSong.Duration.TotalSeconds.ToString(),
-                Source = "youtube",
+                Source = SourceIds.YouTube,
                 Explicit = ytmSong.IsExplicit,
                 Id = ytmSong.Id,
                 ImageLocation = ytmSong.Thumbnails.Last().Url,
@@ -912,7 +913,7 @@ namespace FluentDL.Services
                 AlbumName = albumName,
                 Artists = artistString,
                 Duration = ytmSong?.Duration.TotalSeconds.ToString() ?? video.Duration?.TotalSeconds.ToString() ?? "0",
-                Source = "youtube",
+                Source = SourceIds.YouTube,
                 Explicit = !ytmSong?.IsFamiliyFriendly ?? false,
                 Id = ytmSong?.Id ?? video.Id,
                 ImageLocation = imageLocation,
@@ -959,7 +960,7 @@ namespace FluentDL.Services
                 AlbumName = ytmAlbum.Name,
                 Artists = artistString,
                 Duration = ytmAlbum.Duration.TotalSeconds.ToString() ?? "0",
-                Source = "youtube",
+                Source = SourceIds.YouTube,
                 Explicit = false,
                 Id = ytmAlbum.Id,
                 ImageLocation = imageLocation,
@@ -989,7 +990,7 @@ namespace FluentDL.Services
                 AlbumName = album.Name,
                 Artists = artistString,
                 Duration = song.Duration.TotalSeconds.ToString() ?? "0",
-                Source = "youtube",
+                Source = SourceIds.YouTube,
                 Explicit = song.IsExplicit,
                 Id = song.Id,
                 ImageLocation = imageLocation,

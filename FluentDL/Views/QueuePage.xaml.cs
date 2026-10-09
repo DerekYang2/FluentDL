@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.Globalization;
 using System.Text.RegularExpressions;
 using Windows.Storage.Pickers;
+using FluentDL.Core.Sources;
 using FluentDL.Services;
 using FluentDL.ViewModels;
 using Microsoft.UI.Dispatching;
@@ -51,8 +52,11 @@ public sealed partial class QueuePage : Page
     private CancellationTokenSource cancellationTokenSource;
 
     // Conversion variables
-    private HashSet<string> selectedSources;
     private ConcurrentDictionary<SongSearchObject, int> successSource, warningSource, errorSource;
+
+    // One checkbox per source in the clear and conversion dialogs, in catalog order.
+    public IReadOnlyList<SourceOption> ClearOptions { get; } = SourceCatalog.All.Select(s => new SourceOption(s) { IsChecked = true }).ToList();
+    public IReadOnlyList<SourceOption> ConversionOptions { get; } = SourceCatalog.All.Select(s => new SourceOption(s) { IsChecked = false }).ToList();
 
     private static readonly object _lock = new object();
     private static bool _isConverting = false;
@@ -97,14 +101,18 @@ public sealed partial class QueuePage : Page
         cancellationTokenSource = new CancellationTokenSource();
         InitPreviewPanelButtons();
         InitializeAnimations();
-        OutputComboBox.ItemsSource = new List<string>
+        OutputComboBox.ItemsSource = SourceCatalog.All.Select(s => s.DisplayName).ToList();
+
+        foreach (var option in ClearOptions)
         {
-            "Deezer",
-            "Qobuz",
-            "Spotify",
-            "YouTube",
-            "Local"
-        }; // Default list
+            option.PropertyChanged += (_, e) =>
+            {
+                if (e.PropertyName == nameof(SourceOption.IsChecked))
+                {
+                    UpdateClearSourcesAllState();
+                }
+            };
+        }
 
         QueueViewModel.Source.CollectionChanged += (sender, e) =>
         {
@@ -118,8 +126,6 @@ public sealed partial class QueuePage : Page
         successSource = new ConcurrentDictionary<SongSearchObject, int>();
         warningSource = new ConcurrentDictionary<SongSearchObject, int>();
         errorSource = new ConcurrentDictionary<SongSearchObject, int>();
-
-        selectedSources = new HashSet<string>();
 
         // Create callback
         queueRunCallback = (severity, message) =>
@@ -157,7 +163,7 @@ public sealed partial class QueuePage : Page
         if (selectedSong != null)
         {
             PreviewPanel.Show();
-            if (selectedSong.Source == "local")
+            if (selectedSong.Source == SourceIds.Local)
             {
                 await PreviewPanel.Update(selectedSong, LocalExplorerViewModel.GetMetadataObject(selectedSong.Id));
             }
@@ -218,7 +224,7 @@ public sealed partial class QueuePage : Page
         {
             item.Tag = song;
         }
-        var localVisibility = song.Source == "local" ? Visibility.Visible : Visibility.Collapsed;
+        var localVisibility = song.Source == SourceIds.Local ? Visibility.Visible : Visibility.Collapsed;
         CompactQueueLocalSeparator.Visibility = localVisibility;
         CompactQueueOpenSpekItem.Visibility = localVisibility;
         CompactQueueOpenLocalItem.Visibility = localVisibility;
@@ -354,7 +360,7 @@ public sealed partial class QueuePage : Page
     {
         var button = sender as FrameworkElement;
         var song = button?.Tag as SongSearchObject;
-        if (song == null || song.Source != "local" || !File.Exists(song.Id))  // SongSearchObject.id for local tracks is the file path
+        if (song == null || song.Source != SourceIds.Local || !File.Exists(song.Id))  // SongSearchObject.id for local tracks is the file path
         {
             ShowInfoBar(InfoBarSeverity.Warning, "Track does not exist locally", 3);
             return;
@@ -424,7 +430,7 @@ public sealed partial class QueuePage : Page
         if (file != null)
         {
             byte[]? coverBytes;
-            if (songObj.Source == "local")
+            if (songObj.Source == SourceIds.Local)
             {
                 coverBytes = await Task.Run(() => LocalExplorerViewModel.GetAlbumArtBytes(songObj.Id));
             }
@@ -484,7 +490,7 @@ public sealed partial class QueuePage : Page
         }
 
         PreviewPanel.Show();
-        if (selectedSong.Source == "local")
+        if (selectedSong.Source == SourceIds.Local)
         {
             await PreviewPanel.Update(selectedSong, LocalExplorerViewModel.GetMetadataObject(selectedSong.Id));
         }
@@ -510,7 +516,7 @@ public sealed partial class QueuePage : Page
         try
         {
             var autoBackupEnabled = await SettingsViewModel.GetSetting<bool?>(SettingsViewModel.AutoBackupEnabled) ?? true;
-            bool onlyLocal = selectedSources.Count == 1 && selectedSources.Contains("local");
+            bool onlyLocal = selectedSources.Count == 1 && selectedSources.Contains(SourceIds.Local);
             int deletionCount = 0;
             foreach (var song in QueueViewModel.Source)
             {
@@ -553,41 +559,20 @@ public sealed partial class QueuePage : Page
     private void InitializeClearSourcesSelection()
     {
         ClearSourcesAllCheckBox.IsChecked = true;
-        foreach (var checkBox in GetClearSourceCheckBoxes())
+        foreach (var option in ClearOptions)
         {
-            checkBox.IsChecked = true;
+            option.IsChecked = true;
         }
-    }
-
-    private IEnumerable<CheckBox> GetClearSourceCheckBoxes()
-    {
-        return new[]
-        {
-            ClearSourcesDeezerCheckBox,
-            ClearSourcesQobuzCheckBox,
-            ClearSourcesSpotifyCheckBox,
-            ClearSourcesYouTubeCheckBox,
-            ClearSourcesLocalCheckBox
-        }.Where(checkBox => checkBox != null);
     }
 
     private HashSet<string> GetSelectedClearSources()
     {
-        var selectedSources = new HashSet<string>();
-        foreach (var checkBox in GetClearSourceCheckBoxes())
-        {
-            if (checkBox.IsChecked == true && checkBox.Tag is string tag)
-            {
-                selectedSources.Add(tag);
-            }
-        }
-
-        return selectedSources;
+        return ClearOptions.Where(option => option.IsChecked == true).Select(option => option.Id).ToHashSet();
     }
 
     private void ClearSourcesAllCheckBox_Click(object sender, RoutedEventArgs e)
     {
-        var states = GetClearSourceCheckBoxes().Select(checkBox => checkBox.IsChecked).ToList();
+        var states = ClearOptions.Select(option => option.IsChecked).ToList();
         if (states.Count == 0)
         {
             return;
@@ -605,27 +590,17 @@ public sealed partial class QueuePage : Page
         }
     }
 
-    private void ClearSourceCheckBox_Checked(object sender, RoutedEventArgs e)
-    {
-        UpdateClearSourcesAllState();
-    }
-
-    private void ClearSourceCheckBox_Unchecked(object sender, RoutedEventArgs e)
-    {
-        UpdateClearSourcesAllState();
-    }
-
     private void SetClearSourceSelections(bool isChecked)
     {
-        foreach (var checkBox in GetClearSourceCheckBoxes())
+        foreach (var option in ClearOptions)
         {
-            checkBox.IsChecked = isChecked;
+            option.IsChecked = isChecked;
         }
     }
 
     private void UpdateClearSourcesAllState()
     {
-        var states = GetClearSourceCheckBoxes().Select(checkBox => checkBox.IsChecked).ToList();
+        var states = ClearOptions.Select(option => option.IsChecked).ToList();
         if (states.Count == 0)
         {
             ClearSourcesAllCheckBox.IsChecked = false;
@@ -960,23 +935,16 @@ public sealed partial class QueuePage : Page
         ShowInfoBar(InfoBarSeverity.Success, "Copied to clipboard");
     }
 
-    private void CheckBox_OnChecked(object sender, RoutedEventArgs e)
-    {
-        var checkBox = sender as CheckBox;
-        var checkBoxContent = checkBox.Content.ToString();
-        selectedSources.Add(checkBoxContent.ToLower());
-    }
-
-    private void CheckBox_OnUnchecked(object sender, RoutedEventArgs e)
-    {
-        var checkBox = sender as CheckBox;
-        var checkBoxContent = checkBox.Content.ToString();
-        selectedSources.Remove(checkBoxContent.ToLower());
-    }
-
     private string? GetOutputSource()
     {
         return OutputComboBox.SelectedItem as string;
+    }
+
+    // The output list shows display names; this maps the selected one back to its source id.
+    private string? GetOutputSourceId()
+    {
+        var displayName = GetOutputSource();
+        return SourceCatalog.All.FirstOrDefault(s => s.DisplayName == displayName)?.Id;
     }
 
     private async void ConvertDialogOpenButton_OnClick(object sender, RoutedEventArgs e)
@@ -988,18 +956,12 @@ public sealed partial class QueuePage : Page
             sources.Add(song.Source);
         }
 
-        DeezerCheckBox.IsChecked = sources.Contains("deezer");
-        QobuzCheckBox.IsChecked = sources.Contains("qobuz");
-        SpotifyCheckBox.IsChecked = sources.Contains("spotify");
-        YouTubeCheckBox.IsChecked = sources.Contains("youtube");
-        LocalCheckBox.IsChecked = sources.Contains("local");
-
-        // If unchecked, disable the output combobox
-        DeezerCheckBox.IsEnabled = DeezerCheckBox.IsChecked.Value;
-        QobuzCheckBox.IsEnabled = QobuzCheckBox.IsChecked.Value;
-        SpotifyCheckBox.IsEnabled = SpotifyCheckBox.IsChecked.Value;
-        YouTubeCheckBox.IsEnabled = YouTubeCheckBox.IsChecked.Value;
-        LocalCheckBox.IsEnabled = LocalCheckBox.IsChecked.Value;
+        // Only sources that are in the queue can be selected
+        foreach (var option in ConversionOptions)
+        {
+            option.IsChecked = sources.Contains(option.Id);
+            option.IsEnabled = option.IsChecked == true;
+        }
 
         // Show conversion dialog
         ConversionDialog.XamlRoot = this.XamlRoot;
@@ -1016,13 +978,13 @@ public sealed partial class QueuePage : Page
         int totalCount = songsToConvert.Count();
         if (totalCount == 0)
         {
-            ShowInfoBar(InfoBarSeverity.Warning, $"No tracks to {(outputSource == "local" ? "download" : "convert")}", 3);
+            ShowInfoBar(InfoBarSeverity.Warning, $"No tracks to {(outputSource == SourceIds.Local ? "download" : "convert")}", 3);
             return;
         }
 
         // Set download location if output is local and ask before download is enabled or download directory is not set
         var directory = await SettingsViewModel.GetSetting<string>(SettingsViewModel.DownloadDirectory);
-        if (outputSource == "local" && (await SettingsViewModel.GetSetting<bool>(SettingsViewModel.AskBeforeDownload) || string.IsNullOrWhiteSpace(directory)))
+        if (outputSource == SourceIds.Local && (await SettingsViewModel.GetSetting<bool>(SettingsViewModel.AskBeforeDownload) || string.IsNullOrWhiteSpace(directory)))
         {
             directory = await StoragePickerHelper.GetDirectory();
             if (directory == null)
@@ -1086,7 +1048,7 @@ public sealed partial class QueuePage : Page
         try
         {
             // Infobar notification
-            if (outputSource == "local")
+            if (outputSource == SourceIds.Local)
             {
                 ShowInfoBarPermanent(InfoBarSeverity.Informational, $"Saving {totalCount} tracks to <a href='{directory}'>{directory}</a>", title: "Download in Progress");
             }
@@ -1100,7 +1062,7 @@ public sealed partial class QueuePage : Page
             ConvertStopButton.Visibility = Visibility.Visible; // Show stop button
 
             // Other initialization
-            if (outputSource == "local")
+            if (outputSource == SourceIds.Local)
             {
                 downloadHelper.StartLoop();
             }
@@ -1130,7 +1092,7 @@ public sealed partial class QueuePage : Page
                         // Convert the track and get new song object
                         SongSearchObject? newSongObj = null;
                         string? fileLocation = null;
-                        if (outputSource == "local") // Conversion to local, download the track
+                        if (outputSource == SourceIds.Local) // Conversion to local, download the track
                         {
                             fileLocation = await ApiHelper.DownloadObject(song, directory, progress, conversionUpdateCallback);
                             newSongObj = song;
@@ -1139,10 +1101,10 @@ public sealed partial class QueuePage : Page
                         {
                             newSongObj = outputSource switch
                             {
-                                "deezer" => await DeezerApi.GetDeezerTrack(song, token, conversionUpdateCallback),
-                                "qobuz" => await QobuzApi.GetQobuzTrack(song, token, conversionUpdateCallback),
-                                "spotify" => await SpotifyApi.GetSpotifyTrack(song, token, conversionUpdateCallback),
-                                "youtube" => await YoutubeApi.GetYoutubeTrack(song, token, conversionUpdateCallback),
+                                SourceIds.Deezer => await DeezerApi.GetDeezerTrack(song, token, conversionUpdateCallback),
+                                SourceIds.Qobuz => await QobuzApi.GetQobuzTrack(song, token, conversionUpdateCallback),
+                                SourceIds.Spotify => await SpotifyApi.GetSpotifyTrack(song, token, conversionUpdateCallback),
+                                SourceIds.YouTube => await YoutubeApi.GetYoutubeTrack(song, token, conversionUpdateCallback),
                                 _ => throw new Exception("Unspecified output source") // Should never happen
                             };
                         }
@@ -1156,7 +1118,7 @@ public sealed partial class QueuePage : Page
                                 if (newSongObj != null)
                                 {
                                     QueueObject? queueObj;
-                                    if (outputSource == "local")
+                                    if (outputSource == SourceIds.Local)
                                     {
                                         var localSong = LocalExplorerViewModel.ParseFile(fileLocation);
 
@@ -1218,7 +1180,7 @@ public sealed partial class QueuePage : Page
                         dispatcherQueue.TryEnqueue(() =>
                         {
                             song.IsRunning = false; // Set song to not running
-                            if (outputSource != "local")
+                            if (outputSource != SourceIds.Local)
                             {
                                 QueueProgress.Value = 100.0 * processCaptured / totalCount; // Update the progress bar
                             }
@@ -1256,7 +1218,7 @@ public sealed partial class QueuePage : Page
             ConvertStopButton.Visibility = Visibility.Collapsed; // Hide stop button
             IsConverting = false;
 
-            if (outputSource == "local")
+            if (outputSource == SourceIds.Local)
             {
                 downloadHelper.StopLoop();
             }
@@ -1269,8 +1231,8 @@ public sealed partial class QueuePage : Page
 
     private async void DownloadAllButton_Click(object sender, RoutedEventArgs e)
     {
-        string outputSource = "local";
-        var selectedSources = new List<string> { "deezer", "qobuz", "spotify", "youtube" }; // All sources except local
+        string outputSource = SourceIds.Local;
+        var selectedSources = SourceCatalog.All.Where(s => s.Id != SourceIds.Local).Select(s => s.Id).ToList(); // All sources except local
 
         await ConversionTask(selectedSources, outputSource);
     }
@@ -1284,13 +1246,14 @@ public sealed partial class QueuePage : Page
             return;
         }
 
-        if (DeezerCheckBox.IsChecked == false && QobuzCheckBox.IsChecked == false && SpotifyCheckBox.IsChecked == false && YouTubeCheckBox.IsChecked == false && LocalCheckBox.IsChecked == false)
+        if (ConversionOptions.All(option => option.IsChecked == false))
         {
             ShowInfoBar(InfoBarSeverity.Warning, "Please select at least one input source.", 3);
             return;
         }
 
-        var outputSource = GetOutputSource().ToLower();
+        var outputSource = GetOutputSourceId()!;
+        var selectedSources = ConversionOptions.Where(option => option.IsChecked == true).Select(option => option.Id).ToHashSet();
 
         await ConversionTask(selectedSources, outputSource);
     }

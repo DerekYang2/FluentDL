@@ -1,4 +1,5 @@
-﻿using FluentDL.Models;
+﻿using FluentDL.Core.Sources;
+using FluentDL.Models;
 using Microsoft.Extensions.Logging;
 using System.Net.Http.Headers;
 using System.Runtime.CompilerServices;
@@ -304,7 +305,7 @@ namespace FluentDL.Services.CustomSpotify
                 {
                     song = new SongSearchObject
                     {
-                        Source = "spotify",
+                        Source = SourceIds.Spotify,
                         Title = GetString(trackElement, "name"),
                         Id = GetString(trackElement, "id"),
                         Artists = GetArtistsCsv(trackElement),
@@ -374,7 +375,7 @@ namespace FluentDL.Services.CustomSpotify
 
             return new SongSearchObject
             {
-                Source = "spotify",
+                Source = SourceIds.Spotify,
                 Title = data.Title,
                 Id = data.Id,
                 Artists = GetTrackArtistsCsv(data.FirstArtistItemsElement, data.OtherArtistItemsElement),
@@ -567,7 +568,7 @@ namespace FluentDL.Services.CustomSpotify
             var uri = GetString(entityElement, "uri");
             return new SongSearchObject
             {
-                Source = "spotify",
+                Source = SourceIds.Spotify,
                 Title = GetItemV3Title(entityElement),
                 Artists = GetItemV3ArtistsCsv(entityElement),
                 ImageLocation = GetItemV3ImageLocation(entityElement),

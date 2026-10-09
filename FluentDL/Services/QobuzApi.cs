@@ -1,3 +1,4 @@
+using FluentDL.Core.Sources;
 using FluentDL.Helpers;
 using FluentDL.Models;
 using FluentDL.ViewModels;
@@ -673,7 +674,7 @@ internal partial class QobuzApi
             Artists = string.Join(", ", contribList),
             Duration = track.Duration?.ToString() ?? "0",
             Explicit = track.ParentalWarning ?? false,
-            Source = "qobuz",
+            Source = SourceIds.Qobuz,
             Id = track.Id?.ToString() ?? "",
             TrackPosition = (track.TrackNumber ?? 1).ToString(),
             ImageLocation = track.Album?.Image?.Small ?? "",
@@ -707,7 +708,7 @@ internal partial class QobuzApi
             Artists = string.Join(", ", contribList),
             Duration = track.Duration?.ToString() ?? "0",
             Explicit = track.ParentalWarning ?? false,
-            Source = "qobuz",
+            Source = SourceIds.Qobuz,
             Id = track.Id.GetValueOrDefault().ToString(),
             TrackPosition = track.TrackNumber.GetValueOrDefault().ToString(),
             ImageLocation = album.Image.Small,
@@ -739,7 +740,7 @@ internal partial class QobuzApi
             Artists = string.Join(", ", artists),
             Duration = album.Duration?.ToString() ?? "0",
             Explicit = album.ParentalWarning ?? false,
-            Source = "qobuz",
+            Source = SourceIds.Qobuz,
             Id = album.Id.ToString(),
             TrackPosition = "1", // Not applicable for albums
             ImageLocation = album.Image?.Small ?? "",
@@ -806,7 +807,7 @@ internal partial class QobuzApi
 
         string? isrc = songObj.Isrc;
         // Spotify specific
-        if (songObj.Source == "spotify" && string.IsNullOrWhiteSpace(isrc))
+        if (songObj.Source == SourceIds.Spotify && string.IsNullOrWhiteSpace(isrc))
         {
             isrc = await SpotifyApi.GetIsrcFromId(songObj.Id);
         }

@@ -2,6 +2,7 @@ using System.Reflection;
 using System.Windows.Input;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using FluentDL.Core.Sources;
 using FluentDL.Contracts.Services;
 using FluentDL.Core.Services;
 using FluentDL.Core.Contracts.Services;
@@ -174,7 +175,7 @@ public partial class SettingsViewModel : ObservableRecipient
         await SaveSettingsAsyncIfNull<bool?>(Subfolders, false);
         await SaveSettingsAsyncIfNull<bool?>(AlbumSubfolders, true);
         await SaveSettingsAsyncIfNull<bool?>(DownloadAlbumCoverArt, true);
-        await SaveSettingsAsyncIfNull<string?>(SearchSource, "deezer");
+        await SaveSettingsAsyncIfNull<string?>(SearchSource, SourceIds.Deezer);
         await SaveSettingsAsyncIfNull<bool?>(SearchAddChecked, false);
         await SaveSettingsAsyncIfNull<bool?>(SearchShareChecked, false);
         await SaveSettingsAsyncIfNull<bool?>(SearchOpenChecked, false);

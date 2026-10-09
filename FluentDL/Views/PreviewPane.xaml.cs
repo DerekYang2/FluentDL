@@ -1,4 +1,5 @@
 ﻿using CommunityToolkit.Labs.WinUI.MarqueeTextRns;
+using FluentDL.Core.Sources;
 using FluentDL.Contracts.Services;
 using FluentDL.Core.Contracts.Services;
 using FluentDL.Core.ReplayGain;
@@ -245,7 +246,7 @@ namespace FluentDL.Views
             };
 
 
-            if (selectedSong.Source.Equals("deezer"))
+            if (selectedSong.Source.Equals(SourceIds.Deezer))
             {
                 if (selectedSong is AlbumSearchObject selectedAlbum)
                 {
@@ -311,7 +312,7 @@ namespace FluentDL.Views
                 }
             }
 
-            if (selectedSong.Source.Equals("qobuz"))
+            if (selectedSong.Source.Equals(SourceIds.Qobuz))
             {
                 if (selectedSong is AlbumSearchObject selectedAlbum)
                 {
@@ -372,7 +373,7 @@ namespace FluentDL.Views
                 }
             }
 
-            if (selectedSong.Source.Equals("spotify"))
+            if (selectedSong.Source.Equals(SourceIds.Spotify))
             {
                 if (selectedSong is AlbumSearchObject selectedAlbum)
                 {
@@ -429,7 +430,7 @@ namespace FluentDL.Views
                 }
             }
 
-            if (selectedSong.Source.Equals("youtube"))
+            if (selectedSong.Source.Equals(SourceIds.YouTube))
             {
                 ImageSource = new BitmapImage(new Uri(await YoutubeApi.GetMaxResThumbnail(selectedSong) ?? "")); // Get max res thumbnail
                 if (token.IsCancellationRequested || requestId != Interlocked.Read(ref _currentRequestId))
@@ -462,7 +463,7 @@ namespace FluentDL.Views
                 }
             }
 
-            if (selectedSong.Source.Equals("local"))
+            if (selectedSong.Source.Equals(SourceIds.Local))
             {
                 if (trackInfoObj is MetadataObject metadata)
                 {
@@ -576,8 +577,8 @@ namespace FluentDL.Views
         // Qobuz - not available
         private double GetPercentage(SongSearchObject song) {
             return song.Source switch {
-                 "deezer" => double.Parse(song.Rank) / 1E6,
-                 "spotify" => double.Parse(song.Rank) / 100,
+                 SourceIds.Deezer => double.Parse(song.Rank) / 1E6,
+                 SourceIds.Spotify => double.Parse(song.Rank) / 100,
                  _ => -1 // Not available
             };
         }
@@ -646,22 +647,22 @@ namespace FluentDL.Views
             var token = BeginNewRequest();
             var requestId = Interlocked.Read(ref _currentRequestId);
 
-            if (selectedSong.Source == "qobuz")
+            if (selectedSong.Source == SourceIds.Qobuz)
             {
                 var previewUri = await Task.Run(() => QobuzApi.GetPreviewUri(selectedSong.Id));
                 if (token.IsCancellationRequested || requestId != Interlocked.Read(ref _currentRequestId))
                     return;
                 SetPlayerSource(previewUri);
             }
-            if (selectedSong.Source == "deezer")
+            if (selectedSong.Source == SourceIds.Deezer)
             {
                 SetPlayerSource(selectedSong?.AdditionalFields?["preview"]?.ToString());
             }
-            if (selectedSong.Source == "youtube")
+            if (selectedSong.Source == SourceIds.YouTube)
             {
                 await LoadYouTubeAudioPreviewAsync(selectedSong?.Id, requestId, token);
             }
-            if (selectedSong.Source == "spotify")
+            if (selectedSong.Source == SourceIds.Spotify)
             {
                 var previewUrl = await GetSpotifyPreviewUrl(selectedSong.Id);
                 if (token.IsCancellationRequested || requestId != Interlocked.Read(ref _currentRequestId))

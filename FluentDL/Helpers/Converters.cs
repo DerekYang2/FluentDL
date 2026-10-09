@@ -1,6 +1,7 @@
 ﻿using ABI.Microsoft.UI.Xaml;
 using AngleSharp.Dom;
 using FluentDL.Core.Helpers;
+using FluentDL.Core.Sources;
 using FluentDL.Models;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Data;
@@ -143,6 +144,18 @@ internal class StringNullorEmptyVisibilityConverter : IValueConverter
     }
 }
 
+internal static class SourceBrushes
+{
+    private static readonly Windows.UI.Color Fallback = Windows.UI.Color.FromArgb(255, 255, 255, 255);
+
+    // The source's accent color, or white for an unknown source.
+    public static SolidColorBrush For(string? sourceId)
+    {
+        var source = SourceCatalog.Find(sourceId);
+        return new SolidColorBrush(source == null ? Fallback : Windows.UI.Color.FromArgb(255, source.R, source.G, source.B));
+    }
+}
+
 internal class SourceToColorConverter : IValueConverter
 {
     // Converts source to color
@@ -150,14 +163,7 @@ internal class SourceToColorConverter : IValueConverter
     {
         if (value == null) throw new ArgumentNullException(nameof(value));
 
-        return ((string)value) switch
-        {
-            "spotify" => new SolidColorBrush(Windows.UI.Color.FromArgb(255, 15, 213, 101)),
-            "deezer" => new SolidColorBrush(Windows.UI.Color.FromArgb(255, 160, 55, 250)),
-            "qobuz" => new SolidColorBrush(Windows.UI.Color.FromArgb(255, 0, 0, 0)),
-            "youtube" => new SolidColorBrush(Windows.UI.Color.FromArgb(255, 255, 0, 0)),
-            _ => new SolidColorBrush(Windows.UI.Color.FromArgb(255, 255, 255, 255)), // Local source or anything else
-        };
+        return SourceBrushes.For((string)value);
     }
 
     public object ConvertBack(object value, Type targetType, object parameter, string language)
@@ -175,7 +181,7 @@ internal class LocalSourceToVisibilityConverter : IValueConverter
 
         return ((string)value) switch
         {
-            "local" => Microsoft.UI.Xaml.Visibility.Visible,
+            SourceIds.Local => Microsoft.UI.Xaml.Visibility.Visible,
             _ => Microsoft.UI.Xaml.Visibility.Collapsed,
         };
     }

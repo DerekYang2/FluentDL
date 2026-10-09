@@ -1,5 +1,6 @@
 using AngleSharp.Dom;
 using AngleSharp.Text;
+using FluentDL.Core.Sources;
 using FluentDL.Contracts.Services;
 using FluentDL.Helpers;
 using FluentDL.Models;
@@ -107,20 +108,14 @@ public sealed partial class Search : Page
     private string advancedTrackName = "";
     private string advancedAlbumName = "";
     private int searchOffset = 0;
-    private Dictionary<string, int> initialChunkSize = new()
-    {
-        { "deezer", 20 },
-        { "qobuz", 20 },
-        { "spotify", 20 },
-        { "youtube", 10 }
-    };
-    private Dictionary<string, int> searchChunkSize = new()
-    {
-        { "deezer", 10 },
-        { "qobuz", 10 },
-        { "spotify", 10 },
-        { "youtube", 5 }
-    };
+
+    // The Search page's source picker lists every searchable source, in catalog order.
+    public IReadOnlyList<SourceDescriptor> SearchSources => SourceCatalog.Searchable;
+
+    public static string SearchSourceToolTip(string displayName) => $"Get search results from {displayName}";
+
+    private SourceDescriptor SelectedSearchSource => (SourceDescriptor)SourceRadioButtons.SelectedItem;
+
     private static readonly SemaphoreSlim searchLock = new SemaphoreSlim(1, 1);
 
 
@@ -518,22 +513,23 @@ public sealed partial class Search : Page
                     }
                 };
 
-                var generalSource = (SourceRadioButtons.SelectedItem as RadioButton).Content.ToString().ToLower();
+                var searchSource = SelectedSearchSource;
+                var generalSource = searchSource.Id;
                 var itemSource = (ObservableCollection<SongSearchObject>)CustomListView.ItemsSource;
                 int oldSize = itemSource.Count;
-                var searchLimit = isInitial ? initialChunkSize[generalSource] : searchChunkSize[generalSource];
+                var searchLimit = isInitial ? searchSource.InitialChunkSize : searchSource.SearchChunkSize;
 
                 if (currentSearchMode == SearchMode.Advanced)
                 {
                     switch (generalSource)
                     {
-                        case "spotify":
+                        case SourceIds.Spotify:
                             await FluentDL.Services.SpotifyApi.AdvancedSearch(itemSource, advancedArtistName, advancedTrackName, advancedAlbumName, cancellationTokenSource.Token, searchOffset, searchLimit, clearResults: false);
                             break;
-                        case "qobuz":
+                        case SourceIds.Qobuz:
                             await FluentDL.Services.QobuzApi.AdvancedSearch(itemSource, advancedArtistName, advancedTrackName, advancedAlbumName, cancellationTokenSource.Token, searchOffset, searchLimit, clearResults: false);
                             break;
-                        case "youtube":
+                        case SourceIds.YouTube:
                             await FluentDL.Services.YoutubeApi.AdvancedSearch(itemSource, advancedArtistName, advancedTrackName, advancedAlbumName, cancellationTokenSource.Token, searchOffset, searchLimit, clearResults: false);
                             break;
                         default:
@@ -589,13 +585,13 @@ public sealed partial class Search : Page
                 {
                     switch (generalSource)
                     {
-                        case "qobuz":
+                        case SourceIds.Qobuz:
                             await QobuzApi.GeneralSearch(itemSource, generalQuery, cancellationTokenSource.Token, searchOffset, searchLimit, ViewModel.AlbumMode);
                             break;
-                        case "spotify":
+                        case SourceIds.Spotify:
                             await SpotifyApi.GeneralSearch(itemSource, generalQuery, cancellationTokenSource.Token, searchOffset, searchLimit, ViewModel.AlbumMode);
                             break;
-                        case "youtube":
+                        case SourceIds.YouTube:
                             await YoutubeApi.GeneralSearch(itemSource, generalQuery, cancellationTokenSource.Token, searchOffset, searchLimit, ViewModel.AlbumMode);
                             break;
                         default:
@@ -727,13 +723,13 @@ public sealed partial class Search : Page
                 {
                     List<SongSearchObject> albumTracks = [];
 
-                    if (album.Source == "qobuz")
+                    if (album.Source == SourceIds.Qobuz)
                     {
                         var albumInternal = await QobuzApi.GetInternalAlbum(album.Id);
                         albumInternal?.Tracks.Items.ForEach(t => t.Album = albumInternal);
                         albumTracks = albumInternal?.Tracks.Items.Select(t => QobuzApi.ConvertSongSearchObject(t, albumInternal.Artist?.Name)).ToList() ?? [];
                     }
-                    else if (album.Source == "deezer")
+                    else if (album.Source == SourceIds.Deezer)
                     {
                         var fullAlbumObj = await DeezerApi.GetAlbum(album.Id);
 
@@ -749,7 +745,7 @@ public sealed partial class Search : Page
                             }
                         }
                     }
-                    else if (album.Source == "spotify")
+                    else if (album.Source == SourceIds.Spotify)
                     {
                         foreach (var t in album.TrackList ?? [])
                         {
@@ -760,7 +756,7 @@ public sealed partial class Search : Page
                             }
                         }
                     }
-                    else if (album.Source == "youtube")
+                    else if (album.Source == SourceIds.YouTube)
                     {
                         albumTracks = album.TrackList ?? [];
                     }
@@ -862,15 +858,7 @@ public sealed partial class Search : Page
     }
     private void UpdateSourceButtonUI(string source, bool isAlbumMode)
     {
-        // Determine the color
-        var brush = source switch
-        {
-            "spotify" => new SolidColorBrush(Windows.UI.Color.FromArgb(255, 15, 213, 101)),
-            "deezer" => new SolidColorBrush(Windows.UI.Color.FromArgb(255, 160, 55, 250)),
-            "qobuz" => new SolidColorBrush(Windows.UI.Color.FromArgb(255, 0, 0, 0)),
-            "youtube" => new SolidColorBrush(Windows.UI.Color.FromArgb(255, 255, 0, 0)),
-            _ => new SolidColorBrush(Windows.UI.Color.FromArgb(255, 255, 255, 255)),
-        };
+        var brush = SourceBrushes.For(source);
 
         // Apply color to both shapes
         SourceButtonEllipse.Fill = brush;
@@ -891,7 +879,7 @@ public sealed partial class Search : Page
 
     private async void FlyoutBase_OnClosed(object? sender, object e)
     {
-        var selectedSource = (SourceRadioButtons.SelectedItem as RadioButton).Content.ToString().ToLower();
+        var selectedSource = SelectedSearchSource.Id;
 
         // Save settings
         await ViewModel.SaveSearchSource(selectedSource);
@@ -909,18 +897,13 @@ public sealed partial class Search : Page
         var source = await ViewModel.GetSearchSource();
         source = source.ToLower();
 
-        SourceRadioButtons.SelectedIndex = (source) switch
-        {
-            "deezer" => 0,
-            "qobuz" => 1,
-            "spotify" => 2,
-            "youtube" => 3,
-            _ => -1,
-        };
+        // -1 (nothing selected) for an unknown saved source, as before
+        var index = SearchSources.Select(s => s.Id).ToList().IndexOf(source);
+        SourceRadioButtons.SelectedIndex = index;
 
         if (SourceRadioButtons.SelectedIndex != -1)
         {
-            SourceRadioButtons.SelectedItem = SourceRadioButtons.Items.ElementAt(SourceRadioButtons.SelectedIndex);
+            SourceRadioButtons.SelectedItem = SearchSources[SourceRadioButtons.SelectedIndex];
         }
 
         bool isAlbumModeActive = ViewModel.AlbumMode;
@@ -949,13 +932,13 @@ public sealed partial class Search : Page
             {
                 List<SongSearchObject> albumTracks = [];
 
-                if (album.Source == "qobuz")
+                if (album.Source == SourceIds.Qobuz)
                 {
                     var albumInternal = await QobuzApi.GetInternalAlbum(album.Id);
                     albumInternal?.Tracks.Items.ForEach(t => t.Album = albumInternal);
                     albumTracks = albumInternal?.Tracks.Items.Select(t => QobuzApi.ConvertSongSearchObject(t, albumInternal.Artist?.Name)).ToList() ?? [];
                 }
-                else if (album.Source == "deezer")
+                else if (album.Source == SourceIds.Deezer)
                 {
                     var fullAlbumObj = await DeezerApi.GetAlbum(album.Id);
 
@@ -971,7 +954,7 @@ public sealed partial class Search : Page
                         }
                     }
                 }
-                else if (album.Source == "spotify")
+                else if (album.Source == SourceIds.Spotify)
                 {
                     foreach (var t in album.TrackList ?? [])
                     {
@@ -982,7 +965,7 @@ public sealed partial class Search : Page
                         }
                     }
                 }
-                else if (album.Source == "youtube")
+                else if (album.Source == SourceIds.YouTube)
                 {
                     albumTracks = album?.TrackList ?? [];
                 }
@@ -1052,7 +1035,7 @@ public sealed partial class Search : Page
             return;
         }
 
-        if (songObj.Source == "local")
+        if (songObj.Source == SourceIds.Local)
         {
             ShowInfoBar(InfoBarSeverity.Warning, "Track is already local");
             return;

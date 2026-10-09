@@ -1,6 +1,7 @@
 using CommunityToolkit.WinUI.UI.Animations;
 using DeezNET;
 using DeezNET.Data;
+using FluentDL.Core.Sources;
 using FluentDL.Core.Matching;
 using FluentDL.Helpers;
 using FluentDL.Models;
@@ -269,7 +270,7 @@ internal class DeezerApi
         // Try to find by ISRC first
         string? isrc = song.Isrc;
         // Spotify specific
-        if (song.Source == "spotify" && string.IsNullOrWhiteSpace(isrc))
+        if (song.Source == SourceIds.Spotify && string.IsNullOrWhiteSpace(isrc))
         {
             isrc = await SpotifyApi.GetIsrcFromId(song.Id);
         }
@@ -497,7 +498,7 @@ internal class DeezerApi
             Id = jsonObj.SafeGetString("id") ?? "",
             ImageLocation = jsonObj.SafeGetString("album", "cover"),
             Rank = jsonObj.SafeGetString("rank") ?? "0",
-            Source = "deezer",
+            Source = SourceIds.Deezer,
             Title = jsonObj.SafeGetString("title") ?? "Unknown",
         };
     }
@@ -515,7 +516,7 @@ internal class DeezerApi
             Id = jsonObj.SafeGetString("id") ?? "",
             ImageLocation = jsonObj.SafeGetString("cover"),
             Rank = jsonObj.SafeGetString("rank") ?? "0",
-            Source = "deezer",
+            Source = SourceIds.Deezer,
             Title = jsonObj.SafeGetString("title") ?? "Unknown",
             Isrc = jsonObj.SafeGetString("upc"),
             TracksCount = jsonObj.SafeGetInt32("nb_tracks") ?? 0,
@@ -564,7 +565,7 @@ internal class DeezerApi
 
         return new SongSearchObject
         {
-            Source = "deezer",
+            Source = SourceIds.Deezer,
             Title = jsonObject.SafeGetString("title") ?? "Unknown",
             ImageLocation = jsonObject.SafeGetString("album", "cover"),
             Id = jsonObject.SafeGetString("id") ?? "",
@@ -629,7 +630,7 @@ internal class DeezerApi
 
         return new AlbumSearchObject
         {
-            Source = "deezer",
+            Source = SourceIds.Deezer,
             Title = jsonObject.SafeGetString("title") ?? "Unknown",
             ImageLocation = jsonObject.SafeGetString("cover"),
             Id = jsonObject.SafeGetString("id") ?? "",
@@ -687,7 +688,7 @@ internal class DeezerApi
         // Remove extension if it exists
         filePath = ApiHelper.RemoveExtension(filePath);
 
-        if (song == null || song.Source != "deezer" || !Path.IsPathRooted(filePath))
+        if (song == null || song.Source != SourceIds.Deezer || !Path.IsPathRooted(filePath))
         {
             throw new Exception("Invalid song");
         }

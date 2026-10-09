@@ -1,3 +1,4 @@
+using FluentDL.Core.Sources;
 using FluentDL.Helpers;
 using FluentDL.Models;
 using FluentDL.Services.CustomSpotify;
@@ -619,7 +620,7 @@ namespace FluentDL.Services
                 result.AlbumName = albumName.GetString() ?? string.Empty;
 
             // Source and Rank and TrackPosition defaults
-            result.Source = "spotify";
+            result.Source = SourceIds.Spotify;
             result.Rank = string.Empty;
             result.TrackPosition = "1";
 
@@ -735,7 +736,7 @@ namespace FluentDL.Services
                 if (entity.TryGetProperty("album", out var albumProp) && albumProp.TryGetProperty("name", out var albumName) && string.IsNullOrEmpty(track.AlbumName))
                     track.AlbumName = albumName.GetString() ?? string.Empty;
                 // Source and Rank and TrackPosition defaults
-                track.Source = "spotify";
+                track.Source = SourceIds.Spotify;
 
                 // Embed str
                 track.AdditionalFields ??= [];
@@ -1161,7 +1162,7 @@ namespace FluentDL.Services
 
             return new SongSearchObject
             {
-                Source = "spotify",
+                Source = SourceIds.Spotify,
                 Title = track.Name,
                 Artists = artistCsv,
                 ImageLocation = track.Album.Images[1].Url, // Medium image, 300x300
@@ -1185,7 +1186,7 @@ namespace FluentDL.Services
             }
             return new SongSearchObject
             {
-                Source = "spotify",
+                Source = SourceIds.Spotify,
                 Title = track.Name,
                 Artists = artistCsv,
                 ImageLocation = album.Images[1].Url, // Medium image, 300 x 300
@@ -1208,7 +1209,7 @@ namespace FluentDL.Services
 
             return new AlbumSearchObject
             {
-                Source = "spotify",
+                Source = SourceIds.Spotify,
                 Title = album.Name,
                 Artists = artistCsv,
                 ImageLocation = album.Images[1].Url, // medium image, 300 x 300

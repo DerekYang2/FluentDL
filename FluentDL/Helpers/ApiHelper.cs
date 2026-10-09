@@ -1,4 +1,5 @@
 ﻿using FluentDL.Core.Matching;
+using FluentDL.Core.Sources;
 using FluentDL.Models;
 using FluentDL.Services;
 using FluentDL.ViewModels;
@@ -129,33 +130,12 @@ internal class ApiHelper
 
     public static string GetUrl(SongSearchObject song)
     {
-        var id = song.Id;
-        if (song is AlbumSearchObject album)
+        var source = SourceCatalog.Find(song.Source);
+        if (source == null)
         {
-            // Get the url of the current object
-            return song.Source switch
-            {
-                "deezer" => "https://www.deezer.com/album/" + id,
-                "youtube" => "https://music.youtube.com/playlist?list=" + id,
-                "spotify" => "https://open.spotify.com/album/" + id,
-                "qobuz" => "https://open.qobuz.com/album/" + id,
-                "local" => id,
-                _ => string.Empty
-            };
+            return string.Empty;
         }
-        else
-        {
-            // Get the url of the current object
-            return song.Source switch
-            {
-                "deezer" => "https://www.deezer.com/track/" + id,
-                "youtube" => "https://www.youtube.com/watch?v=" + id,
-                "spotify" => "https://open.spotify.com/track/" + id,
-                "qobuz" => "https://open.qobuz.com/track/" + id,
-                "local" => id,
-                _ => string.Empty
-            };
-        }
+        return song is AlbumSearchObject ? source.AlbumUrl(song.Id) : source.TrackUrl(song.Id);
     }
 
     public static string EvaluateWildcard(SongSearchObject song, string wildcard)
@@ -368,7 +348,7 @@ internal class ApiHelper
     private static async Task<string> DownloadTrackCore(SongSearchObject song, string directory, IProgress<ProgressData> progress, ConversionUpdateCallback? callback)
     {
         // Spotify case (web player songs do not have full metadata)
-        if (song.Source == "spotify" && (string.IsNullOrWhiteSpace(song.ReleaseDate) || string.IsNullOrWhiteSpace(song.TrackPosition)))
+        if (song.Source == SourceIds.Spotify && (string.IsNullOrWhiteSpace(song.ReleaseDate) || string.IsNullOrWhiteSpace(song.TrackPosition)))
         {
             song = await SpotifyApi.GetTrack(song.Id) ?? song;
         }
@@ -388,7 +368,7 @@ internal class ApiHelper
         _ = Task.Run(async () => await DownloadLyricsAsync(song, directory, fileName, downloadTcs));
 
 
-        if (song.Source == "youtube")
+        if (song.Source == SourceIds.YouTube)
         {
             var flacLocation = Path.Combine(directory, fileName + ".flac");
             var opusLocation = Path.Combine(directory, fileName + ".opus");
@@ -504,7 +484,7 @@ internal class ApiHelper
             }
         }
 
-        if (song.Source == "deezer")
+        if (song.Source == SourceIds.Deezer)
         {
             try
             {
@@ -521,7 +501,7 @@ internal class ApiHelper
             }
         }
 
-        if (song.Source == "qobuz")
+        if (song.Source == SourceIds.Qobuz)
         {
             try
             {
@@ -538,7 +518,7 @@ internal class ApiHelper
             }
         }
 
-        if (song.Source == "spotify")
+        if (song.Source == SourceIds.Spotify)
         {
             try
             {
@@ -561,7 +541,7 @@ internal class ApiHelper
         }
 
         downloadTcs.SetResult(false);
-        if (song.Source is not ("youtube" or "deezer" or "qobuz" or "spotify"))
+        if (song.Source is not (SourceIds.YouTube or SourceIds.Deezer or SourceIds.Qobuz or SourceIds.Spotify))
         {
             Log.Error("Track download failed because its provider is unsupported");
         }
@@ -629,12 +609,12 @@ internal class ApiHelper
             directory = newDirectory;
         }
 
-        if (album.Source == "qobuz")
+        if (album.Source == SourceIds.Qobuz)
         {
             var fullAlbumObj = await QobuzApi.GetInternalAlbum(album.Id);
             album.TrackList = fullAlbumObj.Tracks.Items.Select(t => QobuzApi.ConvertSongSearchObject(t, fullAlbumObj.Artist?.Name)).ToList();
         }
-        else if (album.Source == "deezer")
+        else if (album.Source == SourceIds.Deezer)
         {
             var jsonObj = await DeezerApi.restClient.FetchJsonElement("album/" + album.Id);
             var fullAlbumObj = DeezerApi.GetAlbumFromJsonElement(jsonObj);
@@ -655,7 +635,7 @@ internal class ApiHelper
                 ["cover_xl"] = jsonObj.SafeGetString("cover_xl")
             };
         }
-        else if (album.Source == "spotify")
+        else if (album.Source == SourceIds.Spotify)
         {
             List<SongSearchObject> newList = [];
             foreach (var t in album.TrackList ?? [])
@@ -668,7 +648,7 @@ internal class ApiHelper
             }
             album.TrackList = newList;
         }
-        else if (album.Source == "youtube")
+        else if (album.Source == SourceIds.YouTube)
         {
             // Nothing needed
         } 
@@ -788,7 +768,7 @@ internal class ApiHelper
     public static async Task<string?> GetAlbumArtLargest(AlbumSearchObject? album)
     {
         if (album == null) return null;
-        if (album.Source == "qobuz")
+        if (album.Source == SourceIds.Qobuz)
         {
             var fullAlbumObj = await QobuzApi.GetInternalAlbum(album.Id);
             if (!string.IsNullOrWhiteSpace(fullAlbumObj?.Image?.Mega))
@@ -804,7 +784,7 @@ internal class ApiHelper
                 return fullAlbumObj.Image.Large;
             }
         } 
-        else if (album.Source == "deezer")
+        else if (album.Source == SourceIds.Deezer)
         {
             if (!string.IsNullOrEmpty(album.AdditionalFields?.GetValueOrDefault("cover_xl") as string))
             {
@@ -815,14 +795,14 @@ internal class ApiHelper
                 return album.AdditionalFields["cover_big"] as string;
             }
         }
-        else if (album.Source == "spotify")
+        else if (album.Source == SourceIds.Spotify)
         {
             if (!string.IsNullOrWhiteSpace(album.AdditionalFields?.GetValueOrDefault("cover_max") as string))
             {
                 return album.AdditionalFields["cover_max"] as string;
             }
         }
-        else if (album.Source == "youtube")
+        else if (album.Source == SourceIds.YouTube)
         {
             return await YoutubeApi.GetMaxResThumbnail(album);
         }

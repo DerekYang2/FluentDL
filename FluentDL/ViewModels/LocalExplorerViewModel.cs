@@ -4,6 +4,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.WinUI.UI.Controls;
 using FFMpegCore.Builders.MetaData;
+using FluentDL.Core.Sources;
 using FluentDL.Contracts.Services;
 using FluentDL.Contracts.ViewModels;
 using FluentDL.Core.Contracts.Services;
@@ -161,7 +162,7 @@ public partial class LocalExplorerViewModel : ObservableRecipient
         var fileName = Path.GetFileNameWithoutExtension(path);
         return new SongSearchObject()
         {
-            Source = "local",
+            Source = SourceIds.Local,
             Id = path,
             Title = metadataObj.Title ?? fileName,
             Artists = string.Join(", ", metadataObj.Artists ?? new string[] { "N/A" }),
