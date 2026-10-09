@@ -1,11 +1,13 @@
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 using FFMpegCore;
 using FluentDL.Core.ReplayGain;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace FluentDL.Core.Tests;
 
-// End-to-end tests that decode real files with the ffmpeg.exe bundled in FluentDL\Assets.
+// End-to-end tests that decode real files with the ffmpeg.exe bundled in FluentDL\Assets\ffmpeg for this machine's
+// architecture.
 [TestClass]
 public class ReplayGainScannerTests
 {
@@ -15,9 +17,10 @@ public class ReplayGainScannerTests
     [ClassInitialize]
     public static void FindFfmpeg(TestContext context)
     {
+        var runtime = RuntimeInformation.ProcessArchitecture == Architecture.Arm64 ? "win-arm64" : "win-x64";
         for (var directory = new DirectoryInfo(AppContext.BaseDirectory); directory is not null; directory = directory.Parent)
         {
-            var candidate = Path.Combine(directory.FullName, "FluentDL", "Assets", "ffmpeg", "bin", "ffmpeg.exe");
+            var candidate = Path.Combine(directory.FullName, "FluentDL", "Assets", "ffmpeg", runtime, "ffmpeg.exe");
             if (File.Exists(candidate))
             {
                 ffmpeg = candidate;
