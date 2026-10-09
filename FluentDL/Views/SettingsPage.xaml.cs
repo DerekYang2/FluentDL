@@ -2,12 +2,14 @@
 using CommunityToolkit.WinUI.Controls;
 using CommunityToolkit.WinUI.Helpers;
 using FluentDL.Contracts.Services;
+using FluentDL.Contracts.Sources;
 using FluentDL.Core.Contracts.Services;
 using FluentDL.Core.Helpers;
 using FluentDL.Core.Sources;
 using FluentDL.Helpers;
 using FluentDL.Models;
 using FluentDL.Services;
+using FluentDL.Services.Sources;
 using FluentDL.ViewModels;
 using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
@@ -31,6 +33,7 @@ public sealed partial class SettingsPage : Page
     private DispatcherQueue dispatcher;
     private DispatcherTimer dispatcherTimer;
     private ILocalSettingsService localSettings;
+    private readonly SourceRegistry sources = App.GetService<SourceRegistry>();
     private readonly ILogger<SettingsPage> _logger;
     private bool _updatingDiagnostics;
 
@@ -182,9 +185,9 @@ public sealed partial class SettingsPage : Page
         QueueRemoveCheckbox.IsChecked = await localSettings.ReadSettingAsync<bool>(SettingsViewModel.QueueRemoveChecked);
 
         // Auth indicators
-        SetDeezerAuthInfo(DeezerApi.IsInitialized);
-        SetQobuzAuthInfo(QobuzApi.IsInitialized);
-        SetSpotifyAuthInfo(SpotifyApi.IsInitialized);
+        SetDeezerAuthInfo(Session(SourceIds.Deezer).IsConnected);
+        SetQobuzAuthInfo(Session(SourceIds.Qobuz).IsConnected);
+        SetSpotifyAuthInfo(Session(SourceIds.Spotify).IsConnected);
         await InitializeDiagnosticsAsync();
     }
 
@@ -255,7 +258,7 @@ public sealed partial class SettingsPage : Page
         {
             DeezerInfoButton.IsEnabled = true;
             DeezerInfoButtonText.Text = "Logged In";
-            DeezerInfoText.Text = DeezerApi.LoginString() ?? "No Info";
+            DeezerInfoText.Text = Session(SourceIds.Deezer).StatusText ?? "No Info";
             DeezerInfoIcon.Glyph = "\uE946";
         }
         else
@@ -272,7 +275,7 @@ public sealed partial class SettingsPage : Page
         {
             QobuzInfoButton.IsEnabled = true;
             QobuzInfoButtonText.Text = "Logged In";
-            QobuzInfoText.Text = QobuzApi.LoginString() ?? "No Info";
+            QobuzInfoText.Text = Session(SourceIds.Qobuz).StatusText ?? "No Info";
             QobuzInfoIcon.Glyph = "\uE946";
         }
         else
@@ -289,7 +292,7 @@ public sealed partial class SettingsPage : Page
         {
             SpotifyInfoButton.IsEnabled = true;
             SpotifyInfoButtonText.Text = "Logged In";
-            SpotifyInfoText.Text = SpotifyApi.LoginString() ?? "No Info";
+            SpotifyInfoText.Text = Session(SourceIds.Spotify).StatusText ?? "No Info";
             SpotifyInfoIcon.Glyph = "\uE946";
         }
         else
@@ -308,33 +311,15 @@ public sealed partial class SettingsPage : Page
             return;
         }
 
-        void authCallback(StatusLevel level, string message)
-        {
-            dispatcher.TryEnqueue(() =>
-            {
-                ShowInfoBar(level.ToSeverity(), message, 3, "Spotify");
-                SetSpotifyAuthInfo(level != StatusLevel.Error);
-            });
-        }
-
         await localSettings.SaveSettingAsync(SettingsViewModel.SpotifyClientId, ClientIdInput.Text.Trim());
         await localSettings.SaveSettingAsync(SettingsViewModel.SpotifyClientSecret, SpotifySecretInput.Password.Trim());
-        await SpotifyApi.Initialize(await localSettings.ReadSettingAsync<string>(SettingsViewModel.SpotifyClientId), await localSettings.ReadSettingAsync<string>(SettingsViewModel.SpotifyClientSecret), authCallback);
+        ShowConnectResult(await Session(SourceIds.Spotify).ConnectAsync(), "Spotify", SetSpotifyAuthInfo);
     }
 
     private async void DeezerUpdateButton_Click(object sender, RoutedEventArgs e)
     {
-        void authCallback(StatusLevel level, string message)
-        {
-            dispatcher.TryEnqueue(() =>
-            {
-                ShowInfoBar(level.ToSeverity(), message, 3, "Deezer");
-                SetDeezerAuthInfo(level != StatusLevel.Error);
-            });
-        }
-
         await localSettings.SaveSettingAsync(SettingsViewModel.DeezerARL, DeezerARLInput.Password.Trim());
-        await DeezerApi.InitDeezerClient(DeezerARLInput.Password.Trim(), authCallback);
+        ShowConnectResult(await Session(SourceIds.Deezer).ConnectAsync(), "Deezer", SetDeezerAuthInfo);
     }
 
     private async void QobuzUpdateButton_Click(object sender, RoutedEventArgs e) {
@@ -344,31 +329,21 @@ public sealed partial class SettingsPage : Page
         await localSettings.SaveSettingAsync(SettingsViewModel.QobuzToken, QobuzTokenInput.Text.Trim());
         await localSettings.SaveSettingAsync(SettingsViewModel.QobuzAppId, QobuzAppIdInput.Text.Trim());
         await localSettings.SaveSettingAsync(SettingsViewModel.QobuzAppSecret, QobuzAppSecretInput.Text.Trim());
+        ShowConnectResult(await Session(SourceIds.Qobuz).ConnectAsync(), "Qobuz", SetQobuzAuthInfo);
+    }
 
-        void authCallback(StatusLevel level, string message)
+    private ISourceSession Session(string id) =>
+        sources.TryGet<ISourceSession>(id, out var session) ? session : throw new InvalidOperationException($"No session for {id}.");
+
+    // Shows the sign-in message, if the source reported one, and updates that source's login details.
+    private void ShowConnectResult(ConnectResult result, string title, Action<bool> setAuthInfo)
+    {
+        if (result.Message == null)
         {
-            dispatcher.TryEnqueue(() =>
-            {
-                ShowInfoBar(level.ToSeverity(), message, 3, "Qobuz");
-                SetQobuzAuthInfo(level != StatusLevel.Error);
-            });
+            return;
         }
-
-        Thread thread = new Thread(() =>
-        {
-            //var qobuzEmail = DPAPIHelper.Decrypt(localSettings.ReadSettingAsync<string>(SettingsViewModel.QobuzEmail).GetAwaiter().GetResult() ?? "");
-            //var qobuzPassword = DPAPIHelper.Decrypt(localSettings.ReadSettingAsync<string>(SettingsViewModel.QobuzPassword).GetAwaiter().GetResult() ?? "");
-            var qobuzId = localSettings.ReadSettingAsync<string>(SettingsViewModel.QobuzId).GetAwaiter().GetResult();
-            var qobuzToken = localSettings.ReadSettingAsync<string>(SettingsViewModel.QobuzToken).GetAwaiter().GetResult();
-            var qobuzAppId = localSettings.ReadSettingAsync<string>(SettingsViewModel.QobuzAppId).GetAwaiter().GetResult();
-            var qobuzAppSecret = localSettings.ReadSettingAsync<string>(SettingsViewModel.QobuzAppSecret).GetAwaiter().GetResult();
-            QobuzApi.Initialize(qobuzId, qobuzToken, qobuzAppId, qobuzAppSecret, authCallback);
-        })
-        {
-            Priority = ThreadPriority.Highest
-        };
-
-        thread.Start();
+        ShowInfoBar(result.Level.ToSeverity(), result.Message, 3, title);
+        setAuthInfo(result.Level != StatusLevel.Error);
     }
 
     private async void SelectFolderButton_OnClick(object sender, RoutedEventArgs e)
