@@ -30,6 +30,24 @@ internal static class TestSources
             [SettingKeys.QobuzAppSecret] = Secrets.Get("qobuz_app_secret"),
             [SettingKeys.SpotifyClientId] = Secrets.Get("spotify_client_id"),
             [SettingKeys.SpotifyClientSecret] = Secrets.Get("spotify_client_secret"),
+
+            // Download settings, with the values SettingsViewModel.SetMissingDefaults gives a new install.
+            [SettingKeys.DeezerQuality] = 2, // FLAC
+            [SettingKeys.QobuzQuality] = 3, // 24-bit/192 kHz
+            [SettingKeys.SpotifyQuality] = 1, // FLAC
+            ["youtube_quality"] = 1,
+            [SettingKeys.Overwrite] = false,
+            ["use_ytdlp"] = false,
+            ["file_naming_wildcard"] = "",
+            ["subfolders"] = false,
+            ["subfolder_wildcard"] = "",
+            ["album_subfolders"] = true,
+            ["album_subfolder_wildcard"] = "",
+            ["download_album_cover_art"] = true,
+            ["download_lyrics"] = false,
+            ["replaygain_auto_apply"] = false,
+            ["replaygain_album_downloads"] = false,
+            ["conversion_threads"] = 3,
         });
         SourceServices.Configure(settings, new NoAudioConverter());
     }

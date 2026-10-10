@@ -38,6 +38,7 @@ $groups = [ordered]@{
     'convert-dz-qb'    = 'FullyQualifiedName~ConvertToDeezer|FullyQualifiedName~ConvertToQobuz'
     'spotify-web'      = 'FullyQualifiedName~SpotifyWebPlayerTests|FullyQualifiedName~ConvertToSpotify'
     'spotify-official' = 'FullyQualifiedName~SpotifyOfficialTests|FullyQualifiedName=FluentDL.Characterization.Tests.ConversionTests.ConvertWithSpotifyOfficial'
+    'downloads'        = 'FullyQualifiedName~.DownloadTests.'
     'youtube'          = 'FullyQualifiedName~YoutubeTests|FullyQualifiedName~ConvertFromYoutube|FullyQualifiedName~ConvertToYoutube|FullyQualifiedName~ConvertWithSpotifyOfficialToYoutube'
 }
 if (-not $IncludeYoutube) { $groups.Remove('youtube') }

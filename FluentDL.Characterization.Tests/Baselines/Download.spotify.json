@@ -1,0 +1,39 @@
+{
+  "Result": "8. Daft Punk - Get Lucky (feat. Pharrell Williams and Nile Rodgers).mp3",
+  "Reports": [
+    {
+      "Level": "Success",
+      "Song": "69kOkLUCkxIZYexIgSG8rq",
+      "Location": "8. Daft Punk - Get Lucky (feat. Pharrell Williams and Nile Rodgers).mp3"
+    }
+  ],
+  "Files": [
+    {
+      "Name": "8. Daft Punk - Get Lucky (feat. Pharrell Williams and Nile Rodgers).mp3",
+      "Size": "5 to 20 MB",
+      "Tags": {
+        "Title": "Get Lucky (feat. Pharrell Williams and Nile Rodgers)",
+        "Performers": [
+          "Daft Punk",
+          "Pharrell Williams",
+          "Nile Rodgers"
+        ],
+        "AlbumArtists": [
+          "Daft Punk",
+          "Pharrell Williams",
+          "Nile Rodgers"
+        ],
+        "Album": "Random Access Memories",
+        "Track": 8,
+        "TrackCount": 0,
+        "Disc": 0,
+        "Year": 2013,
+        "ISRC": null,
+        "Genres": [],
+        "HasCover": true,
+        "DurationSeconds": 370,
+        "MimeType": "taglib/mp3"
+      }
+    }
+  ]
+}

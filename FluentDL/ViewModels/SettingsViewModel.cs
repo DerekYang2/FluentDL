@@ -91,7 +91,9 @@ public partial class SettingsViewModel : ObservableRecipient
         AlbumSubfolderWildcard = "album_subfolder_wildcard",
         FileWildcard = "file_naming_wildcard";
 
-    private static ILocalSettingsService localSettings = App.GetService<ILocalSettingsService>();
+    // The same service App registers, through SourceServices, so code that reads settings (downloads, lyrics) also
+    // runs in the characterization test host, which supplies its own settings store.
+    private static ILocalSettingsService localSettings => SourceServices.Settings;
 
     private readonly IThemeSelectorService _themeSelectorService;
 
