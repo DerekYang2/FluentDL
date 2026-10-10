@@ -1,3 +1,4 @@
+#nullable enable
 using FluentDL.Core.Sources;
 
 namespace FluentDL.Models;

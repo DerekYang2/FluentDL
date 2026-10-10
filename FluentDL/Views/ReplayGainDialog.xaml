@@ -10,6 +10,7 @@
     mc:Ignorable="d">
     <UserControl.Resources>
         <helpers:NullVisibilityConverter x:Key="NullVisibilityConverter" />
+        <helpers:ObjectToImageSourceConverter x:Key="ObjectToImageSourceConverter" />
     </UserControl.Resources>
     <ContentDialog
         x:Name="Dialog"
@@ -197,7 +198,7 @@
                                             VerticalAlignment="Center"
                                             CornerRadius="4">
                                             <Border.Background>
-                                                <ImageBrush ImageSource="{x:Bind Song.LocalBitmapImage, Mode=OneWay}" Stretch="UniformToFill" />
+                                                <ImageBrush ImageSource="{x:Bind Song.LocalBitmapImage, Mode=OneWay, Converter={StaticResource ObjectToImageSourceConverter}}" Stretch="UniformToFill" />
                                             </Border.Background>
                                         </Border>
                                         <StackPanel

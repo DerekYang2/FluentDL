@@ -22,6 +22,7 @@
         <helpers:DurationConverter x:Key="DurationConverter" />
         <helpers:VisibilityConverter x:Key="VisibilityConverter" />
         <helpers:NullVisibilityConverter x:Key="NullVisibilityConverter" />
+        <helpers:ObjectToImageSourceConverter x:Key="ObjectToImageSourceConverter" />
         <helpers:InverseNullVisibilityConverter x:Key="InverseNullVisibilityConverter" />
         <helpers:StringNullorEmptyVisibilityConverter x:Key="StringNullorEmptyVisibilityConverter" />
     </Page.Resources>
@@ -348,7 +349,7 @@
                                 Height="76"
                                 CornerRadius="4">
                                 <Border.Background>
-                                    <ImageBrush ImageSource="{x:Bind LocalBitmapImage, Mode=OneWay}" Stretch="UniformToFill" />
+                                    <ImageBrush ImageSource="{x:Bind LocalBitmapImage, Mode=OneWay, Converter={StaticResource ObjectToImageSourceConverter}}" Stretch="UniformToFill" />
                                 </Border.Background>
                             </Border>
 
@@ -692,7 +693,7 @@
                                                 Height="76"
                                                 CornerRadius="4">
                                                 <Border.Background>
-                                                    <ImageBrush ImageSource="{x:Bind Song.LocalBitmapImage, Mode=OneWay}" Stretch="UniformToFill" />
+                                                    <ImageBrush ImageSource="{x:Bind Song.LocalBitmapImage, Mode=OneWay, Converter={StaticResource ObjectToImageSourceConverter}}" Stretch="UniformToFill" />
                                                 </Border.Background>
                                             </Border>
 

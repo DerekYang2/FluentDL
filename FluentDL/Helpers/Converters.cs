@@ -116,6 +116,17 @@ internal class NullVisibilityConverter : IValueConverter
     }
 }
 
+// SongSearchObject.LocalBitmapImage is typed object (the model lives in Core); the views bind it as an ImageSource.
+internal class ObjectToImageSourceConverter : IValueConverter
+{
+    public object? Convert(object? value, Type targetType, object parameter, string language) => value as Microsoft.UI.Xaml.Media.ImageSource;
+
+    public object ConvertBack(object value, Type targetType, object parameter, string language)
+    {
+        throw new NotImplementedException();
+    }
+}
+
 internal class InverseNullVisibilityConverter : IValueConverter
 {
     // Converts imagelocation path to Visibility (inverted)

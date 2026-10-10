@@ -24,6 +24,7 @@
         <helpers:CollapsedConverter x:Key="CollapsedConverter" />
         <views:PathToVisibilityConverter x:Key="PathToVisibilityConverter" />
         <helpers:NullVisibilityConverter x:Key="NullVisibilityConverter" />
+        <helpers:ObjectToImageSourceConverter x:Key="ObjectToImageSourceConverter" />
         <helpers:InverseNullVisibilityConverter x:Key="InverseNullVisibilityConverter" />
         <helpers:SourceToColorConverter x:Key="SourceToColorConverter" />
         <helpers:LocalSourceToVisibilityConverter x:Key="LocalSourceToVisibilityConverter" />
@@ -276,7 +277,7 @@
                             CornerRadius="4"
                             Visibility="{x:Bind LocalBitmapImage, Mode=OneWay, Converter={StaticResource NullVisibilityConverter}}">
                             <Border.Background>
-                                <ImageBrush ImageSource="{x:Bind LocalBitmapImage, Mode=OneWay}" Stretch="UniformToFill" />
+                                <ImageBrush ImageSource="{x:Bind LocalBitmapImage, Mode=OneWay, Converter={StaticResource ObjectToImageSourceConverter}}" Stretch="UniformToFill" />
                             </Border.Background>
                         </Border>
 

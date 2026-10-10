@@ -11,6 +11,7 @@
         <helpers:VisibilityConverter x:Key="VisibilityConverter" />
         <helpers:CollapsedConverter x:Key="CollapsedConverter" />
         <helpers:NullVisibilityConverter x:Key="NullVisibilityConverter" />
+        <helpers:ObjectToImageSourceConverter x:Key="ObjectToImageSourceConverter" />
         <helpers:SourceToColorConverter x:Key="SourceToColorConverter" />
         <helpers:LocalSourceToVisibilityConverter x:Key="LocalSourceToVisibilityConverter" />
     </UserControl.Resources>
@@ -37,7 +38,7 @@
             CornerRadius="4"
             Visibility="{x:Bind Item.LocalBitmapImage, Mode=OneWay, Converter={StaticResource NullVisibilityConverter}}">
             <Border.Background>
-                <ImageBrush ImageSource="{x:Bind Item.LocalBitmapImage, Mode=OneWay}" Stretch="UniformToFill" />
+                <ImageBrush ImageSource="{x:Bind Item.LocalBitmapImage, Mode=OneWay, Converter={StaticResource ObjectToImageSourceConverter}}" Stretch="UniformToFill" />
             </Border.Background>
         </Border>
         <Grid

@@ -1,5 +1,4 @@
-﻿
-using Microsoft.UI.Xaml.Media.Imaging;
+﻿#nullable enable
 using Newtonsoft.Json;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
@@ -95,10 +94,12 @@ public class SongSearchObject : INotifyPropertyChanged
         get; set;
     }
 
+    // The app's cover image (a WinUI BitmapImage). Typed as object so the model has no UI dependency; the views bind it
+    // through ObjectToImageSourceConverter.
     [JsonIgnore]
-    private BitmapImage? _localBitmapImage;
+    private object? _localBitmapImage;
     [JsonIgnore]
-    public BitmapImage? LocalBitmapImage
+    public object? LocalBitmapImage
     {
         get => _localBitmapImage;
         set

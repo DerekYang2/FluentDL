@@ -33,6 +33,22 @@ public class UiProbe
 
     private static void Dump(AutomationElement element, StringBuilder builder, int depth) => DumpTree(element, builder, depth, 25);
 
+    /// <summary>Fills the queue from a Deezer search and saves a screenshot, to check by eye that the cover images show.</summary>
+    [TestMethod]
+    public void QueueScreenshot()
+    {
+        DevApp.SeedTestAccounts();
+        using var dev = DevApp.Launch();
+        UiSteps.Find(dev, "SearchBox", TimeSpan.FromSeconds(60));
+        UiSteps.SubmitSearch(dev, "daft punk get lucky");
+        UiSteps.WaitUntil(() => UiSteps.Text(UiSteps.Find(dev, "ResultsText")).StartsWith("Add "), TimeSpan.FromSeconds(30), "search results");
+        UiSteps.Invoke(UiSteps.Find(dev, "AddToQueueButton"));
+        UiSteps.WaitUntil(() => UiSteps.Find(dev, "AddToQueueButton").IsEnabled, TimeSpan.FromSeconds(45), "adding results to the queue");
+        UiSteps.Navigate(dev, "Queue");
+        Thread.Sleep(TimeSpan.FromSeconds(5));
+        Console.WriteLine($"Saved to {UiSteps.SaveFailureEvidence(dev, "queue-screenshot")}");
+    }
+
 
     /// <summary>Checks that the test host can write the dev app's settings store. Does not launch the app.</summary>
     [TestMethod]
