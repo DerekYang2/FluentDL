@@ -1,0 +1,118 @@
+{
+  "Before": [
+    {
+      "Title": "Halo",
+      "Artists": "Beyoncé",
+      "Source": "deezer",
+      "Badge": "none"
+    },
+    {
+      "Title": "Levels (Original Version)",
+      "Artists": "Avicii",
+      "Source": "qobuz",
+      "Badge": "none"
+    },
+    {
+      "Title": "夜に駆ける",
+      "Artists": "YOASOBI",
+      "Source": "spotify",
+      "Badge": "none"
+    },
+    {
+      "Title": "Get Lucky (feat. Pharrell Williams and Nile Rodgers)",
+      "Artists": "Daft Punk, Pharrell Williams, Nile Rodgers",
+      "Source": "deezer",
+      "Badge": "none"
+    },
+    {
+      "Title": "Loneliness – Deezer Sessions (Women’s Voices)",
+      "Artists": "Birdy",
+      "Source": "deezer",
+      "Badge": "none"
+    }
+  ],
+  "ToDeezerSummary": {
+    "Success": [
+      "Levels (Original Version)",
+      "夜に駆ける"
+    ],
+    "Warning": [],
+    "Error": []
+  },
+  "AfterToDeezer": [
+    {
+      "Title": "Halo",
+      "Artists": "Beyoncé",
+      "Source": "deezer",
+      "Badge": "none"
+    },
+    {
+      "Title": "Levels (Original Version)",
+      "Artists": "Avicii",
+      "Source": "deezer",
+      "Badge": "success"
+    },
+    {
+      "Title": "夜に駆ける",
+      "Artists": "YOASOBI",
+      "Source": "deezer",
+      "Badge": "success"
+    },
+    {
+      "Title": "Get Lucky (feat. Pharrell Williams and Nile Rodgers)",
+      "Artists": "Daft Punk, Pharrell Williams, Nile Rodgers",
+      "Source": "deezer",
+      "Badge": "none"
+    },
+    {
+      "Title": "Loneliness – Deezer Sessions (Women’s Voices)",
+      "Artists": "Birdy",
+      "Source": "deezer",
+      "Badge": "none"
+    }
+  ],
+  "ToSpotifySummary": {
+    "Success": [],
+    "Warning": [
+      "Get Lucky (feat. Pharrell Williams and Nile Rodgers)",
+      "Halo",
+      "Levels - Original Version",
+      "夜に駆ける"
+    ],
+    "Error": [
+      "Loneliness – Deezer Sessions (Women’s Voices)"
+    ]
+  },
+  "AfterToSpotify": [
+    {
+      "Title": "Halo",
+      "Artists": "Beyoncé",
+      "Source": "spotify",
+      "Badge": "warning"
+    },
+    {
+      "Title": "Levels - Original Version",
+      "Artists": "Avicii",
+      "Source": "spotify",
+      "Badge": "warning"
+    },
+    {
+      "Title": "夜に駆ける",
+      "Artists": "YOASOBI",
+      "Source": "spotify",
+      "Badge": "warning"
+    },
+    {
+      "Title": "Get Lucky (feat. Pharrell Williams and Nile Rodgers)",
+      "Artists": "Daft Punk, Pharrell Williams, Nile Rodgers",
+      "Source": "spotify",
+      "Badge": "warning"
+    },
+    {
+      "Title": "Loneliness – Deezer Sessions (Women’s Voices)",
+      "Artists": "Birdy",
+      "Source": "deezer",
+      "Badge": "error"
+    }
+  ]
+}
