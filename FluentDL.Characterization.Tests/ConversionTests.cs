@@ -40,13 +40,19 @@ public class ConversionTests
     [DataRow("spotify")]
     public Task ConvertFromYoutube(string target) => RunAsync("youtube", target, spotifyOfficial: false);
 
-    // About a minute per origin: every match makes several YouTube Music requests.
+    // About a minute per origin: every match makes several YouTube Music requests, because YouTube can't look up an
+    // ISRC. Normal runs convert from Deezer only; the other origins feed the same matcher nearly the same names, so they
+    // run with the Slow category (a full run).
     [TestMethod]
     [TestCategory("YouTube")]
-    [DataRow("deezer")]
+    public Task ConvertToYoutube() => RunAsync("deezer", "youtube", spotifyOfficial: false);
+
+    [TestMethod]
+    [TestCategory("YouTube")]
+    [TestCategory("Slow")]
     [DataRow("qobuz")]
     [DataRow("spotify")]
-    public Task ConvertToYoutube(string origin) => RunAsync(origin, "youtube", spotifyOfficial: false);
+    public Task ConvertToYoutubeFromOtherSources(string origin) => RunAsync(origin, "youtube", spotifyOfficial: false);
 
     // Spotify with a client id and secret takes different paths: its tracks carry an ISRC, and converting to Spotify
     // searches by ISRC first, then by metadata.
@@ -59,6 +65,7 @@ public class ConversionTests
 
     [TestMethod]
     [TestCategory("YouTube")]
+    [TestCategory("Slow")]
     public Task ConvertWithSpotifyOfficialToYoutube() => RunAsync("spotify", "youtube", spotifyOfficial: true);
 
     // Bugs 15 and 1: a song with no ISRC (a local file, a YouTube video) is matched on Deezer by artist, title and

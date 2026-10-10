@@ -15,8 +15,9 @@ Two ways to compare:
   a minute later. A difference then comes from the code, not the data. Use HEAD while working on a step: every commit
   was compared with the one before it, back to the pre-refactor code.
 
--Quick skips the Spotify official search (category "Slow", about 2 minutes because of bug 17).
-YouTube is slow (about a minute per conversion) and bot-checks heavy use, so its group only runs with -IncludeYoutube.
+-Quick skips the Slow category: album downloads, and the YouTube conversions from Qobuz, Spotify and Spotify
+official (the one from Deezer still runs). YouTube is slow (about 10 s per conversion, since it can't look up an ISRC)
+and bot-checks heavy use, so its group only runs with -IncludeYoutube. A normal YouTube check is -Quick -IncludeYoutube.
 
 .EXAMPLE
 tools\live-tests\Run-LiveTests.ps1 -Quick -Against HEAD
