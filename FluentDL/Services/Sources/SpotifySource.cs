@@ -1,4 +1,5 @@
 using FluentDL.Contracts.Sources;
+using FluentDL.Core.Helpers;
 using FluentDL.Core.Sources;
 using FluentDL.Models;
 
@@ -78,7 +79,7 @@ internal sealed class SpotifySource : ISourceSession, ISearchSource, ILinkSource
         var rows = new List<(string, string)> { ("Track", track?.TrackPosition ?? song.TrackPosition) };
         if (track?.Rank != null && long.TryParse(track.Rank, out long plays) && plays > 0)
         {
-            rows.Add(("Play Count", YoutubeApi.FormatLargeValue(plays)));
+            rows.Add(("Play Count", DisplayFormat.FormatLargeValue(plays)));
         }
         if (!string.IsNullOrEmpty(track?.Isrc))
         {

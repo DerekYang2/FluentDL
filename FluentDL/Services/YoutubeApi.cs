@@ -1027,25 +1027,7 @@ namespace FluentDL.Services
          */
 
         // Billion -> B, Million -> M, Thousand -> K
-        public static string FormatLargeValue(long value)
-        {
-            if (value >= 1e9) // Round two decimal places
-            {
-                return string.Format("{0:F2}B", value / 1e9);
-            }
-
-            if (value >= 1e6)
-            {
-                return string.Format("{0:F1}M", value / 1e6);
-            }
-
-            if (value >= 1e3)
-            {
-                return string.Format("{0:F0}K", value / 1e3);
-            }
-
-            return value.ToString();
-        }
+        public static string FormatLargeValue(long value) => FluentDL.Core.Helpers.DisplayFormat.FormatLargeValue(value);
 
 
         public static async Task DownloadAudio(string filePath, VideoId id, IProgress<ProgressData> progress)
