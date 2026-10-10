@@ -591,48 +591,6 @@ public sealed partial class Search : Page
         await SearchUtil();
     }
 
-    /*
-     // Old conversion method
-    private async Task LoadSpotifyPlaylist(string playlistId, CancellationToken token = default)
-    {
-        failedSpotifySongs.Clear();
-        youtubeAlternateList.Clear();
-        FailedListView.ItemsSource = failedSpotifySongs; // Clear the list
-        YoutubeWebView.Source = null; // Clear web view source
-        ((ObservableCollection<SongSearchObject>)CustomListView.ItemsSource).Clear(); // Clear the list
-
-        List<SongSearchObject> playlistObjects = await SpotifyApi.GetPlaylist(playlistId, token);
-        foreach (var song in playlistObjects)
-        {
-            if (token.IsCancellationRequested)
-            {
-                break;
-            }
-
-            var deezerResult = await FluentDL.Services.DeezerApi.GetDeezerTrack(song);
-            if (deezerResult != null)
-            {
-                ((ObservableCollection<SongSearchObject>)CustomListView.ItemsSource).Add(deezerResult); // Add to list
-            }
-            else // Try a fuzzy
-            {
-                var deezerResult2 = await FluentDL.Services.DeezerApi.GeneralSearch(song);
-                if (deezerResult2 != null)
-                {
-                    ((ObservableCollection<SongSearchObject>)CustomListView.ItemsSource).Add(deezerResult2); // Add to list
-                }
-                else
-                {
-                    // Search failed songs on youtube
-                    youtubeAlternateList.Add(await YoutubeApi.GetSearchResult(song));
-                    failedSpotifySongs.Add(song);
-                    FailedListView.ItemsSource = failedSpotifySongs;
-                }
-            }
-        }
-    }
-    */
-
     private void SetNoSearchResults()
     {
         // If collection is empty, show a message

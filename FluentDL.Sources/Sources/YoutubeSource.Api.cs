@@ -1094,25 +1094,6 @@ namespace FluentDL.Services.Sources
             }
         }
 
-        // youtubeexplode alternative (libvideo)
-        public async Task DownloadAudio2(string filePath, VideoId id)
-        {
-            var youtubeUrl = $"https://www.youtube.com/watch?v={id}";
-            var videoInfos = await youtubeAlt.GetAllVideosAsync(youtubeUrl);
-            var audioFormats = videoInfos.Where(i => i.AudioFormat == AudioFormat.Opus);
-            if (audioFormats.Any())
-            {
-                YouTubeVideo? bestAudioFormat = audioFormats.FirstOrDefault(i => i.AudioBitrate == audioFormats.Max(i => i.AudioBitrate));
-                if (bestAudioFormat != null) {
-                    Container container = new(bestAudioFormat.AudioFormat.ToString().ToLower());
-                    FileSize fileSize = new(bestAudioFormat.ContentLength ?? throw new("Invalid file size"));
-                    Bitrate bitrate = new(bestAudioFormat.AudioBitrate);
-                    AudioOnlyStreamInfo audioStreamInfo = new(bestAudioFormat.Uri, container, fileSize, bitrate, "opus", new(), false);
-                    await youtube.Videos.Streams.DownloadAsync(audioStreamInfo, filePath);
-                }
-            }
-        }
-
 
         /*
            Example codecs:
@@ -1139,25 +1120,6 @@ namespace FluentDL.Services.Sources
             }
 
             await youtube.Videos.Streams.DownloadAsync(streamInfo, filePath /*, new Progress<double>(progressHandler)*/);
-        }
-
-        public async Task DownloadAudioAAC2(string filePath, VideoId id)
-        {
-            var youtubeUrl = $"https://www.youtube.com/watch?v={id}";
-            var videoInfos = await youtubeAlt.GetAllVideosAsync(youtubeUrl);
-            var audioFormats = videoInfos.Where(i => i.AudioFormat == AudioFormat.Aac);
-            if (audioFormats.Any())
-            {
-                YouTubeVideo? bestAudioFormat = audioFormats.FirstOrDefault(i => i.AudioBitrate == audioFormats.Max(i => i.AudioBitrate));
-                if (bestAudioFormat != null)
-                {
-                    Container container = new(bestAudioFormat.AudioFormat.ToString().ToLower());
-                    FileSize fileSize = new(bestAudioFormat.ContentLength ?? throw new("Invalid file size"));
-                    Bitrate bitrate = new(bestAudioFormat.AudioBitrate);
-                    AudioOnlyStreamInfo audioStreamInfo = new(bestAudioFormat.Uri, container, fileSize, bitrate, "mp4a", new(), false);
-                    await youtube.Videos.Streams.DownloadAsync(audioStreamInfo, filePath);
-                }
-            }
         }
 
         public async Task UpdateMetadata(string filePath, string id)
@@ -1238,24 +1200,6 @@ namespace FluentDL.Services.Sources
             //await atlTrack.SaveAsync();
         }
 
-        public async Task<string> AudioStreamUrl(string url)
-        {
-            var streamManifest = await youtube.Videos.Streams.GetManifestAsync(url);
-            var streamInfo = streamManifest.GetAudioOnlyStreams().GetWithHighestBitrate();
-
-            long maxBitRate = 0;
-            foreach (var streamObj in streamManifest.GetAudioStreams()) // Get the opus stream with highest bitrate
-            {
-                if (streamObj.AudioCodec.Equals("opus") && streamObj.Bitrate.BitsPerSecond > maxBitRate)
-                {
-                    maxBitRate = streamObj.Bitrate.BitsPerSecond;
-                    streamInfo = streamObj;
-                }
-            }
-
-            return streamInfo.Url;
-        }
-
         // Get stream with minimum bitrate
         public async Task<string> AudioStreamWorstUrl(string url)
         {
@@ -1283,29 +1227,5 @@ namespace FluentDL.Services.Sources
             }
         }
 
-        public async Task<(Stream?, string?)> AudioStreamWorst(string url)
-        {
-            try
-            {
-                var videoInfos = await youtubeAlt.GetAllVideosAsync(url);
-                var audioFormats = videoInfos.Where(i => i.AudioFormat == AudioFormat.Opus);
-                if (audioFormats.Any())
-                {
-                    YouTubeVideo? bestAudioFormat = audioFormats.FirstOrDefault(i => i.AudioBitrate == audioFormats.Min(i => i.AudioBitrate));
-                    if (bestAudioFormat != null)
-                    {
-                        Container container = new(bestAudioFormat.AudioFormat.ToString().ToLower());
-                        FileSize fileSize = new(bestAudioFormat.ContentLength ?? throw new("Invalid file size"));
-                        Bitrate bitrate = new(bestAudioFormat.AudioBitrate);
-                        AudioOnlyStreamInfo audioStreamInfo = new(bestAudioFormat.Uri, container, fileSize, bitrate, "opus", new(), false);
-                        return (await youtube.Videos.Streams.GetAsync(audioStreamInfo), "audio/opus");
-                    }
-                }
-            } catch (Exception ex)
-            {
-                Debug.WriteLine("Error getting worst audio stream: " + ex.Message);
-            }
-            return (null, null);
-        }
     }
 }

@@ -519,8 +519,6 @@ namespace FluentDL.Views
                     if (token.IsCancellationRequested || requestId != Interlocked.Read(ref _currentRequestId))
                         return;
                     SetPlayerSource(previewUri);
-                    //var (stream, mime) = await YoutubeApi.AudioStreamWorst(ApiHelper.GetUrl(selectedSong));
-                    //SetPlayerSource(stream, mime);
                 } finally
                 {
                     SongPreviewProgressBar.Visibility = Visibility.Collapsed;

@@ -463,7 +463,6 @@ public sealed partial class QueuePage : Page
             ShowInfoBar(InfoBarSeverity.Success, $"Cover saved to <a href='{file.Path}'>{file.Name}</a>", 5);
         }
 
-        //await DeezerApi.DownloadTrack(await DeezerApi.GetTrack(PreviewPanel.GetSong().Id), "E:\\Other Downloads\\test");
     }
 
     // The preview loads a larger cover than the queue thumbnail, so use it when it shows this track.

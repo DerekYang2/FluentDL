@@ -21,7 +21,6 @@ namespace FluentDL.Services.Sources
         private SpotifyClientConfig config = SpotifyClientConfig.CreateDefault().WithRetryHandler(new SimpleRetryHandler() { RetryTimes = 3, TooManyRequestsConsumesARetry = false});
         private SpotifyClient spotify;
         private SpotifyClient? spotifyUser;
-        private Random rand = new();
         public bool IsInitialized = false;
         private string? loginString = null;
         
@@ -47,7 +46,6 @@ namespace FluentDL.Services.Sources
             try 
             {
                 IsInitialized = false;
-                bool attemptedCustomIdSecret = false;
                 loginString = null;
                 
                 try
@@ -62,7 +60,6 @@ namespace FluentDL.Services.Sources
                         spotifyUser = null;
 
                         // Create client without user access
-                        attemptedCustomIdSecret = true;
                         spotify = new SpotifyClient(config.WithAuthenticator(new ClientCredentialsAuthenticator(clientId, clientSecret)));
                         if (await CheckClient())
                         {
@@ -91,71 +88,6 @@ namespace FluentDL.Services.Sources
                     loginString = $"Logged into Spotify Web Player (anonymous)";
                     return;
                 }
-
-                //// If clientId and clientSecret are not provided, try to get from browser
-                //try
-                //{
-                //    spotify = new SpotifyClient(config.WithAuthenticator(new EmbedAuthenticator()));
-                //    IsInitialized = true;
-                //    return;
-                //}
-                //catch (Exception e)
-                //{
-                //    Debug.WriteLine("Failed to get access token: " + e.Message);
-                //}
-
-                //// If still not initialized, try to get bundled keys
-                //try
-                //{
-                //    var idList = KeyReader.GetValues("spot_id");
-                //    var secretList = KeyReader.GetValues("spot_secret");
-
-                //    if (!idList.IsEmpty && !secretList.IsEmpty && idList.Length == secretList.Length)  // If lists have content and same length
-                //    {
-                //        // Shuffle idList
-                //        var pairs = new List<(string? id, string? secret)>();
-                //        for (int i = 0; i < idList.Length; i++)
-                //        {
-                //            pairs.Add((idList[i], secretList[i]));
-                //        }
-                //        var pairArr = pairs.ToArray();
-                //        rand.Shuffle(pairArr);
-
-                //        foreach (var (id, secret) in pairArr)
-                //        {                        
-                //            if (!string.IsNullOrEmpty(id) && !string.IsNullOrEmpty(secret))
-                //            {
-                //                spotify = new SpotifyClient(config.WithAuthenticator(new ClientCredentialsAuthenticator(id, secret)));
-                //                if (await CheckClient())
-                //                {
-                //                    IsInitialized = true;
-                //                    if (attemptedCustomIdSecret)
-                //                    {
-                //                        authCallback?.Invoke(StatusLevel.Warning, "User credentials failed — using included instead");
-                //                    }
-                //                    else
-                //                    {
-                //                        authCallback?.Invoke(StatusLevel.Success, "Logged in with included credentials");
-                //                    }
-                //                    loginString = $"Logged in with included (FluentDL) credentials:\nSelected Client ID: {id[..5] + "..."}";
-                //                    return;
-                //                } else
-                //                {
-                //                    Debug.WriteLine("Failed to validate client: " + id);
-                //                }
-                //            }   
-                //        }
-                //    }
-                //}
-                //catch (Exception e)
-                //{
-                //    Debug.WriteLine("Failed to initialize Spotify API: " + e.Message);
-                //    authCallback?.Invoke(StatusLevel.Error, "Failed to initialize: " + e.Message);
-                //}
-                //if (!IsInitialized)
-                //{
-                //    authCallback?.Invoke(StatusLevel.Error, "All credential options failed");
-                //}
             } catch (Exception ex)
             {
                 authCallback?.Invoke(StatusLevel.Error, "Failed to log into Spotify: " + ex.Message);
@@ -515,111 +447,6 @@ namespace FluentDL.Services.Sources
             return null;
         }
 
-        public async Task<SongSearchObject?> GetTrackEmbed(string id)
-        {
-            var httpClient = new System.Net.Http.HttpClient();
-            string html = await httpClient.GetStringAsync($"https://open.spotify.com/embed/track/{id}");
-            // get json
-            var m = Regex.Match(html, @"<script[^>]*id=[""']__NEXT_DATA__[""'][^>]*>([\s\S]*?)</script>", RegexOptions.IgnoreCase);
-            var jsonStr = m.Success ? m.Groups[1].Value.Trim() : null;
-            if (jsonStr == null) 
-                return null;
-
-            using var doc = System.Text.Json.JsonDocument.Parse(jsonStr);
-            var root = doc.RootElement;
-            // Navigate to props.pageProps.state.data.entity
-            if (!root.TryGetProperty("props", out var props) ||
-                !props.TryGetProperty("pageProps", out var pageProps) ||
-                !pageProps.TryGetProperty("state", out var state) ||
-                !state.TryGetProperty("data", out var data) ||
-                !data.TryGetProperty("entity", out var entity))
-            {
-                throw new InvalidOperationException("Expected path props.pageProps.state.data.entity not found.");
-            }
-
-            var result = new SongSearchObject();
-
-            // Title / Name
-            if (entity.TryGetProperty("name", out var nameProp))
-                result.Title = nameProp.GetString() ?? string.Empty;
-            else if (entity.TryGetProperty("title", out var titleProp))
-                result.Title = titleProp.GetString() ?? string.Empty;
-
-            // Id
-            if (entity.TryGetProperty("id", out var idProp))
-                result.Id = idProp.GetString() ?? string.Empty;
-            else if (entity.TryGetProperty("uri", out var uriProp))
-                result.Id = uriProp.GetString() ?? string.Empty;
-
-            // Artists (join names)
-            if (entity.TryGetProperty("artists", out var artistsProp) && artistsProp.ValueKind == JsonValueKind.Array)
-            {
-                var names = artistsProp.EnumerateArray()
-                                      .Select(a => a.TryGetProperty("name", out var n) ? n.GetString() : null)
-                                      .Where(s => !string.IsNullOrEmpty(s))
-                                      .ToArray();
-                result.Artists = string.Join(", ", names);
-            }
-
-            // Release date
-            if (entity.TryGetProperty("releaseDate", out var releaseDateProp) &&
-                releaseDateProp.TryGetProperty("isoString", out var isoProp))
-            {
-                var iso = isoProp.GetString();
-                if (DateTime.TryParse(iso, null, DateTimeStyles.AdjustToUniversal, out var dt))
-                    result.ReleaseDate = dt.ToString("yyyy-MM-dd");
-                else
-                    result.ReleaseDate = iso ?? string.Empty;
-            }
-
-            // Duration (ms -> mm:ss)
-            if (entity.TryGetProperty("duration", out var durationProp) && durationProp.TryGetInt32(out var ms))
-            {
-                var ts = TimeSpan.FromMilliseconds(ms);
-                result.Duration = $"{(int)ts.TotalMinutes}:{ts.Seconds:D2}";
-            }
-
-            // ImageLocation: pick largest available image or first
-            if (entity.TryGetProperty("visualIdentity", out var visual) &&
-                visual.TryGetProperty("image", out var images) && images.ValueKind == JsonValueKind.Array)
-            {
-                // prefer largest by maxWidth if present
-                var best = images.EnumerateArray()
-                                 .Select(i => new
-                                 {
-                                     Url = i.TryGetProperty("url", out var u) ? u.GetString() : null,
-                                     Width = i.TryGetProperty("maxWidth", out var w) && w.TryGetInt32(out var wi) ? wi : 0
-                                 })
-                                 .Where(x => !string.IsNullOrEmpty(x.Url))
-                                 .OrderByDescending(x => x.Width)
-                                 .FirstOrDefault();
-
-                result.ImageLocation = best?.Url ?? result.ImageLocation;
-            }
-            else if (entity.TryGetProperty("image", out var imageProp) && imageProp.ValueKind == JsonValueKind.Array)
-            {
-                var first = imageProp.EnumerateArray().FirstOrDefault();
-                if (first.ValueKind == JsonValueKind.Object && first.TryGetProperty("url", out var u))
-                    result.ImageLocation = u.GetString() ?? result.ImageLocation;
-            }
-
-            // Explicit flag
-            if (entity.TryGetProperty("isExplicit", out var explicitProp) && explicitProp.ValueKind == JsonValueKind.True)
-                result.Explicit = true;
-            else
-                result.Explicit = false;
-
-            // AlbumName (if available)
-            if (entity.TryGetProperty("album", out var albumProp) && albumProp.TryGetProperty("name", out var albumName))
-                result.AlbumName = albumName.GetString() ?? string.Empty;
-
-            // Source and Rank and TrackPosition defaults
-            result.Source = SourceIds.Spotify;
-            result.Rank = string.Empty;
-            result.TrackPosition = "1";
-
-            return result;
-        }
         public async Task<SongSearchObject?> GetTrackWebPlayer(string id)
         {
             try

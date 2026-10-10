@@ -141,16 +141,6 @@ internal class ApiHelper
 
     public static string FormatDateTimeOffset(DateTimeOffset? dateTimeOffset) => DisplayFormat.FormatDateTimeOffset(dateTimeOffset);
 
-    // Gets a bitmap image from a URL
-    public static async Task<BitmapImage> GetBitmapImageAsync(string uri)
-    {
-        var byteArr = await client.GetByteArrayAsync(uri);
-        var bitmapImage = new BitmapImage();
-        using var stream = new MemoryStream(byteArr);
-        await bitmapImage.SetSourceAsync(stream.AsRandomAccessStream());
-        return bitmapImage;
-    }
-
     // For any file downloading with progress
     public static Task DownloadFileAsync(string filePath, string downloadUrl, IProgress<ProgressData> progress) => WebDownloads.DownloadFileAsync(filePath, downloadUrl, progress);
 }

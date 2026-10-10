@@ -9,7 +9,6 @@ using System.Runtime.Intrinsics.Arm;
 using System.Runtime.Intrinsics.X86;
 using System.Text;
 using System.Threading.Tasks;
-using TagLib.Id3v2;
 
 namespace FluentDL.Services.Sources
 {
