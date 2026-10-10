@@ -60,20 +60,30 @@ public class TitleNormalizerTests
         Assert.AreEqual(string.Empty, TextNormalization.PrunePunctuation(title));
     }
 
-    // Bug 14: an unclosed featuring bracket throws in the index-based normalizers.
+    // Bug 14 (fixed): an unclosed featuring bracket used to throw. It now runs to the end of the title.
     [DataTestMethod]
-    [DataRow("Unclosed (feat. Someone")]
-    [DataRow("Unclosed (ft. Someone")]
-    [DataRow("Unclosed (with Someone")]
-    public void CompactLegacy_ThrowsOnUnclosedBracket(string title)
+    [DataRow("Unclosed (feat. Someone", "unclosed")]
+    [DataRow("Unclosed (ft. Someone", "unclosed")]
+    [DataRow("Unclosed (with Someone", "unclosed")]
+    [DataRow("Song (feat. A) (with B", "song")]
+    public void CompactLegacy_RemovesAnUnclosedBracketToTheEnd(string title, string expected)
     {
-        Assert.ThrowsException<ArgumentOutOfRangeException>(() => TitleNormalizer.CompactLegacy(title));
+        Assert.AreEqual(expected, TitleNormalizer.CompactLegacy(title));
+    }
+
+    // "(with" used to match the start of "(without", cutting it out of the title.
+    [TestMethod]
+    public void CompactLegacy_KeepsWithout()
+    {
+        Assert.AreEqual("lifewithoutyou", TitleNormalizer.CompactLegacy("Life (Without You)"));
+        Assert.AreEqual("song", TitleNormalizer.CompactLegacy("Song (with Someone)"));
     }
 
     [TestMethod]
-    public void ForSearchQuery_ThrowsOnUnclosedFeat_ButNotOnUnclosedWith()
+    public void ForSearchQuery_RemovesAnUnclosedFeatToTheEnd()
     {
-        Assert.ThrowsException<ArgumentOutOfRangeException>(() => TitleNormalizer.ForSearchQuery("Unclosed (feat. Someone"));
+        Assert.AreEqual("unclosed", TitleNormalizer.ForSearchQuery("Unclosed (feat. Someone"));
+        Assert.AreEqual("unclosed", TitleNormalizer.ForSearchQuery("Unclosed (ft. Someone"));
         Assert.AreEqual("unclosed (with someone", TitleNormalizer.ForSearchQuery("Unclosed (with Someone"));
     }
 }

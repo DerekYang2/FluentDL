@@ -221,27 +221,27 @@
   },
   {
     "Input": "Unclosed (feat. Someone",
-    "ApiHelper_PruneTitle": "throws ArgumentOutOfRangeException",
+    "ApiHelper_PruneTitle": "unclosed",
     "ApiHelper_PruneFeaturing": "Unclosed (feat. Someone",
     "ApiHelper_PrunePunctuation": "UnclosedfeatSomeone",
     "ApiHelper_EnforceAscii": "Unclosed (feat. Someone",
     "ApiHelper_RemoveDiacritics": "Unclosed (feat. Someone",
     "DeezerApi_PruneTitle": "unclosedfeatsomeone",
-    "DeezerApi_PruneTitleSearch": "throws ArgumentOutOfRangeException"
+    "DeezerApi_PruneTitleSearch": "unclosed"
   },
   {
     "Input": "Unclosed (ft. Someone",
-    "ApiHelper_PruneTitle": "throws ArgumentOutOfRangeException",
+    "ApiHelper_PruneTitle": "unclosed",
     "ApiHelper_PruneFeaturing": "Unclosed (ft. Someone",
     "ApiHelper_PrunePunctuation": "UnclosedftSomeone",
     "ApiHelper_EnforceAscii": "Unclosed (ft. Someone",
     "ApiHelper_RemoveDiacritics": "Unclosed (ft. Someone",
     "DeezerApi_PruneTitle": "unclosedftsomeone",
-    "DeezerApi_PruneTitleSearch": "throws ArgumentOutOfRangeException"
+    "DeezerApi_PruneTitleSearch": "unclosed"
   },
   {
     "Input": "Unclosed (with Someone",
-    "ApiHelper_PruneTitle": "throws ArgumentOutOfRangeException",
+    "ApiHelper_PruneTitle": "unclosed",
     "ApiHelper_PruneFeaturing": "Unclosed (with Someone",
     "ApiHelper_PrunePunctuation": "UnclosedwithSomeone",
     "ApiHelper_EnforceAscii": "Unclosed (with Someone",

@@ -25,9 +25,9 @@ public static class TitleNormalizer
     }
 
     /// <summary>
-    /// The older variant of <see cref="Compact"/>: removes only the first "(feat.", "(ft." and "(with" group, found by
-    /// index. "(with" also matches "(without". Throws ArgumentOutOfRangeException when the bracket is never closed
-    /// (bug 14). Formerly ApiHelper.PruneTitle; Spotify uses it.
+    /// The older variant of <see cref="Compact"/>: removes only the first "(feat.", "(ft." and "(with " group, found by
+    /// index. A group with no closing bracket runs to the end of the title. Formerly ApiHelper.PruneTitle; Spotify
+    /// uses it.
     /// </summary>
     public static string CompactLegacy(string title)
     {
@@ -35,7 +35,7 @@ public static class TitleNormalizer
 
         titlePruned = RemoveFirstGroup(titlePruned, "(feat.");
         titlePruned = RemoveFirstGroup(titlePruned, "(ft.");
-        titlePruned = RemoveFirstGroup(titlePruned, "(with");
+        titlePruned = RemoveFirstGroup(titlePruned, "(with "); // the space keeps "(without" out
 
         titlePruned = StripPunctuation(titlePruned);
 
@@ -45,8 +45,8 @@ public static class TitleNormalizer
 
     /// <summary>
     /// Cleans a title for use in a search query: lowercase, hyphens to spaces, first "(feat." and "(ft." groups and
-    /// "radio edit" removed, repeated whitespace collapsed, ASCII only. Throws ArgumentOutOfRangeException when a
-    /// featuring bracket is never closed (bug 14). Formerly DeezerApi.PruneTitleSearch.
+    /// "radio edit" removed, repeated whitespace collapsed, ASCII only. A group with no closing bracket runs to the end
+    /// of the title. Formerly DeezerApi.PruneTitleSearch.
     /// </summary>
     public static string ForSearchQuery(string title)
     {
@@ -66,7 +66,7 @@ public static class TitleNormalizer
         return title.Replace(" ", "").Replace("(", "").Replace(")", "").Replace("-", "").Replace(".", "").Replace("[", "").Replace("]", "").Replace("\u2014", "").Replace("'", "").Replace("\"", "");
     }
 
-    // Removes from the first occurrence of `opening` through the next ")".
+    // Removes from the first occurrence of `opening` through the next ")", or to the end when there is none.
     private static string RemoveFirstGroup(string title, string opening)
     {
         var index = title.IndexOf(opening);
@@ -76,6 +76,6 @@ public static class TitleNormalizer
         }
 
         var closingIndex = title.IndexOf(")", index);
-        return title.Remove(index, closingIndex - index + 1);
+        return closingIndex == -1 ? title[..index] : title.Remove(index, closingIndex - index + 1);
     }
 }
