@@ -66,4 +66,38 @@ public class DeezerTests
         }
         return rows;
     });
+
+    // Bug 10: clearing the ARL kept the signed-in client, so downloads still ran on the old account. A fresh instance,
+    // so the shared signed-in one stays as it is.
+    [TestMethod]
+    public async Task ClearingTheArlSignsOut()
+    {
+        var deezer = new Services.Sources.DeezerSource(TestSources.Settings, TestSources.AudioConverter);
+        await deezer.ConnectAsync();
+        Assert.IsTrue(deezer.IsInitialized);
+        var song = await deezer.GetTrack(Fixtures.Tracks[0].DeezerId!);
+
+        await deezer.InitDeezerClient("");
+
+        var directory = Path.Combine(Path.GetTempPath(), "opencode", "fluentdl-downloads", Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(directory);
+        try
+        {
+            Exception? error = null;
+            try
+            {
+                await deezer.DownloadTrack(Path.Combine(directory, "track"), song, DeezNET.Data.Bitrate.MP3_128);
+            }
+            catch (Exception e)
+            {
+                error = e;
+            }
+            Assert.IsNotNull(error, "the download ran after the ARL was cleared");
+            Assert.AreEqual(0, Directory.GetFiles(directory).Length);
+        }
+        finally
+        {
+            try { Directory.Delete(directory, recursive: true); } catch (IOException) { }
+        }
+    }
 }

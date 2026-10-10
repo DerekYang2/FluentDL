@@ -31,12 +31,12 @@ internal sealed partial class DeezerSource
         IsInitialized = false;
         loginString = null;
         IsPremium = false;
+        deezerClient = new DeezerClient(); // A blank ARL signs out too (bug 10: it kept the old signed-in client)
 
         if (!string.IsNullOrWhiteSpace(ARL))
         {
             try
             {
-                deezerClient = new DeezerClient();
                 await deezerClient.SetARL(ARL);
                 var data = await deezerClient.GWApi.GetUserData();
     
