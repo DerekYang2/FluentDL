@@ -800,7 +800,11 @@ internal sealed partial class QobuzSource
     /// <param name="isrc">The ISRC to match by first. ConversionService looks it up for songs that don't carry one.</param>
     public async Task<SongSearchObject?> GetQobuzTrack(SongSearchObject songObj, string? isrc, CancellationToken token = default, ConversionUpdateCallback? callback = null, bool onlyISRC = false)
     {
-        if (!IsInitialized) return null;
+        if (!IsInitialized) // Report it, so the queue marks the row (bug 7)
+        {
+            callback?.Invoke(StatusLevel.Error, songObj);
+            return null;
+        }
 
         string query = songObj.Artists.Split(", ")[0] + " " + songObj.Title;
 
