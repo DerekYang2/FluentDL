@@ -6,35 +6,35 @@ using FluentDL.Models;
 
 namespace FluentDL.Services.Sources;
 
-internal sealed class DeezerSource : ISourceSession, ISearchSource, ILinkSource, IConversionTarget, ICatalogSource, IPreviewSource, IDownloadSource, ITagSource
+internal sealed partial class DeezerSource : ISourceSession, ISearchSource, ILinkSource, IConversionTarget, ICatalogSource, IPreviewSource, IDownloadSource, ITagSource
 {
     public SourceDescriptor Descriptor { get; } = SourceCatalog.Find(SourceIds.Deezer)!;
 
-    public bool IsConnected => DeezerApi.IsInitialized;
+    public bool IsConnected => IsInitialized;
 
-    public string? StatusText => DeezerApi.LoginString();
+    public string? StatusText => LoginString();
 
     public async Task<ConnectResult> ConnectAsync()
     {
         var arl = await SourceServices.Settings.ReadSettingAsync<string>(SettingKeys.DeezerArl);
-        return await CallbackResults.Connect(callback => DeezerApi.InitDeezerClient(arl, callback), () => DeezerApi.IsInitialized);
+        return await CallbackResults.Connect(callback => InitDeezerClient(arl, callback), () => IsInitialized);
     }
 
     public Task SearchAsync(ICollection<SongSearchObject> results, string query, PageRequest page, bool albumMode, CancellationToken token) =>
-        DeezerApi.GeneralSearch(results, query, token, page.Offset, page.Limit, albumMode);
+        GeneralSearch(results, query, token, page.Offset, page.Limit, albumMode);
 
     public Task AdvancedSearchAsync(ICollection<SongSearchObject> results, AdvancedQuery query, PageRequest page, CancellationToken token) =>
-        DeezerApi.AdvancedSearch(results, query.Artist, query.Track, query.Album, token, page.Offset, page.Limit, clearResults: false);
+        AdvancedSearch(results, query.Artist, query.Track, query.Album, token, page.Offset, page.Limit, clearResults: false);
 
     public bool CanHandle(string url) =>
         url.StartsWith("https://deezer.page.link/") || url.StartsWith("https://dzr.page.link/") || url.StartsWith("https://link.deezer.com/")
         || Regex.IsMatch(url, @"https://www\.deezer\.com(/[^/]+)?/(track|album|playlist)/.*");
 
     public Task AddFromLinkAsync(ICollection<SongSearchObject> results, string url, LinkRequest request, UrlStatusUpdateCallback? status, CancellationToken token) =>
-        request.IsFirstPage ? DeezerApi.AddTracksFromLink(results, url, token, status, request.AlbumMode) : Task.CompletedTask;
+        request.IsFirstPage ? AddTracksFromLink(results, url, token, status, request.AlbumMode) : Task.CompletedTask;
 
     public Task<MatchResult> FindEquivalentAsync(SongSearchObject song, string? isrc, CancellationToken token, bool isrcOnly = false) =>
-        CallbackResults.Match(callback => DeezerApi.GetDeezerTrack(song, isrc, token, callback, isrcOnly));
+        CallbackResults.Match(callback => GetDeezerTrack(song, isrc, token, callback, isrcOnly));
 
     public Task<string> DownloadAsync(SongSearchObject track, string pathWithoutExtension, DownloadRequest request, IProgress<ProgressData>? progress)
     {
@@ -44,20 +44,20 @@ internal sealed class DeezerSource : ISourceSession, ISearchSource, ILinkSource,
             DownloadQuality.Lossless => DeezNET.Data.Bitrate.FLAC,
             _ => null, // the deezer_quality setting
         };
-        return DeezerApi.DownloadTrack(pathWithoutExtension, track, bitrate, request.Allow128Fallback, progress);
+        return DownloadTrack(pathWithoutExtension, track, bitrate, request.Allow128Fallback, progress);
     }
 
     // Search results carry only part of each track, so every track is loaded again.
     public async Task<List<SongSearchObject>> GetAlbumTracksAsync(AlbumSearchObject album)
     {
         List<SongSearchObject> albumTracks = [];
-        var fullAlbumObj = await DeezerApi.GetAlbum(album.Id);
+        var fullAlbumObj = await GetAlbum(album.Id);
 
         if (fullAlbumObj != null)
         {
             foreach (var t in fullAlbumObj.TrackList ?? [])
             {
-                var track = await DeezerApi.GetTrack(t.Id);
+                var track = await GetTrack(t.Id);
                 if (track != null)
                 {
                     albumTracks.Add(track);
@@ -71,14 +71,14 @@ internal sealed class DeezerSource : ISourceSession, ISearchSource, ILinkSource,
     {
         if (song is AlbumSearchObject album)
         {
-            var albumJson = await DeezerApi.restClient.FetchJsonElement("album/" + album.Id);
-            var fullAlbumObject = DeezerApi.GetAlbumFromJsonElement(albumJson);
+            var albumJson = await restClient.FetchJsonElement("album/" + album.Id);
+            var fullAlbumObject = GetAlbumFromJsonElement(albumJson);
             string? cover = null;
             if (albumJson.TryGetProperty("cover_big", out var coverBig) && !string.IsNullOrEmpty(coverBig.GetString()))
             {
                 cover = coverBig.GetString();
             }
-            var rows = new List<(string, string)> { ("Genre", DeezerApi.GetGenreStr(albumJson)), ("Max Quality", "16-Bit/44.1 kHz") };
+            var rows = new List<(string, string)> { ("Genre", GetGenreStr(albumJson)), ("Max Quality", "16-Bit/44.1 kHz") };
             if (albumJson.TryGetProperty("fans", out var fans))
             {
                 rows.Add(("Fans", fans.GetInt32().ToString()));
@@ -88,8 +88,8 @@ internal sealed class DeezerSource : ISourceSession, ISearchSource, ILinkSource,
             return new PreviewInfo { CoverUrl = cover, Rows = rows, RemoveAlbumRow = true, AlbumTracks = tracks, AlbumTrackCount = album.TracksCount };
         }
 
-        var json = await DeezerApi.restClient.FetchJsonElement("track/" + song.Id);
-        var genre = await DeezerApi.GetGenreStr(json.GetProperty("album").GetProperty("id").GetInt32());
+        var json = await restClient.FetchJsonElement("track/" + song.Id);
+        var genre = await GetGenreStr(json.GetProperty("album").GetProperty("id").GetInt32());
         var trackRows = new List<(string, string)> { ("Track", json.GetProperty("track_position").ToString()) };
         if (!string.IsNullOrEmpty(genre))
         {
@@ -111,18 +111,18 @@ internal sealed class DeezerSource : ISourceSession, ISearchSource, ILinkSource,
 
     public Task<string?> GetPreviewAudioAsync(SongSearchObject track) => Task.FromResult(track?.AdditionalFields?["preview"]?.ToString());
 
-    public Task<SongSearchObject?> GetTrackAsync(string id) => DeezerApi.GetTrack(id);
+    public Task<SongSearchObject?> GetTrackAsync(string id) => GetTrack(id);
 
     // Every track is loaded again, and the album keeps its cover URLs for GetLargestCoverUrlAsync.
     public async Task LoadAlbumForDownloadAsync(AlbumSearchObject album)
     {
-        var jsonObj = await DeezerApi.restClient.FetchJsonElement("album/" + album.Id);
-        var fullAlbumObj = DeezerApi.GetAlbumFromJsonElement(jsonObj);
+        var jsonObj = await restClient.FetchJsonElement("album/" + album.Id);
+        var fullAlbumObj = GetAlbumFromJsonElement(jsonObj);
 
         album.TrackList = [];
         foreach (var t in fullAlbumObj?.TrackList ?? [])
         {
-            var track = await DeezerApi.GetTrack(t.Id);
+            var track = await GetTrack(t.Id);
             if (track != null)
             {
                 album.TrackList.Add(track);
@@ -149,5 +149,5 @@ internal sealed class DeezerSource : ISourceSession, ISearchSource, ILinkSource,
         return Task.FromResult<string?>(null);
     }
 
-    public Task WriteTagsAsync(string filePath, SongSearchObject track) => DeezerApi.UpdateMetadata(filePath, track.Id);
+    public Task WriteTagsAsync(string filePath, SongSearchObject track) => UpdateMetadata(filePath, track.Id);
 }

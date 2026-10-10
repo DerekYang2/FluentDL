@@ -66,8 +66,8 @@ public class HelperTests
             ApiHelper_PrunePunctuation = Capture(() => ApiHelper.PrunePunctuation(t)),
             ApiHelper_EnforceAscii = Capture(() => ApiHelper.EnforceAscii(t)),
             ApiHelper_RemoveDiacritics = Capture(() => ApiHelper.RemoveDiacritics(t)),
-            DeezerApi_PruneTitle = Capture(() => DeezerApi.PruneTitle(t)),
-            DeezerApi_PruneTitleSearch = Capture(() => DeezerApi.PruneTitleSearch(t)),
+            DeezerApi_PruneTitle = Capture(() => TestSources.Deezer.PruneTitle(t)),
+            DeezerApi_PruneTitleSearch = Capture(() => TestSources.Deezer.PruneTitleSearch(t)),
         });
 
         Snapshot.Match("Helpers.TitleNormalizers", rows);

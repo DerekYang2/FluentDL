@@ -12,20 +12,20 @@ using System.Net;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 
-namespace FluentDL.Services;
+namespace FluentDL.Services.Sources;
 
 // TODO: Handle null warnings and catch network errors
 
-internal class DeezerApi
+internal sealed partial class DeezerSource
 {
     public static readonly string baseURL = "https://api.deezer.com";
-    private static DeezerClient deezerClient = new DeezerClient();
-    public static RestHelper restClient = new RestHelper(baseURL, 5); // 5 seconds timeout
-    public static bool IsInitialized = false;
-    private static string? loginString = null;
-    public static bool IsPremium = false;
+    private DeezerClient deezerClient = new DeezerClient();
+    public RestHelper restClient = new RestHelper(baseURL, 5); // 5 seconds timeout
+    public bool IsInitialized = false;
+    private string? loginString = null;
+    public bool IsPremium = false;
 
-    public static async Task InitDeezerClient(string? ARL, AuthenticationCallback? authCallback = null)
+    public async Task InitDeezerClient(string? ARL, AuthenticationCallback? authCallback = null)
     {
         IsInitialized = false;
         loginString = null;
@@ -77,12 +77,12 @@ internal class DeezerApi
         }
     }
 
-    public static string? LoginString()
+    public string? LoginString()
     {
         return loginString;
     }
 
-    public static async Task AddTracksFromLink(ICollection<SongSearchObject> list, string url, CancellationToken token, UrlStatusUpdateCallback? statusUpdate, bool albumMode = false)
+    public async Task AddTracksFromLink(ICollection<SongSearchObject> list, string url, CancellationToken token, UrlStatusUpdateCallback? statusUpdate, bool albumMode = false)
     {
         if (url.StartsWith("https://deezer.page.link/") || url.StartsWith("https://dzr.page.link/") || url.StartsWith("https://link.deezer.com/"))
         {
@@ -168,11 +168,11 @@ internal class DeezerApi
     }
 
     // Moved to FluentDL.Core.Matching.TitleNormalizer. These wrappers keep existing callers unchanged.
-    public static string PruneTitle(string title) => TitleNormalizer.Compact(title);
+    public string PruneTitle(string title) => TitleNormalizer.Compact(title);
 
-    public static string PruneTitleSearch(string title) => TitleNormalizer.ForSearchQuery(title);
+    public string PruneTitleSearch(string title) => TitleNormalizer.ForSearchQuery(title);
 
-    public static async Task GeneralSearch(ICollection<SongSearchObject> itemSource, string query, CancellationToken token, int offset = 0, int limit = 25, bool albumMode = false)
+    public async Task GeneralSearch(ICollection<SongSearchObject> itemSource, string query, CancellationToken token, int offset = 0, int limit = 25, bool albumMode = false)
     {
         query = query.Trim(); // Trim the query
         if (string.IsNullOrWhiteSpace(query))
@@ -202,7 +202,7 @@ internal class DeezerApi
         }
     }
 
-    public static async Task<SongSearchObject?> GeneralSearch(SongSearchObject song)
+    public async Task<SongSearchObject?> GeneralSearch(SongSearchObject song)
     {
         var title = PruneTitleSearch(song.Title);
         var artists = song.Artists.Split(", ").ToList();
@@ -260,7 +260,7 @@ internal class DeezerApi
     }
 
     /// <param name="isrc">The ISRC to match by first. ConversionService looks it up for songs that don't carry one.</param>
-    public static async Task<SongSearchObject?> GetDeezerTrack(SongSearchObject song, string? isrc, CancellationToken token = default, ConversionUpdateCallback? callback = null, bool onlyISRC = false)
+    public async Task<SongSearchObject?> GetDeezerTrack(SongSearchObject song, string? isrc, CancellationToken token = default, ConversionUpdateCallback? callback = null, bool onlyISRC = false)
     {
         // Try to find by ISRC first
         if (isrc != null)
@@ -438,7 +438,7 @@ internal class DeezerApi
         return null;
     }
 
-    public static async Task AdvancedSearch(ICollection<SongSearchObject> itemSource, string artistName, string trackName, string albumName, CancellationToken token, int offset = 0, int limit = 25, bool clearResults = true)
+    public async Task AdvancedSearch(ICollection<SongSearchObject> itemSource, string artistName, string trackName, string albumName, CancellationToken token, int offset = 0, int limit = 25, bool clearResults = true)
     {
         // Trim
         artistName = artistName.Trim();
@@ -475,7 +475,7 @@ internal class DeezerApi
         }
     }
 
-    private static SongSearchObject GetTrackPreview(JsonElement jsonObj)
+    private SongSearchObject GetTrackPreview(JsonElement jsonObj)
     {
         return new SongSearchObject()
         {
@@ -492,7 +492,7 @@ internal class DeezerApi
     }
 
     // Problem: Deezer search album objects don't have duration
-    private static AlbumSearchObject GetAlbumPreview(JsonElement jsonObj)
+    private AlbumSearchObject GetAlbumPreview(JsonElement jsonObj)
     {
         
         return new AlbumSearchObject()
@@ -511,7 +511,7 @@ internal class DeezerApi
         };
     }
 
-    private static SongSearchObject? GetTrackFromJsonElement(JsonElement jsonObject)
+    private SongSearchObject? GetTrackFromJsonElement(JsonElement jsonObject)
     {
         if (string.IsNullOrWhiteSpace(jsonObject.ToString()))
         {
@@ -569,7 +569,7 @@ internal class DeezerApi
         };
     }
 
-    public static AlbumSearchObject? GetAlbumFromJsonElement(JsonElement jsonObject)
+    public AlbumSearchObject? GetAlbumFromJsonElement(JsonElement jsonObject)
     {
         if (string.IsNullOrWhiteSpace(jsonObject.ToString()))
         {
@@ -636,19 +636,19 @@ internal class DeezerApi
         };
     }
 
-    public static async Task<SongSearchObject?> GetTrack(string trackId)
+    public async Task<SongSearchObject?> GetTrack(string trackId)
     {
         var jsonObject = await restClient.FetchJsonElement("track/" + trackId);
         return GetTrackFromJsonElement(jsonObject);
     }
 
-    public static async Task<AlbumSearchObject?> GetAlbum(string albumId)
+    public async Task<AlbumSearchObject?> GetAlbum(string albumId)
     {
         var jsonObject = await restClient.FetchJsonElement("album/" + albumId);
         return GetAlbumFromJsonElement(jsonObject);
     }
 
-    public static async Task<SongSearchObject?> GetTrackFromISRC(string ISRC)
+    public async Task<SongSearchObject?> GetTrackFromISRC(string ISRC)
     {
         var jsonObject = await restClient.FetchJsonElement("track/isrc:" + ISRC);
         if (jsonObject.TryGetProperty("error", out var errorObj)) // Has an error field
@@ -660,7 +660,7 @@ internal class DeezerApi
         return GetTrackFromJsonElement(jsonObject);
     }
 
-    public static async Task<AlbumSearchObject?> GetAlbumFromUPC(string UPC)
+    public async Task<AlbumSearchObject?> GetAlbumFromUPC(string UPC)
     {
         var jsonObject = await restClient.FetchJsonElement("album/upc:" + UPC);
         if (jsonObject.TryGetProperty("error", out var errorObj)) // Has an error field
@@ -671,7 +671,7 @@ internal class DeezerApi
         return GetAlbumFromJsonElement(jsonObject);
     }
 
-    public static async Task<string> DownloadTrack(string filePath, SongSearchObject? song, DeezNET.Data.Bitrate? bitrateEnum = null, bool use128Fallback = false, IProgress<ProgressData>? progress = null)
+    public async Task<string> DownloadTrack(string filePath, SongSearchObject? song, DeezNET.Data.Bitrate? bitrateEnum = null, bool use128Fallback = false, IProgress<ProgressData>? progress = null)
     {
         // Remove extension if it exists
         filePath = ApiHelper.RemoveExtension(filePath);
@@ -771,13 +771,13 @@ internal class DeezerApi
         return filePath;
     }
 
-    public static async Task<string> GetGenreStr(int albumId)
+    public async Task<string> GetGenreStr(int albumId)
     {
         var albumJson = await restClient.FetchJsonElement("album/" + albumId);
         return GetGenreStr(albumJson);
     }
 
-    public static string GetGenreStr(JsonElement jsonElement)
+    public string GetGenreStr(JsonElement jsonElement)
     {
         // Get Genres
         var genreList = new List<string>();
@@ -791,7 +791,7 @@ internal class DeezerApi
         return string.Join(", ", genreList);
     }
 
-    public static async Task UpdateMetadata(string filePath, string trackId)
+    public async Task UpdateMetadata(string filePath, string trackId)
     {
         var jsonObject = await restClient.FetchJsonElement("track/" + trackId);
         var albumJson = await restClient.FetchJsonElement("album/" + jsonObject.SafeGetString("album", "id"));

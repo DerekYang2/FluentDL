@@ -35,16 +35,16 @@ public class DeezerTests
             tracks.Add(new
             {
                 f.Key,
-                ById = await Live.Capture(async () => (await DeezerApi.GetTrack(f.DeezerId!)).ToShape()),
-                ByIsrc = await Live.Capture(async () => (await DeezerApi.GetTrackFromISRC(f.Isrc!)).ToShape()),
+                ById = await Live.Capture(async () => (await TestSources.Deezer.GetTrack(f.DeezerId!)).ToShape()),
+                ByIsrc = await Live.Capture(async () => (await TestSources.Deezer.GetTrackFromISRC(f.Isrc!)).ToShape()),
             });
         }
 
         return new
         {
             Tracks = tracks,
-            Album = await Live.Capture(async () => (await DeezerApi.GetAlbum(Fixtures.DeezerAlbumId)).ToShape()),
-            AlbumByUpc = await Live.Capture(async () => (await DeezerApi.GetAlbumFromUPC(Fixtures.AlbumUpc)).ToShape()),
+            Album = await Live.Capture(async () => (await TestSources.Deezer.GetAlbum(Fixtures.DeezerAlbumId)).ToShape()),
+            AlbumByUpc = await Live.Capture(async () => (await TestSources.Deezer.GetAlbumFromUPC(Fixtures.AlbumUpc)).ToShape()),
         };
     });
 

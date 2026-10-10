@@ -53,7 +53,7 @@ internal static class LiveSources
     {
         await RunOnceAsync(() => deezerTried, () => deezerTried = true, () => TestSources.Deezer.ConnectAsync());
 
-        if (!DeezerApi.IsInitialized) Assert.Inconclusive("Deezer did not sign in with the ARL from the secrets file.");
+        if (!TestSources.Deezer.IsInitialized) Assert.Inconclusive("Deezer did not sign in with the ARL from the secrets file.");
     }
 
     public static async Task EnsureQobuzAsync()

@@ -110,7 +110,7 @@ public class ConversionTests
 
     private static async Task<SongSearchObject?> LoadAsync(string source, string id) => source switch
     {
-        "deezer" => await DeezerApi.GetTrack(id),
+        "deezer" => await TestSources.Deezer.GetTrack(id),
         "qobuz" => await QobuzApi.GetTrackAsync(id),
         "spotify" => await SpotifyApi.GetTrack(id),
         _ => await YoutubeApi.GetTrack(id),
