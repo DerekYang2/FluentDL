@@ -30,6 +30,8 @@ public class SettingsUiTests
             {
                 Find(dev, "SearchBox", TimeSpan.FromSeconds(60));
                 Navigate(dev, "Settings");
+                // The page sets the login indicators after loading its settings, so wait for them to settle.
+                WaitForStable(() => string.Join("|", Sources.Select(s => LoginState(dev, s))), TimeSpan.FromSeconds(3), TimeSpan.FromSeconds(20), "the login indicators");
                 state["AfterStartup"] = Sources.ToDictionary(s => s, s => LoginState(dev, s));
 
                 var updates = new Dictionary<string, object>();

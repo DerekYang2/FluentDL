@@ -100,7 +100,7 @@ public class SourceUiTests
         }
     }
 
-    private static AutomationElement OpenSourcePicker(DevApp dev)
+    internal static AutomationElement OpenSourcePicker(DevApp dev)
     {
         var button = Find(dev, "SourceButton");
         for (var attempt = 1; attempt <= 3; attempt++)
@@ -126,7 +126,7 @@ public class SourceUiTests
         throw new InvalidOperationException("The source picker did not open.");
     }
 
-    private static void CloseSourcePicker(DevApp dev)
+    internal static void CloseSourcePicker(DevApp dev)
     {
         Find(dev, "SourceButton").Patterns.ExpandCollapse.Pattern.Collapse();
         WaitUntil(() => TryFind(dev, cf => cf.ByAutomationId("SourceRadioButtons")) == null, DefaultTimeout, "the source picker to close");
@@ -188,21 +188,6 @@ public class SourceUiTests
             : resultsText;
 
         return (new { Source = source, Results = resultCount, VisibleSourceBadges = VisibleBadges() }, count);
-    }
-
-    // Sets the search text through UI Automation and invokes the box's search button, which raises the same
-    // QuerySubmitted event as Enter. No real mouse or keyboard input, so the test works while someone uses the PC.
-    // The button is only in the raw view of the automation tree.
-    private static void SubmitSearch(DevApp dev, string query)
-    {
-        var searchBox = Find(dev, "SearchBox");
-        var textBox = searchBox.FindFirstDescendant(cf => cf.ByControlType(ControlType.Edit))
-            ?? throw new InvalidOperationException("The search box has no text field.");
-        textBox.AsTextBox().Text = query;
-
-        var queryButton = FindInRawView(dev, textBox, "QueryButton")
-            ?? throw new InvalidOperationException("The search box has no QueryButton in the raw automation tree.");
-        Invoke(queryButton);
     }
 
     // The Queue page has no checkboxes of its own, so while a dialog is open every checkbox in the tree is the dialog's.

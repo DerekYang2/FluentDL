@@ -124,6 +124,23 @@ internal static class UiSteps
     public static void Invoke(AutomationElement element) => element.Patterns.Invoke.Pattern.Invoke();
 
     /// <summary>
+    /// Types a query into the Search page's box through UI Automation and invokes its search button, which raises the
+    /// same QuerySubmitted event as Enter. No real mouse or keyboard input, so it works while someone uses the PC.
+    /// The button is only in the raw view of the automation tree.
+    /// </summary>
+    public static void SubmitSearch(DevApp dev, string query)
+    {
+        var searchBox = Find(dev, "SearchBox");
+        var textBox = searchBox.FindFirstDescendant(cf => cf.ByControlType(ControlType.Edit))
+            ?? throw new InvalidOperationException("The search box has no text field.");
+        textBox.AsTextBox().Text = query;
+
+        var queryButton = FindInRawView(dev, textBox, "QueryButton")
+            ?? throw new InvalidOperationException("The search box has no QueryButton in the raw automation tree.");
+        Invoke(queryButton);
+    }
+
+    /// <summary>
     /// Saves a screenshot of the app window and its UI Automation tree to %TEMP%\opencode, to see what the app showed
     /// when a step failed.
     /// </summary>

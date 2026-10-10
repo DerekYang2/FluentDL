@@ -6,12 +6,16 @@ The dev app's window does open on top while they run (about 1 minute).
 
   .\tools\ui-tests\Run-UiTests.ps1                          # install the dev app from this checkout, compare with the baselines
   .\tools\ui-tests\Run-UiTests.ps1 -BaselineFrom 2cb77c1    # record the baselines from an older commit's app
+  .\tools\ui-tests\Run-UiTests.ps1 -Filter PreviewDetails   # only the tests whose name contains this
 
 -BaselineFrom checks the commit out into a temporary worktree, installs the dev app from it, records the UI
 baselines with this checkout's test code, then reinstalls the dev app from this checkout and removes the worktree.
+Record one test at a time with -Filter when only that test is new, so a flaky service in another test can't
+overwrite a good baseline.
 #>
 param(
     [string]$BaselineFrom,
+    [string]$Filter,
     [switch]$SkipInstall
 )
 
@@ -20,12 +24,13 @@ $repo = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path
 $install = Join-Path $PSScriptRoot 'Install-DevPackage.ps1'
 $tests = Join-Path $repo 'FluentDL.Characterization.Tests\FluentDL.Characterization.Tests.csproj'
 $worktree = $null
+$testFilter = if ($Filter) { "TestCategory=UI&FullyQualifiedName~$Filter" } else { 'TestCategory=UI' }
 
 function Invoke-UiTests([switch]$Record) {
     $env:FLUENTDL_UI_TESTS = '1'
     if ($Record) { $env:FLUENTDL_RECORD = '1' }
     try {
-        dotnet test $tests -p:Platform=x64 --nologo -v q --filter 'TestCategory=UI' --logger 'console;verbosity=normal' | Out-Host
+        dotnet test $tests -p:Platform=x64 --nologo -v q --filter $testFilter --logger 'console;verbosity=normal' | Out-Host
         return $LASTEXITCODE
     }
     finally {

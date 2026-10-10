@@ -1,0 +1,206 @@
+{
+  "deezer-track": {
+    "Title": "Get Lucky (feat. Pharrell Williams and Nile Rodgers)",
+    "Rows": [
+      {
+        "Label": "Artists",
+        "Value": "Daft Punk, Pharrell Williams, Nile Rodgers"
+      },
+      {
+        "Label": "Release Date",
+        "Value": "May 20, 2013"
+      },
+      {
+        "Label": "Length",
+        "Value": "6 min 7 sec"
+      },
+      {
+        "Label": "Album",
+        "Value": "Random Access Memories"
+      },
+      {
+        "Label": "Track",
+        "Value": "8"
+      },
+      {
+        "Label": "Genre",
+        "Value": "Dance, Pop"
+      },
+      {
+        "Label": "Max Quality",
+        "Value": "16-Bit/44.1 kHz"
+      },
+      {
+        "Label": "ISRC",
+        "Value": "USQX91300108"
+      },
+      {
+        "Label": "Popularity",
+        "Value": ""
+      }
+    ],
+    "LabelsMatchValues": true,
+    "RatingShown": true,
+    "TrackListHeader": null
+  },
+  "deezer-album": {
+    "Title": "Random Access Memories",
+    "Rows": [
+      {
+        "Label": "Artists",
+        "Value": "Daft Punk"
+      },
+      {
+        "Label": "Release Date",
+        "Value": "May 17, 2013"
+      },
+      {
+        "Label": "Length",
+        "Value": "1 hr 14 min 24 sec"
+      },
+      {
+        "Label": "Genre",
+        "Value": "Dance, Pop"
+      },
+      {
+        "Label": "Max Quality",
+        "Value": "16-Bit/44.1 kHz"
+      },
+      {
+        "Label": "Fans",
+        "Value": "(varies)"
+      }
+    ],
+    "LabelsMatchValues": true,
+    "RatingShown": false,
+    "TrackListHeader": "13 Tracks"
+  },
+  "qobuz-track": {
+    "Title": "Get Lucky (feat. Pharrell Williams and Nile Rodgers)",
+    "Rows": [
+      {
+        "Label": "Artists",
+        "Value": "Daft Punk feat. Pharrell Williams"
+      },
+      {
+        "Label": "Release Date",
+        "Value": "November 17, 2023"
+      },
+      {
+        "Label": "Length",
+        "Value": "6 min 9 sec"
+      },
+      {
+        "Label": "Album",
+        "Value": "Random Access Memories"
+      },
+      {
+        "Label": "Track",
+        "Value": "8"
+      },
+      {
+        "Label": "Genre",
+        "Value": "Électronique"
+      },
+      {
+        "Label": "Max Quality",
+        "Value": "24-Bit/88.2 kHz"
+      },
+      {
+        "Label": "ISRC",
+        "Value": "USQX91300108"
+      }
+    ],
+    "LabelsMatchValues": true,
+    "RatingShown": false,
+    "TrackListHeader": null
+  },
+  "qobuz-album": {
+    "Title": "Random Access Memories",
+    "Rows": [
+      {
+        "Label": "Artists",
+        "Value": "Daft Punk"
+      },
+      {
+        "Label": "Release Date",
+        "Value": "May 20, 2013"
+      },
+      {
+        "Label": "Length",
+        "Value": "1 hr 14 min 30 sec"
+      },
+      {
+        "Label": "Genre",
+        "Value": "Électronique"
+      },
+      {
+        "Label": "Max Quality",
+        "Value": "24-Bit/88.2 kHz"
+      }
+    ],
+    "LabelsMatchValues": true,
+    "RatingShown": false,
+    "TrackListHeader": "13 Tracks"
+  },
+  "spotify-track": {
+    "Title": "Get Lucky (feat. Pharrell Williams and Nile Rodgers)",
+    "Rows": [
+      {
+        "Label": "Artists",
+        "Value": "Daft Punk, Pharrell Williams, Nile Rodgers"
+      },
+      {
+        "Label": "Release Date",
+        "Value": "May 19, 2013"
+      },
+      {
+        "Label": "Length",
+        "Value": "6 min 10 sec"
+      },
+      {
+        "Label": "Album",
+        "Value": "Random Access Memories"
+      },
+      {
+        "Label": "Track",
+        "Value": "8"
+      },
+      {
+        "Label": "Play Count",
+        "Value": "(varies)"
+      }
+    ],
+    "LabelsMatchValues": true,
+    "RatingShown": false,
+    "TrackListHeader": null
+  },
+  "youtube-track": {
+    "Title": "Get Lucky (feat. Pharrell Williams and Nile Rodgers)",
+    "Rows": [
+      {
+        "Label": "Artists",
+        "Value": "Daft Punk, Pharrell Williams, Nile Rodgers"
+      },
+      {
+        "Label": "Release Date",
+        "Value": "November 7, 2014"
+      },
+      {
+        "Label": "Length",
+        "Value": "6 min 10 sec"
+      },
+      {
+        "Label": "Album",
+        "Value": "Random Access Memories"
+      },
+      {
+        "Label": "Views",
+        "Value": "(varies)"
+      }
+    ],
+    "LabelsMatchValues": true,
+    "RatingShown": false,
+    "TrackListHeader": null
+  }
+}
