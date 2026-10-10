@@ -112,12 +112,6 @@ internal sealed partial class QobuzSource : ISourceSession, ISearchSource, ILink
 
     public Task<SongSearchObject?> GetTrackAsync(string id) => GetTrackAsync(id, CancellationToken.None);
 
-    public async Task LoadAlbumForDownloadAsync(AlbumSearchObject album)
-    {
-        var fullAlbumObj = await GetInternalAlbum(album.Id);
-        album.TrackList = fullAlbumObj.Tracks.Items.Select(t => ConvertSongSearchObject(t, fullAlbumObj.Artist?.Name)).ToList();
-    }
-
     public async Task<string?> GetLargestCoverUrlAsync(AlbumSearchObject album)
     {
         var fullAlbumObj = await GetInternalAlbum(album.Id);

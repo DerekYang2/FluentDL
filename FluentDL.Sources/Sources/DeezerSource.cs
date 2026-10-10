@@ -123,40 +123,17 @@ internal sealed partial class DeezerSource : ISourceSession, ISearchSource, ILin
 
     public Task<SongSearchObject?> GetTrackAsync(string id) => GetTrack(id);
 
-    // Every track is loaded again, and the album keeps its cover URLs for GetLargestCoverUrlAsync.
-    public async Task LoadAlbumForDownloadAsync(AlbumSearchObject album)
+    // Read from the album itself, so it doesn't depend on which fields the album object carries.
+    public async Task<string?> GetLargestCoverUrlAsync(AlbumSearchObject album)
     {
         var jsonObj = await restClient.FetchJsonElement("album/" + album.Id);
-        var fullAlbumObj = GetAlbumFromJsonElement(jsonObj);
-
-        album.TrackList = [];
-        foreach (var t in fullAlbumObj?.TrackList ?? [])
+        var coverXl = jsonObj.SafeGetString("cover_xl");
+        if (!string.IsNullOrEmpty(coverXl))
         {
-            var track = await GetTrack(t.Id);
-            if (track != null)
-            {
-                album.TrackList.Add(track);
-            }
+            return coverXl;
         }
-
-        album.AdditionalFields = new Dictionary<string, object?>
-        {
-            ["cover_big"] = jsonObj.SafeGetString("cover_big"),
-            ["cover_xl"] = jsonObj.SafeGetString("cover_xl")
-        };
-    }
-
-    public Task<string?> GetLargestCoverUrlAsync(AlbumSearchObject album)
-    {
-        if (!string.IsNullOrEmpty(album.AdditionalFields?.GetValueOrDefault("cover_xl") as string))
-        {
-            return Task.FromResult(album.AdditionalFields["cover_xl"] as string);
-        }
-        if (!string.IsNullOrEmpty(album.AdditionalFields?.GetValueOrDefault("cover_big") as string))
-        {
-            return Task.FromResult(album.AdditionalFields["cover_big"] as string);
-        }
-        return Task.FromResult<string?>(null);
+        var coverBig = jsonObj.SafeGetString("cover_big");
+        return string.IsNullOrEmpty(coverBig) ? null : coverBig;
     }
 
     public Task WriteTagsAsync(string filePath, SongSearchObject track) => UpdateMetadata(filePath, track.Id);

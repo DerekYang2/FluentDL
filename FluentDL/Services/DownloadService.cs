@@ -318,7 +318,7 @@ public sealed class DownloadService(SourceRegistry sources, EquivalentDownloader
 
         if (sources.TryGet<ICatalogSource>(album.Source, out var albumCatalog))
         {
-            await albumCatalog.LoadAlbumForDownloadAsync(album);
+            album.TrackList = await albumCatalog.GetAlbumTracksAsync(album);
         }
 
         if (album.TrackList == null)

@@ -147,9 +147,6 @@ internal sealed partial class YoutubeSource : ISearchSource, ILinkSource, IConve
 
     public Task<SongSearchObject?> GetTrackAsync(string id) => GetTrack(id);
 
-    // YouTube album results already hold their tracks.
-    public Task LoadAlbumForDownloadAsync(AlbumSearchObject album) => Task.CompletedTask;
-
     public async Task<string?> GetLargestCoverUrlAsync(AlbumSearchObject album) => await GetMaxResThumbnail(album);
 
     public Task WriteTagsAsync(string filePath, SongSearchObject track) => UpdateMetadata(filePath, track.Id);

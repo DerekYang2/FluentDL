@@ -128,20 +128,6 @@ internal sealed partial class SpotifySource : ISourceSession, ISearchSource, ILi
 
     public Task<SongSearchObject?> GetTrackAsync(string id) => GetTrack(id);
 
-    public async Task LoadAlbumForDownloadAsync(AlbumSearchObject album)
-    {
-        List<SongSearchObject> newList = [];
-        foreach (var t in album.TrackList ?? [])
-        {
-            var songObj = await GetTrack(t.Id);
-            if (songObj != null)
-            {
-                newList.Add(songObj);
-            }
-        }
-        album.TrackList = newList;
-    }
-
     public Task<string?> GetLargestCoverUrlAsync(AlbumSearchObject album) =>
         Task.FromResult(!string.IsNullOrWhiteSpace(album.AdditionalFields?.GetValueOrDefault("cover_max") as string)
             ? album.AdditionalFields["cover_max"] as string
