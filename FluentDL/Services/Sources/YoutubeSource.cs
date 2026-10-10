@@ -5,7 +5,7 @@ using FluentDL.Models;
 namespace FluentDL.Services.Sources;
 
 /// <summary>YouTube needs no sign-in, so it has no session.</summary>
-internal sealed class YoutubeSource : ISearchSource, ILinkSource, IConversionTarget, ICatalogSource
+internal sealed class YoutubeSource : ISearchSource, ILinkSource, IConversionTarget, ICatalogSource, IPreviewSource
 {
     public SourceDescriptor Descriptor { get; } = SourceCatalog.Find(SourceIds.YouTube)!;
 
@@ -26,4 +26,20 @@ internal sealed class YoutubeSource : ISearchSource, ILinkSource, IConversionTar
 
     // YouTube album results already hold full tracks.
     public Task<List<SongSearchObject>> GetAlbumTracksAsync(AlbumSearchObject album) => Task.FromResult(album.TrackList ?? []);
+
+    // The preview pane loads YouTube audio itself, because it may use yt-dlp (an app setting) and shows progress.
+    public async Task<PreviewInfo> GetPreviewAsync(SongSearchObject song)
+    {
+        var cover = await YoutubeApi.GetMaxResThumbnail(song) ?? "";
+        if (song is AlbumSearchObject album)
+        {
+            album.TrackList ??= [];
+            return new PreviewInfo { CoverUrl = cover, AlbumTracks = album.TrackList, AlbumTrackCount = album.TracksCount };
+        }
+        return new PreviewInfo { CoverUrl = cover, Rows = [("Views", song.Rank)] };
+    }
+
+    // Used when yt-dlp is off.
+    public async Task<string?> GetPreviewAudioAsync(SongSearchObject track) =>
+        await YoutubeApi.AudioStreamWorstUrl("https://www.youtube.com/watch?v=" + track.Id);
 }

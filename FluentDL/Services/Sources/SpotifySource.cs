@@ -4,8 +4,10 @@ using FluentDL.Models;
 
 namespace FluentDL.Services.Sources;
 
-internal sealed class SpotifySource : ISourceSession, ISearchSource, ILinkSource, IConversionTarget, ICatalogSource
+internal sealed class SpotifySource : ISourceSession, ISearchSource, ILinkSource, IConversionTarget, ICatalogSource, IPreviewSource
 {
+    private static readonly HttpClient httpClient = new();
+
     public SourceDescriptor Descriptor { get; } = SourceCatalog.Find(SourceIds.Spotify)!;
 
     public bool IsConnected => SpotifyApi.IsInitialized;
@@ -54,5 +56,55 @@ internal sealed class SpotifySource : ISourceSession, ISearchSource, ILinkSource
             }
         }
         return albumTracks;
+    }
+
+    public async Task<PreviewInfo> GetPreviewAsync(SongSearchObject song)
+    {
+        if (song is AlbumSearchObject album)
+        {
+            return new PreviewInfo
+            {
+                CoverUrl = (string)(album.AdditionalFields?["cover_max"] ?? ""), // the largest
+                RemoveAlbumRow = true,
+                AlbumTracks = album.TrackList ?? [],
+                AlbumTrackCount = album.TracksCount,
+            };
+        }
+
+        var track = await SpotifyApi.GetTrack(song.Id);
+        var rows = new List<(string, string)> { ("Track", track?.TrackPosition ?? song.TrackPosition) };
+        if (track?.Rank != null && long.TryParse(track.Rank, out long plays) && plays > 0)
+        {
+            rows.Add(("Play Count", YoutubeApi.FormatLargeValue(plays)));
+        }
+        if (!string.IsNullOrEmpty(track?.Isrc))
+        {
+            rows.Add(("ISRC", track.Isrc!));
+        }
+
+        var hasPreviewUrl = track?.AdditionalFields?.ContainsKey("preview_url") ?? false;
+        return new PreviewInfo
+        {
+            CoverUrl = track?.ImageLocation,
+            ReleaseDate = track?.ReleaseDate ?? song.ReleaseDate,
+            Rows = rows,
+            AudioUrl = hasPreviewUrl ? track!.AdditionalFields["preview_url"]?.ToString() : null,
+            LoadAudioSeparately = !hasPreviewUrl,
+        };
+    }
+
+    // Reads the preview link from the track's embed page.
+    public async Task<string?> GetPreviewAudioAsync(SongSearchObject track)
+    {
+        try
+        {
+            string htmlStr = await httpClient.GetStringAsync($"https://open.spotify.com/embed/track/{track.Id}");
+            return SpotifyApi.GetSpotifyPreviewUrl(htmlStr);
+        }
+        catch (Exception e)
+        {
+            System.Diagnostics.Debug.WriteLine("Failed to get spotify preview url: " + e.Message);
+        }
+        return null;
     }
 }

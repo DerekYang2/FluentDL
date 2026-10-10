@@ -4,7 +4,7 @@ using FluentDL.Models;
 
 namespace FluentDL.Services.Sources;
 
-internal sealed class QobuzSource : ISourceSession, ISearchSource, ILinkSource, IConversionTarget, ICatalogSource
+internal sealed class QobuzSource : ISourceSession, ISearchSource, ILinkSource, IConversionTarget, ICatalogSource, IPreviewSource
 {
     public SourceDescriptor Descriptor { get; } = SourceCatalog.Find(SourceIds.Qobuz)!;
 
@@ -52,4 +52,43 @@ internal sealed class QobuzSource : ISourceSession, ISearchSource, ILinkSource, 
         albumInternal?.Tracks.Items.ForEach(t => t.Album = albumInternal);
         return albumInternal?.Tracks.Items.Select(t => QobuzApi.ConvertSongSearchObject(t, albumInternal.Artist?.Name)).ToList() ?? [];
     }
+
+    public async Task<PreviewInfo> GetPreviewAsync(SongSearchObject song)
+    {
+        if (song is AlbumSearchObject selectedAlbum)
+        {
+            var album = await QobuzApi.GetInternalAlbum(selectedAlbum.Id);
+            var rows = new List<(string, string)>();
+            if (album != null)
+            {
+                rows.Add(("Genre", string.Join(", ", QobuzApi.PruneGenreList(album.GenresList))));
+                rows.Add(("Max Quality", $"{album.MaximumBitDepth}-Bit/{album.MaximumSamplingRate} kHz"));
+            }
+            var tracks = album?.Tracks.Items.Select(t => QobuzApi.ConvertSongSearchObject(t, album.Artist?.Name)).ToList() ?? [];
+            selectedAlbum.TrackList = tracks;
+            return new PreviewInfo
+            {
+                CoverUrl = album?.Image.Large,
+                Rows = rows,
+                RemoveAlbumRow = true,
+                AlbumTracks = tracks,
+                AlbumTrackCount = album?.TracksCount ?? 0,
+            };
+        }
+
+        var track = await QobuzApi.GetInternalTrack(song.Id);
+        var trackRows = new List<(string, string)> { ("Track", song.TrackPosition) };
+        if (track != null)
+        {
+            trackRows.Add(("Genre", string.Join(", ", QobuzApi.PruneGenreList(track.Album.GenresList))));
+            trackRows.Add(("Max Quality", $"{track.MaximumBitDepth}-Bit/{track.MaximumSamplingRate} kHz"));
+        }
+        if (!string.IsNullOrEmpty(song.Isrc))
+        {
+            trackRows.Add(("ISRC", song.Isrc!));
+        }
+        return new PreviewInfo { CoverUrl = track?.Album.Image.Large, Rows = trackRows, LoadAudioSeparately = true };
+    }
+
+    public Task<string?> GetPreviewAudioAsync(SongSearchObject track) => Task.Run(() => QobuzApi.GetPreviewUri(track.Id));
 }

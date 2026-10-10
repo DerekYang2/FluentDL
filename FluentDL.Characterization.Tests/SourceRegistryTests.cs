@@ -48,6 +48,7 @@ public class SourceRegistryTests
         CollectionAssert.AreEqual(all, Ids<ILinkSource>());
         CollectionAssert.AreEqual(all, Ids<IConversionTarget>());
         CollectionAssert.AreEqual(all, Ids<ICatalogSource>());
+        CollectionAssert.AreEqual(all, Ids<IPreviewSource>());
         CollectionAssert.AreEqual(new[] { SourceIds.Deezer, SourceIds.Qobuz, SourceIds.Spotify }, Ids<ISourceSession>());
 
         Assert.IsTrue(Registry.TryGet<ISearchSource>(SourceIds.Qobuz, out var qobuz));

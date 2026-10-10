@@ -56,6 +56,47 @@ public interface ICatalogSource : ISource
     Task<List<SongSearchObject>> GetAlbumTracksAsync(AlbumSearchObject album);
 }
 
+/// <summary>What the Search page's preview pane shows for a selected track or album.</summary>
+public interface IPreviewSource : ISource
+{
+    Task<PreviewInfo> GetPreviewAsync(SongSearchObject song);
+
+    /// <summary>The preview audio's URL, for a track whose PreviewInfo loads it separately or a track in an album's list.</summary>
+    Task<string?> GetPreviewAudioAsync(SongSearchObject track);
+}
+
+/// <summary>
+/// The pane always shows Artists, Release Date, Length and Album rows from the item itself; this is what a source
+/// adds or changes. Each source fills it the way its old branch in PreviewPane did.
+/// </summary>
+public sealed class PreviewInfo
+{
+    /// <summary>Null shows no cover. An empty string fails, as it did before.</summary>
+    public string? CoverUrl { get; init; }
+
+    /// <summary>Replaces the item's release date in the Release Date row.</summary>
+    public string? ReleaseDate { get; init; }
+
+    public bool RemoveAlbumRow { get; init; }
+
+    /// <summary>Rows added after the common ones, in order.</summary>
+    public List<(string Label, string Value)> Rows { get; init; } = [];
+
+    /// <summary>0 to 1. When set, the pane adds an empty Popularity row with the rating control.</summary>
+    public double? Popularity { get; init; }
+
+    /// <summary>For albums: the track list and the count shown above it.</summary>
+    public List<SongSearchObject>? AlbumTracks { get; init; }
+
+    public int AlbumTrackCount { get; init; }
+
+    /// <summary>For tracks: the preview audio, when the details already include it.</summary>
+    public string? AudioUrl { get; init; }
+
+    /// <summary>For tracks: show the details first, then call GetPreviewAudioAsync.</summary>
+    public bool LoadAudioSeparately { get; init; }
+}
+
 public sealed record PageRequest(int Offset, int Limit);
 
 public sealed record AdvancedQuery(string Artist, string Track, string Album);

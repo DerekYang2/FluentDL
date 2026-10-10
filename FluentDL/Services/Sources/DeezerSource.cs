@@ -5,7 +5,7 @@ using FluentDL.Models;
 
 namespace FluentDL.Services.Sources;
 
-internal sealed class DeezerSource : ISourceSession, ISearchSource, ILinkSource, IConversionTarget, ICatalogSource
+internal sealed class DeezerSource : ISourceSession, ISearchSource, ILinkSource, IConversionTarget, ICatalogSource, IPreviewSource
 {
     public SourceDescriptor Descriptor { get; } = SourceCatalog.Find(SourceIds.Deezer)!;
 
@@ -54,4 +54,48 @@ internal sealed class DeezerSource : ISourceSession, ISearchSource, ILinkSource,
         }
         return albumTracks;
     }
+
+    public async Task<PreviewInfo> GetPreviewAsync(SongSearchObject song)
+    {
+        if (song is AlbumSearchObject album)
+        {
+            var albumJson = await DeezerApi.restClient.FetchJsonElement("album/" + album.Id);
+            var fullAlbumObject = DeezerApi.GetAlbumFromJsonElement(albumJson);
+            string? cover = null;
+            if (albumJson.TryGetProperty("cover_big", out var coverBig) && !string.IsNullOrEmpty(coverBig.GetString()))
+            {
+                cover = coverBig.GetString();
+            }
+            var rows = new List<(string, string)> { ("Genre", DeezerApi.GetGenreStr(albumJson)), ("Max Quality", "16-Bit/44.1 kHz") };
+            if (albumJson.TryGetProperty("fans", out var fans))
+            {
+                rows.Add(("Fans", fans.GetInt32().ToString()));
+            }
+            var tracks = fullAlbumObject?.TrackList ?? [];
+            album.TrackList = tracks;
+            return new PreviewInfo { CoverUrl = cover, Rows = rows, RemoveAlbumRow = true, AlbumTracks = tracks, AlbumTrackCount = album.TracksCount };
+        }
+
+        var json = await DeezerApi.restClient.FetchJsonElement("track/" + song.Id);
+        var genre = await DeezerApi.GetGenreStr(json.GetProperty("album").GetProperty("id").GetInt32());
+        var trackRows = new List<(string, string)> { ("Track", json.GetProperty("track_position").ToString()) };
+        if (!string.IsNullOrEmpty(genre))
+        {
+            trackRows.Add(("Genre", genre));
+        }
+        trackRows.Add(("Max Quality", "16-Bit/44.1 kHz"));
+        if (!string.IsNullOrEmpty(song.Isrc))
+        {
+            trackRows.Add(("ISRC", song.Isrc!));
+        }
+        return new PreviewInfo
+        {
+            CoverUrl = json.GetProperty("album").GetProperty("cover_big").ToString(),
+            Rows = trackRows,
+            Popularity = double.Parse(song.Rank) / 1E6, // rank runs from 0 to 1,000,000
+            AudioUrl = json.GetProperty("preview").ToString(),
+        };
+    }
+
+    public Task<string?> GetPreviewAudioAsync(SongSearchObject track) => Task.FromResult(track?.AdditionalFields?["preview"]?.ToString());
 }
