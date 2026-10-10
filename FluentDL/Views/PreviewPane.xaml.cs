@@ -492,7 +492,7 @@ namespace FluentDL.Views
                     previewPath = Path.Combine(Path.GetTempPath(), "FluentDL", $"preview-{Guid.NewGuid():N}.webm");
                     Directory.CreateDirectory(Path.GetDirectoryName(previewPath)!);
                     var ytdlpPath = await SettingsViewModel.GetSetting<string?>(SettingsViewModel.YtdlpPath);
-                    await YoutubeApi.DownloadAudioYTDLPWorst(previewPath, youtubeUrl, ytdlpPath, token);
+                    await YtDlp.DownloadAudioYTDLPWorst(previewPath, youtubeUrl, ytdlpPath, token);
                     if (token.IsCancellationRequested || requestId != Interlocked.Read(ref _currentRequestId))
                         return;
                     _previewPath = previewPath;

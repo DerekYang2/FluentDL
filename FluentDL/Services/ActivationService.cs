@@ -109,7 +109,7 @@ public class ActivationService : IActivationService
                 splashScreen.SetText("Updating yt-dlp ...", rowIdx);
                 _logger.LogInformation("yt-dlp update started");
                 var existingPath = await localSettings.ReadSettingAsync<string>(SettingsViewModel.YtdlpPath);
-                var output = await YoutubeApi.UpdateYtdlpAsync(existingPath);
+                var output = await YtDlp.UpdateYtdlpAsync(existingPath);
                 splashScreen.SetText($"Update complete: {output ?? "null"}", rowIdx);
                 _logger.LogInformation("yt-dlp update finished");
             } catch(Exception ex)

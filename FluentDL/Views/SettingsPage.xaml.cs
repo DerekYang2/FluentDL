@@ -429,7 +429,7 @@ public sealed partial class SettingsPage : Page
 
             if (hasCustomExecutable)
             {
-                string? version = await YoutubeApi.GetYtdlpVersionAsync(executablePath);
+                string? version = await YtDlp.GetYtdlpVersionAsync(executablePath);
                 if (!string.IsNullOrWhiteSpace(version))
                 {
                     YtdlpVersionText.Text = version;
@@ -484,7 +484,7 @@ public sealed partial class SettingsPage : Page
             UpdateYtdlpButton.IsEnabled = false;
             UpdateYtdlpButton.Content = "Updating...";
 
-            string? output = await YoutubeApi.UpdateYtdlpAsync(ytdlpPath);
+            string? output = await YtDlp.UpdateYtdlpAsync(ytdlpPath);
 
             // Output format is usually "yt-dlp is up to date" or "Updated yt-dlp to version X"
             ShowInfoBar(InfoBarSeverity.Success, output ?? "Update finished silently.", seconds: 10);

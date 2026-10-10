@@ -33,7 +33,7 @@ public class YoutubeTests
             tracks.Add(new
             {
                 f.Key,
-                ById = await Live.Capture(async () => (await YoutubeApi.GetTrack(f.YoutubeId!)).ToShape()),
+                ById = await Live.Capture(async () => (await TestSources.Youtube.GetTrack(f.YoutubeId!)).ToShape()),
             });
         }
         return tracks;

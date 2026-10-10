@@ -113,7 +113,7 @@ public class ConversionTests
         "deezer" => await TestSources.Deezer.GetTrack(id),
         "qobuz" => await TestSources.Qobuz.GetTrackAsync(id),
         "spotify" => await TestSources.Spotify.GetTrack(id),
-        _ => await YoutubeApi.GetTrack(id),
+        _ => await TestSources.Youtube.GetTrack(id),
     };
 
     // Through the conversion adapters, the way the queue will call them. The queue's callback is rebuilt from the

@@ -155,7 +155,7 @@ public class HelperTests
         {
             QobuzContributors = performers.Select(p => new { Input = p, Artists = Capture(() => TestSources.Qobuz.GetAllContributorsList(p)) }),
             QobuzGenres = Capture(() => TestSources.Qobuz.PruneGenreList(["Pop", "Musiques du monde", "Musiques du monde\u2192Europe", "Musiques du monde\u2192Europe\u2192Chanson française"])),
-            YoutubeLargeValues = counts.Select(c => new { Input = c, Output = Capture(() => YoutubeApi.FormatLargeValue(c)) }),
+            YoutubeLargeValues = counts.Select(c => new { Input = c, Output = Capture(() => TestSources.Youtube.FormatLargeValue(c)) }),
         });
     }
 

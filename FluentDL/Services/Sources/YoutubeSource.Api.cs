@@ -14,19 +14,15 @@ using YouTubeMusicAPI.Client;
 using YouTubeMusicAPI.Models.Info;
 using YouTubeMusicAPI.Models.Search;
 
-namespace FluentDL.Services
+namespace FluentDL.Services.Sources
 {
-    internal class YoutubeApi
+    internal sealed partial class YoutubeSource
     {
-        private static YoutubeClient youtube = new YoutubeClient();
-        private static YouTubeMusicClient ytm = new YouTubeMusicClient();
-        private static YouTube youtubeAlt = YouTube.Default;
+        private YoutubeClient youtube = new YoutubeClient();
+        private YouTubeMusicClient ytm = new YouTubeMusicClient();
+        private YouTube youtubeAlt = YouTube.Default;
 
-        public YoutubeApi()
-        {
-        }
-
-        public static async Task GeneralSearch(ICollection<SongSearchObject> itemSource, string query, CancellationToken token, int offset = 0, int limit = 25, bool albumMode = false)
+        public async Task GeneralSearch(ICollection<SongSearchObject> itemSource, string query, CancellationToken token, int offset = 0, int limit = 25, bool albumMode = false)
         {
             query = query.Trim(); // Trim the query
             if (string.IsNullOrWhiteSpace(query))
@@ -102,7 +98,7 @@ namespace FluentDL.Services
             }
         }
 
-        public static async Task AdvancedSearch(ICollection<SongSearchObject> itemSource, string artistName, string trackName, string albumName, CancellationToken token = default, int offset = 0, int limit = 25, bool clearResults = true)
+        public async Task AdvancedSearch(ICollection<SongSearchObject> itemSource, string artistName, string trackName, string albumName, CancellationToken token = default, int offset = 0, int limit = 25, bool clearResults = true)
         {
             // Youtube doesn't have an advanced search, must be done manually
             if (string.IsNullOrWhiteSpace(artistName) && string.IsNullOrWhiteSpace(trackName) && string.IsNullOrWhiteSpace(albumName))
@@ -351,7 +347,7 @@ namespace FluentDL.Services
             }
         }
 
-        public static async Task AddTracksFromLink(ICollection<SongSearchObject> itemSource, string url, CancellationToken token, UrlStatusUpdateCallback? statusUpdate, bool albumMode = false)
+        public async Task AddTracksFromLink(ICollection<SongSearchObject> itemSource, string url, CancellationToken token, UrlStatusUpdateCallback? statusUpdate, bool albumMode = false)
         {
             if (url.StartsWith("https://www.youtube.com/watch?") || url.StartsWith("https://youtube.com/watch?")) // Youtube video
             {
@@ -471,7 +467,7 @@ namespace FluentDL.Services
         }
 
 
-        public static async Task<YoutubeExplode.Search.VideoSearchResult?> GetSearchResult(SongSearchObject song)
+        public async Task<YoutubeExplode.Search.VideoSearchResult?> GetSearchResult(SongSearchObject song)
         {
             // Convert artists csv to array
             var artists = song.Artists.Split(", ");
@@ -622,7 +618,7 @@ namespace FluentDL.Services
             return null;
         }
 
-        public static async Task<SongSearchObject?> GetYoutubeTrack(SongSearchObject songObj, CancellationToken token = default, ConversionUpdateCallback? callback = null)
+        public async Task<SongSearchObject?> GetYoutubeTrack(SongSearchObject songObj, CancellationToken token = default, ConversionUpdateCallback? callback = null)
         {
             // Convert artists csv to array
             var artists = songObj.Artists.Split(", ");
@@ -755,7 +751,7 @@ namespace FluentDL.Services
                 https://lh3.googleusercontent.com/{string}=w120-h120-l90-rj
                 https://lh3.googleusercontent.com/{string}=w544-h544-l90-rj (not returned by youtube music api, manually get)
              */
-        public static async Task<string?> GetMaxResThumbnail(SongSearchObject song)
+        public async Task<string?> GetMaxResThumbnail(SongSearchObject song)
         {
             if (song.ImageLocation == null)
                 return null;
@@ -794,7 +790,7 @@ namespace FluentDL.Services
             }
         }
 
-        public static string GetMaxResThumbnail(SongVideoInfo? ytmSong, YoutubeExplode.Videos.Video video)
+        public string GetMaxResThumbnail(SongVideoInfo? ytmSong, YoutubeExplode.Videos.Video video)
         {
             if (ytmSong !=null && ytmSong.Thumbnails.Length > 0 && 
                 video.Description.StartsWith("Provided to YouTube by") && video.Description.Contains("\u2117")) // Song
@@ -824,7 +820,7 @@ namespace FluentDL.Services
             return video.Thumbnails[idx].Url;
         }
 
-        public static async Task<SongSearchObject> GetTrack(SongSearchResult ytmSong)
+        public async Task<SongSearchObject> GetTrack(SongSearchResult ytmSong)
         {
             var artistString = string.Join(", ", ytmSong.Artists.Where(a => a.Id != null).Select(a => a.Name).ToList());
 
@@ -847,13 +843,13 @@ namespace FluentDL.Services
             };
         }
 
-        public static async Task<SongSearchObject?> GetTrack(string id)
+        public async Task<SongSearchObject?> GetTrack(string id)
         {
             var video = await youtube.Videos.GetAsync(id);
             return await ConvertSongSearchObject(video);
         }
 
-        public static SongSearchObject GetTrack(SongVideoInfo? ytmSong, YoutubeExplode.Videos.Video video)
+        public SongSearchObject GetTrack(SongVideoInfo? ytmSong, YoutubeExplode.Videos.Video video)
         {
             // Get artist csv
             string artistString;
@@ -922,7 +918,7 @@ namespace FluentDL.Services
             };
         }
 
-        public static async Task<SongSearchObject> ConvertSongSearchObject(YoutubeExplode.Videos.Video video)
+        public async Task<SongSearchObject> ConvertSongSearchObject(YoutubeExplode.Videos.Video video)
         {
             SongVideoInfo? ytmInfo = null;
             try
@@ -936,13 +932,13 @@ namespace FluentDL.Services
             return GetTrack(ytmInfo, video);
         }
 
-        public static async Task<SongSearchObject> ConvertSongSearchObject(SongVideoInfo ytmSong)
+        public async Task<SongSearchObject> ConvertSongSearchObject(SongVideoInfo ytmSong)
         {
             var video = await youtube.Videos.GetAsync(ytmSong.Id); // Get youtube explode video object, has more technical info like release date + views
             return GetTrack(ytmSong, video);
         }
 
-        public static AlbumSearchObject ConvertAlbumSearchObject(AlbumInfo ytmAlbum) {
+        public AlbumSearchObject ConvertAlbumSearchObject(AlbumInfo ytmAlbum) {
             var artistString = string.Join(',', ytmAlbum.Artists.Where(a => a.Id != null).Select(a => a.Name).ToList());
 
             string imageLocation = "";
@@ -970,7 +966,7 @@ namespace FluentDL.Services
             };
         }
 
-        public static SongSearchObject ConvertSongSearchObject(AlbumSong song, AlbumInfo album)
+        public SongSearchObject ConvertSongSearchObject(AlbumSong song, AlbumInfo album)
         {
             var artistString = string.Join(", ", album.Artists.Where(a => a.Id != null).Select(a => a.Name).ToList());
 
@@ -1027,10 +1023,10 @@ namespace FluentDL.Services
          */
 
         // Billion -> B, Million -> M, Thousand -> K
-        public static string FormatLargeValue(long value) => FluentDL.Core.Helpers.DisplayFormat.FormatLargeValue(value);
+        public string FormatLargeValue(long value) => FluentDL.Core.Helpers.DisplayFormat.FormatLargeValue(value);
 
 
-        public static async Task DownloadAudio(string filePath, VideoId id, IProgress<ProgressData> progress)
+        public async Task DownloadAudio(string filePath, VideoId id, IProgress<ProgressData> progress)
         {
             var streamManifest = await youtube.Videos.Streams.GetManifestAsync(id);
             var streamInfo = streamManifest.GetAudioOnlyStreams().GetWithHighestBitrate();
@@ -1098,7 +1094,7 @@ namespace FluentDL.Services
         }
 
         // youtubeexplode alternative (libvideo)
-        public static async Task DownloadAudio2(string filePath, VideoId id)
+        public async Task DownloadAudio2(string filePath, VideoId id)
         {
             var youtubeUrl = $"https://www.youtube.com/watch?v={id}";
             var videoInfos = await youtubeAlt.GetAllVideosAsync(youtubeUrl);
@@ -1116,224 +1112,6 @@ namespace FluentDL.Services
             }
         }
 
-        public static async Task DownloadAudioYTDLP(
-            string filePath,
-            string youtubeUrl,
-            string? executablePath = null,
-            CancellationToken cancellationToken = default)
-        {
-            // YouTube native stream format: `.webm` (contains raw Opus codec)
-            // Convert after download: `.webm` -> `.opus` or desired target
-            await DownloadAudioYTDLPInternal(filePath, youtubeUrl, executablePath, "bestaudio[acodec=opus]", "bestaudio[acodec^=opus]", cancellationToken);
-        }
-
-        public static async Task DownloadAudioYTDLPWorst(
-            string filePath,
-            string youtubeUrl,
-            string? executablePath = null,
-            CancellationToken cancellationToken = default)
-        {
-            // YouTube native stream format: `.webm` (contains raw Opus codec)
-            // Convert after download: `.webm` -> `.opus` or desired target
-            await DownloadAudioYTDLPInternal(filePath, youtubeUrl, executablePath, "worstaudio[acodec=opus]", "worstaudio[acodec^=opus]", cancellationToken);
-        }
-
-        public static async Task DownloadAudioAACYTDLP(
-            string filePath,
-            string youtubeUrl,
-            string? executablePath = null,
-            CancellationToken cancellationToken = default)
-        {
-            // YouTube native stream format: `.m4a` (contains raw AAC codec / mp4a.40.2)
-            // Convert after download: No conversion needed if saving as .m4a; purely container-bound AAC
-            if (filePath.EndsWith(".mp4"))
-            {
-                filePath = filePath.Substring(0, filePath.Length - 4) + ".m4a";
-            }
-
-            await DownloadAudioYTDLPInternal(filePath, youtubeUrl, executablePath, "bestaudio[acodec=mp4a.40.2]", "bestaudio[acodec^=mp4a]", cancellationToken);
-        }
-
-        private static async Task DownloadAudioYTDLPInternal(
-            string filePath,
-            string youtubeUrl,
-            string? executablePath,
-            string format,
-            string fallbackFormat,
-            CancellationToken cancellationToken = default)
-        {
-            var fullPath = !string.IsNullOrWhiteSpace(executablePath) && File.Exists(executablePath)
-                ? executablePath
-                : System.IO.Path.Combine(AppContext.BaseDirectory, "Assets\\yt-dlp\\yt-dlp.exe");
-
-            try
-            {
-                await RunYtdlpAsync(fullPath, filePath, youtubeUrl, format, cancellationToken);
-            }
-            catch (OperationCanceledException)
-            {
-                throw;
-            }
-            catch (Exception firstError)
-            {
-                try
-                {
-                    if (File.Exists(filePath))
-                    {
-                        File.Delete(filePath);
-                    }
-
-                    await RunYtdlpAsync(fullPath, filePath, youtubeUrl, fallbackFormat, cancellationToken);
-                }
-                catch (OperationCanceledException)
-                {
-                    throw;
-                }
-                catch (Exception fallbackError)
-                {
-                    throw new Exception($"yt-dlp failed with the requested format: {firstError.Message} Fallback failed: {fallbackError.Message}", fallbackError);
-                }
-            }
-        }
-
-        private static async Task RunYtdlpAsync(
-            string executablePath,
-            string filePath,
-            string youtubeUrl,
-            string format,
-            CancellationToken cancellationToken = default)
-        {
-            var startInfo = new ProcessStartInfo(executablePath)
-            {
-                CreateNoWindow = true,
-                RedirectStandardError = true,
-                RedirectStandardOutput = false,
-            };
-
-            // 1. Select the specific audio format stream
-            startInfo.ArgumentList.Add("-f");
-            startInfo.ArgumentList.Add(format);
-
-            // 2. Output directly to file path without running any post-processors (-x and --audio-format removed)
-            startInfo.ArgumentList.Add("-o");
-            startInfo.ArgumentList.Add(filePath);
-
-            startInfo.ArgumentList.Add(youtubeUrl);
-
-            using var process = new Process { StartInfo = startInfo };
-
-            try
-            {
-                process.Start();
-                await process.WaitForExitAsync(cancellationToken);
-
-                if (process.ExitCode != 0)
-                {
-                    var error = await process.StandardError.ReadToEndAsync();
-                    throw new Exception($"yt-dlp error: {error.Trim()}");
-                }
-            }
-            catch (OperationCanceledException)
-            {
-                if (!process.HasExited)
-                {
-                    process.Kill(entireProcessTree: true);
-                }
-                throw;
-            }
-        }
-
-        public static async Task<string?> UpdateYtdlpAsync(string? executablePath = null, CancellationToken cancellationToken = default)
-        {
-            var fullPath = !string.IsNullOrWhiteSpace(executablePath) && File.Exists(executablePath)
-                ? executablePath
-                : System.IO.Path.Combine(AppContext.BaseDirectory, "Assets\\yt-dlp\\yt-dlp.exe");
-
-            if (!File.Exists(fullPath))
-            {
-                throw new FileNotFoundException($"yt-dlp executable not found at: {fullPath}");
-            }
-
-            var startInfo = new ProcessStartInfo(fullPath)
-            {
-                CreateNoWindow = true,
-                RedirectStandardError = true,
-                RedirectStandardOutput = true,
-            };
-
-            // Pass -U flag to trigger update
-            startInfo.ArgumentList.Add("-U");
-
-            using var process = new Process { StartInfo = startInfo };
-
-            try
-            {
-                process.Start();
-
-                // Read output concurrently to avoid deadlocks
-                var outputTask = process.StandardOutput.ReadToEndAsync(cancellationToken);
-                var errorTask = process.StandardError.ReadToEndAsync(cancellationToken);
-
-                await process.WaitForExitAsync(cancellationToken);
-
-                var output = await outputTask;
-                var error = await errorTask;
-
-                if (process.ExitCode != 0)
-                {
-                    throw new Exception($"yt-dlp update failed: {error.Trim()}");
-                }
-
-                Debug.WriteLine($"yt-dlp update output: {output.Trim()}");
-                return output;
-            }
-            catch (OperationCanceledException)
-            {
-                if (!process.HasExited)
-                {
-                    process.Kill(entireProcessTree: true);
-                }
-                throw;
-            }
-        }
-        public static async Task<string?> GetYtdlpVersionAsync(string? executablePath = null, CancellationToken cancellationToken = default)
-        {
-            string fullPath = !string.IsNullOrWhiteSpace(executablePath) && File.Exists(executablePath)
-                ? executablePath
-                : Path.Combine(AppContext.BaseDirectory, "Assets\\yt-dlp\\yt-dlp.exe");
-
-            if (!File.Exists(fullPath))
-            {
-                return null;
-            }
-
-            var startInfo = new ProcessStartInfo(fullPath)
-            {
-                CreateNoWindow = true,
-                RedirectStandardOutput = true,
-                RedirectStandardError = true
-            };
-
-            startInfo.ArgumentList.Add("--version");
-
-            using var process = new Process { StartInfo = startInfo };
-            try
-            {
-                process.Start();
-                string output = await process.StandardOutput.ReadToEndAsync(cancellationToken);
-                await process.WaitForExitAsync(cancellationToken);
-
-                if (process.ExitCode == 0)
-                {
-                    return output.Trim();
-                }
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine("Failed to get yt-dlp version: " + ex.Message);
-            }
-            return null;
-        }
 
         /*
            Example codecs:
@@ -1344,7 +1122,7 @@ namespace FluentDL.Services
            Codec: opus 80.41 Kbit/s
            Codec: opus 134.56 Kbit/s
          */
-        public static async Task DownloadAudioAAC(string filePath, VideoId id)
+        public async Task DownloadAudioAAC(string filePath, VideoId id)
         {
             var streamManifest = await youtube.Videos.Streams.GetManifestAsync(id);
             var streamInfo = streamManifest.GetAudioOnlyStreams().GetWithHighestBitrate();
@@ -1362,7 +1140,7 @@ namespace FluentDL.Services
             await youtube.Videos.Streams.DownloadAsync(streamInfo, filePath /*, new Progress<double>(progressHandler)*/);
         }
 
-        public static async Task DownloadAudioAAC2(string filePath, VideoId id)
+        public async Task DownloadAudioAAC2(string filePath, VideoId id)
         {
             var youtubeUrl = $"https://www.youtube.com/watch?v={id}";
             var videoInfos = await youtubeAlt.GetAllVideosAsync(youtubeUrl);
@@ -1381,7 +1159,7 @@ namespace FluentDL.Services
             }
         }
 
-        public static async Task UpdateMetadata(string filePath, string id)
+        public async Task UpdateMetadata(string filePath, string id)
         {
             var video = await youtube.Videos.GetAsync(id);
             var ytmSong = await ytm.GetSongVideoInfoAsync(id);
@@ -1459,7 +1237,7 @@ namespace FluentDL.Services
             //await atlTrack.SaveAsync();
         }
 
-        public static async Task<string> AudioStreamUrl(string url)
+        public async Task<string> AudioStreamUrl(string url)
         {
             var streamManifest = await youtube.Videos.Streams.GetManifestAsync(url);
             var streamInfo = streamManifest.GetAudioOnlyStreams().GetWithHighestBitrate();
@@ -1478,7 +1256,7 @@ namespace FluentDL.Services
         }
 
         // Get stream with minimum bitrate
-        public static async Task<string> AudioStreamWorstUrl(string url)
+        public async Task<string> AudioStreamWorstUrl(string url)
         {
             try
             {
@@ -1504,7 +1282,7 @@ namespace FluentDL.Services
             }
         }
 
-        public static async Task<(Stream?, string?)> AudioStreamWorst(string url)
+        public async Task<(Stream?, string?)> AudioStreamWorst(string url)
         {
             try
             {
