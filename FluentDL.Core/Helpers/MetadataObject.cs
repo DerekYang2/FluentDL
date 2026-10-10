@@ -1,3 +1,4 @@
+#nullable enable
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -10,9 +11,7 @@ using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Threading.Tasks.Dataflow;
 using FluentDL.Models;
-using QobuzApiSharp.Models.Content;
 using TagLib;
-using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace FluentDL.Helpers
 {

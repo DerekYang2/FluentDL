@@ -1,0 +1,34 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- The music sources (Deezer, Qobuz, Spotify, YouTube), their roles and helpers. Plain .NET: no WinUI. -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>FluentDL</RootNamespace>
+    <Platforms>x86;x64;arm64;AnyCPU</Platforms>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="FluentDL" />
+    <InternalsVisibleTo Include="FluentDL.Characterization.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\FluentDL.Core\FluentDL.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="DeezNET" Version="1.2.2" />
+    <PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="8.0.1" />
+    <PackageReference Include="Microsoft.Extensions.Http" Version="8.0.1" />
+    <PackageReference Include="QobuzApiSharp" Version="0.0.8" />
+    <PackageReference Include="RestSharp" Version="111.4.1" />
+    <PackageReference Include="SpotifyAPI.Web" Version="7.4.2" />
+    <PackageReference Include="SpotifyAPI.Web.Auth" Version="7.4.2" />
+    <PackageReference Include="VideoLibrary" Version="3.3.1" />
+    <PackageReference Include="YoutubeExplode" Version="6.6.2" />
+    <PackageReference Include="YouTubeMusicAPI" Version="3.0.10" />
+  </ItemGroup>
+
+</Project>
