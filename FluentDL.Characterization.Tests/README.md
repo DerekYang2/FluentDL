@@ -8,12 +8,18 @@ These tests call the real Deezer, Qobuz, Spotify and YouTube code in the app pro
 # Offline tests only (no network, a few seconds)
 dotnet test FluentDL.Characterization.Tests -p:Platform=x64 --filter "TestCategory!=Live&TestCategory!=UI&TestCategory!=UIProbe"
 
-# Live tests in parallel processes, skipping everything that calls YouTube and the Spotify official search (about 2 minutes)
-tools\live-tests\Run-LiveTests.ps1 -Quick
+# Parity with the last commit on today's data (about 1.5 minutes). The usual check while changing code.
+tools\live-tests\Run-LiveTests.ps1 -Quick -Against HEAD
 
-# All live tests in parallel. Run this before committing a phase.
+# Against the stored baselines (about 25 seconds), and the full set including the Spotify official search
+tools\live-tests\Run-LiveTests.ps1 -Quick
 tools\live-tests\Run-LiveTests.ps1
+
+# YouTube only runs when asked: it is slow and bot-checks heavy use
+tools\live-tests\Run-LiveTests.ps1 -IncludeYoutube
 ```
+
+The live services change their data: Qobuz corrects a release date, Spotify reranks a search. A stored baseline then fails with no code change. `-Against <commit>` avoids that. It checks the commit out into a temporary worktree, records fresh baselines there with that commit's own tests, and runs this checkout's tests against them a minute later (`FLUENTDL_BASELINES` points the snapshots at that folder). A difference then comes from the code. When a stored baseline goes stale, re-record it from the pre-refactor code (`2cb77c1`) in a worktree, not from refactored code.
 
 The source classes keep their state in static fields, so one process runs its tests one at a time. The runner starts one process per group of sources instead. The YouTube-heavy tests stay in one group, so YouTube sees a single client. Each group's full output goes to `%TEMP%\opencode\fluentdl-live-tests`.
 

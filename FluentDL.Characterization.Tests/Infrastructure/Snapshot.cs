@@ -6,7 +6,9 @@ namespace FluentDL.Characterization.Tests.Infrastructure;
 
 /// <summary>
 /// Compares a value against a JSON baseline in the project's Baselines folder.
-/// Set FLUENTDL_RECORD=1 to write the baselines instead of comparing.
+/// Set FLUENTDL_RECORD=1 to write the baselines instead of comparing. Set FLUENTDL_BASELINES to a folder to use
+/// baselines from somewhere else, such as fresh ones that tools/live-tests/Run-LiveTests.ps1 -Against just recorded
+/// from an older commit.
 /// </summary>
 internal static class Snapshot
 {
@@ -90,7 +92,8 @@ internal static class Snapshot
         return string.Empty;
     }
 
-    private static string BaselineDirectory { get; } = Path.Combine(FindProjectDirectory(), "Baselines");
+    private static string BaselineDirectory { get; } =
+        Environment.GetEnvironmentVariable("FLUENTDL_BASELINES") is { Length: > 0 } dir ? dir : Path.Combine(FindProjectDirectory(), "Baselines");
 
     private static string FindProjectDirectory()
     {
