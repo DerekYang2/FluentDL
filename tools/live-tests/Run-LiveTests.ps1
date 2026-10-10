@@ -35,11 +35,11 @@ New-Item -ItemType Directory -Force $logDir | Out-Null
 
 $groups = [ordered]@{
     'deezer-qobuz'     = 'FullyQualifiedName~.DeezerTests.|FullyQualifiedName~.QobuzTests.|TestCategory!=Live'
-    'convert-dz-qb'    = 'FullyQualifiedName~ConvertToDeezer|FullyQualifiedName~ConvertToQobuz'
+    'convert-dz-qb'    = 'FullyQualifiedName~ConvertToDeezer|FullyQualifiedName~ConvertToQobuz|FullyQualifiedName~DeezerMatchesByMetadata'
     'spotify-web'      = 'FullyQualifiedName~SpotifyWebPlayerTests|FullyQualifiedName~ConvertToSpotify'
     'spotify-official' = 'FullyQualifiedName~SpotifyOfficialTests|FullyQualifiedName=FluentDL.Characterization.Tests.ConversionTests.ConvertWithSpotifyOfficial'
-    'downloads'        = 'FullyQualifiedName~.DownloadTests.'
-    'youtube'          = 'FullyQualifiedName~YoutubeTests|FullyQualifiedName~ConvertFromYoutube|FullyQualifiedName~ConvertToYoutube|FullyQualifiedName~ConvertWithSpotifyOfficialToYoutube'
+    'downloads'        = 'FullyQualifiedName~.DownloadTests.|FullyQualifiedName~.DownloadSettingsTests.'
+    'youtube'          = 'FullyQualifiedName~YoutubeTests|FullyQualifiedName~YoutubeWithoutMusicTests|FullyQualifiedName~ConvertFromYoutube|FullyQualifiedName~ConvertToYoutube|FullyQualifiedName~ConvertWithSpotifyOfficialToYoutube'
 }
 if (-not $IncludeYoutube) { $groups.Remove('youtube') }
 

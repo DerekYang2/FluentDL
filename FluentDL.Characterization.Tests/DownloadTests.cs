@@ -10,9 +10,9 @@ namespace FluentDL.Characterization.Tests;
 /// The download pipeline (DownloadService.DownloadObject and DownloadAlbum): one fixture per source, downloaded into a fresh folder with the
 /// settings a new install has. Pins the reported result, the files written, and the tags in the audio file.
 ///
-/// Free accounts shape these: Deezer falls back to a 128 kbps MP3, and Qobuz serves a 30-second MP3 sample. FFmpeg
-/// isn't set up in the test host, so branches that convert audio take their "no FFmpeg" path. YouTube is left out
-/// (slow, and it bot-checks heavy use).
+/// Free accounts shape these: Deezer falls back to a 128 kbps MP3, and Qobuz serves a 30-second MP3 sample. These use
+/// no FFmpeg, so branches that convert audio take their "no FFmpeg" path; DownloadSettingsTests covers Deezer's FFmpeg
+/// conversion and the download settings. YouTube is left out (slow, and it bot-checks heavy use).
 /// </summary>
 [TestClass]
 [TestCategory("Live")]
