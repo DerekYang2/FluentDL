@@ -99,4 +99,15 @@ public class QobuzTests
         }
         return rows;
     });
+
+    // Bug 8: the ISRC search is a text search, and the top result was returned without checking its ISRC.
+    [TestMethod]
+    [DataRow("USQX91300108", "USQX91300108")]
+    [DataRow("USQX91300199", null)] // one digit off a real ISRC, not a Qobuz track
+    [DataRow("daft punk", null)] // not an ISRC at all
+    public async Task SearchIsrcOnlyReturnsThatIsrc(string isrc, string? expectedIsrc)
+    {
+        var track = await TestSources.Qobuz.SearchISRC(isrc);
+        Assert.AreEqual(expectedIsrc, track?.Isrc, $"{track?.Title} / {track?.Performer?.Name}");
+    }
 }

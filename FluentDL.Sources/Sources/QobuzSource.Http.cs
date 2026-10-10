@@ -143,11 +143,18 @@ namespace FluentDL.Services.Sources
             }
         }
 
+        // Qobuz has no ISRC lookup, only a text search, so a result counts only when its ISRC is the one asked for
+        // (bug 8: the top result was returned unchecked, and the HTTP client was used before sign-in).
         public async Task<Track?> SearchISRC(string isrc)
         {
+            if (!HttpClientInitialized)
+            {
+                return null;
+            }
+
             try
             {
-                var requestUrl = $"{BaseUrl}/track/search?query={Uri.EscapeDataString(isrc)}&limit=1";
+                var requestUrl = $"{BaseUrl}/track/search?query={Uri.EscapeDataString(isrc)}&limit=10";
 
                 using HttpRequestMessage request = new(HttpMethod.Get, requestUrl);
                 var response = await QobuzHttpClient.SendAsync(request);
@@ -170,10 +177,10 @@ namespace FluentDL.Services.Sources
                         }
                     });
                     var jsonArray = jsonObject["tracks"]?["items"];
-                    if (jsonArray != null && jsonArray.Any())
+                    if (jsonArray != null)
                     {
-                        var trackObj = jsonArray.First;
-                        return trackObj?.ToObject<Track>();
+                        return jsonArray.Select(item => item.ToObject<Track>())
+                            .FirstOrDefault(track => string.Equals(track?.Isrc, isrc, StringComparison.OrdinalIgnoreCase));
                     }
                 }
             }
