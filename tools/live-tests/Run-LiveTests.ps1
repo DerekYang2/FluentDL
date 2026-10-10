@@ -35,7 +35,7 @@ New-Item -ItemType Directory -Force $logDir | Out-Null
 
 $groups = [ordered]@{
     'deezer-qobuz'     = 'FullyQualifiedName~.DeezerTests.|FullyQualifiedName~.QobuzTests.|TestCategory!=Live'
-    'convert-dz-qb'    = 'FullyQualifiedName~ConvertToDeezer|FullyQualifiedName~ConvertToQobuz|FullyQualifiedName~DeezerMatchesByMetadata'
+    'convert-dz-qb'    = 'FullyQualifiedName~ConvertToDeezer|FullyQualifiedName~ConvertToQobuz|FullyQualifiedName~DeezerMatchesByMetadata|FullyQualifiedName~NativeNamesConvertThroughSpotify'
     'spotify-web'      = 'FullyQualifiedName~SpotifyWebPlayerTests|FullyQualifiedName~ConvertToSpotify'
     'spotify-official' = 'FullyQualifiedName~SpotifyOfficialTests|FullyQualifiedName=FluentDL.Characterization.Tests.ConversionTests.ConvertWithSpotifyOfficial'
     'downloads'        = 'FullyQualifiedName~.DownloadTests.|FullyQualifiedName~.DownloadSettingsTests.'

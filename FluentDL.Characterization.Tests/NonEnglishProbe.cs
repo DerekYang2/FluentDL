@@ -83,7 +83,9 @@ public class NonEnglishProbe
             report.AppendLine("\n| Convert from (no ISRC) | To | Result |");
             report.AppendLine("|---|---|---|");
             var origins = named.Where(n => n.Value != null).Select(n => (Name: $"{n.Key} naming", Song: n.Value!)).ToList();
-            origins.Add(("native names", new SongSearchObject { Title = example.NativeTitle, Artists = example.NativeArtist, AlbumName = example.NativeAlbum }));
+            // A local file tagged in the native language; it has its own length, taken here from a service.
+            var length = named.Values.FirstOrDefault(n => n != null)?.Duration ?? "0";
+            origins.Add(("native names", new SongSearchObject { Title = example.NativeTitle, Artists = example.NativeArtist, AlbumName = example.NativeAlbum, Duration = length }));
             foreach (var (name, origin) in origins)
             {
                 foreach (var target in Targets)

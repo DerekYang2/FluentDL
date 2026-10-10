@@ -77,6 +77,25 @@ public class ConversionTests
         Assert.AreEqual(Fixtures.Tracks[0].DeezerId, match.Track!.Id);
     }
 
+    // A local file tagged in its own language, whose names the target lists differently (Deezer: "Spring Day" by
+    // BTS, "Gurenge"; Qobuz: "Sunny Day"). ConversionService finds it on Spotify (web player mode) by search and
+    // length, and the target finds it by that ISRC. Before, name matching found nothing.
+    [TestMethod]
+    [DataRow("\ubc29\ud0c4\uc18c\ub144\ub2e8", "\ubd04\ub0a0", "274", "deezer", "KRA381700253")] // 방탄소년단 봄날
+    [DataRow("LiSA", "\u7d05\u84ee\u83ef", "236", "deezer", "JPU901900905")] // 紅蓮華
+    [DataRow("\u5468\u6770\u502b", "\u6674\u5929", "270", "qobuz", "TWK970300503")] // 周杰倫 晴天
+    public async Task NativeNamesConvertThroughSpotify(string artist, string title, string duration, string target, string isrc)
+    {
+        await LiveSources.EnsureSpotifyWebPlayerAsync();
+        await SignInAsync(target, spotifyOfficial: false);
+        var song = new SongSearchObject { Source = SourceIds.Local, Id = "native.flac", Title = title, Artists = artist, AlbumName = "", Duration = duration };
+
+        var match = await TestSources.Conversions.FindEquivalentAsync(song, target, CancellationToken.None);
+
+        Assert.AreEqual(MatchKind.Close, match.Kind);
+        Assert.AreEqual(isrc, match.Track!.Isrc, $"{match.Track.Title} ({match.Track.Artists})");
+    }
+
     private static async Task RunAsync(string origin, string target, bool spotifyOfficial)
     {
         var baselineName = $"{(spotifyOfficial ? "ConversionSpotifyOfficial" : "Conversion")}.{origin}-to-{target}";

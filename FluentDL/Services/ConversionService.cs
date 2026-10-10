@@ -1,27 +1,98 @@
 using FluentDL.Contracts.Sources;
+using FluentDL.Core.Helpers;
+using FluentDL.Core.Matching;
 using FluentDL.Models;
 using FluentDL.Services.Sources;
 
 namespace FluentDL.Services;
 
 /// <summary>
-/// Converts a track from one source to another (the queue's "convert" feature). It fills in the song's ISRC from
-/// its own source when the song has none, so the target never has to call another source.
+/// Converts a track from one source to another (the queue's "convert" feature). Targets match by ISRC first, so this
+/// finds one when it can: on the song, from the song's own source (Spotify web player results), or, for songs with
+/// none (local files, YouTube videos), by finding the same recording on Spotify. The ISRC finds a recording whatever
+/// each service calls it: Deezer lists 紅蓮華 as "Gurenge" and 봄날 as "Spring Day", which no name match connects.
 /// </summary>
 public sealed class ConversionService(SourceRegistry sources)
 {
+    // Spotify's top result counts as the same recording only at about the same length; covers and karaoke versions
+    // usually differ.
+    private static readonly TimeSpan BridgeLengthTolerance = TimeSpan.FromSeconds(2);
+
     public async Task<MatchResult> FindEquivalentAsync(SongSearchObject song, string targetId, CancellationToken token)
     {
         if (!sources.TryGet<IConversionTarget>(targetId, out var target))
         {
             throw new Exception("Unspecified output source");
         }
-        return await target.FindEquivalentAsync(song, await IsrcOf(song), token);
+
+        var isrc = await IsrcOf(song);
+        if (isrc != null)
+        {
+            return await target.FindEquivalentAsync(song, isrc, token);
+        }
+
+        var bridged = await FindOnBridge(song, token);
+        if (bridged == null)
+        {
+            return await target.FindEquivalentAsync(song, null, token);
+        }
+
+        // Found by a search and its length, not by the song's own ISRC, so it is a likely match (yellow), not a
+        // certain one. If the ISRC finds nothing on the target, the target still matches by name as before.
+        var (bridgeTrack, bridgeIsrc, bridge) = bridged.Value;
+        if (bridge.Descriptor.Id == targetId)
+        {
+            return new MatchResult(bridgeTrack, MatchKind.Close);
+        }
+        var match = await target.FindEquivalentAsync(song, bridgeIsrc, token);
+        return match.Kind == MatchKind.Exact ? match with { Kind = MatchKind.Close } : match;
     }
 
-    // Only Spotify web player results lack an ISRC; Spotify is the only source with an ISRC lookup.
-    private async Task<string?> IsrcOf(SongSearchObject song) =>
-        string.IsNullOrWhiteSpace(song.Isrc) && sources.TryGet<IIsrcSource>(song.Source, out var origin)
-            ? await origin.GetIsrcAsync(song.Id)
-            : song.Isrc;
+    // Only Spotify web player results lack an ISRC among the sources that have one; Spotify is the only source with an
+    // ISRC lookup.
+    private async Task<string?> IsrcOf(SongSearchObject song)
+    {
+        if (!string.IsNullOrWhiteSpace(song.Isrc))
+        {
+            return song.Isrc;
+        }
+        return sources.TryGet<IIsrcSource>(song.Source, out var origin) ? await origin.GetIsrcAsync(song.Id) : null;
+    }
+
+    // The top search result on a source that can search and give ISRCs (Spotify), with its ISRC, when it is as long as
+    // the song. Null when the song has no length, or nothing fits, or the source fails.
+    private async Task<(SongSearchObject Track, string Isrc, ISource Bridge)?> FindOnBridge(SongSearchObject song, CancellationToken token)
+    {
+        var bridge = sources.All<ISearchSource>().FirstOrDefault(s => s is IIsrcSource);
+        if (bridge == null || bridge.Descriptor.Id == song.Source // its own ISRC lookup already failed above
+            || !DurationParser.TryParse(song.Duration, out var length) || length == TimeSpan.Zero)
+        {
+            return null;
+        }
+
+        try
+        {
+            var results = new List<SongSearchObject>();
+            var query = $"{song.Artists.Split(", ")[0]} {TextNormalization.PruneFeaturing(song.Title)}";
+            await bridge.SearchAsync(results, query, new PageRequest(0, 1), albumMode: false, token);
+            if (results is not [var top] || !DurationParser.TryParse(top.Duration, out var topLength)
+                || (topLength - length).Duration() > BridgeLengthTolerance)
+            {
+                return null;
+            }
+
+            var isrc = await ((IIsrcSource)bridge).GetIsrcAsync(top.Id);
+            if (string.IsNullOrWhiteSpace(isrc))
+            {
+                return null;
+            }
+            top.Isrc = isrc;
+            return (top, isrc, bridge);
+        }
+        catch (Exception e) when (e is not OperationCanceledException)
+        {
+            Serilog.Log.Warning(e, "Finding the recording on {Provider} for its ISRC failed", bridge.Descriptor.DisplayName);
+            return null;
+        }
+    }
 }
