@@ -9,14 +9,14 @@ using System.Diagnostics;
 using System.Text.RegularExpressions;
 
 
-namespace FluentDL.Services;
+namespace FluentDL.Services.Sources;
 
-internal partial class QobuzApi
+internal sealed partial class QobuzSource
 {
-    private static QobuzApiService apiService = null!;
-    private static HttpClient QobuzHttpClient = null!;
+    private QobuzApiService apiService = null!;
+    private HttpClient QobuzHttpClient = null!;
 
-    private static string GetFullTitle(Track? track)
+    private string GetFullTitle(Track? track)
     {
         if (track == null) 
             return "";
@@ -27,12 +27,12 @@ internal partial class QobuzApi
         return $"{track.Title} ({track.Version})";
     }
 
-    public static string oldI = "VuCHDsuyiFjcl994xa1eyg==";
-    public static string oldS = "5mLYFjeXUrtSoZvPIYn7ymMz6QQY65+XBg2OBH9cxLJlT9hMiDIrRB8Yj4OfOikn";
-    public static bool IsInitialized = false;
-    private static Login? loginResult = null;
+    public string oldI = "VuCHDsuyiFjcl994xa1eyg==";
+    public string oldS = "5mLYFjeXUrtSoZvPIYn7ymMz6QQY65+XBg2OBH9cxLJlT9hMiDIrRB8Yj4OfOikn";
+    public bool IsInitialized = false;
+    private Login? loginResult = null;
 
-    public static void Initialize(string? userId, string? AuthToken, string? appId, string? appSecret, AuthenticationCallback? authCallback = null)
+    public void Initialize(string? userId, string? AuthToken, string? appId, string? appSecret, AuthenticationCallback? authCallback = null)
     {
         IsInitialized = false;
         string? failMessage = null;
@@ -112,7 +112,7 @@ internal partial class QobuzApi
         }
     }
 
-    public static string? LoginString()
+    public string? LoginString()
     {
         if (loginResult == null)
         {
@@ -146,7 +146,7 @@ internal partial class QobuzApi
         return str;
     }
 
-    public static bool IsPremium()
+    public bool IsPremium()
     {
         if (!IsInitialized || loginResult == null)
         {
@@ -163,7 +163,7 @@ internal partial class QobuzApi
         return false;
     }
 
-    public static async Task GeneralSearch(ICollection<SongSearchObject> itemSource, string query, CancellationToken token, int offset = 0, int limit = 25, bool albumMode = false)
+    public async Task GeneralSearch(ICollection<SongSearchObject> itemSource, string query, CancellationToken token, int offset = 0, int limit = 25, bool albumMode = false)
     {
         query = query.Trim(); // Trim the query
         if (string.IsNullOrWhiteSpace(query))
@@ -204,12 +204,12 @@ internal partial class QobuzApi
         }
     }
 
-    private static bool CloseMatch(string str1, string str2)
+    private bool CloseMatch(string str1, string str2)
     {
         return ApiHelper.IsSubstring(str1.ToLower(), str2.ToLower());
     }
 
-    public static async Task AdvancedSearch(ICollection<SongSearchObject> itemSource, string artistName, string trackName, string albumName, CancellationToken token, int offset = 0, int limit = 25, bool clearResults = true)
+    public async Task AdvancedSearch(ICollection<SongSearchObject> itemSource, string artistName, string trackName, string albumName, CancellationToken token, int offset = 0, int limit = 25, bool clearResults = true)
     {
         // Qobuz doesn't have an advanced search, must be done manually
         artistName = artistName.Trim();
@@ -355,7 +355,7 @@ internal partial class QobuzApi
         }
     }
 
-    public static async Task AddTracksFromLink(ICollection<SongSearchObject> itemSource, string url, CancellationToken token, UrlStatusUpdateCallback? statusUpdate, bool albumMode = false)
+    public async Task AddTracksFromLink(ICollection<SongSearchObject> itemSource, string url, CancellationToken token, UrlStatusUpdateCallback? statusUpdate, bool albumMode = false)
     {
         var isTrack = url.StartsWith("https://play.qobuz.com/track/") || url.StartsWith("https://open.qobuz.com/track/") || Regex.IsMatch(url, @"https://www\.qobuz\.com(/[^/]+)?/track/.*");
         var isAlbum = url.StartsWith("https://play.qobuz.com/album/") || url.StartsWith("https://open.qobuz.com/album/") || Regex.IsMatch(url, @"https://www\.qobuz\.com(/[^/]+)?/album/.*");
@@ -499,7 +499,7 @@ internal partial class QobuzApi
 
     public enum QobuzLinkType { None, Label, Artist }
 
-    public static bool IsLinkLabelOrArtist(string url, out QobuzLinkType linkType, out string? id)
+    public bool IsLinkLabelOrArtist(string url, out QobuzLinkType linkType, out string? id)
     {
         linkType = QobuzLinkType.None;
         id = null;
@@ -549,7 +549,7 @@ internal partial class QobuzApi
         return false;
     }
 
-    public static async Task AddTracksFromLabelOrArtist(ICollection<SongSearchObject> itemSource, string url, CancellationToken token, UrlStatusUpdateCallback? statusUpdate, int offset, int limit, bool albumMode = false)
+    public async Task AddTracksFromLabelOrArtist(ICollection<SongSearchObject> itemSource, string url, CancellationToken token, UrlStatusUpdateCallback? statusUpdate, int offset, int limit, bool albumMode = false)
     {
         if (token.IsCancellationRequested)
         {
@@ -648,7 +648,7 @@ internal partial class QobuzApi
         }
     }
 
-    public static SongSearchObject ConvertSongSearchObject(Track track, string? mainArtist = null)
+    public SongSearchObject ConvertSongSearchObject(Track track, string? mainArtist = null)
     {
         var listedArtist = track.Performer?.Name ?? "unlisted";
         var contribList = GetAllContributorsList(track.Performers);
@@ -682,7 +682,7 @@ internal partial class QobuzApi
         };
     }
 
-    public static SongSearchObject CreateSongSearchObject(Track track, Album album)
+    public SongSearchObject CreateSongSearchObject(Track track, Album album)
     {
         var listedArtist = track.Performer?.Name ?? "unlisted";
         var contribList = GetAllContributorsList(track.Performers);
@@ -715,7 +715,7 @@ internal partial class QobuzApi
         };
     }
 
-    public static AlbumSearchObject ConvertAlbumSearchObject(Album album)
+    public AlbumSearchObject ConvertAlbumSearchObject(Album album)
     {
         var mainArtist = album.Artist.Name;
         var artists = album.Artists.Select(a => a.Name).ToList();
@@ -747,7 +747,7 @@ internal partial class QobuzApi
         };
     }
 
-    public static async Task<Album?> GetInternalAlbum(string id)
+    public async Task<Album?> GetInternalAlbum(string id)
     {
         return await Task.Run(() =>
         {
@@ -762,7 +762,7 @@ internal partial class QobuzApi
         });
     }
 
-    public static async Task<Track?> GetInternalTrack(string id)
+    public async Task<Track?> GetInternalTrack(string id)
     {
         return await Task.Run(() =>
         {
@@ -777,13 +777,13 @@ internal partial class QobuzApi
         });
     }
 
-    public static async Task<SongSearchObject?> GetTrackAsync(int? id, CancellationToken token = default)
+    public async Task<SongSearchObject?> GetTrackAsync(int? id, CancellationToken token = default)
     {
         if (id == null) return await Task.FromResult<SongSearchObject?>(null);
         return await GetTrackAsync(id.ToString(), token);
     }
 
-    public static async Task<SongSearchObject?> GetTrackAsync(string? id, CancellationToken token = default)
+    public async Task<SongSearchObject?> GetTrackAsync(string? id, CancellationToken token = default)
     {
         if (id == null) return null;
         var track = await Task.Run(() => apiService.GetTrack(id, withAuth: true), token);
@@ -796,7 +796,7 @@ internal partial class QobuzApi
     }
 
     /// <param name="isrc">The ISRC to match by first. ConversionService looks it up for songs that don't carry one.</param>
-    public static async Task<SongSearchObject?> GetQobuzTrack(SongSearchObject songObj, string? isrc, CancellationToken token = default, ConversionUpdateCallback? callback = null, bool onlyISRC = false)
+    public async Task<SongSearchObject?> GetQobuzTrack(SongSearchObject songObj, string? isrc, CancellationToken token = default, ConversionUpdateCallback? callback = null, bool onlyISRC = false)
     {
         if (!IsInitialized) return null;
 
@@ -925,7 +925,7 @@ internal partial class QobuzApi
         return null;
     }
 
-    public static string? GetPreviewUri(string trackId)
+    public string? GetPreviewUri(string trackId)
     {
         try
         {
@@ -937,7 +937,7 @@ internal partial class QobuzApi
         }
     }
 
-    public static List<string> GetAllContributorsList(string performerStr)
+    public List<string> GetAllContributorsList(string performerStr)
     {
         if (string.IsNullOrWhiteSpace(performerStr))  // Issue with QobuzAPI, should be nullable but is not
         {
@@ -975,7 +975,7 @@ internal partial class QobuzApi
         return artistList.ToList();
     }
 
-    public static async Task<string> DownloadTrack(string filePath, SongSearchObject song, IProgress<ProgressData> progress, string? format = null)
+    public async Task<string> DownloadTrack(string filePath, SongSearchObject song, IProgress<ProgressData> progress, string? format = null)
     {
         // Remove extension if it exists
         filePath = ApiHelper.RemoveExtension(filePath);
@@ -1019,7 +1019,7 @@ internal partial class QobuzApi
      * Qobuz genre list sometimes includes sub-genres separately, such as
      * Musiques du monde | Musiques du monde→Europe | Musiques du monde→Europe→Chanson française
      */
-    public static List<string> PruneGenreList(List<string> rawGenreList)
+    public List<string> PruneGenreList(List<string> rawGenreList)
     {
         var genreList = new List<string>();
         foreach (var genre in rawGenreList)
@@ -1031,7 +1031,7 @@ internal partial class QobuzApi
         return genreList.ToList();
     }
 
-    public static async Task UpdateMetadata(string filePath, string trackId)
+    public async Task UpdateMetadata(string filePath, string trackId)
     {
         var track = await GetInternalTrack(trackId);
 

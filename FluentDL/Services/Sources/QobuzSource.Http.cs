@@ -11,11 +11,11 @@ using System.Text;
 using System.Threading.Tasks;
 using TagLib.Id3v2;
 
-namespace FluentDL.Services
+namespace FluentDL.Services.Sources
 {
-    internal partial class QobuzApi
+    internal sealed partial class QobuzSource
     {
-        private static bool HttpClientInitialized = false;
+        private bool HttpClientInitialized = false;
         public const string BaseUrl = "https://www.qobuz.com/api.json/0.2";
         public enum EnumQobuzSearchType
         {
@@ -25,7 +25,7 @@ namespace FluentDL.Services
             ByLabel,
         }
 
-        public static void InitializeQobuzHttpClient(string appId, string? userAuthToken = "")
+        public void InitializeQobuzHttpClient(string appId, string? userAuthToken = "")
         {
             HttpClientInitialized = false;
             try
@@ -45,7 +45,7 @@ namespace FluentDL.Services
             }
         }
 
-        public static async Task<Playlist?> GetPlaylistAsync(string playlistId, CancellationToken cancellationToken = default)
+        public async Task<Playlist?> GetPlaylistAsync(string playlistId, CancellationToken cancellationToken = default)
         {
             if (!HttpClientInitialized)
                 return null;
@@ -67,7 +67,7 @@ namespace FluentDL.Services
             return null;
         }
 
-        public static async IAsyncEnumerable<T> ApiSearch<T>(string query, int offset = 0, int limit = 25, EnumQobuzSearchType searchType = EnumQobuzSearchType.None)
+        public async IAsyncEnumerable<T> ApiSearch<T>(string query, int offset = 0, int limit = 25, EnumQobuzSearchType searchType = EnumQobuzSearchType.None)
         {
             if (!HttpClientInitialized)
                 yield break;
@@ -144,7 +144,7 @@ namespace FluentDL.Services
             }
         }
 
-        public static async Task<Track?> SearchISRC(string isrc)
+        public async Task<Track?> SearchISRC(string isrc)
         {
             try
             {

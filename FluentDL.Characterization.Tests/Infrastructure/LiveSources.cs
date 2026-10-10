@@ -60,7 +60,7 @@ internal static class LiveSources
     {
         await RunOnceAsync(() => qobuzTried, () => qobuzTried = true, () => TestSources.Qobuz.ConnectAsync());
 
-        if (!QobuzApi.IsInitialized) Assert.Inconclusive("Qobuz did not sign in with the values from the secrets file.");
+        if (!TestSources.Qobuz.IsInitialized) Assert.Inconclusive("Qobuz did not sign in with the values from the secrets file.");
     }
 
     /// <summary>

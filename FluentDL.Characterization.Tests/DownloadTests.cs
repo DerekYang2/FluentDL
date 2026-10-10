@@ -145,7 +145,7 @@ public class DownloadTests
     private static async Task<SongSearchObject?> LoadAsync(string source, Fixtures.Track fixture) => source switch
     {
         "deezer" => await TestSources.Deezer.GetTrack(fixture.DeezerId!),
-        "qobuz" => await QobuzApi.GetTrackAsync(fixture.QobuzId!),
+        "qobuz" => await TestSources.Qobuz.GetTrackAsync(fixture.QobuzId!),
         _ => await SpotifyApi.GetTrack(fixture.SpotifyId!),
     };
 

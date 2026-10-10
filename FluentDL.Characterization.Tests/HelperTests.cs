@@ -153,8 +153,8 @@ public class HelperTests
 
         Snapshot.Match("Helpers.SourceSpecific", new
         {
-            QobuzContributors = performers.Select(p => new { Input = p, Artists = Capture(() => QobuzApi.GetAllContributorsList(p)) }),
-            QobuzGenres = Capture(() => QobuzApi.PruneGenreList(["Pop", "Musiques du monde", "Musiques du monde\u2192Europe", "Musiques du monde\u2192Europe\u2192Chanson française"])),
+            QobuzContributors = performers.Select(p => new { Input = p, Artists = Capture(() => TestSources.Qobuz.GetAllContributorsList(p)) }),
+            QobuzGenres = Capture(() => TestSources.Qobuz.PruneGenreList(["Pop", "Musiques du monde", "Musiques du monde\u2192Europe", "Musiques du monde\u2192Europe\u2192Chanson française"])),
             YoutubeLargeValues = counts.Select(c => new { Input = c, Output = Capture(() => YoutubeApi.FormatLargeValue(c)) }),
         });
     }

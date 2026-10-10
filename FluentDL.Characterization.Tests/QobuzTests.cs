@@ -38,11 +38,11 @@ public class QobuzTests
             tracks.Add(new
             {
                 f.Key,
-                ById = await Live.Capture(async () => (await QobuzApi.GetTrackAsync(f.QobuzId!)).ToShape()),
+                ById = await Live.Capture(async () => (await TestSources.Qobuz.GetTrackAsync(f.QobuzId!)).ToShape()),
                 ByIsrc = await Live.Capture(async () =>
                 {
-                    var track = await QobuzApi.SearchISRC(f.Isrc!);
-                    return track == null ? null : QobuzApi.ConvertSongSearchObject(track).ToShape();
+                    var track = await TestSources.Qobuz.SearchISRC(f.Isrc!);
+                    return track == null ? null : TestSources.Qobuz.ConvertSongSearchObject(track).ToShape();
                 }),
             });
         }
@@ -52,16 +52,16 @@ public class QobuzTests
             Tracks = tracks,
             Album = await Live.Capture(async () =>
             {
-                var album = await QobuzApi.GetInternalAlbum(Fixtures.QobuzAlbumId);
+                var album = await TestSources.Qobuz.GetInternalAlbum(Fixtures.QobuzAlbumId);
                 if (album == null) return null;
                 return new
                 {
-                    Converted = QobuzApi.ConvertAlbumSearchObject(album).ToShape(),
-                    Tracks = album.Tracks?.Items.Select(t => QobuzApi.CreateSongSearchObject(t, album).ToShape()).ToArray(),
+                    Converted = TestSources.Qobuz.ConvertAlbumSearchObject(album).ToShape(),
+                    Tracks = album.Tracks?.Items.Select(t => TestSources.Qobuz.CreateSongSearchObject(t, album).ToShape()).ToArray(),
                 };
             }),
-            PreviewUriAvailable = await Live.Capture(() => Task.FromResult<object?>(QobuzApi.GetPreviewUri("9140031") != null)),
-            IsPremium = QobuzApi.IsPremium(),
+            PreviewUriAvailable = await Live.Capture(() => Task.FromResult<object?>(TestSources.Qobuz.GetPreviewUri("9140031") != null)),
+            IsPremium = TestSources.Qobuz.IsPremium(),
         };
     });
 
@@ -90,7 +90,7 @@ public class QobuzTests
             ($"https://www.qobuz.com/us-en/interpreter/daft-punk/{Fixtures.QobuzArtistId}", false),
         })
         {
-            var isLabelOrArtist = QobuzApi.IsLinkLabelOrArtist(url, out var linkType, out var id);
+            var isLabelOrArtist = TestSources.Qobuz.IsLinkLabelOrArtist(url, out var linkType, out var id);
             var log = new Live.StatusLog();
             Func<ObservableCollection<SongSearchObject>, Task> fill =
                 items => TestSources.Qobuz.AddFromLinkAsync(items, url, new(IsFirstPage: true, new(0, 5), AlbumMode: true), log.Callback, CancellationToken.None);
