@@ -1,3 +1,5 @@
+using FluentDL.Core.Helpers;
+using FluentDL.Core.Matching;
 using FluentDL.Core.Sources;
 using FluentDL.Helpers;
 using FluentDL.Models;
@@ -206,7 +208,7 @@ internal sealed partial class QobuzSource
 
     private bool CloseMatch(string str1, string str2)
     {
-        return ApiHelper.IsSubstring(str1.ToLower(), str2.ToLower());
+        return FuzzyMatch.IsSubstring(str1.ToLower(), str2.ToLower());
     }
 
     public async Task AdvancedSearch(ICollection<SongSearchObject> itemSource, string artistName, string trackName, string albumName, CancellationToken token, int offset = 0, int limit = 25, bool clearResults = true)
@@ -878,8 +880,8 @@ internal sealed partial class QobuzSource
                     oneArtistMatch = false;
                     foreach (var artist in artists) // For every artist in SongObject
                     {
-                        var a1 = ApiHelper.PrunePunctuation(artist.ToLower());
-                        var performerPrune = ApiHelper.PrunePunctuation(track.Performers?.ToLower() ?? "");
+                        var a1 = TextNormalization.PrunePunctuation(artist.ToLower());
+                        var performerPrune = TextNormalization.PrunePunctuation(track.Performers?.ToLower() ?? "");
                         if (performerPrune.Contains(a1)) // Check if artist is in performers
                         {
                             oneArtistMatch = true;
@@ -910,9 +912,9 @@ internal sealed partial class QobuzSource
             // Check if at least one pair of artists match
             foreach (var artist in artists)
             {
-                var a1 = ApiHelper.PrunePunctuation(artist.ToLower());
-                var performerPrune = result.Performers == null ? "" : ApiHelper.PrunePunctuation(result.Performers.ToLower());
-                if (performerPrune.Contains(a1) && ApiHelper.PrunePunctuation(trackName.ToLower()).Equals(ApiHelper.PrunePunctuation(GetFullTitle(result).ToLower())))
+                var a1 = TextNormalization.PrunePunctuation(artist.ToLower());
+                var performerPrune = result.Performers == null ? "" : TextNormalization.PrunePunctuation(result.Performers.ToLower());
+                if (performerPrune.Contains(a1) && TextNormalization.PrunePunctuation(trackName.ToLower()).Equals(TextNormalization.PrunePunctuation(GetFullTitle(result).ToLower())))
                 {
                     var retObj = ConvertSongSearchObject(result);
                     callback?.Invoke(StatusLevel.Warning, retObj); // Not found by ISRC
@@ -978,7 +980,7 @@ internal sealed partial class QobuzSource
     public async Task<string> DownloadTrack(string filePath, SongSearchObject song, IProgress<ProgressData> progress, string? format = null)
     {
         // Remove extension if it exists
-        filePath = ApiHelper.RemoveExtension(filePath);
+        filePath = AudioFiles.RemoveExtension(filePath);
 
         if (format == null) // If format is not specified, get it from the settings
         {
@@ -1009,7 +1011,7 @@ internal sealed partial class QobuzSource
         }
 
         var fileUrl = apiService.GetTrackFileUrl(song.Id, format);
-        await ApiHelper.DownloadFileAsync(filePath, fileUrl.Url, progress);
+        await WebDownloads.DownloadFileAsync(filePath, fileUrl.Url, progress);
         return filePath;
         //var trackBytes = await new HttpClient().GetByteArrayAsync(fileUrl.Url);
         //await File.WriteAllBytesAsync(filePath, trackBytes);

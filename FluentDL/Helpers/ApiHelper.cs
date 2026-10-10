@@ -1,4 +1,5 @@
-﻿using FluentDL.Core.Matching;
+﻿using FluentDL.Core.Helpers;
+using FluentDL.Core.Matching;
 using FluentDL.Core.Sources;
 using FluentDL.Models;
 using FluentDL.Services;
@@ -20,7 +21,6 @@ namespace FluentDL.Helpers;
 internal class ApiHelper
 {   
     private static HttpClient client = new HttpClient();
-    private static HttpClient clientNoRedir = new HttpClient(new HttpClientHandler { AllowAutoRedirect = false }, true);
 
     // The string helpers below live in FluentDL.Core.Matching. These wrappers keep existing callers unchanged.
     public static bool IsSubstring(string str, string str2) => FuzzyMatch.IsSubstring(str, str2);
@@ -69,29 +69,9 @@ internal class ApiHelper
         return string.Join("\\", sanitizedSegments);
     }
 
-    public static string RemoveExtension(string filename)
-    {
-        var idx = filename.LastIndexOf('.');
-        if (idx == -1) return filename;
-        var ext = filename[idx..].ToLower();
+    public static string RemoveExtension(string filename) => AudioFiles.RemoveExtension(filename);
 
-        if (!LocalExplorerViewModel.SupportedExtensions.Contains(ext))
-        {
-            return filename; // Not a valid extension
-        }
-
-        return filename[..idx];
-    }
-
-    public static string GetUrl(SongSearchObject song)
-    {
-        var source = SourceCatalog.Find(song.Source);
-        if (source == null)
-        {
-            return string.Empty;
-        }
-        return song is AlbumSearchObject ? source.AlbumUrl(song.Id) : source.TrackUrl(song.Id);
-    }
+    public static string GetUrl(SongSearchObject song) => SourceCatalog.UrlOf(song);
 
     public static string EvaluateWildcard(SongSearchObject song, string wildcard)
     {
@@ -153,57 +133,13 @@ internal class ApiHelper
 
     public static int CalcLevenshteinDistance(string a, string b) => FuzzyMatch.LevenshteinDistance(a, b);
 
-    public static async Task<Uri?> GetRedirectedUrlAsync(Uri uri, CancellationToken cancellationToken = default)
-    {
-        try
-        {
-            Uri prevUri;
-            Uri curUri = uri;
-
-            do
-            {
-                using var response = await clientNoRedir.GetAsync(curUri, cancellationToken);
-
-                if (!response.Headers.Contains("Location"))
-                {
-                    if (response.StatusCode == System.Net.HttpStatusCode.OK && response.ReasonPhrase == "OK")
-                    {
-                        return curUri;  // No redirection, return the current URI
-                    } 
-                    else
-                    {
-                        return null;
-                    }
-                }
-
-                prevUri = curUri;
-                curUri = new Uri(response.Headers.GetValues("Location").First());
-            } while (curUri.AbsoluteUri != prevUri.AbsoluteUri);
-
-            return curUri;
-        }
-        catch (Exception e)
-        {
-            Log.Warning(e, "Could not resolve a redirected provider link");
-            return null;
-        }
-    }
+    public static Task<Uri?> GetRedirectedUrlAsync(Uri uri, CancellationToken cancellationToken = default) => WebDownloads.GetRedirectedUrlAsync(uri, cancellationToken);
 
     public static string RemoveDiacritics(string text) => TextNormalization.RemoveDiacritics(text);
 
     public static string EnforceAscii(string text) => TextNormalization.EnforceAscii(text);
 
-    public static string FormatDateTimeOffset(DateTimeOffset? dateTimeOffset)
-    {
-        if (dateTimeOffset != null)
-        {
-            return dateTimeOffset.GetValueOrDefault().ToString("yyyy-MM-dd");
-        }
-        else
-        {
-            return "";
-        }
-    }
+    public static string FormatDateTimeOffset(DateTimeOffset? dateTimeOffset) => DisplayFormat.FormatDateTimeOffset(dateTimeOffset);
 
     // Gets a bitmap image from a URL
     public static async Task<BitmapImage> GetBitmapImageAsync(string uri)
@@ -216,43 +152,5 @@ internal class ApiHelper
     }
 
     // For any file downloading with progress
-    public static async Task DownloadFileAsync(string filePath, string downloadUrl, IProgress<ProgressData> progress)
-    {
-        using var response = await client.GetAsync(downloadUrl, HttpCompletionOption.ResponseHeadersRead); 
-        response.EnsureSuccessStatusCode(); 
-        var contentLength = response.Content.Headers.ContentLength ?? 0;
-
-        using Stream streamRead = await response.Content.ReadAsStreamAsync();
-        await using FileStream streamWrite = System.IO.File.Create(filePath);
-        long totalBytesRead = 0;
-        var buffer = new byte[32768]; // 32KB buffer size
-        var firstBufferRead = false;
-
-        Stopwatch stopwatch = Stopwatch.StartNew();
-        var lastElapsed = stopwatch.Elapsed;
-        int bytesRead;
-
-        // Progress identifier
-        var uniqueId = DateTime.Now.Ticks;
-
-        try
-        {
-            while ((bytesRead = await streamRead.ReadAsync(buffer, 0, buffer.Length)) > 0)
-            {
-                await streamWrite.WriteAsync(buffer.AsMemory(0, Math.Min(buffer.Length, bytesRead)));
-                totalBytesRead += bytesRead;
-                double? percent = contentLength > 0 ? (double)totalBytesRead / contentLength : null;
-
-                var loopElapsed = stopwatch.Elapsed - lastElapsed;
-                progress.Report(new ProgressData() { uniqueId = uniqueId, currentBytes = totalBytesRead, totalBytes = contentLength, bps = bytesRead / loopElapsed.TotalSeconds });
-                lastElapsed = stopwatch.Elapsed;
-            }
-        } catch
-        {
-            throw;
-        } finally
-        {
-            progress.Report(new ProgressData() { uniqueId = uniqueId, currentBytes = contentLength, totalBytes = contentLength, bps = 0 });
-        }
-    }
+    public static Task DownloadFileAsync(string filePath, string downloadUrl, IProgress<ProgressData> progress) => WebDownloads.DownloadFileAsync(filePath, downloadUrl, progress);
 }

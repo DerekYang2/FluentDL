@@ -22,4 +22,17 @@ public static class DisplayFormat
 
         return value.ToString();
     }
+
+    /// <summary>A date as yyyy-MM-dd, or an empty string for null.</summary>
+    public static string FormatDateTimeOffset(DateTimeOffset? dateTimeOffset)
+    {
+        if (dateTimeOffset != null)
+        {
+            return dateTimeOffset.GetValueOrDefault().ToString("yyyy-MM-dd");
+        }
+        else
+        {
+            return "";
+        }
+    }
 }

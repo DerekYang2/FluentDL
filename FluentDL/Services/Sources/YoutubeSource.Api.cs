@@ -1,4 +1,5 @@
-﻿using FluentDL.Core.Sources;
+﻿using FluentDL.Core.Helpers;
+using FluentDL.Core.Sources;
 using FluentDL.Core.Matching;
 using FluentDL.Helpers;
 using FluentDL.Models;
@@ -106,9 +107,9 @@ namespace FluentDL.Services.Sources
                 return;
             }
 
-            artistName = ApiHelper.EnforceAscii(artistName.Trim());
-            trackName = ApiHelper.EnforceAscii(trackName.Trim());
-            albumName = ApiHelper.EnforceAscii(albumName.Trim());
+            artistName = TextNormalization.EnforceAscii(artistName.Trim());
+            trackName = TextNormalization.EnforceAscii(trackName.Trim());
+            albumName = TextNormalization.EnforceAscii(albumName.Trim());
 
             if (clearResults)
             {
@@ -136,7 +137,7 @@ namespace FluentDL.Services.Sources
                     {
                         foreach (var queryArtist in album.Artists)
                         {
-                            if (ApiHelper.CloseMatch(queryArtist.Name, artistName))
+                            if (FuzzyMatch.CloseMatch(queryArtist.Name, artistName))
                             {
                                 oneArtistMatch = true;
                                 break;
@@ -148,7 +149,7 @@ namespace FluentDL.Services.Sources
                         oneArtistMatch = true; // Assume true if artist not specified
                     }
 
-                    if (oneArtistMatch && ApiHelper.CloseMatch(album.Name, albumName)) // This album result substring matches
+                    if (oneArtistMatch && FuzzyMatch.CloseMatch(album.Name, albumName)) // This album result substring matches
                     {
                         // https://music.youtube.com/playlist?list={albumId}
 
@@ -174,21 +175,21 @@ namespace FluentDL.Services.Sources
                                         oneArtistMatch = false;
                                         foreach (var artist in song.Artists) // Check if at least one artist matches
                                         {
-                                            if (ApiHelper.CloseMatch(artist.Name, artistName))
+                                            if (FuzzyMatch.CloseMatch(artist.Name, artistName))
                                             {
                                                 oneArtistMatch = true;
                                                 break;
                                             }
                                         }
 
-                                        valid = oneArtistMatch && ApiHelper.CloseMatch(trackName, song.Name);
+                                        valid = oneArtistMatch && FuzzyMatch.CloseMatch(trackName, song.Name);
                                     }
                                 }
                                 else if (isTrackSpecified) // Album and track specified
                                 {
                                     if (isTrackSpecified) // Album and track specified
                                     {
-                                        valid = ApiHelper.CloseMatch(trackName, song.Name);
+                                        valid = FuzzyMatch.CloseMatch(trackName, song.Name);
                                     }
                                 }
 
@@ -225,21 +226,21 @@ namespace FluentDL.Services.Sources
                                         oneArtistMatch = false;
                                         foreach (var artist in song.Artists) // Check if at least one artist matches
                                         {
-                                            if (ApiHelper.CloseMatch(artist.Name, artistName))
+                                            if (FuzzyMatch.CloseMatch(artist.Name, artistName))
                                             {
                                                 oneArtistMatch = true;
                                                 break;
                                             }
                                         }
 
-                                        valid = oneArtistMatch && ApiHelper.CloseMatch(trackName, song.Name);
+                                        valid = oneArtistMatch && FuzzyMatch.CloseMatch(trackName, song.Name);
                                     }
                                 }
                                 else if (isTrackSpecified) // Album and track specified
                                 {
                                     if (isTrackSpecified) // Album and track specified
                                     {
-                                        valid = ApiHelper.CloseMatch(trackName, song.Name);
+                                        valid = FuzzyMatch.CloseMatch(trackName, song.Name);
                                     }
                                 }
 
@@ -276,14 +277,14 @@ namespace FluentDL.Services.Sources
                         bool oneArtistMatch = false;
                         foreach (var artist in song.Artists) // Check if at least one artist matches
                         {
-                            if (ApiHelper.CloseMatch(artist.Name, artistName))
+                            if (FuzzyMatch.CloseMatch(artist.Name, artistName))
                             {
                                 oneArtistMatch = true;
                                 break;
                             }
                         }
 
-                        if (oneArtistMatch && ApiHelper.CloseMatch(song.Name, trackName)) // If at least one artist match and track name close match
+                        if (oneArtistMatch && FuzzyMatch.CloseMatch(song.Name, trackName)) // If at least one artist match and track name close match
                         {
                             if (!trackIdList.Contains(song.Id)) // If not already added
                             {
@@ -315,7 +316,7 @@ namespace FluentDL.Services.Sources
                                 bool oneArtistMatch = false;
                                 foreach (var artist in song.Artists) // Check if at least one artist matches
                                 {
-                                    if (ApiHelper.CloseMatch(artist.Name, artistName))
+                                    if (FuzzyMatch.CloseMatch(artist.Name, artistName))
                                     {
                                         oneArtistMatch = true;
                                         break;
@@ -645,9 +646,9 @@ namespace FluentDL.Services.Sources
                     var album = await ytm.GetAlbumInfoAsync(browseId);
 
                     // Ensure album artist matches
-                    bool oneArtistMatch = album.Artists.Any(queryArtist => artists.Any(artist => ApiHelper.CloseMatch(queryArtist.Name, artist)));
+                    bool oneArtistMatch = album.Artists.Any(queryArtist => artists.Any(artist => FuzzyMatch.CloseMatch(queryArtist.Name, artist)));
 
-                        if (oneArtistMatch && ApiHelper.CloseMatch(album.Name, albumName)) // This album result substring matches
+                        if (oneArtistMatch && FuzzyMatch.CloseMatch(album.Name, albumName)) // This album result substring matches
                     {
                         var playlistUrl = $"https://music.youtube.com/playlist?list={album.Id}";
 
@@ -661,9 +662,9 @@ namespace FluentDL.Services.Sources
                                     return null;
                                 }
 
-                                oneArtistMatch = song.Artists.Any(queryArtist => artists.Any(artist => ApiHelper.CloseMatch(queryArtist.Name, artist)));
+                                oneArtistMatch = song.Artists.Any(queryArtist => artists.Any(artist => FuzzyMatch.CloseMatch(queryArtist.Name, artist)));
 
-                                if (oneArtistMatch && ApiHelper.CloseMatch(song.Name, trackName))
+                                if (oneArtistMatch && FuzzyMatch.CloseMatch(song.Name, trackName))
                                 {
                                     var retObj = await ConvertSongSearchObject(song);
                                     if (retObj != null)
@@ -696,12 +697,12 @@ namespace FluentDL.Services.Sources
                 {
                     if (ct >= 20) break;
                     if (token.IsCancellationRequested) return null; // Check if task is cancelled
-                    if (ApiHelper.PrunePunctuation(songObj.Title.ToLower()).Equals(ApiHelper.PrunePunctuation(res.Name.ToLower())))
+                    if (TextNormalization.PrunePunctuation(songObj.Title.ToLower()).Equals(TextNormalization.PrunePunctuation(res.Name.ToLower())))
                     {
                         var fullRes = await ytm.GetSongVideoInfoAsync(res.Id);
                         foreach (var artistResult in fullRes.Artists)
                         {
-                            if (artists.Any(artist => ApiHelper.CloseMatch(artistResult.Name, artist)))
+                            if (artists.Any(artist => FuzzyMatch.CloseMatch(artistResult.Name, artist)))
                             {
                                 var retObj = await ConvertSongSearchObject(fullRes);
                                 callback?.Invoke(StatusLevel.Warning, retObj); // Not found by ISRC
@@ -838,7 +839,7 @@ namespace FluentDL.Services.Sources
                 Isrc = null,
                 Rank = FormatLargeValue(video.Engagement.ViewCount),
                 TrackPosition = "1",
-                ReleaseDate = ApiHelper.FormatDateTimeOffset(video.UploadDate),
+                ReleaseDate = DisplayFormat.FormatDateTimeOffset(video.UploadDate),
                 Title = ytmSong.Name,
             };
         }
@@ -913,7 +914,7 @@ namespace FluentDL.Services.Sources
                 Isrc = null,
                 Rank = FormatLargeValue(video.Engagement.ViewCount),
                 TrackPosition = "1",
-                ReleaseDate = ApiHelper.FormatDateTimeOffset(video.UploadDate),
+                ReleaseDate = DisplayFormat.FormatDateTimeOffset(video.UploadDate),
                 Title = ytmSong?.Name ?? video.Title,
             };
         }

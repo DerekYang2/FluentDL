@@ -1,3 +1,4 @@
+using FluentDL.Core.Helpers;
 using DeezNET;
 using DeezNET.Data;
 using FluentDL.Core.Sources;
@@ -86,7 +87,7 @@ internal sealed partial class DeezerSource
     {
         if (url.StartsWith("https://deezer.page.link/") || url.StartsWith("https://dzr.page.link/") || url.StartsWith("https://link.deezer.com/"))
         {
-            url = (await ApiHelper.GetRedirectedUrlAsync(new Uri(url)))?.AbsoluteUri ?? "";
+            url = (await WebDownloads.GetRedirectedUrlAsync(new Uri(url)))?.AbsoluteUri ?? "";
             if (string.IsNullOrEmpty(url))
             {
                 statusUpdate?.Invoke(StatusLevel.Error, "Invalid Deezer URL");
@@ -247,7 +248,7 @@ internal sealed partial class DeezerSource
 
             if (titlePruned.Equals(songObjTitlePruned)) // If pruned titles are equal
             {
-                var editDist = ApiHelper.CalcLevenshteinDistance(PruneTitle(song.AlbumName), PruneTitle(songObj.AlbumName)); // Calculate and update min edit dist
+                var editDist = FuzzyMatch.LevenshteinDistance(PruneTitle(song.AlbumName), PruneTitle(songObj.AlbumName)); // Calculate and update min edit dist
                 if (editDist < minDist)
                 {
                     minDist = editDist;
@@ -315,7 +316,7 @@ internal sealed partial class DeezerSource
 
                     // Check if close artist match to add to list
                     var queryArtists = song.Artists.Split(", ").ToList();
-                    var oneArtistMatch = queryArtists.Any(queryArtist => artists.Any(artist => ApiHelper.CloseMatch(queryArtist, artist)));
+                    var oneArtistMatch = queryArtists.Any(queryArtist => artists.Any(artist => FuzzyMatch.CloseMatch(queryArtist, artist)));
 
                     if (oneArtistMatch)
                     {
@@ -347,7 +348,7 @@ internal sealed partial class DeezerSource
 
                     // Check if close artist match to add to list
                     var queryArtists = song.Artists.Split(", ").ToList();
-                    var oneArtistMatch = queryArtists.Any(queryArtist => artists.Any(artist => ApiHelper.CloseMatch(queryArtist, artist)));
+                    var oneArtistMatch = queryArtists.Any(queryArtist => artists.Any(artist => FuzzyMatch.CloseMatch(queryArtist, artist)));
 
                     if (oneArtistMatch)
                     {
@@ -371,7 +372,7 @@ internal sealed partial class DeezerSource
             var songObjTitlePruned = PruneTitle(songObj.Title);
             if (titlePruned.Equals(songObjTitlePruned) || titlePruned.Replace("radioedit", "").Equals(songObjTitlePruned.Replace("radioedit", ""))) // If the title matches without punctuation
             {
-                if (ApiHelper.PruneFeaturing(albumName).Replace(" ", "").Equals(ApiHelper.PruneFeaturing(songObj.AlbumName).Replace(" ", ""))) // If the album name is exact match
+                if (TextNormalization.PruneFeaturing(albumName).Replace(" ", "").Equals(TextNormalization.PruneFeaturing(songObj.AlbumName).Replace(" ", ""))) // If the album name is exact match
                 {
                     var fullTrack = await GetTrack(songObj.Id);
                     if (fullTrack != null)
@@ -381,7 +382,7 @@ internal sealed partial class DeezerSource
                     }
                 }
 
-                var dist = ApiHelper.CalcLevenshteinDistance(PruneTitle(albumName), PruneTitle(songObj.AlbumName));
+                var dist = FuzzyMatch.LevenshteinDistance(PruneTitle(albumName), PruneTitle(songObj.AlbumName));
                 if (dist < minEditDistance)
                 {
                     minEditDistance = dist;
@@ -414,7 +415,7 @@ internal sealed partial class DeezerSource
                 string pruneTargetName = PruneTitle(trackName), pruneName = PruneTitle(songObj.Title);
                 if (pruneName.Contains(pruneTargetName) || pruneTargetName.Contains(pruneName)) // Should at least be substrings
                 {
-                    var dist = ApiHelper.CalcLevenshteinDistance(pruneTargetName, pruneName); // Calculate and update min edit dist
+                    var dist = FuzzyMatch.LevenshteinDistance(pruneTargetName, pruneName); // Calculate and update min edit dist
                     if (dist < minEditDistance)
                     {
                         minEditDistance = dist;
@@ -674,7 +675,7 @@ internal sealed partial class DeezerSource
     public async Task<string> DownloadTrack(string filePath, SongSearchObject? song, DeezNET.Data.Bitrate? bitrateEnum = null, bool use128Fallback = false, IProgress<ProgressData>? progress = null)
     {
         // Remove extension if it exists
-        filePath = ApiHelper.RemoveExtension(filePath);
+        filePath = AudioFiles.RemoveExtension(filePath);
 
         if (song == null || song.Source != SourceIds.Deezer || !Path.IsPathRooted(filePath))
         {
@@ -735,7 +736,7 @@ internal sealed partial class DeezerSource
             }
             Debug.WriteLine($"Error downloading track {id}: {e.Message}");
             // Fallback to 128 kbps
-            filePath = ApiHelper.RemoveExtension(filePath) + ".mp3";
+            filePath = AudioFiles.RemoveExtension(filePath) + ".mp3";
             trackBytes = await deezerClient.Downloader.GetRawTrackBytes(id, DeezNET.Data.Bitrate.MP3_128);
             if (trackBytes == null || trackBytes.Length == 0)
             {
@@ -766,7 +767,7 @@ internal sealed partial class DeezerSource
             {
                 throw new Exception("Failed to convert to FLAC: " + e.Message);
             }
-            filePath = ApiHelper.RemoveExtension(filePath) + ".flac";
+            filePath = AudioFiles.RemoveExtension(filePath) + ".flac";
         }
         return filePath;
     }

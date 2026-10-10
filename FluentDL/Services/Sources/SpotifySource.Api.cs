@@ -1,3 +1,5 @@
+using FluentDL.Core.Helpers;
+using FluentDL.Core.Matching;
 using FluentDL.Core.Sources;
 using FluentDL.Helpers;
 using FluentDL.Models;
@@ -243,7 +245,7 @@ namespace FluentDL.Services.Sources
 
         private bool CloseMatch(string str1, string str2)
         {
-            return ApiHelper.IsSubstring(str1.ToLower(), str2.ToLower());
+            return FuzzyMatch.IsSubstring(str1.ToLower(), str2.ToLower());
         }
 
         public string? LoginString()
@@ -1109,8 +1111,8 @@ namespace FluentDL.Services.Sources
                         return null;
                     }
 
-                    var titlePruned = ApiHelper.PruneTitle(trackName);
-                    var songObjTitlePruned = ApiHelper.PruneTitle(songObj.Title);
+                    var titlePruned = TitleNormalizer.CompactLegacy(trackName);
+                    var songObjTitlePruned = TitleNormalizer.CompactLegacy(songObj.Title);
                     if (titlePruned.Equals(songObjTitlePruned) || titlePruned.Replace("radioedit", "").Equals(songObjTitlePruned.Replace("radioedit", ""))) // If the title matches without punctuation
                     {
                         if (albumName.ToLower().Replace(" ", "").Equals(songObj.AlbumName.ToLower().Replace(" ", ""))) // If the album name is exact match
@@ -1119,7 +1121,7 @@ namespace FluentDL.Services.Sources
                             return songObj; // Return direct match
                         }
 
-                        var dist = ApiHelper.CalcLevenshteinDistance(ApiHelper.PruneTitle(albumName), ApiHelper.PruneTitle(songObj.AlbumName));
+                        var dist = FuzzyMatch.LevenshteinDistance(TitleNormalizer.CompactLegacy(albumName), TitleNormalizer.CompactLegacy(songObj.AlbumName));
                         if (dist < minEditDistance)
                         {
                             minEditDistance = dist;
@@ -1269,7 +1271,7 @@ namespace FluentDL.Services.Sources
                     ReleaseDate = DateTime.TryParse(songObj.ReleaseDate, out var dt) ? dt : null,
                     AlbumArtPath = songObj.ImageLocation,
                     TrackNumber = int.TryParse(songObj.TrackPosition, out var tn) ? tn : null,
-                    Url = ApiHelper.GetUrl(songObj),
+                    Url = SourceCatalog.UrlOf(songObj),
                 };
 
                 await metadata.SaveAsync();

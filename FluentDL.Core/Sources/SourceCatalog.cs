@@ -26,4 +26,15 @@ public static class SourceCatalog
 
     /// <summary>The descriptor for a persisted id, or null for an unknown id.</summary>
     public static SourceDescriptor? Find(string? id) => All.FirstOrDefault(s => s.Id == id);
+
+    /// <summary>The link to a track or album on its source, or an empty string for an unknown source.</summary>
+    public static string UrlOf(FluentDL.Models.SongSearchObject song)
+    {
+        var source = Find(song.Source);
+        if (source == null)
+        {
+            return string.Empty;
+        }
+        return song is FluentDL.Models.AlbumSearchObject ? source.AlbumUrl(song.Id) : source.TrackUrl(song.Id);
+    }
 }
