@@ -23,6 +23,26 @@ namespace FluentDL.Services.Sources
         private YouTubeMusicClient ytm = new YouTubeMusicClient();
         private YouTube youtubeAlt = YouTube.Default;
 
+        // YouTube answers some song detail requests with a bot check and no details, at random (about half of them on
+        // 2026-10-10, with YouTubeMusicAPI 3.0.11), and the library then throws ArgumentNullException("videoDetails.title").
+        // The same request usually works on another try (bug 16).
+        private Task<SongVideoInfo> GetSongVideoInfoAsync(string id, CancellationToken token = default) =>
+            RetryBotCheckAsync(() => ytm.GetSongVideoInfoAsync(id, token));
+
+        internal static async Task<T> RetryBotCheckAsync<T>(Func<Task<T>> call, int attempts = 3)
+        {
+            for (var attempt = 1; ; attempt++)
+            {
+                try
+                {
+                    return await call();
+                }
+                catch (ArgumentNullException e) when (e.ParamName == "videoDetails.title" && attempt < attempts)
+                {
+                }
+            }
+        }
+
         public async Task GeneralSearch(ICollection<SongSearchObject> itemSource, string query, CancellationToken token, int offset = 0, int limit = 25, bool albumMode = false)
         {
             query = query.Trim(); // Trim the query
@@ -164,7 +184,7 @@ namespace FluentDL.Services.Sources
                                     break;
                                 }
 
-                                var song = await ytm.GetSongVideoInfoAsync(playlistVideo.Id);
+                                var song = await GetSongVideoInfoAsync(playlistVideo.Id);
 
                                 bool valid = true; // True as default
 
@@ -215,7 +235,7 @@ namespace FluentDL.Services.Sources
                             foreach (var albumSongInfo in albumInfo.Songs) // Iterate through album tracks
                             {
                                 if (token.IsCancellationRequested) return; // Check if task is cancelled
-                                var song = await ytm.GetSongVideoInfoAsync(albumSongInfo.Id); // Get full track info
+                                var song = await GetSongVideoInfoAsync(albumSongInfo.Id); // Get full track info
 
                                 bool valid = true; // True as default
 
@@ -272,7 +292,7 @@ namespace FluentDL.Services.Sources
                     await foreach (var result in ytm.SearchAsync(query, SearchCategory.Songs))
                     {
                         if (token.IsCancellationRequested || trackIdList.Count >= limit) return; // Check if task is cancelled or limit reached
-                        var song = await ytm.GetSongVideoInfoAsync(result.Id);
+                        var song = await GetSongVideoInfoAsync(result.Id);
 
                         bool oneArtistMatch = false;
                         foreach (var artist in song.Artists) // Check if at least one artist matches
@@ -654,6 +674,14 @@ namespace FluentDL.Services.Sources
             var albumName = songObj.AlbumName;
             var albumQuery = $"{artistName} {albumName}";
 
+            // A live or re-recorded version can contain the title ("夜に駆ける (From "THE FIRST TAKE")"), so when the
+            // song's length is known, a title match within 3 s of it wins. A title match of another length is kept and
+            // used only if the album and song searches find none of the same length: releases of the same recording can
+            // differ by several seconds (the Yo-Yo Ma Prelude is 146 s on Deezer, 152 s on YouTube).
+            var hasLength = DurationParser.TryParse(songObj.Duration, out var songLength) && songLength > TimeSpan.Zero;
+            bool SameLength(TimeSpan candidate) => !hasLength || (candidate - songLength).Duration() <= TimeSpan.FromSeconds(3);
+            SongVideoInfo? otherLength = null;
+
             int ct = 0;
             try
             {
@@ -677,7 +705,7 @@ namespace FluentDL.Services.Sources
                         {
                             await foreach (var playlistVideo in youtube.Playlists.GetVideosAsync(playlistUrl, token))
                             {
-                                var song = await ytm.GetSongVideoInfoAsync(playlistVideo.Id, token);
+                                var song = await GetSongVideoInfoAsync(playlistVideo.Id, token);
                                 if (token.IsCancellationRequested)
                                 {
                                     return null;
@@ -685,7 +713,11 @@ namespace FluentDL.Services.Sources
 
                                 oneArtistMatch = song.Artists.Any(queryArtist => artists.Any(artist => FuzzyMatch.CloseMatch(queryArtist.Name, artist)));
 
-                                if (oneArtistMatch && FuzzyMatch.CloseMatch(song.Name, trackName))
+                                if (oneArtistMatch && FuzzyMatch.CloseMatch(song.Name, trackName) && !SameLength(song.Duration))
+                                {
+                                    otherLength ??= song;
+                                }
+                                else if (oneArtistMatch && FuzzyMatch.CloseMatch(song.Name, trackName))
                                 {
                                     var retObj = await ConvertSongSearchObject(song);
                                     if (retObj != null)
@@ -722,9 +754,14 @@ namespace FluentDL.Services.Sources
                     if (token.IsCancellationRequested) return null; // Check if task is cancelled
                     if (TextNormalization.PrunePunctuation(songObj.Title.ToLower()).Equals(TextNormalization.PrunePunctuation(res.Name.ToLower())))
                     {
-                        var fullRes = await ytm.GetSongVideoInfoAsync(res.Id);
+                        var fullRes = await GetSongVideoInfoAsync(res.Id);
                         foreach (var artistResult in fullRes.Artists)
                         {
+                            if (artists.Any(artist => FuzzyMatch.CloseMatch(artistResult.Name, artist)) && !SameLength(fullRes.Duration))
+                            {
+                                otherLength ??= fullRes;
+                                break;
+                            }
                             if (artists.Any(artist => FuzzyMatch.CloseMatch(artistResult.Name, artist)))
                             {
                                 var retObj = await ConvertSongSearchObject(fullRes);
@@ -737,6 +774,13 @@ namespace FluentDL.Services.Sources
             } catch (Exception e)
             {
                 Debug.WriteLine("Error searching without album: " + e.ToString());
+            }
+
+            // A title match of another length, which these searches used to return before checking length
+            if (otherLength != null && await ConvertSongSearchObject(otherLength) is { } otherLengthObj)
+            {
+                callback?.Invoke(StatusLevel.Warning, otherLengthObj); // Not found by ISRC
+                return otherLengthObj;
             }
 
             // Fall back to searching for videos
@@ -947,7 +991,7 @@ namespace FluentDL.Services.Sources
             SongVideoInfo? ytmInfo = null;
             try
             {
-                ytmInfo = await ytm.GetSongVideoInfoAsync(video.Id);
+                ytmInfo = await GetSongVideoInfoAsync(video.Id);
             }
             catch (Exception e)
             {
@@ -1148,7 +1192,7 @@ namespace FluentDL.Services.Sources
         public async Task UpdateMetadata(string filePath, string id)
         {
             var video = await youtube.Videos.GetAsync(id);
-            var ytmSong = await ytm.GetSongVideoInfoAsync(id);
+            var ytmSong = await GetSongVideoInfoAsync(id);
 
             var artists = new List<string>();
             foreach (var artist in ytmSong.Artists)

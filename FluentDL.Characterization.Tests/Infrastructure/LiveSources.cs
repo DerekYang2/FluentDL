@@ -17,27 +17,33 @@ internal static class LiveSources
     private static string? youtubeBlockedReason;
 
     /// <summary>
-    /// YouTube sometimes answers YouTubeMusicAPI's ANDROID_VR player requests with "Sign in to confirm you're not a bot"
-    /// and no videoDetails, and the library then throws ArgumentNullException('videoDetails.title'). Heavy test runs can
-    /// trigger this for hours. It is an outside outage, not a regression, so YouTube tests end as Inconclusive while it lasts.
+    /// YouTube answers some YouTubeMusicAPI song detail requests with a bot check and no videoDetails, and the library
+    /// then throws ArgumentNullException('videoDetails.title') (bug 16). Since 3.0.11 about half of them fail at random,
+    /// and YoutubeSource retries them, so YouTube counts as blocked only when most fixture videos still fail after the
+    /// same retries. One fixture video (wDuoOapZ9Z0) never returns details. A real block is an outside outage, not a
+    /// regression, so YouTube tests end as Inconclusive while it lasts.
     /// </summary>
     public static async Task EnsureYoutubeMusicAvailableAsync()
     {
         await RunOnceAsync(() => youtubeTried, () => youtubeTried = true, async () =>
         {
-            // The check hits some requests and not others, so probe every fixture video.
             var client = new YouTubeMusicAPI.Client.YouTubeMusicClient();
-            var ids = Fixtures.Tracks.Where(f => f.YoutubeId != null && f.Isrc != null).Select(f => f.YoutubeId!);
+            var ids = Fixtures.Tracks.Where(f => f.YoutubeId != null && f.Isrc != null).Select(f => f.YoutubeId!).ToList();
+            var failed = new List<string>();
             foreach (var id in ids)
             {
                 try
                 {
-                    await client.GetSongVideoInfoAsync(id);
+                    await FluentDL.Services.Sources.YoutubeSource.RetryBotCheckAsync(() => client.GetSongVideoInfoAsync(id));
                 }
                 catch (ArgumentNullException e) when (e.ParamName == "videoDetails.title")
                 {
-                    youtubeBlockedReason = $"YouTube is bot-checking YouTubeMusicAPI requests from this machine (no videoDetails for {id}). Try again later.";
-                    return;
+                    failed.Add(id);
+                    if (failed.Count * 2 > ids.Count)
+                    {
+                        youtubeBlockedReason = $"YouTube is bot-checking YouTubeMusicAPI requests from this machine (no videoDetails for {string.Join(", ", failed)}, after retries). Try again later.";
+                        return;
+                    }
                 }
                 catch (HttpRequestException e)
                 {
