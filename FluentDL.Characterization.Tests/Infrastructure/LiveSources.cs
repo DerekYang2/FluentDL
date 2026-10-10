@@ -1,6 +1,7 @@
 using System.Reflection;
 using FluentDL.Services;
 using FluentDL.Services.CustomSpotify;
+using FluentDL.Services.Sources;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging.Abstractions;
 
@@ -64,7 +65,7 @@ internal static class LiveSources
     }
 
     /// <summary>
-    /// Puts SpotifyApi in web player mode. In the app, SpotifyApi.Initialize gets these services from
+    /// Puts Spotify in web player mode. In the app, SpotifySource.Initialize gets these services from
     /// App.GetService, which needs the running WinUI app, so the test builds them and sets the same
     /// private fields that the web player branch of Initialize sets. It also clears the official client, which the
     /// app never sets in this mode (bug 9), in case an official-mode test ran first in the same process.
@@ -87,18 +88,18 @@ internal static class LiveSources
             SetPrivateStatic("spotifyUser", null);
             SetPrivateStatic("spotifyWebService", spotifyWebService);
             SetPrivateStatic("spotifyISRCService", spotifyIsrcService);
-            SpotifyApi.IsInitialized = spotifyWebAuthenticated;
+            TestSources.Spotify.IsInitialized = spotifyWebAuthenticated;
         }
         finally
         {
             Gate.Release();
         }
 
-        if (!SpotifyApi.IsInitialized) Assert.Inconclusive("Spotify web player authentication failed.");
+        if (!TestSources.Spotify.IsInitialized) Assert.Inconclusive("Spotify web player authentication failed.");
     }
 
     /// <summary>
-    /// Puts SpotifyApi in official API mode through SpotifySource.ConnectAsync, which reads the client id and secret
+    /// Puts Spotify in official API mode through SpotifySource.ConnectAsync, which reads the client id and secret
     /// (from the secrets file here). Runs every time, because web player tests switch the mode back.
     /// </summary>
     public static async Task EnsureSpotifyOfficialAsync()
@@ -116,7 +117,7 @@ internal static class LiveSources
             Gate.Release();
         }
 
-        if (!SpotifyApi.IsInitialized) Assert.Inconclusive("Spotify did not sign in with the client id and secret from the secrets file.");
+        if (!TestSources.Spotify.IsInitialized) Assert.Inconclusive("Spotify did not sign in with the client id and secret from the secrets file.");
     }
 
     private static SpotifyWebService? spotifyWebService;
@@ -125,9 +126,9 @@ internal static class LiveSources
 
     private static void SetPrivateStatic(string name, object? value)
     {
-        var field = typeof(SpotifyApi).GetField(name, BindingFlags.NonPublic | BindingFlags.Static)
-            ?? throw new MissingFieldException(nameof(SpotifyApi), name);
-        field.SetValue(null, value);
+        var field = typeof(SpotifySource).GetField(name, BindingFlags.NonPublic | BindingFlags.Instance)
+            ?? throw new MissingFieldException(nameof(SpotifySource), name);
+        field.SetValue(TestSources.Spotify, value);
     }
 
     private static async Task RunOnceAsync(Func<bool> tried, Action markTried, Func<Task> init)

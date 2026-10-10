@@ -110,7 +110,7 @@ public partial class SettingsViewModel : ObservableRecipient
 
     public string SpotifyCallbackUri
     {
-        get => FluentDL.Services.SpotifyApi.GetCallbackUri();
+        get => FluentDL.Services.Sources.SpotifySource.GetCallbackUri();
     }
 
     public SettingsViewModel(IThemeSelectorService themeSelectorService, QueueDisplaySettings queueDisplay)

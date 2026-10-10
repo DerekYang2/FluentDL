@@ -11,40 +11,35 @@ using System.Text.Json;
 using System.Text.RegularExpressions;
 
 
-namespace FluentDL.Services
+namespace FluentDL.Services.Sources
 {
-    internal class SpotifyApi
+    internal sealed partial class SpotifySource
     {
         private static readonly SemaphoreSlim _lock = new(1, 1);
-        private static SpotifyClientConfig config = SpotifyClientConfig.CreateDefault().WithRetryHandler(new SimpleRetryHandler() { RetryTimes = 3, TooManyRequestsConsumesARetry = false});
-        private static SpotifyClient spotify;
-        private static SpotifyClient? spotifyUser;
-        private static Random rand = new();
-        public static bool IsInitialized = false;
-        private static string? loginString = null;
+        private SpotifyClientConfig config = SpotifyClientConfig.CreateDefault().WithRetryHandler(new SimpleRetryHandler() { RetryTimes = 3, TooManyRequestsConsumesARetry = false});
+        private SpotifyClient spotify;
+        private SpotifyClient? spotifyUser;
+        private Random rand = new();
+        public bool IsInitialized = false;
+        private string? loginString = null;
         
         // Login as user related
-        private static EmbedIOAuthServer? _server;
-        private static string? _clientId, _clientSecret;
+        private EmbedIOAuthServer? _server;
+        private string? _clientId, _clientSecret;
         private static readonly int _port = 5543;
         private static readonly string _redirect = $"http://127.0.0.1:{_port}/callback";
-        private static TaskCompletionSource<bool> _loginTcs = new();
+        private TaskCompletionSource<bool> _loginTcs = new();
 
         // Custom web player
-        private static ISpotifyWebService? spotifyWebService;
-        private static ISpotifyISRCService? spotifyISRCService;
-
-        public SpotifyApi()
-        {
-
-        }
+        private ISpotifyWebService? spotifyWebService;
+        private ISpotifyISRCService? spotifyISRCService;
 
         public static string GetCallbackUri()
         {
             return _redirect;
         }
 
-        public static async Task Initialize(string? clientId, string? clientSecret,  AuthenticationCallback? authCallback = null)
+        public async Task Initialize(string? clientId, string? clientSecret,  AuthenticationCallback? authCallback = null)
         {
             await _lock.WaitAsync();
             try 
@@ -168,7 +163,7 @@ namespace FluentDL.Services
             }
         }
 
-        private static async Task PromptUserLogin()
+        private async Task PromptUserLogin()
         {
             if (_clientId == null || _clientSecret == null)
             {
@@ -197,7 +192,7 @@ namespace FluentDL.Services
             }
         }
 
-        private static async Task OnAuthorizationCodeReceived(object sender, AuthorizationCodeResponse response)
+        private async Task OnAuthorizationCodeReceived(object sender, AuthorizationCodeResponse response)
         {
             if (spotifyUser == null)
             {
@@ -219,13 +214,13 @@ namespace FluentDL.Services
             }
         }
 
-        private static async Task OnErrorReceived(object sender, string error, string? state)
+        private async Task OnErrorReceived(object sender, string error, string? state)
         {
             Debug.WriteLine($"Aborting authorization, error received: {error}");
             await _server!.Stop();
         }
 
-        private static async Task<bool> CheckClient()
+        private async Task<bool> CheckClient()
         {
             try
             {
@@ -246,19 +241,19 @@ namespace FluentDL.Services
             }
         }
 
-        private static bool CloseMatch(string str1, string str2)
+        private bool CloseMatch(string str1, string str2)
         {
             return ApiHelper.IsSubstring(str1.ToLower(), str2.ToLower());
         }
 
-        public static string? LoginString()
+        public string? LoginString()
         {
             return loginString;
         }
 
         // For whatever reason, a request like below throws bad request error
         // REQUEST: artist:"The Beep Test" track:"The Beep Test: 20 Metre (Complete Test)" album:"The Beep Test: The Best 20 Metre and 15 Metre Bleep Test for Personal Fitness & Recruitment Practice to the Police, RAF, Army, Fire Brigade, Royal Air Force, Royal Navy and the Emergency Services"
-        public static async Task AdvancedSearch(ICollection<SongSearchObject> itemSource, string artistName, string trackName, string albumName, CancellationToken token, int offset = 0, int limit = 25, bool clearResults = true)
+        public async Task AdvancedSearch(ICollection<SongSearchObject> itemSource, string artistName, string trackName, string albumName, CancellationToken token, int offset = 0, int limit = 25, bool clearResults = true)
         {
             // Trim
             artistName = artistName.Trim();
@@ -341,7 +336,7 @@ namespace FluentDL.Services
             }
         }
 
-        public static async Task GeneralSearch(ICollection<SongSearchObject> itemSource, string query, CancellationToken token, int offset = 0, int limit = 25, bool albumMode = false)
+        public async Task GeneralSearch(ICollection<SongSearchObject> itemSource, string query, CancellationToken token, int offset = 0, int limit = 25, bool albumMode = false)
         {
             query = query.Trim(); // Trim the query
             //limit = Math.Min(limit, 1000);
@@ -420,7 +415,7 @@ namespace FluentDL.Services
             }
         }
 
-        public static async Task<string?> GetPlaylistName(string playlistId)
+        public async Task<string?> GetPlaylistName(string playlistId)
         {
             if (spotifyUser == null) return null;
             try
@@ -436,7 +431,7 @@ namespace FluentDL.Services
             }
         }
 
-        public static async Task<string?> GetIsrcFromId(string id)
+        public async Task<string?> GetIsrcFromId(string id)
         {
             try
             {
@@ -463,7 +458,7 @@ namespace FluentDL.Services
             }
         }
 
-        public static async Task<SongSearchObject?> GetTrackFromISRC(string isrc, CancellationToken token = default)
+        public async Task<SongSearchObject?> GetTrackFromISRC(string isrc, CancellationToken token = default)
         {
             try 
             {
@@ -496,7 +491,7 @@ namespace FluentDL.Services
             return null;
         }
 
-        public static string? GetSpotifyPreviewUrl(string html)
+        public string? GetSpotifyPreviewUrl(string html)
         {
             try
             {
@@ -518,7 +513,7 @@ namespace FluentDL.Services
             return null;
         }
 
-        public static async Task<SongSearchObject?> GetTrackEmbed(string id)
+        public async Task<SongSearchObject?> GetTrackEmbed(string id)
         {
             var httpClient = new System.Net.Http.HttpClient();
             string html = await httpClient.GetStringAsync($"https://open.spotify.com/embed/track/{id}");
@@ -623,7 +618,7 @@ namespace FluentDL.Services
 
             return result;
         }
-        public static async Task<SongSearchObject?> GetTrackWebPlayer(string id)
+        public async Task<SongSearchObject?> GetTrackWebPlayer(string id)
         {
             try
             {
@@ -746,7 +741,7 @@ namespace FluentDL.Services
                 return null;
             }
         }
-        public static async Task<SongSearchObject?> GetTrack(string id)
+        public async Task<SongSearchObject?> GetTrack(string id)
         {
             try
             {
@@ -764,7 +759,7 @@ namespace FluentDL.Services
             }
         }
 
-        public static async Task<FullAlbum?> GetAlbum(string id)
+        public async Task<FullAlbum?> GetAlbum(string id)
         {
             try
             {
@@ -779,7 +774,7 @@ namespace FluentDL.Services
         }
 
         // TODO: handle invalid playlist ids
-        public static async Task<List<SongSearchObject>> GetPlaylist(string playlistId, CancellationToken token)
+        public async Task<List<SongSearchObject>> GetPlaylist(string playlistId, CancellationToken token)
         {
             var pages = await spotify.Playlists.GetItems(playlistId, cancel: token);
             var allPages = await spotify.PaginateAll(pages, cancellationToken: token);
@@ -813,7 +808,7 @@ namespace FluentDL.Services
             return songs;
         }
 
-        public static async Task AddTracksFromLink(ICollection<SongSearchObject> itemSource, string url, CancellationToken token, UrlStatusUpdateCallback? statusUpdate, bool userLogin, bool albumMode = false)
+        public async Task AddTracksFromLink(ICollection<SongSearchObject> itemSource, string url, CancellationToken token, UrlStatusUpdateCallback? statusUpdate, bool userLogin, bool albumMode = false)
         {
             if (!IsInitialized)
             {
@@ -982,7 +977,7 @@ namespace FluentDL.Services
         }
 
         // TODO: if 20 was not hit/searches are very low, then do not do a spotify filter search, instead append artist and track name as general query
-        public static async Task<SongSearchObject?> GetSpotifyTrack(SongSearchObject song, CancellationToken token = default, ConversionUpdateCallback? callback = null)
+        public async Task<SongSearchObject?> GetSpotifyTrack(SongSearchObject song, CancellationToken token = default, ConversionUpdateCallback? callback = null)
         {
             if (!IsInitialized)
             {
@@ -1148,7 +1143,7 @@ namespace FluentDL.Services
         }
 
         // NOTE: album images are 640, 300, then 64 
-        public static SongSearchObject? ConvertSongSearchObject(FullTrack track)
+        public SongSearchObject? ConvertSongSearchObject(FullTrack track)
         {
             var artistCsv = track.Artists.Select(a => a.Name).Aggregate((a, b) => a + ", " + b);
 
@@ -1174,7 +1169,7 @@ namespace FluentDL.Services
             };
         }
 
-        public static SongSearchObject? ConvertSongSearchObject(SimpleTrack track, FullAlbum album)
+        public SongSearchObject? ConvertSongSearchObject(SimpleTrack track, FullAlbum album)
         {
             var artistCsv = track.Artists.Select(a => a.Name).Aggregate((a, b) => a + ", " + b);
             if (artistCsv.Length == 0 || string.IsNullOrEmpty(track.Name))
@@ -1196,7 +1191,7 @@ namespace FluentDL.Services
             };
         }
 
-        public static AlbumSearchObject? ConvertAlbumSearchObject(FullAlbum album)
+        public AlbumSearchObject? ConvertAlbumSearchObject(FullAlbum album)
         {
             var artistCsv = album.Artists.Select(a => a.Name).Aggregate((a, b) => a + ", " + b);
             if (artistCsv.Length == 0 || string.IsNullOrEmpty(album.Name))
@@ -1224,7 +1219,7 @@ namespace FluentDL.Services
             };
         }
 
-        public static async Task UpdateMetadata(string filePath, string id)
+        public async Task UpdateMetadata(string filePath, string id)
         {
             if (!File.Exists(filePath))
             {

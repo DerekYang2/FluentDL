@@ -112,7 +112,7 @@ public class ConversionTests
     {
         "deezer" => await TestSources.Deezer.GetTrack(id),
         "qobuz" => await TestSources.Qobuz.GetTrackAsync(id),
-        "spotify" => await SpotifyApi.GetTrack(id),
+        "spotify" => await TestSources.Spotify.GetTrack(id),
         _ => await YoutubeApi.GetTrack(id),
     };
 

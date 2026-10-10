@@ -5,28 +5,28 @@ using FluentDL.Models;
 
 namespace FluentDL.Services.Sources;
 
-internal sealed class SpotifySource : ISourceSession, ISearchSource, ILinkSource, IConversionTarget, ICatalogSource, IPreviewSource, IIsrcSource, ITagSource
+internal sealed partial class SpotifySource : ISourceSession, ISearchSource, ILinkSource, IConversionTarget, ICatalogSource, IPreviewSource, IIsrcSource, ITagSource
 {
     private static readonly HttpClient httpClient = new();
 
     public SourceDescriptor Descriptor { get; } = SourceCatalog.Find(SourceIds.Spotify)!;
 
-    public bool IsConnected => SpotifyApi.IsInitialized;
+    public bool IsConnected => IsInitialized;
 
-    public string? StatusText => SpotifyApi.LoginString();
+    public string? StatusText => LoginString();
 
     public async Task<ConnectResult> ConnectAsync()
     {
         var clientId = await SourceServices.Settings.ReadSettingAsync<string>(SettingKeys.SpotifyClientId);
         var clientSecret = await SourceServices.Settings.ReadSettingAsync<string>(SettingKeys.SpotifyClientSecret);
-        return await CallbackResults.Connect(callback => SpotifyApi.Initialize(clientId, clientSecret, callback), () => SpotifyApi.IsInitialized);
+        return await CallbackResults.Connect(callback => Initialize(clientId, clientSecret, callback), () => IsInitialized);
     }
 
     public Task SearchAsync(ICollection<SongSearchObject> results, string query, PageRequest page, bool albumMode, CancellationToken token) =>
-        SpotifyApi.GeneralSearch(results, query, token, page.Offset, page.Limit, albumMode);
+        GeneralSearch(results, query, token, page.Offset, page.Limit, albumMode);
 
     public Task AdvancedSearchAsync(ICollection<SongSearchObject> results, AdvancedQuery query, PageRequest page, CancellationToken token) =>
-        SpotifyApi.AdvancedSearch(results, query.Artist, query.Track, query.Album, token, page.Offset, page.Limit, clearResults: false);
+        AdvancedSearch(results, query.Artist, query.Track, query.Album, token, page.Offset, page.Limit, clearResults: false);
 
     public bool CanHandle(string url) => url.StartsWith("https://open.spotify.com/");
 
@@ -38,14 +38,14 @@ internal sealed class SpotifySource : ISourceSession, ISearchSource, ILinkSource
         }
         // With the prompt on, private playlists open a browser sign-in.
         var userLogin = await SourceServices.Settings.ReadSettingAsync<bool>(SettingKeys.SpotifyPlaylistPrompt);
-        await SpotifyApi.AddTracksFromLink(results, url, token, status, userLogin, request.AlbumMode);
+        await AddTracksFromLink(results, url, token, status, userLogin, request.AlbumMode);
     }
 
     // GetSpotifyTrack reads song.Isrc itself and never used a looked-up ISRC, so the passed one is ignored.
     public Task<MatchResult> FindEquivalentAsync(SongSearchObject song, string? isrc, CancellationToken token, bool isrcOnly = false) =>
-        CallbackResults.Match(callback => SpotifyApi.GetSpotifyTrack(song, token, callback));
+        CallbackResults.Match(callback => GetSpotifyTrack(song, token, callback));
 
-    public Task<string?> GetIsrcAsync(string trackId) => SpotifyApi.GetIsrcFromId(trackId);
+    public Task<string?> GetIsrcAsync(string trackId) => GetIsrcFromId(trackId);
 
     // The album search result already lists its tracks; each one is loaded in full.
     public async Task<List<SongSearchObject>> GetAlbumTracksAsync(AlbumSearchObject album)
@@ -53,7 +53,7 @@ internal sealed class SpotifySource : ISourceSession, ISearchSource, ILinkSource
         List<SongSearchObject> albumTracks = [];
         foreach (var t in album.TrackList ?? [])
         {
-            var songObj = await SpotifyApi.GetTrack(t.Id);
+            var songObj = await GetTrack(t.Id);
             if (songObj != null)
             {
                 albumTracks.Add(songObj);
@@ -75,7 +75,7 @@ internal sealed class SpotifySource : ISourceSession, ISearchSource, ILinkSource
             };
         }
 
-        var track = await SpotifyApi.GetTrack(song.Id);
+        var track = await GetTrack(song.Id);
         var rows = new List<(string, string)> { ("Track", track?.TrackPosition ?? song.TrackPosition) };
         if (track?.Rank != null && long.TryParse(track.Rank, out long plays) && plays > 0)
         {
@@ -103,7 +103,7 @@ internal sealed class SpotifySource : ISourceSession, ISearchSource, ILinkSource
         try
         {
             string htmlStr = await httpClient.GetStringAsync($"https://open.spotify.com/embed/track/{track.Id}");
-            return SpotifyApi.GetSpotifyPreviewUrl(htmlStr);
+            return GetSpotifyPreviewUrl(htmlStr);
         }
         catch (Exception e)
         {
@@ -112,14 +112,14 @@ internal sealed class SpotifySource : ISourceSession, ISearchSource, ILinkSource
         return null;
     }
 
-    public Task<SongSearchObject?> GetTrackAsync(string id) => SpotifyApi.GetTrack(id);
+    public Task<SongSearchObject?> GetTrackAsync(string id) => GetTrack(id);
 
     public async Task LoadAlbumForDownloadAsync(AlbumSearchObject album)
     {
         List<SongSearchObject> newList = [];
         foreach (var t in album.TrackList ?? [])
         {
-            var songObj = await SpotifyApi.GetTrack(t.Id);
+            var songObj = await GetTrack(t.Id);
             if (songObj != null)
             {
                 newList.Add(songObj);
@@ -133,5 +133,5 @@ internal sealed class SpotifySource : ISourceSession, ISearchSource, ILinkSource
             ? album.AdditionalFields["cover_max"] as string
             : null);
 
-    public Task WriteTagsAsync(string filePath, SongSearchObject track) => SpotifyApi.UpdateMetadata(filePath, track.Id);
+    public Task WriteTagsAsync(string filePath, SongSearchObject track) => UpdateMetadata(filePath, track.Id);
 }

@@ -41,9 +41,9 @@ public class SpotifyOfficialTests
             tracks.Add(new
             {
                 f.Key,
-                ById = await Live.Capture(async () => (await SpotifyApi.GetTrack(f.SpotifyId!)).ToShape()),
-                IsrcFromId = await Live.Capture(async () => await SpotifyApi.GetIsrcFromId(f.SpotifyId!)),
-                ByIsrc = await Live.Capture(async () => (await SpotifyApi.GetTrackFromISRC(f.Isrc!)).ToShape()),
+                ById = await Live.Capture(async () => (await TestSources.Spotify.GetTrack(f.SpotifyId!)).ToShape()),
+                IsrcFromId = await Live.Capture(async () => await TestSources.Spotify.GetIsrcFromId(f.SpotifyId!)),
+                ByIsrc = await Live.Capture(async () => (await TestSources.Spotify.GetTrackFromISRC(f.Isrc!)).ToShape()),
             });
         }
 
@@ -52,8 +52,8 @@ public class SpotifyOfficialTests
             Tracks = tracks,
             Album = await Live.Capture(async () =>
             {
-                var album = await SpotifyApi.GetAlbum(Fixtures.SpotifyAlbumId);
-                return album == null ? null : SpotifyApi.ConvertAlbumSearchObject(album).ToShape();
+                var album = await TestSources.Spotify.GetAlbum(Fixtures.SpotifyAlbumId);
+                return album == null ? null : TestSources.Spotify.ConvertAlbumSearchObject(album).ToShape();
             }),
         };
     });

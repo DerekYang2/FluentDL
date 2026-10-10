@@ -146,7 +146,7 @@ public class DownloadTests
     {
         "deezer" => await TestSources.Deezer.GetTrack(fixture.DeezerId!),
         "qobuz" => await TestSources.Qobuz.GetTrackAsync(fixture.QobuzId!),
-        _ => await SpotifyApi.GetTrack(fixture.SpotifyId!),
+        _ => await TestSources.Spotify.GetTrack(fixture.SpotifyId!),
     };
 
     // Error results carry a message instead of a path; only paths inside the folder are rewritten.

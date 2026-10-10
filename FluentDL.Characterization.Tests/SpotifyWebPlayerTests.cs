@@ -38,9 +38,9 @@ public class SpotifyWebPlayerTests
             tracks.Add(new
             {
                 f.Key,
-                ById = await Live.Capture(async () => (await SpotifyApi.GetTrack(f.SpotifyId!)).ToShape()),
-                IsrcFromId = await Live.Capture(async () => await SpotifyApi.GetIsrcFromId(f.SpotifyId!)),
-                ByIsrc = await Live.Capture(async () => (await SpotifyApi.GetTrackFromISRC(f.Isrc!)).ToShape()),
+                ById = await Live.Capture(async () => (await TestSources.Spotify.GetTrack(f.SpotifyId!)).ToShape()),
+                IsrcFromId = await Live.Capture(async () => await TestSources.Spotify.GetIsrcFromId(f.SpotifyId!)),
+                ByIsrc = await Live.Capture(async () => (await TestSources.Spotify.GetTrackFromISRC(f.Isrc!)).ToShape()),
             });
         }
         return tracks;
