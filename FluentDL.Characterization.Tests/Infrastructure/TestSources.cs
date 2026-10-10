@@ -3,6 +3,7 @@ using FluentDL.Core.Sources;
 using FluentDL.Services;
 using FluentDL.Services.CustomSpotify;
 using FluentDL.Services.Sources;
+using FluentDL.Services.Tidal;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging.Abstractions;
 
@@ -27,8 +28,10 @@ internal static class TestSources
     public static readonly QobuzSource Qobuz = new(Settings);
     public static readonly SpotifySource Spotify = new(Settings, SpotifyWebService, SpotifyIsrcService);
     public static readonly YoutubeSource Youtube = new(Settings, AudioConverter);
+    public static readonly TidalApi TidalApi = new(Settings, new HttpClient(), countryCode: "US");
+    public static readonly TidalSource Tidal = new(TidalApi);
 
-    public static readonly SourceRegistry Registry = new([Deezer, Qobuz, Spotify, Youtube]);
+    public static readonly SourceRegistry Registry = new([Deezer, Qobuz, Spotify, Youtube, Tidal]);
 
     /// <summary>The queue's conversion path: fills in the ISRC from the origin source, then asks the target.</summary>
     public static readonly ConversionService Conversions = new(Registry);
@@ -48,6 +51,8 @@ internal static class TestSources
         [SettingKeys.QobuzAppSecret] = Secrets.Get("qobuz_app_secret"),
         [SettingKeys.SpotifyClientId] = Secrets.Get("spotify_client_id"),
         [SettingKeys.SpotifyClientSecret] = Secrets.Get("spotify_client_secret"),
+        [SettingKeys.TidalClientId] = Secrets.Get("tidal_client_id"),
+        [SettingKeys.TidalClientSecret] = Secrets.Get("tidal_client_secret"),
 
         // Download settings, with the values SettingsViewModel.SetMissingDefaults gives a new install.
         [SettingKeys.DeezerQuality] = 2, // FLAC

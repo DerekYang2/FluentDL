@@ -1,0 +1,226 @@
+{
+  "Tracks": {
+    "Items": [
+      {
+        "Source": "tidal",
+        "Id": "20115564",
+        "Title": "Get Lucky (feat. Pharrell Williams and Nile Rodgers)",
+        "Artists": "Daft Punk, Pharrell Williams, Nile Rodgers",
+        "AlbumName": "Random Access Memories",
+        "Isrc": "USQX91300108",
+        "Duration": "370",
+        "ReleaseDate": "2013-05-20",
+        "Explicit": false,
+        "TrackPosition": "1",
+        "ImageLocation": "https://resources.tidal.com/images/b66a5c40/c34d/4507/a0dc/5f98e46fdd20/320x320.jpg",
+        "AdditionalFieldKeys": [
+          "cover_max"
+        ]
+      },
+      {
+        "Source": "tidal",
+        "Id": "19823990",
+        "Title": "Get Lucky (Radio Edit - feat. Pharrell Williams and Nile Rodgers)",
+        "Artists": "Daft Punk, Pharrell Williams, Nile Rodgers",
+        "AlbumName": "Get Lucky (Radio Edit - feat. Pharrell Williams and Nile Rodgers)",
+        "Isrc": "USQX91300809",
+        "Duration": "248",
+        "ReleaseDate": "2013-04-19",
+        "Explicit": false,
+        "TrackPosition": "1",
+        "ImageLocation": "https://resources.tidal.com/images/5b3c232a/c6c1/4f3d/b014/fe7f3a3d86a8/320x320.jpg",
+        "AdditionalFieldKeys": [
+          "cover_max"
+        ]
+      },
+      {
+        "Source": "tidal",
+        "Id": "20968321",
+        "Title": "Get Lucky (Daft Punk Remix)",
+        "Artists": "Daft Punk, Pharrell Williams, Nile Rodgers",
+        "AlbumName": "Get Lucky (feat. Pharrell Williams & Nile Rodgers)",
+        "Isrc": "USQX91301322",
+        "Duration": "633",
+        "ReleaseDate": "2013-07-03",
+        "Explicit": false,
+        "TrackPosition": "1",
+        "ImageLocation": "https://resources.tidal.com/images/14ad1f4f/3e37/4fef/b319/6bfe44afef4c/320x320.jpg",
+        "AdditionalFieldKeys": [
+          "cover_max"
+        ]
+      },
+      {
+        "Source": "tidal",
+        "Id": "77440248",
+        "Title": "Get lucky feat Nile Rodgers Pharrell Williams",
+        "Artists": "Daft Punk",
+        "AlbumName": "Until the morning 2",
+        "Isrc": "FR0Z50017631",
+        "Duration": "369",
+        "ReleaseDate": "2014-08-04",
+        "Explicit": false,
+        "TrackPosition": "1",
+        "ImageLocation": "https://resources.tidal.com/images/e61e55ba/196d/4978/81b6/d898b683b2c7/320x320.jpg",
+        "AdditionalFieldKeys": [
+          "cover_max"
+        ]
+      },
+      {
+        "Source": "tidal",
+        "Id": "373516806",
+        "Title": "Daft Punk - Get Lucky",
+        "Artists": "Various Artists",
+        "AlbumName": "Electronic Dance Music",
+        "Isrc": "KRA251400478",
+        "Duration": "242",
+        "ReleaseDate": "2014-07-17",
+        "Explicit": false,
+        "TrackPosition": "1",
+        "ImageLocation": "https://resources.tidal.com/images/bf2fd1d3/117c/40b6/83ff/b1b7a1fc2ed4/320x320.jpg",
+        "AdditionalFieldKeys": [
+          "cover_max"
+        ]
+      }
+    ],
+    "Error": null
+  },
+  "TracksSecondPage": {
+    "Count": 5,
+    "RepeatsFirstPage": false,
+    "Error": null
+  },
+  "Albums": {
+    "Items": [
+      {
+        "Album": {
+          "Source": "tidal",
+          "Id": "471424981",
+          "Title": "Memories of Holbrooks Bowl",
+          "Artists": "Random Access",
+          "AlbumName": "Memories of Holbrooks Bowl",
+          "Isrc": "199900022929",
+          "Duration": "2608",
+          "ReleaseDate": "2025-11-26",
+          "Explicit": false,
+          "TrackPosition": "1",
+          "ImageLocation": "https://resources.tidal.com/images/ca0d2fa7/d6a0/41e2/849b/5505742fd4e1/320x320.jpg",
+          "AdditionalFieldKeys": [
+            "cover_max"
+          ]
+        },
+        "TracksCount": 13,
+        "TrackList": null
+      },
+      {
+        "Album": {
+          "Source": "tidal",
+          "Id": "20115556",
+          "Title": "Random Access Memories",
+          "Artists": "Daft Punk",
+          "AlbumName": "Random Access Memories",
+          "Isrc": "886443927087",
+          "Duration": "4479",
+          "ReleaseDate": "2013-05-20",
+          "Explicit": false,
+          "TrackPosition": "1",
+          "ImageLocation": "https://resources.tidal.com/images/b66a5c40/c34d/4507/a0dc/5f98e46fdd20/320x320.jpg",
+          "AdditionalFieldKeys": [
+            "cover_max"
+          ]
+        },
+        "TracksCount": 13,
+        "TrackList": null
+      },
+      {
+        "Album": {
+          "Source": "tidal",
+          "Id": "328638757",
+          "Title": "Random Access Memories (Drumless Edition)",
+          "Artists": "Daft Punk",
+          "AlbumName": "Random Access Memories (Drumless Edition)",
+          "Isrc": "196871342049",
+          "Duration": "4477",
+          "ReleaseDate": "2013-05-20",
+          "Explicit": false,
+          "TrackPosition": "1",
+          "ImageLocation": "https://resources.tidal.com/images/114606c8/4ab5/4bef/85d8/0539eb99df27/320x320.jpg",
+          "AdditionalFieldKeys": [
+            "cover_max"
+          ]
+        },
+        "TracksCount": 13,
+        "TrackList": null
+      }
+    ],
+    "Error": null
+  },
+  "AdvancedArtistTrack": {
+    "Items": [
+      {
+        "Source": "tidal",
+        "Id": "20115564",
+        "Title": "Get Lucky (feat. Pharrell Williams and Nile Rodgers)",
+        "Artists": "Daft Punk, Pharrell Williams, Nile Rodgers",
+        "AlbumName": "Random Access Memories",
+        "Isrc": "USQX91300108",
+        "Duration": "370",
+        "ReleaseDate": "2013-05-20",
+        "Explicit": false,
+        "TrackPosition": "1",
+        "ImageLocation": "https://resources.tidal.com/images/b66a5c40/c34d/4507/a0dc/5f98e46fdd20/320x320.jpg",
+        "AdditionalFieldKeys": [
+          "cover_max"
+        ]
+      },
+      {
+        "Source": "tidal",
+        "Id": "19823990",
+        "Title": "Get Lucky (Radio Edit - feat. Pharrell Williams and Nile Rodgers)",
+        "Artists": "Daft Punk, Pharrell Williams, Nile Rodgers",
+        "AlbumName": "Get Lucky (Radio Edit - feat. Pharrell Williams and Nile Rodgers)",
+        "Isrc": "USQX91300809",
+        "Duration": "248",
+        "ReleaseDate": "2013-04-19",
+        "Explicit": false,
+        "TrackPosition": "1",
+        "ImageLocation": "https://resources.tidal.com/images/5b3c232a/c6c1/4f3d/b014/fe7f3a3d86a8/320x320.jpg",
+        "AdditionalFieldKeys": [
+          "cover_max"
+        ]
+      },
+      {
+        "Source": "tidal",
+        "Id": "20968321",
+        "Title": "Get Lucky (Daft Punk Remix)",
+        "Artists": "Daft Punk, Pharrell Williams, Nile Rodgers",
+        "AlbumName": "Get Lucky (feat. Pharrell Williams & Nile Rodgers)",
+        "Isrc": "USQX91301322",
+        "Duration": "633",
+        "ReleaseDate": "2013-07-03",
+        "Explicit": false,
+        "TrackPosition": "1",
+        "ImageLocation": "https://resources.tidal.com/images/14ad1f4f/3e37/4fef/b319/6bfe44afef4c/320x320.jpg",
+        "AdditionalFieldKeys": [
+          "cover_max"
+        ]
+      },
+      {
+        "Source": "tidal",
+        "Id": "77440248",
+        "Title": "Get lucky feat Nile Rodgers Pharrell Williams",
+        "Artists": "Daft Punk",
+        "AlbumName": "Until the morning 2",
+        "Isrc": "FR0Z50017631",
+        "Duration": "369",
+        "ReleaseDate": "2014-08-04",
+        "Explicit": false,
+        "TrackPosition": "1",
+        "ImageLocation": "https://resources.tidal.com/images/e61e55ba/196d/4978/81b6/d898b683b2c7/320x320.jpg",
+        "AdditionalFieldKeys": [
+          "cover_max"
+        ]
+      }
+    ],
+    "Error": null
+  }
+}

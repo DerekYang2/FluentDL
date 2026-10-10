@@ -13,7 +13,7 @@ namespace FluentDL.Characterization.Tests.Infrastructure;
 internal static class LiveSources
 {
     private static readonly SemaphoreSlim Gate = new(1, 1);
-    private static bool deezerTried, qobuzTried, spotifyTried, youtubeTried;
+    private static bool deezerTried, qobuzTried, spotifyTried, youtubeTried, tidalTried;
     private static string? youtubeBlockedReason;
 
     /// <summary>
@@ -61,6 +61,14 @@ internal static class LiveSources
         await RunOnceAsync(() => deezerTried, () => deezerTried = true, () => TestSources.Deezer.ConnectAsync());
 
         if (!TestSources.Deezer.IsInitialized) Assert.Inconclusive("Deezer did not sign in with the ARL from the secrets file.");
+    }
+
+    /// <summary>Signs TIDAL in with the client id and secret from the secrets file (client credentials).</summary>
+    public static async Task EnsureTidalAsync()
+    {
+        await RunOnceAsync(() => tidalTried, () => tidalTried = true, () => TestSources.Tidal.ConnectAsync());
+
+        if (!TestSources.Tidal.IsConnected) Assert.Inconclusive("TIDAL did not sign in with the client ID and secret from the secrets file.");
     }
 
     public static async Task EnsureQobuzAsync()

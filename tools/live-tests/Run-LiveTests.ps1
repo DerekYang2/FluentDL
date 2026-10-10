@@ -40,6 +40,7 @@ $groups = [ordered]@{
     'spotify-web'      = 'FullyQualifiedName~SpotifyWebPlayerTests|FullyQualifiedName~ConvertToSpotify'
     'spotify-official' = 'FullyQualifiedName~SpotifyOfficialTests|FullyQualifiedName=FluentDL.Characterization.Tests.ConversionTests.ConvertWithSpotifyOfficial'
     'downloads'        = 'FullyQualifiedName~.DownloadTests.|FullyQualifiedName~.DownloadSettingsTests.'
+    'tidal'            = 'FullyQualifiedName~.TidalTests.'
     'youtube'          = 'FullyQualifiedName~YoutubeTests|FullyQualifiedName~YoutubeWithoutMusicTests|FullyQualifiedName~ConvertFromYoutube|FullyQualifiedName~ConvertToYoutube|FullyQualifiedName~ConvertWithSpotifyOfficialToYoutube'
 }
 if (-not $IncludeYoutube) { $groups.Remove('youtube') }

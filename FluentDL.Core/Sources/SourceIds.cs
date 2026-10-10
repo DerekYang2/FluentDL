@@ -10,5 +10,6 @@ public static class SourceIds
     public const string Qobuz = "qobuz";
     public const string Spotify = "spotify";
     public const string YouTube = "youtube";
+    public const string Tidal = "tidal";
     public const string Local = "local";
 }
