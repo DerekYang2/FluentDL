@@ -5,8 +5,8 @@ namespace FluentDL.Characterization.Tests;
 
 /// <summary>
 /// Spotify in web player mode, which is what the app uses when no client id and secret are set.
-/// Some methods use the official client even in this mode and fail (bug 9 in the refactor plan);
-/// the baseline records those failures as they are.
+/// The web player has no field search, ISRC search or album loading (bug 9): advanced search runs a normal search,
+/// ISRC lookups return null, and album links report an error.
 /// </summary>
 [TestClass]
 [TestCategory("Live")]

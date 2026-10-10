@@ -203,6 +203,15 @@ namespace FluentDL.Services.Sources
                 itemSource.Clear();
             }
 
+            // The web player has no field search, so it runs a normal search for the fields joined. The official client
+            // used below doesn't exist in that mode (bug 9).
+            if (spotifyWebService != null)
+            {
+                var query = string.Join(" ", new[] { artistName, trackName, albumName }.Where(s => s.Length > 0));
+                await GeneralSearch(itemSource, query, token, offset, limit);
+                return;
+            }
+
             var reqStr = "";
             if (!string.IsNullOrWhiteSpace(artistName))
             {
@@ -396,6 +405,11 @@ namespace FluentDL.Services.Sources
 
         public async Task<SongSearchObject?> GetTrackFromISRC(string isrc, CancellationToken token = default)
         {
+            if (spotifyWebService != null) // The web player has no ISRC search (bug 9)
+            {
+                return null;
+            }
+
             try 
             {
                 // https://api.spotify.com/v1/search?type=track&q=isrc:{isrc}
@@ -592,6 +606,11 @@ namespace FluentDL.Services.Sources
 
         public async Task<FullAlbum?> GetAlbum(string id)
         {
+            if (spotifyWebService != null) // The web player can't load albums (bug 9)
+            {
+                return null;
+            }
+
             try
             {
                 var album = await spotify.Albums.Get(id);
@@ -602,41 +621,6 @@ namespace FluentDL.Services.Sources
                 Debug.WriteLine(e.Message);
                 return null;
             }
-        }
-
-        // TODO: handle invalid playlist ids
-        public async Task<List<SongSearchObject>> GetPlaylist(string playlistId, CancellationToken token)
-        {
-            var pages = await spotify.Playlists.GetItems(playlistId, cancel: token);
-            var allPages = await spotify.PaginateAll(pages, cancellationToken: token);
-
-            var songs = new List<SongSearchObject>();
-            // Debug: loop and print all tracks
-            foreach (PlaylistTrack<IPlayableItem> item in allPages)
-            {
-                if (item.Track is FullTrack track)
-                {
-                    if (token.IsCancellationRequested)
-                    {
-                        break; // Stop if cancelled
-                    }
-
-                    // All FullTrack properties are available
-                    var artistCsv = track.Artists.Select(a => a.Name).Aggregate((a, b) => a + ", " + b);
-                    if (artistCsv.Length == 0 || track.Album.Name.Length == 0)
-                    {
-                        continue;
-                    }
-
-                    var songObj = ConvertSongSearchObject(track);
-                    if (songObj != null)
-                    {
-                        songs.Add(songObj);
-                    }
-                }
-            }
-
-            return songs;
         }
 
         public async Task AddTracksFromLink(ICollection<SongSearchObject> itemSource, string url, CancellationToken token, UrlStatusUpdateCallback? statusUpdate, bool userLogin, bool albumMode = false)
@@ -740,6 +724,12 @@ namespace FluentDL.Services.Sources
 
             if (url.StartsWith("https://open.spotify.com/album/"))
             {
+                if (spotifyWebService != null) // The web player can't load albums (bug 9)
+                {
+                    statusUpdate?.Invoke(StatusLevel.Error, $"<b>Spotify</b>   Album links need a Spotify client ID and secret (Settings). Cannot load <a href='{url}'>{url}</a>");
+                    return;
+                }
+
                 var album = await spotify.Albums.Get(id, token);
                 
                 if (albumMode)

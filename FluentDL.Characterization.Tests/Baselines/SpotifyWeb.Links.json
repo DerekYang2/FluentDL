@@ -63,8 +63,13 @@
     "Url": "https://open.spotify.com/album/4m2880jivSbbyEGAKfITCa",
     "Result": {
       "Items": [],
-      "Error": "throws NullReferenceException"
+      "Error": null
     },
-    "Status": []
+    "Status": [
+      {
+        "Severity": "Error",
+        "Message": "<b>Spotify</b>   Album links need a Spotify client ID and secret (Settings). Cannot load <a href='https://open.spotify.com/album/4m2880jivSbbyEGAKfITCa'>https://open.spotify.com/album/4m2880jivSbbyEGAKfITCa</a>"
+      }
+    ]
   }
 ]
