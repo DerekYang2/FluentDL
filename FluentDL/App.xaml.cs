@@ -129,6 +129,7 @@ public partial class App : Application
                     services.AddSource<SpotifySource>();
                     services.AddSource<YoutubeSource>();
                     services.AddSingleton<SourceRegistry>();
+                    services.AddSingleton<ConversionService>();
                     // Views and ViewModels
                     services.AddTransient<SettingsViewModel>();
                     services.AddTransient<SettingsPage>();

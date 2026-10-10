@@ -120,14 +120,7 @@ public class ConversionTests
     // MatchResult: a match reports the found track, NotFound reports the original song, NotReported reports nothing.
     private static async Task<SongSearchObject?> ConvertAsync(string target, SongSearchObject song, ConversionUpdateCallback callback)
     {
-        IConversionTarget source = target switch
-        {
-            "deezer" => TestSources.Deezer,
-            "qobuz" => TestSources.Qobuz,
-            "spotify" => TestSources.Spotify,
-            _ => TestSources.Youtube,
-        };
-        var result = await source.FindEquivalentAsync(song, CancellationToken.None);
+        var result = await TestSources.Conversions.FindEquivalentAsync(song, target, CancellationToken.None);
         switch (result.Kind)
         {
             case MatchKind.Exact:

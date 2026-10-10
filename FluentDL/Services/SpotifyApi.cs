@@ -1235,11 +1235,14 @@ namespace FluentDL.Services
             // 0 - mp3, 1 - flac
             var settingIdx = await SourceServices.Settings.ReadSettingAsync<int?>(SettingKeys.SpotifyQuality);
 
+            // Web player results carry no ISRC, so look it up before each match, as the matchers used to.
+            async Task<string?> Isrc() => string.IsNullOrWhiteSpace(song.Isrc) ? await GetIsrcFromId(song.Id) : song.Isrc;
+
             // Try Deezer first
             SongSearchObject? deezerEquivalent = null;
             try
             {
-                deezerEquivalent = await DeezerApi.GetDeezerTrack(song, onlyISRC: strict); 
+                deezerEquivalent = await DeezerApi.GetDeezerTrack(song, await Isrc(), onlyISRC: strict); 
                 if (deezerEquivalent != null) // Found on Deezer
                 {
                     var bitrateEnum = settingIdx switch
@@ -1261,7 +1264,7 @@ namespace FluentDL.Services
             // Not found on Deezer, try Qobuz
             try
             {
-                var qobuzEquivalent = await QobuzApi.GetQobuzTrack(song, onlyISRC: strict);
+                var qobuzEquivalent = await QobuzApi.GetQobuzTrack(song, await Isrc(), onlyISRC: strict);
                 if (qobuzEquivalent != null) // Found on Qobuz
                 {
                     var resultPath = await QobuzApi.DownloadTrack(filePath, qobuzEquivalent, progress, settingIdx == 0 ? "5" : " 6"); // mp3 or 16/44.1 flac

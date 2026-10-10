@@ -21,7 +21,8 @@ internal sealed class YoutubeSource : ISearchSource, ILinkSource, IConversionTar
     public Task AddFromLinkAsync(ICollection<SongSearchObject> results, string url, LinkRequest request, UrlStatusUpdateCallback? status, CancellationToken token) =>
         request.IsFirstPage ? YoutubeApi.AddTracksFromLink(results, url, token, status, request.AlbumMode) : Task.CompletedTask;
 
-    public Task<MatchResult> FindEquivalentAsync(SongSearchObject song, CancellationToken token) =>
+    // YouTube matches by title and artist only, so the ISRC is not used.
+    public Task<MatchResult> FindEquivalentAsync(SongSearchObject song, string? isrc, CancellationToken token) =>
         CallbackResults.Match(callback => YoutubeApi.GetYoutubeTrack(song, token, callback));
 
     // YouTube album results already hold full tracks.

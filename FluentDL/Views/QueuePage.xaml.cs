@@ -50,7 +50,7 @@ public sealed partial class QueuePage : Page
     private DispatcherQueue dispatcherQueue;
     private DispatcherTimer dispatcherTimer;
     private CancellationTokenSource cancellationTokenSource;
-    private readonly SourceRegistry sources = App.GetService<SourceRegistry>();
+    private readonly ConversionService conversions = App.GetService<ConversionService>();
 
     // Conversion variables
     private ConcurrentDictionary<SongSearchObject, int> successSource, warningSource, errorSource;
@@ -1100,8 +1100,7 @@ public sealed partial class QueuePage : Page
                         }
                         else
                         {
-                            var target = sources.TryGet<IConversionTarget>(outputSource, out var found) ? found : throw new Exception("Unspecified output source"); // Should never happen
-                            var match = await target.FindEquivalentAsync(song, token);
+                            var match = await conversions.FindEquivalentAsync(song, outputSource, token);
                             switch (match.Kind)
                             {
                                 case MatchKind.Exact:

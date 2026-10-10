@@ -32,8 +32,8 @@ internal sealed class DeezerSource : ISourceSession, ISearchSource, ILinkSource,
     public Task AddFromLinkAsync(ICollection<SongSearchObject> results, string url, LinkRequest request, UrlStatusUpdateCallback? status, CancellationToken token) =>
         request.IsFirstPage ? DeezerApi.AddTracksFromLink(results, url, token, status, request.AlbumMode) : Task.CompletedTask;
 
-    public Task<MatchResult> FindEquivalentAsync(SongSearchObject song, CancellationToken token) =>
-        CallbackResults.Match(callback => DeezerApi.GetDeezerTrack(song, token, callback));
+    public Task<MatchResult> FindEquivalentAsync(SongSearchObject song, string? isrc, CancellationToken token) =>
+        CallbackResults.Match(callback => DeezerApi.GetDeezerTrack(song, isrc, token, callback));
 
     // Search results carry only part of each track, so every track is loaded again.
     public async Task<List<SongSearchObject>> GetAlbumTracksAsync(AlbumSearchObject album)

@@ -1,5 +1,6 @@
 using FluentDL.Core.Contracts.Services;
 using FluentDL.Core.Sources;
+using FluentDL.Services;
 using FluentDL.Services.Sources;
 
 namespace FluentDL.Characterization.Tests.Infrastructure;
@@ -14,6 +15,9 @@ internal static class TestSources
     public static readonly QobuzSource Qobuz = new();
     public static readonly SpotifySource Spotify = new();
     public static readonly YoutubeSource Youtube = new();
+
+    /// <summary>The queue's conversion path: fills in the ISRC from the origin source, then asks the target.</summary>
+    public static readonly ConversionService Conversions = new(new SourceRegistry([Deezer, Qobuz, Spotify, Youtube]));
 
     static TestSources()
     {

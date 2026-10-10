@@ -43,8 +43,8 @@ internal sealed class QobuzSource : ISourceSession, ISearchSource, ILinkSource, 
         return request.IsFirstPage ? QobuzApi.AddTracksFromLink(results, url, token, status, request.AlbumMode) : Task.CompletedTask;
     }
 
-    public Task<MatchResult> FindEquivalentAsync(SongSearchObject song, CancellationToken token) =>
-        CallbackResults.Match(callback => QobuzApi.GetQobuzTrack(song, token, callback));
+    public Task<MatchResult> FindEquivalentAsync(SongSearchObject song, string? isrc, CancellationToken token) =>
+        CallbackResults.Match(callback => QobuzApi.GetQobuzTrack(song, isrc, token, callback));
 
     public async Task<List<SongSearchObject>> GetAlbumTracksAsync(AlbumSearchObject album)
     {

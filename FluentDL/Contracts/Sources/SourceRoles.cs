@@ -46,7 +46,14 @@ public interface ILinkSource : ISource
 /// <summary>Finding a track on this source that matches a track from another source.</summary>
 public interface IConversionTarget : ISource
 {
-    Task<MatchResult> FindEquivalentAsync(SongSearchObject song, CancellationToken token);
+    /// <param name="isrc">The song's ISRC, looked up by ConversionService when the song has none.</param>
+    Task<MatchResult> FindEquivalentAsync(SongSearchObject song, string? isrc, CancellationToken token);
+}
+
+/// <summary>Looking up the ISRC of this source's own track, for songs that don't carry one (Spotify web player results).</summary>
+public interface IIsrcSource : ISource
+{
+    Task<string?> GetIsrcAsync(string trackId);
 }
 
 /// <summary>Looking up full items by id.</summary>

@@ -795,16 +795,11 @@ internal partial class QobuzApi
         return ConvertSongSearchObject(track);
     }
 
-    public static async Task<SongSearchObject?> GetQobuzTrack(SongSearchObject songObj, CancellationToken token = default, ConversionUpdateCallback? callback = null, bool onlyISRC = false)
+    /// <param name="isrc">The ISRC to match by first. ConversionService looks it up for songs that don't carry one.</param>
+    public static async Task<SongSearchObject?> GetQobuzTrack(SongSearchObject songObj, string? isrc, CancellationToken token = default, ConversionUpdateCallback? callback = null, bool onlyISRC = false)
     {
         if (!IsInitialized) return null;
 
-        string? isrc = songObj.Isrc;
-        // Spotify specific
-        if (songObj.Source == SourceIds.Spotify && string.IsNullOrWhiteSpace(isrc))
-        {
-            isrc = await SpotifyApi.GetIsrcFromId(songObj.Id);
-        }
         string query = songObj.Artists.Split(", ")[0] + " " + songObj.Title;
 
         // First attempt exact isrc search

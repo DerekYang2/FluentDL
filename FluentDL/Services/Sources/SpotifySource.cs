@@ -4,7 +4,7 @@ using FluentDL.Models;
 
 namespace FluentDL.Services.Sources;
 
-internal sealed class SpotifySource : ISourceSession, ISearchSource, ILinkSource, IConversionTarget, ICatalogSource, IPreviewSource
+internal sealed class SpotifySource : ISourceSession, ISearchSource, ILinkSource, IConversionTarget, ICatalogSource, IPreviewSource, IIsrcSource
 {
     private static readonly HttpClient httpClient = new();
 
@@ -40,8 +40,11 @@ internal sealed class SpotifySource : ISourceSession, ISearchSource, ILinkSource
         await SpotifyApi.AddTracksFromLink(results, url, token, status, userLogin, request.AlbumMode);
     }
 
-    public Task<MatchResult> FindEquivalentAsync(SongSearchObject song, CancellationToken token) =>
+    // GetSpotifyTrack reads song.Isrc itself and never used a looked-up ISRC, so the passed one is ignored.
+    public Task<MatchResult> FindEquivalentAsync(SongSearchObject song, string? isrc, CancellationToken token) =>
         CallbackResults.Match(callback => SpotifyApi.GetSpotifyTrack(song, token, callback));
+
+    public Task<string?> GetIsrcAsync(string trackId) => SpotifyApi.GetIsrcFromId(trackId);
 
     // The album search result already lists its tracks; each one is loaded in full.
     public async Task<List<SongSearchObject>> GetAlbumTracksAsync(AlbumSearchObject album)
