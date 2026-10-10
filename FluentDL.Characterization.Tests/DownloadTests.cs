@@ -7,7 +7,7 @@ using FluentDL.Services;
 namespace FluentDL.Characterization.Tests;
 
 /// <summary>
-/// The download pipeline (ApiHelper.DownloadObject): one fixture per source, downloaded into a fresh folder with the
+/// The download pipeline (DownloadService.DownloadObject and DownloadAlbum): one fixture per source, downloaded into a fresh folder with the
 /// settings a new install has. Pins the reported result, the files written, and the tags in the audio file.
 ///
 /// Free accounts shape these: Deezer falls back to a 128 kbps MP3, and Qobuz serves a 30-second MP3 sample. FFmpeg
@@ -45,7 +45,7 @@ public class DownloadTests
                     reports.Add(new { Level = level.ToString(), Song = reported.Id, Location = Relative(directory, location) });
 
                 var result = await Live.Capture(async () =>
-                    Relative(directory, await ApiHelper.DownloadObject(song, directory, new Progress<ProgressData>(_ => { }), Report)));
+                    Relative(directory, await TestSources.Downloads.DownloadObject(song, directory, new Progress<ProgressData>(_ => { }), Report)));
 
                 return new
                 {
@@ -96,7 +96,7 @@ public class DownloadTests
                 }
 
                 var result = await Live.Capture(async () =>
-                    (await ApiHelper.DownloadAlbum(album, directory, new Progress<ProgressData>(_ => { }), Report))
+                    (await TestSources.Downloads.DownloadAlbum(album, directory, new Progress<ProgressData>(_ => { }), Report))
                         .Select(p => Relative(directory, p)).OrderBy(p => p).ToArray());
 
                 // The cover is saved by a task that DownloadAlbum doesn't wait for.

@@ -117,6 +117,7 @@ public sealed partial class Search : Page
     private SourceDescriptor SelectedSearchSource => (SourceDescriptor)SourceRadioButtons.SelectedItem;
 
     private readonly SourceRegistry sources = App.GetService<SourceRegistry>();
+    private readonly DownloadService downloads = App.GetService<DownloadService>();
 
     // An unknown id searches Deezer, as the old switch statements did.
     private ISearchSource SearchSourceFor(string id) =>
@@ -947,7 +948,7 @@ public sealed partial class Search : Page
             List<string>? paths = [];
             try
             {
-                paths = await ApiHelper.DownloadAlbum(albumObj, directory, progress);
+                paths = await downloads.DownloadAlbum(albumObj, directory, progress);
             } catch (Exception ex)
             {
                 ShowInfoBar(InfoBarSeverity.Error, ex.Message, seconds: 10);
@@ -1005,7 +1006,7 @@ public sealed partial class Search : Page
             var progress = new Progress<ProgressData>(downloadHelper.UpdateProgressLoop);
             downloadHelper.StartLoop();
 
-            string path = await ApiHelper.DownloadObject(songObj, directory, progress, (severity, song, location) =>
+            string path = await downloads.DownloadObject(songObj, directory, progress, (severity, song, location) =>
             {
                 dispatcher.TryEnqueue(() =>
                 {

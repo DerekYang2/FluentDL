@@ -51,6 +51,7 @@ public sealed partial class QueuePage : Page
     private DispatcherTimer dispatcherTimer;
     private CancellationTokenSource cancellationTokenSource;
     private readonly ConversionService conversions = App.GetService<ConversionService>();
+    private readonly DownloadService downloads = App.GetService<DownloadService>();
 
     // Conversion variables
     private ConcurrentDictionary<SongSearchObject, int> successSource, warningSource, errorSource;
@@ -1095,7 +1096,7 @@ public sealed partial class QueuePage : Page
                         string? fileLocation = null;
                         if (outputSource == SourceIds.Local) // Conversion to local, download the track
                         {
-                            fileLocation = await ApiHelper.DownloadObject(song, directory, progress, conversionUpdateCallback);
+                            fileLocation = await downloads.DownloadObject(song, directory, progress, conversionUpdateCallback);
                             newSongObj = song;
                         }
                         else

@@ -16,8 +16,13 @@ internal static class TestSources
     public static readonly SpotifySource Spotify = new();
     public static readonly YoutubeSource Youtube = new();
 
+    public static readonly SourceRegistry Registry = new([Deezer, Qobuz, Spotify, Youtube]);
+
     /// <summary>The queue's conversion path: fills in the ISRC from the origin source, then asks the target.</summary>
-    public static readonly ConversionService Conversions = new(new SourceRegistry([Deezer, Qobuz, Spotify, Youtube]));
+    public static readonly ConversionService Conversions = new(Registry);
+
+    /// <summary>The download pipeline the Search and Queue pages use.</summary>
+    public static readonly DownloadService Downloads = new(Registry);
 
     static TestSources()
     {

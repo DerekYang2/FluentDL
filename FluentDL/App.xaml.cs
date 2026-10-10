@@ -130,6 +130,7 @@ public partial class App : Application
                     services.AddSource<YoutubeSource>();
                     services.AddSingleton<SourceRegistry>();
                     services.AddSingleton<ConversionService>();
+                    services.AddSingleton<DownloadService>();
                     // Views and ViewModels
                     services.AddTransient<SettingsViewModel>();
                     services.AddTransient<SettingsPage>();
