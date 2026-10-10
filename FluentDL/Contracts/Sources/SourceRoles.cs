@@ -47,7 +47,36 @@ public interface ILinkSource : ISource
 public interface IConversionTarget : ISource
 {
     /// <param name="isrc">The song's ISRC, looked up by ConversionService when the song has none.</param>
-    Task<MatchResult> FindEquivalentAsync(SongSearchObject song, string? isrc, CancellationToken token);
+    /// <param name="isrcOnly">Match by ISRC only. Deezer and Qobuz support it; the others ignore it.</param>
+    Task<MatchResult> FindEquivalentAsync(SongSearchObject song, string? isrc, CancellationToken token, bool isrcOnly = false);
+}
+
+/// <summary>Downloading a track's audio from this source.</summary>
+public interface IDownloadSource : ISource
+{
+    /// <summary>Downloads to <paramref name="pathWithoutExtension"/> plus the extension of the format served, and returns the full path.</summary>
+    Task<string> DownloadAsync(SongSearchObject track, string pathWithoutExtension, DownloadRequest request, IProgress<ProgressData>? progress);
+}
+
+/// <param name="Quality">Which quality to ask the source for.</param>
+/// <param name="Allow128Fallback">Deezer: when the requested quality fails, retry at 128 kbps (and convert to FLAC if FLAC
+/// was asked and FFmpeg is set up). With <see cref="DownloadQuality.Mp3"/>, Deezer then asks for 128 kbps directly, as
+/// the old Spotify equivalent chain did.</param>
+public sealed record DownloadRequest(DownloadQuality Quality = DownloadQuality.Setting, bool Allow128Fallback = false);
+
+public enum DownloadQuality
+{
+    /// <summary>The source's own quality setting.</summary>
+    Setting,
+
+    /// <summary>MP3 (Deezer 320 kbps, Qobuz format 5).</summary>
+    Mp3,
+
+    /// <summary>Lossless (Deezer FLAC, Qobuz 16-bit FLAC).</summary>
+    Lossless,
+
+    /// <summary>Whatever the source serves, with no conversion (YouTube's opus stream).</summary>
+    AsServed,
 }
 
 /// <summary>Looking up the ISRC of this source's own track, for songs that don't carry one (Spotify web player results).</summary>

@@ -5,7 +5,7 @@ using FluentDL.Models;
 
 namespace FluentDL.Services.Sources;
 
-internal sealed class DeezerSource : ISourceSession, ISearchSource, ILinkSource, IConversionTarget, ICatalogSource, IPreviewSource
+internal sealed class DeezerSource : ISourceSession, ISearchSource, ILinkSource, IConversionTarget, ICatalogSource, IPreviewSource, IDownloadSource
 {
     public SourceDescriptor Descriptor { get; } = SourceCatalog.Find(SourceIds.Deezer)!;
 
@@ -32,8 +32,19 @@ internal sealed class DeezerSource : ISourceSession, ISearchSource, ILinkSource,
     public Task AddFromLinkAsync(ICollection<SongSearchObject> results, string url, LinkRequest request, UrlStatusUpdateCallback? status, CancellationToken token) =>
         request.IsFirstPage ? DeezerApi.AddTracksFromLink(results, url, token, status, request.AlbumMode) : Task.CompletedTask;
 
-    public Task<MatchResult> FindEquivalentAsync(SongSearchObject song, string? isrc, CancellationToken token) =>
-        CallbackResults.Match(callback => DeezerApi.GetDeezerTrack(song, isrc, token, callback));
+    public Task<MatchResult> FindEquivalentAsync(SongSearchObject song, string? isrc, CancellationToken token, bool isrcOnly = false) =>
+        CallbackResults.Match(callback => DeezerApi.GetDeezerTrack(song, isrc, token, callback, isrcOnly));
+
+    public Task<string> DownloadAsync(SongSearchObject track, string pathWithoutExtension, DownloadRequest request, IProgress<ProgressData>? progress)
+    {
+        DeezNET.Data.Bitrate? bitrate = request.Quality switch
+        {
+            DownloadQuality.Mp3 => request.Allow128Fallback ? DeezNET.Data.Bitrate.MP3_128 : DeezNET.Data.Bitrate.MP3_320,
+            DownloadQuality.Lossless => DeezNET.Data.Bitrate.FLAC,
+            _ => null, // the deezer_quality setting
+        };
+        return DeezerApi.DownloadTrack(pathWithoutExtension, track, bitrate, request.Allow128Fallback, progress);
+    }
 
     // Search results carry only part of each track, so every track is loaded again.
     public async Task<List<SongSearchObject>> GetAlbumTracksAsync(AlbumSearchObject album)

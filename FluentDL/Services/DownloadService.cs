@@ -23,7 +23,7 @@ namespace FluentDL.Services;
 /// Downloads tracks and albums: naming, the per-source download, tags, lyrics, ReplayGain and the album cover. Moved
 /// unchanged from ApiHelper; Phase 6 replaces its calls into the source classes with role interfaces.
 /// </summary>
-public sealed class DownloadService(SourceRegistry sources)
+public sealed class DownloadService(SourceRegistry sources, EquivalentDownloader equivalents)
 {
     private static readonly HttpClient client = new HttpClient();
 
@@ -151,7 +151,7 @@ public sealed class DownloadService(SourceRegistry sources)
         }
     }
 
-    private static async Task<string> DownloadTrackInternal(SongSearchObject song, string directory, IProgress<ProgressData> progress, ConversionUpdateCallback? callback = default)
+    private async Task<string> DownloadTrackInternal(SongSearchObject song, string directory, IProgress<ProgressData> progress, ConversionUpdateCallback? callback = default)
     {
         using var operation = LogContext.PushProperty("OperationId", Guid.NewGuid().ToString("N"));
         var timer = Stopwatch.StartNew();
@@ -177,7 +177,7 @@ public sealed class DownloadService(SourceRegistry sources)
         }
     }
 
-    private static async Task<string> DownloadTrackCore(SongSearchObject song, string directory, IProgress<ProgressData> progress, ConversionUpdateCallback? callback)
+    private async Task<string> DownloadTrackCore(SongSearchObject song, string directory, IProgress<ProgressData> progress, ConversionUpdateCallback? callback)
     {
         // Spotify case (web player songs do not have full metadata)
         if (song.Source == SourceIds.Spotify && (string.IsNullOrWhiteSpace(song.ReleaseDate) || string.IsNullOrWhiteSpace(song.TrackPosition)))
@@ -354,7 +354,7 @@ public sealed class DownloadService(SourceRegistry sources)
         {
             try
             {
-                var resultPath = await SpotifyApi.DownloadEquivalentTrack(locationNoExt, song, progress, false, callback);
+                var resultPath = await equivalents.DownloadAsync(locationNoExt, song, progress, false, callback);
 
                 if (resultPath != null)
                 {

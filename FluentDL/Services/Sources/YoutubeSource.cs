@@ -5,7 +5,7 @@ using FluentDL.Models;
 namespace FluentDL.Services.Sources;
 
 /// <summary>YouTube needs no sign-in, so it has no session.</summary>
-internal sealed class YoutubeSource : ISearchSource, ILinkSource, IConversionTarget, ICatalogSource, IPreviewSource
+internal sealed class YoutubeSource : ISearchSource, ILinkSource, IConversionTarget, ICatalogSource, IPreviewSource, IDownloadSource
 {
     public SourceDescriptor Descriptor { get; } = SourceCatalog.Find(SourceIds.YouTube)!;
 
@@ -22,8 +22,20 @@ internal sealed class YoutubeSource : ISearchSource, ILinkSource, IConversionTar
         request.IsFirstPage ? YoutubeApi.AddTracksFromLink(results, url, token, status, request.AlbumMode) : Task.CompletedTask;
 
     // YouTube matches by title and artist only, so the ISRC is not used.
-    public Task<MatchResult> FindEquivalentAsync(SongSearchObject song, string? isrc, CancellationToken token) =>
+    public Task<MatchResult> FindEquivalentAsync(SongSearchObject song, string? isrc, CancellationToken token, bool isrcOnly = false) =>
         CallbackResults.Match(callback => YoutubeApi.GetYoutubeTrack(song, token, callback));
+
+    // Only the raw opus stream for now; DownloadService still holds YouTube's quality, yt-dlp and FFmpeg branching.
+    public async Task<string> DownloadAsync(SongSearchObject track, string pathWithoutExtension, DownloadRequest request, IProgress<ProgressData>? progress)
+    {
+        if (request.Quality != DownloadQuality.AsServed)
+        {
+            throw new NotSupportedException("YouTube downloads at a chosen quality still go through DownloadService.");
+        }
+        var opusPath = pathWithoutExtension + ".opus";
+        await YoutubeApi.DownloadAudio(opusPath, track.Id, progress!);
+        return opusPath;
+    }
 
     // YouTube album results already hold full tracks.
     public Task<List<SongSearchObject>> GetAlbumTracksAsync(AlbumSearchObject album) => Task.FromResult(album.TrackList ?? []);

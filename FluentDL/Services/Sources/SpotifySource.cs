@@ -41,7 +41,7 @@ internal sealed class SpotifySource : ISourceSession, ISearchSource, ILinkSource
     }
 
     // GetSpotifyTrack reads song.Isrc itself and never used a looked-up ISRC, so the passed one is ignored.
-    public Task<MatchResult> FindEquivalentAsync(SongSearchObject song, string? isrc, CancellationToken token) =>
+    public Task<MatchResult> FindEquivalentAsync(SongSearchObject song, string? isrc, CancellationToken token, bool isrcOnly = false) =>
         CallbackResults.Match(callback => SpotifyApi.GetSpotifyTrack(song, token, callback));
 
     public Task<string?> GetIsrcAsync(string trackId) => SpotifyApi.GetIsrcFromId(trackId);

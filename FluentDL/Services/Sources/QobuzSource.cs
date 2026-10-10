@@ -4,7 +4,7 @@ using FluentDL.Models;
 
 namespace FluentDL.Services.Sources;
 
-internal sealed class QobuzSource : ISourceSession, ISearchSource, ILinkSource, IConversionTarget, ICatalogSource, IPreviewSource
+internal sealed class QobuzSource : ISourceSession, ISearchSource, ILinkSource, IConversionTarget, ICatalogSource, IPreviewSource, IDownloadSource
 {
     public SourceDescriptor Descriptor { get; } = SourceCatalog.Find(SourceIds.Qobuz)!;
 
@@ -43,8 +43,19 @@ internal sealed class QobuzSource : ISourceSession, ISearchSource, ILinkSource, 
         return request.IsFirstPage ? QobuzApi.AddTracksFromLink(results, url, token, status, request.AlbumMode) : Task.CompletedTask;
     }
 
-    public Task<MatchResult> FindEquivalentAsync(SongSearchObject song, string? isrc, CancellationToken token) =>
-        CallbackResults.Match(callback => QobuzApi.GetQobuzTrack(song, isrc, token, callback));
+    public Task<MatchResult> FindEquivalentAsync(SongSearchObject song, string? isrc, CancellationToken token, bool isrcOnly = false) =>
+        CallbackResults.Match(callback => QobuzApi.GetQobuzTrack(song, isrc, token, callback, isrcOnly));
+
+    public Task<string> DownloadAsync(SongSearchObject track, string pathWithoutExtension, DownloadRequest request, IProgress<ProgressData>? progress)
+    {
+        var format = request.Quality switch
+        {
+            DownloadQuality.Mp3 => "5",
+            DownloadQuality.Lossless => " 6", // bug 2: the leading space is what the old Spotify equivalent chain sent
+            _ => null, // the qobuz_quality setting
+        };
+        return QobuzApi.DownloadTrack(pathWithoutExtension, track, progress!, format);
+    }
 
     public async Task<List<SongSearchObject>> GetAlbumTracksAsync(AlbumSearchObject album)
     {
