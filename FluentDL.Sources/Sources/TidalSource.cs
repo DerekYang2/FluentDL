@@ -1,4 +1,6 @@
+using System.Net;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using System.Xml;
 using FluentDL.Contracts.Sources;
 using FluentDL.Core.Matching;
@@ -13,10 +15,16 @@ namespace FluentDL.Services.Sources;
 /// TIDAL through its official API. It only reads the catalog: search, lookups and links, with audio from other
 /// sources (see ADR-003). Signs in with a client id and secret for now; a TIDAL account login (PKCE) comes later.
 /// </summary>
-internal sealed class TidalSource : ISourceSession, ISearchSource
+internal sealed class TidalSource : ISourceSession, ISearchSource, ILinkSource, ICatalogSource
 {
     private const string TrackIncludes = "tracks,tracks.artists,tracks.albums.coverArt";
     private const string AlbumIncludes = "albums,albums.artists,albums.coverArt";
+    private const string TrackDetailIncludes = "artists,albums,albums.coverArt";
+
+    // tidal.com/track/1, tidal.com/browse/track/1, listen.tidal.com/track/1 (which redirects to tidal.com), for
+    // tracks, albums and playlists (whose ids are UUIDs).
+    private static readonly Regex LinkPattern = new(@"^https?://(?:www\.|listen\.)?tidal\.com/(?:browse/)?(track|album|playlist)/([A-Za-z0-9-]+)",
+        RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
     private readonly TidalApi api;
     private readonly SemaphoreSlim searchLock = new(1, 1);
@@ -79,6 +87,203 @@ internal sealed class TidalSource : ISourceSession, ISearchSource
                 results.Add(item);
             }
         }
+    }
+
+    public bool CanHandle(string url) => LinkPattern.IsMatch(url.Trim());
+
+    // Links load everything on the first page.
+    public async Task AddFromLinkAsync(ICollection<SongSearchObject> results, string url, LinkRequest request, UrlStatusUpdateCallback? status, CancellationToken token)
+    {
+        var match = LinkPattern.Match(url.Trim());
+        if (!request.IsFirstPage || !match.Success)
+        {
+            return;
+        }
+        var (kind, id) = (match.Groups[1].Value.ToLowerInvariant(), match.Groups[2].Value);
+
+        try
+        {
+            switch (kind)
+            {
+                case "track":
+                    if (await GetTrackAsync(id, token) is { } track)
+                    {
+                        results.Add(track);
+                        status?.Invoke(StatusLevel.Success, $"<b>TIDAL</b>   Loaded track <a href='{url}'>{track.Title}</a>");
+                    }
+                    else
+                    {
+                        status?.Invoke(StatusLevel.Error, $"<b>TIDAL</b>   No track found at <a href='{url}'>{url}</a>");
+                    }
+                    break;
+
+                case "album":
+                    if (await GetAlbumAsync(id, token) is not { } album)
+                    {
+                        status?.Invoke(StatusLevel.Error, $"<b>TIDAL</b>   No album found at <a href='{url}'>{url}</a>");
+                    }
+                    else if (request.AlbumMode)
+                    {
+                        results.Add(album);
+                        status?.Invoke(StatusLevel.Success, $"<b>TIDAL</b>   Loaded album <a href='{url}'>{album.Title}</a>");
+                    }
+                    else
+                    {
+                        status?.Invoke(StatusLevel.Informational, $"<b>TIDAL</b>   Loading album <a href='{url}'>{album.Title}</a>", -1);
+                        foreach (var albumTrack in await GetAlbumTracksAsync(album, token))
+                        {
+                            results.Add(albumTrack);
+                        }
+                        status?.Invoke(StatusLevel.Success, $"<b>TIDAL</b>   Loaded album <a href='{url}'>{album.Title}</a>");
+                    }
+                    break;
+
+                case "playlist":
+                    status?.Invoke(StatusLevel.Informational, $"<b>TIDAL</b>   Loading playlist <a href='{url}'>{url}</a>", -1);
+                    var (name, tracks) = await GetPlaylistAsync(id, token);
+                    foreach (var playlistTrack in tracks)
+                    {
+                        results.Add(playlistTrack);
+                    }
+                    status?.Invoke(StatusLevel.Success, $"<b>TIDAL</b>   Loaded playlist <a href='{url}'>{name}</a>");
+                    break;
+            }
+        }
+        catch (Exception e) when (e is not OperationCanceledException)
+        {
+            status?.Invoke(StatusLevel.Error, $"<b>TIDAL</b>   Error loading <a href='{url}'>{url}</a>: {e.Message}");
+        }
+    }
+
+    public Task<SongSearchObject?> GetTrackAsync(string id) => GetTrackAsync(id, CancellationToken.None);
+
+    /// <summary>A track with its artists, album and cover, or null when TIDAL has no track with this id here.</summary>
+    public async Task<SongSearchObject?> GetTrackAsync(string id, CancellationToken token)
+    {
+        var document = await GetOrNullAsync($"tracks/{Uri.EscapeDataString(id)}?include={TrackDetailIncludes}", token);
+        return document?.Data.FirstOrDefault() is { ValueKind: JsonValueKind.Object } track ? ConvertTrack(document, track) : null;
+    }
+
+    /// <summary>An album with its artists and cover, or null when TIDAL has no album with this id here.</summary>
+    public async Task<AlbumSearchObject?> GetAlbumAsync(string id, CancellationToken token)
+    {
+        var document = await GetOrNullAsync($"albums/{Uri.EscapeDataString(id)}?include=artists,coverArt", token);
+        return document?.Data.FirstOrDefault() is { ValueKind: JsonValueKind.Object } album ? ConvertAlbum(document, album) : null;
+    }
+
+    public Task<List<SongSearchObject>> GetAlbumTracksAsync(AlbumSearchObject album) => GetAlbumTracksAsync(album, CancellationToken.None);
+
+    /// <summary>
+    /// Every track of an album, in order, with its track number. The album's tracks come 20 a page; each takes the
+    /// album's name, date and cover from the album itself.
+    /// </summary>
+    public async Task<List<SongSearchObject>> GetAlbumTracksAsync(AlbumSearchObject album, CancellationToken token)
+    {
+        var document = await GetOrNullAsync($"albums/{Uri.EscapeDataString(album.Id)}?include=items,items.artists,artists,coverArt", token);
+        if (document?.Data.FirstOrDefault() is not { ValueKind: JsonValueKind.Object } albumResource)
+        {
+            return [];
+        }
+        var albumObject = ConvertAlbum(document, albumResource);
+        var tracks = new List<SongSearchObject>();
+        foreach (var (itemDocument, reference, resource) in await AllRelatedAsync(document, albumResource, "items", "items,items.artists", token))
+        {
+            if (TypeOf(resource) != "tracks")
+            {
+                continue;
+            }
+            var track = ConvertTrack(itemDocument, resource);
+            track.AlbumName = albumObject.Title;
+            track.ReleaseDate = albumObject.ReleaseDate;
+            track.ImageLocation = albumObject.ImageLocation;
+            track.AdditionalFields = albumObject.AdditionalFields;
+            if (reference.TryGetProperty("meta", out var meta) && meta.TryGetProperty("trackNumber", out var number))
+            {
+                track.TrackPosition = number.GetRawText();
+            }
+            tracks.Add(track);
+        }
+        return tracks;
+    }
+
+    /// <summary>A public playlist's name and tracks, in order. Videos in the playlist are left out.</summary>
+    public async Task<(string Name, List<SongSearchObject> Tracks)> GetPlaylistAsync(string id, CancellationToken token)
+    {
+        const string itemIncludes = "items,items.artists,items.albums.coverArt";
+        var document = await GetOrNullAsync($"playlists/{Uri.EscapeDataString(id)}?include={itemIncludes}", token);
+        if (document?.Data.FirstOrDefault() is not { ValueKind: JsonValueKind.Object } playlist)
+        {
+            throw new InvalidOperationException("TIDAL has no public playlist with this id.");
+        }
+        var tracks = (await AllRelatedAsync(document, playlist, "items", itemIncludes, token))
+            .Where(item => TypeOf(item.Resource) == "tracks")
+            .Select(item => ConvertTrack(item.Document, item.Resource))
+            .ToList();
+        return (Attribute(playlist, "name") ?? id, tracks);
+    }
+
+    public async Task<string?> GetLargestCoverUrlAsync(AlbumSearchObject album) =>
+        album.AdditionalFields?.GetValueOrDefault("cover_max") as string
+        ?? (await GetAlbumAsync(album.Id, CancellationToken.None))?.AdditionalFields?.GetValueOrDefault("cover_max") as string;
+
+    /// <summary>
+    /// The track with this ISRC. TIDAL can list one recording on several releases (album, single, compilations, a
+    /// hi-res reissue); the one on <paramref name="albumName"/> is preferred, else the first.
+    /// </summary>
+    public async Task<SongSearchObject?> GetTrackByIsrcAsync(string isrc, string? albumName, CancellationToken token)
+    {
+        var document = await api.GetAsync($"tracks?filter%5Bisrc%5D={Uri.EscapeDataString(isrc)}&include={TrackDetailIncludes}", token);
+        var tracks = document.Data.Select(t => ConvertTrack(document, t)).Where(t => string.Equals(t.Isrc, isrc, StringComparison.OrdinalIgnoreCase)).ToList();
+        return tracks.FirstOrDefault(t => !string.IsNullOrEmpty(albumName) && FuzzyMatch.CloseMatch(t.AlbumName, albumName)) ?? tracks.FirstOrDefault();
+    }
+
+    /// <summary>The album with this UPC (barcode), or null.</summary>
+    public async Task<AlbumSearchObject?> GetAlbumByUpcAsync(string upc, CancellationToken token)
+    {
+        var document = await api.GetAsync($"albums?filter%5BbarcodeId%5D={Uri.EscapeDataString(upc)}&include=artists,coverArt", token);
+        return document.Data.FirstOrDefault() is { ValueKind: JsonValueKind.Object } album ? ConvertAlbum(document, album) : null;
+    }
+
+    // A missing resource is a 404; anything else is an error.
+    private async Task<JsonApiDocument?> GetOrNullAsync(string pathAndQuery, CancellationToken token)
+    {
+        try
+        {
+            return await api.GetAsync(pathAndQuery, token);
+        }
+        catch (HttpRequestException e) when (e.StatusCode == HttpStatusCode.NotFound)
+        {
+            return null;
+        }
+    }
+
+    // The resources a to-many relationship points to, following its next links (20 a page). Each comes with its
+    // reference, whose meta carries album track numbers, and the response it came in, which holds its artists.
+    private async Task<List<(JsonApiDocument Document, JsonElement Reference, JsonElement Resource)>> AllRelatedAsync(
+        JsonApiDocument first, JsonElement owner, string relationship, string pageIncludes, CancellationToken token)
+    {
+        var items = new List<(JsonApiDocument, JsonElement, JsonElement)>();
+        foreach (var reference in References(owner, relationship))
+        {
+            if (first.Find(reference) is { } resource)
+            {
+                items.Add((first, reference, resource));
+            }
+        }
+        var next = RelationshipNextLink(owner, relationship);
+        while (next != null)
+        {
+            var page = await api.GetAsync(next.Contains("include=") ? next : next + "&include=" + pageIncludes, token);
+            foreach (var reference in page.Data)
+            {
+                if (page.Find(reference) is { } resource)
+                {
+                    items.Add((page, reference, resource));
+                }
+            }
+            next = page.NextLink;
+        }
+        return items;
     }
 
     // The search the Search page is paging through. TIDAL pages by cursor, 20 results a page; the page asks by offset

@@ -28,7 +28,7 @@ internal static class TestSources
     public static readonly QobuzSource Qobuz = new(Settings);
     public static readonly SpotifySource Spotify = new(Settings, SpotifyWebService, SpotifyIsrcService);
     public static readonly YoutubeSource Youtube = new(Settings, AudioConverter);
-    public static readonly TidalApi TidalApi = new(Settings, new HttpClient(), countryCode: "US");
+    public static readonly TidalApi TidalApi = new(Settings, new HttpClient());
     public static readonly TidalSource Tidal = new(TidalApi);
 
     public static readonly SourceRegistry Registry = new([Deezer, Qobuz, Spotify, Youtube, Tidal]);
@@ -53,6 +53,7 @@ internal static class TestSources
         [SettingKeys.SpotifyClientSecret] = Secrets.Get("spotify_client_secret"),
         [SettingKeys.TidalClientId] = Secrets.Get("tidal_client_id"),
         [SettingKeys.TidalClientSecret] = Secrets.Get("tidal_client_secret"),
+        [SettingKeys.TidalCountry] = "US", // so the TIDAL baselines don't depend on the machine's region
 
         // Download settings, with the values SettingsViewModel.SetMissingDefaults gives a new install.
         [SettingKeys.DeezerQuality] = 2, // FLAC

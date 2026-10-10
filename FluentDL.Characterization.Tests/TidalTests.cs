@@ -51,6 +51,60 @@ public class TidalTests
         CollectionAssert.AreEqual(atOnce.Select(s => s.Id).ToList(), scrolled.Select(s => s.Id).ToList());
     }
 
+    // Each link form for a track, and an album link in track and album mode. Playlists are checked below without a
+    // snapshot, since TIDAL edits them.
+    [TestMethod]
+    public Task Links() => Snapshot.MatchLive("Tidal.Links", async () =>
+    {
+        var rows = new List<object>();
+        foreach (var (url, albumMode) in new[]
+        {
+            ("https://tidal.com/track/20115564", false),
+            ("https://tidal.com/browse/track/20115564", false),
+            ("https://listen.tidal.com/track/20115564", false),
+            ("https://tidal.com/album/20115556", false),
+            ("https://tidal.com/album/20115556", true),
+            ("https://tidal.com/track/1", false), // no such track
+        })
+        {
+            var log = new Live.StatusLog();
+            var result = await Live.Collect(items => TestSources.Tidal.AddFromLinkAsync(items, url, new(IsFirstPage: true, new(0, 0), albumMode), log.Callback, CancellationToken.None));
+            rows.Add(new { Url = url, AlbumMode = albumMode, Result = result, Status = log.Messages });
+        }
+        return rows;
+    });
+
+    // Albums and playlists list their tracks 20 a page. This album has 22 tracks and this playlist about 23.
+    [TestMethod]
+    public async Task LongAlbumsAndPlaylistsLoadEveryPage()
+    {
+        var album = await TestSources.Tidal.GetAlbumAsync("293301129", CancellationToken.None); // Random Access Memories (10th Anniversary Edition)
+        var tracks = await TestSources.Tidal.GetAlbumTracksAsync(album!, CancellationToken.None);
+        Assert.AreEqual(22, album!.TracksCount);
+        Assert.AreEqual(22, tracks.Select(t => t.Id).Distinct().Count());
+        Assert.IsTrue(tracks.All(t => t.AlbumName == album.Title && t.ImageLocation == album.ImageLocation), "album tracks take the album's name and cover");
+        Assert.AreEqual("1", tracks[0].TrackPosition);
+
+        var (name, playlistTracks) = await TestSources.Tidal.GetPlaylistAsync("05182a0b-f4e4-474e-9363-6155171a1519", CancellationToken.None);
+        Assert.AreEqual("Stromae: Essentials", name);
+        Assert.IsTrue(playlistTracks.Count > 20, $"{playlistTracks.Count} tracks: the second page didn't load");
+        Assert.AreEqual(playlistTracks.Count, playlistTracks.Select(t => t.Id).Distinct().Count());
+    }
+
+    // TIDAL lists Get Lucky's ISRC on 9 releases; the album one is preferred when the album is known.
+    [TestMethod]
+    public async Task LookupsByIsrcAndUpc()
+    {
+        var onAlbum = await TestSources.Tidal.GetTrackByIsrcAsync(Fixtures.Tracks[0].Isrc!, "Random Access Memories", CancellationToken.None);
+        Assert.AreEqual("20115564", onAlbum?.Id);
+        Assert.AreEqual(Fixtures.Tracks[0].Isrc, (await TestSources.Tidal.GetTrackByIsrcAsync(Fixtures.Tracks[0].Isrc!, null, CancellationToken.None))?.Isrc);
+        Assert.IsNull(await TestSources.Tidal.GetTrackByIsrcAsync("XX0000000000", null, CancellationToken.None));
+
+        var album = await TestSources.Tidal.GetAlbumByUpcAsync("886443927087", CancellationToken.None);
+        Assert.AreEqual("20115556", album?.Id);
+        Assert.AreEqual("Random Access Memories", album?.Title);
+    }
+
     // The fields the app shows and matches on, for one known track.
     [TestMethod]
     public async Task ATrackHasItsDetails()
@@ -71,10 +125,64 @@ public class TidalTests
     }
 }
 
-/// <summary>Parsing TIDAL's responses. No network.</summary>
+/// <summary>Parsing TIDAL's responses and links. No network.</summary>
 [TestClass]
 public class TidalParsingTests
 {
+    [TestMethod]
+    [DataRow("https://tidal.com/track/20115564", true)]
+    [DataRow("https://tidal.com/browse/track/20115564", true)]
+    [DataRow("https://listen.tidal.com/track/20115564", true)]
+    [DataRow("https://www.tidal.com/album/20115556", true)]
+    [DataRow("https://tidal.com/playlist/05182a0b-f4e4-474e-9363-6155171a1519", true)]
+    [DataRow("http://tidal.com/track/1", true)]
+    [DataRow("https://tidal.com/artist/1234", false)] // artist links aren't supported yet
+    [DataRow("https://nottidal.com/track/1", false)]
+    [DataRow("tidal.com/track/1", false)]
+    public void LinksTidalHandles(string url, bool handled) => Assert.AreEqual(handled, TestSources.Tidal.CanHandle(url));
+
+    // Every request carries the country from the setting; the token request doesn't.
+    [TestMethod]
+    public async Task RequestsCarryTheCountrySetting()
+    {
+        var handler = new RecordingHandler();
+        var settings = new DictionarySettings(new()
+        {
+            [Core.Sources.SettingKeys.TidalClientId] = "id",
+            [Core.Sources.SettingKeys.TidalClientSecret] = "secret",
+            [Core.Sources.SettingKeys.TidalCountry] = "gb",
+        });
+        var api = new TidalApi(settings, new HttpClient(handler));
+
+        await api.GetAsync("tracks/1?include=albums", CancellationToken.None);
+
+        Assert.AreEqual("https://openapi.tidal.com/v2/tracks/1?include=albums&countryCode=GB", handler.Requests.Last());
+        Assert.AreEqual("GB", api.CountryCode);
+    }
+
+    private sealed class RecordingHandler : HttpMessageHandler
+    {
+        public List<string> Requests { get; } = [];
+
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            Requests.Add(request.RequestUri!.ToString());
+            var body = request.RequestUri!.Host == "auth.tidal.com"
+                ? """{ "access_token": "token", "expires_in": 14400, "token_type": "Bearer" }"""
+                : """{ "data": { "id": "1", "type": "tracks", "attributes": {} } }""";
+            return Task.FromResult(new HttpResponseMessage(System.Net.HttpStatusCode.OK) { Content = new StringContent(body) });
+        }
+    }
+
+    private sealed class DictionarySettings(Dictionary<string, object?> values) : Core.Contracts.Services.ILocalSettingsService
+    {
+        public Task<T?> ReadSettingAsync<T>(string key) => Task.FromResult(values.TryGetValue(key, out var value) && value is T typed ? typed : default);
+        public Task SaveSettingAsync<T>(string key, T value) { values[key] = value; return Task.CompletedTask; }
+        public Task<string> ExportSettingsAsync() => throw new NotSupportedException();
+        public Task<string?> ImportSettingsAsync(string json) => throw new NotSupportedException();
+        public Task ClearSettings() => throw new NotSupportedException();
+    }
+
     [TestMethod]
     [DataRow("PT6M10S", "370")]
     [DataRow("PT4M8S", "248")]
@@ -85,11 +193,14 @@ public class TidalParsingTests
     public void DurationsBecomeSeconds(string iso, string seconds) => Assert.AreEqual(seconds, TidalSource.Seconds(iso));
 
     [TestMethod]
-    [DataRow("GB", "GB")]
-    [DataRow("us", "US")]
-    [DataRow("001", "US")] // Windows' "World" region
-    [DataRow("", "US")]
-    public void RegionsBecomeCountryCodes(string region, string code) => Assert.AreEqual(code, TidalApi.RegionCode(region));
+    [DataRow("GB", "CA", "GB")] // the setting wins
+    [DataRow(" de ", "CA", "DE")]
+    [DataRow("", "CA", "CA")] // empty: the Windows region
+    [DataRow(null, "CA", "CA")]
+    [DataRow("Germany", "CA", "CA")] // not a two-letter code
+    [DataRow("", "001", "US")] // Windows' "World" region
+    public void TheCountryComesFromTheSettingThenWindows(string? setting, string windowsRegion, string code) =>
+        Assert.AreEqual(code, TidalApi.ResolveCountry(setting, windowsRegion));
 
     // A relationship lists references in TIDAL's order (the ranking, or the credit order); "included" can be in any
     // order and can miss some.

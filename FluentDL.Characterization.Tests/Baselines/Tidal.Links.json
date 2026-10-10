@@ -1,0 +1,371 @@
+[
+  {
+    "Url": "https://tidal.com/track/20115564",
+    "AlbumMode": false,
+    "Result": {
+      "Items": [
+        {
+          "Source": "tidal",
+          "Id": "20115564",
+          "Title": "Get Lucky (feat. Pharrell Williams and Nile Rodgers)",
+          "Artists": "Daft Punk, Pharrell Williams, Nile Rodgers",
+          "AlbumName": "Random Access Memories",
+          "Isrc": "USQX91300108",
+          "Duration": "370",
+          "ReleaseDate": "2013-05-20",
+          "Explicit": false,
+          "TrackPosition": "1",
+          "ImageLocation": "https://resources.tidal.com/images/b66a5c40/c34d/4507/a0dc/5f98e46fdd20/320x320.jpg",
+          "AdditionalFieldKeys": [
+            "cover_max"
+          ]
+        }
+      ],
+      "Error": null
+    },
+    "Status": [
+      {
+        "Severity": "Success",
+        "Message": "<b>TIDAL</b>   Loaded track <a href='https://tidal.com/track/20115564'>Get Lucky (feat. Pharrell Williams and Nile Rodgers)</a>"
+      }
+    ]
+  },
+  {
+    "Url": "https://tidal.com/browse/track/20115564",
+    "AlbumMode": false,
+    "Result": {
+      "Items": [
+        {
+          "Source": "tidal",
+          "Id": "20115564",
+          "Title": "Get Lucky (feat. Pharrell Williams and Nile Rodgers)",
+          "Artists": "Daft Punk, Pharrell Williams, Nile Rodgers",
+          "AlbumName": "Random Access Memories",
+          "Isrc": "USQX91300108",
+          "Duration": "370",
+          "ReleaseDate": "2013-05-20",
+          "Explicit": false,
+          "TrackPosition": "1",
+          "ImageLocation": "https://resources.tidal.com/images/b66a5c40/c34d/4507/a0dc/5f98e46fdd20/320x320.jpg",
+          "AdditionalFieldKeys": [
+            "cover_max"
+          ]
+        }
+      ],
+      "Error": null
+    },
+    "Status": [
+      {
+        "Severity": "Success",
+        "Message": "<b>TIDAL</b>   Loaded track <a href='https://tidal.com/browse/track/20115564'>Get Lucky (feat. Pharrell Williams and Nile Rodgers)</a>"
+      }
+    ]
+  },
+  {
+    "Url": "https://listen.tidal.com/track/20115564",
+    "AlbumMode": false,
+    "Result": {
+      "Items": [
+        {
+          "Source": "tidal",
+          "Id": "20115564",
+          "Title": "Get Lucky (feat. Pharrell Williams and Nile Rodgers)",
+          "Artists": "Daft Punk, Pharrell Williams, Nile Rodgers",
+          "AlbumName": "Random Access Memories",
+          "Isrc": "USQX91300108",
+          "Duration": "370",
+          "ReleaseDate": "2013-05-20",
+          "Explicit": false,
+          "TrackPosition": "1",
+          "ImageLocation": "https://resources.tidal.com/images/b66a5c40/c34d/4507/a0dc/5f98e46fdd20/320x320.jpg",
+          "AdditionalFieldKeys": [
+            "cover_max"
+          ]
+        }
+      ],
+      "Error": null
+    },
+    "Status": [
+      {
+        "Severity": "Success",
+        "Message": "<b>TIDAL</b>   Loaded track <a href='https://listen.tidal.com/track/20115564'>Get Lucky (feat. Pharrell Williams and Nile Rodgers)</a>"
+      }
+    ]
+  },
+  {
+    "Url": "https://tidal.com/album/20115556",
+    "AlbumMode": false,
+    "Result": {
+      "Items": [
+        {
+          "Source": "tidal",
+          "Id": "20115557",
+          "Title": "Give Life Back to Music",
+          "Artists": "Daft Punk",
+          "AlbumName": "Random Access Memories",
+          "Isrc": "USQX91300101",
+          "Duration": "275",
+          "ReleaseDate": "2013-05-20",
+          "Explicit": false,
+          "TrackPosition": "1",
+          "ImageLocation": "https://resources.tidal.com/images/b66a5c40/c34d/4507/a0dc/5f98e46fdd20/320x320.jpg",
+          "AdditionalFieldKeys": [
+            "cover_max"
+          ]
+        },
+        {
+          "Source": "tidal",
+          "Id": "20115558",
+          "Title": "The Game of Love",
+          "Artists": "Daft Punk",
+          "AlbumName": "Random Access Memories",
+          "Isrc": "USQX91300102",
+          "Duration": "322",
+          "ReleaseDate": "2013-05-20",
+          "Explicit": false,
+          "TrackPosition": "2",
+          "ImageLocation": "https://resources.tidal.com/images/b66a5c40/c34d/4507/a0dc/5f98e46fdd20/320x320.jpg",
+          "AdditionalFieldKeys": [
+            "cover_max"
+          ]
+        },
+        {
+          "Source": "tidal",
+          "Id": "20115559",
+          "Title": "Giorgio by Moroder",
+          "Artists": "Daft Punk",
+          "AlbumName": "Random Access Memories",
+          "Isrc": "USQX91300103",
+          "Duration": "545",
+          "ReleaseDate": "2013-05-20",
+          "Explicit": false,
+          "TrackPosition": "3",
+          "ImageLocation": "https://resources.tidal.com/images/b66a5c40/c34d/4507/a0dc/5f98e46fdd20/320x320.jpg",
+          "AdditionalFieldKeys": [
+            "cover_max"
+          ]
+        },
+        {
+          "Source": "tidal",
+          "Id": "20115560",
+          "Title": "Within",
+          "Artists": "Daft Punk",
+          "AlbumName": "Random Access Memories",
+          "Isrc": "USQX91300104",
+          "Duration": "229",
+          "ReleaseDate": "2013-05-20",
+          "Explicit": false,
+          "TrackPosition": "4",
+          "ImageLocation": "https://resources.tidal.com/images/b66a5c40/c34d/4507/a0dc/5f98e46fdd20/320x320.jpg",
+          "AdditionalFieldKeys": [
+            "cover_max"
+          ]
+        },
+        {
+          "Source": "tidal",
+          "Id": "20115561",
+          "Title": "Instant Crush (feat. Julian Casablancas)",
+          "Artists": "Daft Punk, Julian Casablancas",
+          "AlbumName": "Random Access Memories",
+          "Isrc": "USQX91300105",
+          "Duration": "338",
+          "ReleaseDate": "2013-05-20",
+          "Explicit": false,
+          "TrackPosition": "5",
+          "ImageLocation": "https://resources.tidal.com/images/b66a5c40/c34d/4507/a0dc/5f98e46fdd20/320x320.jpg",
+          "AdditionalFieldKeys": [
+            "cover_max"
+          ]
+        },
+        {
+          "Source": "tidal",
+          "Id": "20115562",
+          "Title": "Lose Yourself to Dance (feat. Pharrell Williams)",
+          "Artists": "Daft Punk, Pharrell Williams",
+          "AlbumName": "Random Access Memories",
+          "Isrc": "USQX91300106",
+          "Duration": "354",
+          "ReleaseDate": "2013-05-20",
+          "Explicit": false,
+          "TrackPosition": "6",
+          "ImageLocation": "https://resources.tidal.com/images/b66a5c40/c34d/4507/a0dc/5f98e46fdd20/320x320.jpg",
+          "AdditionalFieldKeys": [
+            "cover_max"
+          ]
+        },
+        {
+          "Source": "tidal",
+          "Id": "20115563",
+          "Title": "Touch (feat. Paul Williams)",
+          "Artists": "Daft Punk, Paul Williams",
+          "AlbumName": "Random Access Memories",
+          "Isrc": "USQX91300107",
+          "Duration": "499",
+          "ReleaseDate": "2013-05-20",
+          "Explicit": false,
+          "TrackPosition": "7",
+          "ImageLocation": "https://resources.tidal.com/images/b66a5c40/c34d/4507/a0dc/5f98e46fdd20/320x320.jpg",
+          "AdditionalFieldKeys": [
+            "cover_max"
+          ]
+        },
+        {
+          "Source": "tidal",
+          "Id": "20115564",
+          "Title": "Get Lucky (feat. Pharrell Williams and Nile Rodgers)",
+          "Artists": "Daft Punk, Pharrell Williams, Nile Rodgers",
+          "AlbumName": "Random Access Memories",
+          "Isrc": "USQX91300108",
+          "Duration": "370",
+          "ReleaseDate": "2013-05-20",
+          "Explicit": false,
+          "TrackPosition": "8",
+          "ImageLocation": "https://resources.tidal.com/images/b66a5c40/c34d/4507/a0dc/5f98e46fdd20/320x320.jpg",
+          "AdditionalFieldKeys": [
+            "cover_max"
+          ]
+        },
+        {
+          "Source": "tidal",
+          "Id": "20115565",
+          "Title": "Beyond",
+          "Artists": "Daft Punk",
+          "AlbumName": "Random Access Memories",
+          "Isrc": "USQX91300109",
+          "Duration": "290",
+          "ReleaseDate": "2013-05-20",
+          "Explicit": false,
+          "TrackPosition": "9",
+          "ImageLocation": "https://resources.tidal.com/images/b66a5c40/c34d/4507/a0dc/5f98e46fdd20/320x320.jpg",
+          "AdditionalFieldKeys": [
+            "cover_max"
+          ]
+        },
+        {
+          "Source": "tidal",
+          "Id": "20115566",
+          "Title": "Motherboard",
+          "Artists": "Daft Punk",
+          "AlbumName": "Random Access Memories",
+          "Isrc": "USQX91300110",
+          "Duration": "342",
+          "ReleaseDate": "2013-05-20",
+          "Explicit": false,
+          "TrackPosition": "10",
+          "ImageLocation": "https://resources.tidal.com/images/b66a5c40/c34d/4507/a0dc/5f98e46fdd20/320x320.jpg",
+          "AdditionalFieldKeys": [
+            "cover_max"
+          ]
+        },
+        {
+          "Source": "tidal",
+          "Id": "20115567",
+          "Title": "Fragments of Time (feat. Todd Edwards)",
+          "Artists": "Daft Punk, Todd Edwards",
+          "AlbumName": "Random Access Memories",
+          "Isrc": "USQX91300111",
+          "Duration": "280",
+          "ReleaseDate": "2013-05-20",
+          "Explicit": false,
+          "TrackPosition": "11",
+          "ImageLocation": "https://resources.tidal.com/images/b66a5c40/c34d/4507/a0dc/5f98e46fdd20/320x320.jpg",
+          "AdditionalFieldKeys": [
+            "cover_max"
+          ]
+        },
+        {
+          "Source": "tidal",
+          "Id": "20115568",
+          "Title": "Doin' it Right (feat. Panda Bear)",
+          "Artists": "Daft Punk, Panda Bear",
+          "AlbumName": "Random Access Memories",
+          "Isrc": "USQX91300112",
+          "Duration": "251",
+          "ReleaseDate": "2013-05-20",
+          "Explicit": false,
+          "TrackPosition": "12",
+          "ImageLocation": "https://resources.tidal.com/images/b66a5c40/c34d/4507/a0dc/5f98e46fdd20/320x320.jpg",
+          "AdditionalFieldKeys": [
+            "cover_max"
+          ]
+        },
+        {
+          "Source": "tidal",
+          "Id": "20115569",
+          "Title": "Contact",
+          "Artists": "Daft Punk",
+          "AlbumName": "Random Access Memories",
+          "Isrc": "USQX91300113",
+          "Duration": "384",
+          "ReleaseDate": "2013-05-20",
+          "Explicit": false,
+          "TrackPosition": "13",
+          "ImageLocation": "https://resources.tidal.com/images/b66a5c40/c34d/4507/a0dc/5f98e46fdd20/320x320.jpg",
+          "AdditionalFieldKeys": [
+            "cover_max"
+          ]
+        }
+      ],
+      "Error": null
+    },
+    "Status": [
+      {
+        "Severity": "Informational",
+        "Message": "<b>TIDAL</b>   Loading album <a href='https://tidal.com/album/20115556'>Random Access Memories</a>"
+      },
+      {
+        "Severity": "Success",
+        "Message": "<b>TIDAL</b>   Loaded album <a href='https://tidal.com/album/20115556'>Random Access Memories</a>"
+      }
+    ]
+  },
+  {
+    "Url": "https://tidal.com/album/20115556",
+    "AlbumMode": true,
+    "Result": {
+      "Items": [
+        {
+          "Album": {
+            "Source": "tidal",
+            "Id": "20115556",
+            "Title": "Random Access Memories",
+            "Artists": "Daft Punk",
+            "AlbumName": "Random Access Memories",
+            "Isrc": "886443927087",
+            "Duration": "4479",
+            "ReleaseDate": "2013-05-20",
+            "Explicit": false,
+            "TrackPosition": "1",
+            "ImageLocation": "https://resources.tidal.com/images/b66a5c40/c34d/4507/a0dc/5f98e46fdd20/320x320.jpg",
+            "AdditionalFieldKeys": [
+              "cover_max"
+            ]
+          },
+          "TracksCount": 13,
+          "TrackList": null
+        }
+      ],
+      "Error": null
+    },
+    "Status": [
+      {
+        "Severity": "Success",
+        "Message": "<b>TIDAL</b>   Loaded album <a href='https://tidal.com/album/20115556'>Random Access Memories</a>"
+      }
+    ]
+  },
+  {
+    "Url": "https://tidal.com/track/1",
+    "AlbumMode": false,
+    "Result": {
+      "Items": [],
+      "Error": null
+    },
+    "Status": [
+      {
+        "Severity": "Error",
+        "Message": "<b>TIDAL</b>   No track found at <a href='https://tidal.com/track/1'>https://tidal.com/track/1</a>"
+      }
+    ]
+  }
+]

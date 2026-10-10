@@ -11,7 +11,8 @@ namespace FluentDL.Services.Tidal;
 /// <summary>
 /// Requests to TIDAL's official API (openapi.tidal.com/v2). It signs in with the client id and secret from Settings
 /// (the client-credentials flow, no TIDAL account needed), keeps the token, which lasts 4 hours, and gets a new one
-/// shortly before it expires. Every request carries the Windows region as its country, which decides availability.
+/// shortly before it expires. Every request carries a country (the TIDAL country setting, else the Windows region),
+/// which decides availability and ranking.
 /// </summary>
 public sealed class TidalApi
 {
@@ -26,25 +27,22 @@ public sealed class TidalApi
     private DateTimeOffset tokenExpires;
 
     public TidalApi(ILocalSettingsService settings)
-        : this(settings, new HttpClient(new SocketsHttpHandler { PooledConnectionLifetime = TimeSpan.FromMinutes(5) }),
-               RegionCode(RegionInfo.CurrentRegion.TwoLetterISORegionName))
+        : this(settings, new HttpClient(new SocketsHttpHandler { PooledConnectionLifetime = TimeSpan.FromMinutes(5) }))
     {
     }
 
-    /// <param name="countryCode">Tests pin it, so their results don't depend on the machine's region.</param>
-    internal TidalApi(ILocalSettingsService settings, HttpClient http, string countryCode)
+    internal TidalApi(ILocalSettingsService settings, HttpClient http)
     {
         this.settings = settings;
         this.http = http;
-        CountryCode = countryCode;
+        CountryCode = ResolveCountry(null, RegionInfo.CurrentRegion.TwoLetterISORegionName);
     }
 
     /// <summary>
-    /// The country sent with every request: the Windows region, or US when Windows has no country (such as "World").
-    /// It changes what TIDAL offers and how it ranks results (Canada ranks another Random Access Memories edition
-    /// second).
+    /// The country of the last request. It changes what TIDAL offers and how it ranks results (Canada ranks another
+    /// Random Access Memories edition second than the US).
     /// </summary>
-    public string CountryCode { get; }
+    public string CountryCode { get; private set; }
 
     public bool IsSignedIn => token != null;
 
@@ -69,6 +67,7 @@ public sealed class TidalApi
         var url = ApiBase + pathAndQuery.TrimStart('/');
         if (!url.Contains("countryCode="))
         {
+            CountryCode = ResolveCountry(await settings.ReadSettingAsync<string>(SettingKeys.TidalCountry), RegionInfo.CurrentRegion.TwoLetterISORegionName);
             url += (url.Contains('?') ? "&" : "?") + "countryCode=" + CountryCode;
         }
 
@@ -173,6 +172,12 @@ public sealed class TidalApi
         return body.Length > 200 ? body[..200] : body;
     }
 
-    internal static string RegionCode(string region) =>
-        region.Length == 2 && region.All(char.IsAsciiLetter) ? region.ToUpperInvariant() : "US";
+    // The setting when it is a two-letter code, else the Windows region, else US (Windows' "World" region is "001").
+    internal static string ResolveCountry(string? setting, string windowsRegion)
+    {
+        static bool IsCountry(string? code) => code is { Length: 2 } && code.All(char.IsAsciiLetter);
+        return IsCountry(setting?.Trim()) ? setting!.Trim().ToUpperInvariant()
+            : IsCountry(windowsRegion) ? windowsRegion.ToUpperInvariant()
+            : "US";
+    }
 }
