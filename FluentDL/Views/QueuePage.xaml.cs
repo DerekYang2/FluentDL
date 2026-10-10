@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.Globalization;
 using System.Text.RegularExpressions;
 using Windows.Storage.Pickers;
+using FluentDL.Core.Helpers;
 using FluentDL.Core.Sources;
 using FluentDL.Contracts.Sources;
 using FluentDL.Services;
@@ -444,7 +445,7 @@ public sealed partial class QueuePage : Page
                 {
                     try
                     {
-                        coverBytes = await new HttpClient().GetByteArrayAsync(coverUri);
+                        coverBytes = await WebDownloads.GetBytesAsync(coverUri.AbsoluteUri);
                     }
                     catch (Exception ex)
                     {

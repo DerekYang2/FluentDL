@@ -10,6 +10,9 @@ public static class WebDownloads
     private static HttpClient client = new HttpClient();
     private static HttpClient clientNoRedir = new HttpClient(new HttpClientHandler { AllowAutoRedirect = false }, true);
 
+    /// <summary>Downloads a small file, such as a cover image, into memory through the shared client.</summary>
+    public static Task<byte[]> GetBytesAsync(string url) => client.GetByteArrayAsync(url);
+
     public static async Task<Uri?> GetRedirectedUrlAsync(Uri uri, CancellationToken cancellationToken = default)
     {
         try

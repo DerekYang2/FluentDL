@@ -10,6 +10,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Threading.Tasks.Dataflow;
+using FluentDL.Core.Helpers;
 using FluentDL.Models;
 using TagLib;
 
@@ -279,7 +280,7 @@ namespace FluentDL.Helpers
                     }
                     else
                     {
-                        albumArt = await new HttpClient().GetByteArrayAsync(AlbumArtPath); // Download image
+                        albumArt = await WebDownloads.GetBytesAsync(AlbumArtPath); // Download image
                     }
                 }
 

@@ -1102,7 +1102,7 @@ internal sealed partial class QobuzSource
         custom.SetField("UPC", track.Album.Upc);
 
         // Get image bytes for cover art
-        var imageBytes = await new HttpClient().GetByteArrayAsync(track.Album.Image.Large);
+        var imageBytes = await WebDownloads.GetBytesAsync(track.Album.Image.Large);
 
         // Define cover art to use for FLAC file(s)
         TagLib.Id3v2.AttachmentFrame pic = new TagLib.Id3v2.AttachmentFrame { TextEncoding = TagLib.StringType.Latin1, MimeType = System.Net.Mime.MediaTypeNames.Image.Jpeg, Type = TagLib.PictureType.FrontCover, Data = new ByteVector(imageBytes) };
