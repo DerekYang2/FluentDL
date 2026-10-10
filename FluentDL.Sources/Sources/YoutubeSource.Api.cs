@@ -348,7 +348,22 @@ namespace FluentDL.Services.Sources
             }
         }
 
+        // A failed lookup (YouTube bot-checking this machine, a removed video) is reported as an error status instead of
+        // thrown; the exception used to crash the app (bug 20).
         public async Task AddTracksFromLink(ICollection<SongSearchObject> itemSource, string url, CancellationToken token, UrlStatusUpdateCallback? statusUpdate, bool albumMode = false)
+        {
+            try
+            {
+                await AddTracksFromLinkUnguarded(itemSource, url, token, statusUpdate, albumMode);
+            }
+            catch (Exception e) when (e is not OperationCanceledException)
+            {
+                Debug.WriteLine(e);
+                statusUpdate?.Invoke(StatusLevel.Error, $"<b>YouTube</b>   Error loading <a href='{url}'>{url}</a>: {e.Message}");
+            }
+        }
+
+        private async Task AddTracksFromLinkUnguarded(ICollection<SongSearchObject> itemSource, string url, CancellationToken token, UrlStatusUpdateCallback? statusUpdate, bool albumMode = false)
         {
             if (url.StartsWith("https://www.youtube.com/watch?") || url.StartsWith("https://youtube.com/watch?")) // Youtube video
             {

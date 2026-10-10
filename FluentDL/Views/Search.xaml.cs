@@ -526,23 +526,37 @@ public sealed partial class Search : Page
                 int oldSize = itemSource.Count;
                 var searchLimit = isInitial ? searchSource.InitialChunkSize : searchSource.SearchChunkSize;
 
-                if (currentSearchMode == SearchMode.Advanced)
+                try
                 {
-                    var query = new AdvancedQuery(advancedArtistName, advancedTrackName, advancedAlbumName);
-                    await SearchSourceFor(generalSource).AdvancedSearchAsync(itemSource, query, new PageRequest(searchOffset, searchLimit), cancellationTokenSource.Token);
-                    searchOffset += searchLimit;
+                    if (currentSearchMode == SearchMode.Advanced)
+                    {
+                        var query = new AdvancedQuery(advancedArtistName, advancedTrackName, advancedAlbumName);
+                        await SearchSourceFor(generalSource).AdvancedSearchAsync(itemSource, query, new PageRequest(searchOffset, searchLimit), cancellationTokenSource.Token);
+                        searchOffset += searchLimit;
+                    }
+                    else if (sources.FindLinkHandler(generalQuery) is { } linkSource)
+                    {
+                        // Most links load everything on the first page; Qobuz label and artist links load page by page.
+                        var request = new LinkRequest(isInitial, new PageRequest(searchOffset, searchLimit), ViewModel.AlbumMode);
+                        await linkSource.AddFromLinkAsync(itemSource, generalQuery, request, statusUpdate, cancellationTokenSource.Token);
+                        searchOffset += searchLimit;
+                    }
+                    else
+                    {
+                        await SearchSourceFor(generalSource).SearchAsync(itemSource, generalQuery, new PageRequest(searchOffset, searchLimit), ViewModel.AlbumMode, cancellationTokenSource.Token);
+                        searchOffset += searchLimit;
+                    }
                 }
-                else if (sources.FindLinkHandler(generalQuery) is { } linkSource)
+                catch (OperationCanceledException)
                 {
-                    // Most links load everything on the first page; Qobuz label and artist links load page by page.
-                    var request = new LinkRequest(isInitial, new PageRequest(searchOffset, searchLimit), ViewModel.AlbumMode);
-                    await linkSource.AddFromLinkAsync(itemSource, generalQuery, request, statusUpdate, cancellationTokenSource.Token);
-                    searchOffset += searchLimit;
+                    // Stopped by the user; keep what loaded.
                 }
-                else
+                catch (Exception e)
                 {
-                    await SearchSourceFor(generalSource).SearchAsync(itemSource, generalQuery, new PageRequest(searchOffset, searchLimit), ViewModel.AlbumMode, cancellationTokenSource.Token);
-                    searchOffset += searchLimit;
+                    // This runs in an async void event handler, so an exception from a source used to crash the app (bug 20).
+                    Serilog.Log.Error(e, "Search or link import failed; source {Source}", generalSource);
+                    InfobarProgress.Visibility = Visibility.Collapsed;
+                    ShowInfoBar(InfoBarSeverity.Error, $"Search failed: {e.Message}", 5);
                 }
 
                 // Add new items to the originalList

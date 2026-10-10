@@ -56,3 +56,30 @@ public class YoutubeTests
         return rows;
     });
 }
+
+/// <summary>
+/// Bug 20: a YouTube link whose lookup fails used to throw out of the link import, which crashed the app. A video that
+/// doesn't exist fails the same way as YouTube's bot check, so it stands in for it. Needs no YouTube Music, so it skips
+/// that availability check.
+/// </summary>
+[TestClass]
+[TestCategory("Live")]
+[TestCategory("YouTube")]
+public class YoutubeLinkErrorTests
+{
+    [TestMethod]
+    public async Task AFailedLookupIsReportedNotThrown()
+    {
+        var url = "https://www.youtube.com/watch?v=aaaaaaaaaaa"; // a well-formed id with no video behind it
+        var items = new List<Models.SongSearchObject>();
+        var log = new Live.StatusLog();
+
+        await TestSources.Youtube.AddFromLinkAsync(items, url, new(IsFirstPage: true, new(0, 0), AlbumMode: false), log.Callback, CancellationToken.None);
+
+        Assert.AreEqual(0, items.Count);
+        Assert.AreEqual(1, log.Messages.Count);
+        Assert.AreEqual("Error", log.Messages[0].Severity);
+        // The new error path ("Error loading <link>: <reason>"), not the older "Error loading track from" one.
+        StringAssert.StartsWith(log.Messages[0].Message, $"<b>YouTube</b>   Error loading <a href='{url}'>");
+    }
+}
