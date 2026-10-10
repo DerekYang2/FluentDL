@@ -10,7 +10,7 @@ namespace FluentDL.Core.Matching;
 public static class TitleNormalizer
 {
     /// <summary>
-    /// Lowercase, remove every bracketed featuring credit, remove spaces and common punctuation, keep ASCII only.
+    /// Lowercase, remove every bracketed featuring credit, spaces, common punctuation, accents and non-ASCII symbols.
     /// "Get Lucky (feat. Pharrell Williams)" becomes "getlucky". Formerly DeezerApi.PruneTitle; Deezer and YouTube use it.
     /// </summary>
     public static string Compact(string title)
@@ -20,7 +20,7 @@ public static class TitleNormalizer
         titlePruned = TextNormalization.PruneFeaturing(titlePruned);
         titlePruned = StripPunctuation(titlePruned);
 
-        titlePruned = TextNormalization.EnforceAscii(titlePruned);
+        titlePruned = TextNormalization.RemoveAccentsAndSymbols(titlePruned);
         return titlePruned.Trim();
     }
 
@@ -39,14 +39,14 @@ public static class TitleNormalizer
 
         titlePruned = StripPunctuation(titlePruned);
 
-        titlePruned = TextNormalization.EnforceAscii(titlePruned);
+        titlePruned = TextNormalization.RemoveAccentsAndSymbols(titlePruned);
         return titlePruned.Trim();
     }
 
     /// <summary>
     /// Cleans a title for use in a search query: lowercase, hyphens to spaces, first "(feat." and "(ft." groups and
-    /// "radio edit" removed, repeated whitespace collapsed, ASCII only. A group with no closing bracket runs to the end
-    /// of the title. Formerly DeezerApi.PruneTitleSearch.
+    /// "radio edit" removed, repeated whitespace collapsed, accents and non-ASCII symbols removed. A group with no
+    /// closing bracket runs to the end of the title. Formerly DeezerApi.PruneTitleSearch.
     /// </summary>
     public static string ForSearchQuery(string title)
     {
@@ -58,7 +58,7 @@ public static class TitleNormalizer
 
         titlePruned = titlePruned.Replace("(radio edit)", "").Replace("radio edit", "");
         titlePruned = Regex.Replace(titlePruned, @"\s+", " ");
-        return TextNormalization.EnforceAscii(titlePruned).Trim();
+        return TextNormalization.RemoveAccentsAndSymbols(titlePruned).Trim();
     }
 
     private static string StripPunctuation(string title)

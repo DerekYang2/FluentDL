@@ -7,7 +7,8 @@ namespace FluentDL.Core.Matching;
 
 /// <summary>
 /// String clean-up used to compare titles and artist names across music services.
-/// Moved unchanged from ApiHelper; the characterization baselines pin the output, including the known bugs.
+/// Moved from ApiHelper. Letters and digits of every script are kept: dropping everything outside ASCII turned any
+/// non-Latin title or artist into an empty string (bug 13).
 /// </summary>
 public static class TextNormalization
 {
@@ -24,10 +25,13 @@ public static class TextNormalization
         return Regex.Replace(title, pattern, string.Empty, RegexOptions.IgnoreCase | RegexOptions.Compiled).Trim();
     }
 
-    /// <summary>Removes featuring credits, then keeps only ASCII letters and digits. Non-Latin text becomes empty (bug 13).</summary>
+    /// <summary>
+    /// Removes featuring credits and accents, then keeps only letters and digits: "Don't Stop (feat. X)" becomes
+    /// "DontStop", "Beyoncé" becomes "Beyonce", and "夜に駆ける" stays as it is.
+    /// </summary>
     public static string PrunePunctuation(string str)
     {
-        return Regex.Replace(PruneFeaturing(str), @"[^a-zA-Z0-9]", string.Empty);
+        return Regex.Replace(RemoveDiacritics(PruneFeaturing(str)), @"[^\p{L}\p{Nd}]", string.Empty);
     }
 
     /// <summary>Replaces accented letters with their base letter, for example "é" with "e".</summary>
@@ -51,11 +55,14 @@ public static class TextNormalization
             .Normalize(NormalizationForm.FormC);
     }
 
-    /// <summary>Removes accents, then drops every remaining non-ASCII character.</summary>
-    public static string EnforceAscii(string text)
+    /// <summary>
+    /// Removes accents, then drops symbols outside ASCII, such as curly quotes and dashes. ASCII and the letters and
+    /// digits of every script stay.
+    /// </summary>
+    public static string RemoveAccentsAndSymbols(string text)
     {
         var result = RemoveDiacritics(text);
-        result = Regex.Replace(result, @"[^\u0000-\u007F]+", string.Empty);
+        result = Regex.Replace(result, @"[^\u0000-\u007F\p{L}\p{Nd}]+", string.Empty);
         return result;
     }
 }

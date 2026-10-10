@@ -29,8 +29,6 @@ internal class ApiHelper
 
     public static string PruneFeaturing(string? title) => TextNormalization.PruneFeaturing(title);
 
-    public static string PrunePunctuation(string str) => TextNormalization.PrunePunctuation(str);
-
     public static bool CloseMatch(string str1, string str2) => FuzzyMatch.CloseMatch(str1, str2);
 
     // Convert illegal filename characters to an underscore
@@ -136,8 +134,6 @@ internal class ApiHelper
     public static Task<Uri?> GetRedirectedUrlAsync(Uri uri, CancellationToken cancellationToken = default) => WebDownloads.GetRedirectedUrlAsync(uri, cancellationToken);
 
     public static string RemoveDiacritics(string text) => TextNormalization.RemoveDiacritics(text);
-
-    public static string EnforceAscii(string text) => TextNormalization.EnforceAscii(text);
 
     public static string FormatDateTimeOffset(DateTimeOffset? dateTimeOffset) => DisplayFormat.FormatDateTimeOffset(dateTimeOffset);
 

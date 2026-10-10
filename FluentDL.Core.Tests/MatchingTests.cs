@@ -48,16 +48,25 @@ public class TitleNormalizerTests
         Assert.AreEqual(expected, TitleNormalizer.ForSearchQuery(title));
     }
 
-    // Bug 13: every normalizer drops non-ASCII characters, so a Japanese title becomes empty.
+    // Bug 13 (fixed): every normalizer dropped non-ASCII characters, so any two Japanese titles compared equal ("").
     [TestMethod]
-    public void NonLatinTitles_BecomeEmpty()
+    public void NonLatinTitles_AreKept()
     {
-        const string title = "\u591c\u306b\u99c6\u3051\u308b";
+        const string title = "\u591c\u306b\u99c6\u3051\u308b"; // 夜に駆ける
 
-        Assert.AreEqual(string.Empty, TitleNormalizer.Compact(title));
-        Assert.AreEqual(string.Empty, TitleNormalizer.CompactLegacy(title));
-        Assert.AreEqual(string.Empty, TitleNormalizer.ForSearchQuery(title));
-        Assert.AreEqual(string.Empty, TextNormalization.PrunePunctuation(title));
+        Assert.AreEqual(title, TitleNormalizer.Compact(title));
+        Assert.AreEqual(title, TitleNormalizer.CompactLegacy(title));
+        Assert.AreEqual(title, TitleNormalizer.ForSearchQuery(title));
+        Assert.AreEqual(title, TextNormalization.PrunePunctuation(title));
+        Assert.AreNotEqual(TitleNormalizer.Compact(title), TitleNormalizer.Compact("\u30a2\u30a4\u30c9\u30eb")); // アイドル
+        Assert.AreEqual("\u591c\u306b\u99c6\u3051\u308b", TitleNormalizer.Compact("\u591c\u306b\u99c6\u3051\u308b (feat. X)"));
+    }
+
+    [TestMethod]
+    public void NonLatinNames_CanMatch()
+    {
+        Assert.IsTrue(FuzzyMatch.CloseMatch("\u7c73\u6d25\u7384\u5e2b", "\u7c73\u6d25\u7384\u5e2b")); // 米津玄師
+        Assert.IsFalse(FuzzyMatch.CloseMatch("\u7c73\u6d25\u7384\u5e2b", "YOASOBI"));
     }
 
     // Bug 14 (fixed): an unclosed featuring bracket used to throw. It now runs to the end of the title.
@@ -106,8 +115,10 @@ public class TextNormalizationTests
     [DataTestMethod]
     [DataRow("Get Lucky (ft. Pharrell)", "GetLucky")]
     [DataRow("Don't Stop Me Now", "DontStopMeNow")]
-    [DataRow("Beyonc\u00e9", "Beyonc")]
-    public void PrunePunctuation_KeepsAsciiLettersAndDigits(string text, string expected)
+    [DataRow("Beyonc\u00e9", "Beyonce")]
+    [DataRow("Sigur R\u00f3s \u2014 Hopp\u00edpolla", "SigurRosHoppipolla")]
+    [DataRow("\u591c\u306b\u99c6\u3051\u308b!", "\u591c\u306b\u99c6\u3051\u308b")]
+    public void PrunePunctuation_KeepsLettersAndDigits(string text, string expected)
     {
         Assert.AreEqual(expected, TextNormalization.PrunePunctuation(text));
     }
@@ -116,9 +127,11 @@ public class TextNormalizationTests
     [DataRow("Beyonc\u00e9", "Beyonce")]
     [DataRow("Sigur R\u00f3s", "Sigur Ros")]
     [DataRow("Under \u2014 Pressure", "Under  Pressure")]
-    public void EnforceAscii_RemovesAccentsThenNonAscii(string text, string expected)
+    [DataRow("Don\u2019t", "Dont")]
+    [DataRow("\u591c\u306b\u99c6\u3051\u308b", "\u591c\u306b\u99c6\u3051\u308b")]
+    public void RemoveAccentsAndSymbols_KeepsAsciiAndLetters(string text, string expected)
     {
-        Assert.AreEqual(expected, TextNormalization.EnforceAscii(text));
+        Assert.AreEqual(expected, TextNormalization.RemoveAccentsAndSymbols(text));
     }
 }
 

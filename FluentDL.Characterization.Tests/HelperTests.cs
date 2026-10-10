@@ -1,4 +1,5 @@
 using FluentDL.Characterization.Tests.Infrastructure;
+using FluentDL.Core.Matching;
 using FluentDL.Helpers;
 using FluentDL.Models;
 using FluentDL.Services;
@@ -63,8 +64,8 @@ public class HelperTests
             Input = t,
             ApiHelper_PruneTitle = Capture(() => ApiHelper.PruneTitle(t)),
             ApiHelper_PruneFeaturing = Capture(() => ApiHelper.PruneFeaturing(t)),
-            ApiHelper_PrunePunctuation = Capture(() => ApiHelper.PrunePunctuation(t)),
-            ApiHelper_EnforceAscii = Capture(() => ApiHelper.EnforceAscii(t)),
+            ApiHelper_PrunePunctuation = Capture(() => TextNormalization.PrunePunctuation(t)),
+            ApiHelper_EnforceAscii = Capture(() => TextNormalization.RemoveAccentsAndSymbols(t)),
             ApiHelper_RemoveDiacritics = Capture(() => ApiHelper.RemoveDiacritics(t)),
             DeezerApi_PruneTitle = Capture(() => TestSources.Deezer.PruneTitle(t)),
             DeezerApi_PruneTitleSearch = Capture(() => TestSources.Deezer.PruneTitleSearch(t)),

@@ -107,9 +107,9 @@ namespace FluentDL.Services.Sources
                 return;
             }
 
-            artistName = TextNormalization.EnforceAscii(artistName.Trim());
-            trackName = TextNormalization.EnforceAscii(trackName.Trim());
-            albumName = TextNormalization.EnforceAscii(albumName.Trim());
+            artistName = TextNormalization.RemoveAccentsAndSymbols(artistName.Trim());
+            trackName = TextNormalization.RemoveAccentsAndSymbols(trackName.Trim());
+            albumName = TextNormalization.RemoveAccentsAndSymbols(albumName.Trim());
 
             if (clearResults)
             {
