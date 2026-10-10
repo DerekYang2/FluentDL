@@ -3,23 +3,40 @@
     "Key": "get-lucky-album",
     "OriginId": "4D7u5KF7SP8",
     "OriginIsrc": null,
-    "Result": null,
+    "Result": {
+      "Source": "deezer",
+      "Id": "67238735",
+      "Title": "Get Lucky (feat. Pharrell Williams and Nile Rodgers)",
+      "Artists": "Daft Punk, Pharrell Williams, Nile Rodgers",
+      "AlbumName": "Random Access Memories",
+      "Isrc": "USQX91300108",
+      "Duration": "367",
+      "ReleaseDate": "2013-05-20",
+      "Explicit": false,
+      "TrackPosition": "8",
+      "ImageLocation": "https://api.deezer.com/album/6575789/image",
+      "AdditionalFieldKeys": [
+        "preview"
+      ]
+    },
     "Callbacks": [
       {
-        "Severity": "Error",
+        "Severity": "Warning",
         "Song": {
-          "Source": "youtube",
-          "Id": "4D7u5KF7SP8",
+          "Source": "deezer",
+          "Id": "67238735",
           "Title": "Get Lucky (feat. Pharrell Williams and Nile Rodgers)",
           "Artists": "Daft Punk, Pharrell Williams, Nile Rodgers",
           "AlbumName": "Random Access Memories",
-          "Isrc": null,
-          "Duration": "370",
-          "ReleaseDate": "2014-11-07",
+          "Isrc": "USQX91300108",
+          "Duration": "367",
+          "ReleaseDate": "2013-05-20",
           "Explicit": false,
-          "TrackPosition": "1",
-          "ImageLocation": "https://yt3.googleusercontent.com/N55arCGj69gtw6thXK8JUPisxoVYiwuIEQ7I6SGlkEyNcSJ7xIWPe76Vuu1SiUqRyx5w9qvR_zV8fV3CWQ=w544-h544-l90-rj",
-          "AdditionalFieldKeys": []
+          "TrackPosition": "8",
+          "ImageLocation": "https://api.deezer.com/album/6575789/image",
+          "AdditionalFieldKeys": [
+            "preview"
+          ]
         },
         "Location": null
       }
@@ -29,23 +46,40 @@
     "Key": "get-lucky-radio-edit",
     "OriginId": "Rgrt_8mXrK8",
     "OriginIsrc": null,
-    "Result": null,
+    "Result": {
+      "Source": "deezer",
+      "Id": "66609426",
+      "Title": "Get Lucky (Radio Edit - feat. Pharrell Williams and Nile Rodgers)",
+      "Artists": "Daft Punk, Pharrell Williams, Nile Rodgers",
+      "AlbumName": "Get Lucky (Radio Edit - feat. Pharrell Williams and Nile Rodgers)",
+      "Isrc": "USQX91300809",
+      "Duration": "248",
+      "ReleaseDate": "2013-04-19",
+      "Explicit": false,
+      "TrackPosition": "1",
+      "ImageLocation": "https://api.deezer.com/album/6516139/image",
+      "AdditionalFieldKeys": [
+        "preview"
+      ]
+    },
     "Callbacks": [
       {
-        "Severity": "Error",
+        "Severity": "Warning",
         "Song": {
-          "Source": "youtube",
-          "Id": "Rgrt_8mXrK8",
+          "Source": "deezer",
+          "Id": "66609426",
           "Title": "Get Lucky (Radio Edit - feat. Pharrell Williams and Nile Rodgers)",
           "Artists": "Daft Punk, Pharrell Williams, Nile Rodgers",
-          "AlbumName": "Get Lucky",
-          "Isrc": null,
+          "AlbumName": "Get Lucky (Radio Edit - feat. Pharrell Williams and Nile Rodgers)",
+          "Isrc": "USQX91300809",
           "Duration": "248",
-          "ReleaseDate": "2016-04-07",
+          "ReleaseDate": "2013-04-19",
           "Explicit": false,
           "TrackPosition": "1",
-          "ImageLocation": "https://yt3.googleusercontent.com/HqegqT4tr2u0IsOqAmUgILJunBwHHkjl9s5L7t02ZFcGsRQpqKtmM7YlkeqzDdXi926mNvAn2UJu48s=w544-h544-l90-rj",
-          "AdditionalFieldKeys": []
+          "ImageLocation": "https://api.deezer.com/album/6516139/image",
+          "AdditionalFieldKeys": [
+            "preview"
+          ]
         },
         "Location": null
       }
@@ -55,23 +89,40 @@
     "Key": "beyonce-halo",
     "OriginId": "-3Wt6wwlmC8",
     "OriginIsrc": null,
-    "Result": null,
+    "Result": {
+      "Source": "deezer",
+      "Id": "2485108",
+      "Title": "Halo",
+      "Artists": "Beyoncé",
+      "AlbumName": "I AM...SASHA FIERCE",
+      "Isrc": "USSM10804556",
+      "Duration": "262",
+      "ReleaseDate": "2008-11-14",
+      "Explicit": false,
+      "TrackPosition": "2",
+      "ImageLocation": "https://api.deezer.com/album/244223/image",
+      "AdditionalFieldKeys": [
+        "preview"
+      ]
+    },
     "Callbacks": [
       {
-        "Severity": "Error",
+        "Severity": "Warning",
         "Song": {
-          "Source": "youtube",
-          "Id": "-3Wt6wwlmC8",
+          "Source": "deezer",
+          "Id": "2485108",
           "Title": "Halo",
           "Artists": "Beyoncé",
           "AlbumName": "I AM...SASHA FIERCE",
-          "Isrc": null,
+          "Isrc": "USSM10804556",
           "Duration": "262",
-          "ReleaseDate": "2017-02-08",
+          "ReleaseDate": "2008-11-14",
           "Explicit": false,
-          "TrackPosition": "1",
-          "ImageLocation": "https://yt3.googleusercontent.com/fyXpxf8iORys9_nMujAg7B9I0M05eQGgcdGgPzblGzWksNXh1MyL64a-euPQKk_BmLiW6lUzyX3z4-cT=w544-h544-l90-rj",
-          "AdditionalFieldKeys": []
+          "TrackPosition": "2",
+          "ImageLocation": "https://api.deezer.com/album/244223/image",
+          "AdditionalFieldKeys": [
+            "preview"
+          ]
         },
         "Location": null
       }
@@ -81,23 +132,40 @@
     "Key": "yoasobi-yoru-ni-kakeru",
     "OriginId": "by4SYYWlhEs",
     "OriginIsrc": null,
-    "Result": null,
+    "Result": {
+      "Source": "deezer",
+      "Id": "824731152",
+      "Title": "夜に駆ける",
+      "Artists": "YOASOBI",
+      "AlbumName": "夜に駆ける",
+      "Isrc": "JPP301900716",
+      "Duration": "261",
+      "ReleaseDate": "2019-12-15",
+      "Explicit": false,
+      "TrackPosition": "1",
+      "ImageLocation": "https://api.deezer.com/album/121611042/image",
+      "AdditionalFieldKeys": [
+        "preview"
+      ]
+    },
     "Callbacks": [
       {
-        "Severity": "Error",
+        "Severity": "Warning",
         "Song": {
-          "Source": "youtube",
-          "Id": "by4SYYWlhEs",
+          "Source": "deezer",
+          "Id": "824731152",
           "Title": "夜に駆ける",
           "Artists": "YOASOBI",
           "AlbumName": "夜に駆ける",
-          "Isrc": null,
+          "Isrc": "JPP301900716",
           "Duration": "261",
-          "ReleaseDate": "2019-12-14",
+          "ReleaseDate": "2019-12-15",
           "Explicit": false,
           "TrackPosition": "1",
-          "ImageLocation": "https://yt3.googleusercontent.com/-smFMOtNB5Zu8EINwbq_FQUXbBp2mguY2-w0MLxcVU0-osix9gV6IF3IuIBkeWlhck8RBQ9shgKCfDw=w544-h544-l90-rj",
-          "AdditionalFieldKeys": []
+          "ImageLocation": "https://api.deezer.com/album/121611042/image",
+          "AdditionalFieldKeys": [
+            "preview"
+          ]
         },
         "Location": null
       }
@@ -107,23 +175,40 @@
     "Key": "avicii-levels-original",
     "OriginId": "wDuoOapZ9Z0",
     "OriginIsrc": null,
-    "Result": null,
+    "Result": {
+      "Source": "deezer",
+      "Id": "14383880",
+      "Title": "Levels (Radio Edit)",
+      "Artists": "Avicii",
+      "AlbumName": "Levels",
+      "Isrc": "SEUM71100962",
+      "Duration": "199",
+      "ReleaseDate": "2011-10-31",
+      "Explicit": false,
+      "TrackPosition": "1",
+      "ImageLocation": "https://api.deezer.com/album/1318964/image",
+      "AdditionalFieldKeys": [
+        "preview"
+      ]
+    },
     "Callbacks": [
       {
-        "Severity": "Error",
+        "Severity": "Warning",
         "Song": {
-          "Source": "youtube",
-          "Id": "wDuoOapZ9Z0",
-          "Title": "Levels",
+          "Source": "deezer",
+          "Id": "14383880",
+          "Title": "Levels (Radio Edit)",
           "Artists": "Avicii",
           "AlbumName": "Levels",
-          "Isrc": null,
-          "Duration": "339",
-          "ReleaseDate": "2018-07-31",
+          "Isrc": "SEUM71100962",
+          "Duration": "199",
+          "ReleaseDate": "2011-10-31",
           "Explicit": false,
           "TrackPosition": "1",
-          "ImageLocation": "https://yt3.googleusercontent.com/bsPieoSMF402F_05hHOq7FITGDPllsNcBnjPE0WUi6T2a4A130z6qqjJLCEV10kE1pCSGBxKt0Bdgfkc=w544-h544-l90-rj",
-          "AdditionalFieldKeys": []
+          "ImageLocation": "https://api.deezer.com/album/1318964/image",
+          "AdditionalFieldKeys": [
+            "preview"
+          ]
         },
         "Location": null
       }
@@ -133,23 +218,40 @@
     "Key": "avicii-levels-skrillex-remix",
     "OriginId": "u6cdQFpP88w",
     "OriginIsrc": null,
-    "Result": null,
+    "Result": {
+      "Source": "deezer",
+      "Id": "15421140",
+      "Title": "Levels (Skrillex Remix)",
+      "Artists": "Avicii, Skrillex",
+      "AlbumName": "Levels (Remixes)",
+      "Isrc": "SEUM71101146",
+      "Duration": "281",
+      "ReleaseDate": "2011-12-19",
+      "Explicit": false,
+      "TrackPosition": "1",
+      "ImageLocation": "https://api.deezer.com/album/1424066/image",
+      "AdditionalFieldKeys": [
+        "preview"
+      ]
+    },
     "Callbacks": [
       {
-        "Severity": "Error",
+        "Severity": "Warning",
         "Song": {
-          "Source": "youtube",
-          "Id": "u6cdQFpP88w",
+          "Source": "deezer",
+          "Id": "15421140",
           "Title": "Levels (Skrillex Remix)",
-          "Artists": "Avicii",
-          "AlbumName": "Levels",
-          "Isrc": null,
+          "Artists": "Avicii, Skrillex",
+          "AlbumName": "Levels (Remixes)",
+          "Isrc": "SEUM71101146",
           "Duration": "281",
-          "ReleaseDate": "2018-07-21",
+          "ReleaseDate": "2011-12-19",
           "Explicit": false,
           "TrackPosition": "1",
-          "ImageLocation": "https://yt3.googleusercontent.com/aXTJre72cWUMOFjCn5i_0W6LucuIC-68guAsN_rIjTxRMwo-o-ak5ZUTqfeXb8XIWp5bdqUCR1NvUM6O=w544-h544-l90-rj",
-          "AdditionalFieldKeys": []
+          "ImageLocation": "https://api.deezer.com/album/1424066/image",
+          "AdditionalFieldKeys": [
+            "preview"
+          ]
         },
         "Location": null
       }
@@ -159,23 +261,40 @@
     "Key": "yo-yo-ma-bwv1007-prelude",
     "OriginId": "noW9fM9vgJs",
     "OriginIsrc": null,
-    "Result": null,
+    "Result": {
+      "Source": "deezer",
+      "Id": "584661",
+      "Title": "Cello Suite No. 1 in G Major, BWV 1007: I. Prélude",
+      "Artists": "Yo-Yo Ma",
+      "AlbumName": "Bach: Cello Suites Nos. 1-6, BWV 1007-1012",
+      "Isrc": "USSM18200515",
+      "Duration": "146",
+      "ReleaseDate": "2006-06-09",
+      "Explicit": false,
+      "TrackPosition": "1",
+      "ImageLocation": "https://api.deezer.com/album/75158/image",
+      "AdditionalFieldKeys": [
+        "preview"
+      ]
+    },
     "Callbacks": [
       {
-        "Severity": "Error",
+        "Severity": "Warning",
         "Song": {
-          "Source": "youtube",
-          "Id": "noW9fM9vgJs",
+          "Source": "deezer",
+          "Id": "584661",
           "Title": "Cello Suite No. 1 in G Major, BWV 1007: I. Prélude",
-          "Artists": "Yo-Yo Ma, Johann Sebastian Bach",
-          "AlbumName": "Cello Suiten No. 1,5 & 6",
-          "Isrc": null,
-          "Duration": "152",
-          "ReleaseDate": "2016-04-07",
+          "Artists": "Yo-Yo Ma",
+          "AlbumName": "Bach: Cello Suites Nos. 1-6, BWV 1007-1012",
+          "Isrc": "USSM18200515",
+          "Duration": "146",
+          "ReleaseDate": "2006-06-09",
           "Explicit": false,
           "TrackPosition": "1",
-          "ImageLocation": "https://yt3.googleusercontent.com/laC3yuXy8h5Sci5Ul1DAsrwKHW5bGPRdxDnF0dKAVom5qMJkXtcMECdf8J-s-q4vt0a4KXYvCaEa-DvI=w544-h544-l90-rj",
-          "AdditionalFieldKeys": []
+          "ImageLocation": "https://api.deezer.com/album/75158/image",
+          "AdditionalFieldKeys": [
+            "preview"
+          ]
         },
         "Location": null
       }

@@ -120,22 +120,35 @@
     "Key": "yoasobi-yoru-ni-kakeru",
     "OriginId": "by4SYYWlhEs",
     "OriginIsrc": null,
-    "Result": null,
+    "Result": {
+      "Source": "qobuz",
+      "Id": "82096207",
+      "Title": "夜に駆ける",
+      "Artists": "YOASOBI",
+      "AlbumName": "夜に駆ける",
+      "Isrc": "JPP301900716",
+      "Duration": "261",
+      "ReleaseDate": "2019-12-15",
+      "Explicit": false,
+      "TrackPosition": "1",
+      "ImageLocation": "https://static.qobuz.com/images/covers/lb/u9/qlmll0kqxu9lb_230.jpg",
+      "AdditionalFieldKeys": []
+    },
     "Callbacks": [
       {
-        "Severity": "Error",
+        "Severity": "Warning",
         "Song": {
-          "Source": "youtube",
-          "Id": "by4SYYWlhEs",
+          "Source": "qobuz",
+          "Id": "82096207",
           "Title": "夜に駆ける",
           "Artists": "YOASOBI",
           "AlbumName": "夜に駆ける",
-          "Isrc": null,
+          "Isrc": "JPP301900716",
           "Duration": "261",
-          "ReleaseDate": "2019-12-14",
+          "ReleaseDate": "2019-12-15",
           "Explicit": false,
           "TrackPosition": "1",
-          "ImageLocation": "https://yt3.googleusercontent.com/-smFMOtNB5Zu8EINwbq_FQUXbBp2mguY2-w0MLxcVU0-osix9gV6IF3IuIBkeWlhck8RBQ9shgKCfDw=w544-h544-l90-rj",
+          "ImageLocation": "https://static.qobuz.com/images/covers/lb/u9/qlmll0kqxu9lb_230.jpg",
           "AdditionalFieldKeys": []
         },
         "Location": null
