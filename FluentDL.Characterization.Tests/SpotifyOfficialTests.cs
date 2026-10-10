@@ -42,6 +42,22 @@ public class SpotifyOfficialTests
         Assert.AreEqual(3, albums.Count);
     }
 
+    // Bugs 3 and 19: when the ISRC search found nothing, the conversion returned null right away, without trying the
+    // metadata or reporting an error. The fake ISRC finds nothing, so only the metadata can match.
+    [TestMethod]
+    public async Task ConversionFallsBackToMetadataWhenTheIsrcFindsNothing()
+    {
+        var song = new Models.SongSearchObject
+        {
+            Source = "deezer", Id = "67238735", Isrc = "XX0000000000", Title = "Get Lucky (feat. Pharrell Williams and Nile Rodgers)",
+            Artists = "Daft Punk, Pharrell Williams, Nile Rodgers", AlbumName = "Random Access Memories",
+        };
+        var match = await TestSources.Spotify.FindEquivalentAsync(song, song.Isrc, CancellationToken.None);
+
+        Assert.AreEqual(Contracts.Sources.MatchKind.Close, match.Kind);
+        Assert.AreEqual(Fixtures.Tracks[0].SpotifyId, match.Track!.Id);
+    }
+
     [TestMethod]
     public Task Lookups() => Snapshot.MatchLive("SpotifyOfficial.Lookups", async () =>
     {

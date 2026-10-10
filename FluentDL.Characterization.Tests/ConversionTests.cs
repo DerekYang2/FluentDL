@@ -49,7 +49,7 @@ public class ConversionTests
     public Task ConvertToYoutube(string origin) => RunAsync(origin, "youtube", spotifyOfficial: false);
 
     // Spotify with a client id and secret takes different paths: its tracks carry an ISRC, and converting to Spotify
-    // searches by ISRC first (bug 3: when the ISRC search finds nothing, it never falls back to metadata).
+    // searches by ISRC first, then by metadata.
     [TestMethod]
     [DataRow("deezer", "spotify")]
     [DataRow("qobuz", "spotify")]

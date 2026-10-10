@@ -853,17 +853,17 @@ namespace FluentDL.Services.Sources
 
                     reqStr = reqStr.Trim(); // Trim the query
 
-                    // Try to find by ISRC first
-                    if (song.Isrc != null)
+                    // Try to find by ISRC first, then fall back to metadata (bugs 3 and 19: a failed ISRC search used to
+                    // return null right away, without the metadata search or an error callback).
+                    if (!string.IsNullOrWhiteSpace(song.Isrc))
                     {
                         var retObj = await GetTrackFromISRC(song.Isrc, token);
 
                         if (retObj != null) // Update callback with result
                         {
                             callback?.Invoke(StatusLevel.Success, retObj);
+                            return retObj;
                         }
-
-                        return retObj;
                     }
 
 
