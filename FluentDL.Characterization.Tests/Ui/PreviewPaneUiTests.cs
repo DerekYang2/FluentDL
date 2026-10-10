@@ -23,6 +23,11 @@ public class PreviewPaneUiTests
         ("qobuz-album", "qobuz", $"https://open.qobuz.com/album/{Fixtures.QobuzAlbumId}", true),
         ("spotify-track", "spotify", $"https://open.spotify.com/track/{Fixtures.Tracks[0].SpotifyId}", false),
         // No Spotify album: the dev app uses the web player, and album links there load nothing (see the live link tests).
+    ];
+
+    // Separate, because a YouTube link crashes the app while YouTube bot-checks this machine (bug 20).
+    private static readonly (string Name, string Source, string Url, bool AlbumMode)[] YoutubeCases =
+    [
         ("youtube-track", "youtube", $"https://www.youtube.com/watch?v={Fixtures.Tracks[0].YoutubeId}", false),
     ];
 
@@ -31,7 +36,14 @@ public class PreviewPaneUiTests
 
     [TestMethod]
     [Timeout(6 * 60 * 1000)]
-    public void PreviewDetails()
+    public void PreviewDetails() => Run("Ui.PreviewDetails", Cases);
+
+    [TestMethod]
+    [TestCategory("YouTube")]
+    [Timeout(3 * 60 * 1000)]
+    public void PreviewDetailsYoutube() => Run("Ui.PreviewDetailsYoutube", YoutubeCases);
+
+    private static void Run(string baselineName, (string Name, string Source, string Url, bool AlbumMode)[] cases)
     {
         DevApp.RequireUiTests();
         DevApp.SeedTestAccounts();
@@ -44,7 +56,7 @@ public class PreviewPaneUiTests
             try
             {
                 Find(dev, "SearchBox", TimeSpan.FromSeconds(60));
-                foreach (var c in Cases)
+                foreach (var c in cases)
                 {
                     SetAlbumMode(dev, c.AlbumMode);
                     // The previous case's row stays until the new search clears the list, so wait for a different row
@@ -75,7 +87,7 @@ public class PreviewPaneUiTests
             }
         }
 
-        Snapshot.Match("Ui.PreviewDetails", state);
+        Snapshot.Match(baselineName, state);
     }
 
     private static AutomationElement[] ResultRows(DevApp dev) =>

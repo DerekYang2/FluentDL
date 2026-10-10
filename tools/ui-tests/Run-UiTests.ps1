@@ -16,6 +16,7 @@ overwrite a good baseline.
 param(
     [string]$BaselineFrom,
     [string]$Filter,
+    [switch]$IncludeYoutube,
     [switch]$SkipInstall
 )
 
@@ -24,7 +25,10 @@ $repo = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path
 $install = Join-Path $PSScriptRoot 'Install-DevPackage.ps1'
 $tests = Join-Path $repo 'FluentDL.Characterization.Tests\FluentDL.Characterization.Tests.csproj'
 $worktree = $null
-$testFilter = if ($Filter) { "TestCategory=UI&FullyQualifiedName~$Filter" } else { 'TestCategory=UI' }
+# YouTube-category tests only run with -IncludeYoutube: a YouTube link crashes the app while YouTube bot-checks (bug 20).
+$testFilter = 'TestCategory=UI'
+if ($Filter) { $testFilter += "&FullyQualifiedName~$Filter" }
+if (-not $IncludeYoutube) { $testFilter += '&TestCategory!=YouTube' }
 
 function Invoke-UiTests([switch]$Record) {
     $env:FLUENTDL_UI_TESTS = '1'

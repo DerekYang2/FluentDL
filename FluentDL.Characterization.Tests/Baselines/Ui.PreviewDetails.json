@@ -174,33 +174,5 @@
     "LabelsMatchValues": true,
     "RatingShown": false,
     "TrackListHeader": null
-  },
-  "youtube-track": {
-    "Title": "Get Lucky (feat. Pharrell Williams and Nile Rodgers)",
-    "Rows": [
-      {
-        "Label": "Artists",
-        "Value": "Daft Punk, Pharrell Williams, Nile Rodgers"
-      },
-      {
-        "Label": "Release Date",
-        "Value": "November 7, 2014"
-      },
-      {
-        "Label": "Length",
-        "Value": "6 min 10 sec"
-      },
-      {
-        "Label": "Album",
-        "Value": "Random Access Memories"
-      },
-      {
-        "Label": "Views",
-        "Value": "(varies)"
-      }
-    ],
-    "LabelsMatchValues": true,
-    "RatingShown": false,
-    "TrackListHeader": null
   }
 }
