@@ -14,23 +14,33 @@ public class SpotifyOfficialTests
     [TestInitialize]
     public Task SignIn() => LiveSources.EnsureSpotifyOfficialAsync();
 
-    // About 100 s because of bug 17.
     [TestMethod]
-    [TestCategory("Slow")]
     public Task Search() => Snapshot.MatchLive("SpotifyOfficial.Search", async () =>
     {
         var token = CancellationToken.None;
-        // Bug 17: the official search reads every page of results and ignores the limit, so only the first five
-        // results and the fact that more were loaded are pinned. Page 2's head is skipped, since lower ranks reorder.
+        var tracks = await Live.Collect(items => TestSources.Spotify.SearchAsync(items, "daft punk get lucky", new(0, 5), albumMode: false, token));
         return new
         {
-            Tracks = await Live.CollectHead(items => TestSources.Spotify.SearchAsync(items, "daft punk get lucky", new(0, 5), albumMode: false, token), 5),
-            TracksSecondPage = await Live.CollectHead(items => TestSources.Spotify.SearchAsync(items, "daft punk get lucky", new(5, 5), albumMode: false, token), 0),
+            Tracks = tracks,
+            TracksSecondPage = await Live.CollectNextPage(items => TestSources.Spotify.SearchAsync(items, "daft punk get lucky", new(5, 5), albumMode: false, token), tracks),
             Albums = await Live.Collect(items => TestSources.Spotify.SearchAsync(items, "random access memories", new(0, 3), albumMode: true, token)),
             AdvancedArtistTrack = await Live.Collect(items => TestSources.Spotify.AdvancedSearchAsync(items, new("Daft Punk", "Get Lucky", ""), new(0, 5), token)),
             AdvancedAll = await Live.Collect(items => TestSources.Spotify.AdvancedSearchAsync(items, new("Daft Punk", "Get Lucky", "Random Access Memories"), new(0, 5), token)),
         };
     });
+
+    // Bug 17: the official search used to read every page of results (610 for a limit of 5, about 100 s).
+    [TestMethod]
+    public async Task SearchReturnsAtMostTheLimit()
+    {
+        var tracks = new List<Models.SongSearchObject>();
+        await TestSources.Spotify.SearchAsync(tracks, "daft punk get lucky", new(0, 5), albumMode: false, CancellationToken.None);
+        var albums = new List<Models.SongSearchObject>();
+        await TestSources.Spotify.SearchAsync(albums, "random access memories", new(0, 3), albumMode: true, CancellationToken.None);
+
+        Assert.AreEqual(5, tracks.Count);
+        Assert.AreEqual(3, albums.Count);
+    }
 
     [TestMethod]
     public Task Lookups() => Snapshot.MatchLive("SpotifyOfficial.Lookups", async () =>

@@ -316,9 +316,11 @@ namespace FluentDL.Services.Sources
 
                 try
                 {
+                    // Only the first page: Spotify already returns `limit` results from `offset`. Paginate used to walk
+                    // every later page as well, loading hundreds of results for one search (bug 17).
                     if (albumMode)
                     {
-                        await foreach (var album in spotify.Paginate(response.Albums, s => s.Albums))
+                        foreach (var album in response.Albums?.Items ?? [])
                         {
                             if (token.IsCancellationRequested) return;
                             var albumObj = ConvertAlbumSearchObject(await spotify.Albums.Get(album.Id));
@@ -331,7 +333,7 @@ namespace FluentDL.Services.Sources
                     }
                     else
                     {
-                        await foreach (FullTrack track in spotify.Paginate(response.Tracks, s => s.Tracks))
+                        foreach (FullTrack track in response.Tracks?.Items ?? [])
                         {
                             if (token.IsCancellationRequested) return;
                             var song = ConvertSongSearchObject(track);
