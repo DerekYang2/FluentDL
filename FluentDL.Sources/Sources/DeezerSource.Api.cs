@@ -294,24 +294,25 @@ internal sealed partial class DeezerSource
         var songObjList = new List<SongSearchObject>(); // List of SongSearchObject results
         HashSet<string> idSet = new HashSet<string>(); // Set of track ids
 
-        // With album
-        var req = PlainSearchRequest(song.Artists, trackName, albumName);
-        var jsonObject = await restClient.FetchJsonElement(req); // Create json object from the response
-
-        if (jsonObject.TryGetProperty("data", out var dataElement))
+        // Adds the results by one of the song's artists. False when cancelled.
+        async Task<bool> AddCandidates(string req)
         {
+            var jsonObject = await restClient.FetchJsonElement(req); // Create json object from the response
+            if (!jsonObject.TryGetProperty("data", out var dataElement))
+            {
+                return true;
+            }
+
             foreach (var track in dataElement.EnumerateArray())
             {
                 if (token.IsCancellationRequested) // Cancel requested, terminate this method
                 {
-                    return null;
+                    return false;
                 }
 
                 var trackId = track.GetProperty("id").ToString();
-                if (!idSet.Contains(trackId)) // If the track id is not already in the set
+                if (idSet.Add(trackId)) // If the track id is not already in the set
                 {
-                    idSet.Add(trackId);
-                    //var songObj = await GetTrack(trackId);
                     var songObj = GetTrackPreview(track);
 
                     // Check if close artist match to add to list
@@ -321,35 +322,18 @@ internal sealed partial class DeezerSource
                     }
                 }
             }
+            return true;
         }
 
-        // Without album
-        req = PlainSearchRequest(song.Artists, trackName);
-        jsonObject = await restClient.FetchJsonElement(req); // Create json object from the response
+        // With album, then without
+        if (!await AddCandidates(PlainSearchRequest(song.Artists, trackName, albumName))) return null;
+        if (!await AddCandidates(PlainSearchRequest(song.Artists, trackName))) return null;
 
-        if (jsonObject.TryGetProperty("data", out var dataElement2))
+        // Deezer finds nothing for long queries such as a title with a bracketed subtitle in another script
+        // ("光年之外 (電影 《Passengers》 中國區主題曲)"), so try the first artist and the main title alone.
+        if (songObjList.Count == 0 && !await AddCandidates(PlainSearchRequest(artists[0], TitleNormalizer.ForSearchQuery(TitleNormalizer.MainTitle(song.Title)))))
         {
-            foreach (var track in dataElement2.EnumerateArray())
-            {
-                if (token.IsCancellationRequested)
-                {
-                    return null;
-                }
-
-                var trackId = track.GetProperty("id").ToString();
-                if (!idSet.Contains(trackId)) // If the track id is not already in the set
-                {
-                    idSet.Add(trackId);
-                    // var songObj = await GetTrack(trackId);
-                    var songObj = GetTrackPreview(track);
-
-                    // Check if close artist match to add to list
-                    if (FuzzyMatch.AnyArtistMatches(song.Artists, songObj.Artists))
-                    {
-                        songObjList.Add(songObj);
-                    }
-                }
-            }
+            return null;
         }
 
         // Pass 1: exact title match, find least edit distance album name

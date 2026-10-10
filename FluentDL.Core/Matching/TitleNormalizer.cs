@@ -10,8 +10,9 @@ namespace FluentDL.Core.Matching;
 public static class TitleNormalizer
 {
     /// <summary>
-    /// Lowercase, remove every bracketed featuring credit, spaces, common punctuation, accents and non-ASCII symbols.
-    /// "Get Lucky (feat. Pharrell Williams)" becomes "getlucky". Formerly DeezerApi.PruneTitle; Deezer and YouTube use it.
+    /// Lowercase, remove every bracketed featuring credit, spaces, common punctuation, accents and non-ASCII symbols,
+    /// and write Cyrillic in Latin letters. "Get Lucky (feat. Pharrell Williams)" becomes "getlucky", "Группа крови"
+    /// becomes "gruppakrovi". Formerly DeezerApi.PruneTitle; Deezer and YouTube use it.
     /// </summary>
     public static string Compact(string title)
     {
@@ -20,7 +21,7 @@ public static class TitleNormalizer
         titlePruned = TextNormalization.PruneFeaturing(titlePruned);
         titlePruned = StripPunctuation(titlePruned);
 
-        titlePruned = TextNormalization.RemoveAccentsAndSymbols(titlePruned);
+        titlePruned = TextNormalization.RemoveAccentsAndSymbols(TextNormalization.TransliterateCyrillic(titlePruned));
         return titlePruned.Trim();
     }
 
@@ -39,7 +40,7 @@ public static class TitleNormalizer
 
         titlePruned = StripPunctuation(titlePruned);
 
-        titlePruned = TextNormalization.RemoveAccentsAndSymbols(titlePruned);
+        titlePruned = TextNormalization.RemoveAccentsAndSymbols(TextNormalization.TransliterateCyrillic(titlePruned));
         return titlePruned.Trim();
     }
 
@@ -59,6 +60,24 @@ public static class TitleNormalizer
         titlePruned = titlePruned.Replace("(radio edit)", "").Replace("radio edit", "");
         titlePruned = Regex.Replace(titlePruned, @"\s+", " ");
         return TextNormalization.RemoveAccentsAndSymbols(titlePruned).Trim();
+    }
+
+    /// <summary>
+    /// The title before its first bracketed part or " - " suffix: "MALAMENTE - Cap.1: Augurio" becomes "MALAMENTE",
+    /// "光年之外 (電影 《Passengers》 中國區主題曲)" becomes "光年之外". A title that starts with a bracket is kept whole.
+    /// </summary>
+    public static string MainTitle(string title)
+    {
+        var cut = title.Length;
+        foreach (var marker in new[] { " (", " [", " - ", "（" })
+        {
+            var index = title.IndexOf(marker, StringComparison.Ordinal);
+            if (index > 0)
+            {
+                cut = Math.Min(cut, index);
+            }
+        }
+        return title[..cut].Trim();
     }
 
     private static string StripPunctuation(string title)

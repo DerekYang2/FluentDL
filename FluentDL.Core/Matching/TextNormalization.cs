@@ -26,12 +26,51 @@ public static class TextNormalization
     }
 
     /// <summary>
-    /// Removes featuring credits and accents, then keeps only letters and digits: "Don't Stop (feat. X)" becomes
-    /// "DontStop", "Beyoncé" becomes "Beyonce", and "夜に駆ける" stays as it is.
+    /// Removes featuring credits and accents, writes Cyrillic in Latin, then keeps only letters and digits:
+    /// "Don't Stop (feat. X)" becomes "DontStop", "Beyoncé" becomes "Beyonce", "Кино" becomes "Kino", and "夜に駆ける"
+    /// stays as it is.
     /// </summary>
     public static string PrunePunctuation(string str)
     {
-        return Regex.Replace(RemoveDiacritics(PruneFeaturing(str)), @"[^\p{L}\p{Nd}]", string.Empty);
+        return Regex.Replace(RemoveDiacritics(TransliterateCyrillic(PruneFeaturing(str))), @"[^\p{L}\p{Nd}]", string.Empty);
+    }
+
+    // Russian, Ukrainian and Serbian letters, in a simple scheme close to what the services use ("Кино" is "Kino" on
+    // Spotify). Spellings still vary between services (Tsoi, Tsoy), so this only helps when they agree.
+    private static readonly Dictionary<char, string> CyrillicLetters = new()
+    {
+        ['а'] = "a", ['б'] = "b", ['в'] = "v", ['г'] = "g", ['д'] = "d", ['е'] = "e", ['ё'] = "e", ['ж'] = "zh",
+        ['з'] = "z", ['и'] = "i", ['й'] = "y", ['к'] = "k", ['л'] = "l", ['м'] = "m", ['н'] = "n", ['о'] = "o",
+        ['п'] = "p", ['р'] = "r", ['с'] = "s", ['т'] = "t", ['у'] = "u", ['ф'] = "f", ['х'] = "kh", ['ц'] = "ts",
+        ['ч'] = "ch", ['ш'] = "sh", ['щ'] = "shch", ['ъ'] = "", ['ы'] = "y", ['ь'] = "", ['э'] = "e", ['ю'] = "yu",
+        ['я'] = "ya", ['і'] = "i", ['ї'] = "yi", ['є'] = "ye", ['ґ'] = "g", ['ђ'] = "dj", ['ј'] = "j", ['љ'] = "lj",
+        ['њ'] = "nj", ['ћ'] = "c", ['џ'] = "dz",
+    };
+
+    /// <summary>
+    /// Writes Cyrillic letters in Latin, so a name one service lists as "Кино" and another as "Kino" compares equal.
+    /// Other characters are unchanged. Used only to compare names, never to build a search.
+    /// </summary>
+    public static string TransliterateCyrillic(string text)
+    {
+        if (!text.Any(c => c is >= '\u0400' and <= '\u04FF'))
+        {
+            return text;
+        }
+
+        var builder = new StringBuilder(text.Length);
+        foreach (var c in text)
+        {
+            if (CyrillicLetters.TryGetValue(char.ToLowerInvariant(c), out var latin))
+            {
+                builder.Append(char.IsUpper(c) && latin.Length > 0 ? char.ToUpperInvariant(latin[0]) + latin[1..] : latin);
+            }
+            else
+            {
+                builder.Append(c);
+            }
+        }
+        return builder.ToString();
     }
 
     /// <summary>Replaces accented letters with their base letter, for example "é" with "e".</summary>

@@ -62,6 +62,33 @@ public class TitleNormalizerTests
         Assert.AreEqual("\u591c\u306b\u99c6\u3051\u308b", TitleNormalizer.Compact("\u591c\u306b\u99c6\u3051\u308b (feat. X)"));
     }
 
+    [DataTestMethod]
+    [DataRow("MALAMENTE - Cap.1: Augurio", "MALAMENTE")]
+    [DataRow("\u5149\u5e74\u4e4b\u5916 (\u96fb\u5f71 \u300aPassengers\u300b \u4e2d\u570b\u5340\u4e3b\u984c\u66f2)", "\u5149\u5e74\u4e4b\u5916")]
+    [DataRow("Get Lucky [Radio Edit]", "Get Lucky")]
+    [DataRow("\u6674\u5929\uff08Live\uff09", "\u6674\u5929")]
+    [DataRow("(I Can't Get No) Satisfaction", "(I Can't Get No) Satisfaction")]
+    [DataRow("Levels", "Levels")]
+    public void MainTitle_DropsBracketsAndSuffixes(string title, string expected)
+    {
+        Assert.AreEqual(expected, TitleNormalizer.MainTitle(title));
+    }
+
+    // Spotify lists Kino as "Kino", Deezer as "Кино"; both list the title in Cyrillic.
+    [TestMethod]
+    public void CyrillicMatchesItsLatinSpelling()
+    {
+        Assert.AreEqual("Kino", TextNormalization.TransliterateCyrillic("\u041a\u0438\u043d\u043e"));
+        Assert.AreEqual("Gruppa krovi", TextNormalization.TransliterateCyrillic("\u0413\u0440\u0443\u043f\u043f\u0430 \u043a\u0440\u043e\u0432\u0438"));
+        Assert.AreEqual("Viktor Tsoy", TextNormalization.TransliterateCyrillic("\u0412\u0438\u043a\u0442\u043e\u0440 \u0426\u043e\u0439"));
+        Assert.IsTrue(FuzzyMatch.CloseMatch("\u041a\u0438\u043d\u043e", "Kino"));
+        Assert.IsTrue(FuzzyMatch.AnyArtistMatches("Kino", "\u041a\u0438\u043d\u043e"));
+        Assert.AreEqual(TitleNormalizer.Compact("Gruppa krovi"), TitleNormalizer.Compact("\u0413\u0440\u0443\u043f\u043f\u0430 \u043a\u0440\u043e\u0432\u0438"));
+        Assert.AreEqual(TitleNormalizer.CompactLegacy("Gruppa krovi"), TitleNormalizer.CompactLegacy("\u0413\u0440\u0443\u043f\u043f\u0430 \u043a\u0440\u043e\u0432\u0438"));
+        // Search queries keep the Cyrillic, because the services find Cyrillic titles by their Cyrillic names.
+        Assert.AreEqual("\u0433\u0440\u0443\u043f\u043f\u0430 \u043a\u0440\u043e\u0432\u0438", TitleNormalizer.ForSearchQuery("\u0413\u0440\u0443\u043f\u043f\u0430 \u043a\u0440\u043e\u0432\u0438"));
+    }
+
     [TestMethod]
     public void NonLatinNames_CanMatch()
     {
