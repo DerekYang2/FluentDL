@@ -40,6 +40,21 @@ public class QueueConversionUiTests
         var state = new Dictionary<string, object?>();
 
         using var dev = DevApp.Launch();
+        try
+        {
+            RunConversions(dev, state);
+        }
+        finally
+        {
+            // The queue is saved between runs, and SourceUiTests counts it, so leave it empty even after a failure.
+            try { ClearQueue(dev); } catch (Exception) { }
+        }
+
+        Snapshot.Match("Ui.QueueConversion", state);
+    }
+
+    private static void RunConversions(DevApp dev, Dictionary<string, object?> state)
+    {
         RunStep(dev, "fill-queue", () =>
         {
             Find(dev, "SearchBox", StartupTimeout);
@@ -67,10 +82,7 @@ public class QueueConversionUiTests
             Convert(dev, inputs: ["Deezer"], output: "Spotify");
             state["ToSpotifySummary"] = ReadSummary(dev);
             state["AfterToSpotify"] = ReadQueueRows(dev);
-            ClearQueue(dev); // SourceUiTests counts the queue, so leave it empty
         });
-
-        Snapshot.Match("Ui.QueueConversion", state);
     }
 
     private static void RunStep(DevApp dev, string name, Action step)
@@ -99,13 +111,18 @@ public class QueueConversionUiTests
         WaitUntil(() => Text(Find(dev, "CountText")) == "No tracks in queue", TimeSpan.FromSeconds(30), "the queue to clear");
     }
 
-    // A track link loads one result; wait for it before adding, since the previous link's row stays until replaced.
+    // A track link loads one result; wait for it before adding. The previous link's row stays until replaced, and two
+    // links in a row can be from the same source, so wait for the row itself to change: adding too early added the
+    // previous track again, which the queue ignores as a duplicate.
     // Spotify web player links fail now and then without a message, so a link gets a second try.
     private static void AddLinkToQueue(DevApp dev, string source, string url)
     {
         string[] VisibleBadges() => Find(dev, "CustomListView")
             .FindAllDescendants(cf => cf.ByAutomationId("SourceBadge")).Select(Text).ToArray();
-        bool Loaded() => VisibleBadges() is [var only] && only == source && Text(Find(dev, "ResultsText")) == "Add 1 to queue";
+        string? FirstRow() => Find(dev, "CustomListView").FindFirstChild(cf => cf.ByControlType(ControlType.ListItem)) is { } row ? Text(row) : null;
+        var previousRow = FirstRow();
+        bool Loaded() => VisibleBadges() is [var only] && only == source && Text(Find(dev, "ResultsText")) == "Add 1 to queue"
+            && FirstRow() != previousRow;
 
         SubmitSearch(dev, url);
         try
