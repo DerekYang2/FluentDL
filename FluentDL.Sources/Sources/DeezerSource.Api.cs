@@ -295,7 +295,7 @@ internal sealed partial class DeezerSource
         HashSet<string> idSet = new HashSet<string>(); // Set of track ids
 
         // With album
-        var req = "search?q=" + WebUtility.UrlEncode(("artist:%22" + song.Artists + "%22 ") + (trackName.Length > 0 ? "track:%22" + trackName + "%22 " : "") + (albumName.Length > 0 ? "album:%22" + albumName + "%22" : ""));
+        var req = PlainSearchRequest(song.Artists, trackName, albumName);
         var jsonObject = await restClient.FetchJsonElement(req); // Create json object from the response
 
         if (jsonObject.TryGetProperty("data", out var dataElement))
@@ -315,10 +315,7 @@ internal sealed partial class DeezerSource
                     var songObj = GetTrackPreview(track);
 
                     // Check if close artist match to add to list
-                    var queryArtists = song.Artists.Split(", ").ToList();
-                    var oneArtistMatch = queryArtists.Any(queryArtist => artists.Any(artist => FuzzyMatch.CloseMatch(queryArtist, artist)));
-
-                    if (oneArtistMatch)
+                    if (FuzzyMatch.AnyArtistMatches(song.Artists, songObj.Artists))
                     {
                         songObjList.Add(songObj);
                     }
@@ -327,7 +324,7 @@ internal sealed partial class DeezerSource
         }
 
         // Without album
-        req = "search?q=" + WebUtility.UrlEncode(("artist:%22" + song.Artists + "%22 ") + (trackName.Length > 0 ? "track:%22" + trackName + "%22 " : "")) + "?strict=on"; // Strict search
+        req = PlainSearchRequest(song.Artists, trackName);
         jsonObject = await restClient.FetchJsonElement(req); // Create json object from the response
 
         if (jsonObject.TryGetProperty("data", out var dataElement2))
@@ -347,10 +344,7 @@ internal sealed partial class DeezerSource
                     var songObj = GetTrackPreview(track);
 
                     // Check if close artist match to add to list
-                    var queryArtists = song.Artists.Split(", ").ToList();
-                    var oneArtistMatch = queryArtists.Any(queryArtist => artists.Any(artist => FuzzyMatch.CloseMatch(queryArtist, artist)));
-
-                    if (oneArtistMatch)
+                    if (FuzzyMatch.AnyArtistMatches(song.Artists, songObj.Artists))
                     {
                         songObjList.Add(songObj);
                     }
@@ -456,8 +450,7 @@ internal sealed partial class DeezerSource
             itemSource.Clear();
         }
 
-        var req = "search?q=" + WebUtility.UrlEncode((artistName.Length > 0 ? "artist:%22" + artistName + "%22 " : "") + (trackName.Length > 0 ? "track:%22" + trackName + "%22 " : "") + (albumName.Length > 0 ? "album:%22" + albumName + "%22" : "")) + "?strict=on"; // Strict search
-        req += $"%20&limit={limit}&index={offset}"; // Add limit and offset to the query
+        var req = PlainSearchRequest(artistName, trackName, albumName) + $"&limit={limit}&index={offset}";
         var jsonObject = await restClient.FetchJsonElement(req); // Create json object from the response
 
         foreach (var track in jsonObject.GetProperty("data").EnumerateArray())
@@ -469,12 +462,20 @@ internal sealed partial class DeezerSource
 
             var trackId = track.GetProperty("id").ToString();
             var songObj = await GetTrack(trackId);
-            if (songObj != null)
+            // The artist is only a search word, so results by other artists are dropped here. A page can come back
+            // with fewer than `limit` tracks.
+            if (songObj != null && (artistName.Length == 0 || FuzzyMatch.AnyArtistMatches(artistName, songObj.Artists)))
             {
                 itemSource.Add(songObj);
             }
         }
     }
+
+    // Deezer's search ignores its artist:"..." field: any query with it returns nothing (checked 2026-10-10), while a
+    // plain "artist title" search ranks the right track at or near the top. So every term goes in as plain words, and
+    // callers filter the results by artist (bug 15).
+    private static string PlainSearchRequest(params string[] terms) =>
+        "search?q=" + Uri.EscapeDataString(string.Join(" ", terms.Where(term => term.Length > 0)));
 
     private SongSearchObject GetTrackPreview(JsonElement jsonObj)
     {

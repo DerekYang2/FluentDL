@@ -926,15 +926,178 @@
     "Error": null
   },
   "AdvancedArtistTrack": {
-    "Items": [],
+    "Items": [
+      {
+        "Source": "deezer",
+        "Id": "66609426",
+        "Title": "Get Lucky (Radio Edit - feat. Pharrell Williams and Nile Rodgers)",
+        "Artists": "Daft Punk, Pharrell Williams, Nile Rodgers",
+        "AlbumName": "Get Lucky (Radio Edit - feat. Pharrell Williams and Nile Rodgers)",
+        "Isrc": "USQX91300809",
+        "Duration": "248",
+        "ReleaseDate": "2013-04-19",
+        "Explicit": false,
+        "TrackPosition": "1",
+        "ImageLocation": "https://api.deezer.com/album/6516139/image",
+        "AdditionalFieldKeys": [
+          "preview"
+        ]
+      },
+      {
+        "Source": "deezer",
+        "Id": "67238735",
+        "Title": "Get Lucky (feat. Pharrell Williams and Nile Rodgers)",
+        "Artists": "Daft Punk, Pharrell Williams, Nile Rodgers",
+        "AlbumName": "Random Access Memories",
+        "Isrc": "USQX91300108",
+        "Duration": "367",
+        "ReleaseDate": "2013-05-20",
+        "Explicit": false,
+        "TrackPosition": "8",
+        "ImageLocation": "https://api.deezer.com/album/6575789/image",
+        "AdditionalFieldKeys": [
+          "preview"
+        ]
+      },
+      {
+        "Source": "deezer",
+        "Id": "68442505",
+        "Title": "Get Lucky (Daft Punk Remix)",
+        "Artists": "Daft Punk, Pharrell Williams, Nile Rodgers, Florian Lagatta",
+        "AlbumName": "Get Lucky (feat. Pharrell Williams & Nile Rodgers)",
+        "Isrc": "USQX91301322",
+        "Duration": "631",
+        "ReleaseDate": "2013-06-26",
+        "Explicit": false,
+        "TrackPosition": "1",
+        "ImageLocation": "https://api.deezer.com/album/6703310/image",
+        "AdditionalFieldKeys": [
+          "preview"
+        ]
+      },
+      {
+        "Source": "deezer",
+        "Id": "1819285597",
+        "Title": "Get Lucky",
+        "Artists": "Daft Punk Experience, Zico Oliveira",
+        "AlbumName": "Get Lucky",
+        "Isrc": "BXCPT2000157",
+        "Duration": "204",
+        "ReleaseDate": "2022-07-06",
+        "Explicit": false,
+        "TrackPosition": "1",
+        "ImageLocation": "https://api.deezer.com/album/334342767/image",
+        "AdditionalFieldKeys": [
+          "preview"
+        ]
+      }
+    ],
     "Error": null
   },
   "AdvancedAll": {
-    "Items": [],
+    "Items": [
+      {
+        "Source": "deezer",
+        "Id": "67238735",
+        "Title": "Get Lucky (feat. Pharrell Williams and Nile Rodgers)",
+        "Artists": "Daft Punk, Pharrell Williams, Nile Rodgers",
+        "AlbumName": "Random Access Memories",
+        "Isrc": "USQX91300108",
+        "Duration": "367",
+        "ReleaseDate": "2013-05-20",
+        "Explicit": false,
+        "TrackPosition": "8",
+        "ImageLocation": "https://api.deezer.com/album/6575789/image",
+        "AdditionalFieldKeys": [
+          "preview"
+        ]
+      }
+    ],
     "Error": null
   },
   "AdvancedArtistOnly": {
-    "Items": [],
+    "Items": [
+      {
+        "Source": "deezer",
+        "Id": "70266756",
+        "Title": "Wake Me Up",
+        "Artists": "Avicii",
+        "AlbumName": "True",
+        "Isrc": "SEUM71301326",
+        "Duration": "249",
+        "ReleaseDate": "2013-09-16",
+        "Explicit": false,
+        "TrackPosition": "1",
+        "ImageLocation": "https://api.deezer.com/album/6893935/image",
+        "AdditionalFieldKeys": [
+          "preview"
+        ]
+      },
+      {
+        "Source": "deezer",
+        "Id": "90632837",
+        "Title": "The Nights",
+        "Artists": "Avicii",
+        "AlbumName": "The Days / Nights (EP)",
+        "Isrc": "CH3131340464",
+        "Duration": "179",
+        "ReleaseDate": "2014-12-01",
+        "Explicit": false,
+        "TrackPosition": "2",
+        "ImageLocation": "https://api.deezer.com/album/9188269/image",
+        "AdditionalFieldKeys": [
+          "preview"
+        ]
+      },
+      {
+        "Source": "deezer",
+        "Id": "14383880",
+        "Title": "Levels (Radio Edit)",
+        "Artists": "Avicii",
+        "AlbumName": "Levels",
+        "Isrc": "SEUM71100962",
+        "Duration": "199",
+        "ReleaseDate": "2011-10-31",
+        "Explicit": false,
+        "TrackPosition": "1",
+        "ImageLocation": "https://api.deezer.com/album/1318964/image",
+        "AdditionalFieldKeys": [
+          "preview"
+        ]
+      },
+      {
+        "Source": "deezer",
+        "Id": "107346368",
+        "Title": "Waiting For Love",
+        "Artists": "Avicii",
+        "AlbumName": "Stories",
+        "Isrc": "CHB701400134",
+        "Duration": "228",
+        "ReleaseDate": "2015-10-02",
+        "Explicit": false,
+        "TrackPosition": "1",
+        "ImageLocation": "https://api.deezer.com/album/11192186/image",
+        "AdditionalFieldKeys": [
+          "preview"
+        ]
+      },
+      {
+        "Source": "deezer",
+        "Id": "70266759",
+        "Title": "Addicted To You",
+        "Artists": "Avicii",
+        "AlbumName": "True",
+        "Isrc": "CH3131340085",
+        "Duration": "148",
+        "ReleaseDate": "2013-09-16",
+        "Explicit": false,
+        "TrackPosition": "4",
+        "ImageLocation": "https://api.deezer.com/album/6893935/image",
+        "AdditionalFieldKeys": [
+          "preview"
+        ]
+      }
+    ],
     "Error": null
   }
 }

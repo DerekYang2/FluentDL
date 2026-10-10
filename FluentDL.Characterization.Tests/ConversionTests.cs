@@ -61,6 +61,22 @@ public class ConversionTests
     [TestCategory("YouTube")]
     public Task ConvertWithSpotifyOfficialToYoutube() => RunAsync("spotify", "youtube", spotifyOfficial: true);
 
+    // Bugs 15 and 1: a song with no ISRC (a local file, a YouTube video) is matched on Deezer by artist, title and
+    // album. That search used to find nothing. The artist check on its results is covered by Core's AnyArtistMatches tests.
+    [TestMethod]
+    public async Task DeezerMatchesByMetadataWithoutAnIsrc()
+    {
+        await LiveSources.EnsureDeezerAsync();
+        var song = new SongSearchObject
+        {
+            Source = "local", Id = "get-lucky.flac", Title = "Get Lucky (feat. Pharrell Williams and Nile Rodgers)",
+            Artists = "Daft Punk, Pharrell Williams, Nile Rodgers", AlbumName = "Random Access Memories",
+        };
+        var match = await TestSources.Conversions.FindEquivalentAsync(song, "deezer", CancellationToken.None);
+        Assert.AreEqual(MatchKind.Close, match.Kind);
+        Assert.AreEqual(Fixtures.Tracks[0].DeezerId, match.Track!.Id);
+    }
+
     private static async Task RunAsync(string origin, string target, bool spotifyOfficial)
     {
         var baselineName = $"{(spotifyOfficial ? "ConversionSpotifyOfficial" : "Conversion")}.{origin}-to-{target}";

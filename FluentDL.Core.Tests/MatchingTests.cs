@@ -141,6 +141,19 @@ public class FuzzyMatchTests
         Assert.AreEqual(expected, FuzzyMatch.CloseMatch(b, a));
     }
 
+    // Bug 1: Deezer's conversion compared the song's artists with themselves, so this check always passed.
+    [DataTestMethod]
+    [DataRow("Daft Punk, Pharrell Williams, Nile Rodgers", "Daft Punk", true)]
+    [DataRow("Pharrell Williams", "Daft Punk, Pharrell Williams", true)]
+    [DataRow("Beyonc\u00e9", "Beyonce", true)]
+    [DataRow("Thomas Bangalter", "Da Funk", false)]
+    [DataRow("Daft Punk, Pharrell Williams", "Vitamin String Quartet", false)]
+    public void AnyArtistMatches(string artists, string otherArtists, bool expected)
+    {
+        Assert.AreEqual(expected, FuzzyMatch.AnyArtistMatches(artists, otherArtists));
+        Assert.AreEqual(expected, FuzzyMatch.AnyArtistMatches(otherArtists, artists));
+    }
+
     [DataTestMethod]
     [DataRow("Levels", "Levels (Skrillex Remix)", true)]
     [DataRow("Halo", "Halo (Live)", true)]

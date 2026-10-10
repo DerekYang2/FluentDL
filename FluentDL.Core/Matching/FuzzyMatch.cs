@@ -40,6 +40,16 @@ public static class FuzzyMatch
         return IsSubstring(str1.ToLower(), str2.ToLower());
     }
 
+    /// <summary>
+    /// True when any artist in one ", "-separated list is a <see cref="CloseMatch"/> for any artist in the other.
+    /// "Daft Punk, Pharrell Williams" shares an artist with "Pharrell Williams".
+    /// </summary>
+    public static bool AnyArtistMatches(string artists, string otherArtists)
+    {
+        var others = otherArtists.Split(", ");
+        return artists.Split(", ").Any(artist => others.Any(other => CloseMatch(artist, other)));
+    }
+
     /// <summary>Edit distance between two strings. An empty or null string counts as length 0.</summary>
     public static int LevenshteinDistance(string a, string b)
     {
