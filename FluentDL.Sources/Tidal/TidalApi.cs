@@ -39,7 +39,7 @@ public sealed class TidalApi
     }
 
     /// <summary>
-    /// The country of the last request. It changes what TIDAL offers and how it ranks results (Canada ranks another
+    /// The country of the last sign-in or request. It changes what TIDAL offers and how it ranks results (Canada ranks another
     /// Random Access Memories edition second than the US).
     /// </summary>
     public string CountryCode { get; private set; }
@@ -54,6 +54,7 @@ public sealed class TidalApi
         {
             token = null;
             await RequestTokenAsync(cancellationToken);
+            await ReadCountryAsync();
         }
         finally
         {
@@ -67,8 +68,7 @@ public sealed class TidalApi
         var url = ApiBase + pathAndQuery.TrimStart('/');
         if (!url.Contains("countryCode="))
         {
-            CountryCode = ResolveCountry(await settings.ReadSettingAsync<string>(SettingKeys.TidalCountry), RegionInfo.CurrentRegion.TwoLetterISORegionName);
-            url += (url.Contains('?') ? "&" : "?") + "countryCode=" + CountryCode;
+            url += (url.Contains('?') ? "&" : "?") + "countryCode=" + await ReadCountryAsync();
         }
 
         for (var attempt = 1; ; attempt++)
@@ -99,6 +99,9 @@ public sealed class TidalApi
             return new JsonApiDocument(JsonDocument.Parse(body).RootElement);
         }
     }
+
+    private async Task<string> ReadCountryAsync() =>
+        CountryCode = ResolveCountry(await settings.ReadSettingAsync<string>(SettingKeys.TidalCountry), RegionInfo.CurrentRegion.TwoLetterISORegionName);
 
     private async Task<string> GetTokenAsync(CancellationToken cancellationToken)
     {

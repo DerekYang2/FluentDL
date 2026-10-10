@@ -2,7 +2,8 @@
   "AfterStartup": {
     "Deezer": "Logged In",
     "Qobuz": "Logged In",
-    "Spotify": "Logged In"
+    "Spotify": "Logged In",
+    "Tidal": "Logged In"
   },
   "AfterUpdate": {
     "Deezer": {
@@ -15,6 +16,10 @@
     },
     "Spotify": {
       "Message": "Spotify   Logged in with Spotify Web Player",
+      "LoginState": "Logged In"
+    },
+    "Tidal": {
+      "Message": "TIDAL   Signed in to TIDAL",
       "LoginState": "Logged In"
     }
   },

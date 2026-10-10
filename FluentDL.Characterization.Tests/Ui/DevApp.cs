@@ -64,7 +64,10 @@ internal sealed class DevApp : IDisposable
         }
     }
 
-    /// <summary>Saves the Deezer ARL and the Qobuz login from the secrets file. Spotify is left in web player mode.</summary>
+    /// <summary>
+    /// Saves the Deezer ARL, the Qobuz login and the TIDAL client from the secrets file, with TIDAL pinned to the US.
+    /// Spotify is left in web player mode.
+    /// </summary>
     public static void SeedTestAccounts() => SeedSettings(new Dictionary<string, string>
     {
         ["deezer_arl"] = Secrets.Require("deezer_arl"),
@@ -72,6 +75,9 @@ internal sealed class DevApp : IDisposable
         ["qobuz_token"] = Secrets.Require("qobuz_token"),
         ["qobuz_app_id"] = Secrets.Require("qobuz_app_id"),
         ["qobuz_app_secret"] = Secrets.Require("qobuz_app_secret"),
+        ["tidal_client_id"] = Secrets.Require("tidal_client_id"),
+        ["tidal_client_secret"] = Secrets.Require("tidal_client_secret"),
+        ["tidal_country"] = "US",
     });
 
     /// <summary>Launches the dev app and waits for its main window. Startup can wait up to 30 s for the music services.</summary>

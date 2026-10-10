@@ -17,7 +17,8 @@
           "TrackPosition": "1",
           "ImageLocation": "https://resources.tidal.com/images/b66a5c40/c34d/4507/a0dc/5f98e46fdd20/320x320.jpg",
           "AdditionalFieldKeys": [
-            "cover_max"
+            "cover_max",
+            "max_quality"
           ]
         }
       ],
@@ -48,7 +49,8 @@
           "TrackPosition": "1",
           "ImageLocation": "https://resources.tidal.com/images/b66a5c40/c34d/4507/a0dc/5f98e46fdd20/320x320.jpg",
           "AdditionalFieldKeys": [
-            "cover_max"
+            "cover_max",
+            "max_quality"
           ]
         }
       ],
@@ -79,7 +81,8 @@
           "TrackPosition": "1",
           "ImageLocation": "https://resources.tidal.com/images/b66a5c40/c34d/4507/a0dc/5f98e46fdd20/320x320.jpg",
           "AdditionalFieldKeys": [
-            "cover_max"
+            "cover_max",
+            "max_quality"
           ]
         }
       ],
@@ -110,7 +113,8 @@
           "TrackPosition": "1",
           "ImageLocation": "https://resources.tidal.com/images/b66a5c40/c34d/4507/a0dc/5f98e46fdd20/320x320.jpg",
           "AdditionalFieldKeys": [
-            "cover_max"
+            "cover_max",
+            "max_quality"
           ]
         },
         {
@@ -126,7 +130,8 @@
           "TrackPosition": "2",
           "ImageLocation": "https://resources.tidal.com/images/b66a5c40/c34d/4507/a0dc/5f98e46fdd20/320x320.jpg",
           "AdditionalFieldKeys": [
-            "cover_max"
+            "cover_max",
+            "max_quality"
           ]
         },
         {
@@ -142,7 +147,8 @@
           "TrackPosition": "3",
           "ImageLocation": "https://resources.tidal.com/images/b66a5c40/c34d/4507/a0dc/5f98e46fdd20/320x320.jpg",
           "AdditionalFieldKeys": [
-            "cover_max"
+            "cover_max",
+            "max_quality"
           ]
         },
         {
@@ -158,7 +164,8 @@
           "TrackPosition": "4",
           "ImageLocation": "https://resources.tidal.com/images/b66a5c40/c34d/4507/a0dc/5f98e46fdd20/320x320.jpg",
           "AdditionalFieldKeys": [
-            "cover_max"
+            "cover_max",
+            "max_quality"
           ]
         },
         {
@@ -174,7 +181,8 @@
           "TrackPosition": "5",
           "ImageLocation": "https://resources.tidal.com/images/b66a5c40/c34d/4507/a0dc/5f98e46fdd20/320x320.jpg",
           "AdditionalFieldKeys": [
-            "cover_max"
+            "cover_max",
+            "max_quality"
           ]
         },
         {
@@ -190,7 +198,8 @@
           "TrackPosition": "6",
           "ImageLocation": "https://resources.tidal.com/images/b66a5c40/c34d/4507/a0dc/5f98e46fdd20/320x320.jpg",
           "AdditionalFieldKeys": [
-            "cover_max"
+            "cover_max",
+            "max_quality"
           ]
         },
         {
@@ -206,7 +215,8 @@
           "TrackPosition": "7",
           "ImageLocation": "https://resources.tidal.com/images/b66a5c40/c34d/4507/a0dc/5f98e46fdd20/320x320.jpg",
           "AdditionalFieldKeys": [
-            "cover_max"
+            "cover_max",
+            "max_quality"
           ]
         },
         {
@@ -222,7 +232,8 @@
           "TrackPosition": "8",
           "ImageLocation": "https://resources.tidal.com/images/b66a5c40/c34d/4507/a0dc/5f98e46fdd20/320x320.jpg",
           "AdditionalFieldKeys": [
-            "cover_max"
+            "cover_max",
+            "max_quality"
           ]
         },
         {
@@ -238,7 +249,8 @@
           "TrackPosition": "9",
           "ImageLocation": "https://resources.tidal.com/images/b66a5c40/c34d/4507/a0dc/5f98e46fdd20/320x320.jpg",
           "AdditionalFieldKeys": [
-            "cover_max"
+            "cover_max",
+            "max_quality"
           ]
         },
         {
@@ -254,7 +266,8 @@
           "TrackPosition": "10",
           "ImageLocation": "https://resources.tidal.com/images/b66a5c40/c34d/4507/a0dc/5f98e46fdd20/320x320.jpg",
           "AdditionalFieldKeys": [
-            "cover_max"
+            "cover_max",
+            "max_quality"
           ]
         },
         {
@@ -270,7 +283,8 @@
           "TrackPosition": "11",
           "ImageLocation": "https://resources.tidal.com/images/b66a5c40/c34d/4507/a0dc/5f98e46fdd20/320x320.jpg",
           "AdditionalFieldKeys": [
-            "cover_max"
+            "cover_max",
+            "max_quality"
           ]
         },
         {
@@ -286,7 +300,8 @@
           "TrackPosition": "12",
           "ImageLocation": "https://resources.tidal.com/images/b66a5c40/c34d/4507/a0dc/5f98e46fdd20/320x320.jpg",
           "AdditionalFieldKeys": [
-            "cover_max"
+            "cover_max",
+            "max_quality"
           ]
         },
         {
@@ -302,7 +317,8 @@
           "TrackPosition": "13",
           "ImageLocation": "https://resources.tidal.com/images/b66a5c40/c34d/4507/a0dc/5f98e46fdd20/320x320.jpg",
           "AdditionalFieldKeys": [
-            "cover_max"
+            "cover_max",
+            "max_quality"
           ]
         }
       ],
@@ -338,7 +354,8 @@
             "TrackPosition": "1",
             "ImageLocation": "https://resources.tidal.com/images/b66a5c40/c34d/4507/a0dc/5f98e46fdd20/320x320.jpg",
             "AdditionalFieldKeys": [
-              "cover_max"
+              "cover_max",
+              "max_quality"
             ]
           },
           "TracksCount": 13,

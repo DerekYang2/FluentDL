@@ -14,7 +14,7 @@ namespace FluentDL.Characterization.Tests.Ui;
 [TestCategory("UI")]
 public class SettingsUiTests
 {
-    private static readonly string[] Sources = ["Deezer", "Qobuz", "Spotify"];
+    private static readonly string[] Sources = ["Deezer", "Qobuz", "Spotify", "Tidal"];
 
     [TestMethod]
     [Timeout(4 * 60 * 1000)]

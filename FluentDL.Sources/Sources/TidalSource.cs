@@ -15,7 +15,7 @@ namespace FluentDL.Services.Sources;
 /// TIDAL through its official API. It only reads the catalog: search, lookups and links, with audio from other
 /// sources (see ADR-003). Signs in with a client id and secret for now; a TIDAL account login (PKCE) comes later.
 /// </summary>
-internal sealed class TidalSource : ISourceSession, ISearchSource, ILinkSource, ICatalogSource
+internal sealed class TidalSource : ISourceSession, ISearchSource, ILinkSource, ICatalogSource, IPreviewSource
 {
     private const string TrackIncludes = "tracks,tracks.artists,tracks.albums.coverArt";
     private const string AlbumIncludes = "albums,albums.artists,albums.coverArt";
@@ -206,6 +206,47 @@ internal sealed class TidalSource : ISourceSession, ISearchSource, ILinkSource, 
         return tracks;
     }
 
+    public async Task<PreviewInfo> GetPreviewAsync(SongSearchObject song)
+    {
+        var rows = new List<(string, string)>();
+        if (song.AdditionalFields?.GetValueOrDefault("max_quality") is string quality)
+        {
+            rows.Add(("Max Quality", quality));
+        }
+        var popularity = double.TryParse(song.Rank, out var rank) ? rank / 100 : (double?)null;
+        var cover = song.AdditionalFields?.GetValueOrDefault("cover_max") as string ?? song.ImageLocation;
+
+        if (song is AlbumSearchObject album)
+        {
+            if (!string.IsNullOrEmpty(album.Upc))
+            {
+                rows.Add(("UPC", album.Upc!));
+            }
+            var tracks = await GetAlbumTracksAsync(album, CancellationToken.None);
+            album.TrackList = tracks;
+            return new PreviewInfo { CoverUrl = cover, Rows = rows, RemoveAlbumRow = true, Popularity = popularity, AlbumTracks = tracks, AlbumTrackCount = album.TracksCount };
+        }
+
+        if (!string.IsNullOrEmpty(song.Isrc))
+        {
+            rows.Add(("ISRC", song.Isrc!));
+        }
+        return new PreviewInfo { CoverUrl = cover, Rows = rows, Popularity = popularity, LoadAudioSeparately = true };
+    }
+
+    /// <summary>
+    /// The track's 30 s preview, as the address of an HLS playlist (a list of short AAC chunks that Windows' media player
+    /// streams). TIDAL gives a preview, not the full track, without a subscription login. The address expires, so it
+    /// is fetched when the preview opens.
+    /// </summary>
+    public async Task<string?> GetPreviewAudioAsync(SongSearchObject track)
+    {
+        var document = await GetOrNullAsync(
+            $"trackManifests/{Uri.EscapeDataString(track.Id)}?manifestType=HLS&formats=HEAACV1&uriScheme=HTTPS&usage=PLAYBACK&adaptive=false",
+            CancellationToken.None);
+        return document?.Data.FirstOrDefault() is { ValueKind: JsonValueKind.Object } manifest ? Attribute(manifest, "uri") : null;
+    }
+
     /// <summary>A public playlist's name and tracks, in order. Videos in the playlist are left out.</summary>
     public async Task<(string Name, List<SongSearchObject> Tracks)> GetPlaylistAsync(string id, CancellationToken token)
     {
@@ -352,6 +393,7 @@ internal sealed class TidalSource : ISourceSession, ISearchSource, ILinkSource, 
         {
             SetCovers(song, document, album);
         }
+        SetMaxQuality(song, track);
         return song;
     }
 
@@ -372,7 +414,25 @@ internal sealed class TidalSource : ISourceSession, ISearchSource, ILinkSource, 
             Upc = Attribute(album, "barcodeId"),
         };
         SetCovers(result, document, album);
+        SetMaxQuality(result, album);
         return result;
+    }
+
+    // TIDAL tags what a track or album is available in. Only shown in the preview: FluentDL doesn't download from TIDAL.
+    private static void SetMaxQuality(SongSearchObject item, JsonElement resource)
+    {
+        if (AttributeElement(resource, "mediaTags") is not { ValueKind: JsonValueKind.Array } tags)
+        {
+            return;
+        }
+        var names = tags.EnumerateArray().Select(t => t.GetString()).ToHashSet();
+        var quality = names.Contains("HIRES_LOSSLESS") ? "Hi-Res Lossless (up to 24-bit/192 kHz)"
+            : names.Contains("LOSSLESS") ? "Lossless (16-bit/44.1 kHz)"
+            : null;
+        if (quality != null)
+        {
+            (item.AdditionalFields ??= [])["max_quality"] = quality;
+        }
     }
 
     // TIDAL keeps a version apart from the title ("Get Lucky" + "feat. Pharrell Williams and Nile Rodgers"); the app

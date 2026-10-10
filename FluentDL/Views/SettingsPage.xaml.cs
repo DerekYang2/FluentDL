@@ -160,6 +160,10 @@ public sealed partial class SettingsPage : Page
         // Set Ids/Secrets
         ClientIdInput.Text = (await localSettings.ReadSettingAsync<string?>(SettingsViewModel.SpotifyClientId)) ?? "";
         SpotifySecretInput.Password = (await localSettings.ReadSettingAsync<string?>(SettingsViewModel.SpotifyClientSecret)) ?? "";
+        TidalClientIdInput.Text = await localSettings.ReadSettingAsync<string?>(SettingsViewModel.TidalClientId) ?? "";
+        TidalSecretInput.Password = await localSettings.ReadSettingAsync<string?>(SettingsViewModel.TidalClientSecret) ?? "";
+        TidalCountryInput.Text = await localSettings.ReadSettingAsync<string?>(SettingsViewModel.TidalCountry) ?? "";
+        TidalCountryInput.PlaceholderText = $"Windows region ({System.Globalization.RegionInfo.CurrentRegion.TwoLetterISORegionName})";
         DeezerARLInput.Password = await localSettings.ReadSettingAsync<string?>(SettingsViewModel.DeezerARL) ?? "";
         QobuzIDInput.Text = await localSettings.ReadSettingAsync<string?>(SettingsViewModel.QobuzId) ?? "";
         QobuzTokenInput.Text = await localSettings.ReadSettingAsync<string?>(SettingsViewModel.QobuzToken) ?? "";
@@ -188,6 +192,7 @@ public sealed partial class SettingsPage : Page
         SetDeezerAuthInfo(Session(SourceIds.Deezer).IsConnected);
         SetQobuzAuthInfo(Session(SourceIds.Qobuz).IsConnected);
         SetSpotifyAuthInfo(Session(SourceIds.Spotify).IsConnected);
+        SetTidalAuthInfo(Session(SourceIds.Tidal).IsConnected);
         await InitializeDiagnosticsAsync();
     }
 
@@ -314,6 +319,32 @@ public sealed partial class SettingsPage : Page
         await localSettings.SaveSettingAsync(SettingsViewModel.SpotifyClientId, ClientIdInput.Text.Trim());
         await localSettings.SaveSettingAsync(SettingsViewModel.SpotifyClientSecret, SpotifySecretInput.Password.Trim());
         ShowConnectResult(await Session(SourceIds.Spotify).ConnectAsync(), "Spotify", SetSpotifyAuthInfo);
+    }
+
+    private void SetTidalAuthInfo(bool isInitialized)
+    {
+        if (isInitialized)
+        {
+            TidalInfoButton.IsEnabled = true;
+            TidalInfoButtonText.Text = "Logged In";
+            TidalInfoText.Text = Session(SourceIds.Tidal).StatusText ?? "No Info";
+            TidalInfoIcon.Glyph = "\uE946";
+        }
+        else
+        {
+            TidalInfoButton.IsEnabled = false;
+            TidalInfoButtonText.Text = "Not Logged In";
+            TidalInfoIcon.Glyph = "\uEA39";
+        }
+    }
+
+    private async void TidalUpdateButton_Click(object sender, RoutedEventArgs e)
+    {
+        await localSettings.SaveSettingAsync(SettingsViewModel.TidalClientId, TidalClientIdInput.Text.Trim());
+        await localSettings.SaveSettingAsync(SettingsViewModel.TidalClientSecret, TidalSecretInput.Password.Trim());
+        await localSettings.SaveSettingAsync(SettingsViewModel.TidalCountry, TidalCountryInput.Text.Trim().ToUpperInvariant());
+        // Missing credentials come back as a warning, not an error, so ask the session whether it signed in.
+        ShowConnectResult(await Session(SourceIds.Tidal).ConnectAsync(), "TIDAL", _ => SetTidalAuthInfo(Session(SourceIds.Tidal).IsConnected));
     }
 
     private async void DeezerUpdateButton_Click(object sender, RoutedEventArgs e)
