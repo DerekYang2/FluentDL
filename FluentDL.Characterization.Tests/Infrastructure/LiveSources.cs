@@ -65,10 +65,10 @@ internal static class LiveSources
     }
 
     /// <summary>
-    /// Puts Spotify in web player mode. In the app, SpotifySource.Initialize gets these services from
-    /// App.GetService, which needs the running WinUI app, so the test builds them and sets the same
-    /// private fields that the web player branch of Initialize sets. It also clears the official client, which the
-    /// app never sets in this mode (bug 9), in case an official-mode test ran first in the same process.
+    /// Puts Spotify in web player mode by setting the private fields that the web player branch of
+    /// SpotifySource.Initialize sets, with the web services TestSources gave the adapter. It also clears the official
+    /// client, which the app never does in this mode (bug 9), in case an official-mode test ran first in the same
+    /// process.
     /// </summary>
     public static async Task EnsureSpotifyWebPlayerAsync()
     {
@@ -78,16 +78,13 @@ internal static class LiveSources
             if (!spotifyTried)
             {
                 spotifyTried = true;
-                var tokens = new ClientTokenService(new HttpClient(), NullLogger<ClientTokenService>.Instance, new MemoryCache(new MemoryCacheOptions()));
-                spotifyWebService = new SpotifyWebService(new HttpClient(), tokens, NullLogger<SpotifyWebService>.Instance);
-                spotifyIsrcService = new SpotifyISRCService(new HttpClient(), tokens, NullLogger<SpotifyISRCService>.Instance);
-                spotifyWebAuthenticated = await spotifyWebService.IsAuthenticated(10000);
+                spotifyWebAuthenticated = await TestSources.SpotifyWebService.IsAuthenticated(10000);
             }
 
-            SetPrivateStatic("spotify", null);
-            SetPrivateStatic("spotifyUser", null);
-            SetPrivateStatic("spotifyWebService", spotifyWebService);
-            SetPrivateStatic("spotifyISRCService", spotifyIsrcService);
+            SetPrivateField("spotify", null);
+            SetPrivateField("spotifyUser", null);
+            SetPrivateField("spotifyWebService", TestSources.SpotifyWebService);
+            SetPrivateField("spotifyISRCService", TestSources.SpotifyIsrcService);
             TestSources.Spotify.IsInitialized = spotifyWebAuthenticated;
         }
         finally
@@ -120,11 +117,9 @@ internal static class LiveSources
         if (!TestSources.Spotify.IsInitialized) Assert.Inconclusive("Spotify did not sign in with the client id and secret from the secrets file.");
     }
 
-    private static SpotifyWebService? spotifyWebService;
-    private static SpotifyISRCService? spotifyIsrcService;
     private static bool spotifyWebAuthenticated;
 
-    private static void SetPrivateStatic(string name, object? value)
+    private static void SetPrivateField(string name, object? value)
     {
         var field = typeof(SpotifySource).GetField(name, BindingFlags.NonPublic | BindingFlags.Instance)
             ?? throw new MissingFieldException(nameof(SpotifySource), name);

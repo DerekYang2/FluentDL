@@ -1,4 +1,5 @@
 using FluentDL.Contracts.Sources;
+using FluentDL.Core.Contracts.Services;
 using FluentDL.Core.Sources;
 using FluentDL.Models;
 
@@ -8,6 +9,15 @@ namespace FluentDL.Services.Sources;
 internal sealed partial class YoutubeSource : ISearchSource, ILinkSource, IConversionTarget, ICatalogSource, IPreviewSource, IDownloadSource, ITagSource
 {
     public SourceDescriptor Descriptor { get; } = SourceCatalog.Find(SourceIds.YouTube)!;
+
+    private readonly ILocalSettingsService settings;
+    private readonly IAudioConverter audioConverter;
+
+    public YoutubeSource(ILocalSettingsService settings, IAudioConverter audioConverter)
+    {
+        this.settings = settings;
+        this.audioConverter = audioConverter;
+    }
 
     public Task SearchAsync(ICollection<SongSearchObject> results, string query, PageRequest page, bool albumMode, CancellationToken token) =>
         GeneralSearch(results, query, token, page.Offset, page.Limit, albumMode);
@@ -37,8 +47,7 @@ internal sealed partial class YoutubeSource : ISearchSource, ILinkSource, IConve
             return opusPath;
         }
 
-        var settings = SourceServices.Settings;
-        var converter = SourceServices.AudioConverter;
+        var converter = audioConverter;
         var flacLocation = pathWithoutExtension + ".flac";
         var opusLocation = pathWithoutExtension + ".opus";
         var m4aLocation = pathWithoutExtension + ".m4a";

@@ -78,8 +78,8 @@ namespace FluentDL.Services.Sources
                 }
 
                 // Create web services if normal api not configured
-                spotifyWebService ??= App.GetService<ISpotifyWebService>();
-                spotifyISRCService ??= App.GetService<ISpotifyISRCService>();
+                spotifyWebService ??= injectedWebService;
+                spotifyISRCService ??= injectedIsrcService;
 
                 // Check if spotify web player services are authenticated
                 if (await spotifyWebService.IsAuthenticated(10000))
@@ -448,7 +448,7 @@ namespace FluentDL.Services.Sources
             // Fallback
             try
             {
-                var isrcServiceInstance = spotifyISRCService ?? App.GetService<ISpotifyISRCService>();
+                var isrcServiceInstance = spotifyISRCService ?? injectedIsrcService;
                 return await isrcServiceInstance.GetIsrc(id);
             }
             catch (Exception e)
@@ -825,7 +825,7 @@ namespace FluentDL.Services.Sources
 
             if (url.StartsWith("https://open.spotify.com/playlist/"))
             {
-                ISpotifyWebService webServiceInstance = spotifyWebService ?? App.GetService<ISpotifyWebService>();
+                ISpotifyWebService webServiceInstance = spotifyWebService ?? injectedWebService;
 
                 statusUpdate?.Invoke(StatusLevel.Informational, $"<b>Spotify</b>   Loading <a href='{url}'>playlist</a>", -1);
 

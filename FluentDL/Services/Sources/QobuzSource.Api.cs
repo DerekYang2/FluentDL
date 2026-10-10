@@ -983,7 +983,7 @@ internal sealed partial class QobuzSource
         if (format == null) // If format is not specified, get it from the settings
         {
             // Get the format from settings
-            var selectedIndex = await SourceServices.Settings.ReadSettingAsync<int?>(SettingKeys.QobuzQuality) ?? 0;
+            var selectedIndex = await settings.ReadSettingAsync<int?>(SettingKeys.QobuzQuality) ?? 0;
 
             format = selectedIndex switch
             {
@@ -1003,7 +1003,7 @@ internal sealed partial class QobuzSource
         // Add the extension
         filePath += "." + (format == "5" ? "mp3" : "flac"); // Only one format is mp3
 
-        if (System.IO.File.Exists(filePath) && await SourceServices.Settings.ReadSettingAsync<bool>(SettingKeys.Overwrite) == false)
+        if (System.IO.File.Exists(filePath) && await settings.ReadSettingAsync<bool>(SettingKeys.Overwrite) == false)
         {
             throw new Exception("File already exists");
         }

@@ -1,5 +1,6 @@
 using System.Text.RegularExpressions;
 using FluentDL.Contracts.Sources;
+using FluentDL.Core.Contracts.Services;
 using FluentDL.Core.Sources;
 using FluentDL.Helpers;
 using FluentDL.Models;
@@ -10,13 +11,22 @@ internal sealed partial class DeezerSource : ISourceSession, ISearchSource, ILin
 {
     public SourceDescriptor Descriptor { get; } = SourceCatalog.Find(SourceIds.Deezer)!;
 
+    private readonly ILocalSettingsService settings;
+    private readonly IAudioConverter audioConverter;
+
+    public DeezerSource(ILocalSettingsService settings, IAudioConverter audioConverter)
+    {
+        this.settings = settings;
+        this.audioConverter = audioConverter;
+    }
+
     public bool IsConnected => IsInitialized;
 
     public string? StatusText => LoginString();
 
     public async Task<ConnectResult> ConnectAsync()
     {
-        var arl = await SourceServices.Settings.ReadSettingAsync<string>(SettingKeys.DeezerArl);
+        var arl = await settings.ReadSettingAsync<string>(SettingKeys.DeezerArl);
         return await CallbackResults.Connect(callback => InitDeezerClient(arl, callback), () => IsInitialized);
     }
 

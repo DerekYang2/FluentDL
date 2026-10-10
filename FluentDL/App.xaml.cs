@@ -8,6 +8,7 @@ using FluentDL.Models;
 using FluentDL.Notifications;
 using FluentDL.Services;
 using FluentDL.Services.CustomSpotify;
+using FluentDL.Core.Sources;
 using FluentDL.Services.Sources;
 using FluentDL.ViewModels;
 using FluentDL.Views;
@@ -122,6 +123,7 @@ public partial class App : Application
                     // Core Services
                     services.AddSingleton<ISampleDataService, SampleDataService>();
                     services.AddSingleton<IFileService, FileService>();
+                    services.AddSingleton<IAudioConverter, FFmpegRunner>();
 
                     // Music sources
                     services.AddSource<DeezerSource>();
@@ -163,7 +165,7 @@ public partial class App : Application
                         context.Configuration.GetSection(nameof(LocalSettingsOptions)));
                 }).Build();
 
-            FluentDL.Core.Sources.SourceServices.Configure(GetService<ILocalSettingsService>(), new FFmpegRunner());
+            FluentDL.Core.Sources.SourceServices.Configure(GetService<ILocalSettingsService>(), GetService<IAudioConverter>());
 
             Log.Information("Application services initialized; version {Version}", SettingsViewModel.GetVersionDescription());
             App.GetService<IAppNotificationService>().Initialize();

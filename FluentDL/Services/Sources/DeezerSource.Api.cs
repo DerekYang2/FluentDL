@@ -687,7 +687,7 @@ internal sealed partial class DeezerSource
         if (bitrateEnum == null)
         {
             // Get quality based on setting
-            var settingIdx = await SourceServices.Settings.ReadSettingAsync<int?>(SettingKeys.DeezerQuality) ?? 0;
+            var settingIdx = await settings.ReadSettingAsync<int?>(SettingKeys.DeezerQuality) ?? 0;
             bitrateEnum = settingIdx switch
             {
                 0 => DeezNET.Data.Bitrate.MP3_128,
@@ -711,7 +711,7 @@ internal sealed partial class DeezerSource
             _ => throw new ArgumentOutOfRangeException("Invalid bitrate enum")
         };
 
-        if (File.Exists(filePath) && await SourceServices.Settings.ReadSettingAsync<bool>(SettingKeys.Overwrite) == false)
+        if (File.Exists(filePath) && await settings.ReadSettingAsync<bool>(SettingKeys.Overwrite) == false)
         {
             throw new Exception("File already exists");
         }
@@ -729,7 +729,7 @@ internal sealed partial class DeezerSource
             }
         } catch (Exception e)
         {
-            if (!use128Fallback || (!SourceServices.AudioConverter.IsInitialized && bitrateEnum == DeezNET.Data.Bitrate.FLAC))  // Rethrow if not using fallback
+            if (!use128Fallback || (!audioConverter.IsInitialized && bitrateEnum == DeezNET.Data.Bitrate.FLAC))  // Rethrow if not using fallback
             {
                 throw;
             }
@@ -761,7 +761,7 @@ internal sealed partial class DeezerSource
         {
             try
             {
-                await SourceServices.AudioConverter.ConvertToFlacAsync(filePath, 44100);
+                await audioConverter.ConvertToFlacAsync(filePath, 44100);
             } catch (Exception e)
             {
                 throw new Exception("Failed to convert to FLAC: " + e.Message);

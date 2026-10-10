@@ -1,7 +1,10 @@
 using FluentDL.Core.Contracts.Services;
 using FluentDL.Core.Sources;
 using FluentDL.Services;
+using FluentDL.Services.CustomSpotify;
 using FluentDL.Services.Sources;
+using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace FluentDL.Characterization.Tests.Infrastructure;
 
@@ -11,10 +14,19 @@ namespace FluentDL.Characterization.Tests.Infrastructure;
 /// </summary>
 internal static class TestSources
 {
-    public static readonly DeezerSource Deezer = new();
-    public static readonly QobuzSource Qobuz = new();
-    public static readonly SpotifySource Spotify = new();
-    public static readonly YoutubeSource Youtube = new();
+    // Static fields initialize in the order written: the services first, then the adapters that take them.
+    public static readonly ILocalSettingsService Settings = CreateSettings();
+    public static readonly IAudioConverter AudioConverter = new NoAudioConverter();
+
+    private static readonly ClientTokenService SpotifyTokens =
+        new(new HttpClient(), NullLogger<ClientTokenService>.Instance, new MemoryCache(new MemoryCacheOptions()));
+    public static readonly SpotifyWebService SpotifyWebService = new(new HttpClient(), SpotifyTokens, NullLogger<SpotifyWebService>.Instance);
+    public static readonly SpotifyISRCService SpotifyIsrcService = new(new HttpClient(), SpotifyTokens, NullLogger<SpotifyISRCService>.Instance);
+
+    public static readonly DeezerSource Deezer = new(Settings, AudioConverter);
+    public static readonly QobuzSource Qobuz = new(Settings);
+    public static readonly SpotifySource Spotify = new(Settings, SpotifyWebService, SpotifyIsrcService);
+    public static readonly YoutubeSource Youtube = new(Settings, AudioConverter);
 
     public static readonly SourceRegistry Registry = new([Deezer, Qobuz, Spotify, Youtube]);
 
@@ -24,38 +36,37 @@ internal static class TestSources
     /// <summary>The download pipeline the Search and Queue pages use.</summary>
     public static readonly DownloadService Downloads = new(Registry, new EquivalentDownloader(Registry));
 
-    static TestSources()
-    {
-        var settings = new MemorySettings(new()
-        {
-            [SettingKeys.DeezerArl] = Secrets.Get("deezer_arl"),
-            [SettingKeys.QobuzId] = Secrets.Get("qobuz_id"),
-            [SettingKeys.QobuzToken] = Secrets.Get("qobuz_token"),
-            [SettingKeys.QobuzAppId] = Secrets.Get("qobuz_app_id"),
-            [SettingKeys.QobuzAppSecret] = Secrets.Get("qobuz_app_secret"),
-            [SettingKeys.SpotifyClientId] = Secrets.Get("spotify_client_id"),
-            [SettingKeys.SpotifyClientSecret] = Secrets.Get("spotify_client_secret"),
+    // App-level code (SettingsViewModel, EquivalentDownloader) still reads these through SourceServices.
+    static TestSources() => SourceServices.Configure(Settings, AudioConverter);
 
-            // Download settings, with the values SettingsViewModel.SetMissingDefaults gives a new install.
-            [SettingKeys.DeezerQuality] = 2, // FLAC
-            [SettingKeys.QobuzQuality] = 3, // 24-bit/192 kHz
-            [SettingKeys.SpotifyQuality] = 1, // FLAC
-            ["youtube_quality"] = 1,
-            [SettingKeys.Overwrite] = false,
-            ["use_ytdlp"] = false,
-            ["file_naming_wildcard"] = "",
-            ["subfolders"] = false,
-            ["subfolder_wildcard"] = "",
-            ["album_subfolders"] = true,
-            ["album_subfolder_wildcard"] = "",
-            ["download_album_cover_art"] = true,
-            ["download_lyrics"] = false,
-            ["replaygain_auto_apply"] = false,
-            ["replaygain_album_downloads"] = false,
-            ["conversion_threads"] = 3,
-        });
-        SourceServices.Configure(settings, new NoAudioConverter());
-    }
+    private static MemorySettings CreateSettings() => new(new()
+    {
+        [SettingKeys.DeezerArl] = Secrets.Get("deezer_arl"),
+        [SettingKeys.QobuzId] = Secrets.Get("qobuz_id"),
+        [SettingKeys.QobuzToken] = Secrets.Get("qobuz_token"),
+        [SettingKeys.QobuzAppId] = Secrets.Get("qobuz_app_id"),
+        [SettingKeys.QobuzAppSecret] = Secrets.Get("qobuz_app_secret"),
+        [SettingKeys.SpotifyClientId] = Secrets.Get("spotify_client_id"),
+        [SettingKeys.SpotifyClientSecret] = Secrets.Get("spotify_client_secret"),
+
+        // Download settings, with the values SettingsViewModel.SetMissingDefaults gives a new install.
+        [SettingKeys.DeezerQuality] = 2, // FLAC
+        [SettingKeys.QobuzQuality] = 3, // 24-bit/192 kHz
+        [SettingKeys.SpotifyQuality] = 1, // FLAC
+        [SettingKeys.YoutubeQuality] = 1,
+        [SettingKeys.Overwrite] = false,
+        [SettingKeys.UseYtdlp] = false,
+        ["file_naming_wildcard"] = "",
+        ["subfolders"] = false,
+        ["subfolder_wildcard"] = "",
+        ["album_subfolders"] = true,
+        ["album_subfolder_wildcard"] = "",
+        ["download_album_cover_art"] = true,
+        ["download_lyrics"] = false,
+        ["replaygain_auto_apply"] = false,
+        ["replaygain_album_downloads"] = false,
+        ["conversion_threads"] = 3,
+    });
 
     private sealed class MemorySettings(Dictionary<string, object?> values) : ILocalSettingsService
     {

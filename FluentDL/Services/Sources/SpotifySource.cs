@@ -1,7 +1,9 @@
 using FluentDL.Contracts.Sources;
+using FluentDL.Core.Contracts.Services;
 using FluentDL.Core.Helpers;
 using FluentDL.Core.Sources;
 using FluentDL.Models;
+using FluentDL.Services.CustomSpotify;
 
 namespace FluentDL.Services.Sources;
 
@@ -11,14 +13,26 @@ internal sealed partial class SpotifySource : ISourceSession, ISearchSource, ILi
 
     public SourceDescriptor Descriptor { get; } = SourceCatalog.Find(SourceIds.Spotify)!;
 
+    private readonly ILocalSettingsService settings;
+    // Web player mode clears spotifyWebService and spotifyISRCService and fills them again from these.
+    private readonly ISpotifyWebService injectedWebService;
+    private readonly ISpotifyISRCService injectedIsrcService;
+
+    public SpotifySource(ILocalSettingsService settings, ISpotifyWebService webService, ISpotifyISRCService isrcService)
+    {
+        this.settings = settings;
+        injectedWebService = webService;
+        injectedIsrcService = isrcService;
+    }
+
     public bool IsConnected => IsInitialized;
 
     public string? StatusText => LoginString();
 
     public async Task<ConnectResult> ConnectAsync()
     {
-        var clientId = await SourceServices.Settings.ReadSettingAsync<string>(SettingKeys.SpotifyClientId);
-        var clientSecret = await SourceServices.Settings.ReadSettingAsync<string>(SettingKeys.SpotifyClientSecret);
+        var clientId = await settings.ReadSettingAsync<string>(SettingKeys.SpotifyClientId);
+        var clientSecret = await settings.ReadSettingAsync<string>(SettingKeys.SpotifyClientSecret);
         return await CallbackResults.Connect(callback => Initialize(clientId, clientSecret, callback), () => IsInitialized);
     }
 
@@ -37,7 +51,7 @@ internal sealed partial class SpotifySource : ISourceSession, ISearchSource, ILi
             return;
         }
         // With the prompt on, private playlists open a browser sign-in.
-        var userLogin = await SourceServices.Settings.ReadSettingAsync<bool>(SettingKeys.SpotifyPlaylistPrompt);
+        var userLogin = await settings.ReadSettingAsync<bool>(SettingKeys.SpotifyPlaylistPrompt);
         await AddTracksFromLink(results, url, token, status, userLogin, request.AlbumMode);
     }
 

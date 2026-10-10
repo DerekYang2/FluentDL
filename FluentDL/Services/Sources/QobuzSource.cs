@@ -1,4 +1,5 @@
 using FluentDL.Contracts.Sources;
+using FluentDL.Core.Contracts.Services;
 using FluentDL.Core.Sources;
 using FluentDL.Models;
 
@@ -8,13 +9,19 @@ internal sealed partial class QobuzSource : ISourceSession, ISearchSource, ILink
 {
     public SourceDescriptor Descriptor { get; } = SourceCatalog.Find(SourceIds.Qobuz)!;
 
+    private readonly ILocalSettingsService settings;
+
+    public QobuzSource(ILocalSettingsService settings)
+    {
+        this.settings = settings;
+    }
+
     public bool IsConnected => IsInitialized;
 
     public string? StatusText => LoginString();
 
     public async Task<ConnectResult> ConnectAsync()
     {
-        var settings = SourceServices.Settings;
         var id = await settings.ReadSettingAsync<string>(SettingKeys.QobuzId);
         var token = await settings.ReadSettingAsync<string>(SettingKeys.QobuzToken);
         var appId = await settings.ReadSettingAsync<string>(SettingKeys.QobuzAppId);

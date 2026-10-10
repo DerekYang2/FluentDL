@@ -1,3 +1,4 @@
+using FluentDL.Characterization.Tests.Infrastructure;
 using FluentDL.Contracts.Sources;
 using FluentDL.Core.Sources;
 using FluentDL.Services.Sources;
@@ -12,7 +13,7 @@ namespace FluentDL.Characterization.Tests;
 public class SourceRegistryTests
 {
     private static readonly SourceRegistry Registry = new(
-        [new YoutubeSource(), new SpotifySource(), new QobuzSource(), new DeezerSource()]);
+        [TestSources.Youtube, TestSources.Spotify, TestSources.Qobuz, TestSources.Deezer]);
 
     [DataTestMethod]
     [DataRow("https://open.spotify.com/track/69kOkLUCkxIZYexIgSG8rq", SourceIds.Spotify)]
