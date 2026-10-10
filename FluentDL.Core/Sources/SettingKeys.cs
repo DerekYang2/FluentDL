@@ -16,4 +16,8 @@ public static class SettingKeys
     public const string SpotifyClientId = "spotify_client_Id";
     public const string SpotifyClientSecret = "spotify_client_secret";
     public const string SpotifyPlaylistPrompt = "spotify_playlist_prompt";
+
+    public const string YoutubeQuality = "youtube_quality";
+    public const string UseYtdlp = "use_ytdlp";
+    public const string YtdlpPath = "ytdlp_path";
 }

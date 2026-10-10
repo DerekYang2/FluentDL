@@ -35,7 +35,7 @@ public partial class SettingsViewModel : ObservableRecipient
         DeezerQuality = SettingKeys.DeezerQuality,
         QobuzQuality = SettingKeys.QobuzQuality,
         SpotifyQuality = SettingKeys.SpotifyQuality,
-        YoutubeQuality = "youtube_quality",
+        YoutubeQuality = SettingKeys.YoutubeQuality,
         Overwrite = SettingKeys.Overwrite,
         CommandThreads = "command_threads",
         ConversionThreads = "conversion_threads",
@@ -66,8 +66,8 @@ public partial class SettingsViewModel : ObservableRecipient
         QueueRemoveChecked = "queue_remove_checked";
 
     public static readonly string FFmpegPath = "ffmpeg_path",
-        YtdlpPath = "ytdlp_path",
-        UseYtdlp = "use_ytdlp",
+        YtdlpPath = SettingKeys.YtdlpPath,
+        UseYtdlp = SettingKeys.UseYtdlp,
         AutoUpdateYtdlp = "auto_update_ytdlp";
 
     // Subfolder settings

@@ -88,8 +88,26 @@ public interface IIsrcSource : ISource
 /// <summary>Looking up full items by id.</summary>
 public interface ICatalogSource : ISource
 {
+    Task<SongSearchObject?> GetTrackAsync(string id);
+
     /// <summary>The full tracks of an album search result, as the queue needs them. Tracks that fail to load are left out.</summary>
     Task<List<SongSearchObject>> GetAlbumTracksAsync(AlbumSearchObject album);
+
+    /// <summary>
+    /// Fills <see cref="SongSearchObject"/>s into the album's TrackList (and any fields its cover lookup needs) the way
+    /// album downloads always did. Kept apart from GetAlbumTracksAsync because the two differ in small ways (Qobuz
+    /// tracks don't get their album attached here), and merging them could change file names or tags.
+    /// </summary>
+    Task LoadAlbumForDownloadAsync(AlbumSearchObject album);
+
+    /// <summary>The largest cover image this source has for the album, or null.</summary>
+    Task<string?> GetLargestCoverUrlAsync(AlbumSearchObject album);
+}
+
+/// <summary>Writing this source's metadata (tags, cover) into a downloaded file.</summary>
+public interface ITagSource : ISource
+{
+    Task WriteTagsAsync(string filePath, SongSearchObject track);
 }
 
 /// <summary>What the Search page's preview pane shows for a selected track or album.</summary>

@@ -5,7 +5,7 @@ using FluentDL.Models;
 namespace FluentDL.Services.Sources;
 
 /// <summary>YouTube needs no sign-in, so it has no session.</summary>
-internal sealed class YoutubeSource : ISearchSource, ILinkSource, IConversionTarget, ICatalogSource, IPreviewSource, IDownloadSource
+internal sealed class YoutubeSource : ISearchSource, ILinkSource, IConversionTarget, ICatalogSource, IPreviewSource, IDownloadSource, ITagSource
 {
     public SourceDescriptor Descriptor { get; } = SourceCatalog.Find(SourceIds.YouTube)!;
 
@@ -25,17 +25,125 @@ internal sealed class YoutubeSource : ISearchSource, ILinkSource, IConversionTar
     public Task<MatchResult> FindEquivalentAsync(SongSearchObject song, string? isrc, CancellationToken token, bool isrcOnly = false) =>
         CallbackResults.Match(callback => YoutubeApi.GetYoutubeTrack(song, token, callback));
 
-    // Only the raw opus stream for now; DownloadService still holds YouTube's quality, yt-dlp and FFmpeg branching.
+    // AsServed: the raw opus stream (the Spotify equivalent chain). Otherwise the youtube_quality setting picks opus,
+    // FLAC (from opus) or M4A (AAC), through yt-dlp when use_ytdlp is on, and FFmpeg. Moved unchanged from the old
+    // download pipeline.
     public async Task<string> DownloadAsync(SongSearchObject track, string pathWithoutExtension, DownloadRequest request, IProgress<ProgressData>? progress)
     {
-        if (request.Quality != DownloadQuality.AsServed)
+        if (request.Quality == DownloadQuality.AsServed)
         {
-            throw new NotSupportedException("YouTube downloads at a chosen quality still go through DownloadService.");
+            var opusPath = pathWithoutExtension + ".opus";
+            await YoutubeApi.DownloadAudio(opusPath, track.Id, progress!);
+            return opusPath;
         }
-        var opusPath = pathWithoutExtension + ".opus";
-        await YoutubeApi.DownloadAudio(opusPath, track.Id, progress!);
-        return opusPath;
+
+        var settings = SourceServices.Settings;
+        var converter = SourceServices.AudioConverter;
+        var flacLocation = pathWithoutExtension + ".flac";
+        var opusLocation = pathWithoutExtension + ".opus";
+        var m4aLocation = pathWithoutExtension + ".m4a";
+
+        // 0 - opus
+        // 1 - flac (opus)
+        // 2 - m4a (aac)
+        var settingIdx = await settings.ReadSettingAsync<int?>(SettingKeys.YoutubeQuality) ?? 0;
+        var useYtdlp = await settings.ReadSettingAsync<bool>(SettingKeys.UseYtdlp);
+        var ytdlpPath = useYtdlp ? await settings.ReadSettingAsync<string?>(SettingKeys.YtdlpPath) : null;
+
+        // Ensure the base FluentDL temp directory exists
+        var tempBaseDir = Path.Combine(Path.GetTempPath(), "FluentDL");
+        Directory.CreateDirectory(tempBaseDir);
+
+        // --- AAC / M4A PATH ---
+        if (settingIdx == 2)
+        {
+            if (File.Exists(m4aLocation) && await settings.ReadSettingAsync<bool>(SettingKeys.Overwrite) == false)
+            {
+                throw new Exception("File already exists.");
+            }
+
+            var tempGuid = Guid.NewGuid().ToString("N");
+            var tempM4a = Path.Combine(tempBaseDir, $"download-{tempGuid}.m4a");
+            var tempMp4 = Path.Combine(tempBaseDir, $"download-{tempGuid}.mp4");
+
+            try
+            {
+                if (useYtdlp)
+                {
+                    // yt-dlp extracts bestaudio[acodec=mp4a.40.2] which natively saves as .m4a
+                    await YoutubeApi.DownloadAudioAACYTDLP(tempM4a, $"https://www.youtube.com/watch?v={track.Id}", ytdlpPath);
+                    // Move the temp file to the final destination
+                    File.Move(tempM4a, m4aLocation, overwrite: true);
+                }
+                else
+                {
+                    if (!converter.IsInitialized) throw new Exception("FFmpeg is not initialized.");
+                    await YoutubeApi.DownloadAudioAAC(tempMp4, track.Id);
+                    await converter.ConvertMp4ToM4aAsync(tempMp4, m4aLocation);
+                }
+                return m4aLocation;
+            }
+            finally
+            {
+                // Clean up possible temp files
+                if (File.Exists(tempM4a)) File.Delete(tempM4a);
+                if (File.Exists(tempMp4)) File.Delete(tempMp4);
+            }
+        }
+
+        // --- OPUS / FLAC PATH ---
+        var finalLocation = settingIdx == 1 ? flacLocation : opusLocation;
+
+        if (File.Exists(finalLocation) && await settings.ReadSettingAsync<bool>(SettingKeys.Overwrite) == false)
+        {
+            throw new Exception("File already exists.");
+        }
+
+        // Generate a single unique temporary path for the WebM download
+        var tempWebmLocation = Path.Combine(tempBaseDir, $"download-{Guid.NewGuid():N}.webm");
+
+        try
+        {
+            // Both YT-DLP and Native download a .webm file
+            if (useYtdlp)
+            {
+                await YoutubeApi.DownloadAudioYTDLP(tempWebmLocation, $"https://www.youtube.com/watch?v={track.Id}", ytdlpPath);
+            }
+            else
+            {
+                await YoutubeApi.DownloadAudio(tempWebmLocation, track.Id, progress!);
+            }
+
+            if (!converter.IsInitialized) throw new Exception("FFmpeg is not initialized.");
+
+            if (settingIdx == 1) // FLAC
+            {
+                await converter.ConvertToFlacAsync(tempWebmLocation, flacLocation);
+            }
+            else // OPUS
+            {
+                await converter.RemuxOpusAsync(tempWebmLocation, opusLocation);
+            }
+            return finalLocation;
+        }
+        finally
+        {
+            // Always clean up the temporary .webm file
+            if (File.Exists(tempWebmLocation))
+            {
+                File.Delete(tempWebmLocation);
+            }
+        }
     }
+
+    public Task<SongSearchObject?> GetTrackAsync(string id) => YoutubeApi.GetTrack(id);
+
+    // YouTube album results already hold their tracks.
+    public Task LoadAlbumForDownloadAsync(AlbumSearchObject album) => Task.CompletedTask;
+
+    public async Task<string?> GetLargestCoverUrlAsync(AlbumSearchObject album) => await YoutubeApi.GetMaxResThumbnail(album);
+
+    public Task WriteTagsAsync(string filePath, SongSearchObject track) => YoutubeApi.UpdateMetadata(filePath, track.Id);
 
     // YouTube album results already hold full tracks.
     public Task<List<SongSearchObject>> GetAlbumTracksAsync(AlbumSearchObject album) => Task.FromResult(album.TrackList ?? []);

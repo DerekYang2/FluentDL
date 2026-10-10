@@ -4,7 +4,7 @@ using FluentDL.Models;
 
 namespace FluentDL.Services.Sources;
 
-internal sealed class SpotifySource : ISourceSession, ISearchSource, ILinkSource, IConversionTarget, ICatalogSource, IPreviewSource, IIsrcSource
+internal sealed class SpotifySource : ISourceSession, ISearchSource, ILinkSource, IConversionTarget, ICatalogSource, IPreviewSource, IIsrcSource, ITagSource
 {
     private static readonly HttpClient httpClient = new();
 
@@ -110,4 +110,27 @@ internal sealed class SpotifySource : ISourceSession, ISearchSource, ILinkSource
         }
         return null;
     }
+
+    public Task<SongSearchObject?> GetTrackAsync(string id) => SpotifyApi.GetTrack(id);
+
+    public async Task LoadAlbumForDownloadAsync(AlbumSearchObject album)
+    {
+        List<SongSearchObject> newList = [];
+        foreach (var t in album.TrackList ?? [])
+        {
+            var songObj = await SpotifyApi.GetTrack(t.Id);
+            if (songObj != null)
+            {
+                newList.Add(songObj);
+            }
+        }
+        album.TrackList = newList;
+    }
+
+    public Task<string?> GetLargestCoverUrlAsync(AlbumSearchObject album) =>
+        Task.FromResult(!string.IsNullOrWhiteSpace(album.AdditionalFields?.GetValueOrDefault("cover_max") as string)
+            ? album.AdditionalFields["cover_max"] as string
+            : null);
+
+    public Task WriteTagsAsync(string filePath, SongSearchObject track) => SpotifyApi.UpdateMetadata(filePath, track.Id);
 }

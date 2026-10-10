@@ -1,4 +1,5 @@
-﻿using FluentDL.Core.Matching;
+﻿using FluentDL.Contracts.Sources;
+using FluentDL.Core.Matching;
 using FluentDL.Core.Sources;
 using FluentDL.Helpers;
 using FluentDL.Models;
@@ -180,9 +181,10 @@ public sealed class DownloadService(SourceRegistry sources, EquivalentDownloader
     private async Task<string> DownloadTrackCore(SongSearchObject song, string directory, IProgress<ProgressData> progress, ConversionUpdateCallback? callback)
     {
         // Spotify case (web player songs do not have full metadata)
-        if (song.Source == SourceIds.Spotify && (string.IsNullOrWhiteSpace(song.ReleaseDate) || string.IsNullOrWhiteSpace(song.TrackPosition)))
+        if (song.Source == SourceIds.Spotify && (string.IsNullOrWhiteSpace(song.ReleaseDate) || string.IsNullOrWhiteSpace(song.TrackPosition))
+            && sources.TryGet<ICatalogSource>(song.Source, out var catalog))
         {
-            song = await SpotifyApi.GetTrack(song.Id) ?? song;
+            song = await catalog.GetTrackAsync(song.Id) ?? song;
         }
 
         // Create file name
@@ -200,128 +202,16 @@ public sealed class DownloadService(SourceRegistry sources, EquivalentDownloader
         _ = Task.Run(async () => await DownloadLyricsAsync(song, directory, fileName, downloadTcs));
 
 
-        if (song.Source == SourceIds.YouTube)
-        {
-            var flacLocation = Path.Combine(directory, fileName + ".flac");
-            var opusLocation = Path.Combine(directory, fileName + ".opus");
-            var m4aLocation = Path.Combine(directory, fileName + ".m4a");
-
-            try
-            {
-                // 0 - opus
-                // 1 - flac (opus)
-                // 2 - m4a (aac)
-                var settingIdx = await SettingsViewModel.GetSetting<int?>(SettingsViewModel.YoutubeQuality) ?? 0;
-                var useYtdlp = await SettingsViewModel.GetSetting<bool>(SettingsViewModel.UseYtdlp);
-                var ytdlpPath = useYtdlp ? await SettingsViewModel.GetSetting<string?>(SettingsViewModel.YtdlpPath) : null;
-
-                // Ensure the base FluentDL temp directory exists
-                var tempBaseDir = Path.Combine(Path.GetTempPath(), "FluentDL");
-                Directory.CreateDirectory(tempBaseDir);
-
-                // --- AAC / M4A PATH ---
-                if (settingIdx == 2)
-                {
-                    if (File.Exists(m4aLocation) && await SettingsViewModel.GetSetting<bool>(SettingsViewModel.Overwrite) == false)
-                    {
-                        throw new Exception("File already exists.");
-                    }
-
-                    var tempGuid = Guid.NewGuid().ToString("N");
-                    var tempM4a = Path.Combine(tempBaseDir, $"download-{tempGuid}.m4a");
-                    var tempMp4 = Path.Combine(tempBaseDir, $"download-{tempGuid}.mp4");
-
-                    try
-                    {
-                        if (useYtdlp)
-                        {
-                            // yt-dlp extracts bestaudio[acodec=mp4a.40.2] which natively saves as .m4a
-                            await YoutubeApi.DownloadAudioAACYTDLP(tempM4a, $"https://www.youtube.com/watch?v={song.Id}", ytdlpPath);
-                            // Move the temp file to the final destination
-                            File.Move(tempM4a, m4aLocation, overwrite: true);
-                        }
-                        else
-                        {
-                            if (!FFmpegRunner.IsInitialized) throw new Exception("FFmpeg is not initialized.");
-                            await YoutubeApi.DownloadAudioAAC(tempMp4, song.Id);
-                            await FFmpegRunner.ConvertMp4ToM4aAsync(tempMp4, m4aLocation);
-                        }
-
-                        await YoutubeApi.UpdateMetadata(m4aLocation, song.Id);
-                        downloadTcs.SetResult(true);
-                        callback?.Invoke(StatusLevel.Success, song, m4aLocation);
-                        return m4aLocation;
-                    }
-                    finally
-                    {
-                        // Clean up possible temp files
-                        if (File.Exists(tempM4a)) File.Delete(tempM4a);
-                        if (File.Exists(tempMp4)) File.Delete(tempMp4);
-                    }
-                }
-
-                // --- OPUS / FLAC PATH ---
-                var finalLocation = settingIdx == 1 ? flacLocation : opusLocation;
-
-                if (File.Exists(finalLocation) && await SettingsViewModel.GetSetting<bool>(SettingsViewModel.Overwrite) == false)
-                {
-                    throw new Exception("File already exists.");
-                }
-
-                // Generate a single unique temporary path for the WebM download
-                var tempWebmLocation = Path.Combine(tempBaseDir, $"download-{Guid.NewGuid():N}.webm");
-
-                try
-                {
-                    // Both YT-DLP and Native download a .webm file
-                    if (useYtdlp)
-                    {
-                        await YoutubeApi.DownloadAudioYTDLP(tempWebmLocation, $"https://www.youtube.com/watch?v={song.Id}", ytdlpPath);
-                    }
-                    else
-                    {
-                        await YoutubeApi.DownloadAudio(tempWebmLocation, song.Id, progress);
-                    }
-
-                    if (!FFmpegRunner.IsInitialized) throw new Exception("FFmpeg is not initialized.");
-
-                    if (settingIdx == 1) // FLAC
-                    {
-                        await FFmpegRunner.ConvertToFlacAsync(tempWebmLocation, flacLocation);
-                    }
-                    else // OPUS
-                    {
-                        await FFmpegRunner.RemuxOpusAsync(tempWebmLocation, opusLocation);
-                    }
-
-                    // Finalize Metadata and Return
-                    await YoutubeApi.UpdateMetadata(finalLocation, song.Id);
-                    downloadTcs.SetResult(true);
-                    callback?.Invoke(StatusLevel.Success, song, finalLocation);
-                    return finalLocation;
-                }
-                finally
-                {
-                    // Always clean up the temporary .webm file
-                    if (File.Exists(tempWebmLocation))
-                    {
-                        File.Delete(tempWebmLocation);
-                    }
-                }
-            }
-            catch (Exception e)
-            {
-                callback?.Invoke(StatusLevel.Error, song, e.Message);
-                Log.Error(e, "YouTube download or post-processing failed");
-            }
-        }
-
-        if (song.Source == SourceIds.Deezer)
+        if (sources.TryGet<IDownloadSource>(song.Source, out var downloader))
         {
             try
             {
-                var resultPath = await DeezerApi.DownloadTrack(locationNoExt, song, use128Fallback: true, progress: progress);
-                await DeezerApi.UpdateMetadata(resultPath, song.Id);
+                // Deezer retries at 128 kbps when its quality setting fails on this account; the others ignore it.
+                var resultPath = await downloader.DownloadAsync(song, locationNoExt, new DownloadRequest(Allow128Fallback: true), progress);
+                if (sources.TryGet<ITagSource>(song.Source, out var tagger))
+                {
+                    await tagger.WriteTagsAsync(resultPath, song);
+                }
                 downloadTcs.SetResult(true);
                 callback?.Invoke(StatusLevel.Success, song, resultPath); // Assume success
                 return resultPath;
@@ -329,28 +219,10 @@ public sealed class DownloadService(SourceRegistry sources, EquivalentDownloader
             catch (Exception e)
             {
                 callback?.Invoke(StatusLevel.Error, song, e.Message);
-                Log.Error(e, "Deezer download or post-processing failed");
+                Log.Error(e, "{Provider} download or post-processing failed", downloader.Descriptor.DisplayName);
             }
         }
-
-        if (song.Source == SourceIds.Qobuz)
-        {
-            try
-            {
-                var resultPath = await QobuzApi.DownloadTrack(locationNoExt, song, progress);
-                await QobuzApi.UpdateMetadata(resultPath, song.Id);
-                downloadTcs.SetResult(true);
-                callback?.Invoke(StatusLevel.Success, song, resultPath); // Assume success
-                return resultPath;
-            }
-            catch (Exception e)
-            {
-                callback?.Invoke(StatusLevel.Error, song, e.Message);
-                Log.Error(e, "Qobuz download or post-processing failed");
-            }
-        }
-
-        if (song.Source == SourceIds.Spotify)
+        else if (sources.TryGet<ICatalogSource>(song.Source, out var catalogOnly)) // Spotify: download an equivalent from another source
         {
             try
             {
@@ -358,25 +230,28 @@ public sealed class DownloadService(SourceRegistry sources, EquivalentDownloader
 
                 if (resultPath != null)
                 {
-                    await SpotifyApi.UpdateMetadata(resultPath, song.Id);
+                    if (sources.TryGet<ITagSource>(song.Source, out var tagger))
+                    {
+                        await tagger.WriteTagsAsync(resultPath, song);
+                    }
                     downloadTcs.SetResult(true);
                     return resultPath;
                 }
 
                 callback?.Invoke(StatusLevel.Error, song); // Null - error
-                Log.Error("Spotify equivalent-track download returned no result");
-            } catch (Exception e) 
+                Log.Error("{Provider} equivalent-track download returned no result", catalogOnly.Descriptor.DisplayName);
+            } catch (Exception e)
             {
-                Log.Error(e, "Spotify equivalent-track download or post-processing failed");
+                Log.Error(e, "{Provider} equivalent-track download or post-processing failed", catalogOnly.Descriptor.DisplayName);
                 callback?.Invoke(StatusLevel.Error, song, e.Message);
             }
         }
-
-        downloadTcs.SetResult(false);
-        if (song.Source is not (SourceIds.YouTube or SourceIds.Deezer or SourceIds.Qobuz or SourceIds.Spotify))
+        else
         {
             Log.Error("Track download failed because its provider is unsupported");
         }
+
+        downloadTcs.SetResult(false);
         return string.Empty;
     }
 
@@ -441,49 +316,10 @@ public sealed class DownloadService(SourceRegistry sources, EquivalentDownloader
             directory = newDirectory;
         }
 
-        if (album.Source == SourceIds.Qobuz)
+        if (sources.TryGet<ICatalogSource>(album.Source, out var albumCatalog))
         {
-            var fullAlbumObj = await QobuzApi.GetInternalAlbum(album.Id);
-            album.TrackList = fullAlbumObj.Tracks.Items.Select(t => QobuzApi.ConvertSongSearchObject(t, fullAlbumObj.Artist?.Name)).ToList();
+            await albumCatalog.LoadAlbumForDownloadAsync(album);
         }
-        else if (album.Source == SourceIds.Deezer)
-        {
-            var jsonObj = await DeezerApi.restClient.FetchJsonElement("album/" + album.Id);
-            var fullAlbumObj = DeezerApi.GetAlbumFromJsonElement(jsonObj);
-
-            album.TrackList = [];
-            foreach (var t in fullAlbumObj?.TrackList ?? [])
-            {
-                var track = await DeezerApi.GetTrack(t.Id);
-                if (track != null)
-                {
-                    album.TrackList.Add(track);
-                }
-            }
-
-            album.AdditionalFields = new Dictionary<string, object?>
-            {
-                ["cover_big"] = jsonObj.SafeGetString("cover_big"),
-                ["cover_xl"] = jsonObj.SafeGetString("cover_xl")
-            };
-        }
-        else if (album.Source == SourceIds.Spotify)
-        {
-            List<SongSearchObject> newList = [];
-            foreach (var t in album.TrackList ?? [])
-            {
-                var songObj = await SpotifyApi.GetTrack(t.Id);
-                if (songObj != null)
-                {
-                    newList.Add(songObj);
-                }
-            }
-            album.TrackList = newList;
-        }
-        else if (album.Source == SourceIds.YouTube)
-        {
-            // Nothing needed
-        } 
 
         if (album.TrackList == null)
         {
@@ -597,47 +433,9 @@ public sealed class DownloadService(SourceRegistry sources, EquivalentDownloader
         return downloadPaths.ToList();
     }
 
-    public static async Task<string?> GetAlbumArtLargest(AlbumSearchObject? album)
+    private async Task<string?> GetAlbumArtLargest(AlbumSearchObject? album)
     {
         if (album == null) return null;
-        if (album.Source == SourceIds.Qobuz)
-        {
-            var fullAlbumObj = await QobuzApi.GetInternalAlbum(album.Id);
-            if (!string.IsNullOrWhiteSpace(fullAlbumObj?.Image?.Mega))
-            {
-                return fullAlbumObj.Image.Mega;
-            }
-            if (!string.IsNullOrEmpty(fullAlbumObj?.Image?.Extralarge))
-            {
-                return fullAlbumObj.Image.Extralarge;
-            }
-            if (!string.IsNullOrEmpty(fullAlbumObj?.Image?.Large))
-            {
-                return fullAlbumObj.Image.Large;
-            }
-        } 
-        else if (album.Source == SourceIds.Deezer)
-        {
-            if (!string.IsNullOrEmpty(album.AdditionalFields?.GetValueOrDefault("cover_xl") as string))
-            {
-                return album.AdditionalFields["cover_xl"] as string;
-            }
-            if (!string.IsNullOrEmpty(album.AdditionalFields?.GetValueOrDefault("cover_big") as string))
-            {
-                return album.AdditionalFields["cover_big"] as string;
-            }
-        }
-        else if (album.Source == SourceIds.Spotify)
-        {
-            if (!string.IsNullOrWhiteSpace(album.AdditionalFields?.GetValueOrDefault("cover_max") as string))
-            {
-                return album.AdditionalFields["cover_max"] as string;
-            }
-        }
-        else if (album.Source == SourceIds.YouTube)
-        {
-            return await YoutubeApi.GetMaxResThumbnail(album);
-        }
-        return null;
+        return sources.TryGet<ICatalogSource>(album.Source, out var catalog) ? await catalog.GetLargestCoverUrlAsync(album) : null;
     }
 }

@@ -78,6 +78,9 @@ internal static class TestSources
     {
         public bool IsInitialized => false;
         public Task ConvertToFlacAsync(string initialPath, int samplingRate = 48000) => throw new NotSupportedException();
+        public Task ConvertToFlacAsync(string inputPath, string outputPath) => throw new NotSupportedException();
+        public Task ConvertMp4ToM4aAsync(string inputPath, string outputPath) => throw new NotSupportedException();
+        public Task RemuxOpusAsync(string inputPath, string outputPath) => throw new NotSupportedException();
         public Task<string?> CreateMp3Async(string initialPath, string? outputDirectory = null) => throw new NotSupportedException();
     }
 }

@@ -1,11 +1,12 @@
 using System.Text.RegularExpressions;
 using FluentDL.Contracts.Sources;
 using FluentDL.Core.Sources;
+using FluentDL.Helpers;
 using FluentDL.Models;
 
 namespace FluentDL.Services.Sources;
 
-internal sealed class DeezerSource : ISourceSession, ISearchSource, ILinkSource, IConversionTarget, ICatalogSource, IPreviewSource, IDownloadSource
+internal sealed class DeezerSource : ISourceSession, ISearchSource, ILinkSource, IConversionTarget, ICatalogSource, IPreviewSource, IDownloadSource, ITagSource
 {
     public SourceDescriptor Descriptor { get; } = SourceCatalog.Find(SourceIds.Deezer)!;
 
@@ -109,4 +110,44 @@ internal sealed class DeezerSource : ISourceSession, ISearchSource, ILinkSource,
     }
 
     public Task<string?> GetPreviewAudioAsync(SongSearchObject track) => Task.FromResult(track?.AdditionalFields?["preview"]?.ToString());
+
+    public Task<SongSearchObject?> GetTrackAsync(string id) => DeezerApi.GetTrack(id);
+
+    // Every track is loaded again, and the album keeps its cover URLs for GetLargestCoverUrlAsync.
+    public async Task LoadAlbumForDownloadAsync(AlbumSearchObject album)
+    {
+        var jsonObj = await DeezerApi.restClient.FetchJsonElement("album/" + album.Id);
+        var fullAlbumObj = DeezerApi.GetAlbumFromJsonElement(jsonObj);
+
+        album.TrackList = [];
+        foreach (var t in fullAlbumObj?.TrackList ?? [])
+        {
+            var track = await DeezerApi.GetTrack(t.Id);
+            if (track != null)
+            {
+                album.TrackList.Add(track);
+            }
+        }
+
+        album.AdditionalFields = new Dictionary<string, object?>
+        {
+            ["cover_big"] = jsonObj.SafeGetString("cover_big"),
+            ["cover_xl"] = jsonObj.SafeGetString("cover_xl")
+        };
+    }
+
+    public Task<string?> GetLargestCoverUrlAsync(AlbumSearchObject album)
+    {
+        if (!string.IsNullOrEmpty(album.AdditionalFields?.GetValueOrDefault("cover_xl") as string))
+        {
+            return Task.FromResult(album.AdditionalFields["cover_xl"] as string);
+        }
+        if (!string.IsNullOrEmpty(album.AdditionalFields?.GetValueOrDefault("cover_big") as string))
+        {
+            return Task.FromResult(album.AdditionalFields["cover_big"] as string);
+        }
+        return Task.FromResult<string?>(null);
+    }
+
+    public Task WriteTagsAsync(string filePath, SongSearchObject track) => DeezerApi.UpdateMetadata(filePath, track.Id);
 }

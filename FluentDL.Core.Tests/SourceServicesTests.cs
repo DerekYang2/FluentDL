@@ -22,6 +22,9 @@ public class SourceServicesTests
         Assert.AreEqual("spotify_client_Id", SettingKeys.SpotifyClientId); // capital I, matching users' saved settings
         Assert.AreEqual("spotify_client_secret", SettingKeys.SpotifyClientSecret);
         Assert.AreEqual("spotify_playlist_prompt", SettingKeys.SpotifyPlaylistPrompt);
+        Assert.AreEqual("youtube_quality", SettingKeys.YoutubeQuality);
+        Assert.AreEqual("use_ytdlp", SettingKeys.UseYtdlp);
+        Assert.AreEqual("ytdlp_path", SettingKeys.YtdlpPath);
     }
 
     // The app maps StatusLevel to WinUI's InfoBarSeverity, which has the same members in the same order.

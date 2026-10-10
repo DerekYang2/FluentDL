@@ -27,6 +27,12 @@ internal class FFmpegRunner : IAudioConverter
 
     Task IAudioConverter.ConvertToFlacAsync(string initialPath, int samplingRate) => ConvertToFlacAsync(initialPath, samplingRate);
 
+    Task IAudioConverter.ConvertToFlacAsync(string inputPath, string outputPath) => ConvertToFlacAsync(inputPath, outputPath);
+
+    Task IAudioConverter.ConvertMp4ToM4aAsync(string inputPath, string outputPath) => ConvertMp4ToM4aAsync(inputPath, outputPath);
+
+    Task IAudioConverter.RemuxOpusAsync(string inputPath, string outputPath) => RemuxOpusAsync(inputPath, outputPath);
+
     Task<string?> IAudioConverter.CreateMp3Async(string initialPath, string? outputDirectory) => CreateMp3Async(initialPath, outputDirectory);
 
     private static int NormalizeSpectrogramHeight(int height)

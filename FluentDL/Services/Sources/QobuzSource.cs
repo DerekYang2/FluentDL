@@ -4,7 +4,7 @@ using FluentDL.Models;
 
 namespace FluentDL.Services.Sources;
 
-internal sealed class QobuzSource : ISourceSession, ISearchSource, ILinkSource, IConversionTarget, ICatalogSource, IPreviewSource, IDownloadSource
+internal sealed class QobuzSource : ISourceSession, ISearchSource, ILinkSource, IConversionTarget, ICatalogSource, IPreviewSource, IDownloadSource, ITagSource
 {
     public SourceDescriptor Descriptor { get; } = SourceCatalog.Find(SourceIds.Qobuz)!;
 
@@ -102,4 +102,32 @@ internal sealed class QobuzSource : ISourceSession, ISearchSource, ILinkSource, 
     }
 
     public Task<string?> GetPreviewAudioAsync(SongSearchObject track) => Task.Run(() => QobuzApi.GetPreviewUri(track.Id));
+
+    public Task<SongSearchObject?> GetTrackAsync(string id) => QobuzApi.GetTrackAsync(id);
+
+    public async Task LoadAlbumForDownloadAsync(AlbumSearchObject album)
+    {
+        var fullAlbumObj = await QobuzApi.GetInternalAlbum(album.Id);
+        album.TrackList = fullAlbumObj.Tracks.Items.Select(t => QobuzApi.ConvertSongSearchObject(t, fullAlbumObj.Artist?.Name)).ToList();
+    }
+
+    public async Task<string?> GetLargestCoverUrlAsync(AlbumSearchObject album)
+    {
+        var fullAlbumObj = await QobuzApi.GetInternalAlbum(album.Id);
+        if (!string.IsNullOrWhiteSpace(fullAlbumObj?.Image?.Mega))
+        {
+            return fullAlbumObj.Image.Mega;
+        }
+        if (!string.IsNullOrEmpty(fullAlbumObj?.Image?.Extralarge))
+        {
+            return fullAlbumObj.Image.Extralarge;
+        }
+        if (!string.IsNullOrEmpty(fullAlbumObj?.Image?.Large))
+        {
+            return fullAlbumObj.Image.Large;
+        }
+        return null;
+    }
+
+    public Task WriteTagsAsync(string filePath, SongSearchObject track) => QobuzApi.UpdateMetadata(filePath, track.Id);
 }
