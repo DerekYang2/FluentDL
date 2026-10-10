@@ -11,7 +11,7 @@ namespace FluentDL.Services;
 /// Downloads a track from a catalog-only source (Spotify) by finding the same track on a source that serves audio.
 /// The order and qualities are the old SpotifyApi.DownloadEquivalentTrack's, step by step:
 /// 1. Deezer, matched by ISRC only when strict, at MP3 320 or FLAC (spotify_quality).
-/// 2. Qobuz, matched the same way, at format 5 or " 6" (bug 2).
+/// 2. Qobuz, matched the same way, at format 5 (MP3) or 6 (FLAC).
 /// 3. Deezer's match again, at MP3 128 or FLAC with the 128 kbps fallback.
 /// 4. When not strict, YouTube's opus stream, converted to FLAC or MP3 with FFmpeg.
 /// </summary>

@@ -58,7 +58,7 @@ internal sealed partial class QobuzSource : ISourceSession, ISearchSource, ILink
         var format = request.Quality switch
         {
             DownloadQuality.Mp3 => "5",
-            DownloadQuality.Lossless => " 6", // bug 2: the leading space is what the old Spotify equivalent chain sent
+            DownloadQuality.Lossless => "6",
             _ => null, // the qobuz_quality setting
         };
         return DownloadTrack(pathWithoutExtension, track, progress!, format);
