@@ -163,7 +163,9 @@ internal sealed partial class YoutubeSource : ISearchSource, ILinkSource, IConve
             album.TrackList ??= [];
             return new PreviewInfo { CoverUrl = cover, AlbumTracks = album.TrackList, AlbumTrackCount = album.TracksCount };
         }
-        return new PreviewInfo { CoverUrl = cover, Rows = [("Views", song.Rank)] };
+        // The audio loads after the details: through yt-dlp when that setting is on (the pane does that), otherwise
+        // through GetPreviewAudioAsync.
+        return new PreviewInfo { CoverUrl = cover, Rows = [("Views", song.Rank)], LoadAudioSeparately = true };
     }
 
     // Used when yt-dlp is off.

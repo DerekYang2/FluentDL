@@ -34,7 +34,7 @@ $logDir = Join-Path ([IO.Path]::GetTempPath()) 'opencode\fluentdl-live-tests'
 New-Item -ItemType Directory -Force $logDir | Out-Null
 
 $groups = [ordered]@{
-    'deezer-qobuz'     = 'FullyQualifiedName~.DeezerTests.|FullyQualifiedName~.QobuzTests.|TestCategory!=Live'
+    'deezer-qobuz'     = 'FullyQualifiedName~.DeezerTests.|FullyQualifiedName~.QobuzTests.|FullyQualifiedName~.PreviewAudioTests.|TestCategory!=Live'
     'convert-dz-qb'    = 'FullyQualifiedName~ConvertToDeezer|FullyQualifiedName~ConvertToQobuz|FullyQualifiedName~DeezerMatchesByMetadata|FullyQualifiedName~NativeNamesConvertThroughSpotify'
     'spotify-web'      = 'FullyQualifiedName~SpotifyWebPlayerTests|FullyQualifiedName~ConvertToSpotify'
     'spotify-official' = 'FullyQualifiedName~SpotifyOfficialTests|FullyQualifiedName=FluentDL.Characterization.Tests.ConversionTests.ConvertWithSpotifyOfficial'
