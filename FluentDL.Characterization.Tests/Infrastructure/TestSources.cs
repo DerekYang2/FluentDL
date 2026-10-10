@@ -34,7 +34,7 @@ internal static class TestSources
     public static readonly ConversionService Conversions = new(Registry);
 
     /// <summary>The download pipeline the Search and Queue pages use.</summary>
-    public static readonly DownloadService Downloads = new(Registry, new EquivalentDownloader(Registry));
+    public static readonly DownloadService Downloads = new(Registry, new EquivalentDownloader(Registry), new LRCLyricService(new HttpClient(), Settings));
 
     // App-level code (SettingsViewModel, EquivalentDownloader) still reads these through SourceServices.
     static TestSources() => SourceServices.Configure(Settings, AudioConverter);

@@ -24,7 +24,7 @@ namespace FluentDL.Services;
 /// Downloads tracks and albums: naming, the per-source download, tags, lyrics, ReplayGain and the album cover. Moved
 /// unchanged from ApiHelper; Phase 6 replaces its calls into the source classes with role interfaces.
 /// </summary>
-public sealed class DownloadService(SourceRegistry sources, EquivalentDownloader equivalents)
+public sealed class DownloadService(SourceRegistry sources, EquivalentDownloader equivalents, ILyricService lyricService)
 {
     private static readonly HttpClient client = new HttpClient();
 
@@ -91,7 +91,7 @@ public sealed class DownloadService(SourceRegistry sources, EquivalentDownloader
         return coverDirectories.ToList();
     }
 
-    private static async Task DownloadLyricsAsync(SongSearchObject song, string directory, string fileName, TaskCompletionSource<bool>? downloadTcs = default)
+    private async Task DownloadLyricsAsync(SongSearchObject song, string directory, string fileName, TaskCompletionSource<bool>? downloadTcs = default)
     {
         try
         {
@@ -123,7 +123,6 @@ public sealed class DownloadService(SourceRegistry sources, EquivalentDownloader
                 return;
 
             // Get lyrics from service
-            var lyricService = App.GetService<ILyricService>();
             var lyrics = await lyricService.GetLyricsAsync(song);
 
             if (lyrics == null)
