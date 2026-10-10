@@ -58,15 +58,16 @@ public class YoutubeTests
 }
 
 /// <summary>
-/// Bug 20: a YouTube link whose lookup fails used to throw out of the link import, which crashed the app. A video that
-/// doesn't exist fails the same way as YouTube's bot check, so it stands in for it. Needs no YouTube Music, so it skips
-/// that availability check.
+/// YouTube tests that use only YoutubeExplode, not YouTube Music, so they skip the YouTube Music availability check
+/// and still run while YouTube Music bot-checks this machine.
 /// </summary>
 [TestClass]
 [TestCategory("Live")]
 [TestCategory("YouTube")]
-public class YoutubeLinkErrorTests
+public class YoutubeWithoutMusicTests
 {
+    // Bug 20: a YouTube link whose lookup fails used to throw out of the link import, which crashed the app. A video
+    // that doesn't exist fails the same way as YouTube's bot check, so it stands in for it.
     [TestMethod]
     public async Task AFailedLookupIsReportedNotThrown()
     {
@@ -81,5 +82,20 @@ public class YoutubeLinkErrorTests
         Assert.AreEqual("Error", log.Messages[0].Severity);
         // The new error path ("Error loading <link>: <reason>"), not the older "Error loading track from" one.
         StringAssert.StartsWith(log.Messages[0].Message, $"<b>YouTube</b>   Error loading <a href='{url}'>");
+    }
+
+    // Bug 6: the video search compared durations with double.Parse, which threw on clock text such as "4:08".
+    [TestMethod]
+    public async Task VideoSearchAcceptsClockDurations()
+    {
+        Models.SongSearchObject Song(string duration) => new()
+        {
+            Source = "local", Id = "get-lucky", Title = "Get Lucky", Artists = "Daft Punk", AlbumName = "", Duration = duration,
+        };
+
+        var bySeconds = await TestSources.Youtube.GetSearchResult(Song("248"));
+        var byClock = await TestSources.Youtube.GetSearchResult(Song("4:08"));
+
+        Assert.AreEqual(bySeconds?.Id.Value, byClock?.Id.Value);
     }
 }

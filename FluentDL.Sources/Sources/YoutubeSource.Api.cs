@@ -492,6 +492,12 @@ namespace FluentDL.Services.Sources
                 artists[i] = artists[i].ToLower();
             }
 
+            // Durations can be seconds or clock text such as "6:10"; double.Parse threw on the latter (bug 6).
+            if (!DurationParser.TryParse(song.Duration, out var songDuration))
+            {
+                return null;
+            }
+
             var query = artists[0] + " " + song.Title; // TODO: maybe try other artists or even all if fail?
             var ct = 0;
 
@@ -505,7 +511,7 @@ namespace FluentDL.Services.Sources
                 var duration = result.Duration;
                 double totalSeconds = TimeSpan.Parse(duration?.ToString() ?? "0").TotalSeconds;
 
-                if (Math.Abs(totalSeconds - double.Parse(song.Duration)) <= 1)
+                if (Math.Abs(totalSeconds - songDuration.TotalSeconds) <= 1)
                 {
                     results.Add(result);
                 }
@@ -693,7 +699,9 @@ namespace FluentDL.Services.Sources
                         catch (Exception e) // Can crash on invalid playlist or token cancel (for some reason)
                         {
                             Debug.WriteLine("Error loading playlist: " + e.Message);
-                            return null;
+                            if (token.IsCancellationRequested) return null;
+                            // Otherwise try the next album, then the song and video searches below (bug 5: a failed
+                            // album used to end the whole match).
                         }
                     }
                 }
@@ -710,7 +718,7 @@ namespace FluentDL.Services.Sources
             {
                 await foreach (var res in ytm.SearchAsync(query, SearchCategory.Songs))
                 {
-                    if (ct >= 20) break;
+                    if (ct++ >= 20) break; // ct was never incremented, so this never stopped the search (bug 4)
                     if (token.IsCancellationRequested) return null; // Check if task is cancelled
                     if (TextNormalization.PrunePunctuation(songObj.Title.ToLower()).Equals(TextNormalization.PrunePunctuation(res.Name.ToLower())))
                     {
