@@ -321,8 +321,49 @@ public sealed partial class SettingsPage : Page
         ShowConnectResult(await Session(SourceIds.Spotify).ConnectAsync(), "Spotify", SetSpotifyAuthInfo);
     }
 
+    private CancellationTokenSource? _tidalLogin;
+
+    // Sign in, cancel a sign-in in progress, or sign out, depending on the state.
+    private async void TidalLoginButton_Click(object sender, RoutedEventArgs e)
+    {
+        var login = (IAccountLogin)Session(SourceIds.Tidal);
+        if (_tidalLogin != null)
+        {
+            _tidalLogin.Cancel();
+            return;
+        }
+        if (login.AccountName != null)
+        {
+            await login.LogoutAsync();
+            ShowInfoBar(InfoBarSeverity.Informational, "Signed out of TIDAL.", 3, "TIDAL");
+            SetTidalAuthInfo(Session(SourceIds.Tidal).IsConnected);
+            return;
+        }
+
+        _tidalLogin = new CancellationTokenSource();
+        TidalLoginButton.Content = "Cancel sign-in";
+        ShowInfoBar(InfoBarSeverity.Informational, "Finish signing in to TIDAL in your browser.", 5, "TIDAL");
+        try
+        {
+            var result = await login.LoginAsync(_tidalLogin.Token);
+            ShowConnectResult(result, "TIDAL", _ => SetTidalAuthInfo(Session(SourceIds.Tidal).IsConnected));
+        }
+        finally
+        {
+            _tidalLogin.Dispose();
+            _tidalLogin = null;
+            SetTidalAuthInfo(Session(SourceIds.Tidal).IsConnected);
+        }
+    }
+
     private void SetTidalAuthInfo(bool isInitialized)
     {
+        var login = (IAccountLogin)Session(SourceIds.Tidal);
+        TidalLoginButton.Content = login.AccountName != null ? "Sign out" : "Sign in";
+        TidalLoginButton.IsEnabled = login.CanLogin;
+        TidalAccountCard.Description = login.CanLogin
+            ? "Optional. Opens TIDAL's sign-in page in your browser. FluentDL only reads your account's name and country, and stays signed in until you sign out."
+            : "This build of FluentDL can't sign in to TIDAL. Enter your own client ID and secret below.";
         if (isInitialized)
         {
             TidalInfoButton.IsEnabled = true;

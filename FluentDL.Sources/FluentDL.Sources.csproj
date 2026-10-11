@@ -18,6 +18,16 @@
     <ProjectReference Include="..\FluentDL.Core\FluentDL.Core.csproj" />
   </ItemGroup>
 
+  <!-- FluentDL's TIDAL app (client ID and secret), so TIDAL works without setup and users can sign in. The values
+       come from the FLUENTDL_TIDAL_CLIENT_ID and FLUENTDL_TIDAL_CLIENT_SECRET environment variables (GitHub Actions
+       secrets in release builds), or from a developer's own %USERPROFILE%\.fluentdl-secrets\build.props, so the
+       repository never holds them. Builds without them have neither: users enter their own client ID and secret. -->
+  <Import Project="$(USERPROFILE)\.fluentdl-secrets\build.props" Condition="'$(FLUENTDL_TIDAL_CLIENT_ID)' == '' And Exists('$(USERPROFILE)\.fluentdl-secrets\build.props')" />
+  <ItemGroup>
+    <AssemblyMetadata Include="TidalClientId" Value="$(FLUENTDL_TIDAL_CLIENT_ID)" Condition="'$(FLUENTDL_TIDAL_CLIENT_ID)' != ''" />
+    <AssemblyMetadata Include="TidalClientSecret" Value="$(FLUENTDL_TIDAL_CLIENT_SECRET)" Condition="'$(FLUENTDL_TIDAL_CLIENT_SECRET)' != ''" />
+  </ItemGroup>
+
   <ItemGroup>
     <PackageReference Include="DeezNET" Version="1.2.2" />
     <PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="8.0.1" />
@@ -26,6 +36,7 @@
     <PackageReference Include="RestSharp" Version="111.4.1" />
     <PackageReference Include="SpotifyAPI.Web" Version="7.4.2" />
     <PackageReference Include="SpotifyAPI.Web.Auth" Version="7.4.2" />
+    <PackageReference Include="System.Security.Cryptography.ProtectedData" Version="9.0.10" />
     <PackageReference Include="VideoLibrary" Version="3.3.1" />
     <PackageReference Include="YoutubeExplode" Version="6.6.2" />
     <PackageReference Include="YouTubeMusicAPI" Version="3.0.11" />

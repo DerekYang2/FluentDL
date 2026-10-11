@@ -16,7 +16,7 @@ namespace FluentDL.Services.Sources;
 /// TIDAL through its official API. It only reads the catalog: search, lookups and links, with audio from other
 /// sources (see ADR-003). Signs in with a client id and secret for now; a TIDAL account login (PKCE) comes later.
 /// </summary>
-internal sealed class TidalSource : ISourceSession, ISearchSource, ILinkSource, ICatalogSource, IPreviewSource, IConversionTarget, ITagSource
+internal sealed class TidalSource : ISourceSession, IAccountLogin, ISearchSource, ILinkSource, ICatalogSource, IPreviewSource, IConversionTarget, ITagSource
 {
     private const string TrackIncludes = "tracks,tracks.artists,tracks.albums.coverArt";
     private const string AlbumIncludes = "albums,albums.artists,albums.coverArt";
@@ -40,16 +40,25 @@ internal sealed class TidalSource : ISourceSession, ISearchSource, ILinkSource, 
 
     public bool IsConnected => api.IsSignedIn;
 
-    public string? StatusText => IsConnected ? $"Signed in with a client ID and secret\nCountry: {api.CountryCode}" : null;
+    public string? StatusText => !IsConnected ? null : api.Access switch
+    {
+        TidalAccess.Account => $"Signed in as {AccountName}\nCountry: {api.CountryCode}",
+        TidalAccess.OwnApp => $"Using your client ID and secret\nCountry: {api.CountryCode}",
+        _ => $"Using FluentDL's built-in access\nCountry: {api.CountryCode}",
+    };
+
+    public bool CanLogin => api.CanLogin;
+
+    public string? AccountName => api.AccountName;
 
     public async Task<ConnectResult> ConnectAsync()
     {
         try
         {
             await api.SignInAsync();
-            return new ConnectResult(true, StatusLevel.Success, "Signed in to TIDAL");
+            return new ConnectResult(true, StatusLevel.Success, AccountName != null ? $"Signed in to TIDAL as {AccountName}" : "Signed in to TIDAL");
         }
-        catch (InvalidOperationException e) // no client id or secret saved
+        catch (InvalidOperationException e) // nothing set up, or the saved sign-in expired
         {
             return new ConnectResult(false, StatusLevel.Warning, e.Message);
         }
@@ -57,6 +66,30 @@ internal sealed class TidalSource : ISourceSession, ISearchSource, ILinkSource, 
         {
             return new ConnectResult(false, StatusLevel.Error, $"Couldn't sign in to TIDAL: {e.Message}");
         }
+    }
+
+    public async Task<ConnectResult> LoginAsync(CancellationToken token)
+    {
+        try
+        {
+            await api.LoginAsync(token);
+            return new ConnectResult(true, StatusLevel.Success, $"Signed in to TIDAL as {AccountName}");
+        }
+        catch (OperationCanceledException)
+        {
+            return new ConnectResult(IsConnected, StatusLevel.Warning, "TIDAL sign-in cancelled or timed out.");
+        }
+        catch (Exception e)
+        {
+            return new ConnectResult(IsConnected, StatusLevel.Error, $"Couldn't sign in to TIDAL: {e.Message}");
+        }
+    }
+
+    // The user's client ID and secret, or the built-in access, take over.
+    public async Task LogoutAsync()
+    {
+        await api.LogoutAsync();
+        await ConnectAsync();
     }
 
     public async Task SearchAsync(ICollection<SongSearchObject> results, string query, PageRequest page, bool albumMode, CancellationToken token)

@@ -18,7 +18,8 @@ public static class SettingKeys
     public const string SpotifyPlaylistPrompt = "spotify_playlist_prompt";
     public const string TidalClientId = "tidal_client_id";
     public const string TidalClientSecret = "tidal_client_secret";
-    public const string TidalCountry = "tidal_country"; // two-letter code; empty uses the Windows region
+    public const string TidalCountry = "tidal_country"; // two-letter code; empty uses the account's country, then the Windows region
+    public const string TidalRefreshToken = "tidal_refresh_token"; // the account sign-in, encrypted for the Windows user (DPAPI)
 
     public const string YoutubeQuality = "youtube_quality";
     public const string UseYtdlp = "use_ytdlp";

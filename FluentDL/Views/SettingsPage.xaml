@@ -1078,8 +1078,7 @@
                         Header="TIDAL">
                         <local:SettingsExpander.Description>
                             <TextBlock TextWrapping="Wrap">
-                                Search TIDAL and open its links by entering your own&#32;<Hyperlink NavigateUri="https://developer.tidal.com/dashboard">TIDAL developer app</Hyperlink>
-                                client ID and secret. FluentDL doesn't download from TIDAL.</TextBlock>
+                                TIDAL works without setup. Signing in is optional: searches then use your account's country, and TIDAL keeps working if FluentDL's built-in access stops. A free account works. FluentDL doesn't download from TIDAL.</TextBlock>
                         </local:SettingsExpander.Description>
                         <local:SettingsExpander.HeaderIcon>
                             <FontIcon Glyph="&#xE72E;" />
@@ -1109,9 +1108,22 @@
                         </Grid>
                         <local:SettingsExpander.Items>
                             <local:SettingsCard
+                                x:Name="TidalAccountCard"
                                 HorizontalContentAlignment="Stretch"
-                                Description="Enter your client ID string"
-                                Header="Client ID">
+                                Description="Optional. Opens TIDAL's sign-in page in your browser. FluentDL only reads your account's name and country, and stays signed in until you sign out."
+                                Header="Account">
+                                <Button
+                                    x:Name="TidalLoginButton"
+                                    Click="TidalLoginButton_Click"
+                                    Content="Sign in" />
+                            </local:SettingsCard>
+                            <local:SettingsCard
+                                HorizontalContentAlignment="Stretch"
+                                Header="Client ID (optional)">
+                                <local:SettingsCard.Description>
+                                    <TextBlock TextWrapping="Wrap">
+                                        Instead of signing in, use your own&#32;<Hyperlink NavigateUri="https://developer.tidal.com/dashboard">TIDAL developer app</Hyperlink>. Signing in takes priority.</TextBlock>
+                                </local:SettingsCard.Description>
                                 <TextBox
                                     x:Name="TidalClientIdInput"
                                     Width="500"
@@ -1131,8 +1143,8 @@
                             </local:SettingsCard>
                             <local:SettingsCard
                                 HorizontalContentAlignment="Stretch"
-                                Description="Enter your client secret string"
-                                Header="Client Secret">
+                                Description="Your developer app's client secret"
+                                Header="Client Secret (optional)">
                                 <helpers:CustomPasswordBox
                                     x:Name="TidalSecretInput"
                                     Width="500"
@@ -1142,7 +1154,7 @@
                             </local:SettingsCard>
                             <local:SettingsCard
                                 HorizontalContentAlignment="Stretch"
-                                Description="Two-letter country code, such as US or GB. TIDAL's catalog and search ranking differ by country. Leave empty to use your Windows region."
+                                Description="Two-letter country code, such as US or GB. TIDAL's catalog and search ranking differ by country. Leave empty to use your account's country, or your Windows region."
                                 Header="Country">
                                 <TextBox
                                     x:Name="TidalCountryInput"

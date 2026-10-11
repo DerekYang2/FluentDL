@@ -67,6 +67,9 @@ jobs:
       VERSION: ${{ needs.version.outputs.version }}
       # The Store reserves the last part of the version, so only versions ending in .0 get Store packages.
       STORE: ${{ endsWith(needs.version.outputs.version, '.0') }}
+      # FluentDL's TIDAL app, built into the release (see FluentDL.Sources.csproj). Repository secrets.
+      FLUENTDL_TIDAL_CLIENT_ID: ${{ secrets.TIDAL_CLIENT_ID }}
+      FLUENTDL_TIDAL_CLIENT_SECRET: ${{ secrets.TIDAL_CLIENT_SECRET }}
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/lfs-pull
