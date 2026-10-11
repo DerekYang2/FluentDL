@@ -14,6 +14,7 @@
         "TrackPosition": "1",
         "ImageLocation": "https://resources.tidal.com/images/b66a5c40/c34d/4507/a0dc/5f98e46fdd20/320x320.jpg",
         "AdditionalFieldKeys": [
+          "album_id",
           "cover_max",
           "max_quality"
         ]
@@ -31,6 +32,7 @@
         "TrackPosition": "1",
         "ImageLocation": "https://resources.tidal.com/images/5b3c232a/c6c1/4f3d/b014/fe7f3a3d86a8/320x320.jpg",
         "AdditionalFieldKeys": [
+          "album_id",
           "cover_max",
           "max_quality"
         ]
@@ -48,6 +50,7 @@
         "TrackPosition": "1",
         "ImageLocation": "https://resources.tidal.com/images/14ad1f4f/3e37/4fef/b319/6bfe44afef4c/320x320.jpg",
         "AdditionalFieldKeys": [
+          "album_id",
           "cover_max",
           "max_quality"
         ]
@@ -65,6 +68,7 @@
         "TrackPosition": "1",
         "ImageLocation": "https://resources.tidal.com/images/e61e55ba/196d/4978/81b6/d898b683b2c7/320x320.jpg",
         "AdditionalFieldKeys": [
+          "album_id",
           "cover_max",
           "max_quality"
         ]
@@ -82,6 +86,7 @@
         "TrackPosition": "1",
         "ImageLocation": "https://resources.tidal.com/images/bf2fd1d3/117c/40b6/83ff/b1b7a1fc2ed4/320x320.jpg",
         "AdditionalFieldKeys": [
+          "album_id",
           "cover_max",
           "max_quality"
         ]
@@ -177,6 +182,7 @@
         "TrackPosition": "1",
         "ImageLocation": "https://resources.tidal.com/images/b66a5c40/c34d/4507/a0dc/5f98e46fdd20/320x320.jpg",
         "AdditionalFieldKeys": [
+          "album_id",
           "cover_max",
           "max_quality"
         ]
@@ -194,6 +200,7 @@
         "TrackPosition": "1",
         "ImageLocation": "https://resources.tidal.com/images/5b3c232a/c6c1/4f3d/b014/fe7f3a3d86a8/320x320.jpg",
         "AdditionalFieldKeys": [
+          "album_id",
           "cover_max",
           "max_quality"
         ]
@@ -211,6 +218,7 @@
         "TrackPosition": "1",
         "ImageLocation": "https://resources.tidal.com/images/14ad1f4f/3e37/4fef/b319/6bfe44afef4c/320x320.jpg",
         "AdditionalFieldKeys": [
+          "album_id",
           "cover_max",
           "max_quality"
         ]
@@ -228,6 +236,7 @@
         "TrackPosition": "1",
         "ImageLocation": "https://resources.tidal.com/images/e61e55ba/196d/4978/81b6/d898b683b2c7/320x320.jpg",
         "AdditionalFieldKeys": [
+          "album_id",
           "cover_max",
           "max_quality"
         ]

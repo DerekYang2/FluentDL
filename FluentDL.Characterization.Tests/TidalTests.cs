@@ -160,6 +160,18 @@ public class TidalParsingTests
         Assert.AreEqual("GB", api.CountryCode);
     }
 
+    // Without a client ID and secret, conversion to TIDAL reports no match (a red badge), not an error.
+    [TestMethod]
+    public async Task ConversionWithoutCredentialsReportsNotFound()
+    {
+        var source = new TidalSource(new TidalApi(new DictionarySettings([]), new HttpClient(new RecordingHandler())));
+        var song = new Models.SongSearchObject { Source = "deezer", Id = "67238735", Title = "Get Lucky", Artists = "Daft Punk", AlbumName = "Random Access Memories", Isrc = "USQX91300108" };
+
+        var match = await source.FindEquivalentAsync(song, song.Isrc, CancellationToken.None);
+
+        Assert.AreEqual(Contracts.Sources.MatchKind.NotFound, match.Kind);
+    }
+
     private sealed class RecordingHandler : HttpMessageHandler
     {
         public List<string> Requests { get; } = [];

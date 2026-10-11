@@ -179,8 +179,9 @@ public sealed class DownloadService(SourceRegistry sources, EquivalentDownloader
 
     private async Task<string> DownloadTrackCore(SongSearchObject song, string directory, IProgress<ProgressData> progress, ConversionUpdateCallback? callback)
     {
-        // Spotify case (web player songs do not have full metadata)
-        if (song.Source == SourceIds.Spotify && (string.IsNullOrWhiteSpace(song.ReleaseDate) || string.IsNullOrWhiteSpace(song.TrackPosition))
+        // Spotify web player songs lack full metadata, and TIDAL tracks from searches and playlists lack their track number.
+        if (((song.Source == SourceIds.Spotify && (string.IsNullOrWhiteSpace(song.ReleaseDate) || string.IsNullOrWhiteSpace(song.TrackPosition)))
+                || song.Source == SourceIds.Tidal)
             && sources.TryGet<ICatalogSource>(song.Source, out var catalog))
         {
             song = await catalog.GetTrackAsync(song.Id) ?? song;

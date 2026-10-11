@@ -17,8 +17,8 @@ public static class SourceCatalog
             "https://open.spotify.com/track/", "https://open.spotify.com/album/"),
         new(SourceIds.YouTube, "YouTube", 255, 0, 0, IsSearchable: true, InitialChunkSize: 10, SearchChunkSize: 5,
             "https://www.youtube.com/watch?v=", "https://music.youtube.com/playlist?list="),
-        // TIDAL's brand color is black, which Qobuz already uses, so its badge is TIDAL's cyan accent.
-        new(SourceIds.Tidal, "TIDAL", 0, 255, 255, IsSearchable: true, InitialChunkSize: 20, SearchChunkSize: 10,
+        // TIDAL's brand color is black, which Qobuz already uses, so its badge is the teal of tidal.com's accents.
+        new(SourceIds.Tidal, "TIDAL", 70, 205, 205, IsSearchable: true, InitialChunkSize: 20, SearchChunkSize: 10,
             "https://tidal.com/track/", "https://tidal.com/album/"),
         // Local files: the id is the file path, which is also the "link".
         new(SourceIds.Local, "Local", 255, 255, 255, IsSearchable: false, InitialChunkSize: 0, SearchChunkSize: 0,
