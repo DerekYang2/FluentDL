@@ -53,17 +53,21 @@ internal sealed class TidalSource : ISourceSession, IAccountLogin, ISearchSource
 
     public async Task<ConnectResult> ConnectAsync()
     {
+        // The log says which access is in use (never the ID or secret); the release launch check looks for BuiltIn.
         try
         {
             await api.SignInAsync();
+            Serilog.Log.Information("TIDAL access {Access}", api.Access);
             return new ConnectResult(true, StatusLevel.Success, AccountName != null ? $"Signed in to TIDAL as {AccountName}" : "Signed in to TIDAL");
         }
         catch (InvalidOperationException e) // nothing set up, or the saved sign-in expired
         {
+            Serilog.Log.Warning("TIDAL access {Access}: {Reason}", TidalAccess.None, e.Message);
             return new ConnectResult(false, StatusLevel.Warning, e.Message);
         }
         catch (Exception e)
         {
+            Serilog.Log.Warning("TIDAL access {Access}: {Reason}", TidalAccess.None, e.Message);
             return new ConnectResult(false, StatusLevel.Error, $"Couldn't sign in to TIDAL: {e.Message}");
         }
     }

@@ -79,6 +79,10 @@ jobs:
       - name: Build the packages
         working-directory: FluentDL
         run: |
+          if (-not $env:FLUENTDL_TIDAL_CLIENT_ID -or -not $env:FLUENTDL_TIDAL_CLIENT_SECRET) {
+            Write-Host "::error::The TIDAL_CLIENT_ID and TIDAL_CLIENT_SECRET repository secrets are missing, so TIDAL wouldn't work without setup."
+            exit 1
+          }
           $channel = 'All'
           if ($env:STORE -ne 'true') {
             $channel = 'Sideload'
@@ -124,7 +128,7 @@ jobs:
         run: |
           Expand-Archive "package/FluentDL_$($env:VERSION)_${{ matrix.architecture }}.zip" -DestinationPath package/unzipped
           $msix = Get-ChildItem package/unzipped -Recurse -Filter *.msix | Select-Object -First 1
-          ./.github/scripts/Test-AppLaunch.ps1 -Package $msix.FullName -Architecture ${{ matrix.architecture }} -Output launch-results
+          ./.github/scripts/Test-AppLaunch.ps1 -Package $msix.FullName -Architecture ${{ matrix.architecture }} -Output launch-results -ExpectTidalBuiltIn
       - name: Upload the launch results
         if: always()
         uses: actions/upload-artifact@v7
