@@ -565,12 +565,12 @@ internal class FFmpegRunner : IAudioConverter
 
         try
         {
-            // First try with AudioCodec.LibFdk_Aac (better quality)
+            // First try with AudioCodec.LibFdk_Aac (better quality). Don't add another -c:a here: ffmpeg only uses the last
+            // one, and an extra "-c:a aac" once made this attempt use FFmpeg's own encoder instead of FDK.
             FFMpegArguments.FromFileInput(initialPath)
                 .OutputToFile(outputPath, true, options => options.WithCustomArgument("-c:v copy")
                     .WithAudioCodec(AudioCodec.LibFdk_Aac)
                     .WithCustomArgument("-map_metadata 0")
-                    .WithCustomArgument("-c:a aac")
                     .WithCustomArgument($"-b:a {bitRate}k")).ProcessSynchronously();
             return outputPath;
         }
@@ -645,6 +645,7 @@ internal class FFmpegRunner : IAudioConverter
         {
             FFMpegArguments.FromFileInput(initialPath)
                 .OutputToFile(outputPath, true, options => options
+                    .WithCustomArgument("-vn")
                     .WithCustomArgument("-c:a libvorbis")
                     .WithCustomArgument($"-q:a {qScale}")
                     .WithCustomArgument("-map_metadata 0")).ProcessSynchronously();
@@ -671,6 +672,7 @@ internal class FFmpegRunner : IAudioConverter
         {
             FFMpegArguments.FromFileInput(initialPath)
                 .OutputToFile(outputPath, true, options => options
+                    .WithCustomArgument("-vn")
                     .WithCustomArgument("-c:a libvorbis")
                     .WithCustomArgument("-map_metadata 0")
                     .WithCustomArgument($"-b:a {bitRate}k")).ProcessSynchronously();
@@ -696,6 +698,7 @@ internal class FFmpegRunner : IAudioConverter
         {
             FFMpegArguments.FromFileInput(initialPath)
                 .OutputToFile(outputPath, true, options => options
+                    .WithCustomArgument("-vn")
                     .WithCustomArgument("-c:a libopus")
                     .WithCustomArgument("-vbr on")
                     .WithCustomArgument("-frame_duration 60")
@@ -805,12 +808,12 @@ internal class FFmpegRunner : IAudioConverter
 
         try
         {
-            // First try with AudioCodec.LibFdk_Aac (better quality)
+            // First try with AudioCodec.LibFdk_Aac (better quality). Don't add another -c:a here: ffmpeg only uses the last
+            // one, and an extra "-c:a aac" once made this attempt use FFmpeg's own encoder instead of FDK.
             await FFMpegArguments.FromFileInput(initialPath)
                 .OutputToFile(outputPath, true, options => options.WithCustomArgument("-c:v copy")
                     .WithAudioCodec(AudioCodec.LibFdk_Aac)
                     .WithCustomArgument("-map_metadata 0")
-                    .WithCustomArgument("-c:a aac")
                     .WithCustomArgument($"-b:a {bitRate}k")).ProcessAsynchronously();
             return outputPath;
         }
@@ -873,6 +876,7 @@ internal class FFmpegRunner : IAudioConverter
         {
             await FFMpegArguments.FromFileInput(initialPath)
                 .OutputToFile(outputPath, true, options => options
+                    .WithCustomArgument("-vn")
                     .WithCustomArgument("-c:a libvorbis")
                     .WithCustomArgument("-map_metadata 0")
                     .WithCustomArgument($"-b:a {bitRate}k")).ProcessAsynchronously();
@@ -898,6 +902,7 @@ internal class FFmpegRunner : IAudioConverter
         {
             await FFMpegArguments.FromFileInput(initialPath)
                 .OutputToFile(outputPath, true, options => options
+                    .WithCustomArgument("-vn")
                     .WithCustomArgument("-c:a libopus")
                     .WithCustomArgument("-vbr on")
                     .WithCustomArgument("-frame_duration 60")
