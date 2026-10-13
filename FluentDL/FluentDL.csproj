@@ -40,6 +40,17 @@
     <!-- PackageSelect\BuildPackages.cs is a standalone 'dotnet run' script, not part of the app. -->
     <Compile Remove="PackageSelect\**" />
   </ItemGroup>
+  <!-- Assets\ffmpeg holds an audio-only ffmpeg build for each platform, from https://github.com/DerekYang2/ffmpeg-audio.
+       Each build packs its own platform's copy as Assets\ffmpeg\bin\ffmpeg.exe, where FFmpegRunner looks for it. -->
+  <ItemGroup>
+    <None Remove="Assets\ffmpeg\**" />
+    <Content Remove="Assets\ffmpeg\**" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(RuntimeIdentifier)' != ''">
+    <Content Include="Assets\ffmpeg\$(RuntimeIdentifier)\ffmpeg.exe" Link="Assets\ffmpeg\bin\ffmpeg.exe" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="Assets\ffmpeg\$(RuntimeIdentifier)\BUILD.txt" Link="Assets\ffmpeg\bin\BUILD.txt" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="Assets\ffmpeg\licenses\*.txt" Link="Assets\ffmpeg\licenses\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
   <ItemGroup>
     <Manifest Include="$(ApplicationManifest)" />
   </ItemGroup>
