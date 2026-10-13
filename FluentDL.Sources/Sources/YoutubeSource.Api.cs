@@ -5,6 +5,7 @@ using FluentDL.Helpers;
 using FluentDL.Models;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
+using System.Globalization;
 using System.Text.RegularExpressions;
 using VideoLibrary;
 using YoutubeExplode;
@@ -19,8 +20,8 @@ namespace FluentDL.Services.Sources
 {
     internal sealed partial class YoutubeSource
     {
-        private YoutubeClient youtube = new YoutubeClient();
-        private YouTubeMusicClient ytm = new YouTubeMusicClient();
+        private readonly YoutubeClient youtube;
+        private readonly YouTubeMusicClient ytm;
         private YouTube youtubeAlt = YouTube.Default;
 
         // YouTube answers some song detail requests with a bot check and no details, at random (about half of them on
@@ -45,6 +46,7 @@ namespace FluentDL.Services.Sources
 
         public async Task GeneralSearch(ICollection<SongSearchObject> itemSource, string query, CancellationToken token, int offset = 0, int limit = 25, bool albumMode = false)
         {
+            token.ThrowIfCancellationRequested();
             query = query.Trim(); // Trim the query
             if (string.IsNullOrWhiteSpace(query))
             {
@@ -56,7 +58,7 @@ namespace FluentDL.Services.Sources
                 try
                 {
                     var searchResults = ytm.SearchAsync(query, SearchCategory.Albums);
-                    var bufferedResults = await searchResults.FetchItemsAsync(offset, limit);
+                    var bufferedResults = await searchResults.FetchItemsAsync(offset, limit, token);
                     foreach (var album in bufferedResults)
                     {
                         if (token.IsCancellationRequested)
@@ -64,7 +66,8 @@ namespace FluentDL.Services.Sources
                         var browseId = await ytm.GetAlbumBrowseIdAsync(album.Id); // Get the browse id
                         itemSource.Add(ConvertAlbumSearchObject(await ytm.GetAlbumInfoAsync(browseId)));
                     }
-                } catch (Exception e)
+                } catch (OperationCanceledException) { throw; }
+                catch (Exception e)
                 {
                     Debug.WriteLine("Failed to search for albums: " + e.ToString());
                 }
@@ -74,21 +77,23 @@ namespace FluentDL.Services.Sources
                 try
                 {
                     var searchResults = ytm.SearchAsync(query, SearchCategory.Songs);
-                    var bufferedResults = await searchResults.FetchItemsAsync(offset, limit);
+                    var bufferedResults = await searchResults.FetchItemsAsync(offset, limit, token);
                     foreach (var song in bufferedResults)
                     {
                         if (token.IsCancellationRequested)
                             break;
-                        var track = await GetTrack(song.Id);
-                        if (track != null)
+                        // As in Melora's Music query search, use the returned song rather than refetching its ID.
+                        if (song is SongSearchResult track)
                         {
-                            itemSource.Add(track);
+                            itemSource.Add(ConvertSongSearchResult(track));
                         }
                     }
                 }
+                catch (OperationCanceledException) { throw; }
                 catch (Exception e1)
                 {
                     Debug.WriteLine("Error searching YTM: " + e1.Message);
+                    Serilog.Log.Warning("YouTube Music search failed; error type {ErrorType}; trying video search", e1.GetType().Name);
                     int ct = 0;
                     // Fall back to regular youtube
                     if (offset > 0) {  // Does not support pagination so disable incremental loading 
@@ -110,9 +115,11 @@ namespace FluentDL.Services.Sources
                             }
                         }
                     }
+                    catch (OperationCanceledException) { throw; }
                     catch (Exception e2)
                     {
                         Debug.WriteLine("Error searching YouTube: " + e2.Message);
+                        Serilog.Log.Warning("YouTube fallback search failed; error type {ErrorType}", e2.GetType().Name);
                     }
                     return;
                 }
@@ -887,6 +894,21 @@ namespace FluentDL.Services.Sources
 
             return video.Thumbnails[idx].Url;
         }
+
+        // Search has no video upload date or view count. Leave them unknown instead of making per-row requests.
+        internal static SongSearchObject ConvertSongSearchResult(SongSearchResult song) => new()
+        {
+            Source = SourceIds.YouTube,
+            Id = song.Id,
+            Title = song.Name,
+            Artists = string.Join(", ", song.Artists.Select(a => a.Name)),
+            AlbumName = song.Album?.Name ?? "",
+            Duration = song.Duration.TotalSeconds.ToString(CultureInfo.InvariantCulture),
+            Explicit = song.IsExplicit,
+            ImageLocation = song.Thumbnails.MaxBy(t => t.Width)?.Url ?? "",
+            ReleaseDate = "",
+            Rank = "",
+        };
 
         public async Task<SongSearchObject> GetTrack(SongSearchResult ytmSong)
         {

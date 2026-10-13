@@ -180,8 +180,9 @@ public sealed class DownloadService(SourceRegistry sources, EquivalentDownloader
 
     private async Task<string> DownloadTrackCore(SongSearchObject song, string directory, IProgress<ProgressData> progress, ConversionUpdateCallback? callback)
     {
-        // Spotify web player songs lack full metadata, and TIDAL tracks from searches and playlists lack their track number.
+        // Spotify and YouTube search rows lack full metadata; TIDAL searches and playlists lack their track number.
         if (((song.Source == SourceIds.Spotify && (string.IsNullOrWhiteSpace(song.ReleaseDate) || string.IsNullOrWhiteSpace(song.TrackPosition)))
+                || (song.Source == SourceIds.YouTube && string.IsNullOrWhiteSpace(song.ReleaseDate))
                 || song.Source == SourceIds.Tidal)
             && sources.TryGet<ICatalogSource>(song.Source, out var catalog))
         {
@@ -263,6 +264,18 @@ public sealed class DownloadService(SourceRegistry sources, EquivalentDownloader
 
     public async Task<string> DownloadObject(SongSearchObject song, string directory, IProgress<ProgressData> progress, ConversionUpdateCallback? callback = default)
     {
+        // Resolve a lightweight YouTube row before folder templates as well as the filename use its year.
+        if (song.Source == SourceIds.YouTube && string.IsNullOrWhiteSpace(song.ReleaseDate)
+            && sources.TryGet<ICatalogSource>(song.Source, out var youtubeCatalog))
+        {
+            try { song = await youtubeCatalog.GetTrackAsync(song.Id) ?? throw new InvalidOperationException("YouTube track metadata could not be loaded."); }
+            catch (Exception e)
+            {
+                Log.Error(e, "YouTube metadata lookup failed before download naming");
+                callback?.Invoke(StatusLevel.Error, song, e.Message);
+                return string.Empty;
+            }
+        }
         // Create file path
         bool createTrackSubfolder = await SettingsViewModel.GetSetting<bool>(SettingsViewModel.Subfolders);
         if (createTrackSubfolder)

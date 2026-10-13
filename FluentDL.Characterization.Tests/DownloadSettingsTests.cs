@@ -185,9 +185,14 @@ public class DownloadSettingsTests
         await WithSettings(new() { [SettingKeys.YoutubeQuality] = quality }, () =>
             InTempFolder(async folder =>
             {
-                var path = await downloads.DownloadObject(song!, folder, new Progress<ProgressData>(_ => { }));
+                var errors = new List<string>();
+                var path = await downloads.DownloadObject(song!, folder, new Progress<ProgressData>(_ => { }), (level, _, message) =>
+                {
+                    if (level == StatusLevel.Error && message != null)
+                        errors.Add(System.Text.RegularExpressions.Regex.Replace(message, @"https?://\S+", "<URL>"));
+                });
 
-                Assert.AreEqual(extension, Path.GetExtension(path));
+                Assert.AreEqual(extension, Path.GetExtension(path), string.Join("; ", errors));
                 using var file = TagLib.File.Create(path);
                 Assert.AreEqual(248, file.Properties.Duration.TotalSeconds, 3);
                 StringAssert.StartsWith(file.Tag.Title, "Get Lucky");
