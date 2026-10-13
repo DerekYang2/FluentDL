@@ -18,6 +18,7 @@
         <StackPanel Spacing="8">
             <TextBlock Text="Sign in below. If TIDAL blocks this window, use your browser instead." TextWrapping="Wrap" />
             <Button x:Name="BrowserButton" Content="Open in my browser instead" Click="Browser_Click" />
+            <TextBlock x:Name="BrowserStatus" Text="Starting embedded browser..." TextWrapping="Wrap" />
             <InfoBar x:Name="LoginError" Severity="Error" IsOpen="False" />
         </StackPanel>
         <WebView2 x:Name="LoginWebView" Grid.Row="1" AutomationProperties.Name="TIDAL sign-in page" />

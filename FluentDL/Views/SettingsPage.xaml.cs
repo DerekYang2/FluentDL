@@ -388,7 +388,13 @@ public sealed partial class SettingsPage : Page
                 if (dialog.SignedIn) ShowInfoBar(InfoBarSeverity.Success, "Signed in for TIDAL downloads.", 4, "TIDAL");
             }
         }
-        catch (Exception ex) { ShowInfoBar(InfoBarSeverity.Error, ex is InvalidOperationException ? ex.Message : "Couldn't start the TIDAL download sign-in.", 5, "TIDAL"); }
+        catch (Exception ex)
+        {
+            Serilog.Log.Warning("TIDAL download login dialog failed: {ExceptionType}, HRESULT {HResult}",
+                ex.GetType().FullName, $"0x{ex.HResult:X8}");
+            ShowInfoBar(InfoBarSeverity.Error, ex is InvalidOperationException ? ex.Message
+                : $"Couldn't start the TIDAL download sign-in. Error 0x{ex.HResult:X8}.", 5, "TIDAL");
+        }
         finally { await UpdateTidalDownloadStatusAsync(); }
     }
 

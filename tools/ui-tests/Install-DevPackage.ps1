@@ -10,7 +10,9 @@ Requires Developer Mode (Settings > System > For developers), which allows regis
 #>
 param(
     [string]$RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path,
-    [ValidateSet('Debug', 'Release')][string]$Configuration = 'Debug'
+    [ValidateSet('Debug', 'Release')][string]$Configuration = 'Debug',
+    # Native WebView2 startup check without navigating to TIDAL's sign-in page.
+    [switch]$BlankTidalLogin
 )
 
 $ErrorActionPreference = 'Stop'
@@ -20,9 +22,20 @@ $project = Join-Path $RepoRoot 'FluentDL\FluentDL.csproj'
 $outDir = Join-Path $RepoRoot 'FluentDL\bin\uitest'
 
 Write-Host "Building $project as $devName..."
+$diagnosticArguments = @()
+if ($BlankTidalLogin) {
+    $source = Get-Content (Join-Path $RepoRoot 'FluentDL\Views\TidalDownloadLoginDialog.xaml.cs') -Raw
+    $line = 'LoginWebView.Source = login.Address;'
+    if (-not $source.Contains($line)) { throw 'Cannot substitute the diagnostic login address.' }
+    $folder = Join-Path $env:TEMP 'opencode\tidal-blank-browser'
+    New-Item -ItemType Directory -Force $folder | Out-Null
+    $diagnosticSource = Join-Path $folder 'TidalDownloadLoginDialog.xaml.cs'
+    [IO.File]::WriteAllText($diagnosticSource, $source.Replace($line, 'LoginWebView.Source = new Uri("about:blank");'))
+    $diagnosticArguments = @("-p:FluentDLTidalDiagnosticSource=$diagnosticSource")
+}
 dotnet build $project -c $Configuration -p:Platform=x64 -v q --nologo `
     "-p:CustomAfterMicrosoftCommonTargets=$targets" `
-    '-p:IntermediateOutputPath=obj\uitest\' '-p:OutputPath=bin\uitest\'
+    '-p:IntermediateOutputPath=obj\uitest\' '-p:OutputPath=bin\uitest\' @diagnosticArguments
 if ($LASTEXITCODE -ne 0) { throw "Build failed (exit $LASTEXITCODE)." }
 
 $manifest = Get-ChildItem $outDir -Recurse -Filter AppxManifest.xml |

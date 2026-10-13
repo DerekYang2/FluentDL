@@ -61,6 +61,26 @@ public class TidalDownloadTests
         Assert.AreEqual("bundled-client", (await Client(new TidalParsingTests.DictionarySettings([]), handler).BeginLoginAsync()).ClientId);
     }
 
+    // Makes only a GitHub request. Creating the PKCE address does not open a browser or contact TIDAL.
+    [TestMethod]
+    [TestCategory("Live")]
+    public async Task RealGistSuppliesTheClientIdBeforeTheBundledFallback()
+    {
+        var url = Environment.GetEnvironmentVariable("FLUENTDL_TIDAL_DOWNLOAD_GIST_TEST_URL");
+        if (string.IsNullOrWhiteSpace(url)) Assert.Inconclusive("Set FLUENTDL_TIDAL_DOWNLOAD_GIST_TEST_URL for this manual Gist check.");
+        var settings = new TidalParsingTests.DictionarySettings([]);
+        var client = new TidalDownloadClient(settings, new HttpClient())
+        {
+            FallbackClientId = "intentionally-different-fallback",
+        };
+        Assert.AreEqual(url, client.ConfigUrl, "The build must include the configured Gist URL.");
+        var login = await client.BeginLoginAsync();
+        Assert.AreNotEqual(client.FallbackClientId, login.ClientId, "The remote fetch fell back to the bundled ID.");
+        Assert.AreEqual(login.ClientId, await settings.ReadSettingAsync<string>(SettingKeys.TidalDownloadCachedClient));
+        Assert.AreEqual(login.ClientId, System.Web.HttpUtility.ParseQueryString(login.Address.Query)["client_id"]);
+        Console.WriteLine("Real Gist fetch, cache write and PKCE client selection passed without contacting TIDAL.");
+    }
+
     [TestMethod]
     public async Task LoginUsesPkceAndRefreshKeepsTheOriginalClientAfterConfigChanges()
     {

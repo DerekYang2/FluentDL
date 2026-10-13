@@ -16,6 +16,46 @@ public class SettingsUiTests
 {
     private static readonly string[] Sources = ["Deezer", "Qobuz", "Spotify", "Tidal"];
 
+    // Run only against a diagnostic dev build whose login page is about:blank. This checks native WebView2 startup
+    // without automated navigation to TIDAL, which has previously triggered its bot protection.
+    [TestMethod]
+    [TestCategory("UIProbe")]
+    public void TidalEmbeddedBrowserStartsOffline()
+    {
+        DevApp.RequireUiTests();
+        if (Environment.GetEnvironmentVariable("FLUENTDL_TIDAL_BLANK_BROWSER_TEST") != "1")
+            Assert.Inconclusive("Requires the about:blank diagnostic dev build.");
+        var data = Windows.Management.Core.ApplicationDataManager.CreateForPackageFamily(DevApp.FindAumid().Split('!')[0]);
+        var keys = new[] { "tidal_direct_downloads", "tidal_download_session" };
+        var previous = keys.ToDictionary(k => k, k => data.LocalSettings.Values.TryGetValue(k, out var value) ? value : null);
+        data.LocalSettings.Values["tidal_direct_downloads"] = "true";
+        data.LocalSettings.Values.Remove("tidal_download_session");
+        try
+        {
+            using var dev = DevApp.Launch();
+            Find(dev, "SearchBox", TimeSpan.FromSeconds(60));
+            Navigate(dev, "Settings");
+            Expand(dev, "TidalDownloadsExpander");
+            Invoke(FindScrolling(dev, "TidalDownloadLoginButton"));
+            var status = Find(dev, "BrowserStatus");
+            WaitUntil(() => Text(status) != "Starting embedded browser...", TimeSpan.FromSeconds(30), "WebView2 initialization result");
+            var folder = Path.Combine(Path.GetTempPath(), "opencode", "tidal-embedded-ui");
+            Directory.CreateDirectory(folder);
+            FlaUI.Core.Capturing.Capture.Element(dev.MainWindow).ToFile(Path.Combine(folder, "dialog.png"));
+            Console.WriteLine("Embedded dialog status: " + Text(status));
+            Assert.AreEqual("Embedded browser ready.", Text(status));
+            var close = FindInRawView(dev, dev.MainWindow, "CloseButton", maxDepth: 25)
+                ?? throw new InvalidOperationException("The download dialog has no close button in the raw UI tree.");
+            Invoke(close);
+            WaitUntil(() => TryFind(dev, cf => cf.ByAutomationId("BrowserStatus")) == null, TimeSpan.FromSeconds(10), "dialog closed");
+        }
+        finally
+        {
+            foreach (var (key, value) in previous)
+                if (value == null) data.LocalSettings.Values.Remove(key); else data.LocalSettings.Values[key] = value;
+        }
+    }
+
     [TestMethod]
     public void TidalDownloadOptInPersists()
     {

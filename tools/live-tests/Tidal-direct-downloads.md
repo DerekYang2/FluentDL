@@ -29,3 +29,7 @@ A saved refresh token belongs to the client ID used to create it. Updating the G
 `TidalDownloadTests` covers manifest ordering, returned codecs, encryption rejection, PKCE, refresh, Gist caching, preview fallback, and partial-file cleanup without network access.
 
 `TidalDirectLiveTests` is an explicit manual test. Set `FLUENTDL_TIDAL_DOWNLOAD_TEST_SESSION` to a file containing the DPAPI-protected download session before running it. It downloads a full track through DownloadService and checks the duration, bit depth and tags. The file must belong to the same Windows user. The normal test run does not need this session.
+
+To check the real Gist reader without opening a browser or contacting TIDAL, put the Gist URL in the local build properties and set `FLUENTDL_TIDAL_DOWNLOAD_GIST_TEST_URL` to the same URL. Run `TidalDownloadTests.RealGistSuppliesTheClientIdBeforeTheBundledFallback`. The test supplies a different bundled fallback and requires the remote ID to reach the cache and PKCE address. App logs say `TIDAL download client configuration source: Gist`, `Cache`, or `Bundled`, without printing the ID.
+
+For the native embedded-browser startup check, install the dev package with `tools/ui-tests/Install-DevPackage.ps1 -BlankTidalLogin`. Set `FLUENTDL_UI_TESTS=1` and `FLUENTDL_TIDAL_BLANK_BROWSER_TEST=1`, then run `SettingsUiTests.TidalEmbeddedBrowserStartsOffline`. This diagnostic build opens only `about:blank` in the login dialog. Reinstall a normal dev build afterwards before testing a real sign-in.

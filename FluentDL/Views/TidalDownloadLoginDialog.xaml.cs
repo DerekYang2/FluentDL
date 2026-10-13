@@ -27,13 +27,19 @@ public sealed partial class TidalDownloadLoginDialog : ContentDialog
             await LoginWebView.EnsureCoreWebView2Async();
             if (closing.IsCancellationRequested) return;
             LoginWebView.CoreWebView2.NavigationStarting += NavigationStarting;
+            BrowserStatus.Text = "Embedded browser ready.";
+            Serilog.Log.Information("TIDAL embedded browser initialized");
             LoginWebView.Source = login.Address;
         }
-        catch (Exception)
+        catch (Exception ex)
         {
             if (closing.IsCancellationRequested) return;
-            LoginError.Message = "The embedded browser couldn't start. Use Open in my browser instead.";
+            // Do not log the navigation address, which can contain a sign-in code.
+            Serilog.Log.Warning("TIDAL embedded browser initialization failed: {ExceptionType}, HRESULT {HResult}",
+                ex.GetType().FullName, $"0x{ex.HResult:X8}");
+            LoginError.Message = $"The embedded browser couldn't start. Error 0x{ex.HResult:X8}. Use Open in my browser instead.";
             LoginError.IsOpen = true;
+            BrowserStatus.Text = "Embedded browser unavailable.";
             PastePanel.Visibility = Visibility.Visible;
             LoginWebView.Visibility = Visibility.Collapsed;
         }
