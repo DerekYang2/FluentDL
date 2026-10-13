@@ -1078,7 +1078,7 @@
                         Header="TIDAL">
                         <local:SettingsExpander.Description>
                             <TextBlock TextWrapping="Wrap">
-                                TIDAL works without setup. Signing in is optional: searches then use your account's country, and TIDAL keeps working if FluentDL's built-in access stops. A free account works. FluentDL doesn't download from TIDAL.</TextBlock>
+                                TIDAL works without setup. Signing in is optional: searches then use your account's country, and TIDAL keeps working if FluentDL's built-in access stops. Direct downloads have a separate opt-in below.</TextBlock>
                         </local:SettingsExpander.Description>
                         <local:SettingsExpander.HeaderIcon>
                             <FontIcon Glyph="&#xE72E;" />
@@ -1180,6 +1180,43 @@
                                     x:Name="TidalUpdateButton"
                                     Click="TidalUpdateButton_Click"
                                     Content="Save" />
+                            </local:SettingsCard>
+                        </local:SettingsExpander.Items>
+                    </local:SettingsExpander>
+
+                    <local:SettingsExpander x:Name="TidalDownloadsExpander" Header="TIDAL direct downloads"
+                        Description="Optional downloads using a separate TIDAL account sign-in. Full tracks require an active subscription or trial."
+                        HorizontalContentAlignment="Stretch">
+                        <local:SettingsExpander.HeaderIcon>
+                            <FontIcon Glyph="&#xE896;" />
+                        </local:SettingsExpander.HeaderIcon>
+                        <local:SettingsExpander.Items>
+                            <local:SettingsCard Header="Download from TIDAL" HorizontalContentAlignment="Stretch"
+                                Description="Uses an unofficial Android-client login. TIDAL may restrict this access or your account. When off, signed out, or limited to previews, FluentDL downloads through other sources.">
+                                <ToggleSwitch x:Name="TidalDirectToggle" OffContent="Off" OnContent="On"
+                                    AutomationProperties.Name="Download directly from TIDAL" Toggled="TidalDirectToggle_Toggled" />
+                            </local:SettingsCard>
+                            <local:SettingsCard Header="Download account" HorizontalContentAlignment="Stretch">
+                                <StackPanel Spacing="8">
+                                    <TextBlock x:Name="TidalDownloadStatus" Text="Not signed in" TextWrapping="Wrap" />
+                                    <Button x:Name="TidalDownloadLoginButton" Content="Sign in for downloads" Click="TidalDownloadLogin_Click" />
+                                </StackPanel>
+                            </local:SettingsCard>
+                            <local:SettingsCard Header="Download quality" HorizontalContentAlignment="Stretch">
+                                <ComboBox x:Name="TidalDownloadQualityInput" SelectedIndex="3" SelectionChanged="TidalDownloadQuality_Changed"
+                                    AutomationProperties.Name="TIDAL download quality">
+                                    <ComboBoxItem Content="Low, AAC 96 kbps" Tag="LOW" />
+                                    <ComboBoxItem Content="High, AAC 320 kbps" Tag="HIGH" />
+                                    <ComboBoxItem Content="Lossless, FLAC" Tag="LOSSLESS" />
+                                    <ComboBoxItem Content="Hi-res, best available FLAC" Tag="HI_RES_LOSSLESS" />
+                                </ComboBox>
+                            </local:SettingsCard>
+                            <local:SettingsCard Header="Client configuration" HorizontalContentAlignment="Stretch"
+                                Description="Optional raw Gist URL. Supplies only the download client ID. If unavailable, the cached or bundled ID is used. Save before signing in.">
+                                <StackPanel Spacing="8">
+                                    <TextBox x:Name="TidalDownloadConfigInput" Header="Raw Gist URL" MinWidth="280" />
+                                    <Button x:Name="TidalDownloadConfigSaveButton" Content="Save configuration URL" Click="TidalDownloadConfigSave_Click" />
+                                </StackPanel>
                             </local:SettingsCard>
                         </local:SettingsExpander.Items>
                     </local:SettingsExpander>

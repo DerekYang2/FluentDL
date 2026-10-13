@@ -99,6 +99,10 @@
     <PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="8.0.1" />
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="8.0.1" />
     <PackageReference Include="Microsoft.Extensions.Http" Version="8.0.1" />
+    <PackageReference Include="Microsoft.Windows.SDK.BuildTools.WinUIAnalyzer" Version="0.7.1">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
     <PackageReference Include="Microsoft.WindowsAppSDK" Version="2.5.1" />
     <!-- Windows App SDK 2 copies its AI, Windows ML and search runtimes into self-contained builds, about 50 MB that
          FluentDL doesn't use. Update these versions with Microsoft.WindowsAppSDK, or restore fails with NU1605. -->

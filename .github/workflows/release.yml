@@ -70,6 +70,8 @@ jobs:
       # FluentDL's TIDAL app, built into the release (see FluentDL.Sources.csproj). Repository secrets.
       FLUENTDL_TIDAL_CLIENT_ID: ${{ secrets.TIDAL_CLIENT_ID }}
       FLUENTDL_TIDAL_CLIENT_SECRET: ${{ secrets.TIDAL_CLIENT_SECRET }}
+      FLUENTDL_TIDAL_DOWNLOAD_CLIENT_ID: ${{ secrets.TIDAL_DOWNLOAD_CLIENT_ID }}
+      FLUENTDL_TIDAL_DOWNLOAD_CONFIG_URL: ${{ vars.TIDAL_DOWNLOAD_CONFIG_URL }}
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/lfs-pull

@@ -193,6 +193,13 @@ public sealed partial class SettingsPage : Page
         SetQobuzAuthInfo(Session(SourceIds.Qobuz).IsConnected);
         SetSpotifyAuthInfo(Session(SourceIds.Spotify).IsConnected);
         SetTidalAuthInfo(Session(SourceIds.Tidal).IsConnected);
+        TidalDirectToggle.IsOn = await localSettings.ReadSettingAsync<bool>(SettingKeys.TidalDirectDownloads);
+        var tidalQuality = await localSettings.ReadSettingAsync<string>(SettingKeys.TidalDownloadQuality) ?? "HI_RES_LOSSLESS";
+        TidalDownloadQualityInput.SelectedItem = TidalDownloadQualityInput.Items.Cast<ComboBoxItem>().FirstOrDefault(i => (string)i.Tag == tidalQuality)
+            ?? TidalDownloadQualityInput.Items[3];
+        TidalDownloadConfigInput.Text = await localSettings.ReadSettingAsync<string>(SettingKeys.TidalDownloadConfigUrl) ?? "";
+        await UpdateTidalDownloadStatusAsync();
+        _tidalDownloadSettingsReady = true;
         await InitializeDiagnosticsAsync();
     }
 
@@ -322,6 +329,68 @@ public sealed partial class SettingsPage : Page
     }
 
     private CancellationTokenSource? _tidalLogin;
+    private bool _tidalDownloadSettingsReady;
+    private Services.Tidal.TidalDownloadClient TidalDownloads => App.GetService<Services.Tidal.TidalDownloadClient>();
+
+    private async Task UpdateTidalDownloadStatusAsync()
+    {
+        var saved = await TidalDownloads.HasSessionAsync();
+        TidalDownloadStatus.Text = saved ? "Download sign-in saved. Full audio availability is checked when downloading." : "Not signed in for downloads.";
+        TidalDownloadLoginButton.Content = saved ? "Sign out of downloads" : "Sign in for downloads";
+        TidalDownloadLoginButton.IsEnabled = TidalDirectToggle.IsOn || saved;
+    }
+
+    private async void TidalDirectToggle_Toggled(object sender, RoutedEventArgs e)
+    {
+        if (!_tidalDownloadSettingsReady) return;
+        try
+        {
+            await localSettings.SaveSettingAsync(SettingKeys.TidalDirectDownloads, TidalDirectToggle.IsOn);
+            await UpdateTidalDownloadStatusAsync();
+        }
+        catch (Exception) { ShowInfoBar(InfoBarSeverity.Error, "Couldn't save the TIDAL download setting.", 5, "TIDAL"); }
+    }
+
+    private async void TidalDownloadQuality_Changed(object sender, SelectionChangedEventArgs e)
+    {
+        if (!_tidalDownloadSettingsReady || TidalDownloadQualityInput.SelectedItem is not ComboBoxItem item) return;
+        try { await localSettings.SaveSettingAsync(SettingKeys.TidalDownloadQuality, (string)item.Tag); }
+        catch (Exception) { ShowInfoBar(InfoBarSeverity.Error, "Couldn't save the TIDAL quality.", 5, "TIDAL"); }
+    }
+
+    private async void TidalDownloadConfigSave_Click(object sender, RoutedEventArgs e)
+    {
+        var url = TidalDownloadConfigInput.Text.Trim();
+        if (url.Length != 0 && (!Uri.TryCreate(url, UriKind.Absolute, out var uri) || uri.Scheme != "https" || uri.Host != "gist.githubusercontent.com"))
+        {
+            ShowInfoBar(InfoBarSeverity.Warning, "Enter a raw HTTPS Gist URL, or leave it empty for the build's default.", 5, "TIDAL");
+            return;
+        }
+        try
+        {
+            await localSettings.SaveSettingAsync(SettingKeys.TidalDownloadConfigUrl, url.Length == 0 ? null : url);
+            ShowInfoBar(InfoBarSeverity.Success, "Download configuration URL saved. It applies to the next sign-in.", 4, "TIDAL");
+        }
+        catch (Exception) { ShowInfoBar(InfoBarSeverity.Error, "Couldn't save the configuration URL.", 5, "TIDAL"); }
+    }
+
+    private async void TidalDownloadLogin_Click(object sender, RoutedEventArgs e)
+    {
+        TidalDownloadLoginButton.IsEnabled = false;
+        try
+        {
+            if (await TidalDownloads.HasSessionAsync()) await TidalDownloads.LogoutAsync();
+            else
+            {
+                var login = await TidalDownloads.BeginLoginAsync();
+                var dialog = new TidalDownloadLoginDialog(TidalDownloads, login) { XamlRoot = XamlRoot, RequestedTheme = ActualTheme };
+                await dialog.ShowAsync();
+                if (dialog.SignedIn) ShowInfoBar(InfoBarSeverity.Success, "Signed in for TIDAL downloads.", 4, "TIDAL");
+            }
+        }
+        catch (Exception ex) { ShowInfoBar(InfoBarSeverity.Error, ex is InvalidOperationException ? ex.Message : "Couldn't start the TIDAL download sign-in.", 5, "TIDAL"); }
+        finally { await UpdateTidalDownloadStatusAsync(); }
+    }
 
     // Sign in, cancel a sign-in in progress, or sign out, depending on the state.
     private async void TidalLoginButton_Click(object sender, RoutedEventArgs e)

@@ -26,6 +26,8 @@
   <ItemGroup>
     <AssemblyMetadata Include="TidalClientId" Value="$(FLUENTDL_TIDAL_CLIENT_ID)" Condition="'$(FLUENTDL_TIDAL_CLIENT_ID)' != ''" />
     <AssemblyMetadata Include="TidalClientSecret" Value="$(FLUENTDL_TIDAL_CLIENT_SECRET)" Condition="'$(FLUENTDL_TIDAL_CLIENT_SECRET)' != ''" />
+    <AssemblyMetadata Include="TidalDownloadClientId" Value="$(FLUENTDL_TIDAL_DOWNLOAD_CLIENT_ID)" Condition="'$(FLUENTDL_TIDAL_DOWNLOAD_CLIENT_ID)' != ''" />
+    <AssemblyMetadata Include="TidalDownloadConfigUrl" Value="$(FLUENTDL_TIDAL_DOWNLOAD_CONFIG_URL)" Condition="'$(FLUENTDL_TIDAL_DOWNLOAD_CONFIG_URL)' != ''" />
   </ItemGroup>
 
   <ItemGroup>

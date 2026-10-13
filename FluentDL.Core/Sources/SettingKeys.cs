@@ -20,6 +20,11 @@ public static class SettingKeys
     public const string TidalClientSecret = "tidal_client_secret";
     public const string TidalCountry = "tidal_country"; // two-letter code; empty uses the account's country, then the Windows region
     public const string TidalRefreshToken = "tidal_refresh_token"; // the account sign-in, encrypted for the Windows user (DPAPI)
+    public const string TidalDirectDownloads = "tidal_direct_downloads";
+    public const string TidalDownloadSession = "tidal_download_session";
+    public const string TidalDownloadQuality = "tidal_download_quality";
+    public const string TidalDownloadConfigUrl = "tidal_download_config_url";
+    public const string TidalDownloadCachedClient = "tidal_download_cached_client";
 
     public const string YoutubeQuality = "youtube_quality";
     public const string UseYtdlp = "use_ytdlp";

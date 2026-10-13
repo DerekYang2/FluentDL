@@ -24,7 +24,8 @@ namespace FluentDL.Services;
 /// Downloads tracks and albums: naming, the per-source download, tags, lyrics, ReplayGain and the album cover. Moved
 /// unchanged from ApiHelper; Phase 6 replaces its calls into the source classes with role interfaces.
 /// </summary>
-public sealed class DownloadService(SourceRegistry sources, EquivalentDownloader equivalents, ILyricService lyricService)
+public sealed class DownloadService(SourceRegistry sources, EquivalentDownloader equivalents, ILyricService lyricService,
+    Tidal.TidalDownloadClient? tidalDownloads = null)
 {
     private static readonly HttpClient client = new HttpClient();
 
@@ -226,7 +227,11 @@ public sealed class DownloadService(SourceRegistry sources, EquivalentDownloader
         {
             try
             {
-                var resultPath = await equivalents.DownloadAsync(locationNoExt, song, progress, false, callback);
+                // The opt-in TIDAL client returns null for signed-out accounts and previews.
+                var resultPath = song.Source == SourceIds.Tidal && tidalDownloads != null
+                    ? await tidalDownloads.TryDownloadAsync(song.Id, locationNoExt, progress) : null;
+                var direct = resultPath != null;
+                resultPath ??= await equivalents.DownloadAsync(locationNoExt, song, progress, false, callback);
 
                 if (resultPath != null)
                 {
@@ -235,6 +240,7 @@ public sealed class DownloadService(SourceRegistry sources, EquivalentDownloader
                         await tagger.WriteTagsAsync(resultPath, song);
                     }
                     downloadTcs.SetResult(true);
+                    if (direct) callback?.Invoke(StatusLevel.Success, song, resultPath);
                     return resultPath;
                 }
 

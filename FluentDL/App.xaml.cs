@@ -131,6 +131,7 @@ public partial class App : Application
                     services.AddSource<SpotifySource>();
                     services.AddSource<YoutubeSource>();
             services.AddSingleton<FluentDL.Services.Tidal.TidalApi>();
+            services.AddSingleton<FluentDL.Services.Tidal.TidalDownloadClient>();
             services.AddSource<TidalSource>();
                     services.AddSingleton<SourceRegistry>();
                     services.AddSingleton<ConversionService>();

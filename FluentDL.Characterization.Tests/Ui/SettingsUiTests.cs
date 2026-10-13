@@ -17,6 +17,40 @@ public class SettingsUiTests
     private static readonly string[] Sources = ["Deezer", "Qobuz", "Spotify", "Tidal"];
 
     [TestMethod]
+    public void TidalDownloadOptInPersists()
+    {
+        DevApp.RequireUiTests();
+        using (var dev = DevApp.Launch())
+        {
+            Find(dev, "SearchBox", TimeSpan.FromSeconds(60));
+            Navigate(dev, "Settings");
+            Expand(dev, "TidalDownloadsExpander");
+            var toggle = FindScrolling(dev, "TidalDirectToggle").Patterns.Toggle.Pattern;
+            Assert.AreEqual(ToggleState.Off, toggle.ToggleState.Value);
+            Assert.IsFalse(FindScrolling(dev, "TidalDownloadLoginButton").IsEnabled);
+            toggle.Toggle();
+            WaitUntil(() => Find(dev, "TidalDownloadLoginButton").IsEnabled, TimeSpan.FromSeconds(5), "download login enabled");
+        }
+        using (var dev = DevApp.Launch())
+        {
+            Find(dev, "SearchBox", TimeSpan.FromSeconds(60));
+            Navigate(dev, "Settings");
+            Expand(dev, "TidalDownloadsExpander");
+            var toggleElement = FindScrolling(dev, "TidalDirectToggle");
+            Assert.AreEqual(ToggleState.On, toggleElement.Patterns.Toggle.Pattern.ToggleState.Value);
+            toggleElement.Patterns.Toggle.Pattern.Toggle();
+            WaitUntil(() => !Find(dev, "TidalDownloadLoginButton").IsEnabled, TimeSpan.FromSeconds(5), "direct downloads disabled");
+            if (toggleElement.Patterns.ScrollItem.IsSupported) toggleElement.Patterns.ScrollItem.Pattern.ScrollIntoView();
+            var scroller = dev.MainWindow.FindAllDescendants().First(e => e.Patterns.Scroll.IsSupported && e.Patterns.Scroll.Pattern.VerticallyScrollable.Value);
+            scroller.Patterns.Scroll.Pattern.Scroll(ScrollAmount.NoAmount, ScrollAmount.LargeIncrement);
+            Thread.Sleep(500);
+            var folder = Path.Combine(Path.GetTempPath(), "opencode", "tidal-direct-ui");
+            Directory.CreateDirectory(folder);
+            FlaUI.Core.Capturing.Capture.Element(dev.MainWindow).ToFile(Path.Combine(folder, "settings.png"));
+        }
+    }
+
+    [TestMethod]
     [Timeout(4 * 60 * 1000)]
     public void SignInFromSettings()
     {
