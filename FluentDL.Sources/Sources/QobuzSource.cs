@@ -82,6 +82,10 @@ internal sealed partial class QobuzSource : ISourceSession, ISearchSource, ILink
                 rows.Add(("Genre", string.Join(", ", PruneGenreList(album.GenresList))));
                 rows.Add(("Max Quality", $"{album.MaximumBitDepth}-Bit/{album.MaximumSamplingRate} kHz"));
             }
+            if ((album?.Upc ?? selectedAlbum.Upc) is { Length: > 0 } upc)
+            {
+                rows.Add(("UPC", upc));
+            }
             var tracks = album?.Tracks.Items.Select(t => ConvertSongSearchObject(t, album.Artist?.Name)).ToList() ?? [];
             selectedAlbum.TrackList = tracks;
             return new PreviewInfo

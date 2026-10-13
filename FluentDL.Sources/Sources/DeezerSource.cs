@@ -93,6 +93,10 @@ internal sealed partial class DeezerSource : ISourceSession, ISearchSource, ILin
             {
                 rows.Add(("Fans", fans.GetInt32().ToString()));
             }
+            if ((albumJson.SafeGetString("upc") ?? album.Upc) is { Length: > 0 } upc)
+            {
+                rows.Add(("UPC", upc));
+            }
             var tracks = fullAlbumObject?.TrackList ?? [];
             album.TrackList = tracks;
             return new PreviewInfo { CoverUrl = cover, Rows = rows, RemoveAlbumRow = true, AlbumTracks = tracks, AlbumTrackCount = album.TracksCount };

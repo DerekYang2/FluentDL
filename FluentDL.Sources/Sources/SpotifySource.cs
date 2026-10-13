@@ -84,6 +84,8 @@ internal sealed partial class SpotifySource : ISourceSession, ISearchSource, ILi
             {
                 CoverUrl = (string)(album.AdditionalFields?["cover_max"] ?? ""), // the largest
                 RemoveAlbumRow = true,
+                // Only albums from the official API carry a UPC.
+                Rows = string.IsNullOrEmpty(album.Upc) ? [] : [("UPC", album.Upc!)],
                 AlbumTracks = album.TrackList ?? [],
                 AlbumTrackCount = album.TracksCount,
             };
