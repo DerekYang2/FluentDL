@@ -99,7 +99,7 @@ public class QueueConversionUiTests
     }
 
     // The clear dialog starts with every source checked.
-    private static void ClearQueue(DevApp dev)
+    internal static void ClearQueue(DevApp dev)
     {
         Navigate(dev, "Queue");
         var count = Find(dev, "CountText");

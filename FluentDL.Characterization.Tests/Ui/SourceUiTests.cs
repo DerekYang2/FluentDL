@@ -41,6 +41,12 @@ public class SourceUiTests
             {
                 Find(dev, "SearchBox", StartupTimeout);
 
+                // This test checks a fresh queue and the default picker, even when -SkipInstall preserves a
+                // previous test's queue and selected source. Only the separate dev package is affected.
+                QueueConversionUiTests.ClearQueue(dev);
+                Navigate(dev, "Search");
+                SelectSource(dev, "Deezer");
+
                 state["NavigationItems"] = dev.MainWindow
                     .FindAllDescendants(cf => cf.ByClassName("Microsoft.UI.Xaml.Controls.NavigationViewItem"))
                     .Select(Text).ToArray();
@@ -59,6 +65,7 @@ public class SourceUiTests
                     {
                         Invoke(Find(dev, "AddToQueueButton"));
                         WaitUntil(() => Find(dev, "AddToQueueButton").IsEnabled, TimeSpan.FromSeconds(45), "adding results to the queue");
+                        Console.WriteLine($"{source}: {count} search results; " + Text(Find(dev, "InfoBarTextBlock")));
                         added += count;
                     }
                 }
@@ -68,6 +75,7 @@ public class SourceUiTests
                 var queueText = WaitForStable(() => Text(Find(dev, "CountText")), TimeSpan.FromSeconds(2), TimeSpan.FromSeconds(20), "queue count");
                 // YouTube's count varies (see below), so check the queue against what was added instead of a fixed number.
                 state["QueueCountEqualsAddedResults"] = queueText == $"{added} tracks in queue";
+                Console.WriteLine($"Expected queue: {added}; actual: {queueText}");
                 state["ConversionDialog"] = ReadConversionDialog(dev);
                 state["ClearDialog"] = ReadClearDialog(dev);
             });
@@ -152,6 +160,8 @@ public class SourceUiTests
         var radio = group.FindFirstDescendant(cf => cf.ByControlType(ControlType.RadioButton).And(cf.ByName(source)))
             ?? throw new InvalidOperationException($"No '{source}' option in the source picker.");
         radio.Patterns.SelectionItem.Pattern.Select();
+        var albumMode = Find(dev, "AlbumModeSwitch").Patterns.Toggle.Pattern;
+        if (albumMode.ToggleState.Value == ToggleState.On) albumMode.Toggle();
         CloseSourcePicker(dev);
     }
 
@@ -176,7 +186,11 @@ public class SourceUiTests
             WaitUntil(() => VisibleBadges() is [var only] && only == expectedBadge, ResultsTimeout, $"{source} results (second try)");
         }
 
-        var resultsText = WaitForStable(() => Text(Find(dev, "ResultsText")), TimeSpan.FromSeconds(3), TimeSpan.FromSeconds(45), $"{source} result count");
+        // YouTube loads details one result at a time. A quiet three seconds can occur between results while the
+        // search is still running, so wait for the stop button to disappear before counting or adding tracks.
+        WaitUntil(() => TryFind(dev, cf => cf.ByAutomationId("StopSearchButton")) is not { } stop
+            || stop.Properties.IsOffscreen.ValueOrDefault, TimeSpan.FromSeconds(90), $"{source} search completion");
+        var resultsText = Text(Find(dev, "ResultsText"));
         var match = System.Text.RegularExpressions.Regex.Match(resultsText, @"^Add (\d+) to queue$");
         var count = match.Success ? int.Parse(match.Groups[1].Value) : -1;
 
