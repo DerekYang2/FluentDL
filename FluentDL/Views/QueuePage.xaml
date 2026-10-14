@@ -29,6 +29,9 @@
         <helpers:SourceToColorConverter x:Key="SourceToColorConverter" />
         <helpers:LocalSourceToVisibilityConverter x:Key="LocalSourceToVisibilityConverter" />
         <helpers:StringNullorEmptyVisibilityConverter x:Key="StringNullorEmptyVisibilityConverter" />
+        <helpers:AlbumCountConverter x:Key="AlbumCountConverter" />
+        <helpers:AlbumToVisibleConverter x:Key="AlbumToVisibleConverter" />
+        <helpers:AlbumToCollapsedConverter x:Key="AlbumToCollapsedConverter" />
         <Style
             x:Key="CompactQueueItemStyle"
             BasedOn="{StaticResource DefaultListViewItemStyle}"
@@ -342,6 +345,12 @@
                                 Foreground="{ThemeResource TextFillColorSecondary}"
                                 Style="{ThemeResource BodyTextBlockStyle}"
                                 Text="{x:Bind Duration, Converter={StaticResource DurationConverter}}" />
+                            <TextBlock
+                                HorizontalAlignment="Left"
+                                FontFamily="Segoe UI Variable Display"
+                                Foreground="{ThemeResource TextFillColorSecondary}"
+                                Style="{ThemeResource BodyTextBlockStyle}"
+                                Text="{x:Bind Converter={StaticResource AlbumCountConverter}}" />
                         </StackPanel>
 
                         <StackPanel
@@ -359,13 +368,21 @@
                                 Background="{ThemeResource LayerOnMicaBaseAltFillColorSecondaryBrush}"
                                 CornerRadius="2">
                                 <StackPanel Orientation="Horizontal">
+                                    <FontIcon
+                                        Margin="0,0,6,0"
+                                        VerticalAlignment="Center"
+                                        FontSize="12"
+                                        Foreground="{x:Bind Source, Converter={StaticResource SourceToColorConverter}}"
+                                        Glyph="&#xE8D5;"
+                                        Visibility="{x:Bind Converter={StaticResource AlbumToVisibleConverter}}" />
                                     <Ellipse
                                         Width="10"
                                         Height="10"
                                         Margin="0,0,6,0"
                                         VerticalAlignment="Center"
                                         Fill="{x:Bind Source, Converter={StaticResource SourceToColorConverter}}"
-                                        StrokeThickness="0" />
+                                        StrokeThickness="0"
+                                        Visibility="{x:Bind Converter={StaticResource AlbumToCollapsedConverter}}" />
                                     <TextBlock
                                         x:Name="SourceBadge"
                                         Margin="0,-2,0,0"

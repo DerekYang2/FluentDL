@@ -14,6 +14,8 @@
         <helpers:ObjectToImageSourceConverter x:Key="ObjectToImageSourceConverter" />
         <helpers:SourceToColorConverter x:Key="SourceToColorConverter" />
         <helpers:LocalSourceToVisibilityConverter x:Key="LocalSourceToVisibilityConverter" />
+        <helpers:AlbumToVisibleConverter x:Key="AlbumToVisibleConverter" />
+        <helpers:AlbumToCollapsedConverter x:Key="AlbumToCollapsedConverter" />
     </UserControl.Resources>
     <!--  Bindings use OneWay because recycled rows receive a new Item.  -->
     <Grid
@@ -113,11 +115,18 @@
             CornerRadius="2"
             Visibility="{x:Bind Columns.SourceVisibility, Mode=OneWay}">
             <StackPanel Orientation="Horizontal" Spacing="6">
+                <FontIcon
+                    VerticalAlignment="Center"
+                    FontSize="10"
+                    Foreground="{x:Bind Item.Source, Mode=OneWay, Converter={StaticResource SourceToColorConverter}}"
+                    Glyph="&#xE8D5;"
+                    Visibility="{x:Bind Item, Mode=OneWay, Converter={StaticResource AlbumToVisibleConverter}}" />
                 <Ellipse
                     Width="8"
                     Height="8"
                     VerticalAlignment="Center"
-                    Fill="{x:Bind Item.Source, Mode=OneWay, Converter={StaticResource SourceToColorConverter}}" />
+                    Fill="{x:Bind Item.Source, Mode=OneWay, Converter={StaticResource SourceToColorConverter}}"
+                    Visibility="{x:Bind Item, Mode=OneWay, Converter={StaticResource AlbumToCollapsedConverter}}" />
                 <TextBlock Style="{ThemeResource CaptionTextBlockStyle}" Text="{x:Bind Item.Source, Mode=OneWay}" />
             </StackPanel>
         </Border>

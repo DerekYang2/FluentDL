@@ -1,4 +1,4 @@
-using System.Collections.Concurrent;
+﻿using System.Collections.Concurrent;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
@@ -172,7 +172,7 @@ public sealed partial class QueuePage : Page
             }
             else
             {
-                await PreviewPanel.Update(selectedSong);
+                await PreviewPanel.Update(QueueObject.Unwrap(selectedSong));
             }
         }
         
@@ -283,19 +283,18 @@ public sealed partial class QueuePage : Page
     
     private void SetCountText()
     {
-        var count = QueueViewModel.Source.Count;
-        if (count == 0)
-        {
-            CountText.Text = "No tracks in queue";
-        }
-        else if (count == 1)
-        {
-            CountText.Text = "1 track in queue";
-        }
-        else
-        {
-            CountText.Text = $"{count} tracks in queue";
-        }
+        var albums = QueueViewModel.Source.Count(q => q.IsAlbum);
+        var tracks = QueueViewModel.Source.Count - albums;
+        CountText.Text = FormatQueueCount(tracks, albums);
+    }
+
+    internal static string FormatQueueCount(int tracks, int albums)
+    {
+        if (tracks == 0 && albums == 0) return "No tracks in queue";
+        var parts = new List<string>();
+        if (tracks > 0) parts.Add(tracks == 1 ? "1 track" : $"{tracks} tracks");
+        if (albums > 0) parts.Add(albums == 1 ? "1 album" : $"{albums} albums");
+        return string.Join(", ", parts) + " in queue";
     }
 
     private void OnQueueSourceChange()
@@ -379,7 +378,7 @@ public sealed partial class QueuePage : Page
             return;
         }
 
-        var uri = ApiHelper.GetUrl(song);
+        var uri = ApiHelper.GetUrl(QueueObject.Unwrap(song));
 
         Clipboard.CopyToClipboard(uri);
         ShowInfoBar(InfoBarSeverity.Success, "Copied link to clipboard");
@@ -415,7 +414,9 @@ public sealed partial class QueuePage : Page
         // Create file name
         var firstArtist = songObj.Artists.Split(",")[0].Trim();
         var isrcStr = !string.IsNullOrWhiteSpace(songObj.Isrc) ? $" [{songObj.Isrc}] " : "";
-        var safeFileName = ApiHelper.GetSafeFilename($"{songObj.TrackPosition}. {firstArtist} - {songObj.Title}{isrcStr}Cover Art.jpg");
+        var safeFileName = ApiHelper.GetSafeFilename(QueueObject.IsAlbumItem(songObj)
+            ? $"{firstArtist} - {songObj.Title}{isrcStr}Cover Art.jpg" // an album has no track number; its code is a UPC
+            : $"{songObj.TrackPosition}. {firstArtist} - {songObj.Title}{isrcStr}Cover Art.jpg");
 
         // Create a file save picker
         FileSavePicker savePicker = new() { SuggestedStartLocation = PickerLocationId.Downloads, SuggestedFileName = safeFileName, };
@@ -498,7 +499,7 @@ public sealed partial class QueuePage : Page
         }
         else
         {
-            await PreviewPanel.Update(selectedSong);
+            await PreviewPanel.Update(QueueObject.Unwrap(selectedSong));
         }
     }
 
@@ -970,6 +971,102 @@ public sealed partial class QueuePage : Page
         await ConversionDialog.ShowAsync();
     }
 
+    private static readonly Windows.UI.Color BadgeSuccess = Windows.UI.Color.FromArgb(255, 108, 203, 95);
+    private static readonly Windows.UI.Color BadgeWarning = Windows.UI.Color.FromArgb(255, 252, 225, 0);
+    private static readonly Windows.UI.Color BadgeError = Windows.UI.Color.FromArgb(255, 255, 153, 164);
+
+    /// <summary>
+    /// Downloads a queued album, then replaces its row with one row per track in album order: the local file for each
+    /// downloaded track, or the streaming track with an error badge for one that failed, so it can be retried.
+    /// </summary>
+    private async Task DownloadQueuedAlbumAsync(QueueObject row, string directory, IProgress<ProgressData> progress, ConversionUpdateCallback callback)
+    {
+        var album = (AlbumSearchObject)QueueObject.Unwrap(row);
+        var downloaded = new ConcurrentDictionary<string, StatusLevel>(StringComparer.OrdinalIgnoreCase); // file -> result
+        var failedIds = new ConcurrentDictionary<string, byte>();
+        List<string> paths;
+        try
+        {
+            paths = await downloads.DownloadAlbum(album, directory, progress, (level, track, location) =>
+            {
+                callback(level, track, location);
+                if (level == StatusLevel.Error) failedIds.TryAdd(track.Source + track.Id, 0);
+                else if (!string.IsNullOrEmpty(location)) downloaded[location] = level;
+            });
+        }
+        catch (Exception ex)
+        {
+            Serilog.Log.Warning(ex, "Queued album download failed");
+            callback(StatusLevel.Error, row);
+            dispatcherQueue.TryEnqueue(() =>
+            {
+                row.ConvertBadgeColor = new SolidColorBrush(BadgeError);
+                ShowInfoBar(InfoBarSeverity.Error, $"{row.Title}: {ex.Message}", 5);
+            });
+            return;
+        }
+
+        var tracks = album.TrackList ?? [];
+        var files = paths.Concat(downloaded.Keys).Where(File.Exists).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+        var done = new TaskCompletionSource();
+        dispatcherQueue.TryEnqueue(async () =>
+        {
+            try
+            {
+                var entries = new List<(int Order, SongSearchObject Song, Windows.UI.Color Badge)>();
+                foreach (var file in files)
+                {
+                    var local = LocalExplorerViewModel.ParseFile(file);
+                    if (local == null) continue;
+                    local.LocalBitmapImage = await LocalExplorerViewModel.GetBitmapImageAsync(file);
+                    var badge = downloaded.TryGetValue(file, out var level) && level == StatusLevel.Warning ? BadgeWarning : BadgeSuccess;
+                    entries.Add((AlbumOrder(tracks, local), local, badge));
+                }
+                entries.AddRange(tracks.Where(t => failedIds.ContainsKey(t.Source + t.Id)).Select(t => (tracks.IndexOf(t), t, BadgeError)));
+                if (entries.Count == 0)
+                {
+                    row.ConvertBadgeColor = new SolidColorBrush(BadgeError);
+                    return;
+                }
+
+                var rows = new List<QueueObject>();
+                foreach (var (entry, i) in entries.OrderBy(e => e.Order).Select((e, i) => (e, i)))
+                {
+                    var created = await QueueViewModel.CreateQueueObject(entry.Song, row.QueueCounter, i)
+                        ?? new QueueObject(entry.Song) { QueueCounter = row.QueueCounter, QueueSubOrder = i };
+                    created.ConvertBadgeColor = new SolidColorBrush(entry.Badge);
+                    rows.Add(created);
+                }
+                await QueueViewModel.ReplaceWithMany(QueueViewModel.Source.IndexOf(row), rows);
+            }
+            catch (Exception ex)
+            {
+                Serilog.Log.Error(ex, "Could not show the downloaded album's tracks in the queue");
+                row.ConvertBadgeColor = new SolidColorBrush(BadgeWarning);
+            }
+            finally
+            {
+                done.TrySetResult();
+            }
+        });
+        await done.Task.WaitAsync(TimeSpan.FromSeconds(30));
+    }
+
+    // A downloaded file's place in the album: the track with the same ISRC, else the same title, else its track number
+    // after the listed tracks.
+    internal static int AlbumOrder(List<SongSearchObject> tracks, SongSearchObject local)
+    {
+        var index = tracks.FindIndex(t => !string.IsNullOrWhiteSpace(local.Isrc) && string.Equals(t.Isrc, local.Isrc, StringComparison.OrdinalIgnoreCase));
+        if (index < 0)
+        {
+            var title = Core.Matching.TitleNormalizer.Compact(local.Title);
+            index = tracks.FindIndex(t => Core.Matching.TitleNormalizer.Compact(t.Title) == title);
+        }
+        if (index >= 0) return index;
+        var digits = new string((local.TrackPosition ?? "").TakeWhile(char.IsDigit).ToArray());
+        return tracks.Count + (int.TryParse(digits, out var number) ? number : 9999);
+    }
+
     private async Task ConversionTask(IEnumerable<string> selectedSources, string outputSource)
     {
         var songsWithOriginalIndex = QueueViewModel.Source
@@ -1033,8 +1130,9 @@ public sealed partial class QueuePage : Page
             }
         }
 
-        // For to local output
-        var downloadHelper = new DownloadProgressHelper($"Queue to <a href='{directory}'>{directory}</a>", totalCount);
+        // For to local output. Each album counts as its tracks.
+        var trackTotal = songsToConvert.Sum(x => x.Song.AlbumTracksCount is > 0 and var n ? n : 1);
+        var downloadHelper = new DownloadProgressHelper($"Queue to <a href='{directory}'>{directory}</a>", trackTotal);
         downloadHelper.ProgressUpdated += (sender, args) =>
         {
             var finalStr = args.DisplayString;
@@ -1055,7 +1153,7 @@ public sealed partial class QueuePage : Page
             // Infobar notification
             if (outputSource == SourceIds.Local)
             {
-                ShowInfoBarPermanent(InfoBarSeverity.Informational, $"Saving {totalCount} tracks to <a href='{directory}'>{directory}</a>", title: "Download in Progress");
+                ShowInfoBarPermanent(InfoBarSeverity.Informational, $"Saving {trackTotal} tracks to <a href='{directory}'>{directory}</a>", title: "Download in Progress");
             }
             else
             {
@@ -1074,6 +1172,8 @@ public sealed partial class QueuePage : Page
             IsConverting = true;
             int processedCount = 0;
             var token = cancellationTokenSource.Token;
+            var conversionClock = Stopwatch.StartNew();
+            var conversionEta = new EtaEstimator();
 
             var downloadThreads = await SettingsViewModel.GetSetting<int?>(SettingsViewModel.ConversionThreads) ?? 1;
             using var semaphore = new SemaphoreSlim(downloadThreads);
@@ -1097,6 +1197,11 @@ public sealed partial class QueuePage : Page
                         // Convert the track and get new song object
                         SongSearchObject? newSongObj = null;
                         string? fileLocation = null;
+                        if (outputSource == SourceIds.Local && song.IsAlbum)
+                        {
+                            await DownloadQueuedAlbumAsync(song, directory, progress, conversionUpdateCallback);
+                            return; // the finally below releases the slot and counts the row
+                        }
                         if (outputSource == SourceIds.Local) // Conversion to local, download the track
                         {
                             fileLocation = await downloads.DownloadObject(song, directory, progress, conversionUpdateCallback);
@@ -1104,7 +1209,7 @@ public sealed partial class QueuePage : Page
                         }
                         else
                         {
-                            var match = await conversions.FindEquivalentAsync(song, outputSource, token);
+                            var match = await conversions.FindEquivalentAsync(QueueObject.Unwrap(song), outputSource, token);
                             switch (match.Kind)
                             {
                                 case MatchKind.Exact:
@@ -1137,7 +1242,7 @@ public sealed partial class QueuePage : Page
                                         {
                                             localSong.LocalBitmapImage = await LocalExplorerViewModel.GetBitmapImageAsync(fileLocation);
                                             queueObj = await QueueViewModel.CreateQueueObject(localSong, song.QueueCounter);
-                                            await QueueViewModel.Replace(index, queueObj);
+                                            await QueueViewModel.Replace(QueueViewModel.Source.IndexOf(song), queueObj);
                                         }
                                         else // Can happen when trying to parse opus files
                                         {
@@ -1147,7 +1252,7 @@ public sealed partial class QueuePage : Page
                                     else
                                     {
                                         queueObj = await QueueViewModel.CreateQueueObject(newSongObj, song.QueueCounter);
-                                        await QueueViewModel.Replace(index, queueObj);
+                                        await QueueViewModel.Replace(QueueViewModel.Source.IndexOf(song), queueObj);
                                     }
 
                                     if (queueObj != null)
@@ -1188,12 +1293,17 @@ public sealed partial class QueuePage : Page
                     finally
                     {
                         var processCaptured = Interlocked.Increment(ref processedCount); // Increment the processed count
+                        var elapsedCaptured = conversionClock.Elapsed;
                         dispatcherQueue.TryEnqueue(() =>
                         {
                             song.IsRunning = false; // Set song to not running
-                            if (outputSource != SourceIds.Local)
+                            if (outputSource != SourceIds.Local && IsConverting)
                             {
                                 QueueProgress.Value = 100.0 * processCaptured / totalCount; // Update the progress bar
+                                var eta = conversionEta.Update((double)processCaptured / totalCount, elapsedCaptured);
+                                ShowInfoBarPermanent(InfoBarSeverity.Informational,
+                                    $"Converting to {GetOutputSource()} \u2022 {processCaptured} of {totalCount}{(eta != null ? " \u2022 " + eta : "")}",
+                                    title: "Conversion in Progress");
                             }
                         });
 

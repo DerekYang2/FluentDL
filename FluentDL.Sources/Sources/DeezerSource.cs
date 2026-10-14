@@ -7,7 +7,7 @@ using FluentDL.Models;
 
 namespace FluentDL.Services.Sources;
 
-internal sealed partial class DeezerSource : ISourceSession, ISearchSource, ILinkSource, IConversionTarget, ICatalogSource, IPreviewSource, IDownloadSource, ITagSource
+internal sealed partial class DeezerSource : ISourceSession, ISearchSource, ILinkSource, IConversionTarget, ICatalogSource, IPreviewSource, IDownloadSource, ITagSource, IAlbumUpcSource
 {
     public SourceDescriptor Descriptor { get; } = SourceCatalog.Find(SourceIds.Deezer)!;
 
