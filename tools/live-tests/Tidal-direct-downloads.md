@@ -1,8 +1,12 @@
 # TIDAL direct downloads
 
-The download client is a port of the single-file PKCE experiment. Enable it in Settings under **TIDAL direct downloads**, then sign in for downloads. The ordinary TIDAL catalog login stays separate.
+The download client is a port of the single-file PKCE experiment. Open Settings under **TIDAL**, enable **Download from TIDAL**, then sign in for downloads. The ordinary catalog login stays separate, but both accounts appear in the same expander.
 
 The embedded browser catches the Android redirect. If it is blocked, choose **Open in my browser instead**, sign in, and paste the full Page not found address into the dialog. The address contains a short-lived authorization code. The app stores the resulting session with Windows DPAPI.
+
+The status button separates API and downloading identities. It displays the account email when TIDAL supplies one, or the username otherwise. Anonymous catalog access has no account email and instead identifies bundled or custom developer credentials. Download sign-in and sign-out messages identify the account. The account identity is part of the encrypted session, not the app log.
+
+The download subscription check uses `premiumAccess`, not the account's `ACTIVE` status, which can also describe a free account. The UI reports Active, Not active or Unavailable. Active includes trial access and does not mean the user has been charged. Successful checks are cached for one minute.
 
 Full tracks require a subscription or trial. If the opt-in is off, the download account is signed out, or TIDAL returns a preview, FluentDL uses its existing equivalent-download route. It does not save a preview as a full song. Download quality comes from the actual returned codec, so an AAC response gets an `.m4a` extension. FFmpeg copies audio into the final container, then FluentDL writes TIDAL's tags.
 
