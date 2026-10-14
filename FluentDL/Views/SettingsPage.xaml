@@ -1078,7 +1078,7 @@
                         Header="TIDAL">
                         <local:SettingsExpander.Description>
                             <TextBlock TextWrapping="Wrap">
-                                Sign in for direct downloads. Optional: use your own&#32;<Hyperlink NavigateUri="https://developer.tidal.com/dashboard">developer app credentials</Hyperlink> for API access.</TextBlock>
+                                Sign in for direct downloads. Optional: use your own&#32;<Hyperlink NavigateUri="https://developer.tidal.com/dashboard">developer app credentials</Hyperlink> for Search API access.</TextBlock>
                         </local:SettingsExpander.Description>
                         <local:SettingsExpander.HeaderIcon>
                             <FontIcon Glyph="&#xE72E;" />
@@ -1110,20 +1110,28 @@
                             </Button>
                         </Grid>
                         <local:SettingsExpander.Items>
-                            <TextBlock Margin="16,12,16,4" Style="{ThemeResource BodyStrongTextBlockStyle}" Text="Direct downloads" />
-                            <local:SettingsCard Header="Download from TIDAL" HorizontalContentAlignment="Stretch"
+                            <Border Padding="16,10" Background="{ThemeResource CardBackgroundFillColorSecondaryBrush}">
+                                <!-- A local style stops SettingsExpander applying its SettingsCard style, which crashes on a Border. -->
+                                <Border.Style><Style TargetType="Border" /></Border.Style>
+                                <TextBlock Style="{ThemeResource BodyStrongTextBlockStyle}" Text="Direct downloads" />
+                            </Border>
+                            <local:SettingsCard Header="Download directly from TIDAL" HorizontalContentAlignment="Stretch"
                                 Description="Uses an unofficial login, so TIDAL may limit it. When off or unavailable, FluentDL downloads the song from another source.">
                                 <ToggleSwitch x:Name="TidalDirectToggle" OffContent="Off" OnContent="On"
                                     AutomationProperties.Name="Download directly from TIDAL" Toggled="TidalDirectToggle_Toggled" />
                             </local:SettingsCard>
-                            <local:SettingsCard Header="Download account" HorizontalContentAlignment="Stretch"
+                            <local:SettingsCard x:Name="TidalDownloadAccountCard" Header="Download account" HorizontalContentAlignment="Stretch"
                                 Description="Full tracks need a TIDAL subscription or trial.">
-                                <StackPanel Spacing="8">
-                                    <TextBlock x:Name="TidalDownloadStatus" Text="Not signed in" TextWrapping="Wrap" />
+                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                    <Border x:Name="TidalDownloadStatusBox" Padding="4" VerticalAlignment="Center"
+                                        Background="{ThemeResource ControlFillColorSecondaryBrush}" CornerRadius="4">
+                                        <TextBlock x:Name="TidalDownloadStatus" Margin="4,0" VerticalAlignment="Center" FontSize="12"
+                                            IsTextSelectionEnabled="True" Text="Not signed in" />
+                                    </Border>
                                     <Button x:Name="TidalDownloadLoginButton" Content="Sign in for downloads" Click="TidalDownloadLogin_Click" />
                                 </StackPanel>
                             </local:SettingsCard>
-                            <local:SettingsCard Header="Quality" HorizontalContentAlignment="Stretch">
+                            <local:SettingsCard x:Name="TidalDownloadQualityCard" Header="Quality" HorizontalContentAlignment="Stretch">
                                 <ComboBox x:Name="TidalDownloadQualityInput" SelectedIndex="3" SelectionChanged="TidalDownloadQuality_Changed"
                                     AutomationProperties.Name="TIDAL download quality">
                                     <ComboBoxItem Content="Low, AAC 96 kbps" Tag="LOW" />
@@ -1132,16 +1140,22 @@
                                     <ComboBoxItem Content="Hi-res, best available FLAC" Tag="HI_RES_LOSSLESS" />
                                 </ComboBox>
                             </local:SettingsCard>
-                            <local:SettingsCard Header="Download client ID (advanced)" HorizontalContentAlignment="Stretch"
-                                Description="Leave empty to use the default ID. Applies to the next sign-in.">
+                            <local:SettingsCard x:Name="TidalDownloadClientCard" Header="Override download client ID" HorizontalContentAlignment="Stretch"
+                                Description="Optional. Leave empty to use the default download client ID. Only change this if TIDAL downloads stop working.">
                                 <TextBox x:Name="TidalDownloadClientIdInput" Width="500" AutomationProperties.Name="TIDAL download client ID" />
                             </local:SettingsCard>
 
-                            <TextBlock Margin="16,20,16,4" Style="{ThemeResource BodyStrongTextBlockStyle}" Text="Search API" />
+                            <Border Padding="16,10" Background="{ThemeResource CardBackgroundFillColorSecondaryBrush}"
+                                BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="0,1,0,0">
+                                <Border.Style><Style TargetType="Border" /></Border.Style>
+                                <TextBlock Style="{ThemeResource BodyStrongTextBlockStyle}" Text="Search API (optional)" />
+                            </Border>
+                            <!-- API account sign-in (PKCE) is off for now. To bring it back, restore this card, the commented
+                                 code in SettingsPage.xaml.cs, and default TidalApi.AccountLoginEnabled to true.
                             <local:SettingsCard
                                 x:Name="TidalAccountCard"
                                 HorizontalContentAlignment="Stretch"
-                                Description="Optional. Sign in if searches are rate limited."
+                                Description="Sign in if searches are rate limited."
                                 Header="API account">
                                 <StackPanel Spacing="8">
                                     <TextBlock x:Name="TidalCatalogStatus" TextWrapping="Wrap" />
@@ -1151,9 +1165,10 @@
                                         Content="Sign in" />
                                 </StackPanel>
                             </local:SettingsCard>
+                            -->
                             <local:SettingsCard
                                 HorizontalContentAlignment="Stretch"
-                                Description="Two-letter code, such as US or GB. Leave empty to use your account's country or Windows region."
+                                Description="Two-letter code, such as US or GB. Leave empty to use your Windows region."
                                 Header="Country">
                                 <TextBox
                                     x:Name="TidalCountryInput"
@@ -1167,15 +1182,28 @@
                                 Header="Client ID">
                                 <local:SettingsCard.Description>
                                     <TextBlock TextWrapping="Wrap">
-                                        Optional. Your own&#32;<Hyperlink NavigateUri="https://developer.tidal.com/dashboard">developer app</Hyperlink>. Leave empty to use the bundled ID and secret.</TextBlock>
+                                        Your own&#32;<Hyperlink NavigateUri="https://developer.tidal.com/dashboard">developer app</Hyperlink>. Leave empty to use the bundled ID and secret.</TextBlock>
                                 </local:SettingsCard.Description>
                                 <TextBox
                                     x:Name="TidalClientIdInput"
                                     Width="500"
-                                    AutomationProperties.Name="TIDAL client ID" />
+                                    Margin="0,0,0,4"
+                                    Header="Client ID"
+                                    AutomationProperties.Name="TIDAL client ID">
+                                    <TextBox.HeaderTemplate>
+                                        <DataTemplate>
+                                            <TextBlock
+                                                Margin="0,2,0,-2"
+                                                Foreground="{ThemeResource TextFillColorSecondary}"
+                                                Style="{ThemeResource CaptionTextBlockStyle}"
+                                                Text="{Binding}" />
+                                        </DataTemplate>
+                                    </TextBox.HeaderTemplate>
+                                </TextBox>
                             </local:SettingsCard>
                             <local:SettingsCard
                                 HorizontalContentAlignment="Stretch"
+                                Description="Use your own app's ID and secret if searches with the bundled ones are rate limited."
                                 Header="Client secret">
                                 <helpers:CustomPasswordBox
                                     x:Name="TidalSecretInput"

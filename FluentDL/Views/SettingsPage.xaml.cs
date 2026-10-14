@@ -352,10 +352,12 @@ public sealed partial class SettingsPage : Page
         var saved = _tidalDownloadSaved = await TidalDownloads.HasSessionAsync();
         if (!saved) _tidalDownloadAccount = null;
         TidalDownloadStatus.Text = saved
-            ? $"{_tidalDownloadAccount ?? "Saved account"}\nSubscription: {_tidalDownloadSubscription}"
-            : "Not signed in for downloads.";
+            ? $"{_tidalDownloadAccount ?? "Saved account"}  ·  Subscription: {_tidalDownloadSubscription}"
+            : "Not signed in";
+        TidalDownloadStatusBox.Visibility = saved ? Visibility.Visible : Visibility.Collapsed;
         TidalDownloadLoginButton.Content = saved ? "Sign out of downloads" : "Sign in for downloads";
-        TidalDownloadLoginButton.IsEnabled = TidalDirectToggle.IsOn || saved;
+        TidalDownloadLoginButton.IsEnabled = true;
+        TidalDownloadAccountCard.IsEnabled = TidalDownloadQualityCard.IsEnabled = TidalDownloadClientCard.IsEnabled = TidalDirectToggle.IsOn;
         SetTidalAuthInfo(Session(SourceIds.Tidal).IsConnected);
     }
 
@@ -410,49 +412,44 @@ public sealed partial class SettingsPage : Page
         finally { await UpdateTidalDownloadStatusAsync(); }
     }
 
-    // Sign in, cancel a sign-in in progress, or sign out, depending on the state.
-    private async void TidalLoginButton_Click(object sender, RoutedEventArgs e)
-    {
-        var login = (IAccountLogin)Session(SourceIds.Tidal);
-        if (_tidalLogin != null)
-        {
-            _tidalLogin.Cancel();
-            return;
-        }
-        if (login.AccountName != null)
-        {
-            await login.LogoutAsync();
-            ShowInfoBar(InfoBarSeverity.Informational, "Signed out of TIDAL.", 3, "TIDAL");
-            SetTidalAuthInfo(Session(SourceIds.Tidal).IsConnected);
-            return;
-        }
+    // API account sign-in (PKCE) is off for now. See TidalApi.AccountLoginEnabled to bring it back with this handler.
+    // // Sign in, cancel a sign-in in progress, or sign out, depending on the state.
+    // private async void TidalLoginButton_Click(object sender, RoutedEventArgs e)
+    // {
+    //     var login = (IAccountLogin)Session(SourceIds.Tidal);
+    //     if (_tidalLogin != null)
+    //     {
+    //         _tidalLogin.Cancel();
+    //         return;
+    //     }
+    //     if (login.AccountName != null)
+    //     {
+    //         await login.LogoutAsync();
+    //         ShowInfoBar(InfoBarSeverity.Informational, "Signed out of TIDAL.", 3, "TIDAL");
+    //         SetTidalAuthInfo(Session(SourceIds.Tidal).IsConnected);
+    //         return;
+    //     }
 
-        _tidalLogin = new CancellationTokenSource();
-        TidalLoginButton.Content = "Cancel sign-in";
-        ShowInfoBar(InfoBarSeverity.Informational, "Finish signing in to TIDAL in your browser.", 5, "TIDAL");
-        try
-        {
-            var result = await login.LoginAsync(_tidalLogin.Token);
-            ShowConnectResult(result, "TIDAL", _ => SetTidalAuthInfo(Session(SourceIds.Tidal).IsConnected));
-        }
-        finally
-        {
-            _tidalLogin.Dispose();
-            _tidalLogin = null;
-            SetTidalAuthInfo(Session(SourceIds.Tidal).IsConnected);
-        }
-    }
+    //     _tidalLogin = new CancellationTokenSource();
+    //     TidalLoginButton.Content = "Cancel sign-in";
+    //     ShowInfoBar(InfoBarSeverity.Informational, "Finish signing in to TIDAL in your browser.", 5, "TIDAL");
+    //     try
+    //     {
+    //         var result = await login.LoginAsync(_tidalLogin.Token);
+    //         ShowConnectResult(result, "TIDAL", _ => SetTidalAuthInfo(Session(SourceIds.Tidal).IsConnected));
+    //     }
+    //     finally
+    //     {
+    //         _tidalLogin.Dispose();
+    //         _tidalLogin = null;
+    //         SetTidalAuthInfo(Session(SourceIds.Tidal).IsConnected);
+    //     }
+    // }
 
     private void SetTidalAuthInfo(bool isInitialized)
     {
         var login = (IAccountLogin)Session(SourceIds.Tidal);
-        TidalLoginButton.Content = login.AccountName != null ? "Sign out" : "Sign in";
-        TidalLoginButton.IsEnabled = login.CanLogin;
-        TidalAccountCard.Description = login.CanLogin
-            ? "Optional. Sign in if searches are rate limited."
-            : "This build can't sign in to the TIDAL API. Enter your own client ID and secret below.";
-        var catalogStatus = isInitialized ? Session(SourceIds.Tidal).StatusText ?? "Connected" : "Not signed in to the API.";
-        TidalCatalogStatus.Text = catalogStatus;
+        var catalogStatus = isInitialized ? Session(SourceIds.Tidal).StatusText ?? "Connected" : "Not connected to the API.";
         var apiIdentity = login.AccountName ?? (isInitialized ? catalogStatus.Split('\n')[0] : "Not signed in");
         TidalInfoText.Text = FormatTidalAccountInfo(apiIdentity, _tidalDownloadAccount, _tidalDownloadSaved, TidalDirectToggle.IsOn, _tidalDownloadSubscription);
         if (isInitialized || _tidalDownloadSaved)

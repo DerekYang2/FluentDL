@@ -1,6 +1,6 @@
 # TIDAL direct downloads
 
-The download client is a port of the single-file PKCE experiment. Open Settings under **TIDAL**, enable **Download from TIDAL** in the Direct downloads group, then sign in for downloads. The Search API group below has its own optional sign-in, used only when searches are rate limited.
+The download client is a port of the single-file PKCE experiment. Open Settings under **TIDAL**, enable **Download directly from TIDAL** in the Direct downloads group, then sign in for downloads. The optional Search API group below only takes your own developer app's client ID and secret.
 
 The embedded browser catches the Android redirect. If it is blocked, choose **Open in my browser instead**, sign in, and paste the full Page not found address into the dialog. The address contains a short-lived authorization code. The app stores the resulting session with Windows DPAPI.
 

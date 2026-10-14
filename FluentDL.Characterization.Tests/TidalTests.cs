@@ -440,7 +440,29 @@ public class TidalLoginTests
             OpenBrowser = fake.OpenAsync,
             BuiltInClientId = "test-client",
             BuiltInClientSecret = "test-secret",
+            AccountLoginEnabled = true,
         };
+    }
+
+    [TestMethod]
+    public async Task AccountSignInIsOffByDefaultAndASavedSignInIsIgnored()
+    {
+        var tidal = new FakeTidal();
+        var settings = new TidalParsingTests.DictionarySettings([]);
+        var enabled = NewApi(settings, tidal, out _);
+        await enabled.LoginAsync(CancellationToken.None);
+        tidal.TokenRequests.Clear();
+
+        var api = new TidalApi(settings, new HttpClient(tidal), Interlocked.Increment(ref nextPort))
+        {
+            BuiltInClientId = "test-client",
+            BuiltInClientSecret = "test-secret",
+        };
+        Assert.IsFalse(api.CanLogin);
+        await api.SignInAsync();
+        Assert.AreEqual(TidalAccess.BuiltIn, api.Access);
+        Assert.IsTrue(tidal.TokenRequests.All(r => r["grant_type"] == "client_credentials"));
+        await Assert.ThrowsExceptionAsync<InvalidOperationException>(() => api.LoginAsync(CancellationToken.None));
     }
 
     private static Dictionary<string, string> Query(Uri uri) =>

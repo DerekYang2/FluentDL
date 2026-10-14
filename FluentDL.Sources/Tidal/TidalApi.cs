@@ -92,8 +92,14 @@ public sealed class TidalApi
     /// <summary>The secret of FluentDL's app, when the build supplies one. Without it there is no built-in access.</summary>
     internal string? BuiltInClientSecret { get; init; } = BuildValue("TidalClientSecret");
 
+    /// <summary>
+    /// The API account sign-in (PKCE) is off for now; built-in or user-supplied app credentials are enough for search.
+    /// To bring it back, default this to true and restore the commented API account card in SettingsPage.xaml.
+    /// </summary>
+    internal bool AccountLoginEnabled { get; init; }
+
     /// <summary>Whether this build can sign in to a TIDAL account.</summary>
-    public bool CanLogin => BuiltInClientId != null;
+    public bool CanLogin => AccountLoginEnabled && BuiltInClientId != null;
 
     /// <summary>The TIDAL account's username while signed in to an account, else null.</summary>
     public string? AccountName { get; private set; }
@@ -136,7 +142,8 @@ public sealed class TidalApi
     /// </summary>
     public async Task LoginAsync(CancellationToken cancellationToken)
     {
-        var clientId = BuiltInClientId ?? throw new InvalidOperationException("This build of FluentDL can't sign in to TIDAL. Enter your own client ID and secret instead.");
+        if (!CanLogin) throw new InvalidOperationException("TIDAL account sign-in is off. Enter your own client ID and secret instead.");
+        var clientId = BuiltInClientId!;
         var verifier = Base64Url(RandomNumberGenerator.GetBytes(32));
         var state = Base64Url(RandomNumberGenerator.GetBytes(16));
         var query = new Dictionary<string, string>
@@ -283,7 +290,7 @@ public sealed class TidalApi
     private async Task RequestTokenAsync(CancellationToken cancellationToken)
     {
         // A sign-in belongs to the app it was made with, so a build without FluentDL's app skips it.
-        if (BuiltInClientId != null && await ReadRefreshTokenAsync() is { } refreshToken)
+        if (CanLogin && await ReadRefreshTokenAsync() is { } refreshToken)
         {
             try
             {
@@ -332,7 +339,9 @@ public sealed class TidalApi
         catch (HttpRequestException e) when (e.StatusCode is HttpStatusCode.BadRequest or HttpStatusCode.Unauthorized)
         {
             Access = TidalAccess.None;
-            throw new InvalidOperationException("FluentDL's built-in TIDAL access stopped working. Sign in to TIDAL in Settings.", e);
+            throw new InvalidOperationException(CanLogin
+                ? "FluentDL's built-in TIDAL access stopped working. Sign in to TIDAL in Settings."
+                : "FluentDL's built-in TIDAL access stopped working. Enter your own client ID and secret in Settings.", e);
         }
     }
 
