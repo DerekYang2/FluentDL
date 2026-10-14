@@ -197,7 +197,7 @@ public sealed partial class SettingsPage : Page
         var tidalQuality = await localSettings.ReadSettingAsync<string>(SettingKeys.TidalDownloadQuality) ?? "HI_RES_LOSSLESS";
         TidalDownloadQualityInput.SelectedItem = TidalDownloadQualityInput.Items.Cast<ComboBoxItem>().FirstOrDefault(i => (string)i.Tag == tidalQuality)
             ?? TidalDownloadQualityInput.Items[3];
-        TidalDownloadConfigInput.Text = await localSettings.ReadSettingAsync<string>(SettingKeys.TidalDownloadConfigUrl) ?? "";
+        TidalDownloadClientIdInput.Text = await localSettings.ReadSettingAsync<string>(SettingKeys.TidalDownloadClientId) ?? "";
         await UpdateTidalDownloadStatusAsync();
         _tidalDownloadSettingsReady = true;
         await InitializeDiagnosticsAsync();
@@ -377,22 +377,6 @@ public sealed partial class SettingsPage : Page
         catch (Exception) { ShowInfoBar(InfoBarSeverity.Error, "Couldn't save the TIDAL quality.", 5, "TIDAL"); }
     }
 
-    private async void TidalDownloadConfigSave_Click(object sender, RoutedEventArgs e)
-    {
-        var url = TidalDownloadConfigInput.Text.Trim();
-        if (url.Length != 0 && (!Uri.TryCreate(url, UriKind.Absolute, out var uri) || uri.Scheme != "https" || uri.Host != "gist.githubusercontent.com"))
-        {
-            ShowInfoBar(InfoBarSeverity.Warning, "Enter a raw HTTPS Gist URL, or leave it empty for the build's default.", 5, "TIDAL");
-            return;
-        }
-        try
-        {
-            await localSettings.SaveSettingAsync(SettingKeys.TidalDownloadConfigUrl, url.Length == 0 ? null : url);
-            ShowInfoBar(InfoBarSeverity.Success, "Download configuration URL saved. It applies to the next sign-in.", 4, "TIDAL");
-        }
-        catch (Exception) { ShowInfoBar(InfoBarSeverity.Error, "Couldn't save the configuration URL.", 5, "TIDAL"); }
-    }
-
     private async void TidalDownloadLogin_Click(object sender, RoutedEventArgs e)
     {
         TidalDownloadLoginButton.IsEnabled = false;
@@ -465,9 +449,9 @@ public sealed partial class SettingsPage : Page
         TidalLoginButton.Content = login.AccountName != null ? "Sign out" : "Sign in";
         TidalLoginButton.IsEnabled = login.CanLogin;
         TidalAccountCard.Description = login.CanLogin
-            ? "Optional: sign in if built-in API access stops working."
-            : "This build of FluentDL can't sign in to TIDAL. Enter your own client ID and secret below.";
-        var catalogStatus = isInitialized ? Session(SourceIds.Tidal).StatusText ?? "Connected" : "Not signed in to the catalog API.";
+            ? "Optional. Sign in if searches are rate limited."
+            : "This build can't sign in to the TIDAL API. Enter your own client ID and secret below.";
+        var catalogStatus = isInitialized ? Session(SourceIds.Tidal).StatusText ?? "Connected" : "Not signed in to the API.";
         TidalCatalogStatus.Text = catalogStatus;
         var apiIdentity = login.AccountName ?? (isInitialized ? catalogStatus.Split('\n')[0] : "Not signed in");
         TidalInfoText.Text = FormatTidalAccountInfo(apiIdentity, _tidalDownloadAccount, _tidalDownloadSaved, TidalDirectToggle.IsOn, _tidalDownloadSubscription);
@@ -490,6 +474,13 @@ public sealed partial class SettingsPage : Page
 
     private async void TidalUpdateButton_Click(object sender, RoutedEventArgs e)
     {
+        var downloadClientId = TidalDownloadClientIdInput.Text.Trim();
+        if (downloadClientId.Length != 0 && !Services.Tidal.TidalDownloadClient.IsValidClientId(downloadClientId))
+        {
+            ShowInfoBar(InfoBarSeverity.Warning, "The download client ID can only contain letters, numbers, hyphens and underscores.", 5, "TIDAL");
+            return;
+        }
+        await localSettings.SaveSettingAsync(SettingKeys.TidalDownloadClientId, downloadClientId.Length == 0 ? null : downloadClientId);
         await localSettings.SaveSettingAsync(SettingsViewModel.TidalClientId, TidalClientIdInput.Text.Trim());
         await localSettings.SaveSettingAsync(SettingsViewModel.TidalClientSecret, TidalSecretInput.Password.Trim());
         await localSettings.SaveSettingAsync(SettingsViewModel.TidalCountry, TidalCountryInput.Text.Trim().ToUpperInvariant());

@@ -23,7 +23,7 @@ public static class SettingKeys
     public const string TidalDirectDownloads = "tidal_direct_downloads";
     public const string TidalDownloadSession = "tidal_download_session";
     public const string TidalDownloadQuality = "tidal_download_quality";
-    public const string TidalDownloadConfigUrl = "tidal_download_config_url";
+    public const string TidalDownloadClientId = "tidal_download_client_id"; // empty uses the Gist, then the cached or bundled ID
     public const string TidalDownloadCachedClient = "tidal_download_cached_client";
 
     public const string YoutubeQuality = "youtube_quality";

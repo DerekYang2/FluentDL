@@ -264,7 +264,14 @@ public sealed class TidalDownloadClient
 
     private async Task<string> ClientIdAsync(CancellationToken token)
     {
-        var url = await settings.ReadSettingAsync<string>(SettingKeys.TidalDownloadConfigUrl) ?? ConfigUrl;
+        var manual = (await settings.ReadSettingAsync<string>(SettingKeys.TidalDownloadClientId))?.Trim();
+        if (!string.IsNullOrEmpty(manual))
+        {
+            if (!IsValidClientId(manual)) throw new InvalidOperationException("The download client ID in Settings isn't valid.");
+            Serilog.Log.Information("TIDAL download client configuration source: Settings");
+            return manual;
+        }
+        var url = ConfigUrl;
         if (url == checkedConfigUrl && configuredClient != null && configChecked > DateTimeOffset.UtcNow.AddHours(-1)) return configuredClient;
         if (!string.IsNullOrWhiteSpace(url))
         {
@@ -277,7 +284,7 @@ public sealed class TidalDownloadClient
                 var text = await http.GetStringAsync(uri, timeout.Token);
                 using var json = JsonDocument.Parse(text);
                 var id = json.RootElement.GetProperty("client_id").GetString();
-                if (!ValidClient(id)) throw new JsonException();
+                if (!IsValidClientId(id)) throw new JsonException();
                 await settings.SaveSettingAsync(SettingKeys.TidalDownloadCachedClient, id);
                 configuredClient = id;
                 checkedConfigUrl = url;
@@ -291,13 +298,13 @@ public sealed class TidalDownloadClient
             }
         }
         var cached = await settings.ReadSettingAsync<string>(SettingKeys.TidalDownloadCachedClient);
-        var fallback = ValidClient(cached) ? cached : FallbackClientId;
-        if (!ValidClient(fallback)) throw new InvalidOperationException("No download client configured. Set a raw Gist URL or supply TIDAL_DOWNLOAD_CLIENT_ID when building.");
-        Serilog.Log.Information("TIDAL download client configuration source: {Source}", ValidClient(cached) ? "Cache" : "Bundled");
+        var fallback = IsValidClientId(cached) ? cached : FallbackClientId;
+        if (!IsValidClientId(fallback)) throw new InvalidOperationException("No download client configured. Enter a download client ID in Settings or supply TIDAL_DOWNLOAD_CLIENT_ID when building.");
+        Serilog.Log.Information("TIDAL download client configuration source: {Source}", IsValidClientId(cached) ? "Cache" : "Bundled");
         return fallback!;
     }
 
-    private static bool ValidClient(string? id) => id is { Length: > 0 and <= 128 } && id.All(c => char.IsAsciiLetterOrDigit(c) || c is '_' or '-');
+    public static bool IsValidClientId(string? id) => id is { Length: > 0 and <= 128 } && id.All(c => char.IsAsciiLetterOrDigit(c) || c is '_' or '-');
     private static string Url64(byte[] bytes) => Convert.ToBase64String(bytes).TrimEnd('=').Replace('+', '-').Replace('/', '_');
     private static string? BuildValue(string key) => typeof(TidalDownloadClient).Assembly.GetCustomAttributes<AssemblyMetadataAttribute>()
         .FirstOrDefault(a => a.Key == key)?.Value;

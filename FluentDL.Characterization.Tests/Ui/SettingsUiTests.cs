@@ -59,6 +59,15 @@ public class SettingsUiTests
             var folder = Path.Combine(Path.GetTempPath(), "opencode", "tidal-combined-ui");
             Directory.CreateDirectory(folder);
             SaveAppWindow(dev, Path.Combine(folder, "status.png"));
+            FlaUI.Core.Input.Keyboard.Type(FlaUI.Core.WindowsAPI.VirtualKeyShort.ESCAPE);
+            Thread.Sleep(500);
+            Assert.IsNotNull(FindScrolling(dev, "TidalUpdateButton"), "Save should be inside the TIDAL expander.");
+            for (var page = 0; page < 3; page++)
+            {
+                SaveAppWindow(dev, Path.Combine(folder, $"expander-{page}.png"));
+                scroller.Patterns.Scroll.Pattern.Scroll(ScrollAmount.NoAmount, ScrollAmount.LargeIncrement);
+                Thread.Sleep(400);
+            }
         }
         finally
         {

@@ -61,6 +61,15 @@ public class TidalDownloadTests
         Assert.AreEqual("bundled-client", (await Client(new TidalParsingTests.DictionarySettings([]), handler).BeginLoginAsync()).ClientId);
     }
 
+    [TestMethod]
+    public async Task ClientIdFromSettingsOverridesTheGist()
+    {
+        var settings = new TidalParsingTests.DictionarySettings(new() { [SettingKeys.TidalDownloadClientId] = " settings-client " });
+        Assert.AreEqual("settings-client", (await Client(settings, new FakeHttp()).BeginLoginAsync()).ClientId);
+        await settings.SaveSettingAsync(SettingKeys.TidalDownloadClientId, "not valid!");
+        await Assert.ThrowsExceptionAsync<InvalidOperationException>(() => Client(settings, new FakeHttp()).BeginLoginAsync());
+    }
+
     // Makes only a GitHub request. Creating the PKCE address does not open a browser or contact TIDAL.
     [TestMethod]
     [TestCategory("Live")]

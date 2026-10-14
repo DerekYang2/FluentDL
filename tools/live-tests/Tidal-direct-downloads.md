@@ -1,6 +1,6 @@
 # TIDAL direct downloads
 
-The download client is a port of the single-file PKCE experiment. Open Settings under **TIDAL**, enable **Download from TIDAL**, then sign in for downloads. The ordinary catalog login stays separate, but both accounts appear in the same expander.
+The download client is a port of the single-file PKCE experiment. Open Settings under **TIDAL**, enable **Download from TIDAL** in the Direct downloads group, then sign in for downloads. The Search API group below has its own optional sign-in, used only when searches are rate limited.
 
 The embedded browser catches the Android redirect. If it is blocked, choose **Open in my browser instead**, sign in, and paste the full Page not found address into the dialog. The address contains a short-lived authorization code. The app stores the resulting session with Windows DPAPI.
 
@@ -22,7 +22,7 @@ Use its revision-independent raw URL, such as `https://gist.githubusercontent.co
 
 Set repository variable `TIDAL_DOWNLOAD_CONFIG_URL` to that URL. Set repository secret `TIDAL_DOWNLOAD_CLIENT_ID` to the fallback download client ID. There is no download client secret. These are separate from the official API's `TIDAL_CLIENT_ID` and `TIDAL_CLIENT_SECRET`.
 
-The release workflow supplies `FLUENTDL_TIDAL_DOWNLOAD_CONFIG_URL` and `FLUENTDL_TIDAL_DOWNLOAD_CLIENT_ID` at build time. Local builds can put those properties in `%USERPROFILE%\.fluentdl-secrets\build.props`. Settings also has an optional Gist URL override for testing.
+The release workflow supplies `FLUENTDL_TIDAL_DOWNLOAD_CONFIG_URL` and `FLUENTDL_TIDAL_DOWNLOAD_CLIENT_ID` at build time. Local builds can put those properties in `%USERPROFILE%\.fluentdl-secrets\build.props`. Settings also has an optional download client ID that overrides the Gist. Saving it applies to the next sign-in.
 
 Before a download sign-in, FluentDL checks the Gist with a five-second timeout. It reuses a successful result for an hour. Failure uses the saved client ID, then the bundled one. Only `client_id` comes from the Gist. The authentication and redirect addresses stay fixed in code.
 
