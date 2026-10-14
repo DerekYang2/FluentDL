@@ -139,12 +139,15 @@ public class PreviewPaneUiTests
     }
 
     // The pane's rows appear in the automation tree right after the title, flattened: every label, then every value.
+    // A value too wide for the pane scrolls in a MarqueeText, which adds a second copy (Segment2) to loop; skip it, so
+    // the result does not depend on the window's width.
     private static (string[] Labels, string[] Values) Rows(DevApp dev)
     {
         var title = Find(dev, "PreviewTitleText");
         var siblings = title.Parent.FindAllChildren();
         var texts = siblings.SkipWhile(e => !e.Equals(title)).Skip(1)
             .TakeWhile(e => e.Properties.ControlType.ValueOrDefault == ControlType.Text && e.Properties.AutomationId.ValueOrDefault != "TrackListHeader")
+            .Where(e => e.Properties.AutomationId.ValueOrDefault != "Segment2")
             .Select(Text).ToArray();
         var half = texts.Length / 2;
         return (texts[..half], texts[half..]);
