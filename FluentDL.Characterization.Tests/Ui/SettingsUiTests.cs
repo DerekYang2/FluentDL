@@ -16,6 +16,76 @@ public class SettingsUiTests
 {
     private static readonly string[] Sources = ["Deezer", "Qobuz", "Spotify", "Tidal"];
 
+    [TestMethod]
+    public void TidalCombinedStatusShowsTheSavedDownloadAccount()
+    {
+        DevApp.RequireUiTests();
+        var data = Windows.Management.Core.ApplicationDataManager.CreateForPackageFamily(DevApp.FindAumid().Split('!')[0]);
+        var keys = new[] { "tidal_direct_downloads", "tidal_download_session", "tidal_refresh_token" };
+        var previous = keys.ToDictionary(k => k, k => data.LocalSettings.Values.TryGetValue(k, out var value) ? value : null);
+        var session = new Services.Tidal.TidalDownloadClient.Session("test-client", "test-access", "test-refresh",
+            DateTimeOffset.UtcNow.AddHours(1), "CA", "downloads@example.test");
+        var bytes = System.Security.Cryptography.ProtectedData.Protect(System.Text.Json.JsonSerializer.SerializeToUtf8Bytes(session),
+            null, System.Security.Cryptography.DataProtectionScope.CurrentUser);
+        data.LocalSettings.Values["tidal_download_session"] = Newtonsoft.Json.JsonConvert.SerializeObject(Convert.ToBase64String(bytes));
+        data.LocalSettings.Values["tidal_direct_downloads"] = "false";
+        data.LocalSettings.Values.Remove("tidal_refresh_token");
+        try
+        {
+            using var dev = DevApp.Launch();
+            Find(dev, "SearchBox", TimeSpan.FromSeconds(60));
+            Navigate(dev, "Settings");
+            Assert.IsNull(TryFind(dev, cf => cf.ByAutomationId("TidalDownloadsExpander")));
+            Expand(dev, "TidalExpander");
+            var account = FindScrolling(dev, "TidalDownloadStatus");
+            WaitUntil(() => Text(account).Contains("downloads@example.test"), TimeSpan.FromSeconds(10), "download identity");
+            StringAssert.Contains(Text(account), "Subscription: Unavailable");
+            var infoButton = Find(dev, "TidalInfoButton");
+            var scroller = dev.MainWindow.FindAllDescendants()
+                .Where(e => e.Patterns.Scroll.IsSupported && e.Patterns.Scroll.Pattern.VerticallyScrollable.Value)
+                .OrderByDescending(e => e.BoundingRectangle.Height).First();
+            for (var attempt = 0; attempt < 12 && infoButton.Properties.IsOffscreen.ValueOrDefault; attempt++)
+            {
+                scroller.Patterns.Scroll.Pattern.Scroll(ScrollAmount.NoAmount, ScrollAmount.LargeIncrement);
+                Thread.Sleep(250);
+            }
+            Assert.IsFalse(infoButton.Properties.IsOffscreen.ValueOrDefault);
+            Invoke(infoButton);
+            var status = Text(Find(dev, "TidalInfoText"));
+            StringAssert.Contains(status, "API:");
+            StringAssert.Contains(status, "Only searching.");
+            StringAssert.Contains(status, "Downloading:\ndownloads@example.test");
+            StringAssert.Contains(status, "Direct downloads: Off");
+            var folder = Path.Combine(Path.GetTempPath(), "opencode", "tidal-combined-ui");
+            Directory.CreateDirectory(folder);
+            SaveAppWindow(dev, Path.Combine(folder, "status.png"));
+        }
+        finally
+        {
+            foreach (var (key, value) in previous)
+                if (value == null) data.LocalSettings.Values.Remove(key); else data.LocalSettings.Values[key] = value;
+        }
+    }
+
+    [System.Runtime.InteropServices.DllImport("user32.dll")]
+    private static extern bool PrintWindow(IntPtr window, IntPtr deviceContext, uint flags);
+
+    // Capture the app, not the user's foreground window. UI Automation still works when the app is covered.
+    private static void SaveAppWindow(DevApp dev, string path)
+    {
+        var bounds = dev.MainWindow.BoundingRectangle;
+        using var bitmap = new System.Drawing.Bitmap(bounds.Width, bounds.Height);
+        using var graphics = System.Drawing.Graphics.FromImage(bitmap);
+        var context = graphics.GetHdc();
+        try
+        {
+            var handle = new IntPtr(dev.MainWindow.Properties.NativeWindowHandle.Value);
+            Assert.IsTrue(PrintWindow(handle, context, 2), "App window capture failed.");
+        }
+        finally { graphics.ReleaseHdc(context); }
+        bitmap.Save(path);
+    }
+
     // Run only against a diagnostic dev build whose login page is about:blank. This checks native WebView2 startup
     // without automated navigation to TIDAL, which has previously triggered its bot protection.
     [TestMethod]
@@ -35,7 +105,7 @@ public class SettingsUiTests
             using var dev = DevApp.Launch();
             Find(dev, "SearchBox", TimeSpan.FromSeconds(60));
             Navigate(dev, "Settings");
-            Expand(dev, "TidalDownloadsExpander");
+            Expand(dev, "TidalExpander");
             Invoke(FindScrolling(dev, "TidalDownloadLoginButton"));
             var status = Find(dev, "BrowserStatus");
             WaitUntil(() => Text(status) != "Starting embedded browser...", TimeSpan.FromSeconds(30), "WebView2 initialization result");
@@ -64,7 +134,7 @@ public class SettingsUiTests
         {
             Find(dev, "SearchBox", TimeSpan.FromSeconds(60));
             Navigate(dev, "Settings");
-            Expand(dev, "TidalDownloadsExpander");
+            Expand(dev, "TidalExpander");
             var toggle = FindScrolling(dev, "TidalDirectToggle").Patterns.Toggle.Pattern;
             Assert.AreEqual(ToggleState.Off, toggle.ToggleState.Value);
             Assert.IsFalse(FindScrolling(dev, "TidalDownloadLoginButton").IsEnabled);
@@ -75,7 +145,7 @@ public class SettingsUiTests
         {
             Find(dev, "SearchBox", TimeSpan.FromSeconds(60));
             Navigate(dev, "Settings");
-            Expand(dev, "TidalDownloadsExpander");
+            Expand(dev, "TidalExpander");
             var toggleElement = FindScrolling(dev, "TidalDirectToggle");
             Assert.AreEqual(ToggleState.On, toggleElement.Patterns.Toggle.Pattern.ToggleState.Value);
             toggleElement.Patterns.Toggle.Pattern.Toggle();

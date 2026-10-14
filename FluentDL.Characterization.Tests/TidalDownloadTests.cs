@@ -119,6 +119,65 @@ public class TidalDownloadTests
     }
 
     [TestMethod]
+    public async Task DownloadIdentityIsEncryptedRestoredAfterRestartAndClearedOnLogout()
+    {
+        var settings = new TidalParsingTests.DictionarySettings([]);
+        var handler = new FakeHttp();
+        var client = Client(settings, handler);
+        var login = await client.BeginLoginAsync();
+        await client.FinishLoginAsync(login, Callback(login));
+        Assert.AreEqual("downloads@example.test", await client.GetAccountNameAsync());
+        var saved = await settings.ReadSettingAsync<string>(SettingKeys.TidalDownloadSession);
+        Assert.IsFalse(saved!.Contains("downloads@example.test"));
+        var restarted = Client(settings, handler);
+        Assert.AreEqual("downloads@example.test", await restarted.GetAccountNameAsync());
+        Assert.AreEqual(1, handler.Forms.Count, "A fresh session's identity needs no extra request.");
+        await restarted.LogoutAsync();
+        Assert.IsNull(await restarted.GetAccountNameAsync());
+    }
+
+    [TestMethod]
+    public async Task OldSessionWithoutIdentityRecoversItOnRefresh()
+    {
+        var settings = new TidalParsingTests.DictionarySettings([]);
+        var old = """{"ClientId":"old-client","AccessToken":"access","RefreshToken":"refresh","Expires":"2099-01-01T00:00:00Z","Country":"CA"}""";
+        await settings.SaveSettingAsync(SettingKeys.TidalDownloadSession, Convert.ToBase64String(ProtectedData.Protect(Encoding.UTF8.GetBytes(old), null, DataProtectionScope.CurrentUser)));
+        var handler = new FakeHttp();
+        var client = Client(settings, handler);
+        Assert.AreEqual("downloads@example.test", await client.GetAccountNameAsync());
+        Assert.AreEqual("refresh_token", handler.Forms.Single()["grant_type"]);
+        Assert.AreEqual("old-client", handler.Forms.Single()["client_id"]);
+        Assert.AreEqual("downloads@example.test", await client.GetAccountNameAsync());
+        Assert.AreEqual(1, handler.Forms.Count);
+    }
+
+    [TestMethod]
+    public void StatusSeparatelyLabelsCatalogAndDownloadAccounts()
+    {
+        var text = Views.SettingsPage.FormatTidalAccountInfo("catalog@example.test", "downloads@example.test", true, true, "Active");
+        StringAssert.Contains(text, "API:\ncatalog@example.test\nOnly searching.");
+        StringAssert.Contains(text, "Downloading:\ndownloads@example.test");
+        StringAssert.Contains(text, "Subscription: Active");
+        StringAssert.Contains(text, "Direct downloads: On");
+    }
+
+    [TestMethod]
+    [DataRow(true, "Active")]
+    [DataRow(false, "Not active")]
+    public async Task SubscriptionStatusUsesPlaybackAccessNotTheActiveAccountFlag(bool premiumAccess, string expected)
+    {
+        var handler = new FakeHttp { PremiumAccess = premiumAccess };
+        var client = Client(new TidalParsingTests.DictionarySettings([]), handler);
+        var login = await client.BeginLoginAsync();
+        await client.FinishLoginAsync(login, Callback(login));
+        Assert.AreEqual(expected, await client.GetSubscriptionStatusAsync());
+        Assert.AreEqual(expected, await client.GetSubscriptionStatusAsync());
+        Assert.AreEqual(1, handler.SubscriptionRequests);
+        await client.LogoutAsync();
+        Assert.AreEqual("Not signed in", await client.GetSubscriptionStatusAsync());
+    }
+
+    [TestMethod]
     public async Task DisabledDownloadsDoNotReadTheSessionOrCallTidal()
     {
         var handler = new FakeHttp();
@@ -163,6 +222,8 @@ public class TidalDownloadTests
     private sealed class FakeHttp : HttpMessageHandler
     {
         public bool GistFails, Preview, FailSegment;
+        public bool PremiumAccess = true;
+        public int SubscriptionRequests;
         public int ExpiresIn = 14400, MediaRequests, RequestCount;
         public string RemoteId = "remote-client";
         public string? TokenAuthorization;
@@ -178,7 +239,12 @@ public class TidalDownloadTests
                 var form = System.Web.HttpUtility.ParseQueryString(await request.Content!.ReadAsStringAsync(token));
                 Forms.Add(form);
                 var refresh = form["grant_type"] == "refresh_token" ? "" : ",\"refresh_token\":\"refresh-value\"";
-                return Response(200, "{\"access_token\":\"access-value\",\"expires_in\":" + ExpiresIn + refresh + ",\"user\":{\"countryCode\":\"CA\"}}");
+                return Response(200, "{\"access_token\":\"access-value\",\"expires_in\":" + ExpiresIn + refresh + ",\"user_id\":7,\"user\":{\"countryCode\":\"CA\",\"email\":\"downloads@example.test\",\"username\":\"download-user\"}}");
+            }
+            if (uri.AbsolutePath == "/v1/users/7/subscription")
+            {
+                SubscriptionRequests++;
+                return Response(200, "{\"status\":\"ACTIVE\",\"premiumAccess\":" + (PremiumAccess ? "true" : "false") + "}");
             }
             if (uri.Host == "api.tidal.com") return Response(200, StreamResponse(Dash, !Preview));
             MediaRequests++;

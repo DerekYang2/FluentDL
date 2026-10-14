@@ -306,6 +306,8 @@ public class TidalLoginTests
         StringAssert.Contains(await browser.Page!, "signed in to TIDAL");
 
         Assert.AreEqual("derek", api.AccountName);
+        Assert.AreEqual("catalog@example.test", api.AccountEmail);
+        Assert.AreEqual("catalog@example.test", new TidalSource(api).AccountName);
         Assert.AreEqual("GB", api.CountryCode, "the account's country, with no country setting");
         var saved = (string?)await settings.ReadSettingAsync<string>(Core.Sources.SettingKeys.TidalRefreshToken);
         Assert.IsFalse(string.IsNullOrEmpty(saved));
@@ -320,6 +322,7 @@ public class TidalLoginTests
 
         await restarted.LogoutAsync();
         Assert.IsNull(restarted.AccountName);
+        Assert.IsNull(restarted.AccountEmail);
         Assert.IsFalse(restarted.IsSignedIn);
         Assert.AreEqual("", await settings.ReadSettingAsync<string>(Core.Sources.SettingKeys.TidalRefreshToken));
     }
@@ -490,7 +493,7 @@ public class TidalLoginTests
             }
             if (request.RequestUri.AbsolutePath == "/v2/users/me")
             {
-                return Json(System.Net.HttpStatusCode.OK, """{ "data": { "id": "7", "type": "users", "attributes": { "username": "derek", "country": "GB" } } }""");
+                return Json(System.Net.HttpStatusCode.OK, """{ "data": { "id": "7", "type": "users", "attributes": { "username": "derek", "email": "catalog@example.test", "country": "GB" } } }""");
             }
             return Json(System.Net.HttpStatusCode.NotFound, """{ "errors": [ { "detail": "not faked" } ] }""");
         }

@@ -22,6 +22,8 @@ public sealed class TidalDownloadClient
     private DateTimeOffset configChecked;
     private string? configuredClient;
     private string? checkedConfigUrl;
+    private string? subscriptionStatus;
+    private DateTimeOffset subscriptionChecked;
 
     internal string? FallbackClientId { get; init; } = BuildValue("TidalDownloadClientId");
     internal string? ConfigUrl { get; init; } = BuildValue("TidalDownloadConfigUrl");
@@ -29,6 +31,30 @@ public sealed class TidalDownloadClient
     internal TidalDownloadClient(ILocalSettingsService settings, HttpClient http) => (this.settings, this.http) = (settings, http);
 
     public async Task<bool> HasSessionAsync() => !string.IsNullOrEmpty(await settings.ReadSettingAsync<string>(SettingKeys.TidalDownloadSession));
+
+    /// <summary>The download account identity, saved with the encrypted session. Older sessions recover it on refresh.</summary>
+    public async Task<string?> GetAccountNameAsync(CancellationToken token = default) => (await GetSessionAsync(token))?.AccountName;
+
+    /// <summary>TIDAL reports subscription or trial playback access, not whether the account has been charged.</summary>
+    public async Task<string> GetSubscriptionStatusAsync(CancellationToken token = default)
+    {
+        var account = await GetSessionAsync(token);
+        if (account == null) return "Not signed in";
+        if (account.UserId == null) return "Unavailable";
+        if (subscriptionStatus != null && subscriptionChecked > DateTimeOffset.UtcNow.AddMinutes(-1)) return subscriptionStatus;
+        using var request = new HttpRequestMessage(HttpMethod.Get,
+            $"https://api.tidal.com/v1/users/{Uri.EscapeDataString(account.UserId)}/subscription?countryCode={Uri.EscapeDataString(account.Country)}");
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", account.AccessToken);
+        using var response = await http.SendAsync(request, token);
+        if (!response.IsSuccessStatusCode) return "Unavailable";
+        using var json = JsonDocument.Parse(await response.Content.ReadAsStringAsync(token));
+        if (!json.RootElement.TryGetProperty("premiumAccess", out var access) || access.ValueKind is not (JsonValueKind.True or JsonValueKind.False))
+            return "Unavailable";
+        if (session?.UserId != account.UserId) return "Unavailable";
+        subscriptionStatus = access.GetBoolean() ? "Active" : "Not active";
+        subscriptionChecked = DateTimeOffset.UtcNow;
+        return subscriptionStatus;
+    }
 
     // A login keeps its verifier and client ID together. Updating the Gist must not change an in-progress login.
     public sealed record Login(Uri Address, string ClientId, string Verifier, string UniqueKey, string State);
@@ -73,10 +99,12 @@ public sealed class TidalDownloadClient
             var country = root.GetProperty("user").GetProperty("countryCode").GetString()!;
             var next = new Session(login.ClientId, root.GetProperty("access_token").GetString()!,
                 root.GetProperty("refresh_token").GetString()!,
-                DateTimeOffset.UtcNow.AddSeconds(root.GetProperty("expires_in").GetInt32()), country);
+                DateTimeOffset.UtcNow.AddSeconds(root.GetProperty("expires_in").GetInt32()), country,
+                AccountIdentity(root) ?? "TIDAL account", AccountUserId(root));
             token.ThrowIfCancellationRequested();
             await SaveAsync(next);
             session = next;
+            subscriptionStatus = null;
             Serilog.Log.Information("TIDAL download account signed in with PKCE");
         }
         finally { authLock.Release(); }
@@ -89,6 +117,7 @@ public sealed class TidalDownloadClient
         {
             await settings.SaveSettingAsync(SettingKeys.TidalDownloadSession, "");
             session = null;
+            subscriptionStatus = null;
         }
         finally { authLock.Release(); }
     }
@@ -186,7 +215,7 @@ public sealed class TidalDownloadClient
                     return null;
                 }
             }
-            if (session == null || session.Expires > DateTimeOffset.UtcNow.AddMinutes(5)) return session;
+            if (session == null || session.Expires > DateTimeOffset.UtcNow.AddMinutes(5) && !string.IsNullOrEmpty(session.AccountName)) return session;
             try
             {
                 // Refresh under the original client, even if the Gist has since changed.
@@ -201,6 +230,8 @@ public sealed class TidalDownloadClient
                     AccessToken = root.GetProperty("access_token").GetString()!,
                     RefreshToken = root.TryGetProperty("refresh_token", out var r) && !string.IsNullOrEmpty(r.GetString()) ? r.GetString()! : session.RefreshToken,
                     Expires = DateTimeOffset.UtcNow.AddSeconds(root.GetProperty("expires_in").GetInt32()),
+                    AccountName = AccountIdentity(root) ?? session.AccountName ?? "TIDAL account",
+                    UserId = AccountUserId(root) ?? session.UserId,
                 };
                 await SaveAsync(next);
                 session = next;
@@ -270,5 +301,23 @@ public sealed class TidalDownloadClient
     private static string Url64(byte[] bytes) => Convert.ToBase64String(bytes).TrimEnd('=').Replace('+', '-').Replace('/', '_');
     private static string? BuildValue(string key) => typeof(TidalDownloadClient).Assembly.GetCustomAttributes<AssemblyMetadataAttribute>()
         .FirstOrDefault(a => a.Key == key)?.Value;
-    internal sealed record Session(string ClientId, string AccessToken, string RefreshToken, DateTimeOffset Expires, string Country);
+    private static string? AccountIdentity(JsonElement response)
+    {
+        if (!response.TryGetProperty("user", out var user) || user.ValueKind != JsonValueKind.Object) return null;
+        foreach (var field in new[] { "email", "username" })
+            if (user.TryGetProperty(field, out var value) && value.ValueKind == JsonValueKind.String && !string.IsNullOrWhiteSpace(value.GetString()))
+                return value.GetString();
+        return null;
+    }
+    private static string? AccountUserId(JsonElement response)
+    {
+        if (response.TryGetProperty("user_id", out var value) && value.ValueKind is JsonValueKind.String or JsonValueKind.Number)
+            return value.ValueKind == JsonValueKind.String ? value.GetString() : value.GetRawText();
+        if (response.TryGetProperty("user", out var user) && user.ValueKind == JsonValueKind.Object && user.TryGetProperty("userId", out value)
+            && value.ValueKind is JsonValueKind.String or JsonValueKind.Number)
+            return value.ValueKind == JsonValueKind.String ? value.GetString() : value.GetRawText();
+        return null;
+    }
+    internal sealed record Session(string ClientId, string AccessToken, string RefreshToken, DateTimeOffset Expires, string Country,
+        string? AccountName = null, string? UserId = null);
 }

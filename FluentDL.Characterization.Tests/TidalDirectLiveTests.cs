@@ -12,6 +12,23 @@ namespace FluentDL.Characterization.Tests;
 [DoNotParallelize]
 public class TidalDirectLiveTests
 {
+    [TestMethod]
+    public async Task SavedDownloadSessionRestoresTheEmailAndChecksSubscription()
+    {
+        var path = Environment.GetEnvironmentVariable("FLUENTDL_TIDAL_DOWNLOAD_TEST_SESSION");
+        if (string.IsNullOrEmpty(path)) Assert.Inconclusive("Set FLUENTDL_TIDAL_DOWNLOAD_TEST_SESSION for this manual check.");
+        var settings = new TidalParsingTests.DictionarySettings(new()
+        {
+            [SettingKeys.TidalDownloadSession] = Convert.ToBase64String(await File.ReadAllBytesAsync(path!)),
+        });
+        var client = new TidalDownloadClient(settings);
+        var account = await client.GetAccountNameAsync();
+        Assert.IsFalse(string.IsNullOrWhiteSpace(account));
+        StringAssert.Contains(account, "@");
+        CollectionAssert.Contains(new[] { "Active", "Not active" }, await client.GetSubscriptionStatusAsync());
+        // Account identities remain in the encrypted session and the local UI, not console output.
+    }
+
     // Explicit opt-in. The file contains the DPAPI-protected download session, never a checked-in credential.
     [TestMethod]
     [DataRow("HI_RES_LOSSLESS", ".flac")]

@@ -49,7 +49,7 @@ internal sealed class TidalSource : ISourceSession, IAccountLogin, ISearchSource
 
     public bool CanLogin => api.CanLogin;
 
-    public string? AccountName => api.AccountName;
+    public string? AccountName => api.AccountEmail ?? api.AccountName;
 
     public async Task<ConnectResult> ConnectAsync()
     {

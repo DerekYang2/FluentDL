@@ -330,14 +330,33 @@ public sealed partial class SettingsPage : Page
 
     private CancellationTokenSource? _tidalLogin;
     private bool _tidalDownloadSettingsReady;
+    private string? _tidalDownloadAccount;
+    private bool _tidalDownloadSaved;
+    private string _tidalDownloadSubscription = "Unavailable";
     private Services.Tidal.TidalDownloadClient TidalDownloads => App.GetService<Services.Tidal.TidalDownloadClient>();
 
     private async Task UpdateTidalDownloadStatusAsync()
     {
-        var saved = await TidalDownloads.HasSessionAsync();
-        TidalDownloadStatus.Text = saved ? "Download sign-in saved. Full audio availability is checked when downloading." : "Not signed in for downloads.";
+        using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+        try
+        {
+            _tidalDownloadAccount = await TidalDownloads.GetAccountNameAsync(timeout.Token);
+            _tidalDownloadSubscription = await TidalDownloads.GetSubscriptionStatusAsync(timeout.Token);
+        }
+        catch (Exception)
+        {
+            // Keep account emails out of logs and retain the last display identity after a temporary network failure.
+            Serilog.Log.Information("TIDAL download account identity could not be restored");
+            _tidalDownloadSubscription = "Unavailable";
+        }
+        var saved = _tidalDownloadSaved = await TidalDownloads.HasSessionAsync();
+        if (!saved) _tidalDownloadAccount = null;
+        TidalDownloadStatus.Text = saved
+            ? $"{_tidalDownloadAccount ?? "Saved account"}\nSubscription: {_tidalDownloadSubscription}"
+            : "Not signed in for downloads.";
         TidalDownloadLoginButton.Content = saved ? "Sign out of downloads" : "Sign in for downloads";
         TidalDownloadLoginButton.IsEnabled = TidalDirectToggle.IsOn || saved;
+        SetTidalAuthInfo(Session(SourceIds.Tidal).IsConnected);
     }
 
     private async void TidalDirectToggle_Toggled(object sender, RoutedEventArgs e)
@@ -379,13 +398,22 @@ public sealed partial class SettingsPage : Page
         TidalDownloadLoginButton.IsEnabled = false;
         try
         {
-            if (await TidalDownloads.HasSessionAsync()) await TidalDownloads.LogoutAsync();
+            if (await TidalDownloads.HasSessionAsync())
+            {
+                var account = _tidalDownloadAccount ?? "the download account";
+                await TidalDownloads.LogoutAsync();
+                ShowInfoBar(InfoBarSeverity.Informational, $"Signed out of TIDAL downloads for {account}.", 4, "TIDAL");
+            }
             else
             {
                 var login = await TidalDownloads.BeginLoginAsync();
                 var dialog = new TidalDownloadLoginDialog(TidalDownloads, login) { XamlRoot = XamlRoot, RequestedTheme = ActualTheme };
                 await dialog.ShowAsync();
-                if (dialog.SignedIn) ShowInfoBar(InfoBarSeverity.Success, "Signed in for TIDAL downloads.", 4, "TIDAL");
+                if (dialog.SignedIn)
+                {
+                    await UpdateTidalDownloadStatusAsync();
+                    ShowInfoBar(InfoBarSeverity.Success, $"Signed in for TIDAL downloads as {_tidalDownloadAccount ?? "TIDAL account"}.", 5, "TIDAL");
+                }
             }
         }
         catch (Exception ex)
@@ -437,13 +465,16 @@ public sealed partial class SettingsPage : Page
         TidalLoginButton.Content = login.AccountName != null ? "Sign out" : "Sign in";
         TidalLoginButton.IsEnabled = login.CanLogin;
         TidalAccountCard.Description = login.CanLogin
-            ? "Optional. Opens TIDAL's sign-in page in your browser. FluentDL only reads your account's name and country, and stays signed in until you sign out."
+            ? "Optional: sign in if built-in API access stops working."
             : "This build of FluentDL can't sign in to TIDAL. Enter your own client ID and secret below.";
-        if (isInitialized)
+        var catalogStatus = isInitialized ? Session(SourceIds.Tidal).StatusText ?? "Connected" : "Not signed in to the catalog API.";
+        TidalCatalogStatus.Text = catalogStatus;
+        var apiIdentity = login.AccountName ?? (isInitialized ? catalogStatus.Split('\n')[0] : "Not signed in");
+        TidalInfoText.Text = FormatTidalAccountInfo(apiIdentity, _tidalDownloadAccount, _tidalDownloadSaved, TidalDirectToggle.IsOn, _tidalDownloadSubscription);
+        if (isInitialized || _tidalDownloadSaved)
         {
             TidalInfoButton.IsEnabled = true;
-            TidalInfoButtonText.Text = "Logged In";
-            TidalInfoText.Text = Session(SourceIds.Tidal).StatusText ?? "No Info";
+            TidalInfoButtonText.Text = isInitialized ? "Logged In" : "Downloads signed in";
             TidalInfoIcon.Glyph = "\uE946";
         }
         else
@@ -453,6 +484,9 @@ public sealed partial class SettingsPage : Page
             TidalInfoIcon.Glyph = "\uEA39";
         }
     }
+
+    internal static string FormatTidalAccountInfo(string apiIdentity, string? downloadAccount, bool downloadSaved, bool directEnabled, string subscription) =>
+        $"API:\n{apiIdentity}\nOnly searching.\n\nDownloading:\n{(downloadSaved ? downloadAccount ?? "Saved account" : "Not signed in")}\nSubscription: {(downloadSaved ? subscription : "Not signed in")}\nDirect downloads: {(directEnabled ? "On" : "Off")}";
 
     private async void TidalUpdateButton_Click(object sender, RoutedEventArgs e)
     {

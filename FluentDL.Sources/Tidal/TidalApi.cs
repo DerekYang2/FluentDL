@@ -98,6 +98,9 @@ public sealed class TidalApi
     /// <summary>The TIDAL account's username while signed in to an account, else null.</summary>
     public string? AccountName { get; private set; }
 
+    /// <summary>The account email returned by user.read, displayed locally in Settings.</summary>
+    public string? AccountEmail { get; private set; }
+
     /// <summary>Opens the sign-in page. Tests replace it with a fake browser.</summary>
     internal Func<Uri, Task> OpenBrowser { get; set; } = uri =>
     {
@@ -183,6 +186,7 @@ public sealed class TidalApi
             token = null;
             Access = TidalAccess.None;
             AccountName = null;
+            AccountEmail = null;
             accountCountry = null;
             await settings.SaveSettingAsync(SettingKeys.TidalRefreshToken, "");
         }
@@ -237,6 +241,7 @@ public sealed class TidalApi
     private async Task ReadAccountAsync(CancellationToken cancellationToken)
     {
         AccountName = null;
+        AccountEmail = null;
         accountCountry = null;
         if (Access != TidalAccess.Account)
         {
@@ -246,6 +251,8 @@ public sealed class TidalApi
         if (me.Data.FirstOrDefault() is { ValueKind: JsonValueKind.Object } user)
         {
             AccountName = JsonApiDocument.Attribute(user, "username") ?? JsonApiDocument.Attribute(user, "email") ?? "TIDAL user";
+            AccountEmail = JsonApiDocument.Attribute(user, "email");
+            if (string.IsNullOrWhiteSpace(AccountEmail)) AccountEmail = null;
             accountCountry = JsonApiDocument.Attribute(user, "country");
         }
     }
@@ -295,6 +302,7 @@ public sealed class TidalApi
                 // Signed out elsewhere, or the password changed: forget it, so the next sign-in starts clean.
                 await settings.SaveSettingAsync(SettingKeys.TidalRefreshToken, "");
                 AccountName = null;
+                AccountEmail = null;
                 accountCountry = null;
                 throw new InvalidOperationException("Your TIDAL sign-in has expired. Sign in again in Settings.", e);
             }
