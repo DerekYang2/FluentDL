@@ -5,6 +5,11 @@ using System.Text.Json;
 using FluentDL.Characterization.Tests.Infrastructure;
 using FluentDL.Core.Sources;
 using FluentDL.Services.Tidal;
+using FluentDL.Contracts.Sources;
+using FluentDL.Helpers;
+using FluentDL.Models;
+using FluentDL.Services;
+using FluentDL.Services.Sources;
 
 namespace FluentDL.Characterization.Tests;
 
@@ -222,6 +227,131 @@ public class TidalDownloadTests
         finally { SourceServices.Configure(originalSettings, TestSources.AudioConverter); Directory.Delete(folder, true); }
     }
 
+    [TestMethod]
+    [DataRow(false, false)]
+    [DataRow(true, false)]
+    [DataRow(false, true)]
+    [DataRow(true, true)]
+    public async Task TransferProgressCoversDashAndSingleFileStreams(bool singleFile, bool unknownLength)
+    {
+        var settings = new TidalParsingTests.DictionarySettings(new() { [SettingKeys.TidalDirectDownloads] = true });
+        var handler = new FakeHttp { SingleFile = singleFile, ChunkedMedia = true, UnknownMediaLength = unknownLength };
+        var client = Client(settings, handler);
+        var login = await client.BeginLoginAsync();
+        await client.FinishLoginAsync(login, Callback(login));
+        var folder = Path.Combine(Path.GetTempPath(), "opencode", "tidal-progress-test-" + Guid.NewGuid());
+        Directory.CreateDirectory(folder);
+        var originalSettings = TestSources.Settings;
+        SourceServices.Configure(settings, new CopyConverter());
+        var progress = new RecordingProgress();
+        try
+        {
+            var path = await client.TryDownloadAsync("1", Path.Combine(folder, "track"), progress);
+            var reports = progress.Reports.ToArray();
+            Assert.IsTrue(reports.Length > (singleFile ? 1 : 4), "Report while reading a segment, not just after it finishes.");
+            Assert.AreEqual(1, reports.Select(r => r.uniqueId).Distinct().Count());
+            Assert.AreEqual(new FileInfo(path!).Length, reports.Last().currentBytes);
+            Assert.AreEqual(1d, reports.Last().percent);
+            for (var i = 0; i < reports.Length; i++)
+            {
+                Assert.IsTrue(reports[i].percent is >= 0 and <= 1);
+                if (i > 0)
+                {
+                    Assert.IsTrue(reports[i].percent >= reports[i - 1].percent);
+                    Assert.IsTrue(reports[i].currentBytes >= reports[i - 1].currentBytes);
+                }
+            }
+            if (!unknownLength)
+                Assert.IsTrue(reports.Any(r => r.percent is > 0 and < 0.25), "Known-length streams have progress within the first part.");
+            if (!singleFile)
+                Assert.IsTrue(reports.Any(r => r.percent == 0.5), "DASH counts all parts under the same download ID.");
+        }
+        finally { SourceServices.Configure(originalSettings, TestSources.AudioConverter); Directory.Delete(folder, true); }
+    }
+
+    [TestMethod]
+    public async Task ConcurrentTidalTracksKeepTheirProgressSeparateAndFailuresDoNotReportCompletion()
+    {
+        var settings = new TidalParsingTests.DictionarySettings(new() { [SettingKeys.TidalDirectDownloads] = true });
+        var handler = new FakeHttp { ChunkedMedia = true };
+        var client = Client(settings, handler);
+        var login = await client.BeginLoginAsync();
+        await client.FinishLoginAsync(login, Callback(login));
+        var folder = Path.Combine(Path.GetTempPath(), "opencode", "tidal-album-progress-test-" + Guid.NewGuid());
+        Directory.CreateDirectory(folder);
+        var originalSettings = TestSources.Settings;
+        SourceServices.Configure(settings, new CopyConverter());
+        var progress = new RecordingProgress();
+        try
+        {
+            await Task.WhenAll(Enumerable.Range(0, 3).Select(i => Task.Run(() => client.TryDownloadAsync(i.ToString(), Path.Combine(folder, $"track-{i}"), progress))));
+            var tracks = progress.Reports.GroupBy(r => r.uniqueId).ToArray();
+            Assert.AreEqual(3, tracks.Length);
+            Assert.IsTrue(tracks.All(t => t.Last().percent == 1));
+            handler.FailSegment = true;
+            var failed = new RecordingProgress();
+            await Assert.ThrowsExceptionAsync<HttpRequestException>(() => client.TryDownloadAsync("4", Path.Combine(folder, "failed"), failed));
+            Assert.IsTrue(failed.Reports.All(r => r.percent < 1));
+        }
+        finally { SourceServices.Configure(originalSettings, TestSources.AudioConverter); Directory.Delete(folder, true); }
+    }
+
+    private sealed class RecordingProgress : IProgress<ProgressData>
+    {
+        public readonly System.Collections.Concurrent.ConcurrentQueue<ProgressData> Reports = new();
+        public void Report(ProgressData value) => Reports.Enqueue(value);
+    }
+
+    [TestMethod]
+    [DataRow(false)]
+    [DataRow(true)]
+    public async Task AlbumPipelineAggregatesConcurrentTracksWithoutFinishingOnSegmentFailure(bool failSegment)
+    {
+        var settings = new TidalParsingTests.DictionarySettings(new()
+        {
+            [SettingKeys.TidalDirectDownloads] = true, ["conversion_threads"] = 3,
+            ["file_naming_wildcard"] = "{title}", ["download_album_cover_art"] = false,
+        });
+        var client = Client(settings, new FakeHttp { ChunkedMedia = true, FailSegment = failSegment });
+        var login = await client.BeginLoginAsync();
+        await client.FinishLoginAsync(login, Callback(login));
+        var registry = new SourceRegistry([new AlbumCatalog()]);
+        var downloads = new DownloadService(registry, new EquivalentDownloader(registry), new NoLyrics(), client);
+        var folder = Path.Combine(Path.GetTempPath(), "opencode", "tidal-album-pipeline-test-" + Guid.NewGuid());
+        Directory.CreateDirectory(folder);
+        var originalSettings = TestSources.Settings;
+        SourceServices.Configure(settings, new CopyConverter());
+        var helper = new DownloadProgressHelper("Album", 3);
+        var progress = new RecordingProgress();
+        try
+        {
+            var album = new AlbumSearchObject { Source = SourceIds.Tidal, Id = "album", Title = "Album", TracksCount = 3 };
+            var paths = await downloads.DownloadAlbum(album, folder, progress);
+            Assert.AreEqual(failSegment ? 0 : 3, paths.Count);
+            Assert.AreEqual(3, progress.Reports.Select(r => r.uniqueId).Distinct().Count());
+            foreach (var report in progress.Reports) helper.UpdateProgressLoop(report);
+            // Failed tracks are processed too, so the album reaches 100% either way.
+            Assert.AreEqual(1, helper.GetProgressUpdate()!.ProgressValue, 0.000001);
+            Assert.IsFalse(Directory.GetFiles(folder).Any(p => p.EndsWith(".mp4")));
+        }
+        finally { SourceServices.Configure(originalSettings, TestSources.AudioConverter); Directory.Delete(folder, true); }
+    }
+
+    private sealed class AlbumCatalog : ICatalogSource
+    {
+        public SourceDescriptor Descriptor => SourceCatalog.Find(SourceIds.Tidal)!;
+        public Task<SongSearchObject?> GetTrackAsync(string id) => Task.FromResult<SongSearchObject?>(Track(id));
+        public Task<List<SongSearchObject>> GetAlbumTracksAsync(AlbumSearchObject album) =>
+            Task.FromResult(Enumerable.Range(0, 3).Select(i => Track(i.ToString())).ToList());
+        public Task<string?> GetLargestCoverUrlAsync(AlbumSearchObject album) => Task.FromResult<string?>(null);
+        private static SongSearchObject Track(string id) => new() { Source = SourceIds.Tidal, Id = id, Title = $"Track {id}", Artists = "Artist" };
+    }
+
+    private sealed class NoLyrics : ILyricService
+    {
+        public Task<string?> GetLyricsAsync(SongSearchObject song) => Task.FromResult<string?>(null);
+    }
+
     private static TidalDownloadClient Client(TidalParsingTests.DictionarySettings settings, FakeHttp http) => new(settings, new HttpClient(http))
     {
         FallbackClientId = "bundled-client", ConfigUrl = "https://gist.githubusercontent.com/test/raw/client.json",
@@ -231,6 +361,7 @@ public class TidalDownloadTests
     private sealed class FakeHttp : HttpMessageHandler
     {
         public bool GistFails, Preview, FailSegment;
+        public bool SingleFile, ChunkedMedia, UnknownMediaLength;
         public bool PremiumAccess = true;
         public int SubscriptionRequests;
         public int ExpiresIn = 14400, MediaRequests, RequestCount;
@@ -255,12 +386,26 @@ public class TidalDownloadTests
                 SubscriptionRequests++;
                 return Response(200, "{\"status\":\"ACTIVE\",\"premiumAccess\":" + (PremiumAccess ? "true" : "false") + "}");
             }
-            if (uri.Host == "api.tidal.com") return Response(200, StreamResponse(Dash, !Preview));
+            if (uri.Host == "api.tidal.com") return Response(200, SingleFile
+                ? StreamResponse("""{"encryptionType":"NONE","codecs":"mp4a.40.2","urls":["https://audio.example/track"]}""", !Preview, "application/vnd.tidal.bts")
+                : StreamResponse(Dash, !Preview));
             MediaRequests++;
             Assert.IsNull(request.Headers.Authorization, "Bearer tokens must not go to the media host.");
+            if (ChunkedMedia && !(FailSegment && uri.AbsolutePath == "/8.mp4"))
+                return new HttpResponseMessage(HttpStatusCode.OK)
+                {
+                    Content = new StreamContent(new ChunkedStream(Encoding.UTF8.GetBytes(uri.AbsolutePath), UnknownMediaLength)),
+                };
             return Response(FailSegment && uri.AbsolutePath == "/8.mp4" ? 503 : 200, uri.AbsolutePath);
         }
         private static HttpResponseMessage Response(int status, string content) => new((HttpStatusCode)status) { Content = new StringContent(content) };
+    }
+
+    private sealed class ChunkedStream(byte[] bytes, bool unknownLength) : MemoryStream(bytes)
+    {
+        public override bool CanSeek => !unknownLength;
+        public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default) =>
+            base.ReadAsync(buffer[..Math.Min(buffer.Length, 1)], cancellationToken);
     }
 
     private sealed class CopyConverter : IAudioConverter

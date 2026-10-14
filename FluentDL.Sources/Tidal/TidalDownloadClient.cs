@@ -168,17 +168,35 @@ public sealed class TidalDownloadClient
         var temporary = pathWithoutExtension + "." + Guid.NewGuid().ToString("N");
         var raw = temporary + ".mp4";
         var remuxed = temporary + manifest.Extension;
-        var progressId = DateTime.Now.Ticks;
+        var progressId = ProgressData.NewId();
         try
         {
             await using (var file = File.Create(raw))
             {
+                var buffer = new byte[32768];
                 for (var i = 0; i < manifest.Parts.Count; i++)
                 {
                     using var part = await http.GetAsync(manifest.Parts[i], HttpCompletionOption.ResponseHeadersRead, token);
                     if (!part.IsSuccessStatusCode) throw new HttpRequestException($"TIDAL audio segment failed: HTTP {(int)part.StatusCode}.");
-                    await part.Content.CopyToAsync(file, token);
-                    progress?.Report(new ProgressData { uniqueId = progressId, currentBytes = file.Position, totalBytes = file.Position * manifest.Parts.Count / (i + 1) });
+                    var length = part.Content.Headers.ContentLength;
+                    await using var stream = await part.Content.ReadAsStreamAsync(token);
+                    long partBytes = 0;
+                    int read;
+                    while ((read = await stream.ReadAsync(buffer, token)) > 0)
+                    {
+                        await file.WriteAsync(buffer.AsMemory(0, read), token);
+                        partBytes += read;
+                        var partFraction = length > 0 ? Math.Min((double)partBytes / length.Value, 1) : 0;
+                        progress?.Report(new ProgressData
+                        {
+                            uniqueId = progressId, currentBytes = file.Position,
+                            fraction = (i + partFraction) / manifest.Parts.Count,
+                        });
+                    }
+                    progress?.Report(new ProgressData
+                    {
+                        uniqueId = progressId, currentBytes = file.Position, fraction = (double)(i + 1) / manifest.Parts.Count,
+                    });
                 }
             }
             await SourceServices.AudioConverter.RemuxAudioAsync(raw, remuxed);

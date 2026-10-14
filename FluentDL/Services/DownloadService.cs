@@ -156,10 +156,11 @@ public sealed class DownloadService(SourceRegistry sources, EquivalentDownloader
     {
         using var operation = LogContext.PushProperty("OperationId", Guid.NewGuid().ToString("N"));
         var timer = Stopwatch.StartNew();
+        var trackProgress = new TrackDownloadProgress(progress);
         Log.Information("Track download started; provider {Provider}", song.Source);
         try
         {
-            var path = await DownloadTrackCore(song, directory, progress, callback);
+            var path = await DownloadTrackCore(song, directory, trackProgress, callback);
             if (!string.IsNullOrEmpty(path))
             {
                 Log.Information("Track download completed in {ElapsedMilliseconds} ms", timer.ElapsedMilliseconds);
@@ -176,6 +177,7 @@ public sealed class DownloadService(SourceRegistry sources, EquivalentDownloader
             Log.Error(ex, "Track download failed before completion after {ElapsedMilliseconds} ms", timer.ElapsedMilliseconds);
             throw;
         }
+        finally { trackProgress.Finish(); }
     }
 
     private async Task<string> DownloadTrackCore(SongSearchObject song, string directory, IProgress<ProgressData> progress, ConversionUpdateCallback? callback)

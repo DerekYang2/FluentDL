@@ -62,7 +62,8 @@ public class TidalDirectLiveTests
             var downloads = new DownloadService(TestSources.Registry, new EquivalentDownloader(TestSources.Registry),
                 new LRCLyricService(new HttpClient(), settings), direct);
             var reports = new List<StatusLevel>();
-            var path = await downloads.DownloadObject(track, folder, new Progress<ProgressData>(), (level, _, _) => reports.Add(level));
+            var transfer = new RecordingProgress();
+            var path = await downloads.DownloadObject(track, folder, transfer, (level, _, _) => reports.Add(level));
             Assert.IsFalse(string.IsNullOrEmpty(path), "Direct TIDAL download failed or returned only a preview.");
             using var file = TagLib.File.Create(path);
             Assert.AreEqual(extension, Path.GetExtension(path));
@@ -75,6 +76,11 @@ public class TidalDirectLiveTests
             Assert.IsTrue(file.Tag.Track > 0);
             CollectionAssert.AreEqual(new[] { StatusLevel.Success }, reports);
             Assert.IsFalse(Directory.GetFiles(folder).Any(p => p.EndsWith(".mp4")));
+            var updates = transfer.Reports.ToArray();
+            Assert.AreEqual(1, updates.Select(p => p.uniqueId).Distinct().Count());
+            Assert.IsTrue(updates.Any(p => p.currentBytes > 0 && p.percent < 1), "Progress must arrive before the download finishes.");
+            Assert.AreEqual(1d, updates.Last().percent);
+            Assert.IsTrue(updates.All(p => p.percent is >= 0 and <= 1));
         }
         finally
         {
@@ -82,5 +88,11 @@ public class TidalDirectLiveTests
             SourceServices.Configure(settings, TestSources.AudioConverter);
             Directory.Delete(folder, true);
         }
+    }
+
+    private sealed class RecordingProgress : IProgress<ProgressData>
+    {
+        public readonly System.Collections.Concurrent.ConcurrentQueue<ProgressData> Reports = new();
+        public void Report(ProgressData value) => Reports.Enqueue(value);
     }
 }

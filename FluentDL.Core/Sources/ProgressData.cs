@@ -2,14 +2,21 @@ namespace FluentDL.Core.Sources;
 
 public struct ProgressData
 {
+    // Negative IDs cannot collide with the timestamp IDs used by the existing source downloaders.
+    private static long nextId;
+    public static long NewId() => Interlocked.Decrement(ref nextId);
+
     public long uniqueId;
     public long? totalBytes;
     public long? currentBytes;
+    // Segmented downloads know their position in the manifest before they know the full byte count.
+    public double? fraction;
     public readonly double? percent
     {
         get
         {
-            if (totalBytes != null && currentBytes != null)
+            if (fraction != null) return fraction;
+            if (totalBytes > 0 && currentBytes != null)
             {
                 return (double)currentBytes / totalBytes;
             }
