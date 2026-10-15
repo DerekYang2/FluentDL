@@ -1,7 +1,11 @@
 using FluentDL.Contracts.Sources;
 using FluentDL.Core.Contracts.Services;
+using FluentDL.Core.Helpers;
 using FluentDL.Core.Sources;
 using FluentDL.Models;
+using System.Text.RegularExpressions;
+using YoutubeExplode;
+using YouTubeMusicAPI.Client;
 
 namespace FluentDL.Services.Sources;
 
@@ -14,9 +18,17 @@ internal sealed partial class YoutubeSource : ISearchSource, ILinkSource, IConve
     private readonly IAudioConverter audioConverter;
 
     public YoutubeSource(ILocalSettingsService settings, IAudioConverter audioConverter)
+        : this(settings, audioConverter, new YouTubeMusicClient(), new YoutubeClient())
+    {
+    }
+
+    internal YoutubeSource(ILocalSettingsService settings, IAudioConverter audioConverter,
+        YouTubeMusicClient music, YoutubeClient videos)
     {
         this.settings = settings;
         this.audioConverter = audioConverter;
+        ytm = music;
+        youtube = videos;
     }
 
     public Task SearchAsync(ICollection<SongSearchObject> results, string query, PageRequest page, bool albumMode, CancellationToken token) =>
@@ -157,15 +169,37 @@ internal sealed partial class YoutubeSource : ISearchSource, ILinkSource, IConve
     // The preview pane loads YouTube audio itself, because it may use yt-dlp (an app setting) and shows progress.
     public async Task<PreviewInfo> GetPreviewAsync(SongSearchObject song)
     {
-        var cover = await GetMaxResThumbnail(song) ?? "";
         if (song is AlbumSearchObject album)
         {
+            var cover = await GetMaxResThumbnail(song) ?? "";
             album.TrackList ??= [];
             return new PreviewInfo { CoverUrl = cover, AlbumTracks = album.TrackList, AlbumTrackCount = album.TracksCount };
         }
+        var releaseDate = song.ReleaseDate;
+        var views = song.Rank;
+        string? trackCover;
+        if (string.IsNullOrWhiteSpace(releaseDate))
+        {
+            // Search rows already have Music metadata. Only the selected row needs video views and upload date.
+            try
+            {
+                var video = await youtube.Videos.GetAsync(song.Id);
+                releaseDate = DisplayFormat.FormatDateTimeOffset(video.UploadDate);
+                views = FormatLargeValue(video.Engagement.ViewCount);
+                trackCover = Regex.IsMatch(song.ImageLocation, @"=w\d+-h\d+[^&]*")
+                    ? Regex.Replace(song.ImageLocation, @"=w\d+-h\d+[^&]*", "=w544-h544-l90-rj")
+                    : GetMaxResThumbnail(null, video);
+            }
+            catch (Exception e) when (e is not OperationCanceledException)
+            {
+                Serilog.Log.Warning("YouTube preview metadata unavailable; error type {ErrorType}", e.GetType().Name);
+                trackCover = song.ImageLocation;
+            }
+        }
+        else trackCover = await GetMaxResThumbnail(song);
         // The audio loads after the details: through yt-dlp when that setting is on (the pane does that), otherwise
         // through GetPreviewAudioAsync.
-        return new PreviewInfo { CoverUrl = cover, Rows = [("Views", song.Rank)], LoadAudioSeparately = true };
+        return new PreviewInfo { CoverUrl = trackCover, ReleaseDate = releaseDate, Rows = [("Views", views)], LoadAudioSeparately = true };
     }
 
     // Used when yt-dlp is off.

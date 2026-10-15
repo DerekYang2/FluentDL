@@ -18,6 +18,7 @@ public class PreviewAudioTests
     [DataRow("deezer")]
     [DataRow("qobuz")]
     [DataRow("spotify")]
+    [DataRow("tidal")]
     public Task TrackPreviewHasAudio(string source) => CheckAsync(source);
 
     // The refactor dropped LoadAudioSeparately from YouTube's preview, so the pane played nothing (fixed 2026-10-10).
@@ -33,6 +34,7 @@ public class PreviewAudioTests
             "deezer" => await Signed(LiveSources.EnsureDeezerAsync, () => TestSources.Deezer.GetTrack(fixture.DeezerId!)),
             "qobuz" => await Signed(LiveSources.EnsureQobuzAsync, () => TestSources.Qobuz.GetTrackAsync(fixture.QobuzId!)),
             "spotify" => await Signed(LiveSources.EnsureSpotifyWebPlayerAsync, () => TestSources.Spotify.GetTrack(fixture.SpotifyId!)),
+            "tidal" => await Signed(LiveSources.EnsureTidalAsync, () => TestSources.Tidal.GetTrackAsync("20115564")),
             _ => await TestSources.Youtube.GetTrack(fixture.YoutubeId!),
         };
         Assert.IsNotNull(song, "could not load the track");
@@ -47,7 +49,10 @@ public class PreviewAudioTests
         request.Headers.Range = new RangeHeaderValue(0, 1023);
         using var response = await client.SendAsync(request);
         Assert.IsTrue(response.IsSuccessStatusCode, $"{(int)response.StatusCode} from {audio}");
-        StringAssert.StartsWith(response.Content.Headers.ContentType?.MediaType, "audio/");
+        // TIDAL's preview is an HLS playlist (a text list of audio chunks), which the media player streams.
+        var start = await response.Content.ReadAsStringAsync();
+        Assert.IsTrue(response.Content.Headers.ContentType?.MediaType?.StartsWith("audio/") == true || start.StartsWith("#EXTM3U"),
+            $"neither audio nor an HLS playlist: {response.Content.Headers.ContentType}");
     }
 
     private static async Task<SongSearchObject?> Signed(Func<Task> signIn, Func<Task<SongSearchObject?>> load)

@@ -69,6 +69,10 @@
       {
         "Label": "Fans",
         "Value": "(varies)"
+      },
+      {
+        "Label": "UPC",
+        "Value": "886443927087"
       }
     ],
     "LabelsMatchValues": true,
@@ -137,6 +141,10 @@
       {
         "Label": "Max Quality",
         "Value": "24-Bit/88.2 kHz"
+      },
+      {
+        "Label": "UPC",
+        "Value": "0886443927087"
       }
     ],
     "LabelsMatchValues": true,
@@ -174,5 +182,73 @@
     "LabelsMatchValues": true,
     "RatingShown": false,
     "TrackListHeader": null
+  },
+  "tidal-track": {
+    "Title": "Get Lucky (feat. Pharrell Williams and Nile Rodgers)",
+    "Rows": [
+      {
+        "Label": "Artists",
+        "Value": "Daft Punk, Pharrell Williams, Nile Rodgers"
+      },
+      {
+        "Label": "Release Date",
+        "Value": "May 20, 2013"
+      },
+      {
+        "Label": "Length",
+        "Value": "6 min 10 sec"
+      },
+      {
+        "Label": "Album",
+        "Value": "Random Access Memories"
+      },
+      {
+        "Label": "Max Quality",
+        "Value": "Lossless (16-bit/44.1 kHz)"
+      },
+      {
+        "Label": "ISRC",
+        "Value": "USQX91300108"
+      },
+      {
+        "Label": "Popularity",
+        "Value": ""
+      }
+    ],
+    "LabelsMatchValues": true,
+    "RatingShown": true,
+    "TrackListHeader": null
+  },
+  "tidal-album": {
+    "Title": "Random Access Memories",
+    "Rows": [
+      {
+        "Label": "Artists",
+        "Value": "Daft Punk"
+      },
+      {
+        "Label": "Release Date",
+        "Value": "May 20, 2013"
+      },
+      {
+        "Label": "Length",
+        "Value": "1 hr 14 min 39 sec"
+      },
+      {
+        "Label": "Max Quality",
+        "Value": "Lossless (16-bit/44.1 kHz)"
+      },
+      {
+        "Label": "UPC",
+        "Value": "886443927087"
+      },
+      {
+        "Label": "Popularity",
+        "Value": ""
+      }
+    ],
+    "LabelsMatchValues": true,
+    "RatingShown": true,
+    "TrackListHeader": "13 Tracks"
   }
 }

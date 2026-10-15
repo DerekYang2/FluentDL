@@ -1,4 +1,4 @@
-﻿using System.Collections.Concurrent;
+using System.Collections.Concurrent;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
@@ -837,6 +837,7 @@ public sealed partial class QueuePage : Page
             PageInfoBar.IsOpen = true;
             PageInfoBar.Opacity = 1;
             PageInfoBar.Severity = severity;
+            InfoBarWidth.Update(InfobarContent, hold: false);
             //PageInfoBar.Title = title;
 
             if (!string.IsNullOrWhiteSpace(title))
@@ -861,6 +862,7 @@ public sealed partial class QueuePage : Page
             PageInfoBar.IsOpen = true;
             PageInfoBar.Opacity = 1;
             PageInfoBar.Severity = severity;
+            InfoBarWidth.Update(InfobarContent, hold: IsConverting); // progress text changes during a run
 
             //PageInfoBar.Title = title;
             if (!string.IsNullOrWhiteSpace(title))
@@ -1039,9 +1041,12 @@ public sealed partial class QueuePage : Page
         {
             var finalStr = args.DisplayString;
             var progress = args.ProgressValue;
+            var preparing = args.Preparing;
             dispatcherQueue.TryEnqueue(() =>
             {
-                QueueProgress.Value = Math.Clamp(progress * 100, 0, 100); ;
+                if (!downloadHelper.IsRunning) return;
+                QueueProgress.IsIndeterminate = preparing;
+                QueueProgress.Value = Math.Clamp(progress * 100, 0, 100);
                 ShowInfoBarPermanent(InfoBarSeverity.Informational, finalStr, title: "Downloading");
             });
         };
@@ -1218,6 +1223,7 @@ public sealed partial class QueuePage : Page
             // Resetting UI
             dispatcherQueue.TryEnqueue(() =>
             {
+                QueueProgress.IsIndeterminate = false;
                 QueueProgress.Value = 0;  // Ensures this happens after currently queued progress changes
             });
 

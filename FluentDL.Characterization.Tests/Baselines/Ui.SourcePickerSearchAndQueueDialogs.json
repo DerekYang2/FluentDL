@@ -21,6 +21,10 @@
     {
       "Name": "YouTube",
       "Selected": false
+    },
+    {
+      "Name": "TIDAL",
+      "Selected": false
     }
   ],
   "Searches": [
@@ -77,6 +81,11 @@
         "Enabled": true
       },
       {
+        "Name": "TIDAL",
+        "Checked": false,
+        "Enabled": false
+      },
+      {
         "Name": "Local",
         "Checked": false,
         "Enabled": false
@@ -87,6 +96,7 @@
       "Qobuz",
       "Spotify",
       "YouTube",
+      "TIDAL",
       "Local"
     ],
     "SelectedOutput": null,
@@ -120,6 +130,11 @@
         "Enabled": true
       },
       {
+        "Name": "TIDAL",
+        "Checked": true,
+        "Enabled": true
+      },
+      {
         "Name": "Local",
         "Checked": true,
         "Enabled": true
@@ -143,6 +158,10 @@
     {
       "Name": "YouTube",
       "Selected": true
+    },
+    {
+      "Name": "TIDAL",
+      "Selected": false
     }
   ]
 }

@@ -33,6 +33,9 @@ internal class FFmpegRunner : IAudioConverter
 
     Task IAudioConverter.RemuxOpusAsync(string inputPath, string outputPath) => RemuxOpusAsync(inputPath, outputPath);
 
+    // This helper uses stream copy and lets FFmpeg choose the container from the output extension, including FLAC.
+    Task IAudioConverter.RemuxAudioAsync(string inputPath, string outputPath) => ConvertMp4ToM4aAsync(inputPath, outputPath);
+
     Task<string?> IAudioConverter.CreateMp3Async(string initialPath, string? outputDirectory) => CreateMp3Async(initialPath, outputDirectory);
 
     private static int NormalizeSpectrogramHeight(int height)

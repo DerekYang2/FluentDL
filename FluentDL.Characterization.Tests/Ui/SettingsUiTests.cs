@@ -14,7 +14,170 @@ namespace FluentDL.Characterization.Tests.Ui;
 [TestCategory("UI")]
 public class SettingsUiTests
 {
-    private static readonly string[] Sources = ["Deezer", "Qobuz", "Spotify"];
+    private static readonly string[] Sources = ["Deezer", "Qobuz", "Spotify", "Tidal"];
+
+    [TestMethod]
+    public void TidalCombinedStatusShowsTheSavedDownloadAccount()
+    {
+        DevApp.RequireUiTests();
+        var data = Windows.Management.Core.ApplicationDataManager.CreateForPackageFamily(DevApp.FindAumid().Split('!')[0]);
+        var keys = new[] { "tidal_download_session", "tidal_refresh_token" };
+        var previous = keys.ToDictionary(k => k, k => data.LocalSettings.Values.TryGetValue(k, out var value) ? value : null);
+        var session = new Services.Tidal.TidalDownloadClient.Session("test-client", "test-access", "test-refresh",
+            DateTimeOffset.UtcNow.AddHours(1), "CA", "downloads@example.test");
+        var bytes = System.Security.Cryptography.ProtectedData.Protect(System.Text.Json.JsonSerializer.SerializeToUtf8Bytes(session),
+            null, System.Security.Cryptography.DataProtectionScope.CurrentUser);
+        data.LocalSettings.Values["tidal_download_session"] = Newtonsoft.Json.JsonConvert.SerializeObject(Convert.ToBase64String(bytes));
+        data.LocalSettings.Values.Remove("tidal_refresh_token");
+        try
+        {
+            using var dev = DevApp.Launch();
+            Find(dev, "SearchBox", TimeSpan.FromSeconds(60));
+            Navigate(dev, "Settings");
+            Assert.IsNull(TryFind(dev, cf => cf.ByAutomationId("TidalDownloadsExpander")));
+            Expand(dev, "TidalExpander");
+            var account = FindScrolling(dev, "TidalDownloadStatus");
+            WaitUntil(() => Text(account).Contains("downloads@example.test"), TimeSpan.FromSeconds(10), "download identity");
+            StringAssert.Contains(Text(account), "Subscription: Unavailable");
+            var infoButton = Find(dev, "TidalInfoButton");
+            var scroller = dev.MainWindow.FindAllDescendants()
+                .Where(e => e.Patterns.Scroll.IsSupported && e.Patterns.Scroll.Pattern.VerticallyScrollable.Value)
+                .OrderByDescending(e => e.BoundingRectangle.Height).First();
+            for (var attempt = 0; attempt < 12 && infoButton.Properties.IsOffscreen.ValueOrDefault; attempt++)
+            {
+                scroller.Patterns.Scroll.Pattern.Scroll(ScrollAmount.NoAmount, ScrollAmount.LargeIncrement);
+                Thread.Sleep(250);
+            }
+            Assert.IsFalse(infoButton.Properties.IsOffscreen.ValueOrDefault);
+            Invoke(infoButton);
+            var status = Text(Find(dev, "TidalInfoText"));
+            StringAssert.Contains(status, "API:");
+            StringAssert.Contains(status, "Only searching.");
+            StringAssert.Contains(status, "Downloading:\ndownloads@example.test");
+            Assert.IsFalse(status.Contains("Direct downloads"), "Downloads have no on/off setting any more.");
+            var folder = Path.Combine(Path.GetTempPath(), "opencode", "tidal-combined-ui");
+            Directory.CreateDirectory(folder);
+            SaveAppWindow(dev, Path.Combine(folder, "status.png"));
+            FlaUI.Core.Input.Keyboard.Type(FlaUI.Core.WindowsAPI.VirtualKeyShort.ESCAPE);
+            Thread.Sleep(500);
+            Assert.IsNotNull(FindScrolling(dev, "TidalUpdateButton"), "Save should be inside the TIDAL expander.");
+            for (var page = 0; page < 3; page++)
+            {
+                SaveAppWindow(dev, Path.Combine(folder, $"expander-{page}.png"));
+                scroller.Patterns.Scroll.Pattern.Scroll(ScrollAmount.NoAmount, ScrollAmount.LargeIncrement);
+                Thread.Sleep(400);
+            }
+        }
+        finally
+        {
+            foreach (var (key, value) in previous)
+                if (value == null) data.LocalSettings.Values.Remove(key); else data.LocalSettings.Values[key] = value;
+        }
+    }
+
+    [System.Runtime.InteropServices.DllImport("user32.dll")]
+    private static extern bool PrintWindow(IntPtr window, IntPtr deviceContext, uint flags);
+
+    // Capture the app, not the user's foreground window. UI Automation still works when the app is covered.
+    private static void SaveAppWindow(DevApp dev, string path)
+    {
+        var bounds = dev.MainWindow.BoundingRectangle;
+        using var bitmap = new System.Drawing.Bitmap(bounds.Width, bounds.Height);
+        using var graphics = System.Drawing.Graphics.FromImage(bitmap);
+        var context = graphics.GetHdc();
+        try
+        {
+            var handle = new IntPtr(dev.MainWindow.Properties.NativeWindowHandle.Value);
+            Assert.IsTrue(PrintWindow(handle, context, 2), "App window capture failed.");
+        }
+        finally { graphics.ReleaseHdc(context); }
+        bitmap.Save(path);
+    }
+
+    // Run only against a diagnostic dev build whose login page is about:blank. This checks native WebView2 startup
+    // without automated navigation to TIDAL, which has previously triggered its bot protection.
+    [TestMethod]
+    [TestCategory("UIProbe")]
+    public void TidalEmbeddedBrowserStartsOffline()
+    {
+        DevApp.RequireUiTests();
+        if (Environment.GetEnvironmentVariable("FLUENTDL_TIDAL_BLANK_BROWSER_TEST") != "1")
+            Assert.Inconclusive("Requires the about:blank diagnostic dev build.");
+        var data = Windows.Management.Core.ApplicationDataManager.CreateForPackageFamily(DevApp.FindAumid().Split('!')[0]);
+        var keys = new[] { "tidal_download_session" };
+        var previous = keys.ToDictionary(k => k, k => data.LocalSettings.Values.TryGetValue(k, out var value) ? value : null);
+        data.LocalSettings.Values.Remove("tidal_download_session");
+        try
+        {
+            using var dev = DevApp.Launch();
+            Find(dev, "SearchBox", TimeSpan.FromSeconds(60));
+            Navigate(dev, "Settings");
+            Expand(dev, "TidalExpander");
+            Invoke(FindScrolling(dev, "TidalDownloadLoginButton"));
+            var status = Find(dev, "BrowserStatus");
+            WaitUntil(() => Text(status) != "Starting embedded browser...", TimeSpan.FromSeconds(30), "WebView2 initialization result");
+            var folder = Path.Combine(Path.GetTempPath(), "opencode", "tidal-embedded-ui");
+            Directory.CreateDirectory(folder);
+            FlaUI.Core.Capturing.Capture.Element(dev.MainWindow).ToFile(Path.Combine(folder, "dialog.png"));
+            Console.WriteLine("Embedded dialog status: " + Text(status));
+            Assert.AreEqual("Embedded browser ready.", Text(status));
+            var close = FindInRawView(dev, dev.MainWindow, "CloseButton", maxDepth: 25)
+                ?? throw new InvalidOperationException("The download dialog has no close button in the raw UI tree.");
+            Invoke(close);
+            WaitUntil(() => TryFind(dev, cf => cf.ByAutomationId("BrowserStatus")) == null, TimeSpan.FromSeconds(10), "dialog closed");
+        }
+        finally
+        {
+            foreach (var (key, value) in previous)
+                if (value == null) data.LocalSettings.Values.Remove(key); else data.LocalSettings.Values[key] = value;
+        }
+    }
+
+    // A real click on empty space must take focus from a text box (WinUI moves focus only to focusable controls).
+    // Real input would disturb a desktop in use, so this runs only where Run-InGuest.ps1 allows it: in the Sandbox.
+    [TestMethod]
+    public void ClickingEmptySpaceTakesFocusFromATextBox()
+    {
+        DevApp.RequireUiTests();
+        if (Environment.GetEnvironmentVariable("FLUENTDL_UI_REAL_INPUT") != "1")
+            Assert.Inconclusive("Needs a real mouse click. Runs in the Sandbox.");
+        using var dev = DevApp.Launch();
+        Find(dev, "SearchBox", TimeSpan.FromSeconds(60));
+        Navigate(dev, "Settings");
+        Expand(dev, "TidalExpander");
+        var country = FindScrolling(dev, "TidalCountryInput");
+        if (country.Patterns.ScrollItem.IsSupported) country.Patterns.ScrollItem.Pattern.ScrollIntoView();
+        Thread.Sleep(300);
+        country.Focus();
+        WaitUntil(() => country.Properties.HasKeyboardFocus.ValueOrDefault, TimeSpan.FromSeconds(5), "the country box to take focus");
+        // The card's empty area between its description and the box.
+        var box = country.BoundingRectangle;
+        FlaUI.Core.Input.Mouse.Click(new System.Drawing.Point(box.Left - 40, box.Top + box.Height / 2));
+        WaitUntil(() => !country.Properties.HasKeyboardFocus.ValueOrDefault, TimeSpan.FromSeconds(5), "the country box to lose focus");
+    }
+
+    // Downloads have no on/off switch: signing in is always available, and the switch is gone.
+    [TestMethod]
+    public void TidalDownloadSignInIsAlwaysAvailable()
+    {
+        DevApp.RequireUiTests();
+        using var dev = DevApp.Launch();
+        Find(dev, "SearchBox", TimeSpan.FromSeconds(60));
+        Navigate(dev, "Settings");
+        Expand(dev, "TidalExpander");
+        var login = FindScrolling(dev, "TidalDownloadLoginButton");
+        Assert.IsTrue(login.IsEnabled);
+        StringAssert.Contains(Text(login), "downloads"); // "Sign in for downloads" or, with a saved session, "Sign out of downloads"
+        Assert.IsNull(TryFind(dev, cf => cf.ByAutomationId("TidalDirectToggle")));
+        var folder = Path.Combine(Path.GetTempPath(), "opencode", "tidal-direct-ui");
+        Directory.CreateDirectory(folder);
+        SaveAppWindow(dev, Path.Combine(folder, "settings.png"));
+        // TIDAL's quality sits with the other services' download qualities.
+        Expand(dev, "DownloadOptions");
+        var quality = FindScrolling(dev, "TidalDownloadQualityInput");
+        Assert.IsTrue(quality.IsEnabled);
+        StringAssert.Contains(quality.AsComboBox().SelectedItem?.Text ?? "", "FLAC (maximum available)");
+    }
 
     [TestMethod]
     [Timeout(4 * 60 * 1000)]

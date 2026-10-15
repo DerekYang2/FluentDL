@@ -48,12 +48,10 @@ jobs:
         run: dotnet build FluentDL/FluentDL.csproj -c Release -p:Platform=${{ matrix.platform }} -p:GenerateAppxPackageOnBuild=false
       - name: Check that the native binaries match the platform
         shell: pwsh
-        # The WebView2 package copies its x86 Core component into both builds; the app doesn't load it.
         run: >
           ./.github/scripts/Test-NativeArchitecture.ps1
           -Folder FluentDL/bin/${{ matrix.platform }}/Release/net10.0-windows10.0.22621.0/win-${{ matrix.platform }}
           -Architecture ${{ matrix.platform }}
-          -Allow 'Microsoft.Web.WebView2.Core.dll'
 
   package:
     name: Sideload package (${{ matrix.architecture }})

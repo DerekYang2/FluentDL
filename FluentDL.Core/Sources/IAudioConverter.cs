@@ -5,6 +5,9 @@ public interface IAudioConverter
 {
     bool IsInitialized { get; }
 
+    /// <summary>Copies the audio into a new container without changing its codec or sample rate.</summary>
+    Task RemuxAudioAsync(string inputPath, string outputPath) => throw new NotSupportedException();
+
     /// <summary>Converts the file to FLAC in place.</summary>
     Task ConvertToFlacAsync(string initialPath, int samplingRate = 48000);
 

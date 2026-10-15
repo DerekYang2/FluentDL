@@ -906,9 +906,11 @@ public sealed partial class Search : Page
         downloadHelper.ProgressUpdated += (s, e) => {
             var finalStr = e.DisplayString;
             var progress = e.ProgressValue;
+            var preparing = e.Preparing;
             dispatcher.TryEnqueue(() =>
             {
-                ShowInfoBarPermanent(InfoBarSeverity.Informational, finalStr, title: "Downloading", isIndeterminate: false, progressPercent: progress);
+                if (!downloadHelper.IsRunning) return;
+                ShowInfoBarPermanent(InfoBarSeverity.Informational, finalStr, title: "Downloading", isIndeterminate: preparing, progressPercent: progress);
             });
         };
 
@@ -1017,6 +1019,12 @@ public sealed partial class Search : Page
                     Debug.WriteLine($"Failed to add downloaded song to local explorer: {ex.Message}");
                 }
             }
+            // The result callback normally stops it; this covers paths that return without one.
+            if (downloadHelper.IsRunning)
+            {
+                downloadHelper.StopLoop();
+                InfobarProgress.Visibility = Visibility.Collapsed;
+            }
         }
     }
 
@@ -1029,6 +1037,7 @@ public sealed partial class Search : Page
             PageInfoBar.IsOpen = true;
             PageInfoBar.Opacity = 1;
             PageInfoBar.Severity = severity;
+            InfoBarWidth.Update(InfobarContent, hold: false);
             //PageInfoBar.Title = title;
 
             if (!string.IsNullOrWhiteSpace(title))
@@ -1069,6 +1078,7 @@ public sealed partial class Search : Page
             PageInfoBar.Severity = severity;
             InfobarProgress.IsIndeterminate = isIndeterminate;
             InfobarProgress.Value = Math.Clamp(progressPercent * 100, 0, 100);
+            InfoBarWidth.Update(InfobarContent, hold: !isIndeterminate); // a percentage is showing
             //PageInfoBar.Title = title;
             if (!string.IsNullOrWhiteSpace(title))
             {

@@ -55,6 +55,11 @@ public sealed partial class SettingsPage : Page
         ViewModel = App.GetService<SettingsViewModel>();
         InitializeComponent();
         this.Loaded += SettingsPage_Loaded;
+        // WinUI moves focus only to focusable controls, so clicking a card or the page background left a text box
+        // focused. The page takes focus itself then, without a focus outline.
+        IsTabStop = true;
+        UseSystemFocusVisuals = false;
+        AddHandler(PointerPressedEvent, new Microsoft.UI.Xaml.Input.PointerEventHandler(Page_PointerPressedAnywhere), handledEventsToo: true);
 
         dispatcher = DispatcherQueue.GetForCurrentThread();
         dispatcherTimer = new DispatcherTimer();
@@ -160,6 +165,10 @@ public sealed partial class SettingsPage : Page
         // Set Ids/Secrets
         ClientIdInput.Text = (await localSettings.ReadSettingAsync<string?>(SettingsViewModel.SpotifyClientId)) ?? "";
         SpotifySecretInput.Password = (await localSettings.ReadSettingAsync<string?>(SettingsViewModel.SpotifyClientSecret)) ?? "";
+        TidalClientIdInput.Text = await localSettings.ReadSettingAsync<string?>(SettingsViewModel.TidalClientId) ?? "";
+        TidalSecretInput.Password = await localSettings.ReadSettingAsync<string?>(SettingsViewModel.TidalClientSecret) ?? "";
+        TidalCountryInput.Text = await localSettings.ReadSettingAsync<string?>(SettingsViewModel.TidalCountry) ?? "";
+        TidalCountryInput.PlaceholderText = $"Windows region ({System.Globalization.RegionInfo.CurrentRegion.TwoLetterISORegionName})";
         DeezerARLInput.Password = await localSettings.ReadSettingAsync<string?>(SettingsViewModel.DeezerARL) ?? "";
         QobuzIDInput.Text = await localSettings.ReadSettingAsync<string?>(SettingsViewModel.QobuzId) ?? "";
         QobuzTokenInput.Text = await localSettings.ReadSettingAsync<string?>(SettingsViewModel.QobuzToken) ?? "";
@@ -188,6 +197,13 @@ public sealed partial class SettingsPage : Page
         SetDeezerAuthInfo(Session(SourceIds.Deezer).IsConnected);
         SetQobuzAuthInfo(Session(SourceIds.Qobuz).IsConnected);
         SetSpotifyAuthInfo(Session(SourceIds.Spotify).IsConnected);
+        SetTidalAuthInfo(Session(SourceIds.Tidal).IsConnected);
+        var tidalQuality = await localSettings.ReadSettingAsync<string>(SettingKeys.TidalDownloadQuality) ?? "HI_RES_LOSSLESS";
+        TidalDownloadQualityInput.SelectedItem = TidalDownloadQualityInput.Items.Cast<ComboBoxItem>().FirstOrDefault(i => (string)i.Tag == tidalQuality)
+            ?? TidalDownloadQualityInput.Items[3];
+        TidalDownloadClientIdInput.Text = await localSettings.ReadSettingAsync<string>(SettingKeys.TidalDownloadClientId) ?? "";
+        await UpdateTidalDownloadStatusAsync();
+        _tidalDownloadSettingsReady = true;
         await InitializeDiagnosticsAsync();
     }
 
@@ -252,6 +268,17 @@ public sealed partial class SettingsPage : Page
         }
     }
 
+    private void Page_PointerPressedAnywhere(object sender, Microsoft.UI.Xaml.Input.PointerRoutedEventArgs e)
+    {
+        // Runs after the clicked control's own handling: a button or combo box has already taken focus by now.
+        if (Microsoft.UI.Xaml.Input.FocusManager.GetFocusedElement(XamlRoot) is not (TextBox or PasswordBox)) return;
+        for (var element = e.OriginalSource as DependencyObject; element != null; element = Microsoft.UI.Xaml.Media.VisualTreeHelper.GetParent(element))
+        {
+            if (element is TextBox or PasswordBox) return; // a click inside a text box keeps its focus
+        }
+        Focus(FocusState.Programmatic);
+    }
+
     private void SetDeezerAuthInfo(bool isInitialized)
     {
         if (isInitialized)
@@ -314,6 +341,151 @@ public sealed partial class SettingsPage : Page
         await localSettings.SaveSettingAsync(SettingsViewModel.SpotifyClientId, ClientIdInput.Text.Trim());
         await localSettings.SaveSettingAsync(SettingsViewModel.SpotifyClientSecret, SpotifySecretInput.Password.Trim());
         ShowConnectResult(await Session(SourceIds.Spotify).ConnectAsync(), "Spotify", SetSpotifyAuthInfo);
+    }
+
+    private CancellationTokenSource? _tidalLogin;
+    private bool _tidalDownloadSettingsReady;
+    private string? _tidalDownloadAccount;
+    private bool _tidalDownloadSaved;
+    private string _tidalDownloadSubscription = "Unavailable";
+    private Services.Tidal.TidalDownloadClient TidalDownloads => App.GetService<Services.Tidal.TidalDownloadClient>();
+
+    private async Task UpdateTidalDownloadStatusAsync()
+    {
+        using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+        try
+        {
+            _tidalDownloadAccount = await TidalDownloads.GetAccountNameAsync(timeout.Token);
+            _tidalDownloadSubscription = await TidalDownloads.GetSubscriptionStatusAsync(timeout.Token);
+        }
+        catch (Exception)
+        {
+            // Keep account emails out of logs and retain the last display identity after a temporary network failure.
+            Serilog.Log.Information("TIDAL download account identity could not be restored");
+            _tidalDownloadSubscription = "Unavailable";
+        }
+        var saved = _tidalDownloadSaved = await TidalDownloads.HasSessionAsync();
+        if (!saved) _tidalDownloadAccount = null;
+        TidalDownloadStatus.Text = saved
+            ? $"{_tidalDownloadAccount ?? "Saved account"}  ·  Subscription: {_tidalDownloadSubscription}"
+            : "Not signed in";
+        TidalDownloadStatusBox.Visibility = saved ? Visibility.Visible : Visibility.Collapsed;
+        TidalDownloadLoginButton.Content = saved ? "Sign out of downloads" : "Sign in for downloads";
+        TidalDownloadLoginButton.IsEnabled = true;
+        SetTidalAuthInfo(Session(SourceIds.Tidal).IsConnected);
+    }
+
+    private async void TidalDownloadQuality_Changed(object sender, SelectionChangedEventArgs e)
+    {
+        if (!_tidalDownloadSettingsReady || TidalDownloadQualityInput.SelectedItem is not ComboBoxItem item) return;
+        try { await localSettings.SaveSettingAsync(SettingKeys.TidalDownloadQuality, (string)item.Tag); }
+        catch (Exception) { ShowInfoBar(InfoBarSeverity.Error, "Couldn't save the TIDAL quality.", 5, "TIDAL"); }
+    }
+
+    private async void TidalDownloadLogin_Click(object sender, RoutedEventArgs e)
+    {
+        TidalDownloadLoginButton.IsEnabled = false;
+        try
+        {
+            if (await TidalDownloads.HasSessionAsync())
+            {
+                var account = _tidalDownloadAccount ?? "the download account";
+                await TidalDownloads.LogoutAsync();
+                ShowInfoBar(InfoBarSeverity.Informational, $"Signed out of TIDAL downloads for {account}.", 4, "TIDAL");
+            }
+            else
+            {
+                var login = await TidalDownloads.BeginLoginAsync();
+                var dialog = new TidalDownloadLoginDialog(TidalDownloads, login) { XamlRoot = XamlRoot, RequestedTheme = ActualTheme };
+                await dialog.ShowAsync();
+                if (dialog.SignedIn)
+                {
+                    await UpdateTidalDownloadStatusAsync();
+                    ShowInfoBar(InfoBarSeverity.Success, $"Signed in for TIDAL downloads as {_tidalDownloadAccount ?? "TIDAL account"}.", 5, "TIDAL");
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Serilog.Log.Warning("TIDAL download login dialog failed: {ExceptionType}, HRESULT {HResult}",
+                ex.GetType().FullName, $"0x{ex.HResult:X8}");
+            ShowInfoBar(InfoBarSeverity.Error, ex is InvalidOperationException ? ex.Message
+                : $"Couldn't start the TIDAL download sign-in. Error 0x{ex.HResult:X8}.", 5, "TIDAL");
+        }
+        finally { await UpdateTidalDownloadStatusAsync(); }
+    }
+
+    // API account sign-in (PKCE) is off for now. See TidalApi.AccountLoginEnabled to bring it back with this handler.
+    // // Sign in, cancel a sign-in in progress, or sign out, depending on the state.
+    // private async void TidalLoginButton_Click(object sender, RoutedEventArgs e)
+    // {
+    //     var login = (IAccountLogin)Session(SourceIds.Tidal);
+    //     if (_tidalLogin != null)
+    //     {
+    //         _tidalLogin.Cancel();
+    //         return;
+    //     }
+    //     if (login.AccountName != null)
+    //     {
+    //         await login.LogoutAsync();
+    //         ShowInfoBar(InfoBarSeverity.Informational, "Signed out of TIDAL.", 3, "TIDAL");
+    //         SetTidalAuthInfo(Session(SourceIds.Tidal).IsConnected);
+    //         return;
+    //     }
+
+    //     _tidalLogin = new CancellationTokenSource();
+    //     TidalLoginButton.Content = "Cancel sign-in";
+    //     ShowInfoBar(InfoBarSeverity.Informational, "Finish signing in to TIDAL in your browser.", 5, "TIDAL");
+    //     try
+    //     {
+    //         var result = await login.LoginAsync(_tidalLogin.Token);
+    //         ShowConnectResult(result, "TIDAL", _ => SetTidalAuthInfo(Session(SourceIds.Tidal).IsConnected));
+    //     }
+    //     finally
+    //     {
+    //         _tidalLogin.Dispose();
+    //         _tidalLogin = null;
+    //         SetTidalAuthInfo(Session(SourceIds.Tidal).IsConnected);
+    //     }
+    // }
+
+    private void SetTidalAuthInfo(bool isInitialized)
+    {
+        var login = (IAccountLogin)Session(SourceIds.Tidal);
+        var catalogStatus = isInitialized ? Session(SourceIds.Tidal).StatusText ?? "Connected" : "Not connected to the API.";
+        var apiIdentity = login.AccountName ?? (isInitialized ? catalogStatus.Split('\n')[0] : "Not signed in");
+        TidalInfoText.Text = FormatTidalAccountInfo(apiIdentity, _tidalDownloadAccount, _tidalDownloadSaved, _tidalDownloadSubscription);
+        if (isInitialized || _tidalDownloadSaved)
+        {
+            TidalInfoButton.IsEnabled = true;
+            TidalInfoButtonText.Text = isInitialized ? "Logged In" : "Downloads signed in";
+            TidalInfoIcon.Glyph = "\uE946";
+        }
+        else
+        {
+            TidalInfoButton.IsEnabled = false;
+            TidalInfoButtonText.Text = "Not Logged In";
+            TidalInfoIcon.Glyph = "\uEA39";
+        }
+    }
+
+    internal static string FormatTidalAccountInfo(string apiIdentity, string? downloadAccount, bool downloadSaved, string subscription) =>
+        $"API:\n{apiIdentity}\nOnly searching.\n\nDownloading:\n{(downloadSaved ? downloadAccount ?? "Saved account" : "Not signed in")}\nSubscription: {(downloadSaved ? subscription : "Not signed in")}";
+
+    private async void TidalUpdateButton_Click(object sender, RoutedEventArgs e)
+    {
+        var downloadClientId = TidalDownloadClientIdInput.Text.Trim();
+        if (downloadClientId.Length != 0 && !Services.Tidal.TidalDownloadClient.IsValidClientId(downloadClientId))
+        {
+            ShowInfoBar(InfoBarSeverity.Warning, "The download client ID can only contain letters, numbers, hyphens and underscores.", 5, "TIDAL");
+            return;
+        }
+        await localSettings.SaveSettingAsync(SettingKeys.TidalDownloadClientId, downloadClientId.Length == 0 ? null : downloadClientId);
+        await localSettings.SaveSettingAsync(SettingsViewModel.TidalClientId, TidalClientIdInput.Text.Trim());
+        await localSettings.SaveSettingAsync(SettingsViewModel.TidalClientSecret, TidalSecretInput.Password.Trim());
+        await localSettings.SaveSettingAsync(SettingsViewModel.TidalCountry, TidalCountryInput.Text.Trim().ToUpperInvariant());
+        // Missing credentials come back as a warning, not an error, so ask the session whether it signed in.
+        ShowConnectResult(await Session(SourceIds.Tidal).ConnectAsync(), "TIDAL", _ => SetTidalAuthInfo(Session(SourceIds.Tidal).IsConnected));
     }
 
     private async void DeezerUpdateButton_Click(object sender, RoutedEventArgs e)

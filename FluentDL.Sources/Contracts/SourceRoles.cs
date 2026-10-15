@@ -24,6 +24,21 @@ public interface ISourceSession : ISource
     Task<ConnectResult> ConnectAsync();
 }
 
+/// <summary>Signing in to the user's own account in the browser, once; the sign-in is saved (TIDAL).</summary>
+public interface IAccountLogin : ISource
+{
+    /// <summary>Whether this build can sign in at all.</summary>
+    bool CanLogin { get; }
+
+    /// <summary>The account's name while signed in to it, else null.</summary>
+    string? AccountName { get; }
+
+    /// <summary>Opens the sign-in page and waits for the user, up to a few minutes or until cancelled.</summary>
+    Task<ConnectResult> LoginAsync(CancellationToken token);
+
+    Task LogoutAsync();
+}
+
 public interface ISearchSource : ISource
 {
     /// <summary>Adds one page of results. In album mode, each result is an album.</summary>

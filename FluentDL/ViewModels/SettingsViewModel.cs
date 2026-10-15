@@ -22,6 +22,9 @@ public partial class SettingsViewModel : ObservableRecipient
         FirstRun = "first_run",
         SpotifyClientId = SettingKeys.SpotifyClientId,
         SpotifyClientSecret = SettingKeys.SpotifyClientSecret,
+        TidalClientId = SettingKeys.TidalClientId,
+        TidalClientSecret = SettingKeys.TidalClientSecret,
+        TidalCountry = SettingKeys.TidalCountry,
         DeezerARL = SettingKeys.DeezerArl,
         QobuzId = SettingKeys.QobuzId,
         QobuzToken = SettingKeys.QobuzToken,
@@ -164,6 +167,9 @@ public partial class SettingsViewModel : ObservableRecipient
         await SaveSettingsAsyncIfNull<bool?>(AutoUpdateYtdlp, true);
         await SaveSettingsAsyncIfNull<string?>(SpotifyClientId, "");
         await SaveSettingsAsyncIfNull<string?>(SpotifyClientSecret, "");
+        await SaveSettingsAsyncIfNull<string?>(TidalClientId, "");
+        await SaveSettingsAsyncIfNull<string?>(TidalClientSecret, "");
+        await SaveSettingsAsyncIfNull<string?>(TidalCountry, "");
         await SaveSettingsAsyncIfNull<string?>(DeezerARL, "");
         await SaveSettingsAsyncIfNull<string?>(QobuzId, "");
         await SaveSettingsAsyncIfNull<string?>(QobuzToken, "");

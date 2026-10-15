@@ -34,6 +34,18 @@ public class ConversionTests
     public Task ConvertToSpotify(string origin) => RunAsync(origin, "spotify", spotifyOfficial: false);
 
     [TestMethod]
+    [DataRow("deezer")]
+    [DataRow("qobuz")]
+    [DataRow("spotify")]
+    public Task ConvertToTidal(string origin) => RunAsync(origin, "tidal", spotifyOfficial: false);
+
+    [TestMethod]
+    [DataRow("deezer")]
+    [DataRow("qobuz")]
+    [DataRow("spotify")]
+    public Task ConvertFromTidal(string target) => RunAsync("tidal", target, spotifyOfficial: false);
+
+    [TestMethod]
     [TestCategory("YouTube")]
     [DataRow("deezer")]
     [DataRow("qobuz")]
@@ -82,6 +94,23 @@ public class ConversionTests
         var match = await TestSources.Conversions.FindEquivalentAsync(song, "deezer", CancellationToken.None);
         Assert.AreEqual(MatchKind.Close, match.Kind);
         Assert.AreEqual(Fixtures.Tracks[0].DeezerId, match.Track!.Id);
+    }
+
+    // With no ISRC, TIDAL matches by a search for the artist and title. The title check ignores the featuring credit,
+    // and the closest album name picks the album release over compilations.
+    [TestMethod]
+    public async Task TidalMatchesByMetadataWithoutAnIsrc()
+    {
+        await LiveSources.EnsureTidalAsync();
+        var song = new SongSearchObject
+        {
+            Source = "local", Id = "get-lucky.flac", Title = "Get Lucky (feat. Pharrell Williams and Nile Rodgers)",
+            Artists = "Daft Punk, Pharrell Williams, Nile Rodgers", AlbumName = "Random Access Memories",
+        };
+        var match = await TestSources.Tidal.FindEquivalentAsync(song, null, CancellationToken.None);
+        Assert.AreEqual(MatchKind.Close, match.Kind);
+        Assert.AreEqual("Random Access Memories", match.Track!.AlbumName);
+        Assert.AreEqual(Fixtures.Tracks[0].Isrc, match.Track.Isrc);
     }
 
     // A local file tagged in its own language, whose names the target lists differently (Deezer: "Spring Day" by
@@ -139,6 +168,7 @@ public class ConversionTests
         "deezer" => fixture.DeezerId,
         "qobuz" => fixture.QobuzId,
         "spotify" => fixture.SpotifyId,
+        "tidal" => fixture.TidalId,
         _ => fixture.YoutubeId,
     };
 
@@ -147,6 +177,7 @@ public class ConversionTests
         "deezer" => LiveSources.EnsureDeezerAsync(),
         "qobuz" => LiveSources.EnsureQobuzAsync(),
         "spotify" => spotifyOfficial ? LiveSources.EnsureSpotifyOfficialAsync() : LiveSources.EnsureSpotifyWebPlayerAsync(),
+        "tidal" => LiveSources.EnsureTidalAsync(),
         _ => LiveSources.EnsureYoutubeMusicAvailableAsync(),
     };
 
@@ -155,6 +186,7 @@ public class ConversionTests
         "deezer" => await TestSources.Deezer.GetTrack(id),
         "qobuz" => await TestSources.Qobuz.GetTrackAsync(id),
         "spotify" => await TestSources.Spotify.GetTrack(id),
+        "tidal" => await TestSources.Tidal.GetTrackAsync(id),
         _ => await TestSources.Youtube.GetTrack(id),
     };
 

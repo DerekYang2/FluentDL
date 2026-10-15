@@ -1,12 +1,14 @@
 # Installs a FluentDL sideload package, checks that its bundled ffmpeg encodes audio, starts FluentDL, and checks from
 # its log that it started packaged on the expected architecture, ran its ffmpeg and finished activating its main window.
+# With -ExpectTidalBuiltIn it also checks that TIDAL connected with FluentDL's built-in app (release builds).
 # The log, ffmpeg's output, crash events and screenshots go to the output folder.
 param(
     [Parameter(Mandatory)] [string] $Package,
     [ValidateSet('Arm64', 'X64')] [string] $Architecture = 'Arm64',
     [string] $Output = 'launch-results',
     # Startup waits up to 30 seconds for the music services, so the main window can take a while.
-    [int] $Seconds = 90
+    [int] $Seconds = 90,
+    [switch] $ExpectTidalBuiltIn
 )
 
 $ErrorActionPreference = 'Stop'
@@ -103,6 +105,10 @@ $process | Stop-Process -Force -ErrorAction SilentlyContinue
 # Serilog writes the architecture in quotes and the flag in lower case: architecture "Arm64", packaged true.
 if ($text -notmatch "architecture `"?$Architecture`"?, packaged true") { $problems += "The log doesn't say FluentDL started packaged on $Architecture." }
 if ($text -notmatch 'Main window activated') { $problems += "FluentDL didn't finish activating its main window within $Seconds seconds." }
+# FluentDL logs "TIDAL access BuiltIn" when it connected with the client ID and secret the release build baked in.
+$tidal = ($text -split "`n" | Select-String -Pattern 'TIDAL access' | Select-Object -First 1).Line
+Write-Host "TIDAL: $(if ($tidal) { $tidal.Trim() } else { 'no TIDAL access line in the log' })"
+if ($ExpectTidalBuiltIn -and $tidal -notmatch 'TIDAL access "?BuiltIn') { $problems += "TIDAL didn't connect with FluentDL's built-in app. Check the TIDAL_CLIENT_ID and TIDAL_CLIENT_SECRET repository secrets, and the 'TIDAL access' line in the log." }
 if ($text -notmatch 'FFmpeg ready') { $problems += "FluentDL didn't log 'FFmpeg ready', so it couldn't run its ffmpeg. Look for 'FFmpeg unavailable' in the log." }
 if (-not $process) { $problems += "FluentDL wasn't running at the end of the check. See events.txt for a crash." }
 if ($problems.Count -gt 0) {

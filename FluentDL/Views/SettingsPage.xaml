@@ -617,6 +617,22 @@
                                 </ComboBox>
                             </local:SettingsCard>
                             <local:SettingsCard
+                                x:Name="TidalQuality"
+                                Description="Select the quality of TIDAL downloads. Full tracks need a TIDAL subscription or trial."
+                                Header="TIDAL">
+                                <ComboBox
+                                    x:Name="TidalDownloadQualityInput"
+                                    AutomationProperties.Name="TIDAL download quality"
+                                    DropDownOpened="ComboBox_OnDropDownOpened"
+                                    SelectedIndex="3"
+                                    SelectionChanged="TidalDownloadQuality_Changed">
+                                    <ComboBoxItem Content="AAC (96kbps)" Tag="LOW" />
+                                    <ComboBoxItem Content="AAC (320kbps)" Tag="HIGH" />
+                                    <ComboBoxItem Content="FLAC (16bit/44.1kHz)" Tag="LOSSLESS" />
+                                    <ComboBoxItem Content="FLAC (maximum available)" Tag="HI_RES_LOSSLESS" />
+                                </ComboBox>
+                            </local:SettingsCard>
+                            <local:SettingsCard
                                 x:Name="YoutubeQuality"
                                 Description="Select the quality of YouTube downloads. FLAC is NOT lossless and only for compatibility purposes."
                                 Header="YouTube">
@@ -1066,6 +1082,143 @@
                                 <Button
                                     x:Name="SpotifyUpdateButton"
                                     Click="SpotifyUpdateButton_Click"
+                                    Content="Save" />
+                            </local:SettingsCard>
+                        </local:SettingsExpander.Items>
+                    </local:SettingsExpander>
+
+                    <local:SettingsExpander
+                        x:Name="TidalExpander"
+                        VerticalAlignment="Top"
+                        HorizontalContentAlignment="Stretch"
+                        Header="TIDAL">
+                        <local:SettingsExpander.Description>
+                            <TextBlock TextWrapping="Wrap">
+                                Sign in to download from TIDAL. Optional: if searches are rate limited, use your own&#32;<Hyperlink NavigateUri="https://developer.tidal.com/dashboard">developer app credentials</Hyperlink> for Search API access.</TextBlock>
+                        </local:SettingsExpander.Description>
+                        <local:SettingsExpander.HeaderIcon>
+                            <FontIcon Glyph="&#xE72E;" />
+                        </local:SettingsExpander.HeaderIcon>
+                        <Grid HorizontalAlignment="Stretch">
+                            <Button x:Name="TidalInfoButton" IsEnabled="False">
+                                <Button.Flyout>
+                                    <Flyout>
+                                        <StackPanel>
+                                            <TextBlock Text="Status" />
+                                            <TextBlock
+                                                x:Name="TidalInfoText"
+                                                TextWrapping="Wrap"
+                                                IsTextSelectionEnabled="True"
+                                                MaxWidth="480"
+                                                Foreground="{ThemeResource TextFillColorSecondary}"
+                                                Style="{ThemeResource CaptionTextBlockStyle}" />
+                                        </StackPanel>
+                                    </Flyout>
+                                </Button.Flyout>
+                                <StackPanel Orientation="Horizontal">
+                                    <FontIcon
+                                        x:Name="TidalInfoIcon"
+                                        Margin="0,0,8,0"
+                                        FontSize="16"
+                                        Glyph="&#xEA39;" />
+                                    <TextBlock x:Name="TidalInfoButtonText" Text="Not Logged In" />
+                                </StackPanel>
+                            </Button>
+                        </Grid>
+                        <local:SettingsExpander.Items>
+                            <Border Padding="16,10" Background="{ThemeResource CardBackgroundFillColorSecondaryBrush}">
+                                <!-- A local style stops SettingsExpander applying its SettingsCard style, which crashes on a Border. -->
+                                <Border.Style><Style TargetType="Border" /></Border.Style>
+                                <TextBlock Style="{ThemeResource BodyStrongTextBlockStyle}" Text="Downloads" />
+                            </Border>
+                            <local:SettingsCard x:Name="TidalDownloadAccountCard" Header="Download account" HorizontalContentAlignment="Stretch"
+                                Description="Sign in to download from TIDAL. Full tracks need a TIDAL subscription or trial.">
+                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                    <Border x:Name="TidalDownloadStatusBox" Padding="4" VerticalAlignment="Center"
+                                        Background="{ThemeResource ControlFillColorSecondaryBrush}" CornerRadius="4">
+                                        <TextBlock x:Name="TidalDownloadStatus" Margin="4,0" VerticalAlignment="Center" FontSize="12"
+                                            IsTextSelectionEnabled="True" Text="Not signed in" />
+                                    </Border>
+                                    <Button x:Name="TidalDownloadLoginButton" Content="Sign in for downloads" Click="TidalDownloadLogin_Click" />
+                                </StackPanel>
+                            </local:SettingsCard>
+                            <local:SettingsCard x:Name="TidalDownloadClientCard" Header="Override download client ID" HorizontalContentAlignment="Stretch"
+                                Description="Optional. Leave empty to use the default download client ID. Only change this if TIDAL downloads stop working.">
+                                <TextBox x:Name="TidalDownloadClientIdInput" Width="500" AutomationProperties.Name="TIDAL download client ID" />
+                            </local:SettingsCard>
+
+                            <Border Padding="16,10" Background="{ThemeResource CardBackgroundFillColorSecondaryBrush}"
+                                BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="0,1,0,0">
+                                <Border.Style><Style TargetType="Border" /></Border.Style>
+                                <TextBlock Style="{ThemeResource BodyStrongTextBlockStyle}" Text="Search API (optional)" />
+                            </Border>
+                            <!-- API account sign-in (PKCE) is off for now. To bring it back, restore this card, the commented
+                                 code in SettingsPage.xaml.cs, and default TidalApi.AccountLoginEnabled to true.
+                            <local:SettingsCard
+                                x:Name="TidalAccountCard"
+                                HorizontalContentAlignment="Stretch"
+                                Description="Sign in if searches are rate limited."
+                                Header="API account">
+                                <StackPanel Spacing="8">
+                                    <TextBlock x:Name="TidalCatalogStatus" TextWrapping="Wrap" />
+                                    <Button
+                                        x:Name="TidalLoginButton"
+                                        Click="TidalLoginButton_Click"
+                                        Content="Sign in" />
+                                </StackPanel>
+                            </local:SettingsCard>
+                            -->
+                            <local:SettingsCard
+                                HorizontalContentAlignment="Stretch"
+                                Description="Two-letter code, such as US or GB. Leave empty to use your Windows region."
+                                Header="Country">
+                                <TextBox
+                                    x:Name="TidalCountryInput"
+                                    Width="500"
+                                    CharacterCasing="Upper"
+                                    MaxLength="2"
+                                    AutomationProperties.Name="TIDAL country" />
+                            </local:SettingsCard>
+                            <local:SettingsCard
+                                HorizontalContentAlignment="Stretch"
+                                Header="Client ID">
+                                <local:SettingsCard.Description>
+                                    <TextBlock TextWrapping="Wrap">
+                                        Custom&#32;<Hyperlink NavigateUri="https://developer.tidal.com/dashboard">developer app</Hyperlink>&#32;client ID. Leave empty to use FluentDL's own app.</TextBlock>
+                                </local:SettingsCard.Description>
+                                <TextBox
+                                    x:Name="TidalClientIdInput"
+                                    Width="500"
+                                    Margin="0,0,0,4"
+                                    Header="Client ID"
+                                    AutomationProperties.Name="TIDAL client ID">
+                                    <TextBox.HeaderTemplate>
+                                        <DataTemplate>
+                                            <TextBlock
+                                                Margin="0,2,0,-2"
+                                                Foreground="{ThemeResource TextFillColorSecondary}"
+                                                Style="{ThemeResource CaptionTextBlockStyle}"
+                                                Text="{Binding}" />
+                                        </DataTemplate>
+                                    </TextBox.HeaderTemplate>
+                                </TextBox>
+                            </local:SettingsCard>
+                            <local:SettingsCard
+                                HorizontalContentAlignment="Stretch"
+                                Description="Custom developer app client secret. Leave empty to use FluentDL's own app."
+                                Header="Client secret">
+                                <helpers:CustomPasswordBox
+                                    x:Name="TidalSecretInput"
+                                    Width="500"
+                                    VerticalAlignment="Center"
+                                    Header="Client secret"
+                                    Tooltip="TIDAL client secret" />
+                            </local:SettingsCard>
+
+                            <local:SettingsCard HorizontalContentAlignment="Stretch" Header="Save changes">
+                                <Button
+                                    x:Name="TidalUpdateButton"
+                                    Click="TidalUpdateButton_Click"
                                     Content="Save" />
                             </local:SettingsCard>
                         </local:SettingsExpander.Items>

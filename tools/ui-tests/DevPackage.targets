@@ -35,4 +35,24 @@
       <AppxManifest Include="$(FluentDLDevManifest)" SubType="Designer" />
     </ItemGroup>
   </Target>
+
+  <Target Name="FluentDLUseDiagnosticLoginSource" BeforeTargets="CoreCompile"
+          Condition="'$(MSBuildProjectName)' == 'FluentDL' And '$(FluentDLTidalDiagnosticSource)' != ''">
+    <ItemGroup>
+      <Compile Remove="Views\TidalDownloadLoginDialog.xaml.cs" />
+      <Compile Include="$(FluentDLTidalDiagnosticSource)" />
+    </ItemGroup>
+  </Target>
+
+  <!-- Registration uses the flat build folder, not AppX. Copy assets there too so FFmpeg and covers work in the
+       dev app as they do in a packaged release. The source list follows the project's Content items. -->
+  <Target Name="FluentDLCopyDevAssets" AfterTargets="Build" Condition="'$(MSBuildProjectName)' == 'FluentDL'">
+    <ItemGroup>
+      <FluentDLDevAssets Include="@(Content)" Condition="$([System.String]::Copy('%(Identity)').StartsWith('Assets\'))">
+        <DevRelativePath Condition="'%(Content.Link)' != ''">%(Content.Link)</DevRelativePath>
+        <DevRelativePath Condition="'%(Content.Link)' == ''">%(Content.Identity)</DevRelativePath>
+      </FluentDLDevAssets>
+    </ItemGroup>
+    <Copy SourceFiles="@(FluentDLDevAssets)" DestinationFiles="@(FluentDLDevAssets->'$(OutputPath)%(DevRelativePath)')" SkipUnchangedFiles="true" />
+  </Target>
 </Project>

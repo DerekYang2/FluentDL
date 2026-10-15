@@ -1,0 +1,31 @@
+<ContentDialog
+    x:Class="FluentDL.Views.TidalDownloadLoginDialog"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    Title="Sign in for TIDAL downloads"
+    CloseButtonText="Cancel"
+    Loaded="Dialog_Loaded"
+    Closed="Dialog_Closed">
+    <ContentDialog.Resources>
+        <x:Double x:Key="ContentDialogMaxWidth">900</x:Double>
+    </ContentDialog.Resources>
+    <Grid Width="740" Height="560" RowSpacing="12">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+        <StackPanel Spacing="8">
+            <TextBlock Text="Sign in below. If TIDAL blocks this window, use your browser instead." TextWrapping="Wrap" />
+            <Button x:Name="BrowserButton" Content="Open in my browser instead" Click="Browser_Click" />
+            <TextBlock x:Name="BrowserStatus" Text="Starting embedded browser..." TextWrapping="Wrap" />
+            <InfoBar x:Name="LoginError" Severity="Error" IsOpen="False" />
+        </StackPanel>
+        <WebView2 x:Name="LoginWebView" Grid.Row="1" AutomationProperties.Name="TIDAL sign-in page" />
+        <StackPanel Grid.Row="2" x:Name="PastePanel" Spacing="8" Visibility="Collapsed">
+            <TextBlock Text="After signing in in your browser, copy the full address of the Page not found page and paste it here." TextWrapping="Wrap" />
+            <TextBox x:Name="RedirectInput" Header="TIDAL redirect address" AutomationProperties.AutomationId="TidalDownloadRedirect" />
+            <Button x:Name="FinishButton" Content="Finish sign-in" Click="Finish_Click" />
+        </StackPanel>
+    </Grid>
+</ContentDialog>

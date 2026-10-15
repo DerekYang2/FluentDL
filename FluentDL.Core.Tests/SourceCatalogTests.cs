@@ -34,14 +34,14 @@ public class SourceCatalogTests
     [TestMethod]
     public void Catalog_KeepsTheUiOrder()
     {
-        CollectionAssert.AreEqual(new[] { "deezer", "qobuz", "spotify", "youtube", "local" }, SourceCatalog.All.Select(s => s.Id).ToArray());
-        CollectionAssert.AreEqual(new[] { "deezer", "qobuz", "spotify", "youtube" }, SourceCatalog.Searchable.Select(s => s.Id).ToArray());
+        CollectionAssert.AreEqual(new[] { "deezer", "qobuz", "spotify", "youtube", "tidal", "local" }, SourceCatalog.All.Select(s => s.Id).ToArray());
+        CollectionAssert.AreEqual(new[] { "deezer", "qobuz", "spotify", "youtube", "tidal" }, SourceCatalog.Searchable.Select(s => s.Id).ToArray());
     }
 
     [TestMethod]
     public void Find_ReturnsNullForUnknownIds()
     {
-        Assert.IsNull(SourceCatalog.Find("tidal"));
+        Assert.IsNull(SourceCatalog.Find("napster"));
         Assert.IsNull(SourceCatalog.Find(null));
         Assert.IsNull(SourceCatalog.Find("Deezer"));
     }
@@ -53,7 +53,7 @@ public class SourceCatalogTests
     {
         var root = FindRepoRoot();
         var allowed = new[] { Path.Combine("FluentDL.Core", "Sources", "SourceIds.cs") };
-        var literal = new Regex("\"(deezer|qobuz|spotify|youtube|local)\"");
+        var literal = new Regex("\"(deezer|qobuz|spotify|youtube|tidal|local)\"");
 
         var offenders = new[] { "FluentDL", "FluentDL.Core" }
             .SelectMany(project => Directory.EnumerateFiles(Path.Combine(root, project), "*.*", SearchOption.AllDirectories))

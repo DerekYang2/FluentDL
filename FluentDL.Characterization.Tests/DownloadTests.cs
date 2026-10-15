@@ -23,6 +23,7 @@ public class DownloadTests
     [DataRow("deezer")]
     [DataRow("qobuz")]
     [DataRow("spotify")]
+    [DataRow("tidal")]
     public async Task DownloadTrack(string source)
     {
         await SignInAsync(source);
@@ -44,8 +45,16 @@ public class DownloadTests
                 void Report(StatusLevel level, SongSearchObject reported, string? location) =>
                     reports.Add(new { Level = level.ToString(), Song = reported.Id, Location = Relative(directory, location) });
 
-                var result = await Live.Capture(async () =>
-                    Relative(directory, await TestSources.Downloads.DownloadObject(song, directory, new Progress<ProgressData>(_ => { }), Report)));
+                // TIDAL downloads directly or fails. This keeps the switched-off equivalent route covered.
+                var previousFallback = DownloadService.TidalEquivalentFallback;
+                DownloadService.TidalEquivalentFallback = source == "tidal";
+                object result;
+                try
+                {
+                    result = await Live.Capture(async () =>
+                        Relative(directory, await TestSources.Downloads.DownloadObject(song, directory, new Progress<ProgressData>(_ => { }), Report)));
+                }
+                finally { DownloadService.TidalEquivalentFallback = previousFallback; }
 
                 return new
                 {
@@ -138,7 +147,8 @@ public class DownloadTests
     {
         "deezer" => LiveSources.EnsureDeezerAsync(),
         "qobuz" => LiveSources.EnsureQobuzAsync(),
-        // Spotify downloads go through an equivalent on Deezer, then Qobuz.
+        // Spotify and TIDAL downloads go through an equivalent on Deezer, then Qobuz.
+        "tidal" => Task.WhenAll(LiveSources.EnsureTidalAsync(), LiveSources.EnsureDeezerAsync(), LiveSources.EnsureQobuzAsync()),
         _ => Task.WhenAll(LiveSources.EnsureSpotifyWebPlayerAsync(), LiveSources.EnsureDeezerAsync(), LiveSources.EnsureQobuzAsync()),
     };
 
@@ -146,8 +156,17 @@ public class DownloadTests
     {
         "deezer" => await TestSources.Deezer.GetTrack(fixture.DeezerId!),
         "qobuz" => await TestSources.Qobuz.GetTrackAsync(fixture.QobuzId!),
+        // As a search result, which has no track number: the download looks it up.
+        "tidal" => await SearchTidalAsync(fixture.TidalId!),
         _ => await TestSources.Spotify.GetTrack(fixture.SpotifyId!),
     };
+
+    private static async Task<SongSearchObject?> SearchTidalAsync(string id)
+    {
+        var results = new List<SongSearchObject>();
+        await TestSources.Tidal.SearchAsync(results, "daft punk get lucky", new(0, 20), albumMode: false, CancellationToken.None);
+        return results.FirstOrDefault(r => r.Id == id);
+    }
 
     // Error results carry a message instead of a path; only paths inside the folder are rewritten.
     private static string? Relative(string directory, string? path) =>

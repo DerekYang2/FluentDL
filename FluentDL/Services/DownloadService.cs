@@ -24,9 +24,16 @@ namespace FluentDL.Services;
 /// Downloads tracks and albums: naming, the per-source download, tags, lyrics, ReplayGain and the album cover. Moved
 /// unchanged from ApiHelper; Phase 6 replaces its calls into the source classes with role interfaces.
 /// </summary>
-public sealed class DownloadService(SourceRegistry sources, EquivalentDownloader equivalents, ILyricService lyricService)
+public sealed class DownloadService(SourceRegistry sources, EquivalentDownloader equivalents, ILyricService lyricService,
+    Tidal.TidalDownloadClient? tidalDownloads = null)
 {
     private static readonly HttpClient client = new HttpClient();
+
+    /// <summary>
+    /// Off: a TIDAL track that TIDAL can't provide (signed out, preview only) fails with the reason, like Deezer and
+    /// Qobuz downloads. On: it downloads an equivalent from another source, as Spotify tracks do. Code-only switch.
+    /// </summary>
+    internal static bool TidalEquivalentFallback { get; set; } = false;
 
     private static string GetTrackSubfolderPath(SongSearchObject song, string baseDirectory, string? trackWildcard)
     {
@@ -155,10 +162,11 @@ public sealed class DownloadService(SourceRegistry sources, EquivalentDownloader
     {
         using var operation = LogContext.PushProperty("OperationId", Guid.NewGuid().ToString("N"));
         var timer = Stopwatch.StartNew();
+        var trackProgress = new TrackDownloadProgress(progress);
         Log.Information("Track download started; provider {Provider}", song.Source);
         try
         {
-            var path = await DownloadTrackCore(song, directory, progress, callback);
+            var path = await DownloadTrackCore(song, directory, trackProgress, callback);
             if (!string.IsNullOrEmpty(path))
             {
                 Log.Information("Track download completed in {ElapsedMilliseconds} ms", timer.ElapsedMilliseconds);
@@ -175,12 +183,15 @@ public sealed class DownloadService(SourceRegistry sources, EquivalentDownloader
             Log.Error(ex, "Track download failed before completion after {ElapsedMilliseconds} ms", timer.ElapsedMilliseconds);
             throw;
         }
+        finally { trackProgress.Finish(); }
     }
 
     private async Task<string> DownloadTrackCore(SongSearchObject song, string directory, IProgress<ProgressData> progress, ConversionUpdateCallback? callback)
     {
-        // Spotify case (web player songs do not have full metadata)
-        if (song.Source == SourceIds.Spotify && (string.IsNullOrWhiteSpace(song.ReleaseDate) || string.IsNullOrWhiteSpace(song.TrackPosition))
+        // Spotify and YouTube search rows lack full metadata; TIDAL searches and playlists lack their track number.
+        if (((song.Source == SourceIds.Spotify && (string.IsNullOrWhiteSpace(song.ReleaseDate) || string.IsNullOrWhiteSpace(song.TrackPosition)))
+                || (song.Source == SourceIds.YouTube && string.IsNullOrWhiteSpace(song.ReleaseDate))
+                || song.Source == SourceIds.Tidal)
             && sources.TryGet<ICatalogSource>(song.Source, out var catalog))
         {
             song = await catalog.GetTrackAsync(song.Id) ?? song;
@@ -225,7 +236,23 @@ public sealed class DownloadService(SourceRegistry sources, EquivalentDownloader
         {
             try
             {
-                var resultPath = await equivalents.DownloadAsync(locationNoExt, song, progress, false, callback);
+                string? resultPath = null;
+                var direct = false;
+                if (song.Source == SourceIds.Tidal)
+                {
+                    try
+                    {
+                        resultPath = tidalDownloads != null
+                            ? await tidalDownloads.DownloadAsync(song.Id, locationNoExt, progress)
+                            : throw new Tidal.TidalDownloadUnavailableException("TIDAL downloads aren't available in this build.");
+                        direct = true;
+                    }
+                    catch (Tidal.TidalDownloadUnavailableException e) when (TidalEquivalentFallback)
+                    {
+                        Log.Information("TIDAL direct download unavailable; using an equivalent: {Reason}", e.Message);
+                    }
+                }
+                resultPath ??= await equivalents.DownloadAsync(locationNoExt, song, progress, false, callback);
 
                 if (resultPath != null)
                 {
@@ -234,6 +261,7 @@ public sealed class DownloadService(SourceRegistry sources, EquivalentDownloader
                         await tagger.WriteTagsAsync(resultPath, song);
                     }
                     downloadTcs.SetResult(true);
+                    if (direct) callback?.Invoke(StatusLevel.Success, song, resultPath);
                     return resultPath;
                 }
 
@@ -256,6 +284,18 @@ public sealed class DownloadService(SourceRegistry sources, EquivalentDownloader
 
     public async Task<string> DownloadObject(SongSearchObject song, string directory, IProgress<ProgressData> progress, ConversionUpdateCallback? callback = default)
     {
+        // Resolve a lightweight YouTube row before folder templates as well as the filename use its year.
+        if (song.Source == SourceIds.YouTube && string.IsNullOrWhiteSpace(song.ReleaseDate)
+            && sources.TryGet<ICatalogSource>(song.Source, out var youtubeCatalog))
+        {
+            try { song = await youtubeCatalog.GetTrackAsync(song.Id) ?? throw new InvalidOperationException("YouTube track metadata could not be loaded."); }
+            catch (Exception e)
+            {
+                Log.Error(e, "YouTube metadata lookup failed before download naming");
+                callback?.Invoke(StatusLevel.Error, song, e.Message);
+                return string.Empty;
+            }
+        }
         // Create file path
         bool createTrackSubfolder = await SettingsViewModel.GetSetting<bool>(SettingsViewModel.Subfolders);
         if (createTrackSubfolder)

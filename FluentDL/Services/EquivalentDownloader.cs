@@ -8,7 +8,8 @@ using FluentDL.Services.Sources;
 namespace FluentDL.Services;
 
 /// <summary>
-/// Downloads a track from a catalog-only source (Spotify) by finding the same track on a source that serves audio.
+/// Downloads a track from a catalog-only source (Spotify, TIDAL) by finding the same track on a source that serves
+/// audio. Both use Spotify's quality setting.
 /// The order and qualities are the old SpotifyApi.DownloadEquivalentTrack's, step by step:
 /// 1. Deezer, matched by ISRC only when strict, at MP3 320 or FLAC (spotify_quality).
 /// 2. Qobuz, matched the same way, at format 5 (MP3) or 6 (FLAC).

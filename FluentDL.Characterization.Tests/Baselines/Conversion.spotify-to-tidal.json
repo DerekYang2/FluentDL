@@ -1,0 +1,331 @@
+[
+  {
+    "Key": "get-lucky-album",
+    "OriginId": "69kOkLUCkxIZYexIgSG8rq",
+    "OriginIsrc": "",
+    "Result": {
+      "Source": "tidal",
+      "Id": "20115564",
+      "Title": "Get Lucky (feat. Pharrell Williams and Nile Rodgers)",
+      "Artists": "Daft Punk, Pharrell Williams, Nile Rodgers",
+      "AlbumName": "Random Access Memories",
+      "Isrc": "USQX91300108",
+      "Duration": "370",
+      "ReleaseDate": "2013-05-20",
+      "Explicit": false,
+      "TrackPosition": "1",
+      "ImageLocation": "https://resources.tidal.com/images/b66a5c40/c34d/4507/a0dc/5f98e46fdd20/320x320.jpg",
+      "AdditionalFieldKeys": [
+        "album_id",
+        "cover_max",
+        "max_quality"
+      ]
+    },
+    "Callbacks": [
+      {
+        "Severity": "Success",
+        "Song": {
+          "Source": "tidal",
+          "Id": "20115564",
+          "Title": "Get Lucky (feat. Pharrell Williams and Nile Rodgers)",
+          "Artists": "Daft Punk, Pharrell Williams, Nile Rodgers",
+          "AlbumName": "Random Access Memories",
+          "Isrc": "USQX91300108",
+          "Duration": "370",
+          "ReleaseDate": "2013-05-20",
+          "Explicit": false,
+          "TrackPosition": "1",
+          "ImageLocation": "https://resources.tidal.com/images/b66a5c40/c34d/4507/a0dc/5f98e46fdd20/320x320.jpg",
+          "AdditionalFieldKeys": [
+            "album_id",
+            "cover_max",
+            "max_quality"
+          ]
+        },
+        "Location": null
+      }
+    ]
+  },
+  {
+    "Key": "get-lucky-radio-edit",
+    "OriginId": "2Foc5Q5nqNiosCNqttzHof",
+    "OriginIsrc": "",
+    "Result": {
+      "Source": "tidal",
+      "Id": "19823990",
+      "Title": "Get Lucky (Radio Edit - feat. Pharrell Williams and Nile Rodgers)",
+      "Artists": "Daft Punk, Pharrell Williams, Nile Rodgers",
+      "AlbumName": "Get Lucky (Radio Edit - feat. Pharrell Williams and Nile Rodgers)",
+      "Isrc": "USQX91300809",
+      "Duration": "248",
+      "ReleaseDate": "2013-04-19",
+      "Explicit": false,
+      "TrackPosition": "1",
+      "ImageLocation": "https://resources.tidal.com/images/5b3c232a/c6c1/4f3d/b014/fe7f3a3d86a8/320x320.jpg",
+      "AdditionalFieldKeys": [
+        "album_id",
+        "cover_max",
+        "max_quality"
+      ]
+    },
+    "Callbacks": [
+      {
+        "Severity": "Success",
+        "Song": {
+          "Source": "tidal",
+          "Id": "19823990",
+          "Title": "Get Lucky (Radio Edit - feat. Pharrell Williams and Nile Rodgers)",
+          "Artists": "Daft Punk, Pharrell Williams, Nile Rodgers",
+          "AlbumName": "Get Lucky (Radio Edit - feat. Pharrell Williams and Nile Rodgers)",
+          "Isrc": "USQX91300809",
+          "Duration": "248",
+          "ReleaseDate": "2013-04-19",
+          "Explicit": false,
+          "TrackPosition": "1",
+          "ImageLocation": "https://resources.tidal.com/images/5b3c232a/c6c1/4f3d/b014/fe7f3a3d86a8/320x320.jpg",
+          "AdditionalFieldKeys": [
+            "album_id",
+            "cover_max",
+            "max_quality"
+          ]
+        },
+        "Location": null
+      }
+    ]
+  },
+  {
+    "Key": "beyonce-halo",
+    "OriginId": "4JehYebiI9JE8sR8MisGVb",
+    "OriginIsrc": "",
+    "Result": {
+      "Source": "tidal",
+      "Id": "17771055",
+      "Title": "Halo",
+      "Artists": "Beyoncé",
+      "AlbumName": "I AM...SASHA FIERCE",
+      "Isrc": "USSM10804556",
+      "Duration": "262",
+      "ReleaseDate": "2008-11-18",
+      "Explicit": false,
+      "TrackPosition": "1",
+      "ImageLocation": "https://resources.tidal.com/images/2d1308e1/b354/4b4b/8168/edaf576e0add/320x320.jpg",
+      "AdditionalFieldKeys": [
+        "album_id",
+        "cover_max",
+        "max_quality"
+      ]
+    },
+    "Callbacks": [
+      {
+        "Severity": "Success",
+        "Song": {
+          "Source": "tidal",
+          "Id": "17771055",
+          "Title": "Halo",
+          "Artists": "Beyoncé",
+          "AlbumName": "I AM...SASHA FIERCE",
+          "Isrc": "USSM10804556",
+          "Duration": "262",
+          "ReleaseDate": "2008-11-18",
+          "Explicit": false,
+          "TrackPosition": "1",
+          "ImageLocation": "https://resources.tidal.com/images/2d1308e1/b354/4b4b/8168/edaf576e0add/320x320.jpg",
+          "AdditionalFieldKeys": [
+            "album_id",
+            "cover_max",
+            "max_quality"
+          ]
+        },
+        "Location": null
+      }
+    ]
+  },
+  {
+    "Key": "yoasobi-yoru-ni-kakeru",
+    "OriginId": "3dPtXHP0oXQ4HCWHsOA9js",
+    "OriginIsrc": "",
+    "Result": {
+      "Source": "tidal",
+      "Id": "124449196",
+      "Title": "夜に駆ける",
+      "Artists": "YOASOBI",
+      "AlbumName": "夜に駆ける",
+      "Isrc": "JPP301900716",
+      "Duration": "261",
+      "ReleaseDate": "2019-12-15",
+      "Explicit": false,
+      "TrackPosition": "1",
+      "ImageLocation": "https://resources.tidal.com/images/e9875ece/8a93/48cd/815d/e8e7e89e03bf/320x320.jpg",
+      "AdditionalFieldKeys": [
+        "album_id",
+        "cover_max",
+        "max_quality"
+      ]
+    },
+    "Callbacks": [
+      {
+        "Severity": "Success",
+        "Song": {
+          "Source": "tidal",
+          "Id": "124449196",
+          "Title": "夜に駆ける",
+          "Artists": "YOASOBI",
+          "AlbumName": "夜に駆ける",
+          "Isrc": "JPP301900716",
+          "Duration": "261",
+          "ReleaseDate": "2019-12-15",
+          "Explicit": false,
+          "TrackPosition": "1",
+          "ImageLocation": "https://resources.tidal.com/images/e9875ece/8a93/48cd/815d/e8e7e89e03bf/320x320.jpg",
+          "AdditionalFieldKeys": [
+            "album_id",
+            "cover_max",
+            "max_quality"
+          ]
+        },
+        "Location": null
+      }
+    ]
+  },
+  {
+    "Key": "avicii-levels-original",
+    "OriginId": "6Xe9wT5xeZETPwtaP2ynUz",
+    "OriginIsrc": "",
+    "Result": {
+      "Source": "tidal",
+      "Id": "9184438",
+      "Title": "Levels (Original Version)",
+      "Artists": "Avicii",
+      "AlbumName": "Levels",
+      "Isrc": "SEUM71100961",
+      "Duration": "339",
+      "ReleaseDate": "2011-11-11",
+      "Explicit": false,
+      "TrackPosition": "1",
+      "ImageLocation": "https://resources.tidal.com/images/dcfadaed/5967/4387/ac67/5dc43fa758dc/320x320.jpg",
+      "AdditionalFieldKeys": [
+        "album_id",
+        "cover_max",
+        "max_quality"
+      ]
+    },
+    "Callbacks": [
+      {
+        "Severity": "Success",
+        "Song": {
+          "Source": "tidal",
+          "Id": "9184438",
+          "Title": "Levels (Original Version)",
+          "Artists": "Avicii",
+          "AlbumName": "Levels",
+          "Isrc": "SEUM71100961",
+          "Duration": "339",
+          "ReleaseDate": "2011-11-11",
+          "Explicit": false,
+          "TrackPosition": "1",
+          "ImageLocation": "https://resources.tidal.com/images/dcfadaed/5967/4387/ac67/5dc43fa758dc/320x320.jpg",
+          "AdditionalFieldKeys": [
+            "album_id",
+            "cover_max",
+            "max_quality"
+          ]
+        },
+        "Location": null
+      }
+    ]
+  },
+  {
+    "Key": "avicii-levels-skrillex-remix",
+    "OriginId": "5f6igUw1asUL4AGXSvgTW8",
+    "OriginIsrc": "",
+    "Result": {
+      "Source": "tidal",
+      "Id": "10917606",
+      "Title": "Levels (Skrillex Remix)",
+      "Artists": "Avicii",
+      "AlbumName": "Levels (Remixes)",
+      "Isrc": "SEUM71101146",
+      "Duration": "281",
+      "ReleaseDate": "2011-11-11",
+      "Explicit": false,
+      "TrackPosition": "1",
+      "ImageLocation": "https://resources.tidal.com/images/13dd0bd1/45d0/4986/95c0/6a22a476cefb/320x320.jpg",
+      "AdditionalFieldKeys": [
+        "album_id",
+        "cover_max",
+        "max_quality"
+      ]
+    },
+    "Callbacks": [
+      {
+        "Severity": "Success",
+        "Song": {
+          "Source": "tidal",
+          "Id": "10917606",
+          "Title": "Levels (Skrillex Remix)",
+          "Artists": "Avicii",
+          "AlbumName": "Levels (Remixes)",
+          "Isrc": "SEUM71101146",
+          "Duration": "281",
+          "ReleaseDate": "2011-11-11",
+          "Explicit": false,
+          "TrackPosition": "1",
+          "ImageLocation": "https://resources.tidal.com/images/13dd0bd1/45d0/4986/95c0/6a22a476cefb/320x320.jpg",
+          "AdditionalFieldKeys": [
+            "album_id",
+            "cover_max",
+            "max_quality"
+          ]
+        },
+        "Location": null
+      }
+    ]
+  },
+  {
+    "Key": "yo-yo-ma-bwv1007-prelude",
+    "OriginId": "17i5jLpzndlQhbS4SrTd0B",
+    "OriginIsrc": "",
+    "Result": {
+      "Source": "tidal",
+      "Id": "59531",
+      "Title": "Cello Suite No. 1 in G Major, BWV 1007: I. Prélude",
+      "Artists": "Yo-Yo Ma",
+      "AlbumName": "Bach: Cello Suites Nos. 1, 5 & 6",
+      "Isrc": "USSM18200515",
+      "Duration": "152",
+      "ReleaseDate": "1983-01-01",
+      "Explicit": false,
+      "TrackPosition": "1",
+      "ImageLocation": "https://resources.tidal.com/images/06461591/2711/49c4/ab55/e12b6bb7f51c/320x320.jpg",
+      "AdditionalFieldKeys": [
+        "album_id",
+        "cover_max",
+        "max_quality"
+      ]
+    },
+    "Callbacks": [
+      {
+        "Severity": "Success",
+        "Song": {
+          "Source": "tidal",
+          "Id": "59531",
+          "Title": "Cello Suite No. 1 in G Major, BWV 1007: I. Prélude",
+          "Artists": "Yo-Yo Ma",
+          "AlbumName": "Bach: Cello Suites Nos. 1, 5 & 6",
+          "Isrc": "USSM18200515",
+          "Duration": "152",
+          "ReleaseDate": "1983-01-01",
+          "Explicit": false,
+          "TrackPosition": "1",
+          "ImageLocation": "https://resources.tidal.com/images/06461591/2711/49c4/ab55/e12b6bb7f51c/320x320.jpg",
+          "AdditionalFieldKeys": [
+            "album_id",
+            "cover_max",
+            "max_quality"
+          ]
+        },
+        "Location": null
+      }
+    ]
+  }
+]

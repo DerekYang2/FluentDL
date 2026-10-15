@@ -23,6 +23,8 @@ public class PreviewPaneUiTests
         ("qobuz-album", "qobuz", $"https://open.qobuz.com/album/{Fixtures.QobuzAlbumId}", true),
         ("spotify-track", "spotify", $"https://open.spotify.com/track/{Fixtures.Tracks[0].SpotifyId}", false),
         // No Spotify album: the dev app uses the web player, and album links there load nothing (see the live link tests).
+        ("tidal-track", "tidal", $"https://tidal.com/track/{Fixtures.Tracks[0].TidalId}", false),
+        ("tidal-album", "tidal", "https://tidal.com/album/20115556", true), // Random Access Memories
     ];
 
     // Separate, because a YouTube link crashes the app while YouTube bot-checks this machine (bug 20).
