@@ -157,9 +157,20 @@ internal class DownloadProgressHelper
         lock (_progressDict) { _tracksCount = Math.Max(1, tracksCount); }
     }
 
+    /// <summary>
+    /// Never wider than "99.9%" with tabular digits, so the InfoBar doesn't grow late in a run: " 9.5%" starts with a
+    /// figure space (as wide as a digit), and the end shows "100%", which is narrower than "100.0%".
+    /// </summary>
+    internal static string FormatPercent(double percent) => percent switch
+    {
+        >= 99.95 => "100%",
+        < 9.95 => "\u2007" + Math.Max(percent, 0).ToString("0.0") + "%",
+        _ => percent.ToString("0.0") + "%",
+    };
+
     public string GenerateDisplayString(double percent, double? speedMBPS, string? status = null)
     {
-        string percentDisplay = status ?? percent.ToString("0.0") + "%"; // always one decimal, so the text keeps its length
+        string percentDisplay = status ?? FormatPercent(percent);
 
         string? speedDisplay = speedMBPS != null
             ? (speedMBPS >= 100
