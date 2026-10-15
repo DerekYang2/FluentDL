@@ -1,0 +1,62 @@
+{
+  "QobuzContributors": [
+    {
+      "Input": "Daft Punk, MainArtist - Pharrell Williams, FeaturedArtist - Nile Rodgers, FeaturedArtist, Composer - Thomas Bangalter, Producer",
+      "Artists": [
+        "Daft Punk",
+        "Nile Rodgers",
+        "Pharrell Williams"
+      ]
+    },
+    {
+      "Input": "Yo-Yo Ma, Performer - Johann Sebastian Bach, Composer",
+      "Artists": [
+        "Yo-Yo Ma"
+      ]
+    },
+    {
+      "Input": "Someone, Composer - Other, Lyricist",
+      "Artists": []
+    },
+    {
+      "Input": "",
+      "Artists": []
+    }
+  ],
+  "QobuzGenres": [
+    "Pop",
+    "Musiques du monde",
+    "Europe",
+    "Chanson française"
+  ],
+  "YoutubeLargeValues": [
+    {
+      "Input": 0,
+      "Output": "0"
+    },
+    {
+      "Input": 999,
+      "Output": "999"
+    },
+    {
+      "Input": 1000,
+      "Output": "1K"
+    },
+    {
+      "Input": 15400,
+      "Output": "15K"
+    },
+    {
+      "Input": 999999,
+      "Output": "1000K"
+    },
+    {
+      "Input": 1000000,
+      "Output": "1.0M"
+    },
+    {
+      "Input": 2345678901,
+      "Output": "2.35B"
+    }
+  ]
+}

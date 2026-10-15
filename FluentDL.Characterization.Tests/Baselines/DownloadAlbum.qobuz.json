@@ -1,0 +1,430 @@
+{
+  "Result": [
+    "Daft Punk - Random Access Memories [0886443927087]\\1. Daft Punk - Give Life Back to Music [USQX91300101].mp3",
+    "Daft Punk - Random Access Memories [0886443927087]\\10. Daft Punk - Motherboard [USQX91300110].mp3",
+    "Daft Punk - Random Access Memories [0886443927087]\\11. Daft Punk feat. Todd Edwards - Fragments of Time (feat. Todd Edwards) [USQX91300111].mp3",
+    "Daft Punk - Random Access Memories [0886443927087]\\12. Daft Punk feat. Panda Bear - Doin' it Right (feat. Panda Bear) [USQX91300112].mp3",
+    "Daft Punk - Random Access Memories [0886443927087]\\13. Daft Punk - Contact [USQX91300113].mp3",
+    "Daft Punk - Random Access Memories [0886443927087]\\2. Daft Punk - The Game of Love [USQX91300102].mp3",
+    "Daft Punk - Random Access Memories [0886443927087]\\3. Daft Punk - Giorgio by Moroder [USQX91300103].mp3",
+    "Daft Punk - Random Access Memories [0886443927087]\\4. Daft Punk - Within [USQX91300104].mp3",
+    "Daft Punk - Random Access Memories [0886443927087]\\5. Daft Punk feat. Julian Casablancas - Instant Crush (feat. Julian Casablancas) [USQX91300105].mp3",
+    "Daft Punk - Random Access Memories [0886443927087]\\6. Daft Punk feat. Pharrell Williams - Lose Yourself to Dance (feat. Pharrell Williams) [USQX91300106].mp3",
+    "Daft Punk - Random Access Memories [0886443927087]\\7. Daft Punk feat. Paul Williams - Touch (feat. Paul Williams) [USQX91300107].mp3",
+    "Daft Punk - Random Access Memories [0886443927087]\\8. Daft Punk feat. Pharrell Williams - Get Lucky (feat. Pharrell Williams and Nile Rodgers) [USQX91300108].mp3",
+    "Daft Punk - Random Access Memories [0886443927087]\\9. Daft Punk - Beyond [USQX91300109].mp3"
+  ],
+  "Reports": [
+    {
+      "Level": "Success",
+      "Song": "9140024",
+      "Location": "Daft Punk - Random Access Memories [0886443927087]\\1. Daft Punk - Give Life Back to Music [USQX91300101].mp3"
+    },
+    {
+      "Level": "Success",
+      "Song": "9140025",
+      "Location": "Daft Punk - Random Access Memories [0886443927087]\\2. Daft Punk - The Game of Love [USQX91300102].mp3"
+    },
+    {
+      "Level": "Success",
+      "Song": "9140026",
+      "Location": "Daft Punk - Random Access Memories [0886443927087]\\3. Daft Punk - Giorgio by Moroder [USQX91300103].mp3"
+    },
+    {
+      "Level": "Success",
+      "Song": "9140027",
+      "Location": "Daft Punk - Random Access Memories [0886443927087]\\4. Daft Punk - Within [USQX91300104].mp3"
+    },
+    {
+      "Level": "Success",
+      "Song": "9140028",
+      "Location": "Daft Punk - Random Access Memories [0886443927087]\\5. Daft Punk feat. Julian Casablancas - Instant Crush (feat. Julian Casablancas) [USQX91300105].mp3"
+    },
+    {
+      "Level": "Success",
+      "Song": "9140029",
+      "Location": "Daft Punk - Random Access Memories [0886443927087]\\6. Daft Punk feat. Pharrell Williams - Lose Yourself to Dance (feat. Pharrell Williams) [USQX91300106].mp3"
+    },
+    {
+      "Level": "Success",
+      "Song": "9140030",
+      "Location": "Daft Punk - Random Access Memories [0886443927087]\\7. Daft Punk feat. Paul Williams - Touch (feat. Paul Williams) [USQX91300107].mp3"
+    },
+    {
+      "Level": "Success",
+      "Song": "9140031",
+      "Location": "Daft Punk - Random Access Memories [0886443927087]\\8. Daft Punk feat. Pharrell Williams - Get Lucky (feat. Pharrell Williams and Nile Rodgers) [USQX91300108].mp3"
+    },
+    {
+      "Level": "Success",
+      "Song": "9140032",
+      "Location": "Daft Punk - Random Access Memories [0886443927087]\\9. Daft Punk - Beyond [USQX91300109].mp3"
+    },
+    {
+      "Level": "Success",
+      "Song": "9140033",
+      "Location": "Daft Punk - Random Access Memories [0886443927087]\\10. Daft Punk - Motherboard [USQX91300110].mp3"
+    },
+    {
+      "Level": "Success",
+      "Song": "9140034",
+      "Location": "Daft Punk - Random Access Memories [0886443927087]\\11. Daft Punk feat. Todd Edwards - Fragments of Time (feat. Todd Edwards) [USQX91300111].mp3"
+    },
+    {
+      "Level": "Success",
+      "Song": "9140035",
+      "Location": "Daft Punk - Random Access Memories [0886443927087]\\12. Daft Punk feat. Panda Bear - Doin' it Right (feat. Panda Bear) [USQX91300112].mp3"
+    },
+    {
+      "Level": "Success",
+      "Song": "9140036",
+      "Location": "Daft Punk - Random Access Memories [0886443927087]\\13. Daft Punk - Contact [USQX91300113].mp3"
+    }
+  ],
+  "Files": [
+    {
+      "Name": "Daft Punk - Random Access Memories [0886443927087]\\1. Daft Punk - Give Life Back to Music [USQX91300101].mp3",
+      "Size": "1 to 5 MB",
+      "Tags": {
+        "Title": "Give Life Back to Music",
+        "Performers": [
+          "Daft Punk"
+        ],
+        "AlbumArtists": [
+          "Daft Punk"
+        ],
+        "Album": "Random Access Memories",
+        "Track": 1,
+        "TrackCount": 13,
+        "Disc": 0,
+        "Year": 2023,
+        "ISRC": "USQX91300101",
+        "Genres": [
+          "Électronique"
+        ],
+        "HasCover": true,
+        "DurationSeconds": 30,
+        "MimeType": "taglib/mp3"
+      }
+    },
+    {
+      "Name": "Daft Punk - Random Access Memories [0886443927087]\\10. Daft Punk - Motherboard [USQX91300110].mp3",
+      "Size": "1 to 5 MB",
+      "Tags": {
+        "Title": "Motherboard",
+        "Performers": [
+          "Daft Punk"
+        ],
+        "AlbumArtists": [
+          "Daft Punk"
+        ],
+        "Album": "Random Access Memories",
+        "Track": 10,
+        "TrackCount": 13,
+        "Disc": 0,
+        "Year": 2023,
+        "ISRC": "USQX91300110",
+        "Genres": [
+          "Électronique"
+        ],
+        "HasCover": true,
+        "DurationSeconds": 30,
+        "MimeType": "taglib/mp3"
+      }
+    },
+    {
+      "Name": "Daft Punk - Random Access Memories [0886443927087]\\11. Daft Punk feat. Todd Edwards - Fragments of Time (feat. Todd Edwards) [USQX91300111].mp3",
+      "Size": "1 to 5 MB",
+      "Tags": {
+        "Title": "Fragments of Time (feat. Todd Edwards)",
+        "Performers": [
+          "Daft Punk feat. Todd Edwards"
+        ],
+        "AlbumArtists": [
+          "Daft Punk"
+        ],
+        "Album": "Random Access Memories",
+        "Track": 11,
+        "TrackCount": 13,
+        "Disc": 0,
+        "Year": 2023,
+        "ISRC": "USQX91300111",
+        "Genres": [
+          "Électronique"
+        ],
+        "HasCover": true,
+        "DurationSeconds": 30,
+        "MimeType": "taglib/mp3"
+      }
+    },
+    {
+      "Name": "Daft Punk - Random Access Memories [0886443927087]\\12. Daft Punk feat. Panda Bear - Doin' it Right (feat. Panda Bear) [USQX91300112].mp3",
+      "Size": "1 to 5 MB",
+      "Tags": {
+        "Title": "Doin' it Right (feat. Panda Bear)",
+        "Performers": [
+          "Daft Punk feat. Panda Bear"
+        ],
+        "AlbumArtists": [
+          "Daft Punk"
+        ],
+        "Album": "Random Access Memories",
+        "Track": 12,
+        "TrackCount": 13,
+        "Disc": 0,
+        "Year": 2023,
+        "ISRC": "USQX91300112",
+        "Genres": [
+          "Électronique"
+        ],
+        "HasCover": true,
+        "DurationSeconds": 30,
+        "MimeType": "taglib/mp3"
+      }
+    },
+    {
+      "Name": "Daft Punk - Random Access Memories [0886443927087]\\13. Daft Punk - Contact [USQX91300113].mp3",
+      "Size": "1 to 5 MB",
+      "Tags": {
+        "Title": "Contact",
+        "Performers": [
+          "Daft Punk"
+        ],
+        "AlbumArtists": [
+          "Daft Punk"
+        ],
+        "Album": "Random Access Memories",
+        "Track": 13,
+        "TrackCount": 13,
+        "Disc": 0,
+        "Year": 2023,
+        "ISRC": "USQX91300113",
+        "Genres": [
+          "Électronique"
+        ],
+        "HasCover": true,
+        "DurationSeconds": 30,
+        "MimeType": "taglib/mp3"
+      }
+    },
+    {
+      "Name": "Daft Punk - Random Access Memories [0886443927087]\\2. Daft Punk - The Game of Love [USQX91300102].mp3",
+      "Size": "1 to 5 MB",
+      "Tags": {
+        "Title": "The Game of Love",
+        "Performers": [
+          "Daft Punk"
+        ],
+        "AlbumArtists": [
+          "Daft Punk"
+        ],
+        "Album": "Random Access Memories",
+        "Track": 2,
+        "TrackCount": 13,
+        "Disc": 0,
+        "Year": 2023,
+        "ISRC": "USQX91300102",
+        "Genres": [
+          "Électronique"
+        ],
+        "HasCover": true,
+        "DurationSeconds": 30,
+        "MimeType": "taglib/mp3"
+      }
+    },
+    {
+      "Name": "Daft Punk - Random Access Memories [0886443927087]\\3. Daft Punk - Giorgio by Moroder [USQX91300103].mp3",
+      "Size": "1 to 5 MB",
+      "Tags": {
+        "Title": "Giorgio by Moroder",
+        "Performers": [
+          "Daft Punk"
+        ],
+        "AlbumArtists": [
+          "Daft Punk"
+        ],
+        "Album": "Random Access Memories",
+        "Track": 3,
+        "TrackCount": 13,
+        "Disc": 0,
+        "Year": 2023,
+        "ISRC": "USQX91300103",
+        "Genres": [
+          "Électronique"
+        ],
+        "HasCover": true,
+        "DurationSeconds": 30,
+        "MimeType": "taglib/mp3"
+      }
+    },
+    {
+      "Name": "Daft Punk - Random Access Memories [0886443927087]\\4. Daft Punk - Within [USQX91300104].mp3",
+      "Size": "1 to 5 MB",
+      "Tags": {
+        "Title": "Within",
+        "Performers": [
+          "Daft Punk"
+        ],
+        "AlbumArtists": [
+          "Daft Punk"
+        ],
+        "Album": "Random Access Memories",
+        "Track": 4,
+        "TrackCount": 13,
+        "Disc": 0,
+        "Year": 2013,
+        "ISRC": "USQX91300104",
+        "Genres": [
+          "Électronique"
+        ],
+        "HasCover": true,
+        "DurationSeconds": 30,
+        "MimeType": "taglib/mp3"
+      }
+    },
+    {
+      "Name": "Daft Punk - Random Access Memories [0886443927087]\\5. Daft Punk feat. Julian Casablancas - Instant Crush (feat. Julian Casablancas) [USQX91300105].mp3",
+      "Size": "1 to 5 MB",
+      "Tags": {
+        "Title": "Instant Crush (feat. Julian Casablancas)",
+        "Performers": [
+          "Daft Punk feat. Julian Casablancas"
+        ],
+        "AlbumArtists": [
+          "Daft Punk"
+        ],
+        "Album": "Random Access Memories",
+        "Track": 5,
+        "TrackCount": 13,
+        "Disc": 0,
+        "Year": 2023,
+        "ISRC": "USQX91300105",
+        "Genres": [
+          "Électronique"
+        ],
+        "HasCover": true,
+        "DurationSeconds": 30,
+        "MimeType": "taglib/mp3"
+      }
+    },
+    {
+      "Name": "Daft Punk - Random Access Memories [0886443927087]\\6. Daft Punk feat. Pharrell Williams - Lose Yourself to Dance (feat. Pharrell Williams) [USQX91300106].mp3",
+      "Size": "1 to 5 MB",
+      "Tags": {
+        "Title": "Lose Yourself to Dance (feat. Pharrell Williams)",
+        "Performers": [
+          "Daft Punk feat. Pharrell Williams"
+        ],
+        "AlbumArtists": [
+          "Daft Punk"
+        ],
+        "Album": "Random Access Memories",
+        "Track": 6,
+        "TrackCount": 13,
+        "Disc": 0,
+        "Year": 2023,
+        "ISRC": "USQX91300106",
+        "Genres": [
+          "Électronique"
+        ],
+        "HasCover": true,
+        "DurationSeconds": 30,
+        "MimeType": "taglib/mp3"
+      }
+    },
+    {
+      "Name": "Daft Punk - Random Access Memories [0886443927087]\\7. Daft Punk feat. Paul Williams - Touch (feat. Paul Williams) [USQX91300107].mp3",
+      "Size": "1 to 5 MB",
+      "Tags": {
+        "Title": "Touch (feat. Paul Williams)",
+        "Performers": [
+          "Daft Punk feat. Paul Williams"
+        ],
+        "AlbumArtists": [
+          "Daft Punk"
+        ],
+        "Album": "Random Access Memories",
+        "Track": 7,
+        "TrackCount": 13,
+        "Disc": 0,
+        "Year": 2023,
+        "ISRC": "USQX91300107",
+        "Genres": [
+          "Électronique"
+        ],
+        "HasCover": true,
+        "DurationSeconds": 30,
+        "MimeType": "taglib/mp3"
+      }
+    },
+    {
+      "Name": "Daft Punk - Random Access Memories [0886443927087]\\8. Daft Punk feat. Pharrell Williams - Get Lucky (feat. Pharrell Williams and Nile Rodgers) [USQX91300108].mp3",
+      "Size": "1 to 5 MB",
+      "Tags": {
+        "Title": "Get Lucky (feat. Pharrell Williams and Nile Rodgers)",
+        "Performers": [
+          "Daft Punk feat. Pharrell Williams"
+        ],
+        "AlbumArtists": [
+          "Daft Punk"
+        ],
+        "Album": "Random Access Memories",
+        "Track": 8,
+        "TrackCount": 13,
+        "Disc": 0,
+        "Year": 2023,
+        "ISRC": "USQX91300108",
+        "Genres": [
+          "Électronique"
+        ],
+        "HasCover": true,
+        "DurationSeconds": 30,
+        "MimeType": "taglib/mp3"
+      }
+    },
+    {
+      "Name": "Daft Punk - Random Access Memories [0886443927087]\\9. Daft Punk - Beyond [USQX91300109].mp3",
+      "Size": "1 to 5 MB",
+      "Tags": {
+        "Title": "Beyond",
+        "Performers": [
+          "Daft Punk"
+        ],
+        "AlbumArtists": [
+          "Daft Punk"
+        ],
+        "Album": "Random Access Memories",
+        "Track": 9,
+        "TrackCount": 13,
+        "Disc": 0,
+        "Year": 2023,
+        "ISRC": "USQX91300109",
+        "Genres": [
+          "Électronique"
+        ],
+        "HasCover": true,
+        "DurationSeconds": 30,
+        "MimeType": "taglib/mp3"
+      }
+    },
+    {
+      "Name": "Daft Punk - Random Access Memories [0886443927087]\\cover.jpg",
+      "Size": "under 100 KB",
+      "Tags": {
+        "Title": null,
+        "Performers": [],
+        "AlbumArtists": [],
+        "Album": null,
+        "Track": 0,
+        "TrackCount": 0,
+        "Disc": 0,
+        "Year": 0,
+        "ISRC": null,
+        "Genres": [],
+        "HasCover": false,
+        "DurationSeconds": 0,
+        "MimeType": "taglib/jpg"
+      }
+    }
+  ]
+}

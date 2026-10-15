@@ -1,0 +1,148 @@
+{
+  "NavigationItems": [
+    "Search",
+    "Local Explorer",
+    "Queue",
+    "Settings"
+  ],
+  "SourcePickerOnFirstStart": [
+    {
+      "Name": "Deezer",
+      "Selected": true
+    },
+    {
+      "Name": "Qobuz",
+      "Selected": false
+    },
+    {
+      "Name": "Spotify",
+      "Selected": false
+    },
+    {
+      "Name": "YouTube",
+      "Selected": false
+    }
+  ],
+  "Searches": [
+    {
+      "Source": "Deezer",
+      "Results": "Add 20 to queue",
+      "VisibleSourceBadges": [
+        "deezer"
+      ]
+    },
+    {
+      "Source": "Qobuz",
+      "Results": "Add 20 to queue",
+      "VisibleSourceBadges": [
+        "qobuz"
+      ]
+    },
+    {
+      "Source": "Spotify",
+      "Results": "Add 20 to queue",
+      "VisibleSourceBadges": [
+        "spotify"
+      ]
+    },
+    {
+      "Source": "YouTube",
+      "Results": "between 1 and 10",
+      "VisibleSourceBadges": [
+        "youtube"
+      ]
+    }
+  ],
+  "QueueCountEqualsAddedResults": true,
+  "ConversionDialog": {
+    "Inputs": [
+      {
+        "Name": "Deezer",
+        "Checked": true,
+        "Enabled": true
+      },
+      {
+        "Name": "Qobuz",
+        "Checked": false,
+        "Enabled": false
+      },
+      {
+        "Name": "Spotify",
+        "Checked": false,
+        "Enabled": false
+      },
+      {
+        "Name": "YouTube",
+        "Checked": true,
+        "Enabled": true
+      },
+      {
+        "Name": "Local",
+        "Checked": false,
+        "Enabled": false
+      }
+    ],
+    "Outputs": [
+      "Deezer",
+      "Qobuz",
+      "Spotify",
+      "YouTube",
+      "Local"
+    ],
+    "SelectedOutput": null,
+    "CloseButton": "Close"
+  },
+  "ClearDialog": {
+    "Options": [
+      {
+        "Name": "Select all",
+        "Checked": true,
+        "Enabled": true
+      },
+      {
+        "Name": "Deezer",
+        "Checked": true,
+        "Enabled": true
+      },
+      {
+        "Name": "Qobuz",
+        "Checked": true,
+        "Enabled": true
+      },
+      {
+        "Name": "Spotify",
+        "Checked": true,
+        "Enabled": true
+      },
+      {
+        "Name": "YouTube",
+        "Checked": true,
+        "Enabled": true
+      },
+      {
+        "Name": "Local",
+        "Checked": true,
+        "Enabled": true
+      }
+    ],
+    "CloseButton": "Cancel"
+  },
+  "SourcePickerAfterRestart": [
+    {
+      "Name": "Deezer",
+      "Selected": false
+    },
+    {
+      "Name": "Qobuz",
+      "Selected": false
+    },
+    {
+      "Name": "Spotify",
+      "Selected": false
+    },
+    {
+      "Name": "YouTube",
+      "Selected": true
+    }
+  ]
+}

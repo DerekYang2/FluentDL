@@ -2,6 +2,7 @@ using System.Reflection;
 using System.Windows.Input;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using FluentDL.Core.Sources;
 using FluentDL.Contracts.Services;
 using FluentDL.Core.Services;
 using FluentDL.Core.Contracts.Services;
@@ -19,23 +20,23 @@ public partial class SettingsViewModel : ObservableRecipient
 {
     public static readonly string
         FirstRun = "first_run",
-        SpotifyClientId = "spotify_client_Id",
-        SpotifyClientSecret = "spotify_client_secret",
-        DeezerARL = "deezer_arl",
-        QobuzId = "qobuz_id",
-        QobuzToken = "qobuz_token",
+        SpotifyClientId = SettingKeys.SpotifyClientId,
+        SpotifyClientSecret = SettingKeys.SpotifyClientSecret,
+        DeezerARL = SettingKeys.DeezerArl,
+        QobuzId = SettingKeys.QobuzId,
+        QobuzToken = SettingKeys.QobuzToken,
         QobuzEmail = "qobuz_email",
         QobuzPassword = "qobuz_password",
-        QobuzAppId = "qobuz_app_id",
-        QobuzAppSecret = "qobuz_app_secret",
+        QobuzAppId = SettingKeys.QobuzAppId,
+        QobuzAppSecret = SettingKeys.QobuzAppSecret,
         SearchSource = "search_source",
         DownloadDirectory = "download_directory",
         AskBeforeDownload = "ask_before_download",
-        DeezerQuality = "deezer_quality",
-        QobuzQuality = "qobuz_quality",
-        SpotifyQuality = "spotify_quality",
-        YoutubeQuality = "youtube_quality",
-        Overwrite = "overwrite",
+        DeezerQuality = SettingKeys.DeezerQuality,
+        QobuzQuality = SettingKeys.QobuzQuality,
+        SpotifyQuality = SettingKeys.SpotifyQuality,
+        YoutubeQuality = SettingKeys.YoutubeQuality,
+        Overwrite = SettingKeys.Overwrite,
         CommandThreads = "command_threads",
         ConversionThreads = "conversion_threads",
         AudioConversionThreads = "audio_conversion_threads",
@@ -43,7 +44,7 @@ public partial class SettingsViewModel : ObservableRecipient
         AutoPlay = "auto_play",
         PreviewPlayerVolume = "preview_player_volume",
         NotifyUpdate = "notify_update",
-        SpotifyPlaylistPrompt = "spotify_playlist_prompt",
+        SpotifyPlaylistPrompt = SettingKeys.SpotifyPlaylistPrompt,
         DownloadLyrics = "download_lyrics",
         LyricsPreference = "lyrics_preference",
         LyricsExtension = "lyrics_extension",
@@ -65,8 +66,8 @@ public partial class SettingsViewModel : ObservableRecipient
         QueueRemoveChecked = "queue_remove_checked";
 
     public static readonly string FFmpegPath = "ffmpeg_path",
-        YtdlpPath = "ytdlp_path",
-        UseYtdlp = "use_ytdlp",
+        YtdlpPath = SettingKeys.YtdlpPath,
+        UseYtdlp = SettingKeys.UseYtdlp,
         AutoUpdateYtdlp = "auto_update_ytdlp";
 
     // Subfolder settings
@@ -90,7 +91,9 @@ public partial class SettingsViewModel : ObservableRecipient
         AlbumSubfolderWildcard = "album_subfolder_wildcard",
         FileWildcard = "file_naming_wildcard";
 
-    private static ILocalSettingsService localSettings = App.GetService<ILocalSettingsService>();
+    // The same service App registers, through SourceServices, so code that reads settings (downloads, lyrics) also
+    // runs in the characterization test host, which supplies its own settings store.
+    private static ILocalSettingsService localSettings => SourceServices.Settings;
 
     private readonly IThemeSelectorService _themeSelectorService;
 
@@ -107,7 +110,7 @@ public partial class SettingsViewModel : ObservableRecipient
 
     public string SpotifyCallbackUri
     {
-        get => FluentDL.Services.SpotifyApi.GetCallbackUri();
+        get => FluentDL.Services.Sources.SpotifySource.GetCallbackUri();
     }
 
     public SettingsViewModel(IThemeSelectorService themeSelectorService, QueueDisplaySettings queueDisplay)
@@ -174,7 +177,7 @@ public partial class SettingsViewModel : ObservableRecipient
         await SaveSettingsAsyncIfNull<bool?>(Subfolders, false);
         await SaveSettingsAsyncIfNull<bool?>(AlbumSubfolders, true);
         await SaveSettingsAsyncIfNull<bool?>(DownloadAlbumCoverArt, true);
-        await SaveSettingsAsyncIfNull<string?>(SearchSource, "deezer");
+        await SaveSettingsAsyncIfNull<string?>(SearchSource, SourceIds.Deezer);
         await SaveSettingsAsyncIfNull<bool?>(SearchAddChecked, false);
         await SaveSettingsAsyncIfNull<bool?>(SearchShareChecked, false);
         await SaveSettingsAsyncIfNull<bool?>(SearchOpenChecked, false);

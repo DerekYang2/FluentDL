@@ -1,0 +1,329 @@
+[
+  {
+    "Key": "get-lucky-album",
+    "OriginId": "4D7u5KF7SP8",
+    "OriginIsrc": null,
+    "Result": {
+      "Source": "deezer",
+      "Id": "67238735",
+      "Title": "Get Lucky (feat. Pharrell Williams and Nile Rodgers)",
+      "Artists": "Daft Punk, Pharrell Williams, Nile Rodgers",
+      "AlbumName": "Random Access Memories",
+      "Isrc": "USQX91300108",
+      "Duration": "367",
+      "ReleaseDate": "2013-05-20",
+      "Explicit": false,
+      "TrackPosition": "8",
+      "ImageLocation": "https://api.deezer.com/album/6575789/image",
+      "AdditionalFieldKeys": [
+        "preview"
+      ]
+    },
+    "Callbacks": [
+      {
+        "Severity": "Warning",
+        "Song": {
+          "Source": "deezer",
+          "Id": "67238735",
+          "Title": "Get Lucky (feat. Pharrell Williams and Nile Rodgers)",
+          "Artists": "Daft Punk, Pharrell Williams, Nile Rodgers",
+          "AlbumName": "Random Access Memories",
+          "Isrc": "USQX91300108",
+          "Duration": "367",
+          "ReleaseDate": "2013-05-20",
+          "Explicit": false,
+          "TrackPosition": "8",
+          "ImageLocation": "https://api.deezer.com/album/6575789/image",
+          "AdditionalFieldKeys": [
+            "preview"
+          ]
+        },
+        "Location": null
+      }
+    ]
+  },
+  {
+    "Key": "get-lucky-radio-edit",
+    "OriginId": "Rgrt_8mXrK8",
+    "OriginIsrc": null,
+    "Result": {
+      "Source": "deezer",
+      "Id": "66609426",
+      "Title": "Get Lucky (Radio Edit - feat. Pharrell Williams and Nile Rodgers)",
+      "Artists": "Daft Punk, Pharrell Williams, Nile Rodgers",
+      "AlbumName": "Get Lucky (Radio Edit - feat. Pharrell Williams and Nile Rodgers)",
+      "Isrc": "USQX91300809",
+      "Duration": "248",
+      "ReleaseDate": "2013-04-19",
+      "Explicit": false,
+      "TrackPosition": "1",
+      "ImageLocation": "https://api.deezer.com/album/6516139/image",
+      "AdditionalFieldKeys": [
+        "preview"
+      ]
+    },
+    "Callbacks": [
+      {
+        "Severity": "Warning",
+        "Song": {
+          "Source": "deezer",
+          "Id": "66609426",
+          "Title": "Get Lucky (Radio Edit - feat. Pharrell Williams and Nile Rodgers)",
+          "Artists": "Daft Punk, Pharrell Williams, Nile Rodgers",
+          "AlbumName": "Get Lucky (Radio Edit - feat. Pharrell Williams and Nile Rodgers)",
+          "Isrc": "USQX91300809",
+          "Duration": "248",
+          "ReleaseDate": "2013-04-19",
+          "Explicit": false,
+          "TrackPosition": "1",
+          "ImageLocation": "https://api.deezer.com/album/6516139/image",
+          "AdditionalFieldKeys": [
+            "preview"
+          ]
+        },
+        "Location": null
+      }
+    ]
+  },
+  {
+    "Key": "beyonce-halo",
+    "OriginId": "-3Wt6wwlmC8",
+    "OriginIsrc": null,
+    "Result": {
+      "Source": "deezer",
+      "Id": "2485108",
+      "Title": "Halo",
+      "Artists": "Beyoncé",
+      "AlbumName": "I AM...SASHA FIERCE",
+      "Isrc": "USSM10804556",
+      "Duration": "262",
+      "ReleaseDate": "2008-11-14",
+      "Explicit": false,
+      "TrackPosition": "2",
+      "ImageLocation": "https://api.deezer.com/album/244223/image",
+      "AdditionalFieldKeys": [
+        "preview"
+      ]
+    },
+    "Callbacks": [
+      {
+        "Severity": "Warning",
+        "Song": {
+          "Source": "deezer",
+          "Id": "2485108",
+          "Title": "Halo",
+          "Artists": "Beyoncé",
+          "AlbumName": "I AM...SASHA FIERCE",
+          "Isrc": "USSM10804556",
+          "Duration": "262",
+          "ReleaseDate": "2008-11-14",
+          "Explicit": false,
+          "TrackPosition": "2",
+          "ImageLocation": "https://api.deezer.com/album/244223/image",
+          "AdditionalFieldKeys": [
+            "preview"
+          ]
+        },
+        "Location": null
+      }
+    ]
+  },
+  {
+    "Key": "yoasobi-yoru-ni-kakeru",
+    "OriginId": "by4SYYWlhEs",
+    "OriginIsrc": null,
+    "Result": {
+      "Source": "deezer",
+      "Id": "824731152",
+      "Title": "夜に駆ける",
+      "Artists": "YOASOBI",
+      "AlbumName": "夜に駆ける",
+      "Isrc": "JPP301900716",
+      "Duration": "261",
+      "ReleaseDate": "2019-12-15",
+      "Explicit": false,
+      "TrackPosition": "1",
+      "ImageLocation": "https://api.deezer.com/album/121611042/image",
+      "AdditionalFieldKeys": [
+        "preview"
+      ]
+    },
+    "Callbacks": [
+      {
+        "Severity": "Warning",
+        "Song": {
+          "Source": "deezer",
+          "Id": "824731152",
+          "Title": "夜に駆ける",
+          "Artists": "YOASOBI",
+          "AlbumName": "夜に駆ける",
+          "Isrc": "JPP301900716",
+          "Duration": "261",
+          "ReleaseDate": "2019-12-15",
+          "Explicit": false,
+          "TrackPosition": "1",
+          "ImageLocation": "https://api.deezer.com/album/121611042/image",
+          "AdditionalFieldKeys": [
+            "preview"
+          ]
+        },
+        "Location": null
+      }
+    ]
+  },
+  {
+    "Key": "avicii-levels-original",
+    "OriginId": "wDuoOapZ9Z0",
+    "OriginIsrc": null,
+    "Result": {
+      "Source": "deezer",
+      "Id": "14383880",
+      "Title": "Levels (Radio Edit)",
+      "Artists": "Avicii",
+      "AlbumName": "Levels",
+      "Isrc": "SEUM71100962",
+      "Duration": "199",
+      "ReleaseDate": "2011-10-31",
+      "Explicit": false,
+      "TrackPosition": "1",
+      "ImageLocation": "https://api.deezer.com/album/1318964/image",
+      "AdditionalFieldKeys": [
+        "preview"
+      ]
+    },
+    "Callbacks": [
+      {
+        "Severity": "Warning",
+        "Song": {
+          "Source": "deezer",
+          "Id": "14383880",
+          "Title": "Levels (Radio Edit)",
+          "Artists": "Avicii",
+          "AlbumName": "Levels",
+          "Isrc": "SEUM71100962",
+          "Duration": "199",
+          "ReleaseDate": "2011-10-31",
+          "Explicit": false,
+          "TrackPosition": "1",
+          "ImageLocation": "https://api.deezer.com/album/1318964/image",
+          "AdditionalFieldKeys": [
+            "preview"
+          ]
+        },
+        "Location": null
+      }
+    ]
+  },
+  {
+    "Key": "avicii-levels-skrillex-remix",
+    "OriginId": "u6cdQFpP88w",
+    "OriginIsrc": null,
+    "Result": {
+      "Source": "deezer",
+      "Id": "15421140",
+      "Title": "Levels (Skrillex Remix)",
+      "Artists": "Avicii, Skrillex",
+      "AlbumName": "Levels (Remixes)",
+      "Isrc": "SEUM71101146",
+      "Duration": "281",
+      "ReleaseDate": "2011-12-19",
+      "Explicit": false,
+      "TrackPosition": "1",
+      "ImageLocation": "https://api.deezer.com/album/1424066/image",
+      "AdditionalFieldKeys": [
+        "preview"
+      ]
+    },
+    "Callbacks": [
+      {
+        "Severity": "Warning",
+        "Song": {
+          "Source": "deezer",
+          "Id": "15421140",
+          "Title": "Levels (Skrillex Remix)",
+          "Artists": "Avicii, Skrillex",
+          "AlbumName": "Levels (Remixes)",
+          "Isrc": "SEUM71101146",
+          "Duration": "281",
+          "ReleaseDate": "2011-12-19",
+          "Explicit": false,
+          "TrackPosition": "1",
+          "ImageLocation": "https://api.deezer.com/album/1424066/image",
+          "AdditionalFieldKeys": [
+            "preview"
+          ]
+        },
+        "Location": null
+      }
+    ]
+  },
+  {
+    "Key": "yo-yo-ma-bwv1007-prelude",
+    "OriginId": "noW9fM9vgJs",
+    "OriginIsrc": null,
+    "Result": {
+      "Source": "deezer",
+      "Id": "584661",
+      "Title": "Cello Suite No. 1 in G Major, BWV 1007: I. Prélude",
+      "Artists": "Yo-Yo Ma",
+      "AlbumName": "Bach: Cello Suites Nos. 1-6, BWV 1007-1012",
+      "Isrc": "USSM18200515",
+      "Duration": "146",
+      "ReleaseDate": "2006-06-09",
+      "Explicit": false,
+      "TrackPosition": "1",
+      "ImageLocation": "https://api.deezer.com/album/75158/image",
+      "AdditionalFieldKeys": [
+        "preview"
+      ]
+    },
+    "Callbacks": [
+      {
+        "Severity": "Warning",
+        "Song": {
+          "Source": "deezer",
+          "Id": "584661",
+          "Title": "Cello Suite No. 1 in G Major, BWV 1007: I. Prélude",
+          "Artists": "Yo-Yo Ma",
+          "AlbumName": "Bach: Cello Suites Nos. 1-6, BWV 1007-1012",
+          "Isrc": "USSM18200515",
+          "Duration": "146",
+          "ReleaseDate": "2006-06-09",
+          "Explicit": false,
+          "TrackPosition": "1",
+          "ImageLocation": "https://api.deezer.com/album/75158/image",
+          "AdditionalFieldKeys": [
+            "preview"
+          ]
+        },
+        "Location": null
+      }
+    ]
+  },
+  {
+    "Key": "youtube-only-me-at-the-zoo",
+    "OriginId": "jNQXAC9IVRw",
+    "OriginIsrc": null,
+    "Result": null,
+    "Callbacks": [
+      {
+        "Severity": "Error",
+        "Song": {
+          "Source": "youtube",
+          "Id": "jNQXAC9IVRw",
+          "Title": "Me at the zoo",
+          "Artists": "jawed",
+          "AlbumName": "Me at the zoo",
+          "Isrc": null,
+          "Duration": "19",
+          "ReleaseDate": "2005-04-23",
+          "Explicit": false,
+          "TrackPosition": "1",
+          "ImageLocation": "https://i.ytimg.com/vi/jNQXAC9IVRw/hqdefault.jpg?sqp=-oaymwExCJADEOABSFryq4qpAyMIARUAAIhCGAHwAQH4Ab4CgALwAYoCDAgAEAEYVSBZKGUwDw==&rs=AOn4CLAWuWkIqRJl-WjJyHNrmvFb-77q5w",
+          "AdditionalFieldKeys": []
+        },
+        "Location": null
+      }
+    ]
+  }
+]

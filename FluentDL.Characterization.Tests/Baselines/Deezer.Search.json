@@ -1,0 +1,1103 @@
+{
+  "Tracks": {
+    "Items": [
+      {
+        "Source": "deezer",
+        "Id": "66609426",
+        "Title": "Get Lucky (Radio Edit - feat. Pharrell Williams and Nile Rodgers)",
+        "Artists": "Daft Punk, Pharrell Williams, Nile Rodgers",
+        "AlbumName": "Get Lucky (Radio Edit - feat. Pharrell Williams and Nile Rodgers)",
+        "Isrc": "USQX91300809",
+        "Duration": "248",
+        "ReleaseDate": "2013-04-19",
+        "Explicit": false,
+        "TrackPosition": "1",
+        "ImageLocation": "https://api.deezer.com/album/6516139/image",
+        "AdditionalFieldKeys": [
+          "preview"
+        ]
+      },
+      {
+        "Source": "deezer",
+        "Id": "68442505",
+        "Title": "Get Lucky (Daft Punk Remix)",
+        "Artists": "Daft Punk, Pharrell Williams, Nile Rodgers, Florian Lagatta",
+        "AlbumName": "Get Lucky (feat. Pharrell Williams & Nile Rodgers)",
+        "Isrc": "USQX91301322",
+        "Duration": "631",
+        "ReleaseDate": "2013-06-26",
+        "Explicit": false,
+        "TrackPosition": "1",
+        "ImageLocation": "https://api.deezer.com/album/6703310/image",
+        "AdditionalFieldKeys": [
+          "preview"
+        ]
+      },
+      {
+        "Source": "deezer",
+        "Id": "2478010461",
+        "Title": "Get Lucky (Drumless Edition) (ft. Pharrell Williams and Nile Rodgers)",
+        "Artists": "Daft Punk, Pharrell Williams, Nile Rodgers",
+        "AlbumName": "Random Access Memories (Drumless Edition)",
+        "Isrc": "GBDUW2300160",
+        "Duration": "367",
+        "ReleaseDate": "2023-11-17",
+        "Explicit": false,
+        "TrackPosition": "8",
+        "ImageLocation": "https://api.deezer.com/album/494309801/image",
+        "AdditionalFieldKeys": [
+          "preview"
+        ]
+      },
+      {
+        "Source": "deezer",
+        "Id": "68265035",
+        "Title": "Get Lucky - Tribute to Daft Punk",
+        "Artists": "Get Lucky",
+        "AlbumName": "Get Lucky - Tribute to Daft Punk",
+        "Isrc": "USVEI1295801",
+        "Duration": "248",
+        "ReleaseDate": "2013-06-11",
+        "Explicit": false,
+        "TrackPosition": "1",
+        "ImageLocation": "https://api.deezer.com/album/6685831/image",
+        "AdditionalFieldKeys": [
+          "preview"
+        ]
+      },
+      {
+        "Source": "deezer",
+        "Id": "1819285597",
+        "Title": "Get Lucky",
+        "Artists": "Daft Punk Experience, Zico Oliveira",
+        "AlbumName": "Get Lucky",
+        "Isrc": "BXCPT2000157",
+        "Duration": "204",
+        "ReleaseDate": "2022-07-06",
+        "Explicit": false,
+        "TrackPosition": "1",
+        "ImageLocation": "https://api.deezer.com/album/334342767/image",
+        "AdditionalFieldKeys": [
+          "preview"
+        ]
+      }
+    ],
+    "Error": null
+  },
+  "TracksSecondPage": {
+    "Count": 5,
+    "RepeatsFirstPage": false,
+    "Error": null
+  },
+  "Albums": {
+    "Items": [
+      {
+        "Album": {
+          "Source": "deezer",
+          "Id": "6575789",
+          "Title": "Random Access Memories",
+          "Artists": "Daft Punk",
+          "AlbumName": "Random Access Memories",
+          "Isrc": "886443927087",
+          "Duration": "4464",
+          "ReleaseDate": "2013-05-17",
+          "Explicit": false,
+          "TrackPosition": "1",
+          "ImageLocation": "https://api.deezer.com/album/6575789/image",
+          "AdditionalFieldKeys": [
+            "preview"
+          ]
+        },
+        "TracksCount": 13,
+        "TrackList": [
+          {
+            "Source": "deezer",
+            "Id": "67238728",
+            "Title": "Give Life Back to Music",
+            "Artists": "Daft Punk",
+            "AlbumName": "Random Access Memories",
+            "Isrc": null,
+            "Duration": "274",
+            "ReleaseDate": "",
+            "Explicit": false,
+            "TrackPosition": "",
+            "ImageLocation": "https://api.deezer.com/album/6575789/image",
+            "AdditionalFieldKeys": [
+              "preview"
+            ]
+          },
+          {
+            "Source": "deezer",
+            "Id": "67238729",
+            "Title": "The Game of Love",
+            "Artists": "Daft Punk",
+            "AlbumName": "Random Access Memories",
+            "Isrc": null,
+            "Duration": "321",
+            "ReleaseDate": "",
+            "Explicit": false,
+            "TrackPosition": "",
+            "ImageLocation": "https://api.deezer.com/album/6575789/image",
+            "AdditionalFieldKeys": [
+              "preview"
+            ]
+          },
+          {
+            "Source": "deezer",
+            "Id": "67238730",
+            "Title": "Giorgio by Moroder",
+            "Artists": "Daft Punk",
+            "AlbumName": "Random Access Memories",
+            "Isrc": null,
+            "Duration": "544",
+            "ReleaseDate": "",
+            "Explicit": false,
+            "TrackPosition": "",
+            "ImageLocation": "https://api.deezer.com/album/6575789/image",
+            "AdditionalFieldKeys": [
+              "preview"
+            ]
+          },
+          {
+            "Source": "deezer",
+            "Id": "67238731",
+            "Title": "Within",
+            "Artists": "Daft Punk",
+            "AlbumName": "Random Access Memories",
+            "Isrc": null,
+            "Duration": "228",
+            "ReleaseDate": "",
+            "Explicit": false,
+            "TrackPosition": "",
+            "ImageLocation": "https://api.deezer.com/album/6575789/image",
+            "AdditionalFieldKeys": [
+              "preview"
+            ]
+          },
+          {
+            "Source": "deezer",
+            "Id": "67238732",
+            "Title": "Instant Crush (feat. Julian Casablancas)",
+            "Artists": "Daft Punk",
+            "AlbumName": "Random Access Memories",
+            "Isrc": null,
+            "Duration": "337",
+            "ReleaseDate": "",
+            "Explicit": false,
+            "TrackPosition": "",
+            "ImageLocation": "https://api.deezer.com/album/6575789/image",
+            "AdditionalFieldKeys": [
+              "preview"
+            ]
+          },
+          {
+            "Source": "deezer",
+            "Id": "67238733",
+            "Title": "Lose Yourself to Dance (feat. Pharrell Williams)",
+            "Artists": "Daft Punk",
+            "AlbumName": "Random Access Memories",
+            "Isrc": null,
+            "Duration": "353",
+            "ReleaseDate": "",
+            "Explicit": false,
+            "TrackPosition": "",
+            "ImageLocation": "https://api.deezer.com/album/6575789/image",
+            "AdditionalFieldKeys": [
+              "preview"
+            ]
+          },
+          {
+            "Source": "deezer",
+            "Id": "67238734",
+            "Title": "Touch (feat. Paul Williams)",
+            "Artists": "Daft Punk",
+            "AlbumName": "Random Access Memories",
+            "Isrc": null,
+            "Duration": "498",
+            "ReleaseDate": "",
+            "Explicit": false,
+            "TrackPosition": "",
+            "ImageLocation": "https://api.deezer.com/album/6575789/image",
+            "AdditionalFieldKeys": [
+              "preview"
+            ]
+          },
+          {
+            "Source": "deezer",
+            "Id": "67238735",
+            "Title": "Get Lucky (feat. Pharrell Williams and Nile Rodgers)",
+            "Artists": "Daft Punk",
+            "AlbumName": "Random Access Memories",
+            "Isrc": null,
+            "Duration": "367",
+            "ReleaseDate": "",
+            "Explicit": false,
+            "TrackPosition": "",
+            "ImageLocation": "https://api.deezer.com/album/6575789/image",
+            "AdditionalFieldKeys": [
+              "preview"
+            ]
+          },
+          {
+            "Source": "deezer",
+            "Id": "67238736",
+            "Title": "Beyond",
+            "Artists": "Daft Punk",
+            "AlbumName": "Random Access Memories",
+            "Isrc": null,
+            "Duration": "290",
+            "ReleaseDate": "",
+            "Explicit": false,
+            "TrackPosition": "",
+            "ImageLocation": "https://api.deezer.com/album/6575789/image",
+            "AdditionalFieldKeys": [
+              "preview"
+            ]
+          },
+          {
+            "Source": "deezer",
+            "Id": "67238737",
+            "Title": "Motherboard",
+            "Artists": "Daft Punk",
+            "AlbumName": "Random Access Memories",
+            "Isrc": null,
+            "Duration": "341",
+            "ReleaseDate": "",
+            "Explicit": false,
+            "TrackPosition": "",
+            "ImageLocation": "https://api.deezer.com/album/6575789/image",
+            "AdditionalFieldKeys": [
+              "preview"
+            ]
+          },
+          {
+            "Source": "deezer",
+            "Id": "67238738",
+            "Title": "Fragments of Time (feat. Todd Edwards)",
+            "Artists": "Daft Punk",
+            "AlbumName": "Random Access Memories",
+            "Isrc": null,
+            "Duration": "279",
+            "ReleaseDate": "",
+            "Explicit": false,
+            "TrackPosition": "",
+            "ImageLocation": "https://api.deezer.com/album/6575789/image",
+            "AdditionalFieldKeys": [
+              "preview"
+            ]
+          },
+          {
+            "Source": "deezer",
+            "Id": "67238739",
+            "Title": "Doin' it Right (feat. Panda Bear)",
+            "Artists": "Daft Punk",
+            "AlbumName": "Random Access Memories",
+            "Isrc": null,
+            "Duration": "251",
+            "ReleaseDate": "",
+            "Explicit": false,
+            "TrackPosition": "",
+            "ImageLocation": "https://api.deezer.com/album/6575789/image",
+            "AdditionalFieldKeys": [
+              "preview"
+            ]
+          },
+          {
+            "Source": "deezer",
+            "Id": "67238740",
+            "Title": "Contact",
+            "Artists": "Daft Punk",
+            "AlbumName": "Random Access Memories",
+            "Isrc": null,
+            "Duration": "381",
+            "ReleaseDate": "",
+            "Explicit": false,
+            "TrackPosition": "",
+            "ImageLocation": "https://api.deezer.com/album/6575789/image",
+            "AdditionalFieldKeys": [
+              "preview"
+            ]
+          }
+        ]
+      },
+      {
+        "Album": {
+          "Source": "deezer",
+          "Id": "494309801",
+          "Title": "Random Access Memories (Drumless Edition)",
+          "Artists": "Daft Punk",
+          "AlbumName": "Random Access Memories (Drumless Edition)",
+          "Isrc": "196871342049",
+          "Duration": "4464",
+          "ReleaseDate": "2023-11-17",
+          "Explicit": false,
+          "TrackPosition": "1",
+          "ImageLocation": "https://api.deezer.com/album/494309801/image",
+          "AdditionalFieldKeys": [
+            "preview"
+          ]
+        },
+        "TracksCount": 13,
+        "TrackList": [
+          {
+            "Source": "deezer",
+            "Id": "2478010151",
+            "Title": "Give Life Back to Music (Drumless Edition)",
+            "Artists": "Daft Punk",
+            "AlbumName": "Random Access Memories (Drumless Edition)",
+            "Isrc": null,
+            "Duration": "274",
+            "ReleaseDate": "",
+            "Explicit": false,
+            "TrackPosition": "",
+            "ImageLocation": "https://api.deezer.com/album/494309801/image",
+            "AdditionalFieldKeys": [
+              "preview"
+            ]
+          },
+          {
+            "Source": "deezer",
+            "Id": "2478010221",
+            "Title": "The Game of Love (Drumless Edition)",
+            "Artists": "Daft Punk",
+            "AlbumName": "Random Access Memories (Drumless Edition)",
+            "Isrc": null,
+            "Duration": "321",
+            "ReleaseDate": "",
+            "Explicit": false,
+            "TrackPosition": "",
+            "ImageLocation": "https://api.deezer.com/album/494309801/image",
+            "AdditionalFieldKeys": [
+              "preview"
+            ]
+          },
+          {
+            "Source": "deezer",
+            "Id": "2478010261",
+            "Title": "Giorgio by Moroder (Drumless Edition)",
+            "Artists": "Daft Punk",
+            "AlbumName": "Random Access Memories (Drumless Edition)",
+            "Isrc": null,
+            "Duration": "544",
+            "ReleaseDate": "",
+            "Explicit": false,
+            "TrackPosition": "",
+            "ImageLocation": "https://api.deezer.com/album/494309801/image",
+            "AdditionalFieldKeys": [
+              "preview"
+            ]
+          },
+          {
+            "Source": "deezer",
+            "Id": "2478010301",
+            "Title": "Within (Drumless Edition)",
+            "Artists": "Daft Punk",
+            "AlbumName": "Random Access Memories (Drumless Edition)",
+            "Isrc": null,
+            "Duration": "228",
+            "ReleaseDate": "",
+            "Explicit": false,
+            "TrackPosition": "",
+            "ImageLocation": "https://api.deezer.com/album/494309801/image",
+            "AdditionalFieldKeys": [
+              "preview"
+            ]
+          },
+          {
+            "Source": "deezer",
+            "Id": "2478010351",
+            "Title": "Instant Crush (Drumless Edition) (feat. Julian Casablancas)",
+            "Artists": "Daft Punk",
+            "AlbumName": "Random Access Memories (Drumless Edition)",
+            "Isrc": null,
+            "Duration": "337",
+            "ReleaseDate": "",
+            "Explicit": false,
+            "TrackPosition": "",
+            "ImageLocation": "https://api.deezer.com/album/494309801/image",
+            "AdditionalFieldKeys": [
+              "preview"
+            ]
+          },
+          {
+            "Source": "deezer",
+            "Id": "2478010401",
+            "Title": "Lose Yourself to Dance (Drumless Edition) (feat. Pharrell Williams)",
+            "Artists": "Daft Punk",
+            "AlbumName": "Random Access Memories (Drumless Edition)",
+            "Isrc": null,
+            "Duration": "353",
+            "ReleaseDate": "",
+            "Explicit": false,
+            "TrackPosition": "",
+            "ImageLocation": "https://api.deezer.com/album/494309801/image",
+            "AdditionalFieldKeys": [
+              "preview"
+            ]
+          },
+          {
+            "Source": "deezer",
+            "Id": "2478010441",
+            "Title": "Touch (Drumless Edition) (feat. Paul Williams)",
+            "Artists": "Daft Punk",
+            "AlbumName": "Random Access Memories (Drumless Edition)",
+            "Isrc": null,
+            "Duration": "498",
+            "ReleaseDate": "",
+            "Explicit": false,
+            "TrackPosition": "",
+            "ImageLocation": "https://api.deezer.com/album/494309801/image",
+            "AdditionalFieldKeys": [
+              "preview"
+            ]
+          },
+          {
+            "Source": "deezer",
+            "Id": "2478010461",
+            "Title": "Get Lucky (Drumless Edition) (ft. Pharrell Williams and Nile Rodgers)",
+            "Artists": "Daft Punk",
+            "AlbumName": "Random Access Memories (Drumless Edition)",
+            "Isrc": null,
+            "Duration": "367",
+            "ReleaseDate": "",
+            "Explicit": false,
+            "TrackPosition": "",
+            "ImageLocation": "https://api.deezer.com/album/494309801/image",
+            "AdditionalFieldKeys": [
+              "preview"
+            ]
+          },
+          {
+            "Source": "deezer",
+            "Id": "2478010471",
+            "Title": "Beyond (Drumless Edition)",
+            "Artists": "Daft Punk",
+            "AlbumName": "Random Access Memories (Drumless Edition)",
+            "Isrc": null,
+            "Duration": "290",
+            "ReleaseDate": "",
+            "Explicit": false,
+            "TrackPosition": "",
+            "ImageLocation": "https://api.deezer.com/album/494309801/image",
+            "AdditionalFieldKeys": [
+              "preview"
+            ]
+          },
+          {
+            "Source": "deezer",
+            "Id": "2478010481",
+            "Title": "Motherboard (Drumless Edition)",
+            "Artists": "Daft Punk",
+            "AlbumName": "Random Access Memories (Drumless Edition)",
+            "Isrc": null,
+            "Duration": "341",
+            "ReleaseDate": "",
+            "Explicit": false,
+            "TrackPosition": "",
+            "ImageLocation": "https://api.deezer.com/album/494309801/image",
+            "AdditionalFieldKeys": [
+              "preview"
+            ]
+          },
+          {
+            "Source": "deezer",
+            "Id": "2478010501",
+            "Title": "Fragments of Time (Drumless Edition) (feat. Todd Edwards)",
+            "Artists": "Daft Punk",
+            "AlbumName": "Random Access Memories (Drumless Edition)",
+            "Isrc": null,
+            "Duration": "279",
+            "ReleaseDate": "",
+            "Explicit": false,
+            "TrackPosition": "",
+            "ImageLocation": "https://api.deezer.com/album/494309801/image",
+            "AdditionalFieldKeys": [
+              "preview"
+            ]
+          },
+          {
+            "Source": "deezer",
+            "Id": "2478010581",
+            "Title": "Doin' it Right (Drumless Edition) (feat. Panda Bear)",
+            "Artists": "Daft Punk",
+            "AlbumName": "Random Access Memories (Drumless Edition)",
+            "Isrc": null,
+            "Duration": "251",
+            "ReleaseDate": "",
+            "Explicit": false,
+            "TrackPosition": "",
+            "ImageLocation": "https://api.deezer.com/album/494309801/image",
+            "AdditionalFieldKeys": [
+              "preview"
+            ]
+          },
+          {
+            "Source": "deezer",
+            "Id": "2478010611",
+            "Title": "Contact (Drumless Edition)",
+            "Artists": "Daft Punk",
+            "AlbumName": "Random Access Memories (Drumless Edition)",
+            "Isrc": null,
+            "Duration": "381",
+            "ReleaseDate": "",
+            "Explicit": false,
+            "TrackPosition": "",
+            "ImageLocation": "https://api.deezer.com/album/494309801/image",
+            "AdditionalFieldKeys": [
+              "preview"
+            ]
+          }
+        ]
+      },
+      {
+        "Album": {
+          "Source": "deezer",
+          "Id": "438167857",
+          "Title": "Random Access Memories (10th Anniversary Edition)",
+          "Artists": "Daft Punk",
+          "AlbumName": "Random Access Memories (10th Anniversary Edition)",
+          "Isrc": "196589921154",
+          "Duration": "6600",
+          "ReleaseDate": "2023-05-12",
+          "Explicit": false,
+          "TrackPosition": "1",
+          "ImageLocation": "https://api.deezer.com/album/438167857/image",
+          "AdditionalFieldKeys": [
+            "preview"
+          ]
+        },
+        "TracksCount": 22,
+        "TrackList": [
+          {
+            "Source": "deezer",
+            "Id": "2271580937",
+            "Title": "Give Life Back to Music",
+            "Artists": "Daft Punk",
+            "AlbumName": "Random Access Memories (10th Anniversary Edition)",
+            "Isrc": null,
+            "Duration": "274",
+            "ReleaseDate": "",
+            "Explicit": false,
+            "TrackPosition": "",
+            "ImageLocation": "https://api.deezer.com/album/438167857/image",
+            "AdditionalFieldKeys": [
+              "preview"
+            ]
+          },
+          {
+            "Source": "deezer",
+            "Id": "2271580947",
+            "Title": "The Game of Love",
+            "Artists": "Daft Punk",
+            "AlbumName": "Random Access Memories (10th Anniversary Edition)",
+            "Isrc": null,
+            "Duration": "322",
+            "ReleaseDate": "",
+            "Explicit": false,
+            "TrackPosition": "",
+            "ImageLocation": "https://api.deezer.com/album/438167857/image",
+            "AdditionalFieldKeys": [
+              "preview"
+            ]
+          },
+          {
+            "Source": "deezer",
+            "Id": "2271580957",
+            "Title": "Giorgio by Moroder",
+            "Artists": "Daft Punk",
+            "AlbumName": "Random Access Memories (10th Anniversary Edition)",
+            "Isrc": null,
+            "Duration": "544",
+            "ReleaseDate": "",
+            "Explicit": false,
+            "TrackPosition": "",
+            "ImageLocation": "https://api.deezer.com/album/438167857/image",
+            "AdditionalFieldKeys": [
+              "preview"
+            ]
+          },
+          {
+            "Source": "deezer",
+            "Id": "2271580967",
+            "Title": "Within",
+            "Artists": "Daft Punk",
+            "AlbumName": "Random Access Memories (10th Anniversary Edition)",
+            "Isrc": null,
+            "Duration": "228",
+            "ReleaseDate": "",
+            "Explicit": false,
+            "TrackPosition": "",
+            "ImageLocation": "https://api.deezer.com/album/438167857/image",
+            "AdditionalFieldKeys": [
+              "preview"
+            ]
+          },
+          {
+            "Source": "deezer",
+            "Id": "2271580977",
+            "Title": "Instant Crush (feat. Julian Casablancas)",
+            "Artists": "Daft Punk",
+            "AlbumName": "Random Access Memories (10th Anniversary Edition)",
+            "Isrc": null,
+            "Duration": "337",
+            "ReleaseDate": "",
+            "Explicit": false,
+            "TrackPosition": "",
+            "ImageLocation": "https://api.deezer.com/album/438167857/image",
+            "AdditionalFieldKeys": [
+              "preview"
+            ]
+          },
+          {
+            "Source": "deezer",
+            "Id": "2271580987",
+            "Title": "Lose Yourself to Dance (feat. Pharrell Williams)",
+            "Artists": "Daft Punk",
+            "AlbumName": "Random Access Memories (10th Anniversary Edition)",
+            "Isrc": null,
+            "Duration": "353",
+            "ReleaseDate": "",
+            "Explicit": false,
+            "TrackPosition": "",
+            "ImageLocation": "https://api.deezer.com/album/438167857/image",
+            "AdditionalFieldKeys": [
+              "preview"
+            ]
+          },
+          {
+            "Source": "deezer",
+            "Id": "2271580997",
+            "Title": "Touch (feat. Paul Williams)",
+            "Artists": "Daft Punk",
+            "AlbumName": "Random Access Memories (10th Anniversary Edition)",
+            "Isrc": null,
+            "Duration": "499",
+            "ReleaseDate": "",
+            "Explicit": false,
+            "TrackPosition": "",
+            "ImageLocation": "https://api.deezer.com/album/438167857/image",
+            "AdditionalFieldKeys": [
+              "preview"
+            ]
+          },
+          {
+            "Source": "deezer",
+            "Id": "2271581007",
+            "Title": "Get Lucky (feat. Pharrell Williams and Nile Rodgers)",
+            "Artists": "Daft Punk",
+            "AlbumName": "Random Access Memories (10th Anniversary Edition)",
+            "Isrc": null,
+            "Duration": "369",
+            "ReleaseDate": "",
+            "Explicit": false,
+            "TrackPosition": "",
+            "ImageLocation": "https://api.deezer.com/album/438167857/image",
+            "AdditionalFieldKeys": [
+              "preview"
+            ]
+          },
+          {
+            "Source": "deezer",
+            "Id": "2271581017",
+            "Title": "Beyond",
+            "Artists": "Daft Punk",
+            "AlbumName": "Random Access Memories (10th Anniversary Edition)",
+            "Isrc": null,
+            "Duration": "290",
+            "ReleaseDate": "",
+            "Explicit": false,
+            "TrackPosition": "",
+            "ImageLocation": "https://api.deezer.com/album/438167857/image",
+            "AdditionalFieldKeys": [
+              "preview"
+            ]
+          },
+          {
+            "Source": "deezer",
+            "Id": "2271581027",
+            "Title": "Motherboard",
+            "Artists": "Daft Punk",
+            "AlbumName": "Random Access Memories (10th Anniversary Edition)",
+            "Isrc": null,
+            "Duration": "341",
+            "ReleaseDate": "",
+            "Explicit": false,
+            "TrackPosition": "",
+            "ImageLocation": "https://api.deezer.com/album/438167857/image",
+            "AdditionalFieldKeys": [
+              "preview"
+            ]
+          },
+          {
+            "Source": "deezer",
+            "Id": "2271581037",
+            "Title": "Fragments of Time (feat. Todd Edwards)",
+            "Artists": "Daft Punk",
+            "AlbumName": "Random Access Memories (10th Anniversary Edition)",
+            "Isrc": null,
+            "Duration": "279",
+            "ReleaseDate": "",
+            "Explicit": false,
+            "TrackPosition": "",
+            "ImageLocation": "https://api.deezer.com/album/438167857/image",
+            "AdditionalFieldKeys": [
+              "preview"
+            ]
+          },
+          {
+            "Source": "deezer",
+            "Id": "2271581047",
+            "Title": "Doin' it Right (feat. Panda Bear)",
+            "Artists": "Daft Punk",
+            "AlbumName": "Random Access Memories (10th Anniversary Edition)",
+            "Isrc": null,
+            "Duration": "251",
+            "ReleaseDate": "",
+            "Explicit": false,
+            "TrackPosition": "",
+            "ImageLocation": "https://api.deezer.com/album/438167857/image",
+            "AdditionalFieldKeys": [
+              "preview"
+            ]
+          },
+          {
+            "Source": "deezer",
+            "Id": "2271581057",
+            "Title": "Contact",
+            "Artists": "Daft Punk",
+            "AlbumName": "Random Access Memories (10th Anniversary Edition)",
+            "Isrc": null,
+            "Duration": "381",
+            "ReleaseDate": "",
+            "Explicit": false,
+            "TrackPosition": "",
+            "ImageLocation": "https://api.deezer.com/album/438167857/image",
+            "AdditionalFieldKeys": [
+              "preview"
+            ]
+          },
+          {
+            "Source": "deezer",
+            "Id": "2271581067",
+            "Title": "Horizon Ouverture",
+            "Artists": "Daft Punk",
+            "AlbumName": "Random Access Memories (10th Anniversary Edition)",
+            "Isrc": null,
+            "Duration": "127",
+            "ReleaseDate": "",
+            "Explicit": false,
+            "TrackPosition": "",
+            "ImageLocation": "https://api.deezer.com/album/438167857/image",
+            "AdditionalFieldKeys": [
+              "preview"
+            ]
+          },
+          {
+            "Source": "deezer",
+            "Id": "2271581077",
+            "Title": "Horizon (Japan CD)",
+            "Artists": "Daft Punk",
+            "AlbumName": "Random Access Memories (10th Anniversary Edition)",
+            "Isrc": null,
+            "Duration": "262",
+            "ReleaseDate": "",
+            "Explicit": false,
+            "TrackPosition": "",
+            "ImageLocation": "https://api.deezer.com/album/438167857/image",
+            "AdditionalFieldKeys": [
+              "preview"
+            ]
+          },
+          {
+            "Source": "deezer",
+            "Id": "2271581087",
+            "Title": "GLBTM (Studio Outtakes)",
+            "Artists": "Daft Punk",
+            "AlbumName": "Random Access Memories (10th Anniversary Edition)",
+            "Isrc": null,
+            "Duration": "381",
+            "ReleaseDate": "",
+            "Explicit": false,
+            "TrackPosition": "",
+            "ImageLocation": "https://api.deezer.com/album/438167857/image",
+            "AdditionalFieldKeys": [
+              "preview"
+            ]
+          },
+          {
+            "Source": "deezer",
+            "Id": "2271581097",
+            "Title": "Infinity Repeating (2013 Demo) [feat. Julian Casablancas+The Voidz]",
+            "Artists": "Daft Punk",
+            "AlbumName": "Random Access Memories (10th Anniversary Edition)",
+            "Isrc": null,
+            "Duration": "239",
+            "ReleaseDate": "",
+            "Explicit": false,
+            "TrackPosition": "",
+            "ImageLocation": "https://api.deezer.com/album/438167857/image",
+            "AdditionalFieldKeys": [
+              "preview"
+            ]
+          },
+          {
+            "Source": "deezer",
+            "Id": "2271581107",
+            "Title": "GL (Early Take) [feat. Pharrell Williams and Nile Rodgers]",
+            "Artists": "Daft Punk",
+            "AlbumName": "Random Access Memories (10th Anniversary Edition)",
+            "Isrc": null,
+            "Duration": "32",
+            "ReleaseDate": "",
+            "Explicit": false,
+            "TrackPosition": "",
+            "ImageLocation": "https://api.deezer.com/album/438167857/image",
+            "AdditionalFieldKeys": [
+              "preview"
+            ]
+          },
+          {
+            "Source": "deezer",
+            "Id": "2271581117",
+            "Title": "Prime (2012 Unfinished)",
+            "Artists": "Daft Punk",
+            "AlbumName": "Random Access Memories (10th Anniversary Edition)",
+            "Isrc": null,
+            "Duration": "286",
+            "ReleaseDate": "",
+            "Explicit": false,
+            "TrackPosition": "",
+            "ImageLocation": "https://api.deezer.com/album/438167857/image",
+            "AdditionalFieldKeys": [
+              "preview"
+            ]
+          },
+          {
+            "Source": "deezer",
+            "Id": "2271581127",
+            "Title": "LYTD (Vocoder Tests) [feat. Pharrell Williams]",
+            "Artists": "Daft Punk",
+            "AlbumName": "Random Access Memories (10th Anniversary Edition)",
+            "Isrc": null,
+            "Duration": "128",
+            "ReleaseDate": "",
+            "Explicit": false,
+            "TrackPosition": "",
+            "ImageLocation": "https://api.deezer.com/album/438167857/image",
+            "AdditionalFieldKeys": [
+              "preview"
+            ]
+          },
+          {
+            "Source": "deezer",
+            "Id": "2271581137",
+            "Title": "The Writing of Fragments of Time (feat. Todd Edwards)",
+            "Artists": "Daft Punk",
+            "AlbumName": "Random Access Memories (10th Anniversary Edition)",
+            "Isrc": null,
+            "Duration": "497",
+            "ReleaseDate": "",
+            "Explicit": false,
+            "TrackPosition": "",
+            "ImageLocation": "https://api.deezer.com/album/438167857/image",
+            "AdditionalFieldKeys": [
+              "preview"
+            ]
+          },
+          {
+            "Source": "deezer",
+            "Id": "2271581147",
+            "Title": "Touch (2021 Epilogue) [feat. Paul Williams]",
+            "Artists": "Daft Punk",
+            "AlbumName": "Random Access Memories (10th Anniversary Edition)",
+            "Isrc": null,
+            "Duration": "180",
+            "ReleaseDate": "",
+            "Explicit": false,
+            "TrackPosition": "",
+            "ImageLocation": "https://api.deezer.com/album/438167857/image",
+            "AdditionalFieldKeys": [
+              "preview"
+            ]
+          }
+        ]
+      }
+    ],
+    "Error": null
+  },
+  "AdvancedArtistTrack": {
+    "Items": [
+      {
+        "Source": "deezer",
+        "Id": "66609426",
+        "Title": "Get Lucky (Radio Edit - feat. Pharrell Williams and Nile Rodgers)",
+        "Artists": "Daft Punk, Pharrell Williams, Nile Rodgers",
+        "AlbumName": "Get Lucky (Radio Edit - feat. Pharrell Williams and Nile Rodgers)",
+        "Isrc": "USQX91300809",
+        "Duration": "248",
+        "ReleaseDate": "2013-04-19",
+        "Explicit": false,
+        "TrackPosition": "1",
+        "ImageLocation": "https://api.deezer.com/album/6516139/image",
+        "AdditionalFieldKeys": [
+          "preview"
+        ]
+      },
+      {
+        "Source": "deezer",
+        "Id": "67238735",
+        "Title": "Get Lucky (feat. Pharrell Williams and Nile Rodgers)",
+        "Artists": "Daft Punk, Pharrell Williams, Nile Rodgers",
+        "AlbumName": "Random Access Memories",
+        "Isrc": "USQX91300108",
+        "Duration": "367",
+        "ReleaseDate": "2013-05-20",
+        "Explicit": false,
+        "TrackPosition": "8",
+        "ImageLocation": "https://api.deezer.com/album/6575789/image",
+        "AdditionalFieldKeys": [
+          "preview"
+        ]
+      },
+      {
+        "Source": "deezer",
+        "Id": "68442505",
+        "Title": "Get Lucky (Daft Punk Remix)",
+        "Artists": "Daft Punk, Pharrell Williams, Nile Rodgers, Florian Lagatta",
+        "AlbumName": "Get Lucky (feat. Pharrell Williams & Nile Rodgers)",
+        "Isrc": "USQX91301322",
+        "Duration": "631",
+        "ReleaseDate": "2013-06-26",
+        "Explicit": false,
+        "TrackPosition": "1",
+        "ImageLocation": "https://api.deezer.com/album/6703310/image",
+        "AdditionalFieldKeys": [
+          "preview"
+        ]
+      },
+      {
+        "Source": "deezer",
+        "Id": "1819285597",
+        "Title": "Get Lucky",
+        "Artists": "Daft Punk Experience, Zico Oliveira",
+        "AlbumName": "Get Lucky",
+        "Isrc": "BXCPT2000157",
+        "Duration": "204",
+        "ReleaseDate": "2022-07-06",
+        "Explicit": false,
+        "TrackPosition": "1",
+        "ImageLocation": "https://api.deezer.com/album/334342767/image",
+        "AdditionalFieldKeys": [
+          "preview"
+        ]
+      }
+    ],
+    "Error": null
+  },
+  "AdvancedAll": {
+    "Items": [
+      {
+        "Source": "deezer",
+        "Id": "67238735",
+        "Title": "Get Lucky (feat. Pharrell Williams and Nile Rodgers)",
+        "Artists": "Daft Punk, Pharrell Williams, Nile Rodgers",
+        "AlbumName": "Random Access Memories",
+        "Isrc": "USQX91300108",
+        "Duration": "367",
+        "ReleaseDate": "2013-05-20",
+        "Explicit": false,
+        "TrackPosition": "8",
+        "ImageLocation": "https://api.deezer.com/album/6575789/image",
+        "AdditionalFieldKeys": [
+          "preview"
+        ]
+      }
+    ],
+    "Error": null
+  },
+  "AdvancedArtistOnly": {
+    "Items": [
+      {
+        "Source": "deezer",
+        "Id": "70266756",
+        "Title": "Wake Me Up",
+        "Artists": "Avicii",
+        "AlbumName": "True",
+        "Isrc": "SEUM71301326",
+        "Duration": "249",
+        "ReleaseDate": "2013-09-16",
+        "Explicit": false,
+        "TrackPosition": "1",
+        "ImageLocation": "https://api.deezer.com/album/6893935/image",
+        "AdditionalFieldKeys": [
+          "preview"
+        ]
+      },
+      {
+        "Source": "deezer",
+        "Id": "90632837",
+        "Title": "The Nights",
+        "Artists": "Avicii",
+        "AlbumName": "The Days / Nights (EP)",
+        "Isrc": "CH3131340464",
+        "Duration": "179",
+        "ReleaseDate": "2014-12-01",
+        "Explicit": false,
+        "TrackPosition": "2",
+        "ImageLocation": "https://api.deezer.com/album/9188269/image",
+        "AdditionalFieldKeys": [
+          "preview"
+        ]
+      },
+      {
+        "Source": "deezer",
+        "Id": "14383880",
+        "Title": "Levels (Radio Edit)",
+        "Artists": "Avicii",
+        "AlbumName": "Levels",
+        "Isrc": "SEUM71100962",
+        "Duration": "199",
+        "ReleaseDate": "2011-10-31",
+        "Explicit": false,
+        "TrackPosition": "1",
+        "ImageLocation": "https://api.deezer.com/album/1318964/image",
+        "AdditionalFieldKeys": [
+          "preview"
+        ]
+      },
+      {
+        "Source": "deezer",
+        "Id": "107346368",
+        "Title": "Waiting For Love",
+        "Artists": "Avicii",
+        "AlbumName": "Stories",
+        "Isrc": "CHB701400134",
+        "Duration": "228",
+        "ReleaseDate": "2015-10-02",
+        "Explicit": false,
+        "TrackPosition": "1",
+        "ImageLocation": "https://api.deezer.com/album/11192186/image",
+        "AdditionalFieldKeys": [
+          "preview"
+        ]
+      },
+      {
+        "Source": "deezer",
+        "Id": "70266759",
+        "Title": "Addicted To You",
+        "Artists": "Avicii",
+        "AlbumName": "True",
+        "Isrc": "CH3131340085",
+        "Duration": "148",
+        "ReleaseDate": "2013-09-16",
+        "Explicit": false,
+        "TrackPosition": "4",
+        "ImageLocation": "https://api.deezer.com/album/6893935/image",
+        "AdditionalFieldKeys": [
+          "preview"
+        ]
+      }
+    ],
+    "Error": null
+  }
+}

@@ -1,0 +1,619 @@
+[
+  {
+    "Url": "https://open.qobuz.com/track/9140031",
+    "AlbumMode": false,
+    "Result": {
+      "Items": [
+        {
+          "Source": "qobuz",
+          "Id": "9140031",
+          "Title": "Get Lucky (feat. Pharrell Williams and Nile Rodgers)",
+          "Artists": "Daft Punk feat. Pharrell Williams",
+          "AlbumName": "Random Access Memories",
+          "Isrc": "USQX91300108",
+          "Duration": "369",
+          "ReleaseDate": "2023-11-17",
+          "Explicit": false,
+          "TrackPosition": "8",
+          "ImageLocation": "https://static.qobuz.com/images/covers/87/70/0886443927087_230.jpg",
+          "AdditionalFieldKeys": []
+        }
+      ],
+      "Error": null
+    },
+    "Status": [
+      {
+        "Severity": "Success",
+        "Message": "<b>Qobuz</b>   Loaded track <a href='https://open.qobuz.com/track/9140031'>Get Lucky (feat. Pharrell Williams and Nile Rodgers)</a>"
+      }
+    ]
+  },
+  {
+    "Url": "https://play.qobuz.com/track/9140031",
+    "AlbumMode": false,
+    "Result": {
+      "Items": [
+        {
+          "Source": "qobuz",
+          "Id": "9140031",
+          "Title": "Get Lucky (feat. Pharrell Williams and Nile Rodgers)",
+          "Artists": "Daft Punk feat. Pharrell Williams",
+          "AlbumName": "Random Access Memories",
+          "Isrc": "USQX91300108",
+          "Duration": "369",
+          "ReleaseDate": "2023-11-17",
+          "Explicit": false,
+          "TrackPosition": "8",
+          "ImageLocation": "https://static.qobuz.com/images/covers/87/70/0886443927087_230.jpg",
+          "AdditionalFieldKeys": []
+        }
+      ],
+      "Error": null
+    },
+    "Status": [
+      {
+        "Severity": "Success",
+        "Message": "<b>Qobuz</b>   Loaded track <a href='https://play.qobuz.com/track/9140031'>Get Lucky (feat. Pharrell Williams and Nile Rodgers)</a>"
+      }
+    ]
+  },
+  {
+    "Url": "https://open.qobuz.com/album/0886443927087",
+    "AlbumMode": false,
+    "Result": {
+      "Items": [
+        {
+          "Source": "qobuz",
+          "Id": "9140024",
+          "Title": "Give Life Back to Music",
+          "Artists": "Daft Punk",
+          "AlbumName": "Random Access Memories",
+          "Isrc": "USQX91300101",
+          "Duration": "275",
+          "ReleaseDate": "2023-11-17",
+          "Explicit": false,
+          "TrackPosition": "1",
+          "ImageLocation": "https://static.qobuz.com/images/covers/87/70/0886443927087_230.jpg",
+          "AdditionalFieldKeys": []
+        },
+        {
+          "Source": "qobuz",
+          "Id": "9140025",
+          "Title": "The Game of Love",
+          "Artists": "Daft Punk",
+          "AlbumName": "Random Access Memories",
+          "Isrc": "USQX91300102",
+          "Duration": "322",
+          "ReleaseDate": "2023-11-17",
+          "Explicit": false,
+          "TrackPosition": "2",
+          "ImageLocation": "https://static.qobuz.com/images/covers/87/70/0886443927087_230.jpg",
+          "AdditionalFieldKeys": []
+        },
+        {
+          "Source": "qobuz",
+          "Id": "9140026",
+          "Title": "Giorgio by Moroder",
+          "Artists": "Daft Punk",
+          "AlbumName": "Random Access Memories",
+          "Isrc": "USQX91300103",
+          "Duration": "544",
+          "ReleaseDate": "2023-11-17",
+          "Explicit": false,
+          "TrackPosition": "3",
+          "ImageLocation": "https://static.qobuz.com/images/covers/87/70/0886443927087_230.jpg",
+          "AdditionalFieldKeys": []
+        },
+        {
+          "Source": "qobuz",
+          "Id": "9140027",
+          "Title": "Within",
+          "Artists": "Daft Punk",
+          "AlbumName": "Random Access Memories",
+          "Isrc": "USQX91300104",
+          "Duration": "228",
+          "ReleaseDate": "2013-05-20",
+          "Explicit": false,
+          "TrackPosition": "4",
+          "ImageLocation": "https://static.qobuz.com/images/covers/87/70/0886443927087_230.jpg",
+          "AdditionalFieldKeys": []
+        },
+        {
+          "Source": "qobuz",
+          "Id": "9140028",
+          "Title": "Instant Crush (feat. Julian Casablancas)",
+          "Artists": "Daft Punk feat. Julian Casablancas",
+          "AlbumName": "Random Access Memories",
+          "Isrc": "USQX91300105",
+          "Duration": "337",
+          "ReleaseDate": "2023-11-17",
+          "Explicit": false,
+          "TrackPosition": "5",
+          "ImageLocation": "https://static.qobuz.com/images/covers/87/70/0886443927087_230.jpg",
+          "AdditionalFieldKeys": []
+        },
+        {
+          "Source": "qobuz",
+          "Id": "9140029",
+          "Title": "Lose Yourself to Dance (feat. Pharrell Williams)",
+          "Artists": "Daft Punk feat. Pharrell Williams",
+          "AlbumName": "Random Access Memories",
+          "Isrc": "USQX91300106",
+          "Duration": "353",
+          "ReleaseDate": "2023-11-17",
+          "Explicit": false,
+          "TrackPosition": "6",
+          "ImageLocation": "https://static.qobuz.com/images/covers/87/70/0886443927087_230.jpg",
+          "AdditionalFieldKeys": []
+        },
+        {
+          "Source": "qobuz",
+          "Id": "9140030",
+          "Title": "Touch (feat. Paul Williams)",
+          "Artists": "Daft Punk feat. Paul Williams",
+          "AlbumName": "Random Access Memories",
+          "Isrc": "USQX91300107",
+          "Duration": "498",
+          "ReleaseDate": "2023-11-17",
+          "Explicit": false,
+          "TrackPosition": "7",
+          "ImageLocation": "https://static.qobuz.com/images/covers/87/70/0886443927087_230.jpg",
+          "AdditionalFieldKeys": []
+        },
+        {
+          "Source": "qobuz",
+          "Id": "9140031",
+          "Title": "Get Lucky (feat. Pharrell Williams and Nile Rodgers)",
+          "Artists": "Daft Punk feat. Pharrell Williams",
+          "AlbumName": "Random Access Memories",
+          "Isrc": "USQX91300108",
+          "Duration": "369",
+          "ReleaseDate": "2023-11-17",
+          "Explicit": false,
+          "TrackPosition": "8",
+          "ImageLocation": "https://static.qobuz.com/images/covers/87/70/0886443927087_230.jpg",
+          "AdditionalFieldKeys": []
+        },
+        {
+          "Source": "qobuz",
+          "Id": "9140032",
+          "Title": "Beyond",
+          "Artists": "Daft Punk",
+          "AlbumName": "Random Access Memories",
+          "Isrc": "USQX91300109",
+          "Duration": "290",
+          "ReleaseDate": "2023-11-17",
+          "Explicit": false,
+          "TrackPosition": "9",
+          "ImageLocation": "https://static.qobuz.com/images/covers/87/70/0886443927087_230.jpg",
+          "AdditionalFieldKeys": []
+        },
+        {
+          "Source": "qobuz",
+          "Id": "9140033",
+          "Title": "Motherboard",
+          "Artists": "Daft Punk",
+          "AlbumName": "Random Access Memories",
+          "Isrc": "USQX91300110",
+          "Duration": "341",
+          "ReleaseDate": "2023-11-17",
+          "Explicit": false,
+          "TrackPosition": "10",
+          "ImageLocation": "https://static.qobuz.com/images/covers/87/70/0886443927087_230.jpg",
+          "AdditionalFieldKeys": []
+        },
+        {
+          "Source": "qobuz",
+          "Id": "9140034",
+          "Title": "Fragments of Time (feat. Todd Edwards)",
+          "Artists": "Daft Punk feat. Todd Edwards",
+          "AlbumName": "Random Access Memories",
+          "Isrc": "USQX91300111",
+          "Duration": "279",
+          "ReleaseDate": "2023-11-17",
+          "Explicit": false,
+          "TrackPosition": "11",
+          "ImageLocation": "https://static.qobuz.com/images/covers/87/70/0886443927087_230.jpg",
+          "AdditionalFieldKeys": []
+        },
+        {
+          "Source": "qobuz",
+          "Id": "9140035",
+          "Title": "Doin' it Right (feat. Panda Bear)",
+          "Artists": "Daft Punk feat. Panda Bear",
+          "AlbumName": "Random Access Memories",
+          "Isrc": "USQX91300112",
+          "Duration": "251",
+          "ReleaseDate": "2023-11-17",
+          "Explicit": false,
+          "TrackPosition": "12",
+          "ImageLocation": "https://static.qobuz.com/images/covers/87/70/0886443927087_230.jpg",
+          "AdditionalFieldKeys": []
+        },
+        {
+          "Source": "qobuz",
+          "Id": "9140036",
+          "Title": "Contact",
+          "Artists": "Daft Punk",
+          "AlbumName": "Random Access Memories",
+          "Isrc": "USQX91300113",
+          "Duration": "383",
+          "ReleaseDate": "2023-11-17",
+          "Explicit": false,
+          "TrackPosition": "13",
+          "ImageLocation": "https://static.qobuz.com/images/covers/87/70/0886443927087_230.jpg",
+          "AdditionalFieldKeys": []
+        }
+      ],
+      "Error": null
+    },
+    "Status": [
+      {
+        "Severity": "Informational",
+        "Message": "<b>Qobuz</b>   Loading album <a href='https://open.qobuz.com/album/0886443927087'>Random Access Memories</a>"
+      },
+      {
+        "Severity": "Success",
+        "Message": "<b>Qobuz</b>   Loaded album <a href='https://open.qobuz.com/album/0886443927087'>Random Access Memories</a>"
+      }
+    ]
+  },
+  {
+    "Url": "https://open.qobuz.com/album/0886443927087",
+    "AlbumMode": true,
+    "Result": {
+      "Items": [
+        {
+          "Album": {
+            "Source": "qobuz",
+            "Id": "0886443927087",
+            "Title": "Random Access Memories",
+            "Artists": "Daft Punk",
+            "AlbumName": "Random Access Memories",
+            "Isrc": "0886443927087",
+            "Duration": "4470",
+            "ReleaseDate": "2013-05-20",
+            "Explicit": false,
+            "TrackPosition": "1",
+            "ImageLocation": "https://static.qobuz.com/images/covers/87/70/0886443927087_230.jpg",
+            "AdditionalFieldKeys": []
+          },
+          "TracksCount": 13,
+          "TrackList": null
+        }
+      ],
+      "Error": null
+    },
+    "Status": [
+      {
+        "Severity": "Informational",
+        "Message": "<b>Qobuz</b>   Loading album <a href='https://open.qobuz.com/album/0886443927087'>Random Access Memories</a>"
+      },
+      {
+        "Severity": "Success",
+        "Message": "<b>Qobuz</b>   Loaded album <a href='https://open.qobuz.com/album/0886443927087'>Random Access Memories</a>"
+      }
+    ]
+  },
+  {
+    "Url": "https://www.qobuz.com/us-en/album/random-access-memories-daft-punk/0886443927087",
+    "AlbumMode": false,
+    "Result": {
+      "Items": [
+        {
+          "Source": "qobuz",
+          "Id": "9140024",
+          "Title": "Give Life Back to Music",
+          "Artists": "Daft Punk",
+          "AlbumName": "Random Access Memories",
+          "Isrc": "USQX91300101",
+          "Duration": "275",
+          "ReleaseDate": "2023-11-17",
+          "Explicit": false,
+          "TrackPosition": "1",
+          "ImageLocation": "https://static.qobuz.com/images/covers/87/70/0886443927087_230.jpg",
+          "AdditionalFieldKeys": []
+        },
+        {
+          "Source": "qobuz",
+          "Id": "9140025",
+          "Title": "The Game of Love",
+          "Artists": "Daft Punk",
+          "AlbumName": "Random Access Memories",
+          "Isrc": "USQX91300102",
+          "Duration": "322",
+          "ReleaseDate": "2023-11-17",
+          "Explicit": false,
+          "TrackPosition": "2",
+          "ImageLocation": "https://static.qobuz.com/images/covers/87/70/0886443927087_230.jpg",
+          "AdditionalFieldKeys": []
+        },
+        {
+          "Source": "qobuz",
+          "Id": "9140026",
+          "Title": "Giorgio by Moroder",
+          "Artists": "Daft Punk",
+          "AlbumName": "Random Access Memories",
+          "Isrc": "USQX91300103",
+          "Duration": "544",
+          "ReleaseDate": "2023-11-17",
+          "Explicit": false,
+          "TrackPosition": "3",
+          "ImageLocation": "https://static.qobuz.com/images/covers/87/70/0886443927087_230.jpg",
+          "AdditionalFieldKeys": []
+        },
+        {
+          "Source": "qobuz",
+          "Id": "9140027",
+          "Title": "Within",
+          "Artists": "Daft Punk",
+          "AlbumName": "Random Access Memories",
+          "Isrc": "USQX91300104",
+          "Duration": "228",
+          "ReleaseDate": "2013-05-20",
+          "Explicit": false,
+          "TrackPosition": "4",
+          "ImageLocation": "https://static.qobuz.com/images/covers/87/70/0886443927087_230.jpg",
+          "AdditionalFieldKeys": []
+        },
+        {
+          "Source": "qobuz",
+          "Id": "9140028",
+          "Title": "Instant Crush (feat. Julian Casablancas)",
+          "Artists": "Daft Punk feat. Julian Casablancas",
+          "AlbumName": "Random Access Memories",
+          "Isrc": "USQX91300105",
+          "Duration": "337",
+          "ReleaseDate": "2023-11-17",
+          "Explicit": false,
+          "TrackPosition": "5",
+          "ImageLocation": "https://static.qobuz.com/images/covers/87/70/0886443927087_230.jpg",
+          "AdditionalFieldKeys": []
+        },
+        {
+          "Source": "qobuz",
+          "Id": "9140029",
+          "Title": "Lose Yourself to Dance (feat. Pharrell Williams)",
+          "Artists": "Daft Punk feat. Pharrell Williams",
+          "AlbumName": "Random Access Memories",
+          "Isrc": "USQX91300106",
+          "Duration": "353",
+          "ReleaseDate": "2023-11-17",
+          "Explicit": false,
+          "TrackPosition": "6",
+          "ImageLocation": "https://static.qobuz.com/images/covers/87/70/0886443927087_230.jpg",
+          "AdditionalFieldKeys": []
+        },
+        {
+          "Source": "qobuz",
+          "Id": "9140030",
+          "Title": "Touch (feat. Paul Williams)",
+          "Artists": "Daft Punk feat. Paul Williams",
+          "AlbumName": "Random Access Memories",
+          "Isrc": "USQX91300107",
+          "Duration": "498",
+          "ReleaseDate": "2023-11-17",
+          "Explicit": false,
+          "TrackPosition": "7",
+          "ImageLocation": "https://static.qobuz.com/images/covers/87/70/0886443927087_230.jpg",
+          "AdditionalFieldKeys": []
+        },
+        {
+          "Source": "qobuz",
+          "Id": "9140031",
+          "Title": "Get Lucky (feat. Pharrell Williams and Nile Rodgers)",
+          "Artists": "Daft Punk feat. Pharrell Williams",
+          "AlbumName": "Random Access Memories",
+          "Isrc": "USQX91300108",
+          "Duration": "369",
+          "ReleaseDate": "2023-11-17",
+          "Explicit": false,
+          "TrackPosition": "8",
+          "ImageLocation": "https://static.qobuz.com/images/covers/87/70/0886443927087_230.jpg",
+          "AdditionalFieldKeys": []
+        },
+        {
+          "Source": "qobuz",
+          "Id": "9140032",
+          "Title": "Beyond",
+          "Artists": "Daft Punk",
+          "AlbumName": "Random Access Memories",
+          "Isrc": "USQX91300109",
+          "Duration": "290",
+          "ReleaseDate": "2023-11-17",
+          "Explicit": false,
+          "TrackPosition": "9",
+          "ImageLocation": "https://static.qobuz.com/images/covers/87/70/0886443927087_230.jpg",
+          "AdditionalFieldKeys": []
+        },
+        {
+          "Source": "qobuz",
+          "Id": "9140033",
+          "Title": "Motherboard",
+          "Artists": "Daft Punk",
+          "AlbumName": "Random Access Memories",
+          "Isrc": "USQX91300110",
+          "Duration": "341",
+          "ReleaseDate": "2023-11-17",
+          "Explicit": false,
+          "TrackPosition": "10",
+          "ImageLocation": "https://static.qobuz.com/images/covers/87/70/0886443927087_230.jpg",
+          "AdditionalFieldKeys": []
+        },
+        {
+          "Source": "qobuz",
+          "Id": "9140034",
+          "Title": "Fragments of Time (feat. Todd Edwards)",
+          "Artists": "Daft Punk feat. Todd Edwards",
+          "AlbumName": "Random Access Memories",
+          "Isrc": "USQX91300111",
+          "Duration": "279",
+          "ReleaseDate": "2023-11-17",
+          "Explicit": false,
+          "TrackPosition": "11",
+          "ImageLocation": "https://static.qobuz.com/images/covers/87/70/0886443927087_230.jpg",
+          "AdditionalFieldKeys": []
+        },
+        {
+          "Source": "qobuz",
+          "Id": "9140035",
+          "Title": "Doin' it Right (feat. Panda Bear)",
+          "Artists": "Daft Punk feat. Panda Bear",
+          "AlbumName": "Random Access Memories",
+          "Isrc": "USQX91300112",
+          "Duration": "251",
+          "ReleaseDate": "2023-11-17",
+          "Explicit": false,
+          "TrackPosition": "12",
+          "ImageLocation": "https://static.qobuz.com/images/covers/87/70/0886443927087_230.jpg",
+          "AdditionalFieldKeys": []
+        },
+        {
+          "Source": "qobuz",
+          "Id": "9140036",
+          "Title": "Contact",
+          "Artists": "Daft Punk",
+          "AlbumName": "Random Access Memories",
+          "Isrc": "USQX91300113",
+          "Duration": "383",
+          "ReleaseDate": "2023-11-17",
+          "Explicit": false,
+          "TrackPosition": "13",
+          "ImageLocation": "https://static.qobuz.com/images/covers/87/70/0886443927087_230.jpg",
+          "AdditionalFieldKeys": []
+        }
+      ],
+      "Error": null
+    },
+    "Status": [
+      {
+        "Severity": "Informational",
+        "Message": "<b>Qobuz</b>   Loading album <a href='https://www.qobuz.com/us-en/album/random-access-memories-daft-punk/0886443927087'>Random Access Memories</a>"
+      },
+      {
+        "Severity": "Success",
+        "Message": "<b>Qobuz</b>   Loaded album <a href='https://www.qobuz.com/us-en/album/random-access-memories-daft-punk/0886443927087'>Random Access Memories</a>"
+      }
+    ]
+  },
+  {
+    "Url": "https://www.qobuz.com/us-en/label/columbia/download-streaming-albums/4592",
+    "IsLabelOrArtist": true,
+    "LinkType": "Label",
+    "Id": "4592",
+    "Result": {
+      "Count": 5,
+      "Sources": [
+        "qobuz"
+      ],
+      "AllHaveIdAndTitle": true,
+      "Types": [
+        "AlbumSearchObject"
+      ],
+      "Error": null
+    },
+    "Status": []
+  },
+  {
+    "Url": "https://www.qobuz.com/us-en/interpreter/daft-punk/36819",
+    "IsLabelOrArtist": true,
+    "LinkType": "Artist",
+    "Id": "36819",
+    "Result": {
+      "Items": [
+        {
+          "Album": {
+            "Source": "qobuz",
+            "Id": "0886443927087",
+            "Title": "Random Access Memories",
+            "Artists": "Daft Punk",
+            "AlbumName": "Random Access Memories",
+            "Isrc": "0886443927087",
+            "Duration": "4470",
+            "ReleaseDate": "2013-05-20",
+            "Explicit": false,
+            "TrackPosition": "1",
+            "ImageLocation": "https://static.qobuz.com/images/covers/87/70/0886443927087_230.jpg",
+            "AdditionalFieldKeys": []
+          },
+          "TracksCount": 13,
+          "TrackList": null
+        },
+        {
+          "Album": {
+            "Source": "qobuz",
+            "Id": "0724384960650",
+            "Title": "Discovery",
+            "Artists": "Daft Punk",
+            "AlbumName": "Discovery",
+            "Isrc": "0724384960650",
+            "Duration": "3662",
+            "ReleaseDate": "2001-03-07",
+            "Explicit": false,
+            "TrackPosition": "1",
+            "ImageLocation": "https://static.qobuz.com/images/covers/50/06/0724384960650_230.jpg",
+            "AdditionalFieldKeys": []
+          },
+          "TracksCount": 14,
+          "TrackList": null
+        },
+        {
+          "Album": {
+            "Source": "qobuz",
+            "Id": "0724384260958",
+            "Title": "Homework",
+            "Artists": "Daft Punk",
+            "AlbumName": "Homework",
+            "Isrc": "0724384260958",
+            "Duration": "4422",
+            "ReleaseDate": "1997-01-16",
+            "Explicit": false,
+            "TrackPosition": "1",
+            "ImageLocation": "https://static.qobuz.com/images/covers/58/09/0724384260958_230.jpg",
+            "AdditionalFieldKeys": []
+          },
+          "TracksCount": 16,
+          "TrackList": null
+        },
+        {
+          "Album": {
+            "Source": "qobuz",
+            "Id": "d7rchuzba48lc",
+            "Title": "TRON: Legacy - The Complete Edition",
+            "Artists": "Daft Punk",
+            "AlbumName": "TRON: Legacy - The Complete Edition",
+            "Isrc": "0050087478704",
+            "Duration": "4976",
+            "ReleaseDate": "2010-12-07",
+            "Explicit": false,
+            "TrackPosition": "1",
+            "ImageLocation": "https://static.qobuz.com/images/covers/lc/48/d7rchuzba48lc_230.jpg",
+            "AdditionalFieldKeys": []
+          },
+          "TracksCount": 31,
+          "TrackList": null
+        },
+        {
+          "Album": {
+            "Source": "qobuz",
+            "Id": "apk748lfvcgxb",
+            "Title": "Random Access Memories",
+            "Artists": "Daft Punk",
+            "AlbumName": "Random Access Memories",
+            "Isrc": "0196589921154",
+            "Duration": "6599",
+            "ReleaseDate": "2013-05-20",
+            "Explicit": false,
+            "TrackPosition": "1",
+            "ImageLocation": "https://static.qobuz.com/images/covers/xb/cg/apk748lfvcgxb_230.jpg",
+            "AdditionalFieldKeys": []
+          },
+          "TracksCount": 22,
+          "TrackList": null
+        }
+      ],
+      "Error": null
+    },
+    "Status": []
+  }
+]

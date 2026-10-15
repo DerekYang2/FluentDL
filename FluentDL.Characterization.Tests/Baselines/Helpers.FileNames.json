@@ -1,0 +1,74 @@
+[
+  {
+    "Input": "AC/DC: Back in Black?",
+    "GetSafeFilename": "AC_DC_ Back in Black_",
+    "GetSafeDirectoryPath": "AC\\DC_ Back in Black_",
+    "RemoveExtension": "AC/DC: Back in Black?"
+  },
+  {
+    "Input": "CON",
+    "GetSafeFilename": "_CON",
+    "GetSafeDirectoryPath": "_CON",
+    "RemoveExtension": "CON"
+  },
+  {
+    "Input": "con.mp3",
+    "GetSafeFilename": "con.mp3",
+    "GetSafeDirectoryPath": "con.mp3",
+    "RemoveExtension": "con"
+  },
+  {
+    "Input": "trailing dots...",
+    "GetSafeFilename": "trailing dots",
+    "GetSafeDirectoryPath": "trailing dots",
+    "RemoveExtension": "trailing dots..."
+  },
+  {
+    "Input": "  spaced  ",
+    "GetSafeFilename": "spaced",
+    "GetSafeDirectoryPath": "spaced",
+    "RemoveExtension": "  spaced  "
+  },
+  {
+    "Input": "a<b>c|d*e",
+    "GetSafeFilename": "a_b_c_d_e",
+    "GetSafeDirectoryPath": "a_b_c_d_e",
+    "RemoveExtension": "a<b>c|d*e"
+  },
+  {
+    "Input": "",
+    "GetSafeFilename": "_",
+    "GetSafeDirectoryPath": "_",
+    "RemoveExtension": ""
+  },
+  {
+    "Input": "Track.flac",
+    "GetSafeFilename": "Track.flac",
+    "GetSafeDirectoryPath": "Track.flac",
+    "RemoveExtension": "Track"
+  },
+  {
+    "Input": "Track.FLAC",
+    "GetSafeFilename": "Track.FLAC",
+    "GetSafeDirectoryPath": "Track.FLAC",
+    "RemoveExtension": "Track"
+  },
+  {
+    "Input": "Track.txt",
+    "GetSafeFilename": "Track.txt",
+    "GetSafeDirectoryPath": "Track.txt",
+    "RemoveExtension": "Track.txt"
+  },
+  {
+    "Input": "No extension",
+    "GetSafeFilename": "No extension",
+    "GetSafeDirectoryPath": "No extension",
+    "RemoveExtension": "No extension"
+  },
+  {
+    "Input": "Folder/Sub\\Name",
+    "GetSafeFilename": "Folder_Sub_Name",
+    "GetSafeDirectoryPath": "Folder\\Sub\\Name",
+    "RemoveExtension": "Folder/Sub\\Name"
+  }
+]

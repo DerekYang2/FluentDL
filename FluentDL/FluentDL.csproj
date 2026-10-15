@@ -56,6 +56,10 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\FluentDL.Core\FluentDL.Core.csproj" />
+    <ProjectReference Include="..\FluentDL.Sources\FluentDL.Sources.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="FluentDL.Characterization.Tests" />
   </ItemGroup>
   <ItemGroup>
     <Page Update="Helpers\CustomPasswordBox.xaml">
@@ -101,7 +105,6 @@
     <PackageReference Include="CommunityToolkit.WinUI.UI.Animations" Version="7.1.2" />
     <PackageReference Include="CommunityToolkit.WinUI.UI.Controls" Version="7.1.2" />
     <PackageReference Include="CommunityToolkit.WinUI.UI.Controls.DataGrid" Version="7.1.2" />
-    <PackageReference Include="DeezNET" Version="1.2.2" />
     <PackageReference Include="FFMpegCore" Version="5.1.0" />
     <PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.12" />
     <PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="8.0.1" />
@@ -115,17 +118,10 @@
     <PackageReference Include="Microsoft.WindowsAppSDK.Search" Version="2.5.5" ExcludeAssets="all" />
     <PackageReference Include="Microsoft.Windows.AI.MachineLearning" Version="2.1.74" ExcludeAssets="all" />
     <PackageReference Include="Microsoft.Xaml.Behaviors.WinUI.Managed" Version="2.0.9" />
-    <PackageReference Include="QobuzApiSharp" Version="0.0.8" />
-    <PackageReference Include="RestSharp" Version="111.4.1" />
     <PackageReference Include="Serilog.Extensions.Logging" Version="8.0.0" />
     <PackageReference Include="SixLabors.ImageSharp" Version="3.1.12" />
-    <PackageReference Include="SpotifyAPI.Web" Version="7.4.2" />
-    <PackageReference Include="SpotifyAPI.Web.Auth" Version="7.4.2" />
     <PackageReference Include="System.Security.Cryptography.ProtectedData" Version="9.0.10" />
     <PackageReference Include="TagLibSharp" Version="2.3.0" />
-    <PackageReference Include="VideoLibrary" Version="3.3.1" />
     <PackageReference Include="WinUIEx" Version="2.5.1" />
-    <PackageReference Include="YoutubeExplode" Version="6.6.2" />
-    <PackageReference Include="YouTubeMusicAPI" Version="3.0.10" />
   </ItemGroup>
 </Project>

@@ -1,0 +1,149 @@
+[
+  {
+    "Key": "get-lucky-album",
+    "ById": {
+      "Source": "spotify",
+      "Id": "69kOkLUCkxIZYexIgSG8rq",
+      "Title": "Get Lucky (feat. Pharrell Williams and Nile Rodgers)",
+      "Artists": "Daft Punk, Pharrell Williams, Nile Rodgers",
+      "AlbumName": "Random Access Memories",
+      "Isrc": "",
+      "Duration": "370",
+      "ReleaseDate": "2013-05-19",
+      "Explicit": false,
+      "TrackPosition": "8",
+      "ImageLocation": "https://i.scdn.co/image/ab67616d00001e029b9b36b0e22870b9f542d937",
+      "AdditionalFieldKeys": [
+        "preview_url"
+      ]
+    },
+    "IsrcFromId": "USQX91300108",
+    "ByIsrc": null
+  },
+  {
+    "Key": "get-lucky-radio-edit",
+    "ById": {
+      "Source": "spotify",
+      "Id": "2Foc5Q5nqNiosCNqttzHof",
+      "Title": "Get Lucky (Radio Edit) [feat. Pharrell Williams and Nile Rodgers]",
+      "Artists": "Daft Punk, Pharrell Williams, Nile Rodgers",
+      "AlbumName": "Get Lucky (Radio Edit) [feat. Pharrell Williams and Nile Rodgers]",
+      "Isrc": "",
+      "Duration": "248",
+      "ReleaseDate": "2013-04-18",
+      "Explicit": false,
+      "TrackPosition": "1",
+      "ImageLocation": "https://i.scdn.co/image/ab67616d00001e0219a88dd5c7118e87d7b1619e",
+      "AdditionalFieldKeys": [
+        "preview_url"
+      ]
+    },
+    "IsrcFromId": "USQX91300809",
+    "ByIsrc": null
+  },
+  {
+    "Key": "beyonce-halo",
+    "ById": {
+      "Source": "spotify",
+      "Id": "4JehYebiI9JE8sR8MisGVb",
+      "Title": "Halo",
+      "Artists": "Beyoncé",
+      "AlbumName": "I AM...SASHA FIERCE",
+      "Isrc": "",
+      "Duration": "262",
+      "ReleaseDate": "2008-11-16",
+      "Explicit": false,
+      "TrackPosition": "2",
+      "ImageLocation": "https://i.scdn.co/image/ab67616d00001e02801c4d205accdba0a468a10b",
+      "AdditionalFieldKeys": [
+        "preview_url"
+      ]
+    },
+    "IsrcFromId": "USSM10804556",
+    "ByIsrc": null
+  },
+  {
+    "Key": "yoasobi-yoru-ni-kakeru",
+    "ById": {
+      "Source": "spotify",
+      "Id": "3dPtXHP0oXQ4HCWHsOA9js",
+      "Title": "夜に駆ける",
+      "Artists": "YOASOBI",
+      "AlbumName": "夜に駆ける",
+      "Isrc": "",
+      "Duration": "261",
+      "ReleaseDate": "2019-12-14",
+      "Explicit": false,
+      "TrackPosition": "1",
+      "ImageLocation": "https://i.scdn.co/image/ab67616d00001e02c5716278abba6a103ad13aa7",
+      "AdditionalFieldKeys": [
+        "preview_url"
+      ]
+    },
+    "IsrcFromId": "JPP301900716",
+    "ByIsrc": null
+  },
+  {
+    "Key": "avicii-levels-original",
+    "ById": {
+      "Source": "spotify",
+      "Id": "6Xe9wT5xeZETPwtaP2ynUz",
+      "Title": "Levels - Original Version",
+      "Artists": "Avicii",
+      "AlbumName": "Levels",
+      "Isrc": "",
+      "Duration": "339",
+      "ReleaseDate": "2011-10-27",
+      "Explicit": false,
+      "TrackPosition": "2",
+      "ImageLocation": "https://i.scdn.co/image/ab67616d00001e02ffb343926530168be4724dd4",
+      "AdditionalFieldKeys": [
+        "preview_url"
+      ]
+    },
+    "IsrcFromId": "SEUM71100961",
+    "ByIsrc": null
+  },
+  {
+    "Key": "avicii-levels-skrillex-remix",
+    "ById": {
+      "Source": "spotify",
+      "Id": "5f6igUw1asUL4AGXSvgTW8",
+      "Title": "Levels - Skrillex Remix",
+      "Artists": "Avicii, Skrillex",
+      "AlbumName": "Levels (Remixes)",
+      "Isrc": "",
+      "Duration": "281",
+      "ReleaseDate": "2011-12-15",
+      "Explicit": false,
+      "TrackPosition": "1",
+      "ImageLocation": "https://i.scdn.co/image/ab67616d00001e0298b2942df06b3ec74223920c",
+      "AdditionalFieldKeys": [
+        "preview_url"
+      ]
+    },
+    "IsrcFromId": "SEUM71101146",
+    "ByIsrc": null
+  },
+  {
+    "Key": "yo-yo-ma-bwv1007-prelude",
+    "ById": {
+      "Source": "spotify",
+      "Id": "17i5jLpzndlQhbS4SrTd0B",
+      "Title": "Cello Suite No. 1 in G Major, BWV 1007: I. Prélude",
+      "Artists": "Johann Sebastian Bach, Yo-Yo Ma",
+      "AlbumName": "Bach: Cello Suites Nos. 1, 5 & 6",
+      "Isrc": "",
+      "Duration": "152",
+      "ReleaseDate": "1982-12-31",
+      "Explicit": false,
+      "TrackPosition": "1",
+      "ImageLocation": "https://i.scdn.co/image/ab67616d00001e02cbb64bd416bb225456100bbc",
+      "AdditionalFieldKeys": [
+        "preview_url"
+      ]
+    },
+    "IsrcFromId": "USSM18200515",
+    "ByIsrc": null
+  }
+]

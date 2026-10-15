@@ -1,8 +1,10 @@
 ﻿using FluentDL.Activation;
 using FluentDL.Contracts.Services;
+using FluentDL.Contracts.Sources;
 using FluentDL.Core.Services;
 using FluentDL.Core.Contracts.Services;
 using FluentDL.Helpers;
+using FluentDL.Services.Sources;
 using FluentDL.ViewModels;
 using FluentDL.Views;
 
@@ -107,7 +109,7 @@ public class ActivationService : IActivationService
                 splashScreen.SetText("Updating yt-dlp ...", rowIdx);
                 _logger.LogInformation("yt-dlp update started");
                 var existingPath = await localSettings.ReadSettingAsync<string>(SettingsViewModel.YtdlpPath);
-                var output = await YoutubeApi.UpdateYtdlpAsync(existingPath);
+                var output = await YtDlp.UpdateYtdlpAsync(existingPath);
                 splashScreen.SetText($"Update complete: {output ?? "null"}", rowIdx);
                 _logger.LogInformation("yt-dlp update finished");
             } catch(Exception ex)
@@ -149,43 +151,22 @@ public class ActivationService : IActivationService
             // Initialize api objects
 
             var localSettings = App.GetService<ILocalSettingsService>();
-
-            //var qobuzEmail = DPAPIHelper.Decrypt(await localSettings.ReadSettingAsync<string>(SettingsViewModel.QobuzEmail) ?? "");
-            //var qobuzPassword = DPAPIHelper.Decrypt(await localSettings.ReadSettingAsync<string>(SettingsViewModel.QobuzPassword) ?? "");
-            var qobuzId = await localSettings.ReadSettingAsync<string>(SettingsViewModel.QobuzId);
-            var qobuzToken = await localSettings.ReadSettingAsync<string>(SettingsViewModel.QobuzToken);
-            var qobuzAppId = await localSettings.ReadSettingAsync<string>(SettingsViewModel.QobuzAppId);
-            var qobuzAppSecret = await localSettings.ReadSettingAsync<string>(SettingsViewModel.QobuzAppSecret);
-            var spotifyClientId = await localSettings.ReadSettingAsync<string>(SettingsViewModel.SpotifyClientId);
-            var spotifyClientSecret = await localSettings.ReadSettingAsync<string>(SettingsViewModel.SpotifyClientSecret);
-            var deezerArl = await localSettings.ReadSettingAsync<string>(SettingsViewModel.DeezerARL);
+            var sessions = App.GetService<SourceRegistry>().All<ISourceSession>().ToList();
 
             try
             {
-                var tasks = new[]
+                // One splash row per source that signs in, then yt-dlp. Each session reads its own saved credentials.
+                var tasks = sessions.Select((session, row) => Task.Run(async () =>
                 {
-                    Task.Run(() => {
-                        splashScreen.SetText("Initializing Qobuz ...", 0);
-                        QobuzApi.Initialize(qobuzId, qobuzToken, qobuzAppId, qobuzAppSecret);
-                        _logger.LogInformation("Provider {Provider} initialization finished; authenticated {IsAuthenticated}", "Qobuz", QobuzApi.IsInitialized);
-                        splashScreen.SetText("Qobuz Complete", 0);
-                    }),
-                    Task.Run(async()=>{
-                        splashScreen.SetText("Initializing Spotify ...", 1);
-                        await SpotifyApi.Initialize(spotifyClientId, spotifyClientSecret);
-                        _logger.LogInformation("Provider {Provider} initialization finished; authenticated {IsAuthenticated}", "Spotify", SpotifyApi.IsInitialized);
-                        splashScreen.SetText("Spotify Complete", 1);
-                    }),
-                    Task.Run(async()=>{
-                        splashScreen.SetText("Initializing Deezer ...", 2);
-                        await DeezerApi.InitDeezerClient(deezerArl);                         
-                        _logger.LogInformation("Provider {Provider} initialization finished; authenticated {IsAuthenticated}", "Deezer", DeezerApi.IsInitialized);
-                        splashScreen.SetText("Deezer Complete", 2); 
-                    }),
-                    Task.Run(async()=>{
-                        await UpdateYtdlp(localSettings, splashScreen, 3);
-                    })
-                };
+                    var name = session.Descriptor.DisplayName;
+                    splashScreen.SetText($"Initializing {name} ...", row);
+                    await session.ConnectAsync();
+                    _logger.LogInformation("Provider {Provider} initialization finished; authenticated {IsAuthenticated}", name, session.IsConnected);
+                    splashScreen.SetText($"{name} Complete", row);
+                })).Append(Task.Run(async () =>
+                {
+                    await UpdateYtdlp(localSettings, splashScreen, sessions.Count);
+                })).ToArray();
 
                 await Task.WhenAll(tasks.Select(t => t.WaitAsync(TimeSpan.FromSeconds(30))));
 

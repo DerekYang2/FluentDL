@@ -1,0 +1,275 @@
+[
+  {
+    "Key": "get-lucky-album",
+    "OriginId": "67238735",
+    "OriginIsrc": "USQX91300108",
+    "Result": {
+      "Source": "youtube",
+      "Id": "4D7u5KF7SP8",
+      "Title": "Get Lucky (feat. Pharrell Williams and Nile Rodgers)",
+      "Artists": "Daft Punk, Pharrell Williams, Nile Rodgers",
+      "AlbumName": "Random Access Memories",
+      "Isrc": null,
+      "Duration": "370",
+      "ReleaseDate": "2014-11-07",
+      "Explicit": false,
+      "TrackPosition": "1",
+      "ImageLocation": "https://yt3.googleusercontent.com/N55arCGj69gtw6thXK8JUPisxoVYiwuIEQ7I6SGlkEyNcSJ7xIWPe76Vuu1SiUqRyx5w9qvR_zV8fV3CWQ=w544-h544-l90-rj",
+      "AdditionalFieldKeys": []
+    },
+    "Callbacks": [
+      {
+        "Severity": "Warning",
+        "Song": {
+          "Source": "youtube",
+          "Id": "4D7u5KF7SP8",
+          "Title": "Get Lucky (feat. Pharrell Williams and Nile Rodgers)",
+          "Artists": "Daft Punk, Pharrell Williams, Nile Rodgers",
+          "AlbumName": "Random Access Memories",
+          "Isrc": null,
+          "Duration": "370",
+          "ReleaseDate": "2014-11-07",
+          "Explicit": false,
+          "TrackPosition": "1",
+          "ImageLocation": "https://yt3.googleusercontent.com/N55arCGj69gtw6thXK8JUPisxoVYiwuIEQ7I6SGlkEyNcSJ7xIWPe76Vuu1SiUqRyx5w9qvR_zV8fV3CWQ=w544-h544-l90-rj",
+          "AdditionalFieldKeys": []
+        },
+        "Location": null
+      }
+    ]
+  },
+  {
+    "Key": "get-lucky-radio-edit",
+    "OriginId": "66609426",
+    "OriginIsrc": "USQX91300809",
+    "Result": {
+      "Source": "youtube",
+      "Id": "Rgrt_8mXrK8",
+      "Title": "Get Lucky (Radio Edit - feat. Pharrell Williams and Nile Rodgers)",
+      "Artists": "Daft Punk, Pharrell Williams, Nile Rodgers",
+      "AlbumName": "Get Lucky",
+      "Isrc": null,
+      "Duration": "248",
+      "ReleaseDate": "2016-04-07",
+      "Explicit": false,
+      "TrackPosition": "1",
+      "ImageLocation": "https://yt3.googleusercontent.com/HqegqT4tr2u0IsOqAmUgILJunBwHHkjl9s5L7t02ZFcGsRQpqKtmM7YlkeqzDdXi926mNvAn2UJu48s=w544-h544-l90-rj",
+      "AdditionalFieldKeys": []
+    },
+    "Callbacks": [
+      {
+        "Severity": "Warning",
+        "Song": {
+          "Source": "youtube",
+          "Id": "Rgrt_8mXrK8",
+          "Title": "Get Lucky (Radio Edit - feat. Pharrell Williams and Nile Rodgers)",
+          "Artists": "Daft Punk, Pharrell Williams, Nile Rodgers",
+          "AlbumName": "Get Lucky",
+          "Isrc": null,
+          "Duration": "248",
+          "ReleaseDate": "2016-04-07",
+          "Explicit": false,
+          "TrackPosition": "1",
+          "ImageLocation": "https://yt3.googleusercontent.com/HqegqT4tr2u0IsOqAmUgILJunBwHHkjl9s5L7t02ZFcGsRQpqKtmM7YlkeqzDdXi926mNvAn2UJu48s=w544-h544-l90-rj",
+          "AdditionalFieldKeys": []
+        },
+        "Location": null
+      }
+    ]
+  },
+  {
+    "Key": "beyonce-halo",
+    "OriginId": "2553265",
+    "OriginIsrc": "USSM10804556",
+    "Result": {
+      "Source": "youtube",
+      "Id": "-3Wt6wwlmC8",
+      "Title": "Halo",
+      "Artists": "Beyoncé",
+      "AlbumName": "I AM...SASHA FIERCE",
+      "Isrc": null,
+      "Duration": "262",
+      "ReleaseDate": "2017-02-08",
+      "Explicit": false,
+      "TrackPosition": "1",
+      "ImageLocation": "https://yt3.googleusercontent.com/fyXpxf8iORys9_nMujAg7B9I0M05eQGgcdGgPzblGzWksNXh1MyL64a-euPQKk_BmLiW6lUzyX3z4-cT=w544-h544-l90-rj",
+      "AdditionalFieldKeys": []
+    },
+    "Callbacks": [
+      {
+        "Severity": "Warning",
+        "Song": {
+          "Source": "youtube",
+          "Id": "-3Wt6wwlmC8",
+          "Title": "Halo",
+          "Artists": "Beyoncé",
+          "AlbumName": "I AM...SASHA FIERCE",
+          "Isrc": null,
+          "Duration": "262",
+          "ReleaseDate": "2017-02-08",
+          "Explicit": false,
+          "TrackPosition": "1",
+          "ImageLocation": "https://yt3.googleusercontent.com/fyXpxf8iORys9_nMujAg7B9I0M05eQGgcdGgPzblGzWksNXh1MyL64a-euPQKk_BmLiW6lUzyX3z4-cT=w544-h544-l90-rj",
+          "AdditionalFieldKeys": []
+        },
+        "Location": null
+      }
+    ]
+  },
+  {
+    "Key": "yoasobi-yoru-ni-kakeru",
+    "OriginId": "824731152",
+    "OriginIsrc": "JPP301900716",
+    "Result": {
+      "Source": "youtube",
+      "Id": "by4SYYWlhEs",
+      "Title": "夜に駆ける",
+      "Artists": "YOASOBI",
+      "AlbumName": "夜に駆ける",
+      "Isrc": null,
+      "Duration": "261",
+      "ReleaseDate": "2019-12-14",
+      "Explicit": false,
+      "TrackPosition": "1",
+      "ImageLocation": "https://yt3.googleusercontent.com/-smFMOtNB5Zu8EINwbq_FQUXbBp2mguY2-w0MLxcVU0-osix9gV6IF3IuIBkeWlhck8RBQ9shgKCfDw=w544-h544-l90-rj",
+      "AdditionalFieldKeys": []
+    },
+    "Callbacks": [
+      {
+        "Severity": "Warning",
+        "Song": {
+          "Source": "youtube",
+          "Id": "by4SYYWlhEs",
+          "Title": "夜に駆ける",
+          "Artists": "YOASOBI",
+          "AlbumName": "夜に駆ける",
+          "Isrc": null,
+          "Duration": "261",
+          "ReleaseDate": "2019-12-14",
+          "Explicit": false,
+          "TrackPosition": "1",
+          "ImageLocation": "https://yt3.googleusercontent.com/-smFMOtNB5Zu8EINwbq_FQUXbBp2mguY2-w0MLxcVU0-osix9gV6IF3IuIBkeWlhck8RBQ9shgKCfDw=w544-h544-l90-rj",
+          "AdditionalFieldKeys": []
+        },
+        "Location": null
+      }
+    ]
+  },
+  {
+    "Key": "avicii-levels-original",
+    "OriginId": "14383881",
+    "OriginIsrc": "SEUM71100961",
+    "Result": {
+      "Source": "youtube",
+      "Id": "wDuoOapZ9Z0",
+      "Title": "Levels",
+      "Artists": "Avicii",
+      "AlbumName": "Levels",
+      "Isrc": null,
+      "Duration": "339",
+      "ReleaseDate": "2018-07-31",
+      "Explicit": false,
+      "TrackPosition": "1",
+      "ImageLocation": "https://yt3.googleusercontent.com/bsPieoSMF402F_05hHOq7FITGDPllsNcBnjPE0WUi6T2a4A130z6qqjJLCEV10kE1pCSGBxKt0Bdgfkc=w544-h544-l90-rj",
+      "AdditionalFieldKeys": []
+    },
+    "Callbacks": [
+      {
+        "Severity": "Warning",
+        "Song": {
+          "Source": "youtube",
+          "Id": "wDuoOapZ9Z0",
+          "Title": "Levels",
+          "Artists": "Avicii",
+          "AlbumName": "Levels",
+          "Isrc": null,
+          "Duration": "339",
+          "ReleaseDate": "2018-07-31",
+          "Explicit": false,
+          "TrackPosition": "1",
+          "ImageLocation": "https://yt3.googleusercontent.com/bsPieoSMF402F_05hHOq7FITGDPllsNcBnjPE0WUi6T2a4A130z6qqjJLCEV10kE1pCSGBxKt0Bdgfkc=w544-h544-l90-rj",
+          "AdditionalFieldKeys": []
+        },
+        "Location": null
+      }
+    ]
+  },
+  {
+    "Key": "avicii-levels-skrillex-remix",
+    "OriginId": "15421140",
+    "OriginIsrc": "SEUM71101146",
+    "Result": {
+      "Source": "youtube",
+      "Id": "u6cdQFpP88w",
+      "Title": "Levels (Skrillex Remix)",
+      "Artists": "Avicii",
+      "AlbumName": "Levels",
+      "Isrc": null,
+      "Duration": "281",
+      "ReleaseDate": "2018-07-21",
+      "Explicit": false,
+      "TrackPosition": "1",
+      "ImageLocation": "https://yt3.googleusercontent.com/aXTJre72cWUMOFjCn5i_0W6LucuIC-68guAsN_rIjTxRMwo-o-ak5ZUTqfeXb8XIWp5bdqUCR1NvUM6O=w544-h544-l90-rj",
+      "AdditionalFieldKeys": []
+    },
+    "Callbacks": [
+      {
+        "Severity": "Warning",
+        "Song": {
+          "Source": "youtube",
+          "Id": "u6cdQFpP88w",
+          "Title": "Levels (Skrillex Remix)",
+          "Artists": "Avicii",
+          "AlbumName": "Levels",
+          "Isrc": null,
+          "Duration": "281",
+          "ReleaseDate": "2018-07-21",
+          "Explicit": false,
+          "TrackPosition": "1",
+          "ImageLocation": "https://yt3.googleusercontent.com/aXTJre72cWUMOFjCn5i_0W6LucuIC-68guAsN_rIjTxRMwo-o-ak5ZUTqfeXb8XIWp5bdqUCR1NvUM6O=w544-h544-l90-rj",
+          "AdditionalFieldKeys": []
+        },
+        "Location": null
+      }
+    ]
+  },
+  {
+    "Key": "yo-yo-ma-bwv1007-prelude",
+    "OriginId": "584661",
+    "OriginIsrc": "USSM18200515",
+    "Result": {
+      "Source": "youtube",
+      "Id": "noW9fM9vgJs",
+      "Title": "Cello Suite No. 1 in G Major, BWV 1007: I. Prélude",
+      "Artists": "Yo-Yo Ma, Johann Sebastian Bach",
+      "AlbumName": "Cello Suiten No. 1,5 & 6",
+      "Isrc": null,
+      "Duration": "152",
+      "ReleaseDate": "2016-04-07",
+      "Explicit": false,
+      "TrackPosition": "1",
+      "ImageLocation": "https://yt3.googleusercontent.com/laC3yuXy8h5Sci5Ul1DAsrwKHW5bGPRdxDnF0dKAVom5qMJkXtcMECdf8J-s-q4vt0a4KXYvCaEa-DvI=w544-h544-l90-rj",
+      "AdditionalFieldKeys": []
+    },
+    "Callbacks": [
+      {
+        "Severity": "Warning",
+        "Song": {
+          "Source": "youtube",
+          "Id": "noW9fM9vgJs",
+          "Title": "Cello Suite No. 1 in G Major, BWV 1007: I. Prélude",
+          "Artists": "Yo-Yo Ma, Johann Sebastian Bach",
+          "AlbumName": "Cello Suiten No. 1,5 & 6",
+          "Isrc": null,
+          "Duration": "152",
+          "ReleaseDate": "2016-04-07",
+          "Explicit": false,
+          "TrackPosition": "1",
+          "ImageLocation": "https://yt3.googleusercontent.com/laC3yuXy8h5Sci5Ul1DAsrwKHW5bGPRdxDnF0dKAVom5qMJkXtcMECdf8J-s-q4vt0a4KXYvCaEa-DvI=w544-h544-l90-rj",
+          "AdditionalFieldKeys": []
+        },
+        "Location": null
+      }
+    ]
+  }
+]

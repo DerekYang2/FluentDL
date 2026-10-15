@@ -1,4 +1,5 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
+using FluentDL.Core.Sources;
 using FluentDL.Contracts.Services;
 using FluentDL.Core.Contracts.Services;
 using Microsoft.UI.Xaml;
@@ -71,7 +72,7 @@ public partial class SearchViewModel : ObservableRecipient
 
     public async Task<string> GetSearchSource()
     {
-        return await localSettings.ReadSettingAsync<string>(SettingsViewModel.SearchSource) ?? "deezer";
+        return await localSettings.ReadSettingAsync<string>(SettingsViewModel.SearchSource) ?? SourceIds.Deezer;
     }
 
     public async Task SaveSearchSource(string searchSource)

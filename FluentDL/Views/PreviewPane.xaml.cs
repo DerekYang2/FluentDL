@@ -1,10 +1,13 @@
 ﻿using CommunityToolkit.Labs.WinUI.MarqueeTextRns;
+using FluentDL.Core.Sources;
 using FluentDL.Contracts.Services;
+using FluentDL.Contracts.Sources;
 using FluentDL.Core.Contracts.Services;
 using FluentDL.Core.ReplayGain;
 using FluentDL.Helpers;
 using FluentDL.Models;
 using FluentDL.Services;
+using FluentDL.Services.Sources;
 using FluentDL.ViewModels;
 using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
@@ -29,7 +32,7 @@ namespace FluentDL.Views
     {
         private ILocalSettingsService localSettings;
 
-        private static HttpClient httpClient = new HttpClient();
+        private readonly SourceRegistry sources = App.GetService<SourceRegistry>();
         private double rankValue = 0;
         SongSearchObject? song = null;
         DispatcherQueue dispatcher;
@@ -245,224 +248,54 @@ namespace FluentDL.Views
             };
 
 
-            if (selectedSong.Source.Equals("deezer"))
+            if (sources.TryGet<IPreviewSource>(selectedSong.Source, out var previewSource))
             {
-                if (selectedSong is AlbumSearchObject selectedAlbum)
-                {
-                    var jsonObject = await DeezerApi.restClient.FetchJsonElement("album/" + selectedAlbum.Id);
-                    if (token.IsCancellationRequested || requestId != Interlocked.Read(ref _currentRequestId))
-                        return;
-
-                    var fullAlbumObject = DeezerApi.GetAlbumFromJsonElement(jsonObject);
-                    if (jsonObject.TryGetProperty("cover_big", out var cover_big))
-                    {
-                        var str = cover_big.GetString();
-                        if (!string.IsNullOrEmpty(str))
-                            ImageSource = new BitmapImage(new Uri(str));
-                    }
-                    PreviewInfoControl2.ItemsSource = PreviewInfoControl.ItemsSource = trackDetailsList; // First set the details list
-                    trackDetailsList.Add(new TrackDetail { Label = "Genre", Value = DeezerApi.GetGenreStr(jsonObject) });
-                    trackDetailsList.Add(new TrackDetail { Label = "Max Quality", Value = $"16-Bit/44.1 kHz" });
-                    trackDetailsList.RemoveAt(trackDetailsList.ToList().FindIndex(t => t.Label == "Album"));
-                    if (jsonObject.TryGetProperty("fans", out var fansProperty))
-                        trackDetailsList.Add(new TrackDetail { Label = "Fans", Value = fansProperty.GetInt32().ToString() });
-                    
-                    RankRatingControl.Visibility = Visibility.Collapsed;
-
-                    // Tracks list view
-                    TrackListHeader.Text = selectedAlbum.TracksCount switch
-                    {
-                        0 => "No Tracks",
-                        1 => "1 Track",
-                        _ => $"{selectedAlbum.TracksCount} Tracks"
-                    };
-                    List<SongSearchObject> albumTracks = fullAlbumObject?.TrackList ?? [];
-                    AlbumTrackListView.ItemsSource = selectedAlbum.TrackList = albumTracks;
-                }
-                else
-                {
-                    var jsonObject = await DeezerApi.restClient.FetchJsonElement("track/" + selectedSong.Id);
-                    var genreStr = await DeezerApi.GetGenreStr(jsonObject.GetProperty("album").GetProperty("id").GetInt32());
-
-                    if (token.IsCancellationRequested || requestId != Interlocked.Read(ref _currentRequestId))
-                        return;
-
-                    var albumObj = jsonObject.GetProperty("album");
-                    PreviewInfoControl2.ItemsSource = PreviewInfoControl.ItemsSource = trackDetailsList; // First set the details list
-                    ImageSource = new BitmapImage(new Uri(albumObj.GetProperty("cover_big").ToString()));
-
-                    trackDetailsList.Add(new TrackDetail { Label = "Track", Value = jsonObject.GetProperty("track_position").ToString() });
-                    if (!string.IsNullOrEmpty(genreStr))
-                        trackDetailsList.Add(new TrackDetail { Label = "Genre", Value = genreStr});
-                    trackDetailsList.Add(new TrackDetail { Label = "Max Quality", Value = $"16-Bit/44.1 kHz" });
-
-                    if (!string.IsNullOrEmpty(selectedSong?.Isrc))
-                    {
-                        trackDetailsList.Add(new TrackDetail { Label = "ISRC", Value = selectedSong.Isrc! });
-                    }
-
-                    // Configure popularity field
-                    trackDetailsList.Add(new TrackDetail { Label = "Popularity", Value = "" });
-                    RankRatingControl.Visibility = Visibility.Visible;
-                    SetRatingPercentage(GetPercentage(selectedSong));
-
-                    // Load the audio stream
-                    SetPlayerSource(jsonObject.GetProperty("preview").ToString());
-                }
-            }
-
-            if (selectedSong.Source.Equals("qobuz"))
-            {
-                if (selectedSong is AlbumSearchObject selectedAlbum)
-                {
-                    var album = await QobuzApi.GetInternalAlbum(selectedAlbum.Id);
-                    if (token.IsCancellationRequested || requestId != Interlocked.Read(ref _currentRequestId))
-                        return;
-
-                    PreviewInfoControl2.ItemsSource = PreviewInfoControl.ItemsSource = trackDetailsList; // First set the details list
-                    if (album != null)
-                    {
-                        ImageSource = new BitmapImage(new Uri(album.Image.Large)); // Get cover art
-                        trackDetailsList.Add(new TrackDetail { Label = "Genre", Value = string.Join(", ", QobuzApi.PruneGenreList(album.GenresList)) });
-                        trackDetailsList.Add(new TrackDetail { Label = "Max Quality", Value = $"{album.MaximumBitDepth}-Bit/{album.MaximumSamplingRate} kHz" });
-                    }
-                    trackDetailsList.RemoveAt(trackDetailsList.ToList().FindIndex(t => t.Label == "Album"));
-
-                    RankRatingControl.Visibility = Visibility.Collapsed;
-
-                    // Tracks list view
-                    TrackListHeader.Text = (album?.TracksCount ?? 0) switch
-                    {
-                        0 => "No Tracks",
-                        1 => "1 Track",
-                        _ => $"{album!.TracksCount} Tracks"
-                    };
-                    List<SongSearchObject> albumTracks = album?.Tracks.Items.Select(t=>QobuzApi.ConvertSongSearchObject(t, album.Artist?.Name)).ToList() ?? [];
-                    AlbumTrackListView.ItemsSource = selectedAlbum.TrackList = albumTracks;
-                }
-                else
-                {
-                    var track = await QobuzApi.GetInternalTrack(selectedSong.Id);
-                    if (token.IsCancellationRequested || requestId != Interlocked.Read(ref _currentRequestId))
-                        return;
-
-                    if (track != null)
-                        ImageSource = new BitmapImage(new Uri(track.Album.Image.Large)); // Get cover art
-                    // trackDetailsList.RemoveAt(trackDetailsList.ToList().FindIndex(x => x.Label == "Popularity")); // Remove popularity
-                    PreviewInfoControl2.ItemsSource = PreviewInfoControl.ItemsSource = trackDetailsList;
-                    trackDetailsList.Add(new TrackDetail() { Label = "Track", Value = selectedSong.TrackPosition });
-                    if (track != null)
-                    {
-                        trackDetailsList.Add(new TrackDetail { Label = "Genre", Value = string.Join(", ", QobuzApi.PruneGenreList(track.Album.GenresList)) });
-                        trackDetailsList.Add(new TrackDetail { Label = "Max Quality", Value = $"{track.MaximumBitDepth}-Bit/{track.MaximumSamplingRate} kHz" });
-                    }
-                    if (!string.IsNullOrEmpty(selectedSong?.Isrc))
-                    {
-                        trackDetailsList.Add(new TrackDetail { Label = "ISRC", Value = selectedSong.Isrc! });
-                    }
-
-                    RankRatingControl.Visibility = Visibility.Collapsed;
-
-                    var previewUri = await Task.Run(() => QobuzApi.GetPreviewUri(selectedSong.Id));
-
-                    if (token.IsCancellationRequested || requestId != Interlocked.Read(ref _currentRequestId))
-                        return;
-                    // Load the audio stream
-                    SetPlayerSource(previewUri);
-                }
-            }
-
-            if (selectedSong.Source.Equals("spotify"))
-            {
-                if (selectedSong is AlbumSearchObject selectedAlbum)
-                {
-                    ImageSource = new BitmapImage(new Uri((string)(selectedAlbum?.AdditionalFields?["cover_max"] ?? ""))); // Get the largest
-                    PreviewInfoControl2.ItemsSource = PreviewInfoControl.ItemsSource = trackDetailsList; // First set the details list
-                    trackDetailsList.RemoveAt(trackDetailsList.ToList().FindIndex(t => t.Label == "Album"));
-                    RankRatingControl.Visibility = Visibility.Collapsed;
-                    // Tracks list view
-                    TrackListHeader.Text = (selectedAlbum?.TracksCount ?? 0) switch
-                    {
-                        0 => "No Tracks",
-                        1 => "1 Track",
-                        _ => $"{selectedAlbum!.TracksCount} Tracks"
-                    };
-                    AlbumTrackListView.ItemsSource = selectedAlbum?.TrackList ?? [];
-                }
-                else
-                {
-                    var track = await SpotifyApi.GetTrack(selectedSong.Id);
-                    if (token.IsCancellationRequested || requestId != Interlocked.Read(ref _currentRequestId))
-                        return;
-                    //var album = await SpotifyApi.GetAlbum(track.Album.Id);
-                    if (track?.ImageLocation != null)
-                    {
-                        ImageSource = new BitmapImage(new Uri(track.ImageLocation)); // new BitmapImage(new Uri(album.Images.First().Url)); // Get the largest
-                    }
-                    PreviewInfoControl2.ItemsSource = PreviewInfoControl.ItemsSource = trackDetailsList; // First set the details list
-                    // var genreStr = string.Join(", ", await SpotifyApi.GetGenres(track.Artists));
-                    // trackDetailsList.Add(new TrackDetail { Label = "Genre", Value = genreStr });
-
-                    RankRatingControl.Visibility = Visibility.Collapsed;
-                    trackDetailsList.First(t => t.Label == "Release Date").Value = new DateVerboseConverter().Convert(track?.ReleaseDate ?? selectedSong.ReleaseDate, null!, null!, null!)?.ToString() ?? "";
-                    trackDetailsList.Add(new TrackDetail { Label = "Track", Value = track?.TrackPosition ?? selectedSong.TrackPosition });
-                    if (track?.Rank != null && long.TryParse(track.Rank, out long plays) && plays > 0)
-                        trackDetailsList.Add(new TrackDetail { Label = "Play Count", Value = YoutubeApi.FormatLargeValue(plays) });
-
-                    if (!string.IsNullOrEmpty(track?.Isrc))
-                    {
-                        trackDetailsList.Add(new TrackDetail { Label = "ISRC", Value = track?.Isrc!});
-                    }
-
-                    // Load the audio stream
-                    if (track?.AdditionalFields?.ContainsKey("preview_url") ?? false)
-                    {
-                        SetPlayerSource(track.AdditionalFields["preview_url"]?.ToString());
-                    }
-                    else
-                    {
-                        var previewUri = await GetSpotifyPreviewUrl(selectedSong.Id);
-                        if (token.IsCancellationRequested || requestId != Interlocked.Read(ref _currentRequestId))
-                            return;
-                        SetPlayerSource(previewUri);
-                    }
-                }
-            }
-
-            if (selectedSong.Source.Equals("youtube"))
-            {
-                ImageSource = new BitmapImage(new Uri(await YoutubeApi.GetMaxResThumbnail(selectedSong) ?? "")); // Get max res thumbnail
+                var info = await previewSource.GetPreviewAsync(selectedSong);
                 if (token.IsCancellationRequested || requestId != Interlocked.Read(ref _currentRequestId))
                     return;
 
-                if (selectedSong is AlbumSearchObject selectedAlbum)
-                {
-                    PreviewInfoControl2.ItemsSource = PreviewInfoControl.ItemsSource = trackDetailsList; // First set the details list
-                    RankRatingControl.Visibility = Visibility.Collapsed;
+                if (info.CoverUrl != null)
+                    ImageSource = new BitmapImage(new Uri(info.CoverUrl));
+                if (info.ReleaseDate != null)
+                    trackDetailsList.First(t => t.Label == "Release Date").Value = new DateVerboseConverter().Convert(info.ReleaseDate, null!, null!, null!)?.ToString() ?? "";
+                if (info.RemoveAlbumRow)
+                    trackDetailsList.RemoveAt(trackDetailsList.ToList().FindIndex(t => t.Label == "Album"));
+                foreach (var (label, value) in info.Rows)
+                    trackDetailsList.Add(new TrackDetail { Label = label, Value = value });
+                PreviewInfoControl2.ItemsSource = PreviewInfoControl.ItemsSource = trackDetailsList;
 
-                    // Tracks list view
-                    TrackListHeader.Text = selectedAlbum.TracksCount switch
-                    {
-                        0 => "No Tracks",
-                        1 => "1 Track",
-                        _ => $"{selectedAlbum.TracksCount} Tracks"
-                    };
-                    AlbumTrackListView.ItemsSource = selectedAlbum.TrackList = selectedAlbum.TrackList ?? [];
+                if (info.Popularity is { } popularity)
+                {
+                    trackDetailsList.Add(new TrackDetail { Label = "Popularity", Value = "" });
+                    RankRatingControl.Visibility = Visibility.Visible;
+                    SetRatingPercentage(popularity);
                 }
                 else
                 {
-                    trackDetailsList.Add(new TrackDetail { Label = "Views", Value = selectedSong.Rank });
-
-                    PreviewInfoControl2.ItemsSource = PreviewInfoControl.ItemsSource = trackDetailsList; // First set details list
                     RankRatingControl.Visibility = Visibility.Collapsed;
+                }
 
-                    // Load the audio stream
-                    //SongPreviewPlayer.Source = Windows.Media.Core.MediaSource.CreateFromUri(new Uri("http://localhost:8080/infinite_loading_stream.mp3"));
-                    await LoadYouTubeAudioPreviewAsync(selectedSong.Id, requestId, token);
+                if (selectedSong is AlbumSearchObject)
+                {
+                    TrackListHeader.Text = info.AlbumTrackCount switch
+                    {
+                        0 => "No Tracks",
+                        1 => "1 Track",
+                        var count => $"{count} Tracks"
+                    };
+                    AlbumTrackListView.ItemsSource = info.AlbumTracks ?? [];
+                }
+                else if (info.LoadAudioSeparately)
+                {
+                    await LoadPreviewAudioAsync(previewSource, selectedSong, requestId, token);
+                }
+                else
+                {
+                    SetPlayerSource(info.AudioUrl);
                 }
             }
 
-            if (selectedSong.Source.Equals("local"))
+            if (selectedSong.Source.Equals(SourceIds.Local))
             {
                 if (trackInfoObj is MetadataObject metadata)
                 {
@@ -571,17 +404,6 @@ namespace FluentDL.Views
             }
         }
 
-        // Deezer - 0 to 1M
-        // Spotify - 0 to 100
-        // Qobuz - not available
-        private double GetPercentage(SongSearchObject song) {
-            return song.Source switch {
-                 "deezer" => double.Parse(song.Rank) / 1E6,
-                 "spotify" => double.Parse(song.Rank) / 100,
-                 _ => -1 // Not available
-            };
-        }
-
         // percentage between 0 and 1
         private void SetRatingPercentage(double percentage)
         {
@@ -624,17 +446,6 @@ namespace FluentDL.Views
             MarqueeControl.StopMarquee(); // Initialize marquee as stopped
         }
 
-        private async Task<string?> GetSpotifyPreviewUrl(string trackId) {
-            try {
-                string htmlStr = await httpClient.GetStringAsync($"https://open.spotify.com/embed/track/{trackId}");
-                // Find occurrence of audio preview
-                return SpotifyApi.GetSpotifyPreviewUrl(htmlStr);
-            } catch (Exception e) {
-                Debug.WriteLine("Failed to get spotify preview url: " + e.Message);
-            }
-            return null;
-        }
-
         private async void AlbumTrackListView_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             var selectedSong = (SongSearchObject?)AlbumTrackListView.SelectedItem;
@@ -646,34 +457,30 @@ namespace FluentDL.Views
             var token = BeginNewRequest();
             var requestId = Interlocked.Read(ref _currentRequestId);
 
-            if (selectedSong.Source == "qobuz")
+            if (sources.TryGet<IPreviewSource>(selectedSong.Source, out var previewSource))
             {
-                var previewUri = await Task.Run(() => QobuzApi.GetPreviewUri(selectedSong.Id));
-                if (token.IsCancellationRequested || requestId != Interlocked.Read(ref _currentRequestId))
-                    return;
-                SetPlayerSource(previewUri);
-            }
-            if (selectedSong.Source == "deezer")
-            {
-                SetPlayerSource(selectedSong?.AdditionalFields?["preview"]?.ToString());
-            }
-            if (selectedSong.Source == "youtube")
-            {
-                await LoadYouTubeAudioPreviewAsync(selectedSong?.Id, requestId, token);
-            }
-            if (selectedSong.Source == "spotify")
-            {
-                var previewUrl = await GetSpotifyPreviewUrl(selectedSong.Id);
-                if (token.IsCancellationRequested || requestId != Interlocked.Read(ref _currentRequestId))
-                    return;
-                SetPlayerSource(previewUrl);
+                await LoadPreviewAudioAsync(previewSource, selectedSong, requestId, token);
             }
         }
-        
-        private async Task LoadYouTubeAudioPreviewAsync(string? youtubeId, long requestId, CancellationToken token)
+
+        // YouTube audio may come through yt-dlp (an app setting), so the pane loads it itself.
+        private async Task LoadPreviewAudioAsync(IPreviewSource source, SongSearchObject track, long requestId, CancellationToken token)
         {
-            if (youtubeId == null) return;
-            var youtubeUrl = "https://www.youtube.com/watch?v=" + youtubeId;
+            if (track.Source == SourceIds.YouTube)
+            {
+                await LoadYouTubeAudioPreviewAsync(source, track, requestId, token);
+                return;
+            }
+            var previewUri = await source.GetPreviewAudioAsync(track);
+            if (token.IsCancellationRequested || requestId != Interlocked.Read(ref _currentRequestId))
+                return;
+            SetPlayerSource(previewUri);
+        }
+        
+        private async Task LoadYouTubeAudioPreviewAsync(IPreviewSource source, SongSearchObject track, long requestId, CancellationToken token)
+        {
+            if (track.Id == null) return;
+            var youtubeUrl = "https://www.youtube.com/watch?v=" + track.Id;
             
             if (await SettingsViewModel.GetSetting<bool>(SettingsViewModel.UseYtdlp))
             {
@@ -685,7 +492,7 @@ namespace FluentDL.Views
                     previewPath = Path.Combine(Path.GetTempPath(), "FluentDL", $"preview-{Guid.NewGuid():N}.webm");
                     Directory.CreateDirectory(Path.GetDirectoryName(previewPath)!);
                     var ytdlpPath = await SettingsViewModel.GetSetting<string?>(SettingsViewModel.YtdlpPath);
-                    await YoutubeApi.DownloadAudioYTDLPWorst(previewPath, youtubeUrl, ytdlpPath, token);
+                    await YtDlp.DownloadAudioYTDLPWorst(previewPath, youtubeUrl, ytdlpPath, token);
                     if (token.IsCancellationRequested || requestId != Interlocked.Read(ref _currentRequestId))
                         return;
                     _previewPath = previewPath;
@@ -708,12 +515,10 @@ namespace FluentDL.Views
                 try
                 {
                     SongPreviewProgressBar.Visibility = Visibility.Visible;
-                    var previewUri = await YoutubeApi.AudioStreamWorstUrl(youtubeUrl);
+                    var previewUri = await source.GetPreviewAudioAsync(track);
                     if (token.IsCancellationRequested || requestId != Interlocked.Read(ref _currentRequestId))
                         return;
                     SetPlayerSource(previewUri);
-                    //var (stream, mime) = await YoutubeApi.AudioStreamWorst(ApiHelper.GetUrl(selectedSong));
-                    //SetPlayerSource(stream, mime);
                 } finally
                 {
                     SongPreviewProgressBar.Visibility = Visibility.Collapsed;

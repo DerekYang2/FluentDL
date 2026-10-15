@@ -8,6 +8,8 @@ using FluentDL.Models;
 using FluentDL.Notifications;
 using FluentDL.Services;
 using FluentDL.Services.CustomSpotify;
+using FluentDL.Core.Sources;
+using FluentDL.Services.Sources;
 using FluentDL.ViewModels;
 using FluentDL.Views;
 using Microsoft.Extensions.DependencyInjection;
@@ -17,7 +19,6 @@ using Microsoft.UI;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
-using Microsoft.WindowsAppSDK.Runtime.Packages;
 using System.Diagnostics;
 using System.Text;
 using System.Threading;
@@ -122,7 +123,17 @@ public partial class App : Application
                     // Core Services
                     services.AddSingleton<ISampleDataService, SampleDataService>();
                     services.AddSingleton<IFileService, FileService>();
+                    services.AddSingleton<IAudioConverter, FFmpegRunner>();
 
+                    // Music sources
+                    services.AddSource<DeezerSource>();
+                    services.AddSource<QobuzSource>();
+                    services.AddSource<SpotifySource>();
+                    services.AddSource<YoutubeSource>();
+                    services.AddSingleton<SourceRegistry>();
+                    services.AddSingleton<ConversionService>();
+                    services.AddSingleton<EquivalentDownloader>();
+                    services.AddSingleton<DownloadService>();
                     // Views and ViewModels
                     services.AddTransient<SettingsViewModel>();
                     services.AddTransient<SettingsPage>();
@@ -153,6 +164,8 @@ public partial class App : Application
                     services.Configure<LocalSettingsOptions>(
                         context.Configuration.GetSection(nameof(LocalSettingsOptions)));
                 }).Build();
+
+            FluentDL.Core.Sources.SourceServices.Configure(GetService<ILocalSettingsService>(), GetService<IAudioConverter>());
 
             Log.Information("Application services initialized; version {Version}", SettingsViewModel.GetVersionDescription());
             App.GetService<IAppNotificationService>().Initialize();

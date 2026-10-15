@@ -4,6 +4,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.WinUI.UI.Controls;
 using FFMpegCore.Builders.MetaData;
+using FluentDL.Core.Sources;
 using FluentDL.Contracts.Services;
 using FluentDL.Contracts.ViewModels;
 using FluentDL.Core.Contracts.Services;
@@ -161,7 +162,7 @@ public partial class LocalExplorerViewModel : ObservableRecipient
         var fileName = Path.GetFileNameWithoutExtension(path);
         return new SongSearchObject()
         {
-            Source = "local",
+            Source = SourceIds.Local,
             Id = path,
             Title = metadataObj.Title ?? fileName,
             Artists = string.Join(", ", metadataObj.Artists ?? new string[] { "N/A" }),
@@ -344,66 +345,5 @@ public partial class LocalExplorerViewModel : ObservableRecipient
         return ms;
     }
 
-    public static readonly HashSet<string> SupportedExtensions =
-    [
-        ".aac",
-        ".mp4",
-        ".m4a",
-        ".m4b",
-        ".caf",
-        ".aax",
-        ".aa",
-        ".aif",
-        ".aiff",
-        ".aifc",
-        ".dts",
-        ".dsd",
-        ".dsf",
-        ".ac3",
-        ".xm",
-        ".flac",
-        ".gym",
-        ".it",
-        ".mid",
-        ".midi",
-        ".ape",
-        ".mp1",
-        ".mp2",
-        ".mp3",
-        ".mpc",
-        ".mod",
-        ".ogg",
-        ".oga",
-        ".opus",
-        ".ofr",
-        ".ofs",
-        ".psf",
-        ".psf1",
-        ".psf2",
-        ".minipsf",
-        ".minipsf1",
-        ".minipsf2",
-        ".ssf",
-        ".minissf",
-        ".dsf",
-        ".minidsf",
-        ".gsf",
-        ".minigsf",
-        ".qsf",
-        ".miniqsf",
-        ".s3m",
-        ".spc",
-        ".tak",
-        ".tta",
-        ".vqf",
-        ".wav",
-        ".bwav",
-        ".bwf",
-        ".vgm",
-        ".vgz",
-        ".wv",
-        ".wma",
-        ".asf",
-        ".webm",
-    ];
+    public static readonly HashSet<string> SupportedExtensions = FluentDL.Core.Helpers.AudioFiles.SupportedExtensions;
 }

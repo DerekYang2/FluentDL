@@ -1,0 +1,58 @@
+[
+  {
+    "Url": "https://www.youtube.com/watch?v=jNQXAC9IVRw",
+    "Result": {
+      "Items": [
+        {
+          "Source": "youtube",
+          "Id": "jNQXAC9IVRw",
+          "Title": "Me at the zoo",
+          "Artists": "jawed",
+          "AlbumName": "Me at the zoo",
+          "Isrc": null,
+          "Duration": "19",
+          "ReleaseDate": "2005-04-23",
+          "Explicit": false,
+          "TrackPosition": "1",
+          "ImageLocation": "https://i.ytimg.com/vi/jNQXAC9IVRw/hqdefault.jpg?sqp=-oaymwExCJADEOABSFryq4qpAyMIARUAAIhCGAHwAQH4Ab4CgALwAYoCDAgAEAEYVSBZKGUwDw==&rs=AOn4CLAWuWkIqRJl-WjJyHNrmvFb-77q5w",
+          "AdditionalFieldKeys": []
+        }
+      ],
+      "Error": null
+    },
+    "Status": [
+      {
+        "Severity": "Success",
+        "Message": "<b>YouTube</b>   Loaded video <a href='https://www.youtube.com/watch?v=jNQXAC9IVRw'>Me at the zoo</a>"
+      }
+    ]
+  },
+  {
+    "Url": "https://music.youtube.com/watch?v=jNQXAC9IVRw",
+    "Result": {
+      "Items": [
+        {
+          "Source": "youtube",
+          "Id": "jNQXAC9IVRw",
+          "Title": "Me at the zoo",
+          "Artists": "jawed",
+          "AlbumName": "Me at the zoo",
+          "Isrc": null,
+          "Duration": "19",
+          "ReleaseDate": "2005-04-23",
+          "Explicit": false,
+          "TrackPosition": "1",
+          "ImageLocation": "https://i.ytimg.com/vi/jNQXAC9IVRw/hqdefault.jpg?sqp=-oaymwExCJADEOABSFryq4qpAyMIARUAAIhCGAHwAQH4Ab4CgALwAYoCDAgAEAEYVSBZKGUwDw==&rs=AOn4CLAWuWkIqRJl-WjJyHNrmvFb-77q5w",
+          "AdditionalFieldKeys": []
+        }
+      ],
+      "Error": null
+    },
+    "Status": [
+      {
+        "Severity": "Success",
+        "Message": "<b>YouTube Music</b>   Loaded video <a href='https://music.youtube.com/watch?v=jNQXAC9IVRw'>Me at the zoo</a>"
+      }
+    ]
+  }
+]

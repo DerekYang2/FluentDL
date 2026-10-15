@@ -1,0 +1,25 @@
+{
+  "AfterStartup": {
+    "Deezer": "Logged In",
+    "Qobuz": "Logged In",
+    "Spotify": "Logged In"
+  },
+  "AfterUpdate": {
+    "Deezer": {
+      "Message": "Deezer   Log in success: free account",
+      "LoginState": "Logged In"
+    },
+    "Qobuz": {
+      "Message": "Qobuz   Logged in using custom app ID/secret",
+      "LoginState": "Logged In"
+    },
+    "Spotify": {
+      "Message": "Spotify   Logged in with Spotify Web Player",
+      "LoginState": "Logged In"
+    }
+  },
+  "WrongArl": {
+    "Message": "Deezer   Log in failure: ARL invalid",
+    "LoginState": "Not Logged In"
+  }
+}

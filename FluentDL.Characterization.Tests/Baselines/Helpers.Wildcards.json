@@ -1,0 +1,37 @@
+[
+  {
+    "Wildcard": "{artist} - {title}",
+    "Full": "Daft Punk - Get Lucky (feat. Pharrell Williams and Nile Rodgers)",
+    "Sparse": "- A_B_C"
+  },
+  {
+    "Wildcard": "{position}. {title}",
+    "Full": "8. Get Lucky (feat. Pharrell Williams and Nile Rodgers)",
+    "Sparse": "1. A_B_C"
+  },
+  {
+    "Wildcard": "{artists_sorted}/{album} ({year})",
+    "Full": "Daft Punk, Nile Rodgers, Pharrell Williams/Random Access Memories (2013)",
+    "Sparse": "/ (YYYY)"
+  },
+  {
+    "Wildcard": "{isrc}_{id}",
+    "Full": "USQX91300108_67238735",
+    "Sparse": "_x"
+  },
+  {
+    "Wildcard": "{date}",
+    "Full": "2013-05-17",
+    "Sparse": ""
+  },
+  {
+    "Wildcard": "{album}/{artists}",
+    "Full": "Random Access Memories/Daft Punk, Pharrell Williams, Nile Rodgers",
+    "Sparse": "/"
+  },
+  {
+    "Wildcard": "plain",
+    "Full": "plain",
+    "Sparse": "plain"
+  }
+]

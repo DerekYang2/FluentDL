@@ -14,6 +14,7 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:models="using:FluentDL.Models"
     xmlns:services="using:FluentDL.Services"
+    xmlns:sources="using:FluentDL.Core.Sources"
     xmlns:views="using:FluentDL.Views"
     x:Name="RootPage"
     NavigationCacheMode="Required"
@@ -213,6 +214,7 @@
                                     x:Name="SourceRadioButtons"
                                     Padding="0"
                                     Header="Override Source"
+                                    ItemsSource="{x:Bind SearchSources}"
                                     SelectedIndex="0">
                                     <RadioButtons.HeaderTemplate>
                                         <DataTemplate>
@@ -222,10 +224,11 @@
                                                 Text="{Binding}" />
                                         </DataTemplate>
                                     </RadioButtons.HeaderTemplate>
-                                    <RadioButton Content="Deezer" ToolTipService.ToolTip="Get search results from Deezer" />
-                                    <RadioButton Content="Qobuz" ToolTipService.ToolTip="Get search results from Qobuz" />
-                                    <RadioButton Content="Spotify" ToolTipService.ToolTip="Get search results from Spotify" />
-                                    <RadioButton Content="YouTube" ToolTipService.ToolTip="Get search results from YouTube" />
+                                    <RadioButtons.ItemTemplate>
+                                        <DataTemplate x:DataType="sources:SourceDescriptor">
+                                            <RadioButton Content="{x:Bind DisplayName}" ToolTipService.ToolTip="{x:Bind views:Search.SearchSourceToolTip(DisplayName)}" />
+                                        </DataTemplate>
+                                    </RadioButtons.ItemTemplate>
                                 </RadioButtons>
                                 <ToggleSwitch
                                     x:Name="AlbumModeSwitch"

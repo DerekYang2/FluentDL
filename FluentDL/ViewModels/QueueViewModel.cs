@@ -1,4 +1,5 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
+using FluentDL.Core.Sources;
 using FluentDL.Contracts.Services;
 using FluentDL.Core.Services;
 using FluentDL.Core.Contracts.Services;
@@ -281,7 +282,7 @@ public partial class QueueViewModel : ObservableRecipient
                     Serilog.Log.Warning(ex, "Background queue image load failed");
                 }
             });
-        } else if (queueObj.Source == "local")
+        } else if (queueObj.Source == SourceIds.Local)
         {
             _ = DatabaseService.QueueSave(hash, queueObj.ToString(), null);
         }
@@ -320,7 +321,8 @@ public partial class QueueViewModel : ObservableRecipient
         if (sources == null) throw new ArgumentNullException(nameof(sources));
         if (sources.Count == 0) return;
 
-        if (sources.Count >= 5)
+        // Every source selected: clear everything at once.
+        if (sources.Count >= SourceCatalog.All.Count)
         {
             await Clear();
             return;
@@ -380,7 +382,7 @@ public partial class QueueViewModel : ObservableRecipient
                 SongSearchObject song = pair.Item2;
 
                 // If local, set the local bitmap image
-                if (song.Source == "local")
+                if (song.Source == SourceIds.Local)
                 {
                     var localSong = LocalExplorerViewModel.ParseFile(song.Id);  // Re-parse the file
                     if (localSong != null)

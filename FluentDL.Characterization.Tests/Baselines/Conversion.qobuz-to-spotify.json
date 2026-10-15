@@ -1,0 +1,262 @@
+[
+  {
+    "Key": "get-lucky-album",
+    "OriginId": "9140031",
+    "OriginIsrc": "USQX91300108",
+    "Result": {
+      "Source": "spotify",
+      "Id": "69kOkLUCkxIZYexIgSG8rq",
+      "Title": "Get Lucky (feat. Pharrell Williams and Nile Rodgers)",
+      "Artists": "Daft Punk, Pharrell Williams, Nile Rodgers",
+      "AlbumName": "Random Access Memories",
+      "Isrc": "",
+      "Duration": "370",
+      "ReleaseDate": "",
+      "Explicit": false,
+      "TrackPosition": "1",
+      "ImageLocation": "https://i.scdn.co/image/ab67616d00001e029b9b36b0e22870b9f542d937",
+      "AdditionalFieldKeys": []
+    },
+    "Callbacks": [
+      {
+        "Severity": "Warning",
+        "Song": {
+          "Source": "spotify",
+          "Id": "69kOkLUCkxIZYexIgSG8rq",
+          "Title": "Get Lucky (feat. Pharrell Williams and Nile Rodgers)",
+          "Artists": "Daft Punk, Pharrell Williams, Nile Rodgers",
+          "AlbumName": "Random Access Memories",
+          "Isrc": "",
+          "Duration": "370",
+          "ReleaseDate": "",
+          "Explicit": false,
+          "TrackPosition": "1",
+          "ImageLocation": "https://i.scdn.co/image/ab67616d00001e029b9b36b0e22870b9f542d937",
+          "AdditionalFieldKeys": []
+        },
+        "Location": null
+      }
+    ]
+  },
+  {
+    "Key": "get-lucky-radio-edit",
+    "OriginId": "8767428",
+    "OriginIsrc": "USQX91300809",
+    "Result": {
+      "Source": "spotify",
+      "Id": "3OtHNyiaYaQgQlGagvhEku",
+      "Title": "Get Lucky (Radio Edit) [feat. Pharrell Williams and Nile Rodgers]",
+      "Artists": "Daft Punk, Pharrell Williams, Nile Rodgers",
+      "AlbumName": "2010s Hits",
+      "Isrc": "",
+      "Duration": "248",
+      "ReleaseDate": "",
+      "Explicit": false,
+      "TrackPosition": "1",
+      "ImageLocation": "https://i.scdn.co/image/ab67616d00001e028634df56f01887c06c8218f2",
+      "AdditionalFieldKeys": []
+    },
+    "Callbacks": [
+      {
+        "Severity": "Warning",
+        "Song": {
+          "Source": "spotify",
+          "Id": "3OtHNyiaYaQgQlGagvhEku",
+          "Title": "Get Lucky (Radio Edit) [feat. Pharrell Williams and Nile Rodgers]",
+          "Artists": "Daft Punk, Pharrell Williams, Nile Rodgers",
+          "AlbumName": "2010s Hits",
+          "Isrc": "",
+          "Duration": "248",
+          "ReleaseDate": "",
+          "Explicit": false,
+          "TrackPosition": "1",
+          "ImageLocation": "https://i.scdn.co/image/ab67616d00001e028634df56f01887c06c8218f2",
+          "AdditionalFieldKeys": []
+        },
+        "Location": null
+      }
+    ]
+  },
+  {
+    "Key": "beyonce-halo",
+    "OriginId": "460985",
+    "OriginIsrc": "USSM10804556",
+    "Result": {
+      "Source": "spotify",
+      "Id": "4JehYebiI9JE8sR8MisGVb",
+      "Title": "Halo",
+      "Artists": "Beyoncé",
+      "AlbumName": "I AM...SASHA FIERCE",
+      "Isrc": "",
+      "Duration": "262",
+      "ReleaseDate": "",
+      "Explicit": false,
+      "TrackPosition": "1",
+      "ImageLocation": "https://i.scdn.co/image/ab67616d00001e02801c4d205accdba0a468a10b",
+      "AdditionalFieldKeys": []
+    },
+    "Callbacks": [
+      {
+        "Severity": "Warning",
+        "Song": {
+          "Source": "spotify",
+          "Id": "4JehYebiI9JE8sR8MisGVb",
+          "Title": "Halo",
+          "Artists": "Beyoncé",
+          "AlbumName": "I AM...SASHA FIERCE",
+          "Isrc": "",
+          "Duration": "262",
+          "ReleaseDate": "",
+          "Explicit": false,
+          "TrackPosition": "1",
+          "ImageLocation": "https://i.scdn.co/image/ab67616d00001e02801c4d205accdba0a468a10b",
+          "AdditionalFieldKeys": []
+        },
+        "Location": null
+      }
+    ]
+  },
+  {
+    "Key": "yoasobi-yoru-ni-kakeru",
+    "OriginId": "82096207",
+    "OriginIsrc": "JPP301900716",
+    "Result": {
+      "Source": "spotify",
+      "Id": "3dPtXHP0oXQ4HCWHsOA9js",
+      "Title": "夜に駆ける",
+      "Artists": "YOASOBI",
+      "AlbumName": "夜に駆ける",
+      "Isrc": "",
+      "Duration": "261",
+      "ReleaseDate": "",
+      "Explicit": false,
+      "TrackPosition": "1",
+      "ImageLocation": "https://i.scdn.co/image/ab67616d00001e02c5716278abba6a103ad13aa7",
+      "AdditionalFieldKeys": []
+    },
+    "Callbacks": [
+      {
+        "Severity": "Warning",
+        "Song": {
+          "Source": "spotify",
+          "Id": "3dPtXHP0oXQ4HCWHsOA9js",
+          "Title": "夜に駆ける",
+          "Artists": "YOASOBI",
+          "AlbumName": "夜に駆ける",
+          "Isrc": "",
+          "Duration": "261",
+          "ReleaseDate": "",
+          "Explicit": false,
+          "TrackPosition": "1",
+          "ImageLocation": "https://i.scdn.co/image/ab67616d00001e02c5716278abba6a103ad13aa7",
+          "AdditionalFieldKeys": []
+        },
+        "Location": null
+      }
+    ]
+  },
+  {
+    "Key": "avicii-levels-original",
+    "OriginId": "8632879",
+    "OriginIsrc": "SEUM71100961",
+    "Result": {
+      "Source": "spotify",
+      "Id": "6Xe9wT5xeZETPwtaP2ynUz",
+      "Title": "Levels - Original Version",
+      "Artists": "Avicii",
+      "AlbumName": "Levels",
+      "Isrc": "",
+      "Duration": "339",
+      "ReleaseDate": "",
+      "Explicit": false,
+      "TrackPosition": "1",
+      "ImageLocation": "https://i.scdn.co/image/ab67616d00001e02ffb343926530168be4724dd4",
+      "AdditionalFieldKeys": []
+    },
+    "Callbacks": [
+      {
+        "Severity": "Warning",
+        "Song": {
+          "Source": "spotify",
+          "Id": "6Xe9wT5xeZETPwtaP2ynUz",
+          "Title": "Levels - Original Version",
+          "Artists": "Avicii",
+          "AlbumName": "Levels",
+          "Isrc": "",
+          "Duration": "339",
+          "ReleaseDate": "",
+          "Explicit": false,
+          "TrackPosition": "1",
+          "ImageLocation": "https://i.scdn.co/image/ab67616d00001e02ffb343926530168be4724dd4",
+          "AdditionalFieldKeys": []
+        },
+        "Location": null
+      }
+    ]
+  },
+  {
+    "Key": "avicii-levels-skrillex-remix",
+    "OriginId": "8636159",
+    "OriginIsrc": "SEUM71101146",
+    "Result": {
+      "Source": "spotify",
+      "Id": "44yE6CZzRQJAgB5swhWlJO",
+      "Title": "Levels - Skrillex Remix",
+      "Artists": "Avicii, Skrillex",
+      "AlbumName": "Remixxx",
+      "Isrc": "",
+      "Duration": "281",
+      "ReleaseDate": "",
+      "Explicit": false,
+      "TrackPosition": "1",
+      "ImageLocation": "https://i.scdn.co/image/ab67616d00001e0243fd8ca82212c81b1e5ae0b9",
+      "AdditionalFieldKeys": []
+    },
+    "Callbacks": [
+      {
+        "Severity": "Warning",
+        "Song": {
+          "Source": "spotify",
+          "Id": "44yE6CZzRQJAgB5swhWlJO",
+          "Title": "Levels - Skrillex Remix",
+          "Artists": "Avicii, Skrillex",
+          "AlbumName": "Remixxx",
+          "Isrc": "",
+          "Duration": "281",
+          "ReleaseDate": "",
+          "Explicit": false,
+          "TrackPosition": "1",
+          "ImageLocation": "https://i.scdn.co/image/ab67616d00001e0243fd8ca82212c81b1e5ae0b9",
+          "AdditionalFieldKeys": []
+        },
+        "Location": null
+      }
+    ]
+  },
+  {
+    "Key": "yo-yo-ma-bwv1007-prelude",
+    "OriginId": "5590843",
+    "OriginIsrc": "USSM18200515",
+    "Result": null,
+    "Callbacks": [
+      {
+        "Severity": "Error",
+        "Song": {
+          "Source": "qobuz",
+          "Id": "5590843",
+          "Title": "I. Prélude",
+          "Artists": "Yo-Yo Ma",
+          "AlbumName": "Bach: Unaccompanied Cello Suites",
+          "Isrc": "USSM18200515",
+          "Duration": "151",
+          "ReleaseDate": "2010-07-20",
+          "Explicit": false,
+          "TrackPosition": "1",
+          "ImageLocation": "https://static.qobuz.com/images/covers/53/18/0884977621853_230.jpg",
+          "AdditionalFieldKeys": []
+        },
+        "Location": null
+      }
+    ]
+  }
+]
