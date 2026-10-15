@@ -633,28 +633,21 @@ public sealed partial class Search : Page
         try
         {
             var beforeCount = QueueViewModel.Source.Count;
+            // Albums stay albums in the queue.
             foreach (var song in ((ObservableCollection<SongSearchObject>)CustomListView.ItemsSource).ToList())
             {
-                if (song is AlbumSearchObject album)
-                {
-                    var albumTracks = await GetAlbumTracksAsync(album);
-                    albumTracks.ForEach((song)=>QueueViewModel.Add(song));
-                }
-                else
-                {
-                    QueueViewModel.Add(song);
-                }
+                QueueViewModel.Add(song);
             }
 
             var addedCount = QueueViewModel.Source.Count - beforeCount;
 
             if (addedCount < listViewCount)
             {
-                ShowInfoBar(InfoBarSeverity.Informational, $"Added {addedCount} {(addedCount == 1 ? "track" : "tracks")} to queue (duplicates ignored)");
+                ShowInfoBar(InfoBarSeverity.Informational, $"Added {addedCount} {(addedCount == 1 ? "item" : "items")} to queue (duplicates ignored)");
             }
             else
             {
-                ShowInfoBar(InfoBarSeverity.Success, $"Added {addedCount} {(addedCount == 1 ? "track" : "tracks")} to queue");
+                ShowInfoBar(InfoBarSeverity.Success, $"Added {addedCount} {(addedCount == 1 ? "item" : "items")} to queue");
             }
         }
         catch (Exception ex)
@@ -802,47 +795,16 @@ public sealed partial class Search : Page
         }
 
         var beforeCount = QueueViewModel.Source.Count;
+        QueueViewModel.Add(song); // an album is one row
+        var label = song is AlbumSearchObject ? "Album" : "Track";
 
-        if (song is AlbumSearchObject album)
+        if (QueueViewModel.Source.Count == beforeCount) // No change
         {
-            InfobarProgress.Visibility = Visibility.Visible;
-            ShowInfoBarPermanent(InfoBarSeverity.Informational, $"Adding album <a href='{ApiHelper.GetUrl(album)}'>{album.Title}</a> to queue");
-
-            try
-            {
-                var albumTracks = await GetAlbumTracksAsync(album);
-
-                albumTracks.ForEach((song) => QueueViewModel.Add(song));
-
-                int addedCount = QueueViewModel.Source.Count - beforeCount;
-                if (addedCount < albumTracks.Count)
-                {
-                    ShowInfoBar(InfoBarSeverity.Informational, $"Added {addedCount} {(addedCount == 1 ? "track" : "tracks")} from <a href='{ApiHelper.GetUrl(album)}'>{album.Title}</a> to queue (duplicates ignored)", 3);
-                }
-                else
-                {
-                    ShowInfoBar(InfoBarSeverity.Success, $"Added {addedCount} {(addedCount == 1 ? "track" : "tracks")} from <a href='{ApiHelper.GetUrl(album)}'>{album.Title}</a> to queue", 3);
-                }
-            } catch (Exception ex)
-            {
-                ShowInfoBar(InfoBarSeverity.Error, $"Error adding album to queue: {ex.Message}", 5);
-            } finally
-            {
-                InfobarProgress.Visibility = Visibility.Collapsed;
-            }
+            ShowInfoBar(InfoBarSeverity.Warning, $"{label} <a href='{ApiHelper.GetUrl(song)}'>{song.Title}</a> already in queue");
         }
         else
         {
-            QueueViewModel.Add(song);
-
-            if (QueueViewModel.Source.Count == beforeCount) // No change
-            {
-                ShowInfoBar(InfoBarSeverity.Warning, $"<a href='{ApiHelper.GetUrl(song)}'>{song.Title}</a> already in queue");
-            }
-            else
-            {
-                ShowInfoBar(InfoBarSeverity.Success, $"<a href='{ApiHelper.GetUrl(song)}'>{song.Title}</a> added to queue");
-            }
+            ShowInfoBar(InfoBarSeverity.Success, $"{label} <a href='{ApiHelper.GetUrl(song)}'>{song.Title}</a> added to queue");
         }
     }
 

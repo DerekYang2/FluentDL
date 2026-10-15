@@ -207,10 +207,16 @@ internal class AlbumCountConverter : IValueConverter
 {
     public object Convert(object? value, Type targetType, object parameter, string language)
     {
-        if (value is AlbumSearchObject album)
+        var count = value switch
         {
-            string retStr = $"{(char)160}{(char)0x2022}{(char)160}{(char)0xfeff}{album.TracksCount} Track";
-            if (album.TracksCount != 1) retStr += "s";
+            AlbumSearchObject album => (int?)album.TracksCount,
+            ViewModels.QueueObject { IsAlbum: true } row => row.AlbumTracksCount,
+            _ => null,
+        };
+        if (count != null)
+        {
+            string retStr = $"{(char)160}{(char)0x2022}{(char)160}{(char)0xfeff}{count} Track";
+            if (count != 1) retStr += "s";
             return retStr;
         }
         else
@@ -283,12 +289,28 @@ internal class ASCIIInvertedVisibilityConverter : IValueConverter
     }
 }
 
+/// <summary>
+/// The compact queue's Album column: the album name for a track, and the track count for an album row, whose own
+/// album name is just its title.
+/// </summary>
+internal class AlbumColumnConverter : IValueConverter
+{
+    public object Convert(object? value, Type targetType, object parameter, string language) => value switch
+    {
+        ViewModels.QueueObject { IsAlbum: true } row => row.AlbumTracksCount == 1 ? "1 track" : $"{row.AlbumTracksCount} tracks",
+        SongSearchObject song => song.AlbumName,
+        _ => "",
+    };
+
+    public object ConvertBack(object value, Type targetType, object parameter, string language) => throw new NotImplementedException();
+}
+
 internal class AlbumToVisibleConverter : IValueConverter
 {
     public object Convert(object? value, Type targetType, object parameter, string language)
     {
         // Returns Visible if it IS an AlbumSearchObject
-        return value is AlbumSearchObject ? Visibility.Visible : Visibility.Collapsed;
+        return ViewModels.QueueObject.IsAlbumItem(value) ? Visibility.Visible : Visibility.Collapsed;
     }
 
     public object ConvertBack(object value, Type targetType, object parameter, string language) => throw new NotImplementedException();
@@ -299,7 +321,7 @@ internal class AlbumToCollapsedConverter : IValueConverter
     public object Convert(object? value, Type targetType, object parameter, string language)
     {
         // Returns Collapsed if it IS an AlbumSearchObject (showing the ellipse for everything else)
-        return value is AlbumSearchObject ? Visibility.Collapsed : Visibility.Visible;
+        return ViewModels.QueueObject.IsAlbumItem(value) ? Visibility.Collapsed : Visibility.Visible;
     }
 
     public object ConvertBack(object value, Type targetType, object parameter, string language) => throw new NotImplementedException();

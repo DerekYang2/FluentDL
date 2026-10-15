@@ -57,13 +57,14 @@ public class QueueObject : SongSearchObject, INotifyPropertyChanged
         }
     }
 
+    // Created on first read, on the UI thread, so a row can also be built off it (tests, background restores).
     [JsonIgnore]
-    private SolidColorBrush _convertBadgeColor = new(Windows.UI.Color.FromArgb(0, 0, 0, 0));
+    private SolidColorBrush? _convertBadgeColor;
 
     [JsonIgnore]
     public SolidColorBrush ConvertBadgeColor
     {
-        get => _convertBadgeColor;
+        get => _convertBadgeColor ??= new SolidColorBrush(Windows.UI.Color.FromArgb(0, 0, 0, 0));
         set
         {
             if (_convertBadgeColor != value)
@@ -76,7 +77,65 @@ public class QueueObject : SongSearchObject, INotifyPropertyChanged
     }
 
     [JsonIgnore]
-    public Visibility ConvertBadgeVisibility => _convertBadgeColor.Color.A == 0 ? Visibility.Collapsed : Visibility.Visible;
+    public Visibility ConvertBadgeVisibility => _convertBadgeColor is { Color.A: > 0 } ? Visibility.Visible : Visibility.Collapsed;
+
+    /// <summary>Set for an album row: its track count. Null for a track. Saved with the queue.</summary>
+    public int? AlbumTracksCount { get; set; }
+
+    /// <summary>
+    /// An album row's tracks as its source listed them. Saved with the queue: Spotify and YouTube albums can't list
+    /// their tracks again from the id alone, and Spotify's preview reads its cover from AdditionalFields.
+    /// </summary>
+    public List<SongSearchObject>? TrackList { get; set; }
+
+    /// <summary>Orders the tracks an album expanded into, which share the album's QueueCounter. Saved with the queue.</summary>
+    public int? QueueSubOrder { get; set; }
+
+    [JsonIgnore]
+    public bool IsAlbum => AlbumTracksCount != null;
+
+    public static bool IsAlbumItem(object? item) => item is AlbumSearchObject || item is QueueObject { IsAlbum: true };
+
+    /// <summary>The object for source calls: an AlbumSearchObject for an album row, the row itself for a track.</summary>
+    public static SongSearchObject Unwrap(SongSearchObject song) =>
+        song is QueueObject { IsAlbum: true } row ? ToAlbum(row, row.AlbumTracksCount!.Value) : song;
+
+    /// <summary>Restores a saved row: an album when it was saved with a track count, else a track.</summary>
+    internal static (SongSearchObject Song, int SubOrder)? ParseSaved(string json)
+    {
+        SongSearchObject? song;
+        Newtonsoft.Json.Linq.JObject saved;
+        try
+        {
+            song = Newtonsoft.Json.JsonConvert.DeserializeObject<SongSearchObject>(json);
+            saved = Newtonsoft.Json.Linq.JObject.Parse(json);
+        }
+        catch (Newtonsoft.Json.JsonException e)
+        {
+            Serilog.Log.Warning(e, "Skipped an unreadable saved queue row");
+            return null;
+        }
+        if (song == null) return null;
+        if (saved["AlbumTracksCount"] is { Type: Newtonsoft.Json.Linq.JTokenType.Integer } count)
+        {
+            // Read it as an album too, so its TrackList and AdditionalFields come back.
+            var album = saved.ToObject<AlbumSearchObject>() ?? ToAlbum(song, (int)count);
+            album.TracksCount = (int)count;
+            song = album;
+        }
+        var subOrder = saved["QueueSubOrder"] is { Type: Newtonsoft.Json.Linq.JTokenType.Integer } sub ? (int)sub : 0;
+        return (song, subOrder);
+    }
+
+    public static AlbumSearchObject ToAlbum(SongSearchObject song, int tracksCount) => new()
+    {
+        Title = song.Title, ImageLocation = song.ImageLocation, Id = song.Id, ReleaseDate = song.ReleaseDate,
+        Artists = song.Artists, Duration = song.Duration, Rank = song.Rank, AlbumName = song.AlbumName, Source = song.Source,
+        Explicit = song.Explicit, TrackPosition = song.TrackPosition, Isrc = song.Isrc, QueueCounter = song.QueueCounter,
+        AudioFormat = song.AudioFormat, AdditionalFields = song.AdditionalFields, TracksCount = tracksCount,
+        TrackList = (song as QueueObject)?.TrackList?.ToList() ?? (song as AlbumSearchObject)?.TrackList?.ToList(),
+        LocalBitmapImage = song.LocalBitmapImage,
+    };
 
     public QueueObject(SongSearchObject song)
     {
@@ -96,6 +155,17 @@ public class QueueObject : SongSearchObject, INotifyPropertyChanged
         LocalBitmapImage = song.LocalBitmapImage;
         Isrc = song.Isrc;
         QueueCounter = song.QueueCounter;
+        AudioFormat = song.AudioFormat;
+        // Sources keep data here that they need later, such as Deezer's preview address and Spotify's album cover.
+        AdditionalFields = song.AdditionalFields == null ? null : new Dictionary<string, object?>(song.AdditionalFields);
+        TrackList = (song as AlbumSearchObject)?.TrackList?.ToList() ?? (song as QueueObject)?.TrackList?.ToList();
+        AlbumTracksCount = song switch
+        {
+            AlbumSearchObject album => album.TracksCount,
+            QueueObject row => row.AlbumTracksCount,
+            _ => null,
+        };
+        if (song is QueueObject other) QueueSubOrder = other.QueueSubOrder;
     }
 }
 
@@ -218,11 +288,12 @@ public partial class QueueViewModel : ObservableRecipient
         return (Source.Last().QueueCounter ?? 0) + 1;
     }
 
-    public static async Task<QueueObject?> CreateQueueObject(SongSearchObject song, int? queueCounter)
+    public static async Task<QueueObject?> CreateQueueObject(SongSearchObject song, int? queueCounter, int? subOrder = null)
     {
         var queueObj = new QueueObject(song)
         {
-            QueueCounter = queueCounter
+            QueueCounter = queueCounter,
+            QueueSubOrder = subOrder,
         };
         if (queueObj.LocalBitmapImage == null) // Create a local bitmap image for queue objects to prevent disappearing listview images
         {
@@ -300,7 +371,7 @@ public partial class QueueViewModel : ObservableRecipient
 
     public static async Task Replace(int index, QueueObject? queueObj)
     {
-        if (queueObj == null) return;
+        if (queueObj == null || index < 0) return; // a negative index: the row was removed meanwhile
 
         var oldHash = GetHash(Source[index]);
         trackSet.Remove(oldHash); // Remove old from trackset
@@ -357,7 +428,29 @@ public partial class QueueViewModel : ObservableRecipient
 
     private static string GetHash(SongSearchObject song)
     {
-        return song.Source + song.Id;
+        // Albums get their own key, so an album and a track with the same id can both be queued.
+        return (QueueObject.IsAlbumItem(song) ? "album:" : "") + song.Source + song.Id;
+    }
+
+    /// <summary>
+    /// Replaces the album row at <paramref name="index"/> with the rows it expanded into, in order. They keep the album's
+    /// position through restarts.
+    /// </summary>
+    public static async Task ReplaceWithMany(int index, IReadOnlyList<QueueObject> rows)
+    {
+        if (index < 0) return; // the album row was removed meanwhile
+        var album = Source[index];
+        trackSet.Remove(GetHash(album));
+        Source.RemoveAt(index);
+        await DatabaseService.Remove(GetHash(album));
+        var position = index;
+        for (var i = 0; i < rows.Count; i++)
+        {
+            var row = rows[i];
+            // CreateQueueObject already saved the row with its image and order.
+            if (!trackSet.Add(GetHash(row))) continue; // already in the queue elsewhere
+            Source.Insert(position++, row);
+        }
     }
 
     public static async Task LoadSaveQueue() 
@@ -367,16 +460,16 @@ public partial class QueueViewModel : ObservableRecipient
             Source.Clear();
             trackSet.Clear();
             var items = await DatabaseService.LoadQueueJSON();
-            var sortedList = new List<(string, SongSearchObject)>();
+            var sortedList = new List<(string, SongSearchObject, int)>();
 
             foreach (var item in items)
             {
-                var song = await Json.ToObjectAsync<SongSearchObject>(item.Value);
-                if (song == null) continue;
-                sortedList.Add((item.Key, song));
+                var saved = await Task.Run(() => QueueObject.ParseSaved(item.Value));
+                if (saved == null) continue;
+                sortedList.Add((item.Key, saved.Value.Song, saved.Value.SubOrder));
             }
 
-            foreach (var pair in sortedList.OrderBy(pair => pair.Item2.QueueCounter))
+            foreach (var pair in sortedList.OrderBy(pair => pair.Item2.QueueCounter).ThenBy(pair => pair.Item3))
             {
                 string hash = pair.Item1;
                 SongSearchObject song = pair.Item2;

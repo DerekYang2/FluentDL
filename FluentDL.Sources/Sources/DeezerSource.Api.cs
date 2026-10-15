@@ -657,6 +657,8 @@ internal sealed partial class DeezerSource
         return GetAlbumFromJsonElement(jsonObject);
     }
 
+    public Task<AlbumSearchObject?> GetAlbumByUpcAsync(string upc, CancellationToken token) => GetAlbumFromUPC(upc);
+
     public async Task<string> DownloadTrack(string filePath, SongSearchObject? song, DeezNET.Data.Bitrate? bitrateEnum = null, bool use128Fallback = false, IProgress<ProgressData>? progress = null)
     {
         // Remove extension if it exists

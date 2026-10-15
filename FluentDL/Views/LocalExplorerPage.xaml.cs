@@ -854,6 +854,8 @@ public sealed partial class LocalExplorerPage : Page
 
         int index = 0;
         int completedCount = 0;
+        var conversionClock = System.Diagnostics.Stopwatch.StartNew();
+        var conversionEta = new EtaEstimator();
 
         for (int threadNum = 0; threadNum < threadCount; threadNum++)
         {
@@ -885,7 +887,9 @@ public sealed partial class LocalExplorerPage : Page
                     {
                         ConversionResults.Add(new LocalConversionResult(song, resultPath));
                         // Update infobar converting message
-                        UrlParser.ParseTextBlock(ConversionInfobarText, $"Converting <b>{ConversionResults.Count} of {LocalExplorerViewModel.OriginalList.Count}</b> tracks to {outputFormat}");
+                        var total = LocalExplorerViewModel.OriginalList.Count;
+                        var eta = conversionEta.Update((double)ConversionResults.Count / total, conversionClock.Elapsed);
+                        UrlParser.ParseTextBlock(ConversionInfobarText, $"Converting <b>{ConversionResults.Count} of {total}</b> tracks to {outputFormat}{(eta != null ? " \u2022 " + eta : "")}");
                     });
 
                     var countCatpured = Interlocked.Increment(ref completedCount);

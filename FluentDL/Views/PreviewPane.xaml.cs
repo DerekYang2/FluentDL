@@ -254,8 +254,11 @@ namespace FluentDL.Views
                 if (token.IsCancellationRequested || requestId != Interlocked.Read(ref _currentRequestId))
                     return;
 
-                if (info.CoverUrl != null)
-                    ImageSource = new BitmapImage(new Uri(info.CoverUrl));
+                // A source can return an empty or relative cover address; use the row's own image then.
+                if (info.CoverUrl != null
+                    && (Uri.TryCreate(info.CoverUrl, UriKind.Absolute, out var cover)
+                        || Uri.TryCreate(selectedSong.ImageLocation, UriKind.Absolute, out cover)))
+                    ImageSource = new BitmapImage(cover);
                 if (info.ReleaseDate != null)
                     trackDetailsList.First(t => t.Label == "Release Date").Value = new DateVerboseConverter().Convert(info.ReleaseDate, null!, null!, null!)?.ToString() ?? "";
                 if (info.RemoveAlbumRow)

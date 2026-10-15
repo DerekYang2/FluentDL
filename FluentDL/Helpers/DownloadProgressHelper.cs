@@ -129,6 +129,35 @@ internal class ValueDamper
     }
 }
 
+/// <summary>
+/// "About 3 min left" for long operations. The estimate uses the average rate since the start, so it does not swing
+/// with each burst. It appears only after 5 s and 5% progress, when at least 30 s remain, and hides below 10 s.
+/// </summary>
+internal sealed class EtaEstimator
+{
+    private bool _showing;
+
+    public string? Update(double fraction, TimeSpan elapsed)
+    {
+        if (fraction is < 0.05 or >= 1 || elapsed < TimeSpan.FromSeconds(5))
+        {
+            if (fraction >= 1) _showing = false;
+            return null;
+        }
+        var remaining = elapsed.TotalSeconds * (1 - fraction) / fraction;
+        if (!_showing && remaining >= 30) _showing = true;
+        else if (_showing && remaining < 10) _showing = false;
+        return _showing ? Format(remaining) : null;
+    }
+
+    internal static string Format(double seconds)
+    {
+        if (seconds >= 3600) return $"about {(int)(seconds / 3600)} h {(int)(seconds % 3600 / 60)} min left";
+        if (seconds >= 90) return $"about {Math.Round(seconds / 60)} min left";
+        return $"about {Math.Max(10, Math.Round(seconds / 10) * 10)} s left";
+    }
+}
+
 internal class DownloadProgressHelper
 {
     // A track with no live byte progress (Deezer, yt-dlp, link lookups) never estimates past this share.
@@ -168,7 +197,7 @@ internal class DownloadProgressHelper
         _ => percent.ToString("0.0") + "%",
     };
 
-    public string GenerateDisplayString(double percent, double? speedMBPS, string? status = null)
+    public string GenerateDisplayString(double percent, double? speedMBPS, string? status = null, string? eta = null)
     {
         string percentDisplay = status ?? FormatPercent(percent);
 
@@ -190,6 +219,8 @@ internal class DownloadProgressHelper
 
         if (speedDisplay != null)
             parts.Add(speedDisplay);
+        if (eta != null)
+            parts.Add(eta);
         return string.Join(" \u2022 ", parts);
     }
 
@@ -263,6 +294,8 @@ internal class DownloadProgressHelper
             {
                 long lastBytes = 0;
                 var lastTime = _stopwatch.Elapsed;
+                var loopStart = _stopwatch.Elapsed;
+                var eta = new EtaEstimator();
                 double shown = 0;
                 // Run until the page stops the loop, so the final value is always shown.
                 while (!token.IsCancellationRequested)
@@ -285,7 +318,8 @@ internal class DownloadProgressHelper
                     if (update != null && !update.Preparing)
                     {
                         shown = Ease(shown, update.ProgressValue, elapsed);
-                        update = new ProgressEventArgs(GenerateDisplayString(shown * 100, speed), shown);
+                        update = new ProgressEventArgs(GenerateDisplayString(shown * 100, speed,
+                            eta: eta.Update(update.ProgressValue, now - loopStart)), shown);
                     }
                     if (update != null && !token.IsCancellationRequested)
                     {

@@ -177,6 +177,12 @@ public sealed record ConnectResult(bool Connected, StatusLevel Level, string? Me
 /// <summary>The match found, if any, and the badge the queue shows for it.</summary>
 public sealed record MatchResult(SongSearchObject? Track, MatchKind Kind);
 
+/// <summary>Finding an album by its UPC (barcode). Album conversion tries this before an album search.</summary>
+public interface IAlbumUpcSource : ISource
+{
+    Task<AlbumSearchObject?> GetAlbumByUpcAsync(string upc, CancellationToken token);
+}
+
 public enum MatchKind
 {
     /// <summary>Same recording, usually found by ISRC. Green badge.</summary>

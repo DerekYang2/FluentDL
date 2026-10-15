@@ -25,6 +25,11 @@ public sealed class ConversionService(SourceRegistry sources)
             throw new Exception("Unspecified output source");
         }
 
+        if (song is AlbumSearchObject album)
+        {
+            return await FindAlbumAsync(album, targetId, token);
+        }
+
         var isrc = await IsrcOf(song);
         if (isrc != null)
         {
@@ -46,6 +51,54 @@ public sealed class ConversionService(SourceRegistry sources)
         }
         var match = await target.FindEquivalentAsync(song, bridgeIsrc, token);
         return match.Kind == MatchKind.Exact ? match with { Kind = MatchKind.Close } : match;
+    }
+
+    // An album's Isrc field holds its UPC. Services pad UPCs differently (12-digit UPC-A or 13-digit EAN with a leading 0).
+    private static IEnumerable<string> UpcVariants(string upc)
+    {
+        upc = upc.Trim();
+        yield return upc;
+        if (upc.Length == 12) yield return "0" + upc;
+        if (upc.Length == 13 && upc[0] == '0') yield return upc[1..];
+    }
+
+    /// <summary>
+    /// The same album on the target: by UPC where the target can look one up (Exact), otherwise the best album search
+    /// result by title, artist and track count (<see cref="AlbumMatch"/>).
+    /// </summary>
+    private async Task<MatchResult> FindAlbumAsync(AlbumSearchObject album, string targetId, CancellationToken token)
+    {
+        if (!string.IsNullOrWhiteSpace(album.Upc) && sources.TryGet<IAlbumUpcSource>(targetId, out var byUpc))
+        {
+            foreach (var upc in UpcVariants(album.Upc))
+            {
+                try
+                {
+                    if (await byUpc.GetAlbumByUpcAsync(upc, token) is { } found) return new MatchResult(found, MatchKind.Exact);
+                }
+                catch (Exception e) when (e is not OperationCanceledException)
+                {
+                    Serilog.Log.Warning(e, "Album UPC lookup on {Provider} failed", byUpc.Descriptor.DisplayName);
+                    break;
+                }
+            }
+        }
+
+        if (!sources.TryGet<ISearchSource>(targetId, out var search)) return new MatchResult(null, MatchKind.NotFound);
+        // Only album results count. Spotify's web player mode has no album search and returns tracks, so it finds none.
+        var results = new List<SongSearchObject>();
+        var query = $"{album.Artists.Split(", ")[0]} {TextNormalization.PruneFeaturing(album.Title)}";
+        await search.SearchAsync(results, query, new PageRequest(0, 10), albumMode: true, token);
+        var best = results.OfType<AlbumSearchObject>()
+            .Select(candidate => (candidate, level: AlbumMatch.Compare(album.Title, album.Artists, album.TracksCount,
+                candidate.Title, candidate.Artists, candidate.TracksCount)))
+            .Where(c => c.level != AlbumMatchLevel.None)
+            .OrderByDescending(c => c.level)
+            .ThenBy(c => Math.Abs(c.candidate.TracksCount - album.TracksCount))
+            .FirstOrDefault();
+        return best.candidate == null
+            ? new MatchResult(null, MatchKind.NotFound)
+            : new MatchResult(best.candidate, best.level == AlbumMatchLevel.Exact ? MatchKind.Exact : MatchKind.Close);
     }
 
     // Only Spotify web player results lack an ISRC among the sources that have one; Spotify is the only source with an

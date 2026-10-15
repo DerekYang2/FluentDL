@@ -16,7 +16,7 @@ namespace FluentDL.Services.Sources;
 /// TIDAL through its official API. It only reads the catalog: search, lookups and links, with audio from other
 /// sources (see ADR-003). Signs in with a client id and secret for now; a TIDAL account login (PKCE) comes later.
 /// </summary>
-internal sealed class TidalSource : ISourceSession, IAccountLogin, ISearchSource, ILinkSource, ICatalogSource, IPreviewSource, IConversionTarget, ITagSource
+internal sealed class TidalSource : ISourceSession, IAccountLogin, ISearchSource, ILinkSource, ICatalogSource, IPreviewSource, IConversionTarget, ITagSource, IAlbumUpcSource
 {
     private const string TrackIncludes = "tracks,tracks.artists,tracks.albums.coverArt";
     private const string AlbumIncludes = "albums,albums.artists,albums.coverArt";
