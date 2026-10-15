@@ -16,6 +16,7 @@
         <helpers:LocalSourceToVisibilityConverter x:Key="LocalSourceToVisibilityConverter" />
         <helpers:AlbumToVisibleConverter x:Key="AlbumToVisibleConverter" />
         <helpers:AlbumToCollapsedConverter x:Key="AlbumToCollapsedConverter" />
+        <helpers:AlbumColumnConverter x:Key="AlbumColumnConverter" />
     </UserControl.Resources>
     <!--  Bindings use OneWay because recycled rows receive a new Item.  -->
     <Grid
@@ -87,9 +88,9 @@
             Margin="0,0,16,0"
             VerticalAlignment="Center"
             Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-            Text="{x:Bind Item.AlbumName, Mode=OneWay}"
+            Text="{x:Bind Item, Mode=OneWay, Converter={StaticResource AlbumColumnConverter}}"
             TextTrimming="CharacterEllipsis"
-            ToolTipService.ToolTip="{x:Bind Item.AlbumName, Mode=OneWay}"
+            ToolTipService.ToolTip="{x:Bind Item, Mode=OneWay, Converter={StaticResource AlbumColumnConverter}}"
             Visibility="{x:Bind Columns.AlbumVisibility, Mode=OneWay}" />
         <TextBlock
             Grid.Column="3"

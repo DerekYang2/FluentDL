@@ -57,13 +57,14 @@ public class QueueObject : SongSearchObject, INotifyPropertyChanged
         }
     }
 
+    // Created on first read, on the UI thread, so a row can also be built off it (tests, background restores).
     [JsonIgnore]
-    private SolidColorBrush _convertBadgeColor = new(Windows.UI.Color.FromArgb(0, 0, 0, 0));
+    private SolidColorBrush? _convertBadgeColor;
 
     [JsonIgnore]
     public SolidColorBrush ConvertBadgeColor
     {
-        get => _convertBadgeColor;
+        get => _convertBadgeColor ??= new SolidColorBrush(Windows.UI.Color.FromArgb(0, 0, 0, 0));
         set
         {
             if (_convertBadgeColor != value)
@@ -76,10 +77,16 @@ public class QueueObject : SongSearchObject, INotifyPropertyChanged
     }
 
     [JsonIgnore]
-    public Visibility ConvertBadgeVisibility => _convertBadgeColor.Color.A == 0 ? Visibility.Collapsed : Visibility.Visible;
+    public Visibility ConvertBadgeVisibility => _convertBadgeColor is { Color.A: > 0 } ? Visibility.Visible : Visibility.Collapsed;
 
     /// <summary>Set for an album row: its track count. Null for a track. Saved with the queue.</summary>
     public int? AlbumTracksCount { get; set; }
+
+    /// <summary>
+    /// An album row's tracks as its source listed them. Saved with the queue: Spotify and YouTube albums can't list
+    /// their tracks again from the id alone, and Spotify's preview reads its cover from AdditionalFields.
+    /// </summary>
+    public List<SongSearchObject>? TrackList { get; set; }
 
     /// <summary>Orders the tracks an album expanded into, which share the album's QueueCounter. Saved with the queue.</summary>
     public int? QueueSubOrder { get; set; }
@@ -111,7 +118,10 @@ public class QueueObject : SongSearchObject, INotifyPropertyChanged
         if (song == null) return null;
         if (saved["AlbumTracksCount"] is { Type: Newtonsoft.Json.Linq.JTokenType.Integer } count)
         {
-            song = ToAlbum(song, (int)count);
+            // Read it as an album too, so its TrackList and AdditionalFields come back.
+            var album = saved.ToObject<AlbumSearchObject>() ?? ToAlbum(song, (int)count);
+            album.TracksCount = (int)count;
+            song = album;
         }
         var subOrder = saved["QueueSubOrder"] is { Type: Newtonsoft.Json.Linq.JTokenType.Integer } sub ? (int)sub : 0;
         return (song, subOrder);
@@ -123,6 +133,7 @@ public class QueueObject : SongSearchObject, INotifyPropertyChanged
         Artists = song.Artists, Duration = song.Duration, Rank = song.Rank, AlbumName = song.AlbumName, Source = song.Source,
         Explicit = song.Explicit, TrackPosition = song.TrackPosition, Isrc = song.Isrc, QueueCounter = song.QueueCounter,
         AudioFormat = song.AudioFormat, AdditionalFields = song.AdditionalFields, TracksCount = tracksCount,
+        TrackList = (song as QueueObject)?.TrackList?.ToList() ?? (song as AlbumSearchObject)?.TrackList?.ToList(),
         LocalBitmapImage = song.LocalBitmapImage,
     };
 
@@ -144,6 +155,10 @@ public class QueueObject : SongSearchObject, INotifyPropertyChanged
         LocalBitmapImage = song.LocalBitmapImage;
         Isrc = song.Isrc;
         QueueCounter = song.QueueCounter;
+        AudioFormat = song.AudioFormat;
+        // Sources keep data here that they need later, such as Deezer's preview address and Spotify's album cover.
+        AdditionalFields = song.AdditionalFields == null ? null : new Dictionary<string, object?>(song.AdditionalFields);
+        TrackList = (song as AlbumSearchObject)?.TrackList?.ToList() ?? (song as QueueObject)?.TrackList?.ToList();
         AlbumTracksCount = song switch
         {
             AlbumSearchObject album => album.TracksCount,
