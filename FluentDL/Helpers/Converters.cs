@@ -289,6 +289,22 @@ internal class ASCIIInvertedVisibilityConverter : IValueConverter
     }
 }
 
+/// <summary>
+/// The compact queue's Album column: the album name for a track, and the track count for an album row, whose own
+/// album name is just its title.
+/// </summary>
+internal class AlbumColumnConverter : IValueConverter
+{
+    public object Convert(object? value, Type targetType, object parameter, string language) => value switch
+    {
+        ViewModels.QueueObject { IsAlbum: true } row => row.AlbumTracksCount == 1 ? "1 track" : $"{row.AlbumTracksCount} tracks",
+        SongSearchObject song => song.AlbumName,
+        _ => "",
+    };
+
+    public object ConvertBack(object value, Type targetType, object parameter, string language) => throw new NotImplementedException();
+}
+
 internal class AlbumToVisibleConverter : IValueConverter
 {
     public object Convert(object? value, Type targetType, object parameter, string language)
