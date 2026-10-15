@@ -32,7 +32,9 @@ public class TidalDirectLiveTests
     // Explicit opt-in. The file contains the DPAPI-protected download session, never a checked-in credential.
     [TestMethod]
     [DataRow("HI_RES_LOSSLESS", ".flac")]
+    [DataRow("LOSSLESS", ".flac")]
     [DataRow("HIGH", ".m4a")]
+    [DataRow("LOW", ".m4a")]
     public async Task DirectDownloadIsRemuxedAndTaggedThroughTheAppPipeline(string quality, string extension)
     {
         var sessionFile = Environment.GetEnvironmentVariable("FLUENTDL_TIDAL_DOWNLOAD_TEST_SESSION");
@@ -66,7 +68,14 @@ public class TidalDirectLiveTests
             Assert.IsFalse(string.IsNullOrEmpty(path), "Direct TIDAL download failed or returned only a preview.");
             using var file = TagLib.File.Create(path);
             Assert.AreEqual(extension, Path.GetExtension(path));
-            if (extension == ".flac") Assert.AreEqual(24, file.Properties.BitsPerSample);
+            // What each Settings label promises: LOSSLESS is CD quality, HI_RES the best the track has (24-bit here).
+            Console.WriteLine($"{quality}: {Path.GetExtension(path)}, {file.Properties.BitsPerSample}-bit, {file.Properties.AudioSampleRate} Hz, {file.Properties.AudioBitrate} kbps");
+            if (quality == "HI_RES_LOSSLESS") Assert.AreEqual(24, file.Properties.BitsPerSample);
+            if (quality == "LOSSLESS")
+            {
+                Assert.AreEqual(16, file.Properties.BitsPerSample);
+                Assert.AreEqual(44100, file.Properties.AudioSampleRate);
+            }
             Assert.IsTrue(file.Properties.AudioSampleRate >= 44100);
             Assert.AreEqual(double.Parse(track.Duration), file.Properties.Duration.TotalSeconds, 2);
             Assert.AreEqual(track.Title, file.Tag.Title);

@@ -55,6 +55,11 @@ public sealed partial class SettingsPage : Page
         ViewModel = App.GetService<SettingsViewModel>();
         InitializeComponent();
         this.Loaded += SettingsPage_Loaded;
+        // WinUI moves focus only to focusable controls, so clicking a card or the page background left a text box
+        // focused. The page takes focus itself then, without a focus outline.
+        IsTabStop = true;
+        UseSystemFocusVisuals = false;
+        AddHandler(PointerPressedEvent, new Microsoft.UI.Xaml.Input.PointerEventHandler(Page_PointerPressedAnywhere), handledEventsToo: true);
 
         dispatcher = DispatcherQueue.GetForCurrentThread();
         dispatcherTimer = new DispatcherTimer();
@@ -261,6 +266,17 @@ public sealed partial class SettingsPage : Page
             _logger.LogError(ex, "Could not open the logs folder");
             ShowInfoBar(InfoBarSeverity.Error, "Could not open the logs folder. You can copy the displayed path.", 5, "Diagnostics");
         }
+    }
+
+    private void Page_PointerPressedAnywhere(object sender, Microsoft.UI.Xaml.Input.PointerRoutedEventArgs e)
+    {
+        // Runs after the clicked control's own handling: a button or combo box has already taken focus by now.
+        if (Microsoft.UI.Xaml.Input.FocusManager.GetFocusedElement(XamlRoot) is not (TextBox or PasswordBox)) return;
+        for (var element = e.OriginalSource as DependencyObject; element != null; element = Microsoft.UI.Xaml.Media.VisualTreeHelper.GetParent(element))
+        {
+            if (element is TextBox or PasswordBox) return; // a click inside a text box keeps its focus
+        }
+        Focus(FocusState.Programmatic);
     }
 
     private void SetDeezerAuthInfo(bool isInitialized)

@@ -77,7 +77,7 @@ public class DownloadProgressLiveTests
                 lock (timeline) preparingSeconds = clock.Elapsed.TotalSeconds;
                 return;
             }
-            var text = update.DisplayString.Split(" \u2022 ")[1].Split('%')[0];
+            var text = update.DisplayString.Split(" \u2022 ")[1].Split('%')[0].Trim('\u2007');
             Assert.AreEqual(update.ProgressValue, double.Parse(text) / 100, 0.00051, "Bar and text differ.");
             lock (timeline) timeline.Add((clock.Elapsed, update.ProgressValue));
         };

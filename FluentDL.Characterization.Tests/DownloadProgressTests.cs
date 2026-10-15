@@ -129,6 +129,16 @@ public class DownloadProgressTests
         Assert.AreEqual(1, DownloadProgressHelper.Ease(0.9995, 1, 0.1));
     }
 
+    [TestMethod]
+    [DataRow(0.0, "\u20070.0%")]
+    [DataRow(9.94, "\u20079.9%")]
+    [DataRow(9.96, "10.0%")]
+    [DataRow(99.94, "99.9%")]
+    [DataRow(99.96, "100%")]
+    [DataRow(100.0, "100%")]
+    public void PercentTextNeverOutgrowsItsEarlierWidth(double percent, string expected) =>
+        Assert.AreEqual(expected, DownloadProgressHelper.FormatPercent(percent));
+
     private sealed class InlineProgress(Action<ProgressData> report) : IProgress<ProgressData>
     {
         public void Report(ProgressData value) => report(value);
@@ -141,7 +151,7 @@ public class DownloadProgressTests
     {
         Assert.IsNotNull(update);
         Assert.AreEqual(expected, update.ProgressValue, 0.000001);
-        var text = update.DisplayString.Split(" • ")[1].Split('%')[0];
+        var text = update.DisplayString.Split(" • ")[1].Split('%')[0].Trim('\u2007');
         var displayed = double.Parse(text, CultureInfo.CurrentCulture) / 100;
         Assert.AreEqual(update.ProgressValue, displayed, 0.00051, "The text rounds to one decimal but matches the bar.");
     }

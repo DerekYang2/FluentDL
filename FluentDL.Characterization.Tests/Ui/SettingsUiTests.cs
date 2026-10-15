@@ -133,6 +133,29 @@ public class SettingsUiTests
         }
     }
 
+    // A real click on empty space must take focus from a text box (WinUI moves focus only to focusable controls).
+    // Real input would disturb a desktop in use, so this runs only where Run-InGuest.ps1 allows it: in the Sandbox.
+    [TestMethod]
+    public void ClickingEmptySpaceTakesFocusFromATextBox()
+    {
+        DevApp.RequireUiTests();
+        if (Environment.GetEnvironmentVariable("FLUENTDL_UI_REAL_INPUT") != "1")
+            Assert.Inconclusive("Needs a real mouse click. Runs in the Sandbox.");
+        using var dev = DevApp.Launch();
+        Find(dev, "SearchBox", TimeSpan.FromSeconds(60));
+        Navigate(dev, "Settings");
+        Expand(dev, "TidalExpander");
+        var country = FindScrolling(dev, "TidalCountryInput");
+        if (country.Patterns.ScrollItem.IsSupported) country.Patterns.ScrollItem.Pattern.ScrollIntoView();
+        Thread.Sleep(300);
+        country.Focus();
+        WaitUntil(() => country.Properties.HasKeyboardFocus.ValueOrDefault, TimeSpan.FromSeconds(5), "the country box to take focus");
+        // The card's empty area between its description and the box.
+        var box = country.BoundingRectangle;
+        FlaUI.Core.Input.Mouse.Click(new System.Drawing.Point(box.Left - 40, box.Top + box.Height / 2));
+        WaitUntil(() => !country.Properties.HasKeyboardFocus.ValueOrDefault, TimeSpan.FromSeconds(5), "the country box to lose focus");
+    }
+
     // Downloads have no on/off switch: signing in is always available, and the switch is gone.
     [TestMethod]
     public void TidalDownloadSignInIsAlwaysAvailable()
@@ -145,11 +168,15 @@ public class SettingsUiTests
         var login = FindScrolling(dev, "TidalDownloadLoginButton");
         Assert.IsTrue(login.IsEnabled);
         StringAssert.Contains(Text(login), "downloads"); // "Sign in for downloads" or, with a saved session, "Sign out of downloads"
-        Assert.IsTrue(FindScrolling(dev, "TidalDownloadQualityInput").IsEnabled);
         Assert.IsNull(TryFind(dev, cf => cf.ByAutomationId("TidalDirectToggle")));
         var folder = Path.Combine(Path.GetTempPath(), "opencode", "tidal-direct-ui");
         Directory.CreateDirectory(folder);
         SaveAppWindow(dev, Path.Combine(folder, "settings.png"));
+        // TIDAL's quality sits with the other services' download qualities.
+        Expand(dev, "DownloadOptions");
+        var quality = FindScrolling(dev, "TidalDownloadQualityInput");
+        Assert.IsTrue(quality.IsEnabled);
+        StringAssert.Contains(quality.AsComboBox().SelectedItem?.Text ?? "", "FLAC (maximum available)");
     }
 
     [TestMethod]
