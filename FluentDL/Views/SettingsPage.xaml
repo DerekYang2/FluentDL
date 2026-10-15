@@ -1078,7 +1078,7 @@
                         Header="TIDAL">
                         <local:SettingsExpander.Description>
                             <TextBlock TextWrapping="Wrap">
-                                Sign in for direct downloads. Optional: use your own&#32;<Hyperlink NavigateUri="https://developer.tidal.com/dashboard">developer app credentials</Hyperlink> for Search API access.</TextBlock>
+                                Sign in to download from TIDAL. Optional: use your own&#32;<Hyperlink NavigateUri="https://developer.tidal.com/dashboard">developer app credentials</Hyperlink> for Search API access.</TextBlock>
                         </local:SettingsExpander.Description>
                         <local:SettingsExpander.HeaderIcon>
                             <FontIcon Glyph="&#xE72E;" />
@@ -1113,15 +1113,10 @@
                             <Border Padding="16,10" Background="{ThemeResource CardBackgroundFillColorSecondaryBrush}">
                                 <!-- A local style stops SettingsExpander applying its SettingsCard style, which crashes on a Border. -->
                                 <Border.Style><Style TargetType="Border" /></Border.Style>
-                                <TextBlock Style="{ThemeResource BodyStrongTextBlockStyle}" Text="Direct downloads" />
+                                <TextBlock Style="{ThemeResource BodyStrongTextBlockStyle}" Text="Downloads" />
                             </Border>
-                            <local:SettingsCard Header="Download directly from TIDAL" HorizontalContentAlignment="Stretch"
-                                Description="Uses an unofficial login, so TIDAL may limit it. When off or unavailable, FluentDL downloads the song from another source.">
-                                <ToggleSwitch x:Name="TidalDirectToggle" OffContent="Off" OnContent="On"
-                                    AutomationProperties.Name="Download directly from TIDAL" Toggled="TidalDirectToggle_Toggled" />
-                            </local:SettingsCard>
                             <local:SettingsCard x:Name="TidalDownloadAccountCard" Header="Download account" HorizontalContentAlignment="Stretch"
-                                Description="Full tracks need a TIDAL subscription or trial.">
+                                Description="Sign in to download from TIDAL. Full tracks need a TIDAL subscription or trial.">
                                 <StackPanel Orientation="Horizontal" Spacing="8">
                                     <Border x:Name="TidalDownloadStatusBox" Padding="4" VerticalAlignment="Center"
                                         Background="{ThemeResource ControlFillColorSecondaryBrush}" CornerRadius="4">

@@ -1,6 +1,6 @@
 # TIDAL direct downloads
 
-The download client is a port of the single-file PKCE experiment. Open Settings under **TIDAL**, enable **Download directly from TIDAL** in the Direct downloads group, then sign in for downloads. The optional Search API group below only takes your own developer app's client ID and secret.
+The download client is a port of the single-file PKCE experiment. Open Settings under **TIDAL** and choose **Sign in for downloads** in the Downloads group. There is no on/off switch: a signed-in account downloads TIDAL tracks directly. The optional Search API group below only takes your own developer app's client ID and secret.
 
 The embedded browser catches the Android redirect. If it is blocked, choose **Open in my browser instead**, sign in, and paste the full Page not found address into the dialog. The address contains a short-lived authorization code. The app stores the resulting session with Windows DPAPI.
 
@@ -8,7 +8,7 @@ The status button separates API and downloading identities. It displays the acco
 
 The download subscription check uses `premiumAccess`, not the account's `ACTIVE` status, which can also describe a free account. The UI reports Active, Not active or Unavailable. Active includes trial access and does not mean the user has been charged. Successful checks are cached for one minute.
 
-Full tracks require a subscription or trial. If the opt-in is off, the download account is signed out, or TIDAL returns a preview, FluentDL uses its existing equivalent-download route. It does not save a preview as a full song. Download quality comes from the actual returned codec, so an AAC response gets an `.m4a` extension. FFmpeg copies audio into the final container, then FluentDL writes TIDAL's tags.
+Full tracks require a subscription or trial. When TIDAL can't provide the full track (signed out, an expired sign-in, playback denied, a preview only, or encrypted audio), the download fails with that reason, as Deezer and Qobuz downloads do. It never saves a preview as a full song. The older fallback to an equivalent on another source is kept behind `DownloadService.TidalEquivalentFallback`, a code-only switch that is off; the live `DownloadTests` TIDAL case turns it on to keep that route tested. Download quality comes from the actual returned codec, so an AAC response gets an `.m4a` extension. FFmpeg copies audio into the final container, then FluentDL writes TIDAL's tags.
 
 ## Client configuration
 
@@ -30,7 +30,7 @@ A saved refresh token belongs to the client ID used to create it. Updating the G
 
 ## Verification
 
-`TidalDownloadTests` covers manifest ordering, returned codecs, encryption rejection, PKCE, refresh, Gist caching, preview fallback, and partial-file cleanup without network access.
+`TidalDownloadTests` covers manifest ordering, returned codecs, encryption rejection, PKCE, refresh, Gist caching, the failure reasons with the fallback on and off, and partial-file cleanup without network access.
 
 `TidalDirectLiveTests` is an explicit manual test. Set `FLUENTDL_TIDAL_DOWNLOAD_TEST_SESSION` to a file containing the DPAPI-protected download session before running it. It downloads a full track through DownloadService and checks the duration, bit depth and tags. The file must belong to the same Windows user. The normal test run does not need this session.
 

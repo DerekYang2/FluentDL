@@ -21,14 +21,13 @@ public class SettingsUiTests
     {
         DevApp.RequireUiTests();
         var data = Windows.Management.Core.ApplicationDataManager.CreateForPackageFamily(DevApp.FindAumid().Split('!')[0]);
-        var keys = new[] { "tidal_direct_downloads", "tidal_download_session", "tidal_refresh_token" };
+        var keys = new[] { "tidal_download_session", "tidal_refresh_token" };
         var previous = keys.ToDictionary(k => k, k => data.LocalSettings.Values.TryGetValue(k, out var value) ? value : null);
         var session = new Services.Tidal.TidalDownloadClient.Session("test-client", "test-access", "test-refresh",
             DateTimeOffset.UtcNow.AddHours(1), "CA", "downloads@example.test");
         var bytes = System.Security.Cryptography.ProtectedData.Protect(System.Text.Json.JsonSerializer.SerializeToUtf8Bytes(session),
             null, System.Security.Cryptography.DataProtectionScope.CurrentUser);
         data.LocalSettings.Values["tidal_download_session"] = Newtonsoft.Json.JsonConvert.SerializeObject(Convert.ToBase64String(bytes));
-        data.LocalSettings.Values["tidal_direct_downloads"] = "false";
         data.LocalSettings.Values.Remove("tidal_refresh_token");
         try
         {
@@ -55,7 +54,7 @@ public class SettingsUiTests
             StringAssert.Contains(status, "API:");
             StringAssert.Contains(status, "Only searching.");
             StringAssert.Contains(status, "Downloading:\ndownloads@example.test");
-            StringAssert.Contains(status, "Direct downloads: Off");
+            Assert.IsFalse(status.Contains("Direct downloads"), "Downloads have no on/off setting any more.");
             var folder = Path.Combine(Path.GetTempPath(), "opencode", "tidal-combined-ui");
             Directory.CreateDirectory(folder);
             SaveAppWindow(dev, Path.Combine(folder, "status.png"));
@@ -105,9 +104,8 @@ public class SettingsUiTests
         if (Environment.GetEnvironmentVariable("FLUENTDL_TIDAL_BLANK_BROWSER_TEST") != "1")
             Assert.Inconclusive("Requires the about:blank diagnostic dev build.");
         var data = Windows.Management.Core.ApplicationDataManager.CreateForPackageFamily(DevApp.FindAumid().Split('!')[0]);
-        var keys = new[] { "tidal_direct_downloads", "tidal_download_session" };
+        var keys = new[] { "tidal_download_session" };
         var previous = keys.ToDictionary(k => k, k => data.LocalSettings.Values.TryGetValue(k, out var value) ? value : null);
-        data.LocalSettings.Values["tidal_direct_downloads"] = "true";
         data.LocalSettings.Values.Remove("tidal_download_session");
         try
         {
@@ -135,38 +133,23 @@ public class SettingsUiTests
         }
     }
 
+    // Downloads have no on/off switch: signing in is always available, and the switch is gone.
     [TestMethod]
-    public void TidalDownloadOptInPersists()
+    public void TidalDownloadSignInIsAlwaysAvailable()
     {
         DevApp.RequireUiTests();
-        using (var dev = DevApp.Launch())
-        {
-            Find(dev, "SearchBox", TimeSpan.FromSeconds(60));
-            Navigate(dev, "Settings");
-            Expand(dev, "TidalExpander");
-            var toggle = FindScrolling(dev, "TidalDirectToggle").Patterns.Toggle.Pattern;
-            Assert.AreEqual(ToggleState.Off, toggle.ToggleState.Value);
-            Assert.IsFalse(FindScrolling(dev, "TidalDownloadLoginButton").IsEnabled);
-            toggle.Toggle();
-            WaitUntil(() => Find(dev, "TidalDownloadLoginButton").IsEnabled, TimeSpan.FromSeconds(5), "download login enabled");
-        }
-        using (var dev = DevApp.Launch())
-        {
-            Find(dev, "SearchBox", TimeSpan.FromSeconds(60));
-            Navigate(dev, "Settings");
-            Expand(dev, "TidalExpander");
-            var toggleElement = FindScrolling(dev, "TidalDirectToggle");
-            Assert.AreEqual(ToggleState.On, toggleElement.Patterns.Toggle.Pattern.ToggleState.Value);
-            toggleElement.Patterns.Toggle.Pattern.Toggle();
-            WaitUntil(() => !Find(dev, "TidalDownloadLoginButton").IsEnabled, TimeSpan.FromSeconds(5), "direct downloads disabled");
-            if (toggleElement.Patterns.ScrollItem.IsSupported) toggleElement.Patterns.ScrollItem.Pattern.ScrollIntoView();
-            var scroller = dev.MainWindow.FindAllDescendants().First(e => e.Patterns.Scroll.IsSupported && e.Patterns.Scroll.Pattern.VerticallyScrollable.Value);
-            scroller.Patterns.Scroll.Pattern.Scroll(ScrollAmount.NoAmount, ScrollAmount.LargeIncrement);
-            Thread.Sleep(500);
-            var folder = Path.Combine(Path.GetTempPath(), "opencode", "tidal-direct-ui");
-            Directory.CreateDirectory(folder);
-            FlaUI.Core.Capturing.Capture.Element(dev.MainWindow).ToFile(Path.Combine(folder, "settings.png"));
-        }
+        using var dev = DevApp.Launch();
+        Find(dev, "SearchBox", TimeSpan.FromSeconds(60));
+        Navigate(dev, "Settings");
+        Expand(dev, "TidalExpander");
+        var login = FindScrolling(dev, "TidalDownloadLoginButton");
+        Assert.IsTrue(login.IsEnabled);
+        StringAssert.Contains(Text(login), "downloads"); // "Sign in for downloads" or, with a saved session, "Sign out of downloads"
+        Assert.IsTrue(FindScrolling(dev, "TidalDownloadQualityInput").IsEnabled);
+        Assert.IsNull(TryFind(dev, cf => cf.ByAutomationId("TidalDirectToggle")));
+        var folder = Path.Combine(Path.GetTempPath(), "opencode", "tidal-direct-ui");
+        Directory.CreateDirectory(folder);
+        SaveAppWindow(dev, Path.Combine(folder, "settings.png"));
     }
 
     [TestMethod]
