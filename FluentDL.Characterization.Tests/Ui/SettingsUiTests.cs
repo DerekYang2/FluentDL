@@ -145,11 +145,15 @@ public class SettingsUiTests
         var login = FindScrolling(dev, "TidalDownloadLoginButton");
         Assert.IsTrue(login.IsEnabled);
         StringAssert.Contains(Text(login), "downloads"); // "Sign in for downloads" or, with a saved session, "Sign out of downloads"
-        Assert.IsTrue(FindScrolling(dev, "TidalDownloadQualityInput").IsEnabled);
         Assert.IsNull(TryFind(dev, cf => cf.ByAutomationId("TidalDirectToggle")));
         var folder = Path.Combine(Path.GetTempPath(), "opencode", "tidal-direct-ui");
         Directory.CreateDirectory(folder);
         SaveAppWindow(dev, Path.Combine(folder, "settings.png"));
+        // TIDAL's quality sits with the other services' download qualities.
+        Expand(dev, "DownloadOptions");
+        var quality = FindScrolling(dev, "TidalDownloadQualityInput");
+        Assert.IsTrue(quality.IsEnabled);
+        StringAssert.Contains(quality.AsComboBox().SelectedItem?.Text ?? "", "FLAC (maximum available)");
     }
 
     [TestMethod]
