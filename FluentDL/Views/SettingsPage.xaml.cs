@@ -193,7 +193,6 @@ public sealed partial class SettingsPage : Page
         SetQobuzAuthInfo(Session(SourceIds.Qobuz).IsConnected);
         SetSpotifyAuthInfo(Session(SourceIds.Spotify).IsConnected);
         SetTidalAuthInfo(Session(SourceIds.Tidal).IsConnected);
-        TidalDirectToggle.IsOn = await localSettings.ReadSettingAsync<bool>(SettingKeys.TidalDirectDownloads);
         var tidalQuality = await localSettings.ReadSettingAsync<string>(SettingKeys.TidalDownloadQuality) ?? "HI_RES_LOSSLESS";
         TidalDownloadQualityInput.SelectedItem = TidalDownloadQualityInput.Items.Cast<ComboBoxItem>().FirstOrDefault(i => (string)i.Tag == tidalQuality)
             ?? TidalDownloadQualityInput.Items[3];
@@ -357,19 +356,7 @@ public sealed partial class SettingsPage : Page
         TidalDownloadStatusBox.Visibility = saved ? Visibility.Visible : Visibility.Collapsed;
         TidalDownloadLoginButton.Content = saved ? "Sign out of downloads" : "Sign in for downloads";
         TidalDownloadLoginButton.IsEnabled = true;
-        TidalDownloadAccountCard.IsEnabled = TidalDownloadQualityCard.IsEnabled = TidalDownloadClientCard.IsEnabled = TidalDirectToggle.IsOn;
         SetTidalAuthInfo(Session(SourceIds.Tidal).IsConnected);
-    }
-
-    private async void TidalDirectToggle_Toggled(object sender, RoutedEventArgs e)
-    {
-        if (!_tidalDownloadSettingsReady) return;
-        try
-        {
-            await localSettings.SaveSettingAsync(SettingKeys.TidalDirectDownloads, TidalDirectToggle.IsOn);
-            await UpdateTidalDownloadStatusAsync();
-        }
-        catch (Exception) { ShowInfoBar(InfoBarSeverity.Error, "Couldn't save the TIDAL download setting.", 5, "TIDAL"); }
     }
 
     private async void TidalDownloadQuality_Changed(object sender, SelectionChangedEventArgs e)
@@ -451,7 +438,7 @@ public sealed partial class SettingsPage : Page
         var login = (IAccountLogin)Session(SourceIds.Tidal);
         var catalogStatus = isInitialized ? Session(SourceIds.Tidal).StatusText ?? "Connected" : "Not connected to the API.";
         var apiIdentity = login.AccountName ?? (isInitialized ? catalogStatus.Split('\n')[0] : "Not signed in");
-        TidalInfoText.Text = FormatTidalAccountInfo(apiIdentity, _tidalDownloadAccount, _tidalDownloadSaved, TidalDirectToggle.IsOn, _tidalDownloadSubscription);
+        TidalInfoText.Text = FormatTidalAccountInfo(apiIdentity, _tidalDownloadAccount, _tidalDownloadSaved, _tidalDownloadSubscription);
         if (isInitialized || _tidalDownloadSaved)
         {
             TidalInfoButton.IsEnabled = true;
@@ -466,8 +453,8 @@ public sealed partial class SettingsPage : Page
         }
     }
 
-    internal static string FormatTidalAccountInfo(string apiIdentity, string? downloadAccount, bool downloadSaved, bool directEnabled, string subscription) =>
-        $"API:\n{apiIdentity}\nOnly searching.\n\nDownloading:\n{(downloadSaved ? downloadAccount ?? "Saved account" : "Not signed in")}\nSubscription: {(downloadSaved ? subscription : "Not signed in")}\nDirect downloads: {(directEnabled ? "On" : "Off")}";
+    internal static string FormatTidalAccountInfo(string apiIdentity, string? downloadAccount, bool downloadSaved, string subscription) =>
+        $"API:\n{apiIdentity}\nOnly searching.\n\nDownloading:\n{(downloadSaved ? downloadAccount ?? "Saved account" : "Not signed in")}\nSubscription: {(downloadSaved ? subscription : "Not signed in")}";
 
     private async void TidalUpdateButton_Click(object sender, RoutedEventArgs e)
     {
