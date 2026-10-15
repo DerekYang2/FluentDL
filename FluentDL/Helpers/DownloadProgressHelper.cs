@@ -159,7 +159,7 @@ internal class DownloadProgressHelper
 
     public string GenerateDisplayString(double percent, double? speedMBPS, string? status = null)
     {
-        string percentDisplay = status ?? percent.ToString("0.#") + "%";
+        string percentDisplay = status ?? percent.ToString("0.0") + "%"; // always one decimal, so the text keeps its length
 
         string? speedDisplay = speedMBPS != null
             ? (speedMBPS >= 100

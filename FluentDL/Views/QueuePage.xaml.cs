@@ -837,6 +837,7 @@ public sealed partial class QueuePage : Page
             PageInfoBar.IsOpen = true;
             PageInfoBar.Opacity = 1;
             PageInfoBar.Severity = severity;
+            InfoBarWidth.Update(InfobarContent, hold: false);
             //PageInfoBar.Title = title;
 
             if (!string.IsNullOrWhiteSpace(title))
@@ -861,6 +862,7 @@ public sealed partial class QueuePage : Page
             PageInfoBar.IsOpen = true;
             PageInfoBar.Opacity = 1;
             PageInfoBar.Severity = severity;
+            InfoBarWidth.Update(InfobarContent, hold: IsConverting); // progress text changes during a run
 
             //PageInfoBar.Title = title;
             if (!string.IsNullOrWhiteSpace(title))
