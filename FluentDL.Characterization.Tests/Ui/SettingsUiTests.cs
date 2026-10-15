@@ -133,6 +133,29 @@ public class SettingsUiTests
         }
     }
 
+    // A real click on empty space must take focus from a text box (WinUI moves focus only to focusable controls).
+    // Real input would disturb a desktop in use, so this runs only where Run-InGuest.ps1 allows it: in the Sandbox.
+    [TestMethod]
+    public void ClickingEmptySpaceTakesFocusFromATextBox()
+    {
+        DevApp.RequireUiTests();
+        if (Environment.GetEnvironmentVariable("FLUENTDL_UI_REAL_INPUT") != "1")
+            Assert.Inconclusive("Needs a real mouse click. Runs in the Sandbox.");
+        using var dev = DevApp.Launch();
+        Find(dev, "SearchBox", TimeSpan.FromSeconds(60));
+        Navigate(dev, "Settings");
+        Expand(dev, "TidalExpander");
+        var country = FindScrolling(dev, "TidalCountryInput");
+        if (country.Patterns.ScrollItem.IsSupported) country.Patterns.ScrollItem.Pattern.ScrollIntoView();
+        Thread.Sleep(300);
+        country.Focus();
+        WaitUntil(() => country.Properties.HasKeyboardFocus.ValueOrDefault, TimeSpan.FromSeconds(5), "the country box to take focus");
+        // The card's empty area between its description and the box.
+        var box = country.BoundingRectangle;
+        FlaUI.Core.Input.Mouse.Click(new System.Drawing.Point(box.Left - 40, box.Top + box.Height / 2));
+        WaitUntil(() => !country.Properties.HasKeyboardFocus.ValueOrDefault, TimeSpan.FromSeconds(5), "the country box to lose focus");
+    }
+
     // Downloads have no on/off switch: signing in is always available, and the switch is gone.
     [TestMethod]
     public void TidalDownloadSignInIsAlwaysAvailable()
