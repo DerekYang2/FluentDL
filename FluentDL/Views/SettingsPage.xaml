@@ -617,6 +617,22 @@
                                 </ComboBox>
                             </local:SettingsCard>
                             <local:SettingsCard
+                                x:Name="TidalQuality"
+                                Description="Select the quality of TIDAL downloads. Full tracks need a TIDAL subscription or trial."
+                                Header="TIDAL">
+                                <ComboBox
+                                    x:Name="TidalDownloadQualityInput"
+                                    AutomationProperties.Name="TIDAL download quality"
+                                    DropDownOpened="ComboBox_OnDropDownOpened"
+                                    SelectedIndex="3"
+                                    SelectionChanged="TidalDownloadQuality_Changed">
+                                    <ComboBoxItem Content="AAC (96kbps)" Tag="LOW" />
+                                    <ComboBoxItem Content="AAC (320kbps)" Tag="HIGH" />
+                                    <ComboBoxItem Content="FLAC (16bit/44.1kHz)" Tag="LOSSLESS" />
+                                    <ComboBoxItem Content="FLAC (maximum available)" Tag="HI_RES_LOSSLESS" />
+                                </ComboBox>
+                            </local:SettingsCard>
+                            <local:SettingsCard
                                 x:Name="YoutubeQuality"
                                 Description="Select the quality of YouTube downloads. FLAC is NOT lossless and only for compatibility purposes."
                                 Header="YouTube">
@@ -1078,7 +1094,7 @@
                         Header="TIDAL">
                         <local:SettingsExpander.Description>
                             <TextBlock TextWrapping="Wrap">
-                                Sign in to download from TIDAL. Optional: use your own&#32;<Hyperlink NavigateUri="https://developer.tidal.com/dashboard">developer app credentials</Hyperlink> for Search API access.</TextBlock>
+                                Sign in to download from TIDAL. Optional: if searches are rate limited, use your own&#32;<Hyperlink NavigateUri="https://developer.tidal.com/dashboard">developer app credentials</Hyperlink> for Search API access.</TextBlock>
                         </local:SettingsExpander.Description>
                         <local:SettingsExpander.HeaderIcon>
                             <FontIcon Glyph="&#xE72E;" />
@@ -1126,15 +1142,6 @@
                                     <Button x:Name="TidalDownloadLoginButton" Content="Sign in for downloads" Click="TidalDownloadLogin_Click" />
                                 </StackPanel>
                             </local:SettingsCard>
-                            <local:SettingsCard x:Name="TidalDownloadQualityCard" Header="Quality" HorizontalContentAlignment="Stretch">
-                                <ComboBox x:Name="TidalDownloadQualityInput" SelectedIndex="3" SelectionChanged="TidalDownloadQuality_Changed"
-                                    AutomationProperties.Name="TIDAL download quality">
-                                    <ComboBoxItem Content="Low, AAC 96 kbps" Tag="LOW" />
-                                    <ComboBoxItem Content="High, AAC 320 kbps" Tag="HIGH" />
-                                    <ComboBoxItem Content="Lossless, FLAC" Tag="LOSSLESS" />
-                                    <ComboBoxItem Content="Hi-res, best available FLAC" Tag="HI_RES_LOSSLESS" />
-                                </ComboBox>
-                            </local:SettingsCard>
                             <local:SettingsCard x:Name="TidalDownloadClientCard" Header="Override download client ID" HorizontalContentAlignment="Stretch"
                                 Description="Optional. Leave empty to use the default download client ID. Only change this if TIDAL downloads stop working.">
                                 <TextBox x:Name="TidalDownloadClientIdInput" Width="500" AutomationProperties.Name="TIDAL download client ID" />
@@ -1177,7 +1184,7 @@
                                 Header="Client ID">
                                 <local:SettingsCard.Description>
                                     <TextBlock TextWrapping="Wrap">
-                                        Your own&#32;<Hyperlink NavigateUri="https://developer.tidal.com/dashboard">developer app</Hyperlink>. Leave empty to use the bundled ID and secret.</TextBlock>
+                                        Custom&#32;<Hyperlink NavigateUri="https://developer.tidal.com/dashboard">developer app</Hyperlink>&#32;client ID. Leave empty to use FluentDL's own app.</TextBlock>
                                 </local:SettingsCard.Description>
                                 <TextBox
                                     x:Name="TidalClientIdInput"
@@ -1198,7 +1205,7 @@
                             </local:SettingsCard>
                             <local:SettingsCard
                                 HorizontalContentAlignment="Stretch"
-                                Description="Use your own app's ID and secret if searches with the bundled ones are rate limited."
+                                Description="Custom developer app client secret. Leave empty to use FluentDL's own app."
                                 Header="Client secret">
                                 <helpers:CustomPasswordBox
                                     x:Name="TidalSecretInput"
