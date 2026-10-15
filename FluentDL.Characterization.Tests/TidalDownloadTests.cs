@@ -108,14 +108,14 @@ public class TidalDownloadTests
         Assert.IsNull(exchange["client_secret"]);
         Assert.IsNull(handler.TokenAuthorization);
         Assert.IsFalse((await settings.ReadSettingAsync<string>(SettingKeys.TidalDownloadSession))!.Contains("refresh-value"));
-        await settings.SaveSettingAsync(SettingKeys.TidalDirectDownloads, true);
 
         handler.RemoteId = "replacement-client";
         handler.Preview = true;
         handler.ExpiresIn = 14400;
         client = Client(settings, handler);
         Assert.AreEqual("replacement-client", (await client.BeginLoginAsync()).ClientId);
-        Assert.IsNull(await client.TryDownloadAsync("1", "unused", null));
+        var preview = await Assert.ThrowsExceptionAsync<TidalDownloadUnavailableException>(() => client.DownloadAsync("1", "unused", null));
+        StringAssert.Contains(preview.Message, "subscription");
         Assert.AreEqual("refresh_token", handler.Forms.Last()["grant_type"]);
         Assert.AreEqual("remote-client", handler.Forms.Last()["client_id"]);
         Assert.AreEqual("refresh-value", handler.Forms.Last()["refresh_token"]);
@@ -168,11 +168,11 @@ public class TidalDownloadTests
     [TestMethod]
     public void StatusSeparatelyLabelsCatalogAndDownloadAccounts()
     {
-        var text = Views.SettingsPage.FormatTidalAccountInfo("catalog@example.test", "downloads@example.test", true, true, "Active");
+        var text = Views.SettingsPage.FormatTidalAccountInfo("catalog@example.test", "downloads@example.test", true, "Active");
         StringAssert.Contains(text, "API:\ncatalog@example.test\nOnly searching.");
         StringAssert.Contains(text, "Downloading:\ndownloads@example.test");
         StringAssert.Contains(text, "Subscription: Active");
-        StringAssert.Contains(text, "Direct downloads: On");
+        Assert.IsFalse(text.Contains("Direct downloads"), "Downloads have no on/off setting any more.");
     }
 
     [TestMethod]
@@ -192,17 +192,19 @@ public class TidalDownloadTests
     }
 
     [TestMethod]
-    public async Task DisabledDownloadsDoNotReadTheSessionOrCallTidal()
+    public async Task SignedOutDownloadSaysToSignInWithoutCallingTidal()
     {
         var handler = new FakeHttp();
-        Assert.IsNull(await Client(new TidalParsingTests.DictionarySettings([]), handler).TryDownloadAsync("1", "unused", null));
+        var error = await Assert.ThrowsExceptionAsync<TidalDownloadUnavailableException>(() =>
+            Client(new TidalParsingTests.DictionarySettings([]), handler).DownloadAsync("1", "unused", null));
+        StringAssert.Contains(error.Message, "Sign in for TIDAL downloads");
         Assert.AreEqual(0, handler.RequestCount);
     }
 
     [TestMethod]
     public async Task SegmentFailurePreservesExistingFileAndRemovesTemporaryFiles()
     {
-        var settings = new TidalParsingTests.DictionarySettings(new() { [SettingKeys.TidalDirectDownloads] = true, [SettingKeys.Overwrite] = true });
+        var settings = new TidalParsingTests.DictionarySettings(new() { [SettingKeys.Overwrite] = true });
         var handler = new FakeHttp { FailSegment = true };
         var client = Client(settings, handler);
         var login = await client.BeginLoginAsync();
@@ -215,11 +217,11 @@ public class TidalDownloadTests
         {
             var output = Path.Combine(folder, "track.flac");
             await File.WriteAllTextAsync(output, "existing");
-            await Assert.ThrowsExceptionAsync<HttpRequestException>(() => client.TryDownloadAsync("1", Path.Combine(folder, "track"), null));
+            await Assert.ThrowsExceptionAsync<HttpRequestException>(() => client.DownloadAsync("1", Path.Combine(folder, "track"), null));
             Assert.AreEqual("existing", await File.ReadAllTextAsync(output));
             Assert.AreEqual(1, Directory.GetFiles(folder).Length);
             handler.FailSegment = false;
-            var result = await client.TryDownloadAsync("1", Path.Combine(folder, "track"), null);
+            var result = await client.DownloadAsync("1", Path.Combine(folder, "track"), null);
             Assert.AreEqual(output, result);
             Assert.AreEqual("/init.mp4/7.mp4/8.mp4/9.mp4", await File.ReadAllTextAsync(result!));
             Assert.AreEqual(1, Directory.GetFiles(folder).Length);
@@ -234,7 +236,7 @@ public class TidalDownloadTests
     [DataRow(true, true)]
     public async Task TransferProgressCoversDashAndSingleFileStreams(bool singleFile, bool unknownLength)
     {
-        var settings = new TidalParsingTests.DictionarySettings(new() { [SettingKeys.TidalDirectDownloads] = true });
+        var settings = new TidalParsingTests.DictionarySettings(new());
         var handler = new FakeHttp { SingleFile = singleFile, ChunkedMedia = true, UnknownMediaLength = unknownLength };
         var client = Client(settings, handler);
         var login = await client.BeginLoginAsync();
@@ -246,7 +248,7 @@ public class TidalDownloadTests
         var progress = new RecordingProgress();
         try
         {
-            var path = await client.TryDownloadAsync("1", Path.Combine(folder, "track"), progress);
+            var path = await client.DownloadAsync("1", Path.Combine(folder, "track"), progress);
             var reports = progress.Reports.ToArray();
             Assert.IsTrue(reports.Length > (singleFile ? 1 : 4), "Report while reading a segment, not just after it finishes.");
             Assert.AreEqual(1, reports.Select(r => r.uniqueId).Distinct().Count());
@@ -272,7 +274,7 @@ public class TidalDownloadTests
     [TestMethod]
     public async Task ConcurrentTidalTracksKeepTheirProgressSeparateAndFailuresDoNotReportCompletion()
     {
-        var settings = new TidalParsingTests.DictionarySettings(new() { [SettingKeys.TidalDirectDownloads] = true });
+        var settings = new TidalParsingTests.DictionarySettings(new());
         var handler = new FakeHttp { ChunkedMedia = true };
         var client = Client(settings, handler);
         var login = await client.BeginLoginAsync();
@@ -284,13 +286,13 @@ public class TidalDownloadTests
         var progress = new RecordingProgress();
         try
         {
-            await Task.WhenAll(Enumerable.Range(0, 3).Select(i => Task.Run(() => client.TryDownloadAsync(i.ToString(), Path.Combine(folder, $"track-{i}"), progress))));
+            await Task.WhenAll(Enumerable.Range(0, 3).Select(i => Task.Run(() => client.DownloadAsync(i.ToString(), Path.Combine(folder, $"track-{i}"), progress))));
             var tracks = progress.Reports.GroupBy(r => r.uniqueId).ToArray();
             Assert.AreEqual(3, tracks.Length);
             Assert.IsTrue(tracks.All(t => t.Last().percent == 1));
             handler.FailSegment = true;
             var failed = new RecordingProgress();
-            await Assert.ThrowsExceptionAsync<HttpRequestException>(() => client.TryDownloadAsync("4", Path.Combine(folder, "failed"), failed));
+            await Assert.ThrowsExceptionAsync<HttpRequestException>(() => client.DownloadAsync("4", Path.Combine(folder, "failed"), failed));
             Assert.IsTrue(failed.Reports.All(r => r.percent < 1));
         }
         finally { SourceServices.Configure(originalSettings, TestSources.AudioConverter); Directory.Delete(folder, true); }
@@ -309,7 +311,7 @@ public class TidalDownloadTests
     {
         var settings = new TidalParsingTests.DictionarySettings(new()
         {
-            [SettingKeys.TidalDirectDownloads] = true, ["conversion_threads"] = 3,
+            ["conversion_threads"] = 3,
             ["file_naming_wildcard"] = "{title}", ["download_album_cover_art"] = false,
         });
         var client = Client(settings, new FakeHttp { ChunkedMedia = true, FailSegment = failSegment });
@@ -335,6 +337,43 @@ public class TidalDownloadTests
             Assert.IsFalse(Directory.GetFiles(folder).Any(p => p.EndsWith(".mp4")));
         }
         finally { SourceServices.Configure(originalSettings, TestSources.AudioConverter); Directory.Delete(folder, true); }
+    }
+
+    [TestMethod]
+    [DataRow(false)]
+    [DataRow(true)]
+    public async Task UnavailableTidalTrackFailsWithItsReasonUnlessTheFallbackIsOn(bool fallback)
+    {
+        var settings = new TidalParsingTests.DictionarySettings(new() { ["file_naming_wildcard"] = "{title}", ["download_lyrics"] = false });
+        var client = Client(settings, new FakeHttp()); // never signed in
+        var registry = new SourceRegistry([new AlbumCatalog()]);
+        var downloads = new DownloadService(registry, new EquivalentDownloader(registry), new NoLyrics(), client);
+        var folder = Path.Combine(Path.GetTempPath(), "opencode", "tidal-fallback-test-" + Guid.NewGuid());
+        Directory.CreateDirectory(folder);
+        var originalSettings = TestSources.Settings;
+        SourceServices.Configure(settings, new CopyConverter());
+        var previous = DownloadService.TidalEquivalentFallback;
+        DownloadService.TidalEquivalentFallback = fallback;
+        var reports = new List<(StatusLevel Level, string? Message)>();
+        try
+        {
+            var track = new SongSearchObject { Source = SourceIds.Tidal, Id = "1", Title = "Track 1", Artists = "Artist" };
+            var path = await downloads.DownloadObject(track, folder, new Progress<ProgressData>(), (level, _, message) => reports.Add((level, message)));
+            Assert.AreEqual(string.Empty, path);
+            var errors = reports.Where(r => r.Level == StatusLevel.Error).Select(r => r.Message ?? "").ToArray();
+            Assert.IsTrue(errors.Length > 0);
+            if (fallback)
+                Assert.IsFalse(errors.Any(m => m.Contains("Sign in")), "The equivalent route ran instead of reporting the sign-in.");
+            else
+                CollectionAssert.AreEqual(new[] { "Sign in for TIDAL downloads in Settings." }, errors, "Report why, like Deezer and Qobuz.");
+            Assert.AreEqual(0, Directory.GetFiles(folder).Length);
+        }
+        finally
+        {
+            DownloadService.TidalEquivalentFallback = previous;
+            SourceServices.Configure(originalSettings, TestSources.AudioConverter);
+            Directory.Delete(folder, true);
+        }
     }
 
     private sealed class AlbumCatalog : ICatalogSource

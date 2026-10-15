@@ -122,13 +122,15 @@ public sealed class TidalDownloadClient
         finally { authLock.Release(); }
     }
 
-    /// <summary>Null selects the equivalent route when disabled, signed out, or limited to previews.</summary>
-    public async Task<string?> TryDownloadAsync(string trackId, string pathWithoutExtension, IProgress<ProgressData>? progress,
+    /// <summary>
+    /// Downloads the full track. Throws <see cref="TidalDownloadUnavailableException"/> when TIDAL can't provide it:
+    /// signed out, an expired sign-in, playback denied, a preview only, or audio FluentDL can't save.
+    /// </summary>
+    public async Task<string> DownloadAsync(string trackId, string pathWithoutExtension, IProgress<ProgressData>? progress,
         CancellationToken token = default)
     {
-        if (!await settings.ReadSettingAsync<bool>(SettingKeys.TidalDirectDownloads)) return null;
-        var account = await GetSessionAsync(token);
-        if (account == null) return null;
+        var account = await GetSessionAsync(token)
+            ?? throw new TidalDownloadUnavailableException("Sign in for TIDAL downloads in Settings.");
         var quality = await settings.ReadSettingAsync<string>(SettingKeys.TidalDownloadQuality) ?? "HI_RES_LOSSLESS";
         if (quality is not ("LOW" or "HIGH" or "LOSSLESS" or "HI_RES_LOSSLESS")) quality = "HI_RES_LOSSLESS";
         using var request = new HttpRequestMessage(HttpMethod.Get,
@@ -138,27 +140,19 @@ public sealed class TidalDownloadClient
         if (response.StatusCode == HttpStatusCode.Unauthorized)
         {
             await LogoutAsync();
-            Serilog.Log.Warning("TIDAL download session rejected; using an equivalent. Sign in again for direct downloads.");
-            return null;
+            throw new TidalDownloadUnavailableException("Your TIDAL download sign-in expired. Sign in again in Settings.");
         }
         if (response.StatusCode == HttpStatusCode.Forbidden)
-        {
-            Serilog.Log.Warning("TIDAL denied direct playback; using an equivalent");
-            return null;
-        }
+            throw new TidalDownloadUnavailableException("TIDAL doesn't allow playing this track on this account or in this country.");
         if (!response.IsSuccessStatusCode) throw new HttpRequestException($"TIDAL stream request failed: HTTP {(int)response.StatusCode}.");
         using var json = JsonDocument.Parse(await response.Content.ReadAsStringAsync(token));
         if (json.RootElement.GetProperty("assetPresentation").GetString() != "FULL")
-        {
-            Serilog.Log.Information("TIDAL returned a preview; using an equivalent for the full track");
-            return null;
-        }
+            throw new TidalDownloadUnavailableException("TIDAL only offers a preview of this track. Full tracks need a TIDAL subscription or trial.");
         TidalDownloadManifest manifest;
         try { manifest = TidalDownloadManifest.Parse(json.RootElement); }
         catch (NotSupportedException)
         {
-            Serilog.Log.Warning("TIDAL returned unsupported audio; using an equivalent");
-            return null;
+            throw new TidalDownloadUnavailableException("TIDAL returned audio FluentDL can't save, such as an encrypted stream.");
         }
         var output = pathWithoutExtension + manifest.Extension;
         var overwrite = await settings.ReadSettingAsync<bool>(SettingKeys.Overwrite);
@@ -346,3 +340,6 @@ public sealed class TidalDownloadClient
     internal sealed record Session(string ClientId, string AccessToken, string RefreshToken, DateTimeOffset Expires, string Country,
         string? AccountName = null, string? UserId = null);
 }
+
+/// <summary>TIDAL can't provide the full track. The message says why and what to do.</summary>
+public sealed class TidalDownloadUnavailableException(string message) : Exception(message);

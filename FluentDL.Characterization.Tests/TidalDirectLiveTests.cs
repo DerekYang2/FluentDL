@@ -38,14 +38,13 @@ public class TidalDirectLiveTests
         var sessionFile = Environment.GetEnvironmentVariable("FLUENTDL_TIDAL_DOWNLOAD_TEST_SESSION");
         if (string.IsNullOrEmpty(sessionFile)) Assert.Inconclusive("Set FLUENTDL_TIDAL_DOWNLOAD_TEST_SESSION for this manual check.");
         var settings = TestSources.Settings;
-        var keys = new[] { SettingKeys.TidalDirectDownloads, SettingKeys.TidalDownloadSession, SettingKeys.TidalDownloadQuality, SettingsViewModel.FFmpegPath };
+        var keys = new[] { SettingKeys.TidalDownloadSession, SettingKeys.TidalDownloadQuality, SettingsViewModel.FFmpegPath };
         var previous = new Dictionary<string, object?>();
         foreach (var key in keys) previous[key] = await settings.ReadSettingAsync<object>(key);
         var folder = Path.Combine(Path.GetTempPath(), "opencode", "tidal-direct-live-" + Guid.NewGuid());
         Directory.CreateDirectory(folder);
         try
         {
-            await settings.SaveSettingAsync(SettingKeys.TidalDirectDownloads, true);
             await settings.SaveSettingAsync(SettingKeys.TidalDownloadSession, Convert.ToBase64String(await File.ReadAllBytesAsync(sessionFile!)));
             await settings.SaveSettingAsync(SettingKeys.TidalDownloadQuality, quality);
             var ffmpegFolder = Environment.GetEnvironmentVariable("PATH")!.Split(Path.PathSeparator)

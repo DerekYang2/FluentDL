@@ -45,8 +45,16 @@ public class DownloadTests
                 void Report(StatusLevel level, SongSearchObject reported, string? location) =>
                     reports.Add(new { Level = level.ToString(), Song = reported.Id, Location = Relative(directory, location) });
 
-                var result = await Live.Capture(async () =>
-                    Relative(directory, await TestSources.Downloads.DownloadObject(song, directory, new Progress<ProgressData>(_ => { }), Report)));
+                // TIDAL downloads directly or fails. This keeps the switched-off equivalent route covered.
+                var previousFallback = DownloadService.TidalEquivalentFallback;
+                DownloadService.TidalEquivalentFallback = source == "tidal";
+                object result;
+                try
+                {
+                    result = await Live.Capture(async () =>
+                        Relative(directory, await TestSources.Downloads.DownloadObject(song, directory, new Progress<ProgressData>(_ => { }), Report)));
+                }
+                finally { DownloadService.TidalEquivalentFallback = previousFallback; }
 
                 return new
                 {

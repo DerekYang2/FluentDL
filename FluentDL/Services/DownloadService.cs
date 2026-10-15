@@ -29,6 +29,12 @@ public sealed class DownloadService(SourceRegistry sources, EquivalentDownloader
 {
     private static readonly HttpClient client = new HttpClient();
 
+    /// <summary>
+    /// Off: a TIDAL track that TIDAL can't provide (signed out, preview only) fails with the reason, like Deezer and
+    /// Qobuz downloads. On: it downloads an equivalent from another source, as Spotify tracks do. Code-only switch.
+    /// </summary>
+    internal static bool TidalEquivalentFallback { get; set; } = false;
+
     private static string GetTrackSubfolderPath(SongSearchObject song, string baseDirectory, string? trackWildcard)
     {
         var wildCardStr = trackWildcard;
@@ -230,10 +236,22 @@ public sealed class DownloadService(SourceRegistry sources, EquivalentDownloader
         {
             try
             {
-                // The opt-in TIDAL client returns null for signed-out accounts and previews.
-                var resultPath = song.Source == SourceIds.Tidal && tidalDownloads != null
-                    ? await tidalDownloads.TryDownloadAsync(song.Id, locationNoExt, progress) : null;
-                var direct = resultPath != null;
+                string? resultPath = null;
+                var direct = false;
+                if (song.Source == SourceIds.Tidal)
+                {
+                    try
+                    {
+                        resultPath = tidalDownloads != null
+                            ? await tidalDownloads.DownloadAsync(song.Id, locationNoExt, progress)
+                            : throw new Tidal.TidalDownloadUnavailableException("TIDAL downloads aren't available in this build.");
+                        direct = true;
+                    }
+                    catch (Tidal.TidalDownloadUnavailableException e) when (TidalEquivalentFallback)
+                    {
+                        Log.Information("TIDAL direct download unavailable; using an equivalent: {Reason}", e.Message);
+                    }
+                }
                 resultPath ??= await equivalents.DownloadAsync(locationNoExt, song, progress, false, callback);
 
                 if (resultPath != null)
