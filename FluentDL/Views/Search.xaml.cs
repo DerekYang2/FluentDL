@@ -999,6 +999,7 @@ public sealed partial class Search : Page
             PageInfoBar.IsOpen = true;
             PageInfoBar.Opacity = 1;
             PageInfoBar.Severity = severity;
+            InfoBarWidth.Update(InfobarContent, hold: false);
             //PageInfoBar.Title = title;
 
             if (!string.IsNullOrWhiteSpace(title))
@@ -1039,6 +1040,7 @@ public sealed partial class Search : Page
             PageInfoBar.Severity = severity;
             InfobarProgress.IsIndeterminate = isIndeterminate;
             InfobarProgress.Value = Math.Clamp(progressPercent * 100, 0, 100);
+            InfoBarWidth.Update(InfobarContent, hold: !isIndeterminate); // a percentage is showing
             //PageInfoBar.Title = title;
             if (!string.IsNullOrWhiteSpace(title))
             {
