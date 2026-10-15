@@ -1,4 +1,5 @@
-﻿using FluentDL.Contracts.Sources;
+﻿using FluentDL.Characterization.Tests.Infrastructure;
+using FluentDL.Contracts.Sources;
 using FluentDL.Core.Sources;
 using FluentDL.Helpers;
 using FluentDL.Models;
@@ -115,6 +116,45 @@ public class QueueAlbumTests
         var tidalMatch = await new ConversionService(new SourceRegistry([tidal])).FindEquivalentAsync(album, SourceIds.Tidal, CancellationToken.None);
         Assert.AreEqual("t1", tidalMatch.Track!.Id);
         CollectionAssert.AreEqual(new[] { "886443927087", "0886443927087" }, tidal.UpcLookups);
+    }
+
+    [TestMethod]
+    public async Task QueueRowsKeepAlbumTracksAndSourceFieldsThroughSaveAndRestore()
+    {
+        // A Spotify album as its search lists it (and as album conversion returns it): the cover and tracks exist only here.
+        var spotifyAlbum = new AlbumSearchObject
+        {
+            Source = SourceIds.Spotify, Id = "sp1", Title = "Random Access Memories", Artists = "Daft Punk", TracksCount = 2,
+            ImageLocation = "https://i.scdn.co/small.jpg",
+            AdditionalFields = new() { ["cover_max"] = "https://i.scdn.co/large.jpg" },
+            TrackList = [new() { Source = SourceIds.Spotify, Id = "t1", Title = "Give Life Back to Music" }, new() { Source = SourceIds.Spotify, Id = "t2", Title = "The Game of Love" }],
+        };
+        var row = new QueueObject(spotifyAlbum) { QueueCounter = 7 };
+        var restored = (AlbumSearchObject)QueueObject.ParseSaved(row.ToString())!.Value.Song;
+        foreach (var album in new[] { (AlbumSearchObject)QueueObject.Unwrap(row), restored })
+        {
+            // The preview crashed on an empty cover address before; Spotify reads the cover and track list from these.
+            var preview = await TestSources.Spotify.GetPreviewAsync(album);
+            Assert.AreEqual("https://i.scdn.co/large.jpg", preview.CoverUrl);
+            CollectionAssert.AreEqual(new[] { "t1", "t2" }, preview.AlbumTracks!.Select(t => t.Id).ToArray());
+            Assert.AreEqual(2, album.TracksCount);
+        }
+        Assert.AreEqual(7, restored.QueueCounter);
+
+        // YouTube albums list their tracks only from the search result too.
+        var youtubeAlbum = new AlbumSearchObject
+        {
+            Source = SourceIds.YouTube, Id = "MPREb", Title = "Album", Artists = "Artist", TracksCount = 1,
+            TrackList = [new() { Source = SourceIds.YouTube, Id = "v1", Title = "Song" }],
+        };
+        var youtubeRestored = (AlbumSearchObject)QueueObject.ParseSaved(new QueueObject(youtubeAlbum).ToString())!.Value.Song;
+        CollectionAssert.AreEqual(new[] { "v1" }, (await TestSources.Youtube.GetAlbumTracksAsync(youtubeRestored)).Select(t => t.Id).ToArray());
+
+        // Track rows keep their source fields too, such as Deezer's preview address.
+        var track = new QueueObject(new SongSearchObject { Source = SourceIds.Deezer, Id = "d1", AdditionalFields = new() { ["preview"] = "https://cdns-preview.example/x.mp3" } });
+        var trackRestored = QueueObject.ParseSaved(track.ToString())!.Value.Song;
+        Assert.IsNotInstanceOfType(trackRestored, typeof(AlbumSearchObject));
+        Assert.AreEqual("https://cdns-preview.example/x.mp3", trackRestored.AdditionalFields!["preview"]);
     }
 
     [TestMethod]
