@@ -8,7 +8,7 @@ By default the tests run inside the Windows Sandbox that WinApp CLI manages, so 
 
 ## Requirements
 
-- WinApp CLI 0.7+ and the Windows Sandbox feature, for the default Sandbox runs. The first run in a new Sandbox downloads the .NET SDK into it (about 300 MB, a few minutes). Later runs only copy files that changed.
+- WinApp CLI 0.7+ and the Windows Sandbox feature, for the default Sandbox runs. The first run in a new Sandbox downloads the .NET SDK into it (about 300 MB). Later runs only copy files that changed. The guest script first turns off Smart App Control inside the Sandbox, Microsoft's workaround for very slow installs there ([Windows-Sandbox#68](https://github.com/microsoft/Windows-Sandbox/issues/68)). It never changes this PC.
 - Windows Developer Mode (Settings > System > For developers), for `-Local` runs. It allows registering an unsigned build folder. The Sandbox already has it.
 - The test accounts in `%USERPROFILE%\.fluentdl-secrets\hurl.secrets` (or `FLUENTDL_SECRETS`). Sandbox runs copy the file into the guest and delete it afterwards.
 - Locally, the tests use only UI Automation, never the real mouse or keyboard. The dev app's window opens on top, though, and a few tests read badge colours from the screen, so a window covering the app can fail them. Some controls, such as the search box's button, are only in the raw view of the automation tree; `UiSteps.FindInRawView` finds them.

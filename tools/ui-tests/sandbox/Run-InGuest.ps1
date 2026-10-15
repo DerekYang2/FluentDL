@@ -23,6 +23,16 @@ $devName = 'DerekYang2.FluentDL.Dev'
 
 function Step([string]$message) { Write-Host "[guest] $message" }
 
+# Smart App Control makes every install and extraction in the Sandbox very slow: it waits on Defender, which the
+# Sandbox disables. Turning it off inside this disposable guest is Microsoft's workaround until Windows 26H2:
+# https://github.com/microsoft/Windows-Sandbox/issues/68
+$ciPolicy = 'HKLM:\SYSTEM\CurrentControlSet\Control\CI\Policy'
+if ((Get-ItemProperty $ciPolicy -Name VerifiedAndReputablePolicyState -ErrorAction SilentlyContinue).VerifiedAndReputablePolicyState -ne 0) {
+    Step 'Turning off Smart App Control in the Sandbox (it slows installs)...'
+    Set-ItemProperty $ciPolicy -Name VerifiedAndReputablePolicyState -Value 0 -Type DWord
+    CiTool.exe -r | Out-Null
+}
+
 # .NET SDK: the test host targets net10.0-windows, and dotnet test needs the SDK's test platform.
 $dotnet = Join-Path $dotnetRoot 'dotnet.exe'
 if (-not (Test-Path $dotnet)) {
@@ -62,6 +72,8 @@ New-Item -ItemType Directory -Force $results | Out-Null
 Get-ChildItem (Join-Path $root 'tests\Baselines') -Filter '*.actual.json' -ErrorAction SilentlyContinue | Remove-Item
 
 $env:FLUENTDL_UI_TESTS = '1'
+# The guest's desktop is nobody's, so tests may use the real mouse and keyboard here.
+$env:FLUENTDL_UI_REAL_INPUT = '1'
 $env:FLUENTDL_SECRETS = Join-Path $root 'secrets\hurl.secrets'
 if ($Record) { $env:FLUENTDL_RECORD = '1' }
 $dll = Get-ChildItem (Join-Path $root 'tests\bin') -Recurse -Filter 'FluentDL.Characterization.Tests.dll' | Select-Object -First 1
