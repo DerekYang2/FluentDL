@@ -1,11 +1,8 @@
 ﻿using FFMpegCore;
 using FFMpegCore.Enums;
-using FFMpegCore.Pipes;
 using FluentDL.Core.Sources;
 using FluentDL.Helpers;
 using FluentDL.ViewModels;
-using Microsoft.UI.Dispatching;
-using Microsoft.UI.Xaml.Media.Imaging;
 using Org.BouncyCastle.Bcpg.OpenPgp;
 using System;
 using System.Collections.Generic;
@@ -14,7 +11,6 @@ using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
-using Windows.Storage.Streams;
 using Serilog;
 
 namespace FluentDL.Services;
@@ -37,16 +33,6 @@ internal class FFmpegRunner : IAudioConverter
     Task IAudioConverter.RemuxAudioAsync(string inputPath, string outputPath) => ConvertMp4ToM4aAsync(inputPath, outputPath);
 
     Task<string?> IAudioConverter.CreateMp3Async(string initialPath, string? outputDirectory) => CreateMp3Async(initialPath, outputDirectory);
-
-    private static int NormalizeSpectrogramHeight(int height)
-    {
-        return height switch
-        {
-            <= 384 => 256,
-            <= 768 => 512,
-            _ => 1024,
-        };
-    }
 
     public static async Task<string> GetPath()
     {
@@ -127,71 +113,6 @@ internal class FFmpegRunner : IAudioConverter
         catch (Exception e)
         {
             Log.Warning(e, "FFmpeg unavailable ({Source}); converting audio and spectrograms won't work", source);
-        }
-    }
-
-    // Spectrogram
-    public static async Task<BitmapImage?> GetSpectrogram(string filePath, int imageHeight, DispatcherQueue dispatcher)
-    {
-        try
-        {
-            int height = NormalizeSpectrogramHeight(imageHeight);
-            int width = height * 2;
-            using var ms = new MemoryStream();
-            await FFMpegArguments.FromFileInput(filePath)
-                .OutputToPipe(new StreamPipeSink(ms), options => options
-                .WithCustomArgument("-filter_complex")
-                .WithCustomArgument($"showspectrumpic=s={width}x{height}")
-                .WithVideoCodec("png")
-                .ForceFormat("image2pipe")).ProcessAsynchronously(throwOnError: true);
-            ms.Position = 0;
-            using IRandomAccessStream randomStream = ms.AsRandomAccessStream();
-            
-            var tcs = new TaskCompletionSource<BitmapImage?>();
-            // UI Thread
-            dispatcher.TryEnqueue(async () =>
-            {
-                try
-                {
-                    var bitmap = new BitmapImage();
-                    await bitmap.SetSourceAsync(randomStream);
-                    tcs.SetResult(bitmap);
-                }
-                catch
-                {
-                    tcs.SetResult(null);
-                }
-            });
-
-            return await tcs.Task;
-        } catch (Exception ex)
-        {
-            Log.Warning(ex, "Spectrogram generation failed");
-            return null;
-        }
-    }
-
-    public static async Task<bool> SaveSpectrogram(string filePath, string outputPath, int imageHeight = 512)
-    {
-        try
-        {
-            int height = NormalizeSpectrogramHeight(imageHeight);
-            int width = height * 2;
-
-            await FFMpegArguments.FromFileInput(filePath)
-                .OutputToFile(outputPath, true, options => options
-                    .WithCustomArgument("-filter_complex")
-                    .WithCustomArgument($"showspectrumpic=s={width}x{height}")
-                    .WithVideoCodec("png")
-                    .ForceFormat("image2"))
-                .ProcessAsynchronously(throwOnError: true);
-
-            return File.Exists(outputPath);
-        }
-        catch (Exception ex)
-        {
-            Log.Error(ex, "Spectrogram export failed");
-            return false;
         }
     }
 

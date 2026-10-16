@@ -46,3 +46,15 @@ Without `FLUENTDL_UI_TESTS=1` (which the scripts set), UI tests end as Inconclus
 ## Finding control names
 
 `UiProbe` (`TestCategory=UIProbe`) writes the dev app's UI Automation tree to `%TEMP%\opencode\fluentdl-ui-tree.txt`. WinUI uses `x:Name` as the AutomationId, so most named controls in the XAML are directly addressable. Flyouts and ContentDialogs only appear in the tree while open.
+
+## Spectrogram integration smoke test
+
+`Test-Spectrogram.ps1` checks the Spek.NET dialog with a generated local stereo FLAC. It requires WinApp CLI 0.7+ and no music-service credentials. Start a dev package in Sandbox, push a fixture with title `Spectrogram sample` into `C:\WinApp\work\SpekFixtures\spectrogram.flac`, then pass the guest PID and target together:
+
+```powershell
+pwsh .\tools\ui-tests\Test-Spectrogram.ps1 -Target sandbox -AppPid <guestPID> `
+    -FixturePath C:\WinApp\work\SpekFixtures\spectrogram.flac `
+    -ArtifactDirectory "$env:TEMP\opencode\spectrogram-results"
+```
+
+The script checks opening from Local Explorer, changing the palette, FFT size and channel, zoom/reset, selection, inspection options, PNG export, closing/reopening, and both queue layouts. Results and screenshots go to the chosen artifact folder. Review the screenshots as well as the assertions.

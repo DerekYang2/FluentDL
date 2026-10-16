@@ -5,6 +5,7 @@ using FluentDL.ViewModels;
 using Microsoft.UI.Dispatching;
 using Microsoft.UI.Text;
 using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Documents;
 using Microsoft.UI.Xaml.Media.Imaging;
@@ -191,12 +192,14 @@ public sealed partial class LocalExplorerPage : Page
     {
         // Initialize preview panel command bar
         var addButton = new AppBarButton { Icon = new SymbolIcon(Symbol.Add), Label = "Add to queue" };
+        AutomationProperties.SetAutomationId(addButton, "LocalAddToQueue");
         addButton.Click += (sender, e) => AddSongToQueue(PreviewPanel.GetSong());
 
         var editButton = new AppBarButton { Icon = new SymbolIcon(Symbol.Edit), Label = "Edit" };
         editButton.Click += (sender, e) => OpenMetadataDialog(PreviewPanel.GetSong());
 
         var openSpekButton = new AppBarButton { Icon = new FontIcon { Glyph = "\uE9D2" }, Label = "Analyze" };
+        AutomationProperties.SetAutomationId(openSpekButton, "LocalSpectrogram");
         openSpekButton.Click += async (sender, e) => await OpenSpectrogramDialog(PreviewPanel.GetSong());
 
         var openButton = new AppBarButton { Icon = new FontIcon { Glyph = "\uE8DA" }, Label = "Open" };
@@ -734,7 +737,7 @@ public sealed partial class LocalExplorerPage : Page
 
     private async Task OpenSpectrogramDialog(SongSearchObject? selectedSong)
     {
-        await SpectrogramDialog.OpenSpectrogramDialog(selectedSong, dispatcher, this.XamlRoot);
+        await SpectrogramDialog.OpenSpectrogramDialog(selectedSong, this.XamlRoot);
     }
 
     private void AddSongToQueue(SongSearchObject? song)

@@ -367,7 +367,7 @@ public sealed partial class QueuePage : Page
             ShowInfoBar(InfoBarSeverity.Warning, "Track does not exist locally", 3);
             return;
         }
-        await SpectrogramDialog.OpenSpectrogramDialog(song, dispatcherQueue, this.XamlRoot);
+        await SpectrogramDialog.OpenSpectrogramDialog(song, this.XamlRoot);
     }
 
     private void CopySongLink(SongSearchObject? song)
