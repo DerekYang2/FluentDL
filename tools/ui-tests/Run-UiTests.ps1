@@ -23,6 +23,7 @@ param(
     [string]$BaselineFrom,
     [string]$Filter,
     [switch]$IncludeYoutube,
+    [switch]$IncludeSpotifyOfficial,
     [switch]$SkipInstall,
     [switch]$Local
 )
@@ -34,9 +35,11 @@ $sandbox = Join-Path $PSScriptRoot 'sandbox\Invoke-SandboxUiTests.ps1'
 $tests = Join-Path $repo 'FluentDL.Characterization.Tests\FluentDL.Characterization.Tests.csproj'
 $worktree = $null
 # YouTube-category tests only run with -IncludeYoutube: a YouTube link crashes the app while YouTube bot-checks (bug 20).
-$testFilter = 'TestCategory=UI'
+# Deferred workflows stay in source for follow-up, but do not run until their automation is finished.
+$testFilter = 'TestCategory=UI&TestCategory!=Deferred'
 if ($Filter) { $testFilter += "&FullyQualifiedName~$Filter" }
 if (-not $IncludeYoutube) { $testFilter += '&TestCategory!=YouTube' }
+if (-not $IncludeSpotifyOfficial) { $testFilter += '&TestCategory!=SpotifyOfficial' }
 
 function Invoke-UiTests([switch]$Record) {
     $env:FLUENTDL_UI_TESTS = '1'
