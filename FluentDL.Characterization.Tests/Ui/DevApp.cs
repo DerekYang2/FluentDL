@@ -17,12 +17,14 @@ internal sealed class DevApp : IDisposable
     public Application App { get; }
     public UIA3Automation Automation { get; }
     public Window MainWindow { get; private set; }
+    private readonly UiRunLog log;
 
-    private DevApp(Application app, UIA3Automation automation, Window mainWindow)
+    private DevApp(Application app, UIA3Automation automation, Window mainWindow, UiRunLog log)
     {
         App = app;
         Automation = automation;
         MainWindow = mainWindow;
+        this.log = log;
     }
 
     public static void RequireUiTests()
@@ -37,6 +39,15 @@ internal sealed class DevApp : IDisposable
     {
         var package = FindPackage();
         return $"{package.Id.FamilyName}!App";
+    }
+
+    public static string LocalStateDirectory => Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Packages", FindPackage().Id.FamilyName, "LocalState");
+
+    public void AssertHealthy()
+    {
+        Assert.IsFalse(App.HasExited, "The dev app exited unexpectedly during the UI workflow.");
+        Assert.IsFalse(log.HasNewFatal(), "The dev app wrote a new fatal log entry during the UI workflow. Check the guest app log.");
     }
 
     private static Windows.ApplicationModel.Package FindPackage()
@@ -85,15 +96,20 @@ internal sealed class DevApp : IDisposable
     {
         RequireUiTests();
         var aumid = FindAumid();
+        var log = new UiRunLog(Path.Combine(LocalStateDirectory, "Logs"));
         var app = Application.LaunchStoreApp(aumid);
         var automation = new UIA3Automation();
         var window = app.GetMainWindow(automation, timeout ?? TimeSpan.FromSeconds(60))
             ?? throw new InvalidOperationException("The dev app's main window did not appear.");
-        return new DevApp(app, automation, window);
+        return new DevApp(app, automation, window, log);
     }
 
     public void Dispose()
     {
+        // Check before our intentional shutdown. This also catches an async crash after the last UI assertion.
+        string? healthFailure = null;
+        try { AssertHealthy(); }
+        catch (Exception e) { healthFailure = e.Message; }
         try
         {
             App.Close();
@@ -113,5 +129,6 @@ internal sealed class DevApp : IDisposable
         }
         App.Dispose();
         Automation.Dispose();
+        if (healthFailure != null) Assert.Fail(healthFailure);
     }
 }
