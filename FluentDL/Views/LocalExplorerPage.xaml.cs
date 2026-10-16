@@ -111,7 +111,8 @@ public sealed partial class LocalExplorerPage : Page
 
         // Attach changed event for originalList (when any songs are added or removed from the local explorer)
         LocalExplorerViewModel.OriginalList.CollectionChanged += ListChangeDelegate;
-        ListChangeDelegate(null, new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Reset));  // Call once upon construction
+        // Search may have downloaded files before this page was first opened.
+        ListChangeDelegate(null, new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Reset));
 
         ConversionResults.CollectionChanged += (sender, e) =>
         {
@@ -136,10 +137,6 @@ public sealed partial class LocalExplorerPage : Page
                 NoLyricsText.Visibility = Visibility.Collapsed;
             }
         };
-
-        // Set first
-        SetResultsAmount(0);
-        ClearButton.IsEnabled = LocalExplorerViewModel.OriginalList.Count > 0;
 
         // Set on load
         this.Loaded += LocalExplorerPage_Loaded;
