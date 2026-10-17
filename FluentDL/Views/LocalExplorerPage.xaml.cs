@@ -958,7 +958,7 @@ public sealed partial class LocalExplorerPage : Page
             "320 kbps",
         };
 
-        var AacSubsettings = new List<string> { "128 kbps", "192 kbps", "256 kbps" };
+        var AacSubsettings = new List<string> { "128 kbps", "192 kbps", "256 kbps", "320 kbps" };
 
         var VorbisSubsettings = new List<string>
         {
@@ -1025,6 +1025,7 @@ public sealed partial class LocalExplorerPage : Page
             0 => FFmpegRunner.CreateAac(song.Id, 128, outputDirectory),
             1 => FFmpegRunner.CreateAac(song.Id, 192, outputDirectory),
             2 => FFmpegRunner.CreateAac(song.Id, 256, outputDirectory),
+            3 => FFmpegRunner.CreateAac(song.Id, 320, outputDirectory),
             _ => string.Empty,
         };
     }

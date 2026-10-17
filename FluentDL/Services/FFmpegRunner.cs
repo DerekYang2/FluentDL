@@ -475,6 +475,22 @@ internal class FFmpegRunner : IAudioConverter
         }
     }
 
+    internal static FFMpegArgumentProcessor CreateFdkAacConversion(string inputPath, string outputPath, int bitRate)
+    {
+        return FFMpegArguments.FromFileInput(inputPath)
+            .OutputToFile(outputPath, true, options =>
+            {
+                // Keep one codec argument so a later option cannot silently replace FDK with native AAC.
+                options.WithCustomArgument("-c:v copy")
+                    .WithAudioCodec(AudioCodec.LibFdk_Aac)
+                    .WithCustomArgument("-map_metadata 0")
+                    .WithCustomArgument($"-b:a {bitRate}k");
+                // Prefer wider bandwidth for 256 kbps and above. This is not a proven quality improvement;
+                // FDK recommends automatic bandwidth for its listening-test-tuned bit allocation.
+                if (bitRate >= 256) options.WithCustomArgument("-cutoff 20000");
+            });
+    }
+
     public static string? CreateAac(string initialPath, int bitRate, string? outputDirectory = null)
     {
         if (Path.GetExtension(initialPath) == ".m4a")
@@ -486,13 +502,7 @@ internal class FFmpegRunner : IAudioConverter
 
         try
         {
-            // First try with AudioCodec.LibFdk_Aac (better quality). Don't add another -c:a here: ffmpeg only uses the last
-            // one, and an extra "-c:a aac" once made this attempt use FFmpeg's own encoder instead of FDK.
-            FFMpegArguments.FromFileInput(initialPath)
-                .OutputToFile(outputPath, true, options => options.WithCustomArgument("-c:v copy")
-                    .WithAudioCodec(AudioCodec.LibFdk_Aac)
-                    .WithCustomArgument("-map_metadata 0")
-                    .WithCustomArgument($"-b:a {bitRate}k")).ProcessSynchronously();
+            CreateFdkAacConversion(initialPath, outputPath, bitRate).ProcessSynchronously();
             return outputPath;
         }
         catch (Exception e)
@@ -729,13 +739,7 @@ internal class FFmpegRunner : IAudioConverter
 
         try
         {
-            // First try with AudioCodec.LibFdk_Aac (better quality). Don't add another -c:a here: ffmpeg only uses the last
-            // one, and an extra "-c:a aac" once made this attempt use FFmpeg's own encoder instead of FDK.
-            await FFMpegArguments.FromFileInput(initialPath)
-                .OutputToFile(outputPath, true, options => options.WithCustomArgument("-c:v copy")
-                    .WithAudioCodec(AudioCodec.LibFdk_Aac)
-                    .WithCustomArgument("-map_metadata 0")
-                    .WithCustomArgument($"-b:a {bitRate}k")).ProcessAsynchronously();
+            await CreateFdkAacConversion(initialPath, outputPath, bitRate).ProcessAsynchronously();
             return outputPath;
         }
         catch (Exception e)
