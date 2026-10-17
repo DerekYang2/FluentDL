@@ -58,15 +58,19 @@ public class SpectrogramDialogMarkupTests
     }
 
     [TestMethod]
-    public void HeaderUsesLeftAlignedButtonsBesideTheTitle()
+    public void HeaderKeepsTheTitleLeftAndTheButtonsRight()
     {
         var markup = Read();
         XNamespace x = "http://schemas.microsoft.com/winfx/2006/xaml";
         var header = markup.Descendants().Single(element => (string?)element.Attribute(x + "Name") == "HeaderBar");
-        Assert.AreEqual("WrapPanel", header.Name.LocalName);
-        Assert.AreEqual("Left", (string?)header.Attribute("HorizontalAlignment"));
-        Assert.IsTrue(header.Elements().Any(element => (string?)element.Attribute("Text") == "Spectrogram"));
-        Assert.AreEqual(6, header.Elements().Count(element => element.Name.LocalName == "Button"));
+        Assert.AreEqual("Grid", header.Name.LocalName);
+        var title = header.Elements().Single(element => (string?)element.Attribute("Text") == "Spectrogram");
+        Assert.AreEqual("Left", (string?)title.Attribute("HorizontalAlignment"));
+        var buttons = header.Elements().Single(element => (string?)element.Attribute(x + "Name") == "HeaderButtons");
+        Assert.AreEqual("WrapPanel", buttons.Name.LocalName);
+        Assert.AreEqual("Right", (string?)buttons.Attribute("HorizontalAlignment"));
+        Assert.AreEqual("1", (string?)buttons.Attribute("Grid.Column"));
+        Assert.AreEqual(6, buttons.Elements().Count(element => element.Name.LocalName == "Button"));
         Assert.IsFalse(markup.Descendants().Any(element => element.Name.LocalName is "CommandBar" or "AppBarButton"));
         Assert.IsNull(markup.Descendants().Single(element => element.Name.LocalName == "ContentDialog").Attribute("Title"));
     }
@@ -94,5 +98,35 @@ public class SpectrogramDialogMarkupTests
         }
         var references = markup.Descendants().Single(element => (string?)element.Attribute("AutomationProperties.AutomationId") == "SpectrogramReferences");
         CollectionAssert.AreEqual(new[] { "None", "MP3 - LAME defaults" }, references.Elements().Select(element => (string?)element.Attribute("Content")).ToArray());
+    }
+
+    [TestMethod]
+    public void ClearSelectionExplainsItsPurposeAndStartsHidden()
+    {
+        var button = Read().Descendants().Single(element => (string?)element.Attribute("AutomationProperties.AutomationId") == "SpectrogramClearSelection");
+        Assert.AreEqual("Clear selection", (string?)button.Attribute("Content"));
+        Assert.AreEqual("False", (string?)button.Attribute("IsEnabled"));
+        Assert.AreEqual("Collapsed", (string?)button.Attribute("Visibility"));
+        StringAssert.Contains((string?)button.Attribute("ToolTipService.ToolTip"), "Zoom is unchanged");
+    }
+
+    [TestMethod]
+    public void EscapeHandlingCoversTheBodyAndNativeCloseActionInsteadOfOnlyThePlot()
+    {
+        var markup = Read();
+        var dialog = markup.Descendants().Single(element => element.Name.LocalName == "ContentDialog");
+        XNamespace x = "http://schemas.microsoft.com/winfx/2006/xaml";
+        var body = markup.Descendants().Single(element => (string?)element.Attribute(x + "Name") == "DialogBody");
+        Assert.AreEqual("DialogBody_PreviewKeyDown", (string?)body.Attribute("PreviewKeyDown"));
+        Assert.AreEqual("Dialog_CloseButtonClick", (string?)dialog.Attribute("CloseButtonClick"));
+        Assert.IsNull(markup.Descendants(XName.Get("SpekView", "using:Spek.Net.WinUI")).Single().Attribute("PreviewKeyDown"));
+    }
+
+    [TestMethod]
+    public void ReadoutAndReadinessShareOneStatusLine()
+    {
+        var markup = Read();
+        Assert.AreEqual(1, markup.Descendants().Count(element => (string?)element.Attribute("AutomationProperties.AutomationId") == "SpectrogramStatus"));
+        Assert.IsFalse(markup.Descendants().Any(element => (string?)element.Attribute("AutomationProperties.AutomationId") == "SpectrogramReadout"));
     }
 }

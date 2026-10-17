@@ -69,8 +69,9 @@ function Picker([string] $Action, [string] $Path) {
     Ui @('invoke', '1') -Window $hwnd | Out-Null
 }
 function Ready {
-    Ui @('wait-for', 'SpectrogramStatus', '--value', 'Ready', '-t', '15000') | Out-Null
-    Ui @('wait-for', 'SpectrogramSave', '-p', 'IsEnabled', '--value', 'True', '-t', '3000') | Out-Null
+    Ui @('wait-for', 'SpectrogramSave', '-p', 'IsEnabled', '--value', 'True', '-t', '15000') | Out-Null
+    $status = Ui @('get-value', 'SpectrogramStatus', '--json') | ConvertFrom-Json
+    if ($status.text -match '^(Reading|Analyzing|Saving)') { throw "Analysis is not ready: $($status.text)" }
 }
 function Menu([string] $Button, [string] $Choice) {
     Ui @('invoke', $Button) | Out-Null
@@ -107,6 +108,18 @@ try {
         Screenshot '01-local.png'
     }
     if ($results[-1].status -ne 'PASS') { throw 'Import or opening failed; dependent dialog tests were not run.' }
+    Test-Ui 'Inspection readout uses the readiness status line' {
+        Ui @('send-keys', 'right', '--target', 'Spectrogram', '--via', 'send-input')
+        Ui @('wait-for', 'SpectrogramStatus', '--value', 'Hz', '--contains', '-t', '2000')
+        $status = Ui @('get-value', 'SpectrogramStatus', '--json') | ConvertFrom-Json
+        if ($status.text -notmatch 'dB') { throw 'The shared status line has no level readout.' }
+    }
+    Test-Ui 'Escape dismisses an options menu without closing the dialog' {
+        Ui @('invoke', 'SpectrogramPalette')
+        Ui @('wait-for', 'Mono', '-t', '3000')
+        Ui @('send-keys', 'esc', '--via', 'send-input')
+        Ready
+    }
     Test-Ui 'Palette, FFT size and channel controls work' {
         Menu 'SpectrogramPalette' 'Mono'
         Ui @('wait-for', 'SpectrogramPalette', '--value', 'Mono', '-t', '2000')
@@ -129,10 +142,42 @@ try {
         $text = Ui @('get-value', 'SpectrogramInspectionStatus', '--json') | ConvertFrom-Json
         if ($text.text -match 'Frequency view|Time view') { throw 'Reset zoom failed.' }
     }
-    Test-Ui 'Selection clears with Escape before the dialog closes' {
+    Test-Ui 'Clear selection keeps the zoom and restores whole-track inspection' {
+        Ui @('invoke', 'SpectrogramShowProfile')
+        Ui @('send-keys', 'vk=0xBB right shift+right', '--target', 'Spectrogram', '--via', 'send-input')
+        Ui @('wait-for', 'SpectrogramClearSelection', '-p', 'IsEnabled', '--value', 'True', '-t', '2000')
+        Ui @('invoke', 'SpectrogramClearSelection')
+        Ui @('wait-for', 'SpectrogramClearSelection', '--gone', '-t', '2000')
+        $status = Ui @('get-value', 'SpectrogramInspectionStatus', '--json') | ConvertFrom-Json
+        if ($status.text -match 'Passage [0-9]' -or $status.text -notmatch 'Time view') { throw 'Clear selection changed the zoom or retained the passage.' }
+        Ui @('invoke', 'SpectrogramResetZoom')
+        Ui @('invoke', 'SpectrogramShowProfile')
+        Ready
+    }
+    Test-Ui 'Clear selection is visible only with the profile and a passage' {
+        Ui @('send-keys', 'right shift+right', '--target', 'Spectrogram', '--via', 'send-input')
+        Ui @('wait-for', 'SpectrogramClearSelection', '--gone', '-t', '2000')
+        Ui @('invoke', 'SpectrogramShowProfile')
+        Ui @('wait-for', 'SpectrogramClearSelection', '-p', 'IsEnabled', '--value', 'True', '-t', '2000')
+        Ui @('invoke', 'SpectrogramShowProfile')
+        Ui @('wait-for', 'SpectrogramClearSelection', '--gone', '-t', '2000')
+        Ui @('send-keys', 'esc', '--target', 'Spectrogram', '--via', 'send-input')
+        Ready
+    }
+    Test-Ui 'Escape clears a selection and the next press closes with a checkbox focused' {
         Ui @('send-keys', 'right shift+right', '--target', 'Spectrogram', '--via', 'send-input')
         Ui @('wait-for', 'SpectrogramInspectionStatus', '--value', 'Passage', '--contains', '-t', '2000')
-        Ui @('send-keys', 'esc', '--target', 'Spectrogram', '--via', 'send-input')
+        Ui @('send-keys', 'esc', '--target', 'SpectrogramShowProfile', '--via', 'send-input')
+        Ready
+        Ui @('wait-for', 'SpectrogramClearSelection', '--gone', '-t', '2000')
+        Ui @('send-keys', 'esc', '--target', 'SpectrogramShowProfile', '--via', 'send-input')
+        Ui @('wait-for', 'SpectrogramStatus', '--gone', '-t', '3000')
+        Ui @('invoke', 'LocalSpectrogram')
+        Ready
+        Ui @('send-keys', 'right shift+right', '--target', 'Spectrogram', '--via', 'send-input')
+        Ui @('invoke', 'SpectrogramClose')
+        Ui @('wait-for', 'SpectrogramStatus', '--gone', '-t', '3000')
+        Ui @('invoke', 'LocalSpectrogram')
         Ready
     }
     Test-Ui 'Inspection tools stay optional' {

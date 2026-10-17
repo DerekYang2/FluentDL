@@ -5,10 +5,12 @@ using FluentDL.Services;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
+using Microsoft.UI.Input;
 using Serilog;
 using Spek.Net;
 using Spek.Net.WinUI;
 using Windows.System;
+using Windows.UI.Core;
 
 namespace FluentDL.Views;
 
@@ -20,11 +22,13 @@ public sealed partial class SpectrogramDialog : UserControl
     private bool saving;
     private bool completed;
     private bool updatingOptions;
+    private bool escapeClearedSelection;
     private string? selectedFilePath;
 
     public SpectrogramDialog()
     {
         InitializeComponent();
+        DialogBody.AddHandler(UIElement.KeyUpEvent, new KeyEventHandler(DialogBody_KeyUp), handledEventsToo: true);
         Spek.AnalysisCompleted += (_, _) =>
         {
             if (!isOpen || string.IsNullOrEmpty(Spek.FilePath)) return;
@@ -34,6 +38,7 @@ public sealed partial class SpectrogramDialog : UserControl
         };
         Spek.InspectionChanged += (_, _) => UpdateInspection();
         Spek.RegisterPropertyChangedCallback(SpekView.RefinementStatusProperty, (_, _) => UpdateInspection());
+        Spek.RegisterPropertyChangedCallback(SpekView.ReadoutTextProperty, (_, _) => UpdateAnalysisStatus());
         foreach (var property in new[]
         {
             SpekView.PaletteProperty, SpekView.WindowFunctionProperty, SpekView.FftBitsProperty,
@@ -59,6 +64,7 @@ public sealed partial class SpectrogramDialog : UserControl
         if (!DispatcherQueue.HasThreadAccess) throw new InvalidOperationException("Open the spectrogram on the UI thread.");
 
         isOpen = true;
+        escapeClearedSelection = false;
         completed = false;
         Message.IsOpen = false;
         selectedFilePath = selectedSong.Id;
@@ -93,6 +99,24 @@ public sealed partial class SpectrogramDialog : UserControl
         if (args.Result == ContentDialogResult.None) Spek.FilePath = null;
     }
 
+    private void Dialog_CloseButtonClick(ContentDialog sender, ContentDialogButtonClickEventArgs args)
+    {
+        // WinUI invokes the close button for Escape too. Cancel only that keyboard action when it clears a passage;
+        // mouse, touch and accessibility activation of Close should always dismiss the dialog.
+        bool escapePressed = InputKeyboardSource.GetKeyStateForCurrentThread(VirtualKey.Escape).HasFlag(CoreVirtualKeyStates.Down);
+        if (escapePressed && (escapeClearedSelection || Spek.HasSelection))
+        {
+            Spek.ClearSelection();
+            args.Cancel = true;
+        }
+        escapeClearedSelection = false;
+    }
+
+    private void DialogBody_KeyUp(object sender, KeyRoutedEventArgs args)
+    {
+        if (args.Key == VirtualKey.Escape) escapeClearedSelection = false;
+    }
+
     private void Root_Changed(XamlRoot sender, XamlRootChangedEventArgs args) => ResizeForRoot();
 
     private void ResizeForRoot()
@@ -103,14 +127,20 @@ public sealed partial class SpectrogramDialog : UserControl
         Profile.Height = DialogBody.Height < 600 ? 120 : 160;
     }
 
-    private void Spek_PreviewKeyDown(object sender, KeyRoutedEventArgs args)
+    private void DialogBody_PreviewKeyDown(object sender, KeyRoutedEventArgs args)
     {
-        // SpekView consumes Escape to clear selection. Let the next Escape close the host dialog normally.
-        if (args.Key == VirtualKey.Escape && !Spek.HasSelection)
+        if (args.Key != VirtualKey.Escape) return;
+        escapeClearedSelection = false;
+        if (Spek.HasSelection)
+        {
+            escapeClearedSelection = true;
+            Spek.ClearSelection();
+        }
+        else
         {
             Dialog.Hide();
-            args.Handled = true;
         }
+        args.Handled = true;
     }
 
     private void ResetZoom_Click(ContentDialog sender, ContentDialogButtonClickEventArgs args)
@@ -164,14 +194,21 @@ public sealed partial class SpectrogramDialog : UserControl
         StreamButton.Visibility = Spek.StreamCount > 1 ? Visibility.Visible : Visibility.Collapsed;
         Dialog.IsPrimaryButtonEnabled = isOpen && completed && !Spek.IsAnalyzing && !saving;
         Dialog.IsSecondaryButtonEnabled = !saving;
-        if (isOpen)
-            AnalysisStatus.Text = saving ? "Saving image..." : Spek.IsAnalyzing ? "Analyzing..." : completed ? "Ready" :
-                string.IsNullOrEmpty(Spek.Description) ? "Reading file information..." : Spek.Description;
+        UpdateAnalysisStatus();
 
         updatingOptions = true;
         LowerBox.Value = Spek.LowerDb;
         UpperBox.Value = Spek.UpperDb;
         updatingOptions = false;
+    }
+
+    private void UpdateAnalysisStatus()
+    {
+        if (!isOpen) return;
+        if (saving) AnalysisStatus.Text = "Saving image...";
+        else if (Spek.IsAnalyzing) AnalysisStatus.Text = "Analyzing...";
+        else if (completed) AnalysisStatus.Text = string.IsNullOrEmpty(Spek.ReadoutText) ? "Ready" : Spek.ReadoutText;
+        else AnalysisStatus.Text = string.IsNullOrEmpty(Spek.Description) ? "Reading file information..." : Spek.Description;
     }
 
     private void UpdateInspection()
@@ -180,6 +217,9 @@ public sealed partial class SpectrogramDialog : UserControl
         Profile.Profile = Spek.SpectrumProfile;
         Profile.FrequencyRange = Spek.VisibleFrequencyRange;
         Profile.MeasuredDrop = Spek.ShowCutoffMarker ? Spek.MeasuredDrop : null;
+        bool canClearSelection = Spek.ShowSpectrum && Spek.HasSelection;
+        ClearSelectionButton.IsEnabled = canClearSelection;
+        ClearSelectionButton.Visibility = canClearSelection ? Visibility.Visible : Visibility.Collapsed;
         var parts = new List<string>();
         if (!string.IsNullOrEmpty(Spek.RefinementStatus)) parts.Add(Spek.RefinementStatus);
         var time = Spek.VisibleTimeRange;
