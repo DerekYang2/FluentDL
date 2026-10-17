@@ -38,7 +38,9 @@ public sealed partial class SpectrogramDialog : UserControl
         };
         Spek.InspectionChanged += (_, _) => UpdateInspection();
         Spek.RegisterPropertyChangedCallback(SpekView.RefinementStatusProperty, (_, _) => UpdateInspection());
-        Spek.RegisterPropertyChangedCallback(SpekView.ReadoutTextProperty, (_, _) => UpdateAnalysisStatus());
+        Overview.RegisterPropertyChangedCallback(UIElement.VisibilityProperty, (_, _) => UpdateNavigationLayout());
+        NavigationContent.SizeChanged += (_, _) => UpdateNavigationLayout();
+        ClearSelectionButton.SizeChanged += (_, _) => UpdateNavigationLayout();
         foreach (var property in new[]
         {
             SpekView.PaletteProperty, SpekView.WindowFunctionProperty, SpekView.FftBitsProperty,
@@ -77,7 +79,6 @@ public sealed partial class SpectrogramDialog : UserControl
             Spek.ResetZoom();
             Spek.ClearSelection();
             Spek.FilePath = selectedFilePath;
-            AnalysisStatus.Text = "Reading file information...";
             UpdateState();
             await Dialog.ShowAsync();
         }
@@ -125,6 +126,7 @@ public sealed partial class SpectrogramDialog : UserControl
         DialogBody.Width = Math.Max(0, Math.Min(1280, root.Size.Width - 96));
         DialogBody.Height = Math.Max(0, Math.Min(760, root.Size.Height - 208));
         Profile.Height = DialogBody.Height < 600 ? 120 : 160;
+        UpdateNavigationLayout();
     }
 
     private void DialogBody_PreviewKeyDown(object sender, KeyRoutedEventArgs args)
@@ -143,9 +145,8 @@ public sealed partial class SpectrogramDialog : UserControl
         args.Handled = true;
     }
 
-    private void ResetZoom_Click(ContentDialog sender, ContentDialogButtonClickEventArgs args)
+    private void ResetZoom_Click(object sender, RoutedEventArgs args)
     {
-        args.Cancel = true;
         Spek.ResetZoom();
         Spek.Focus(FocusState.Programmatic);
     }
@@ -193,7 +194,7 @@ public sealed partial class SpectrogramDialog : UserControl
         StreamButton.Content = $"Stream {Spek.Stream + 1} / {Spek.StreamCount}";
         StreamButton.Visibility = Spek.StreamCount > 1 ? Visibility.Visible : Visibility.Collapsed;
         Dialog.IsPrimaryButtonEnabled = isOpen && completed && !Spek.IsAnalyzing && !saving;
-        Dialog.IsSecondaryButtonEnabled = !saving;
+        ResetZoomButton.IsEnabled = !saving;
         UpdateAnalysisStatus();
 
         updatingOptions = true;
@@ -204,16 +205,18 @@ public sealed partial class SpectrogramDialog : UserControl
 
     private void UpdateAnalysisStatus()
     {
-        if (!isOpen) return;
-        if (saving) AnalysisStatus.Text = "Saving image...";
-        else if (Spek.IsAnalyzing) AnalysisStatus.Text = "Analyzing...";
-        else if (completed) AnalysisStatus.Text = string.IsNullOrEmpty(Spek.ReadoutText) ? "Ready" : Spek.ReadoutText;
-        else AnalysisStatus.Text = string.IsNullOrEmpty(Spek.Description) ? "Reading file information..." : Spek.Description;
+        SaveStatus.Visibility = isOpen && saving ? Visibility.Visible : Visibility.Collapsed;
     }
 
     private void UpdateInspection()
     {
+        double x = Math.Round(Spek.TimeZoomFactor * 100, 2);
+        double y = Math.Round(Spek.FrequencyZoomFactor * 100, 2);
+        ZoomReadout.Text = x == y ? $"Zoom: {x:0.##}%" : $"X: {x:0.##}% / Y: {y:0.##}%";
         Profile.Visibility = Spek.ShowSpectrum ? Visibility.Visible : Visibility.Collapsed;
+        Profile.Caption = Spek.HasSelection
+            ? $"Average spectral level of the selected passage, {Spek.SelectionStartSeconds:0.00} to {Spek.SelectionEndSeconds:0.00} s"
+            : "Average spectral level of the whole track";
         Profile.Profile = Spek.SpectrumProfile;
         Profile.FrequencyRange = Spek.VisibleFrequencyRange;
         Profile.MeasuredDrop = Spek.ShowCutoffMarker ? Spek.MeasuredDrop : null;
@@ -221,15 +224,7 @@ public sealed partial class SpectrogramDialog : UserControl
         ClearSelectionButton.IsEnabled = canClearSelection;
         ClearSelectionButton.Visibility = canClearSelection ? Visibility.Visible : Visibility.Collapsed;
         var parts = new List<string>();
-        if (!string.IsNullOrEmpty(Spek.RefinementStatus)) parts.Add(Spek.RefinementStatus);
-        var time = Spek.VisibleTimeRange;
-        if (Spek.MinimumTime > 0 || Spek.MaximumTime > 0)
-            parts.Add($"Time view {time.Start:0.00} to {time.End:0.00} s");
-        var range = Spek.VisibleFrequencyRange;
-        if (Spek.MinimumFrequency > 0 || Spek.MaximumFrequency > 0)
-            parts.Add($"Frequency view {range.Minimum / 1000:0.00} to {range.Maximum / 1000:0.00} kHz");
-        if (Spek.HasSelection) parts.Add($"Passage {Spek.SelectionStartSeconds:0.00} to {Spek.SelectionEndSeconds:0.00} s");
-        else if (Spek.ShowSpectrum || Spek.ShowCutoffMarker) parts.Add("Using the whole track");
+        if (Spek.RefinementStatus.StartsWith("Zoom refinement failed", StringComparison.Ordinal)) parts.Add(Spek.RefinementStatus);
         if (Spek.ReferenceLines == ReferenceLines.Mp3Lame) parts.Add("Guides are nominal LAME stereo CBR targets, not bitrate detection.");
         if (Spek.ShowCutoffMarker)
         {
@@ -238,6 +233,38 @@ public sealed partial class SpectrogramDialog : UserControl
             parts.Add("A cutoff does not prove a lossy source, and no marker does not prove lossless origin.");
         }
         InspectionStatus.Text = string.Join(" / ", parts);
+        InspectionStatus.Visibility = parts.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
+        UpdateNavigationLayout();
+    }
+
+    private void UpdateNavigationLayout()
+    {
+        double available = DialogBody.Width;
+        if (!double.IsFinite(available) || available <= 0) return;
+        bool showMap = Overview.Visibility == Visibility.Visible;
+        bool showClear = ClearSelectionButton.Visibility == Visibility.Visible;
+        double clearWidth = showClear ? Math.Max(112, ClearSelectionButton.DesiredSize.Width) : 0;
+        double referenceWidth = ReferencesBox.Width;
+        double profileWidth = ProfileToggle.DesiredSize.Width;
+        double cutoffWidth = CutoffToggle.DesiredSize.Width;
+        double resetWidth = ResetZoomButton.DesiredSize.Width;
+        double minimumMapSpace = showMap ? 96 : 0;
+        double controlsWidth = referenceWidth + profileWidth + cutoffWidth + resetWidth + 36 + (showClear ? clearWidth + 12 : 0);
+        bool wrapReset = controlsWidth + minimumMapSpace > available;
+        if (wrapReset) controlsWidth = referenceWidth + Math.Max(profileWidth, resetWidth) + Math.Max(cutoffWidth, clearWidth) + 24;
+        bool wrapOptions = wrapReset && controlsWidth + minimumMapSpace > available;
+        if (wrapOptions) controlsWidth = Math.Max(referenceWidth, resetWidth) + Math.Max(profileWidth, cutoffWidth) + 12;
+        controlsWidth = Math.Max(controlsWidth, ZoomReadout.MaxWidth + 8 + AnalysisStatus.Width);
+        Grid.SetRow(ResetZoomButton, wrapReset ? 1 : 0);
+        Grid.SetColumn(ResetZoomButton, wrapOptions ? 0 : wrapReset ? 1 : 3);
+        Grid.SetRow(CutoffToggle, wrapOptions ? 1 : 0);
+        Grid.SetColumn(CutoffToggle, wrapOptions ? 1 : 2);
+        Grid.SetRow(ClearSelectionButton, wrapOptions ? 2 : wrapReset ? 1 : 0);
+        Grid.SetColumn(ClearSelectionButton, wrapOptions ? 0 : wrapReset ? 2 : 4);
+        Grid.SetColumnSpan(ClearSelectionButton, wrapOptions ? 2 : 1);
+        InspectionControls.RowSpacing = wrapReset ? 4 : 0;
+        Overview.Width = Math.Min(180, Math.Max(0, available - controlsWidth - 16));
+        Overview.Height = Math.Min(NavigationContent.ActualHeight, Overview.Width / 2.4);
     }
 
     private void Range_Changed(NumberBox sender, NumberBoxValueChangedEventArgs args)

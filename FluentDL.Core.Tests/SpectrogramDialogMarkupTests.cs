@@ -29,11 +29,14 @@ public class SpectrogramDialogMarkupTests
     }
 
     [TestMethod]
-    public void KeepsSaveAndResetInsideTheDialogWithoutADefaultAction()
+    public void KeepsSaveInTheFooterAndResetWithInspectionControlsWithoutADefaultAction()
     {
         var dialog = Read().Descendants().Single(element => element.Name.LocalName == "ContentDialog");
         Assert.AreEqual("SaveImage_Click", (string?)dialog.Attribute("PrimaryButtonClick"));
-        Assert.AreEqual("ResetZoom_Click", (string?)dialog.Attribute("SecondaryButtonClick"));
+        Assert.IsNull(dialog.Attribute("SecondaryButtonClick"));
+        var reset = Read().Descendants().Single(element => (string?)element.Attribute("AutomationProperties.AutomationId") == "SpectrogramResetZoom");
+        Assert.AreEqual("ResetZoom_Click", (string?)reset.Attribute("Click"));
+        Assert.AreEqual("Reset zoom", (string?)reset.Attribute("Content"));
         Assert.AreEqual("Dialog_Closing", (string?)dialog.Attribute("Closing"));
         Assert.AreEqual("False", (string?)dialog.Attribute("IsPrimaryButtonEnabled"));
         Assert.AreEqual("None", (string?)dialog.Attribute("DefaultButton"));
@@ -54,7 +57,7 @@ public class SpectrogramDialogMarkupTests
         var ids = Read().Descendants().Where(element => element.Name.LocalName == "Setter"
                 && (string?)element.Attribute("Property") == "AutomationProperties.AutomationId")
             .Select(element => (string?)element.Attribute("Value")).ToArray();
-        CollectionAssert.AreEquivalent(new[] { "SpectrogramSave", "SpectrogramResetZoom", "SpectrogramClose" }, ids);
+        CollectionAssert.AreEquivalent(new[] { "SpectrogramSave", "SpectrogramClose" }, ids);
     }
 
     [TestMethod]
@@ -123,11 +126,33 @@ public class SpectrogramDialogMarkupTests
     }
 
     [TestMethod]
-    public void ReadoutAndReadinessShareOneStatusLine()
+    public void ReadoutUsesCompactFixedFieldsBesideLeftmostZoom()
     {
         var markup = Read();
         Assert.AreEqual(1, markup.Descendants().Count(element => (string?)element.Attribute("AutomationProperties.AutomationId") == "SpectrogramStatus"));
         Assert.IsFalse(markup.Descendants().Any(element => (string?)element.Attribute("AutomationProperties.AutomationId") == "SpectrogramReadout"));
+        var zoom = markup.Descendants().Single(element => (string?)element.Attribute("AutomationProperties.AutomationId") == "SpectrogramZoomReadout");
+        Assert.AreEqual("Zoom: 100%", (string?)zoom.Attribute("Text"));
+        Assert.IsNull(zoom.Attribute("Grid.Column"));
+        var readout = markup.Descendants().Single(element => (string?)element.Attribute("AutomationProperties.AutomationId") == "SpectrogramStatus");
+        Assert.AreEqual("1", (string?)readout.Attribute("Grid.Column"));
+        Assert.AreEqual("208", (string?)readout.Attribute("Width"));
+        var fields = readout.Descendants().Where(element => element.Name.LocalName == "TextBlock").ToArray();
+        Assert.AreEqual(3, fields.Length);
+        Assert.IsTrue(fields.All(element => (string?)element.Attribute("TextAlignment") == "Right"));
+        Assert.IsTrue(readout.Descendants().Where(element => element.Name.LocalName == "ColumnDefinition")
+            .All(element => (string?)element.Attribute("Width") == "64"));
+    }
+
+    [TestMethod]
+    public void MinimapUsesTheSameSpekSourceAndFitsAboveThePlot()
+    {
+        XNamespace x = "http://schemas.microsoft.com/winfx/2006/xaml";
+        var map = Read().Descendants(XName.Get("SpectrogramOverview", "using:Spek.Net.WinUI")).Single();
+        Assert.AreEqual("Overview", (string?)map.Attribute(x + "Name"));
+        Assert.AreEqual("{x:Bind Spek, Mode=OneTime}", (string?)map.Attribute("Source"));
+        Assert.AreEqual("Top", (string?)map.Attribute("VerticalAlignment"));
+        Assert.AreEqual("1", (string?)map.Parent?.Attribute("Grid.Row"));
     }
 
     [TestMethod]

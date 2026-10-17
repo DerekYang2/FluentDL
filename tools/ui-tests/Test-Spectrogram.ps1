@@ -28,6 +28,7 @@ function Ui([string[]] $Arguments, [string] $Window) {
     Checked (@('ui') + $Arguments + $scope + $selector)
 }
 function Nodes($items) { foreach ($item in $items) { if ($item) { $item; Nodes $item.children } } }
+function Text([string] $Id) { (Ui @('get-value', $Id, '--json') | ConvertFrom-Json).text }
 function Element([string] $Id) {
     $tree = Ui @('inspect', '--json', '--depth', '10') | ConvertFrom-Json
     $match = Nodes @($tree.windows | ForEach-Object elements) | Where-Object { $_.automationId -eq $Id -and -not $_.isOffscreen } | Sort-Object width -Descending | Select-Object -First 1
@@ -70,8 +71,9 @@ function Picker([string] $Action, [string] $Path) {
 }
 function Ready {
     Ui @('wait-for', 'SpectrogramSave', '-p', 'IsEnabled', '--value', 'True', '-t', '15000') | Out-Null
-    $status = Ui @('get-value', 'SpectrogramStatus', '--json') | ConvertFrom-Json
-    if ($status.text -match '^(Reading|Analyzing|Saving)') { throw "Analysis is not ready: $($status.text)" }
+    $tree = Ui @('inspect', '--json', '--depth', '10') | ConvertFrom-Json
+    $status = Nodes @($tree.windows | ForEach-Object elements) | Where-Object automationId -eq 'SpectrogramStatus' | Select-Object -First 1
+    if ($status.name -match '^(Reading|Analyzing|Saving|Ready)') { throw "Unexpected analysis status text: $($status.name)" }
 }
 function Menu([string] $Button, [string] $Choice) {
     Ui @('invoke', $Button) | Out-Null
@@ -108,11 +110,18 @@ try {
         Screenshot '01-local.png'
     }
     if ($results[-1].status -ne 'PASS') { throw 'Import or opening failed; dependent dialog tests were not run.' }
-    Test-Ui 'Inspection readout uses the readiness status line' {
+    Test-Ui 'Inspection readout has fixed fields beside the leftmost zoom percentage' {
         Ui @('send-keys', 'right', '--target', 'Spectrogram', '--via', 'send-input')
         Ui @('wait-for', 'SpectrogramStatus', '--value', 'Hz', '--contains', '-t', '2000')
         $status = Ui @('get-value', 'SpectrogramStatus', '--json') | ConvertFrom-Json
         if ($status.text -notmatch 'dB') { throw 'The shared status line has no level readout.' }
+        $zoom = Element 'SpectrogramZoomReadout'
+        $label = Element 'SpectrogramReferenceLabel'
+        if ($zoom.x -ne $label.x) { throw 'Zoom is not aligned with the reference label.' }
+        foreach ($id in @('SpectrogramTimeReadout', 'SpectrogramFrequencyReadout', 'SpectrogramLevelReadout')) {
+            $field = Element $id
+            if ($field.width -ne 64 -or $field.x -le $zoom.x) { throw "$id is not a compact fixed field after zoom." }
+        }
     }
     Test-Ui 'dB fields increment without an overlapping spinner popup' {
         Ui @('invoke', 'SpectrogramOptions')
@@ -153,23 +162,24 @@ try {
     }
     Test-Ui 'Two-axis zoom refines and resets without leaving the dialog' {
         Ui @('send-keys', 'vk=0xBB', '--target', 'Spectrogram', '--via', 'send-input')
-        Ui @('wait-for', 'SpectrogramInspectionStatus', '--value', 'Frequency view', '--contains', '-t', '2000')
-        Ui @('wait-for', 'SpectrogramInspectionStatus', '--value', 'Zoom refined.', '--contains', '-t', '10000')
-        Ui @('wait-for', 'SpectrogramInspectionStatus', '--value', 'Time view', '--contains', '-t', '2000')
+        Ui @('wait-for', 'SpectrogramZoomReadout', '--value', 'Zoom: 150%', '-t', '2000')
+        Ui @('wait-for', 'SpectrogramOverview', '-t', '2000')
+        Ui @('wait-for', 'ZoomRefinementProgress', '--gone', '-t', '10000')
         Screenshot '03-zoom.png'
         Ui @('invoke', 'SpectrogramResetZoom')
         Ready
-        $text = Ui @('get-value', 'SpectrogramInspectionStatus', '--json') | ConvertFrom-Json
-        if ($text.text -match 'Frequency view|Time view') { throw 'Reset zoom failed.' }
+        Ui @('wait-for', 'SpectrogramZoomReadout', '--value', 'Zoom: 100%', '-t', '2000')
+        Ui @('wait-for', 'SpectrogramOverview', '--gone', '-t', '2000')
     }
     Test-Ui 'Clear selection keeps the zoom and restores whole-track inspection' {
         Ui @('invoke', 'SpectrogramShowProfile')
         Ui @('send-keys', 'vk=0xBB right shift+right', '--target', 'Spectrogram', '--via', 'send-input')
         Ui @('wait-for', 'SpectrogramClearSelection', '-p', 'IsEnabled', '--value', 'True', '-t', '2000')
+        $zoom = Text 'SpectrogramZoomReadout'
         Ui @('invoke', 'SpectrogramClearSelection')
         Ui @('wait-for', 'SpectrogramClearSelection', '--gone', '-t', '2000')
-        $status = Ui @('get-value', 'SpectrogramInspectionStatus', '--json') | ConvertFrom-Json
-        if ($status.text -match 'Passage [0-9]' -or $status.text -notmatch 'Time view') { throw 'Clear selection changed the zoom or retained the passage.' }
+        Ui @('wait-for', 'SpectrumProfile', '-p', 'Name', '--value', 'Average spectral level of the whole track', '-t', '2000')
+        if ((Text 'SpectrogramZoomReadout') -ne $zoom) { throw 'Clear selection changed the zoom.' }
         Ui @('invoke', 'SpectrogramResetZoom')
         Ui @('invoke', 'SpectrogramShowProfile')
         Ready
@@ -181,24 +191,24 @@ try {
         Ui @('wait-for', 'SpectrogramClearSelection', '-p', 'IsEnabled', '--value', 'True', '-t', '2000')
         Ui @('invoke', 'SpectrogramShowProfile')
         Ui @('wait-for', 'SpectrogramClearSelection', '--gone', '-t', '2000')
-        $status = Ui @('get-value', 'SpectrogramInspectionStatus', '--json') | ConvertFrom-Json
-        if ($status.text -match 'Passage [0-9]') { throw 'Disabling the profile retained the selected passage.' }
+        Ui @('wait-for', 'SpectrumProfile', '--gone', '-t', '2000')
         Screenshot '03-profile-disabled.png'
         Ready
     }
     Test-Ui 'Escape clears a selection and the next press closes with a checkbox focused' {
+        if ((Text 'SpectrogramShowProfile') -ne 'On') { Ui @('invoke', 'SpectrogramShowProfile') }
         Ui @('send-keys', 'right shift+right', '--target', 'Spectrogram', '--via', 'send-input')
-        Ui @('wait-for', 'SpectrogramInspectionStatus', '--value', 'Passage', '--contains', '-t', '2000')
+        Ui @('wait-for', 'SpectrumProfile', '-p', 'Name', '--value', 'selected passage,', '--contains', '-t', '2000')
         Ui @('send-keys', 'esc', '--target', 'SpectrogramShowProfile', '--via', 'send-input')
         Ready
         Ui @('wait-for', 'SpectrogramClearSelection', '--gone', '-t', '2000')
         Ui @('send-keys', 'esc', '--target', 'SpectrogramShowProfile', '--via', 'send-input')
-        Ui @('wait-for', 'SpectrogramStatus', '--gone', '-t', '3000')
+        Ui @('wait-for', 'SpectrogramDialog', '-p', 'IsOffscreen', '--value', 'True', '-t', '3000')
         Ui @('invoke', 'LocalSpectrogram')
         Ready
         Ui @('send-keys', 'right shift+right', '--target', 'Spectrogram', '--via', 'send-input')
         Ui @('invoke', 'SpectrogramClose')
-        Ui @('wait-for', 'SpectrogramStatus', '--gone', '-t', '3000')
+        Ui @('wait-for', 'SpectrogramDialog', '-p', 'IsOffscreen', '--value', 'True', '-t', '3000')
         Ui @('invoke', 'LocalSpectrogram')
         Ready
     }
@@ -206,8 +216,8 @@ try {
         Ui @('wait-for', 'SpectrogramReferences', '--value', 'None', '-t', '3000')
         Ui @('send-keys', 'home down enter', '--target', 'SpectrogramReferences', '--via', 'send-input')
         Ui @('send-keys', 'esc', '--via', 'send-input')
-        Ui @('invoke', 'SpectrogramShowProfile')
-        Ui @('invoke', 'SpectrogramShowCutoff')
+        if ((Text 'SpectrogramShowProfile') -ne 'On') { Ui @('invoke', 'SpectrogramShowProfile') }
+        if ((Text 'SpectrogramShowCutoff') -ne 'On') { Ui @('invoke', 'SpectrogramShowCutoff') }
         Ui @('wait-for', 'SpectrogramInspectionStatus', '--value', 'not prove', '--contains', '-t', '5000')
         Screenshot '04-inspection.png'
     }
@@ -226,7 +236,7 @@ try {
     }
     Test-Ui 'Close and reopen does not retain a decoder' {
         Ui @('invoke', 'SpectrogramClose')
-        Ui @('wait-for', 'SpectrogramStatus', '--gone', '-t', '3000')
+        Ui @('wait-for', 'SpectrogramDialog', '-p', 'IsOffscreen', '--value', 'True', '-t', '3000')
         if ($Target -eq 'sandbox') {
             $code = '(Get-Process ffmpeg -ErrorAction SilentlyContinue | Measure-Object).Count'
             $count = Checked @('target', 'exec', 'sandbox', '--', 'powershell.exe', '-NoProfile', '-NonInteractive', '-Command', $code)
@@ -236,7 +246,7 @@ try {
         Ready
         Screenshot '05-reopened.png'
         Ui @('send-keys', 'esc', '--target', 'Spectrogram', '--via', 'send-input')
-        Ui @('wait-for', 'SpectrogramStatus', '--gone', '-t', '3000')
+        Ui @('wait-for', 'SpectrogramDialog', '-p', 'IsOffscreen', '--value', 'True', '-t', '3000')
     }
     Test-Ui 'Queue opens the same view' {
         Ui @('invoke', 'LocalAddToQueue')

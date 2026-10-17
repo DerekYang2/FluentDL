@@ -16,21 +16,13 @@
         IsPrimaryButtonEnabled="False"
         Opened="Dialog_Opened"
         PrimaryButtonClick="SaveImage_Click"
-        PrimaryButtonText="Save image"
-        SecondaryButtonClick="ResetZoom_Click"
-        SecondaryButtonText="Reset zoom">
+        PrimaryButtonText="Save image">
         <ContentDialog.PrimaryButtonStyle>
             <Style TargetType="Button" BasedOn="{StaticResource DefaultButtonStyle}">
                 <Setter Property="AutomationProperties.AutomationId" Value="SpectrogramSave" />
                 <Setter Property="HorizontalContentAlignment" Value="Center" />
             </Style>
         </ContentDialog.PrimaryButtonStyle>
-        <ContentDialog.SecondaryButtonStyle>
-            <Style TargetType="Button" BasedOn="{StaticResource DefaultButtonStyle}">
-                <Setter Property="AutomationProperties.AutomationId" Value="SpectrogramResetZoom" />
-                <Setter Property="HorizontalContentAlignment" Value="Center" />
-            </Style>
-        </ContentDialog.SecondaryButtonStyle>
         <ContentDialog.CloseButtonStyle>
             <Style TargetType="Button" BasedOn="{StaticResource DefaultButtonStyle}">
                 <Setter Property="AutomationProperties.AutomationId" Value="SpectrogramClose" />
@@ -89,21 +81,50 @@
                     </Button>
                 </controls:WrapPanel>
             </Grid>
-            <controls:WrapPanel Grid.Row="1" HorizontalAlignment="Left" HorizontalSpacing="12" VerticalSpacing="8">
-                <TextBlock VerticalAlignment="Center" Text="Reference lines" />
-                <ComboBox x:Name="ReferencesBox" MinWidth="200" AutomationProperties.AutomationId="SpectrogramReferences" AutomationProperties.Name="Reference lines" SelectionChanged="References_Changed">
-                    <ComboBoxItem Content="None" /><ComboBoxItem Content="MP3 - LAME defaults" />
-                </ComboBox>
-                <CheckBox x:Name="ProfileToggle" AutomationProperties.AutomationId="SpectrogramShowProfile" Content="Spectrum profile" Checked="Inspection_Changed" Unchecked="Inspection_Changed" />
-                <CheckBox x:Name="CutoffToggle" AutomationProperties.AutomationId="SpectrogramShowCutoff" Content="Cutoff marker" Checked="Inspection_Changed" Unchecked="Inspection_Changed" />
-                <Button x:Name="ClearSelectionButton" VerticalAlignment="Center" AutomationProperties.AutomationId="SpectrogramClearSelection" Content="Clear selection" IsEnabled="False" Visibility="Collapsed" Style="{StaticResource SpectrogramButtonStyle}" ToolTipService.ToolTip="Clear the selected time passage. The profile and cutoff measurement will use the whole track. Zoom is unchanged." Click="ClearSelection_Click" />
-            </controls:WrapPanel>
+            <Grid Grid.Row="1" ColumnSpacing="16">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <StackPanel x:Name="NavigationContent" Spacing="8">
+                    <Grid x:Name="InspectionControls" ColumnSpacing="12">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" /><ColumnDefinition Width="Auto" /><ColumnDefinition Width="Auto" /><ColumnDefinition Width="Auto" /><ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+                        <StackPanel Spacing="2">
+                            <TextBlock AutomationProperties.AutomationId="SpectrogramReferenceLabel" Foreground="{ThemeResource TextFillColorSecondaryBrush}" Style="{StaticResource CaptionTextBlockStyle}" Text="Reference lines" />
+                            <ComboBox x:Name="ReferencesBox" Width="184" AutomationProperties.AutomationId="SpectrogramReferences" AutomationProperties.Name="Reference lines" SelectionChanged="References_Changed">
+                                <ComboBoxItem Content="None" /><ComboBoxItem Content="MP3 - LAME defaults" />
+                            </ComboBox>
+                        </StackPanel>
+                        <CheckBox x:Name="ProfileToggle" Grid.Column="1" VerticalAlignment="Bottom" AutomationProperties.AutomationId="SpectrogramShowProfile" Content="Spectrum profile" Checked="Inspection_Changed" Unchecked="Inspection_Changed" />
+                        <CheckBox x:Name="CutoffToggle" Grid.Column="2" VerticalAlignment="Bottom" AutomationProperties.AutomationId="SpectrogramShowCutoff" Content="Cutoff marker" Checked="Inspection_Changed" Unchecked="Inspection_Changed" />
+                        <Button x:Name="ResetZoomButton" Grid.Column="3" HorizontalAlignment="Left" VerticalAlignment="Bottom" AutomationProperties.AutomationId="SpectrogramResetZoom" Content="Reset zoom" Style="{StaticResource SpectrogramButtonStyle}" Click="ResetZoom_Click" />
+                        <Button x:Name="ClearSelectionButton" Grid.Column="4" HorizontalAlignment="Left" VerticalAlignment="Bottom" AutomationProperties.AutomationId="SpectrogramClearSelection" Content="Clear selection" IsEnabled="False" Visibility="Collapsed" Style="{StaticResource SpectrogramButtonStyle}" ToolTipService.ToolTip="Clear the selected time passage. The profile and cutoff measurement will use the whole track. Zoom is unchanged." Click="ClearSelection_Click" />
+                    </Grid>
+                    <Grid ColumnSpacing="8" HorizontalAlignment="Left">
+                        <Grid.ColumnDefinitions><ColumnDefinition Width="Auto" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                        <TextBlock x:Name="ZoomReadout" MaxWidth="128" AutomationProperties.AutomationId="SpectrogramZoomReadout" Foreground="{ThemeResource TextFillColorSecondaryBrush}" Style="{StaticResource CaptionTextBlockStyle}" Text="Zoom: 100%" TextWrapping="Wrap" />
+                        <UserControl x:Name="AnalysisStatus" Grid.Column="1" Width="208" MinHeight="16" IsTabStop="False" DataContext="{x:Bind Spek, Mode=OneTime}" AutomationProperties.AutomationId="SpectrogramStatus" AutomationProperties.Name="{Binding ReadoutText}">
+                            <Grid ColumnSpacing="8">
+                                <Grid.ColumnDefinitions><ColumnDefinition Width="64" /><ColumnDefinition Width="64" /><ColumnDefinition Width="64" /></Grid.ColumnDefinitions>
+                                <TextBlock AutomationProperties.AutomationId="SpectrogramTimeReadout" Style="{StaticResource CaptionTextBlockStyle}" Text="{Binding ReadoutTimeText}" TextAlignment="Right" />
+                                <TextBlock Grid.Column="1" AutomationProperties.AutomationId="SpectrogramFrequencyReadout" Style="{StaticResource CaptionTextBlockStyle}" Text="{Binding ReadoutFrequencyText}" TextAlignment="Right" />
+                                <TextBlock Grid.Column="2" AutomationProperties.AutomationId="SpectrogramLevelReadout" Style="{StaticResource CaptionTextBlockStyle}" Text="{Binding ReadoutLevelText}" TextAlignment="Right" TextTrimming="CharacterEllipsis" ToolTipService.ToolTip="{Binding ReadoutLevelText}" />
+                            </Grid>
+                        </UserControl>
+                    </Grid>
+                </StackPanel>
+                <spek:SpectrogramOverview x:Name="Overview" Grid.Column="1" Height="Auto" VerticalAlignment="Top" Source="{x:Bind Spek, Mode=OneTime}" />
+            </Grid>
             <spek:SpekView x:Name="Spek" Grid.Row="2" BrandName="Spek.NET" Palette="Sox" ShowFullPath="False" ShowDetailedDescription="True" />
             <spek:SpectrumProfileView x:Name="Profile" Grid.Row="3" Height="160" Visibility="Collapsed" />
 
             <StackPanel Grid.Row="4" Spacing="4">
                 <TextBlock x:Name="InspectionStatus" AutomationProperties.AutomationId="SpectrogramInspectionStatus" Style="{ThemeResource CaptionTextBlockStyle}" TextWrapping="Wrap" />
-                <TextBlock x:Name="AnalysisStatus" AutomationProperties.AutomationId="SpectrogramStatus" Style="{ThemeResource CaptionTextBlockStyle}" TextWrapping="Wrap" />
+                <TextBlock x:Name="SaveStatus" AutomationProperties.AutomationId="SpectrogramSaveStatus" Style="{StaticResource CaptionTextBlockStyle}" Text="Saving image..." Visibility="Collapsed" />
                 <TextBlock AutomationProperties.AutomationId="SpectrogramHints" Foreground="{ThemeResource TextFillColorSecondaryBrush}" Style="{ThemeResource CaptionTextBlockStyle}" TextWrapping="Wrap">
                     <Run FontWeight="SemiBold" Text="Ctrl+scroll: " /><Run Text="Zoom around the pointer / " />
                     <Run FontWeight="SemiBold" Text="Drag: " /><Run Text="Select a specific passage for the spectrum profile and cutoff / " />
