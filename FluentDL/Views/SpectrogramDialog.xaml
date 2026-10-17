@@ -3,95 +3,114 @@
     x:Class="FluentDL.Views.SpectrogramDialog"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-    xmlns:local="using:FluentDL.Views"
-    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-    xmlns:views="using:FluentDL.Views"
-    mc:Ignorable="d">
-    <!--  Spectrogram dialog  -->
+    xmlns:controls="using:CommunityToolkit.WinUI.UI.Controls"
+    xmlns:spek="using:Spek.Net.WinUI">
     <ContentDialog
         x:Name="Dialog"
-        Title="View Spectrogram"
-        Closed="Dialog_Closed"
+        AutomationProperties.AutomationId="SpectrogramDialog"
+        AutomationProperties.Name="Spectrogram"
         CloseButtonText="Close"
-        FullSizeDesired="False"
-        IsSecondaryButtonEnabled="True"
+        CloseButtonClick="Dialog_CloseButtonClick"
+        Closing="Dialog_Closing"
+        DefaultButton="None"
+        IsPrimaryButtonEnabled="False"
         Opened="Dialog_Opened"
-        PrimaryButtonClick="SpectrogramDialog_PrimaryButtonClick"
-        PrimaryButtonText="Save Image"
-        SecondaryButtonClick="SpectrogramDialog_SecondaryButtonClick"
-        SecondaryButtonText="Reset Zoom">
+        PrimaryButtonClick="SaveImage_Click"
+        PrimaryButtonText="Save image"
+        SecondaryButtonClick="ResetZoom_Click"
+        SecondaryButtonText="Reset zoom">
+        <ContentDialog.PrimaryButtonStyle>
+            <Style TargetType="Button" BasedOn="{StaticResource DefaultButtonStyle}">
+                <Setter Property="AutomationProperties.AutomationId" Value="SpectrogramSave" />
+                <Setter Property="HorizontalContentAlignment" Value="Center" />
+            </Style>
+        </ContentDialog.PrimaryButtonStyle>
+        <ContentDialog.SecondaryButtonStyle>
+            <Style TargetType="Button" BasedOn="{StaticResource DefaultButtonStyle}">
+                <Setter Property="AutomationProperties.AutomationId" Value="SpectrogramResetZoom" />
+                <Setter Property="HorizontalContentAlignment" Value="Center" />
+            </Style>
+        </ContentDialog.SecondaryButtonStyle>
+        <ContentDialog.CloseButtonStyle>
+            <Style TargetType="Button" BasedOn="{StaticResource DefaultButtonStyle}">
+                <Setter Property="AutomationProperties.AutomationId" Value="SpectrogramClose" />
+                <Setter Property="HorizontalContentAlignment" Value="Center" />
+            </Style>
+        </ContentDialog.CloseButtonStyle>
         <ContentDialog.Resources>
             <x:Double x:Key="ContentDialogMaxWidth">1500</x:Double>
             <x:Double x:Key="ContentDialogMaxHeight">1000</x:Double>
+            <Style x:Key="SpectrogramButtonStyle" TargetType="Button" BasedOn="{StaticResource DefaultButtonStyle}">
+                <Setter Property="HorizontalContentAlignment" Value="Center" />
+                <Setter Property="VerticalContentAlignment" Value="Center" />
+                <Setter Property="MinWidth" Value="88" />
+            </Style>
         </ContentDialog.Resources>
-        <Grid>
+        <Grid x:Name="DialogBody" PreviewKeyDown="DialogBody_PreviewKeyDown" RowSpacing="8">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="*" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
             </Grid.RowDefinitions>
-            <Grid Grid.Row="0" ColumnSpacing="8">
+            <Grid x:Name="HeaderBar" ColumnSpacing="16">
                 <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
                 </Grid.ColumnDefinitions>
-                <StackPanel
-                    Grid.Column="0"
-                    Orientation="Horizontal"
-                    Visibility="{Binding Visibility, ElementName=SpectrogramImage}">
-                    <FontIcon
-                        Margin="4,0"
-                        FontSize="14"
-                        Foreground="{ThemeResource TextFillColorSecondary}"
-                        Glyph="&#xE946;" />
-                    <TextBlock
-                        Margin="4,0,0,4"
-                        HorizontalAlignment="Left"
-                        Foreground="{ThemeResource TextFillColorSecondary}"
-                        Style="{ThemeResource CaptionTextBlockStyle}"
-                        Text="Zoom: ctrl + scroll" />
-                </StackPanel>
+                <TextBlock HorizontalAlignment="Left" VerticalAlignment="Center" Style="{ThemeResource SubtitleTextBlockStyle}" Text="Spectrogram" />
+                <controls:WrapPanel x:Name="HeaderButtons" Grid.Column="1" HorizontalAlignment="Right" HorizontalSpacing="8" VerticalSpacing="8">
+                    <Button x:Name="PaletteButton" AutomationProperties.AutomationId="SpectrogramPalette" Content="SoX" Style="{StaticResource SpectrogramButtonStyle}" ToolTipService.ToolTip="Palette (P or Shift+P)">
+                        <Button.Flyout><MenuFlyout x:Name="PaletteMenu" Opening="OptionsMenu_Opening" /></Button.Flyout>
+                    </Button>
+                    <Button x:Name="WindowButton" AutomationProperties.AutomationId="SpectrogramWindow" Content="Hann" Style="{StaticResource SpectrogramButtonStyle}" ToolTipService.ToolTip="Window function (F or Shift+F)">
+                        <Button.Flyout><MenuFlyout x:Name="WindowMenu" Opening="OptionsMenu_Opening" /></Button.Flyout>
+                    </Button>
+                    <Button x:Name="FftButton" AutomationProperties.AutomationId="SpectrogramFft" Content="2048 samples" Style="{StaticResource SpectrogramButtonStyle}" ToolTipService.ToolTip="FFT window size. Fewer samples: finer timing. More samples: finer frequency detail. W or Shift+W.">
+                        <Button.Flyout><MenuFlyout x:Name="FftMenu" Opening="OptionsMenu_Opening" /></Button.Flyout>
+                    </Button>
+                    <Button x:Name="ChannelButton" AutomationProperties.AutomationId="SpectrogramChannel" Content="Channel" Style="{StaticResource SpectrogramButtonStyle}" ToolTipService.ToolTip="Audio channel (C or Shift+C)">
+                        <Button.Flyout><MenuFlyout x:Name="ChannelMenu" Opening="OptionsMenu_Opening" /></Button.Flyout>
+                    </Button>
+                    <Button x:Name="StreamButton" AutomationProperties.AutomationId="SpectrogramStream" Content="Stream" Style="{StaticResource SpectrogramButtonStyle}" ToolTipService.ToolTip="Audio stream (S or Shift+S)" Visibility="Collapsed">
+                        <Button.Flyout><MenuFlyout x:Name="StreamMenu" Opening="OptionsMenu_Opening" /></Button.Flyout>
+                    </Button>
+                    <Button AutomationProperties.AutomationId="SpectrogramOptions" Content="dB limits" Style="{StaticResource SpectrogramButtonStyle}">
+                        <Button.Flyout>
+                            <Flyout>
+                                <StackPanel Orientation="Horizontal" Spacing="12">
+                                    <NumberBox x:Name="LowerBox" Width="176" AutomationProperties.AutomationId="SpectrogramLowerDb" Header="Lower limit (dB)" Minimum="-140" Maximum="-1" SpinButtonPlacementMode="Inline" ValueChanged="Range_Changed" />
+                                    <NumberBox x:Name="UpperBox" Width="176" AutomationProperties.AutomationId="SpectrogramUpperDb" Header="Upper limit (dB)" Minimum="-139" Maximum="0" SpinButtonPlacementMode="Inline" ValueChanged="Range_Changed" />
+                                </StackPanel>
+                            </Flyout>
+                        </Button.Flyout>
+                    </Button>
+                </controls:WrapPanel>
             </Grid>
+            <controls:WrapPanel Grid.Row="1" HorizontalAlignment="Left" HorizontalSpacing="12" VerticalSpacing="8">
+                <TextBlock VerticalAlignment="Center" Text="Reference lines" />
+                <ComboBox x:Name="ReferencesBox" MinWidth="200" AutomationProperties.AutomationId="SpectrogramReferences" AutomationProperties.Name="Reference lines" SelectionChanged="References_Changed">
+                    <ComboBoxItem Content="None" /><ComboBoxItem Content="MP3 - LAME defaults" />
+                </ComboBox>
+                <CheckBox x:Name="ProfileToggle" AutomationProperties.AutomationId="SpectrogramShowProfile" Content="Spectrum profile" Checked="Inspection_Changed" Unchecked="Inspection_Changed" />
+                <CheckBox x:Name="CutoffToggle" AutomationProperties.AutomationId="SpectrogramShowCutoff" Content="Cutoff marker" Checked="Inspection_Changed" Unchecked="Inspection_Changed" />
+                <Button x:Name="ClearSelectionButton" VerticalAlignment="Center" AutomationProperties.AutomationId="SpectrogramClearSelection" Content="Clear selection" IsEnabled="False" Visibility="Collapsed" Style="{StaticResource SpectrogramButtonStyle}" ToolTipService.ToolTip="Clear the selected time passage. The profile and cutoff measurement will use the whole track. Zoom is unchanged." Click="ClearSelection_Click" />
+            </controls:WrapPanel>
+            <spek:SpekView x:Name="Spek" Grid.Row="2" BrandName="Spek.NET" Palette="Sox" ShowFullPath="False" ShowDetailedDescription="True" />
+            <spek:SpectrumProfileView x:Name="Profile" Grid.Row="3" Height="160" Visibility="Collapsed" />
 
-            <TextBlock
-                x:Name="SpectrogramInfoText"
-                Grid.Row="1"
-                Margin="0,0,0,4"
-                HorizontalAlignment="Center"
-                FontWeight="SemiBold"
-                Foreground="{ThemeResource TextFillColorPrimary}"
-                Style="{ThemeResource CaptionTextBlockStyle}"
-                Text="" />
-
-            <ScrollView
-                x:Name="SpectrogramScrollView"
-                Grid.Row="2"
-                HorizontalAlignment="Stretch"
-                VerticalAlignment="Stretch"
-                Background="Black"
-                BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
-                BorderThickness="1"
-                ContentOrientation="None"
-                CornerRadius="8"
-                HorizontalScrollBarVisibility="Visible"
-                HorizontalScrollMode="Auto"
-                SizeChanged="SpectrogramScrollView_SizeChanged"
-                VerticalScrollBarVisibility="Visible"
-                VerticalScrollMode="Auto"
-                ZoomMode="Enabled">
-                <Image
-                    x:Name="SpectrogramImage"
-                    HorizontalAlignment="Center"
-                    VerticalAlignment="Center"
-                    Stretch="Uniform"
-                    Visibility="Collapsed" />
-            </ScrollView>
-            <ProgressRing
-                x:Name="SpectrogramProgressRing"
-                Grid.Row="2"
-                Margin="40" />
+            <StackPanel Grid.Row="4" Spacing="4">
+                <TextBlock x:Name="InspectionStatus" AutomationProperties.AutomationId="SpectrogramInspectionStatus" Style="{ThemeResource CaptionTextBlockStyle}" TextWrapping="Wrap" />
+                <TextBlock x:Name="AnalysisStatus" AutomationProperties.AutomationId="SpectrogramStatus" Style="{ThemeResource CaptionTextBlockStyle}" TextWrapping="Wrap" />
+                <TextBlock AutomationProperties.AutomationId="SpectrogramHints" Foreground="{ThemeResource TextFillColorSecondaryBrush}" Style="{ThemeResource CaptionTextBlockStyle}" TextWrapping="Wrap">
+                    <Run FontWeight="SemiBold" Text="Ctrl+scroll: " /><Run Text="Zoom around the pointer / " />
+                    <Run FontWeight="SemiBold" Text="Drag: " /><Run Text="Select a specific passage for the spectrum profile and cutoff / " />
+                    <Run FontWeight="SemiBold" Text="Esc: " /><Run Text="Clear spectrum profile selection" />
+                </TextBlock>
+            </StackPanel>
+            <InfoBar x:Name="Message" Grid.Row="5" AutomationProperties.AutomationId="SpectrogramMessage" IsOpen="False" IsClosable="True" />
         </Grid>
     </ContentDialog>
-
 </UserControl>
