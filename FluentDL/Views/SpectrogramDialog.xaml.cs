@@ -33,6 +33,7 @@ public sealed partial class SpectrogramDialog : UserControl
             Log.Debug("Spectrogram analysis finished for {Path}", selectedFilePath);
         };
         Spek.InspectionChanged += (_, _) => UpdateInspection();
+        Spek.RegisterPropertyChangedCallback(SpekView.RefinementStatusProperty, (_, _) => UpdateInspection());
         foreach (var property in new[]
         {
             SpekView.PaletteProperty, SpekView.WindowFunctionProperty, SpekView.FftBitsProperty,
@@ -67,7 +68,7 @@ public sealed partial class SpectrogramDialog : UserControl
             ResizeForRoot();
             xamlRoot.Changed += Root_Changed;
             Spek.FfmpegPath = Path.Combine(await FFmpegRunner.GetPath(), "ffmpeg.exe");
-            Spek.ResetFrequencyZoom();
+            Spek.ResetZoom();
             Spek.ClearSelection();
             Spek.FilePath = selectedFilePath;
             AnalysisStatus.Text = "Reading file information...";
@@ -115,7 +116,7 @@ public sealed partial class SpectrogramDialog : UserControl
     private void ResetZoom_Click(ContentDialog sender, ContentDialogButtonClickEventArgs args)
     {
         args.Cancel = true;
-        Spek.ResetFrequencyZoom();
+        Spek.ResetZoom();
         Spek.Focus(FocusState.Programmatic);
     }
 
@@ -154,12 +155,12 @@ public sealed partial class SpectrogramDialog : UserControl
 
     private void UpdateState()
     {
-        PaletteButton.Label = Palettes.DisplayName(Spek.Palette);
-        WindowButton.Label = WindowFunctions.DisplayName(Spek.WindowFunction);
-        FftButton.Label = $"{1 << Spek.FftBits} samples";
-        ChannelButton.Label = Spek.ChannelCount > 0 ? $"Channel {Spek.Channel + 1} / {Spek.ChannelCount}" : "Channel";
+        PaletteButton.Content = Palettes.DisplayName(Spek.Palette);
+        WindowButton.Content = WindowFunctions.DisplayName(Spek.WindowFunction);
+        FftButton.Content = $"{1 << Spek.FftBits} samples";
+        ChannelButton.Content = Spek.ChannelCount > 0 ? $"Channel {Spek.Channel + 1} / {Spek.ChannelCount}" : "Channel";
         ChannelButton.IsEnabled = Spek.ChannelCount > 1;
-        StreamButton.Label = $"Stream {Spek.Stream + 1} / {Spek.StreamCount}";
+        StreamButton.Content = $"Stream {Spek.Stream + 1} / {Spek.StreamCount}";
         StreamButton.Visibility = Spek.StreamCount > 1 ? Visibility.Visible : Visibility.Collapsed;
         Dialog.IsPrimaryButtonEnabled = isOpen && completed && !Spek.IsAnalyzing && !saving;
         Dialog.IsSecondaryButtonEnabled = !saving;
@@ -180,10 +181,15 @@ public sealed partial class SpectrogramDialog : UserControl
         Profile.FrequencyRange = Spek.VisibleFrequencyRange;
         Profile.MeasuredDrop = Spek.ShowCutoffMarker ? Spek.MeasuredDrop : null;
         var parts = new List<string>();
+        if (!string.IsNullOrEmpty(Spek.RefinementStatus)) parts.Add(Spek.RefinementStatus);
+        var time = Spek.VisibleTimeRange;
+        if (Spek.MinimumTime > 0 || Spek.MaximumTime > 0)
+            parts.Add($"Time view {time.Start:0.00} to {time.End:0.00} s.");
         var range = Spek.VisibleFrequencyRange;
         if (Spek.MinimumFrequency > 0 || Spek.MaximumFrequency > 0)
             parts.Add($"Frequency view {range.Minimum / 1000:0.00} to {range.Maximum / 1000:0.00} kHz.");
         if (Spek.HasSelection) parts.Add($"Passage {Spek.SelectionStartSeconds:0.00} to {Spek.SelectionEndSeconds:0.00} s.");
+        else if (Spek.ShowSpectrum || Spek.ShowCutoffMarker) parts.Add("Whole file selected. Drag to inspect a passage.");
         if (Spek.ReferenceLines == ReferenceLines.Mp3Lame) parts.Add("Guides are nominal LAME stereo CBR targets, not bitrate detection.");
         if (Spek.ShowCutoffMarker)
         {

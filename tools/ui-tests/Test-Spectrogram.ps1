@@ -58,13 +58,14 @@ function Picker([string] $Action, [string] $Path) {
     $tree = Ui @('inspect', '--interactive', '--json') -Window $hwnd | ConvertFrom-Json
     $edit = Nodes @($tree.windows | ForEach-Object elements) | Where-Object { $_.type -eq 'Edit' -and $_.name -eq 'File name:' } | Select-Object -First 1
     if (-not $edit) { throw 'No filename edit in the file picker.' }
-    # Windows.Storage.Pickers rejects forward slashes. ValuePattern avoids keyboard escapes in a Windows path.
+    # ValuePattern changes the displayed text but Save can still use the original suggested name.
+    # Type a native Windows path so the picker commits the edit to its selected file.
     $nativePath = $Path.Replace('/', '\')
-    Ui @('focus', $edit.selector) -Window $hwnd | Out-Null
-    Ui @('set-value', $edit.selector, $nativePath) -Window $hwnd | Out-Null
+    Ui @('send-keys', 'ctrl+a', '--target', $edit.selector, '--via', 'send-input') -Window $hwnd | Out-Null
+    Ui @('send-keys', $nativePath, '--verbatim', '--via', 'send-input') -Window $hwnd | Out-Null
     $value = Ui @('get-value', $edit.selector, '--json') -Window $hwnd | ConvertFrom-Json
     if ($value.text -ne $nativePath) { throw 'The filename field did not accept the requested path.' }
-    Ui @('send-keys', 'tab', '--target', $edit.selector, '--via', 'send-input') -Window $hwnd | Out-Null
+    Ui @('send-keys', 'tab', '--via', 'send-input') -Window $hwnd | Out-Null
     Ui @('invoke', '1') -Window $hwnd | Out-Null
 }
 function Ready {
@@ -101,13 +102,14 @@ try {
         Ui @('wait-for', 'LocalSpectrogram', '-t', '5000')
         Ui @('invoke', 'LocalSpectrogram')
         Ready
+        Ui @('wait-for', 'SpectrogramPalette', '--value', 'SoX', '-t', '2000')
         Element 'Spectrogram' | Out-Null
         Screenshot '01-local.png'
     }
     if ($results[-1].status -ne 'PASS') { throw 'Import or opening failed; dependent dialog tests were not run.' }
     Test-Ui 'Palette, FFT size and channel controls work' {
-        Menu 'SpectrogramPalette' 'SoX'
-        Ui @('wait-for', 'SpectrogramPalette', '--value', 'SoX', '-t', '2000')
+        Menu 'SpectrogramPalette' 'Mono'
+        Ui @('wait-for', 'SpectrogramPalette', '--value', 'Mono', '-t', '2000')
         Menu 'SpectrogramFft' '4096 samples'
         Ready
         Ui @('wait-for', 'SpectrogramFft', '--value', '4096 samples', '-t', '2000')
@@ -116,14 +118,16 @@ try {
         Ui @('wait-for', 'SpectrogramChannel', '--value', 'Channel 2 / 2', '-t', '2000')
         Screenshot '02-options.png'
     }
-    Test-Ui 'Frequency zoom resets without leaving the dialog' {
+    Test-Ui 'Two-axis zoom refines and resets without leaving the dialog' {
         Ui @('send-keys', 'vk=0xBB', '--target', 'Spectrogram', '--via', 'send-input')
         Ui @('wait-for', 'SpectrogramInspectionStatus', '--value', 'Frequency view', '--contains', '-t', '2000')
+        Ui @('wait-for', 'SpectrogramInspectionStatus', '--value', 'Zoom refined.', '--contains', '-t', '10000')
+        Ui @('wait-for', 'SpectrogramInspectionStatus', '--value', 'Time view', '--contains', '-t', '2000')
         Screenshot '03-zoom.png'
         Ui @('invoke', 'SpectrogramResetZoom')
         Ready
         $text = Ui @('get-value', 'SpectrogramInspectionStatus', '--json') | ConvertFrom-Json
-        if ($text.text -match 'Frequency view') { throw 'Reset zoom failed.' }
+        if ($text.text -match 'Frequency view|Time view') { throw 'Reset zoom failed.' }
     }
     Test-Ui 'Selection clears with Escape before the dialog closes' {
         Ui @('send-keys', 'right shift+right', '--target', 'Spectrogram', '--via', 'send-input')
@@ -132,21 +136,21 @@ try {
         Ready
     }
     Test-Ui 'Inspection tools stay optional' {
-        Ui @('invoke', 'SpectrogramOptions')
         Ui @('wait-for', 'SpectrogramReferences', '--value', 'None', '-t', '3000')
         Ui @('send-keys', 'home down enter', '--target', 'SpectrogramReferences', '--via', 'send-input')
         Ui @('send-keys', 'esc', '--via', 'send-input')
         Ui @('invoke', 'SpectrogramShowProfile')
         Ui @('invoke', 'SpectrogramShowCutoff')
-        Ui @('send-keys', 'esc', '--via', 'send-input')
         Ui @('wait-for', 'SpectrogramInspectionStatus', '--value', 'not prove', '--contains', '-t', '5000')
         Screenshot '04-inspection.png'
     }
     Test-Ui 'Save exports the current view' {
         Picker 'SpectrogramSave' $ExportPath
-        Ui @('wait-for', 'Saved export.png', '-t', '5000')
+        Ui @('wait-for', "Saved $([IO.Path]::GetFileName($ExportPath))", '-t', '5000')
         if ($Target -eq 'sandbox') {
-            Checked @('target', 'pull', 'sandbox', 'SpekFixtures/export.png', (Join-Path $ArtifactDirectory 'export.png')) | Out-Null
+            $relative = $ExportPath.Replace('\', '/') -replace '^C:/WinApp/work/', ''
+            if ($relative -eq $ExportPath.Replace('\', '/')) { throw 'Sandbox exports must be under C:\WinApp\work.' }
+            Checked @('target', 'pull', 'sandbox', $relative, (Join-Path $ArtifactDirectory 'export.png')) | Out-Null
         }
         elseif (Test-Path $ExportPath) { Copy-Item $ExportPath (Join-Path $ArtifactDirectory 'export.png') }
         $png = Join-Path $ArtifactDirectory 'export.png'
@@ -173,6 +177,9 @@ try {
         $navigation = Nodes @($tree.windows | ForEach-Object elements) | Where-Object { $_.type -eq 'ListItem' -and $_.name -eq 'Queue' } | Select-Object -First 1
         if (-not $navigation) { throw 'No Queue navigation item.' }
         Ui @('invoke', $navigation.selector)
+        if ((Ui @('get-value', 'CompactQueueButton', '--json') | ConvertFrom-Json).text -eq 'On') {
+            Ui @('invoke', 'CompactQueueButton')
+        }
         Ui @('wait-for', 'QueueSpectrogram', '-t', '5000')
         Ui @('invoke', 'QueueSpectrogram')
         Ready
