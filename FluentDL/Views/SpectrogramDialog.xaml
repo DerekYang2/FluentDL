@@ -68,7 +68,7 @@
                     <Button x:Name="WindowButton" AutomationProperties.AutomationId="SpectrogramWindow" Content="Hann" Style="{StaticResource SpectrogramButtonStyle}" ToolTipService.ToolTip="Window function (F or Shift+F)">
                         <Button.Flyout><MenuFlyout x:Name="WindowMenu" Opening="OptionsMenu_Opening" /></Button.Flyout>
                     </Button>
-                    <Button x:Name="FftButton" AutomationProperties.AutomationId="SpectrogramFft" Content="2048 samples" Style="{StaticResource SpectrogramButtonStyle}" ToolTipService.ToolTip="FFT size (W or Shift+W)">
+                    <Button x:Name="FftButton" AutomationProperties.AutomationId="SpectrogramFft" Content="2048 samples" Style="{StaticResource SpectrogramButtonStyle}" ToolTipService.ToolTip="FFT window size. Fewer samples: finer timing. More samples: finer frequency detail. W or Shift+W.">
                         <Button.Flyout><MenuFlyout x:Name="FftMenu" Opening="OptionsMenu_Opening" /></Button.Flyout>
                     </Button>
                     <Button x:Name="ChannelButton" AutomationProperties.AutomationId="SpectrogramChannel" Content="Channel" Style="{StaticResource SpectrogramButtonStyle}" ToolTipService.ToolTip="Audio channel (C or Shift+C)">
@@ -81,8 +81,8 @@
                         <Button.Flyout>
                             <Flyout>
                                 <StackPanel Orientation="Horizontal" Spacing="12">
-                                    <NumberBox x:Name="LowerBox" Width="160" AutomationProperties.AutomationId="SpectrogramLowerDb" Header="Lower limit (dB)" Minimum="-140" Maximum="-1" SpinButtonPlacementMode="Compact" ValueChanged="Range_Changed" />
-                                    <NumberBox x:Name="UpperBox" Width="160" AutomationProperties.AutomationId="SpectrogramUpperDb" Header="Upper limit (dB)" Minimum="-139" Maximum="0" SpinButtonPlacementMode="Compact" ValueChanged="Range_Changed" />
+                                    <NumberBox x:Name="LowerBox" Width="176" AutomationProperties.AutomationId="SpectrogramLowerDb" Header="Lower limit (dB)" Minimum="-140" Maximum="-1" SpinButtonPlacementMode="Inline" ValueChanged="Range_Changed" />
+                                    <NumberBox x:Name="UpperBox" Width="176" AutomationProperties.AutomationId="SpectrogramUpperDb" Header="Upper limit (dB)" Minimum="-139" Maximum="0" SpinButtonPlacementMode="Inline" ValueChanged="Range_Changed" />
                                 </StackPanel>
                             </Flyout>
                         </Button.Flyout>
@@ -104,7 +104,11 @@
             <StackPanel Grid.Row="4" Spacing="4">
                 <TextBlock x:Name="InspectionStatus" AutomationProperties.AutomationId="SpectrogramInspectionStatus" Style="{ThemeResource CaptionTextBlockStyle}" TextWrapping="Wrap" />
                 <TextBlock x:Name="AnalysisStatus" AutomationProperties.AutomationId="SpectrogramStatus" Style="{ThemeResource CaptionTextBlockStyle}" TextWrapping="Wrap" />
-                <TextBlock Foreground="{ThemeResource TextFillColorSecondaryBrush}" Style="{ThemeResource CaptionTextBlockStyle}" Text="Ctrl+scroll: zoom around the pointer. +/-: zoom around the center. Drag: select a passage for the profile and cutoff. Esc: clear selection if present; otherwise close this dialog." TextWrapping="Wrap" />
+                <TextBlock AutomationProperties.AutomationId="SpectrogramHints" Foreground="{ThemeResource TextFillColorSecondaryBrush}" Style="{ThemeResource CaptionTextBlockStyle}" TextWrapping="Wrap">
+                    <Run FontWeight="SemiBold" Text="Ctrl+scroll: " /><Run Text="Zoom around the pointer / " />
+                    <Run FontWeight="SemiBold" Text="Drag: " /><Run Text="Select a specific passage for the spectrum profile and cutoff / " />
+                    <Run FontWeight="SemiBold" Text="Esc: " /><Run Text="Clear spectrum profile selection" />
+                </TextBlock>
             </StackPanel>
             <InfoBar x:Name="Message" Grid.Row="5" AutomationProperties.AutomationId="SpectrogramMessage" IsOpen="False" IsClosable="True" />
         </Grid>

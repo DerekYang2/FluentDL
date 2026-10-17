@@ -114,6 +114,26 @@ try {
         $status = Ui @('get-value', 'SpectrogramStatus', '--json') | ConvertFrom-Json
         if ($status.text -notmatch 'dB') { throw 'The shared status line has no level readout.' }
     }
+    Test-Ui 'dB fields increment without an overlapping spinner popup' {
+        Ui @('invoke', 'SpectrogramOptions')
+        Ui @('wait-for', 'SpectrogramLowerDb', '-t', '3000')
+        $lower = Element 'SpectrogramLowerDb'
+        $children = @(Nodes @($lower.children))
+        $inputBox = $children | Where-Object automationId -eq 'InputBox' | Select-Object -First 1
+        $increase = $children | Where-Object automationId -eq 'UpSpinButton' | Select-Object -First 1
+        $decrease = $children | Where-Object automationId -eq 'DownSpinButton' | Select-Object -First 1
+        if (-not $inputBox -or -not $increase -or -not $decrease) { throw 'The dB field has no inline input/spinners.' }
+        foreach ($button in @($increase, $decrease)) {
+            if ($button.x -lt $lower.x -or $button.x + $button.width -gt $lower.x + $lower.width) { throw 'A spinner extends beyond its own field.' }
+        }
+        Ui @('invoke', $increase.selector)
+        Ui @('wait-for', $inputBox.selector, '--value', '-119', '-t', '2000')
+        Screenshot '01-db-limits.png'
+        Ui @('invoke', $decrease.selector)
+        Ui @('wait-for', $inputBox.selector, '--value', '-120', '-t', '2000')
+        Ui @('send-keys', 'esc', '--via', 'send-input')
+        Ready
+    }
     Test-Ui 'Escape dismisses an options menu without closing the dialog' {
         Ui @('invoke', 'SpectrogramPalette')
         Ui @('wait-for', 'Mono', '-t', '3000')
@@ -154,14 +174,16 @@ try {
         Ui @('invoke', 'SpectrogramShowProfile')
         Ready
     }
-    Test-Ui 'Clear selection is visible only with the profile and a passage' {
+    Test-Ui 'Disabling the profile clears the passage and hides Clear selection' {
         Ui @('send-keys', 'right shift+right', '--target', 'Spectrogram', '--via', 'send-input')
         Ui @('wait-for', 'SpectrogramClearSelection', '--gone', '-t', '2000')
         Ui @('invoke', 'SpectrogramShowProfile')
         Ui @('wait-for', 'SpectrogramClearSelection', '-p', 'IsEnabled', '--value', 'True', '-t', '2000')
         Ui @('invoke', 'SpectrogramShowProfile')
         Ui @('wait-for', 'SpectrogramClearSelection', '--gone', '-t', '2000')
-        Ui @('send-keys', 'esc', '--target', 'Spectrogram', '--via', 'send-input')
+        $status = Ui @('get-value', 'SpectrogramInspectionStatus', '--json') | ConvertFrom-Json
+        if ($status.text -match 'Passage [0-9]') { throw 'Disabling the profile retained the selected passage.' }
+        Screenshot '03-profile-disabled.png'
         Ready
     }
     Test-Ui 'Escape clears a selection and the next press closes with a checkbox focused' {

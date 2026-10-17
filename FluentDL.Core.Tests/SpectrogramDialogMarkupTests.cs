@@ -129,4 +129,27 @@ public class SpectrogramDialogMarkupTests
         Assert.AreEqual(1, markup.Descendants().Count(element => (string?)element.Attribute("AutomationProperties.AutomationId") == "SpectrogramStatus"));
         Assert.IsFalse(markup.Descendants().Any(element => (string?)element.Attribute("AutomationProperties.AutomationId") == "SpectrogramReadout"));
     }
+
+    [TestMethod]
+    public void DbInputsUseInlineSpinnersWithoutAnOverlappingPopup()
+    {
+        var inputs = Read().Descendants().Where(element => element.Name.LocalName == "NumberBox").ToArray();
+        Assert.AreEqual(2, inputs.Length);
+        foreach (var input in inputs)
+        {
+            Assert.AreEqual("Inline", (string?)input.Attribute("SpinButtonPlacementMode"));
+            Assert.AreEqual("176", (string?)input.Attribute("Width"));
+        }
+    }
+
+    [TestMethod]
+    public void HintsUseSeparatedActionsWithoutAdvertisingPlusMinus()
+    {
+        var hints = Read().Descendants().Single(element => (string?)element.Attribute("AutomationProperties.AutomationId") == "SpectrogramHints");
+        string text = string.Concat(hints.Elements().Select(element => (string?)element.Attribute("Text")));
+        StringAssert.Contains(text, "pointer / Drag:");
+        StringAssert.Contains(text, "cutoff / Esc:");
+        StringAssert.Contains(text, "Clear spectrum profile selection");
+        Assert.IsFalse(text.Contains("+/-"));
+    }
 }

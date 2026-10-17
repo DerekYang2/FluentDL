@@ -224,12 +224,12 @@ public sealed partial class SpectrogramDialog : UserControl
         if (!string.IsNullOrEmpty(Spek.RefinementStatus)) parts.Add(Spek.RefinementStatus);
         var time = Spek.VisibleTimeRange;
         if (Spek.MinimumTime > 0 || Spek.MaximumTime > 0)
-            parts.Add($"Time view {time.Start:0.00} to {time.End:0.00} s.");
+            parts.Add($"Time view {time.Start:0.00} to {time.End:0.00} s");
         var range = Spek.VisibleFrequencyRange;
         if (Spek.MinimumFrequency > 0 || Spek.MaximumFrequency > 0)
-            parts.Add($"Frequency view {range.Minimum / 1000:0.00} to {range.Maximum / 1000:0.00} kHz.");
-        if (Spek.HasSelection) parts.Add($"Passage {Spek.SelectionStartSeconds:0.00} to {Spek.SelectionEndSeconds:0.00} s.");
-        else if (Spek.ShowSpectrum || Spek.ShowCutoffMarker) parts.Add("Whole file selected. Drag to inspect a passage.");
+            parts.Add($"Frequency view {range.Minimum / 1000:0.00} to {range.Maximum / 1000:0.00} kHz");
+        if (Spek.HasSelection) parts.Add($"Passage {Spek.SelectionStartSeconds:0.00} to {Spek.SelectionEndSeconds:0.00} s");
+        else if (Spek.ShowSpectrum || Spek.ShowCutoffMarker) parts.Add("Using the whole track");
         if (Spek.ReferenceLines == ReferenceLines.Mp3Lame) parts.Add("Guides are nominal LAME stereo CBR targets, not bitrate detection.");
         if (Spek.ShowCutoffMarker)
         {
@@ -237,7 +237,7 @@ public sealed partial class SpectrogramDialog : UserControl
                 Spek.SpectrumProfile is null ? "Cutoff measurement waits for analysis." : "No qualifying spectral drop found.");
             parts.Add("A cutoff does not prove a lossy source, and no marker does not prove lossless origin.");
         }
-        InspectionStatus.Text = string.Join(" ", parts);
+        InspectionStatus.Text = string.Join(" / ", parts);
     }
 
     private void Range_Changed(NumberBox sender, NumberBoxValueChangedEventArgs args)
@@ -267,8 +267,10 @@ public sealed partial class SpectrogramDialog : UserControl
     private void Inspection_Changed(object sender, RoutedEventArgs args)
     {
         if (Spek is null) return;
+        bool hidingSpectrum = Spek.ShowSpectrum && ProfileToggle.IsChecked != true;
         Spek.ShowSpectrum = ProfileToggle.IsChecked == true;
         Spek.ShowCutoffMarker = CutoffToggle.IsChecked == true;
+        if (hidingSpectrum) Spek.ClearSelection();
         UpdateInspection();
     }
 
