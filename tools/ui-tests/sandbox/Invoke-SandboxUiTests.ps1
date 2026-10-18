@@ -21,7 +21,8 @@ $ErrorActionPreference = 'Stop'
 $repo = (Resolve-Path (Join-Path $PSScriptRoot '..\..\..')).Path
 $devName = 'DerekYang2.FluentDL.Dev'
 $guestRoot = 'FluentDL' # relative to the guest's work root, C:\WinApp\work
-$hostResults = Join-Path $env:TEMP 'opencode\sandbox-ui-results'
+$runName = (Get-Date -Format 'yyyyMMdd-HHmmss') + '-' + [guid]::NewGuid().ToString('N').Substring(0, 8)
+$hostResults = Join-Path $env:TEMP "opencode\sandbox-ui-results\$runName"
 $testProject = Join-Path $repo 'FluentDL.Characterization.Tests\FluentDL.Characterization.Tests.csproj'
 
 function Invoke-WinApp([string[]]$Arguments) {
@@ -35,10 +36,11 @@ if (-not $SkipBuild) {
     Write-Host "Building the dev package from $AppRepoRoot..."
     $targets = Join-Path $repo 'tools\ui-tests\DevPackage.targets'
     dotnet build (Join-Path $AppRepoRoot 'FluentDL\FluentDL.csproj') -c Debug -p:Platform=x64 -v q --nologo `
+        --disable-build-servers -nodeReuse:false -p:UseSharedCompilation=false `
         "-p:CustomAfterMicrosoftCommonTargets=$targets" '-p:IntermediateOutputPath=obj\uitest\' '-p:OutputPath=bin\uitest\'
     if ($LASTEXITCODE -ne 0) { throw "App build failed (exit $LASTEXITCODE)." }
     Write-Host 'Building the tests...'
-    dotnet build $testProject -p:Platform=x64 -v q --nologo
+    dotnet build $testProject -p:Platform=x64 -v q --nologo --disable-build-servers -nodeReuse:false -p:UseSharedCompilation=false
     if ($LASTEXITCODE -ne 0) { throw "Test build failed (exit $LASTEXITCODE)." }
 }
 
@@ -75,8 +77,8 @@ finally {
     & winapp.exe target exec sandbox -- powershell.exe -NoProfile -Command "Remove-Item -Recurse -Force C:\WinApp\work\$guestRoot\secrets" | Out-Null
 }
 
-if (Test-Path $hostResults) { Remove-Item $hostResults -Recurse -Force }
 & winapp.exe target pull sandbox "$guestRoot/results" $hostResults | Out-Null
+if ($LASTEXITCODE -ne 0) { throw 'Failed to pull Sandbox test results. Leave the guest open to recover the evidence.' }
 $baselines = Join-Path $repo 'FluentDL.Characterization.Tests\Baselines'
 Get-ChildItem $baselines -Filter '*.actual.json' | Remove-Item
 Get-ChildItem (Join-Path $hostResults 'baselines') -Filter '*.json' -ErrorAction SilentlyContinue | Copy-Item -Destination $baselines

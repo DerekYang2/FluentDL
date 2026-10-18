@@ -138,7 +138,7 @@ public class QueueConversionUiTests
         WaitUntil(() => Find(dev, "AddToQueueButton").IsEnabled, TimeSpan.FromSeconds(30), "adding the track to the queue");
     }
 
-    private static void Convert(DevApp dev, string[] inputs, string output)
+    internal static void Convert(DevApp dev, string[] inputs, string output)
     {
         Invoke(Find(dev, "ConvertDialogOpenButton"));
         Find(dev, "OutputComboBox");
