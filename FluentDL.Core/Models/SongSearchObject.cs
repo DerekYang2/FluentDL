@@ -25,6 +25,7 @@ public class SongSearchObject : INotifyPropertyChanged
             if (_imageLocation == newValue) return;
             _imageLocation = newValue;
             OnPropertyChanged();
+            OnPropertyChanged(nameof(CoverSource));
         }
     }
 
@@ -108,9 +109,13 @@ public class SongSearchObject : INotifyPropertyChanged
             {
                 _localBitmapImage = value;
                 OnPropertyChanged();
+                OnPropertyChanged(nameof(CoverSource));
             }
         }
     }
+
+    [JsonIgnore]
+    public object CoverSource => LocalBitmapImage ?? ImageLocation;
 
     public string? AudioFormat
     {

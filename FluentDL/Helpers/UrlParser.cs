@@ -13,7 +13,7 @@ namespace FluentDL.Helpers
 {
     class UrlParser
     {
-        public static void ParseTextBlock(TextBlock textblock, string str)
+        public static void ParseTextBlock(TextBlock textblock, string str, Action<SettingsSection>? onSettingsLink = null)
         {
             // Parse <a href=''></a> tags and <b></b> tags
             var r = new Regex(@"<a.*?href=(""|')(?<href>.*?)(""|').*?>(?<value>.*?)</a>|<b>(?<value>.*?)</b>");
@@ -71,7 +71,15 @@ namespace FluentDL.Helpers
                     }
                     else
                     {
-                        hyperLink = new Hyperlink { NavigateUri = new Uri(link) };
+                        var uri = new Uri(link);
+                        hyperLink = new Hyperlink();
+                        if (SettingsNavigation.TryParse(uri, out var section))
+                            hyperLink.Click += (_, _) =>
+                            {
+                                if (onSettingsLink != null) onSettingsLink(section);
+                                else SettingsNavigation.Open(section);
+                            };
+                        else if (uri.Scheme != "fluentdl") hyperLink.NavigateUri = uri;
                         hyperLink.Inlines.Add(new Run { Text = text });
                     }
 

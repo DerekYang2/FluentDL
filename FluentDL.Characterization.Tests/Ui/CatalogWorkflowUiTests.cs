@@ -56,7 +56,7 @@ public class CatalogWorkflowUiTests
             {
                 QueueConversionUiTests.ClearQueue(dev); // creates an automatic backup through the app
                 RestoreNewestBackup(dev);
-                WaitUntil(() => Text(Find(dev, "CountText")) == "2 tracks, 1 album in queue", DefaultTimeout, "the mixed backup to restore");
+                WaitUntil(() => Text(Find(dev, "CountText")) == Views.QueuePage.FormatQueueCount(2, 1), DefaultTimeout, "the mixed backup to restore");
                 CollectionAssert.AreEqual(expected, WaitSaved(3), "Backup restore must preserve row identity, kind and order.");
             });
             PreviewEveryRow(dev, expected, "mixed-backup-restored");

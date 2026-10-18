@@ -110,4 +110,20 @@ public class QobuzTests
         var track = await TestSources.Qobuz.SearchISRC(isrc);
         Assert.AreEqual(expectedIsrc, track?.Isrc, $"{track?.Title} / {track?.Performer?.Name}");
     }
+
+    [TestMethod]
+    [DataRow("TCACK1581189")]
+    [DataRow("TCADA1796141")]
+    [DataRow("USZ4V1600115")]
+    [DataRow("USQX91300108")]
+    public async Task SearchIsrcOnlyReturnsAvailableExactMatches(string isrc)
+    {
+        using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(45));
+        var track = await TestSources.Qobuz.SearchISRC(isrc, timeout.Token);
+        if (track == null) return;
+        Assert.AreEqual(isrc, track.Isrc, ignoreCase: true);
+        Assert.AreEqual(true, track.Streamable);
+        Assert.AreEqual(true, track.Displayable);
+        Assert.IsNotNull(await TestSources.Qobuz.GetTrackAsync(track.Id, timeout.Token), "The selected track must be retrievable.");
+    }
 }

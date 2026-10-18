@@ -51,7 +51,7 @@ public class QueueAlbumUiTests
                     WaitUntil(() => Find(dev, "AddToQueueButton").IsEnabled, TimeSpan.FromSeconds(30), "adding the album");
                     SetAlbumMode(dev, false);
                     Navigate(dev, "Queue");
-                    WaitUntil(() => Text(Find(dev, "CountText")) == "1 album in queue", TimeSpan.FromSeconds(15), "one album row");
+                    WaitUntil(() => Text(Find(dev, "CountText")) == "1 album", TimeSpan.FromSeconds(15), "one album row");
                     StringAssert.Contains(RowTexts(dev).Single(), "13 Tracks");
                 });
             }
@@ -62,12 +62,12 @@ public class QueueAlbumUiTests
                 {
                     Find(dev, "SearchBox", TimeSpan.FromSeconds(60));
                     Navigate(dev, "Queue");
-                    WaitUntil(() => Text(Find(dev, "CountText")) == "1 album in queue", TimeSpan.FromSeconds(15), "the album row after a restart");
+                    WaitUntil(() => Text(Find(dev, "CountText")) == "1 album", TimeSpan.FromSeconds(15), "the album row after a restart");
 
                     Invoke(Find(dev, "DownloadAllButton"));
                     Find(dev, "ConversionTabView", TimeSpan.FromMinutes(5));
                     CloseDialog(dev);
-                    WaitUntil(() => Text(Find(dev, "CountText")) == "13 tracks in queue", TimeSpan.FromSeconds(30), "the album to expand into its tracks");
+                    WaitUntil(() => Text(Find(dev, "CountText")) == "13 tracks", TimeSpan.FromSeconds(30), "the album to expand into its tracks");
                     var badges = Find(dev, "CustomListView").FindAllDescendants(cf => cf.ByAutomationId("SourceBadge")).Select(Text).Distinct().ToArray();
                     CollectionAssert.AreEqual(new[] { "local" }, badges, "Every visible row should be a local file.");
                     Assert.AreEqual(13, Directory.GetFiles(folder, "*.*", SearchOption.AllDirectories)

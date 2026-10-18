@@ -4,6 +4,8 @@ using FluentDL.Core.Sources;
 using FluentDL.Helpers;
 using FluentDL.Models;
 using FluentDL.Services.CustomSpotify;
+using FluentDL.Services.Playlists;
+using FluentDL.Contracts.Sources;
 using SpotifyAPI.Web;
 using SpotifyAPI.Web.Auth;
 using System.Collections.ObjectModel;
@@ -25,11 +27,14 @@ namespace FluentDL.Services.Sources
         private string? loginString = null;
         
         // Login as user related
-        private EmbedIOAuthServer? _server;
         private string? _clientId, _clientSecret;
         private static readonly int _port = 5543;
         private static readonly string _redirect = $"http://127.0.0.1:{_port}/callback";
-        private TaskCompletionSource<bool> _loginTcs = new();
+        private readonly SemaphoreSlim userLoginGate = new(1, 1);
+        private object authorizationGeneration = new();
+        private SpotifyUserAuthorization? userAuthorization;
+        private string? playlistUserId;
+        private CancellationTokenSource? activeUserLogin;
 
         // Custom web player
         private ISpotifyWebService? spotifyWebService;
@@ -47,6 +52,18 @@ namespace FluentDL.Services.Sources
             {
                 IsInitialized = false;
                 loginString = null;
+                var keepUserSession = _clientId == clientId && _clientSecret == clientSecret && IsSignedInForPlaylists;
+                if (!keepUserSession)
+                {
+                    authorizationGeneration = new();
+                    activeUserLogin?.Cancel();
+                    spotifyUser = null;
+                    userAuthorization = null;
+                    playlistUserId = null;
+                }
+                _clientId = clientId;
+                _clientSecret = clientSecret;
+                if (!keepUserSession) await RestoreUserAuthorizationAsync(clientId, clientSecret);
                 
                 try
                 {
@@ -56,8 +73,6 @@ namespace FluentDL.Services.Sources
                         // Save these for login usage (if user wants to login with browser, we need these to get the token)
                         _clientId = clientId;
                         _clientSecret = clientSecret;
-                        _server = null;
-                        spotifyUser = null;
 
                         // Create client without user access
                         spotify = new SpotifyClient(config.WithAuthenticator(new ClientCredentialsAuthenticator(clientId, clientSecret)));
@@ -97,65 +112,169 @@ namespace FluentDL.Services.Sources
             }
         }
 
-        private async Task PromptUserLogin()
+        public Task<bool> AuthorizePlaylistAsync(CancellationToken token) => AuthorizeUserAsync(token);
+
+        public bool IsSignedInForPlaylists => userAuthorization?.CanWritePlaylists == true && playlistUserId != null;
+        public string? UserAccountId => userAuthorization != null ? playlistUserId : null;
+
+        public async Task ClearUserAuthorizationAsync()
         {
-            if (_clientId == null || _clientSecret == null)
-            {
-                Debug.WriteLine("Client ID or secret not set, cannot prompt user login");
-                return;
-            }
+            authorizationGeneration = new();
+            activeUserLogin?.Cancel();
+            userAuthorization = null;
+            playlistUserId = null;
+            spotifyUser = null;
+            await userSessions.ClearAsync();
+        }
 
-            if (_server == null)
-            {
-                _server = new EmbedIOAuthServer(new Uri(_redirect), _port);
-                await _server.Start();
+        internal Func<string, string, string, CancellationToken, Task<AuthorizationCodeRefreshResponse>> RefreshUserTokenAsync { get; set; } =
+            (id, secret, refresh, token) => new OAuthClient().RequestToken(new AuthorizationCodeRefreshRequest(id, secret, refresh), token);
 
-                _server.AuthorizationCodeReceived += OnAuthorizationCodeReceived;
-                _server.ErrorReceived += OnErrorReceived;
-            }
+        internal Func<SpotifyUserAuthorization, CancellationToken, Task<string>>? VerifyUserAccountAsync { get; set; }
+        internal Func<Task<bool>>? CheckCatalogCredentialsAsync { get; set; }
 
-            if (spotifyUser == null)
+        private async Task<string> VerifyAccountAsync(SpotifyUserAuthorization auth, CancellationToken token) =>
+            VerifyUserAccountAsync != null ? await VerifyUserAccountAsync(auth, token)
+                : (await new SpotifyClient(config.WithAuthenticator(auth)).UserProfile.Current(token)).Id;
+
+        private Task SaveUserSessionAsync(AuthorizationCodeTokenResponse response, string clientId, string secret, string userId, object generation) =>
+            userSessions.SaveAsync(new(clientId, SpotifyUserSessionStore.CredentialsHash(clientId, secret), userId, response.RefreshToken, response.Scope),
+                () => ReferenceEquals(generation, authorizationGeneration));
+
+        private SpotifyUserAuthorization CreateUserAuthorization(AuthorizationCodeTokenResponse response, string clientId, string secret, string userId, object generation) =>
+            new(response, ct => RefreshUserTokenAsync(clientId, secret, response.RefreshToken, ct),
+                updated => SaveUserSessionAsync(updated, clientId, secret, userId, generation),
+                async () => { if (ReferenceEquals(generation, authorizationGeneration)) await ClearUserAuthorizationAsync(); });
+
+        internal async Task RestoreUserAuthorizationAsync(string? clientId, string? secret)
+        {
+            var generation = authorizationGeneration;
+            using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(15));
+            try
             {
-                var request = new LoginRequest(_server.BaseUri, _clientId, LoginRequest.ResponseType.Code)
+                if (string.IsNullOrWhiteSpace(clientId) || string.IsNullOrWhiteSpace(secret))
                 {
-                    Scope = new List<string> { Scopes.PlaylistReadCollaborative, Scopes.PlaylistReadPrivate }
+                    await userSessions.ClearAsync();
+                    return;
+                }
+                var saved = await userSessions.ReadAsync(clientId, secret, () => ReferenceEquals(generation, authorizationGeneration));
+                if (saved == null) return;
+                var refreshed = await RefreshUserTokenAsync(clientId, secret, saved.RefreshToken, deadline.Token);
+                if (!ReferenceEquals(generation, authorizationGeneration)) return;
+                var response = new AuthorizationCodeTokenResponse
+                {
+                    AccessToken = refreshed.AccessToken, RefreshToken = string.IsNullOrWhiteSpace(refreshed.RefreshToken) ? saved.RefreshToken : refreshed.RefreshToken,
+                    CreatedAt = refreshed.CreatedAt, ExpiresIn = refreshed.ExpiresIn, TokenType = refreshed.TokenType,
+                    Scope = refreshed.Scope ?? saved.Scope,
                 };
-
-                BrowserUtil.Open(request.ToUri());
-                _loginTcs = new TaskCompletionSource<bool>();
+                if (!SpotifyUserAuthorization.HasPlaylistScopes(response.Scope) || string.IsNullOrWhiteSpace(response.AccessToken))
+                {
+                    await ClearUserAuthorizationAsync();
+                    return;
+                }
+                // Persist rotation before profile lookup, so a transient profile failure cannot lose the new refresh token.
+                await SaveUserSessionAsync(response, clientId, secret, saved.UserId, generation);
+                var auth = CreateUserAuthorization(response, clientId, secret, saved.UserId, generation);
+                var userId = await VerifyAccountAsync(auth, deadline.Token);
+                if (!ReferenceEquals(generation, authorizationGeneration)) return;
+                if (userId != saved.UserId)
+                {
+                    await ClearUserAuthorizationAsync();
+                    return;
+                }
+                deadline.Token.ThrowIfCancellationRequested();
+                spotifyUser = new SpotifyClient(config.WithAuthenticator(auth));
+                playlistUserId = userId;
+                userAuthorization = auth;
+            }
+            catch (APIException error) when (SpotifyUserAuthorization.IsRejected(error))
+            {
+                if (ReferenceEquals(generation, authorizationGeneration)) await ClearUserAuthorizationAsync();
+            }
+            catch (Exception error)
+            {
+                // Keep the encrypted session after offline, timeout or server failures. Never open a browser here.
+                Serilog.Log.Warning("Could not restore Spotify user sign-in: {ExceptionType}", error.GetType().Name);
             }
         }
 
-        private async Task OnAuthorizationCodeReceived(object sender, AuthorizationCodeResponse response)
+        private async Task<bool> AuthorizeUserAsync(CancellationToken token)
         {
-            if (spotifyUser == null)
+            await userLoginGate.WaitAsync(token);
+            try
             {
+                if (spotifyUser != null && IsSignedInForPlaylists) return true;
+                var clientId = _clientId;
+                var secret = _clientSecret;
+                var generation = authorizationGeneration;
+                if (string.IsNullOrWhiteSpace(clientId) || string.IsNullOrWhiteSpace(secret)) return false;
+                using var deadline = CancellationTokenSource.CreateLinkedTokenSource(token);
+                deadline.CancelAfter(TimeSpan.FromMinutes(2));
+                using var server = new EmbedIOAuthServer(new Uri(_redirect), _port);
+                activeUserLogin = deadline;
+                var completion = new TaskCompletionSource<string?>(TaskCreationOptions.RunContinuationsAsynchronously);
+                var state = Convert.ToHexString(System.Security.Cryptography.RandomNumberGenerator.GetBytes(32));
+                server.AuthorizationCodeReceived += (_, response) =>
+                {
+                    if (state == response.State && ReferenceEquals(generation, authorizationGeneration)) completion.TrySetResult(response.Code);
+                    return Task.CompletedTask;
+                };
+                server.ErrorReceived += (_, _, receivedState) =>
+                {
+                    if (state == receivedState) completion.TrySetResult(null);
+                    return Task.CompletedTask;
+                };
                 try
                 {
-                    var tokenResponse = await new OAuthClient().RequestToken(
-                        new AuthorizationCodeTokenRequest(_clientId!, _clientSecret!, response.Code, new Uri(_redirect))
-                    );
-                    var customConfig = config.WithAuthenticator(new AuthorizationCodeAuthenticator(_clientId!, _clientSecret!, tokenResponse));
-                    spotifyUser = new SpotifyClient(customConfig);
-                    await _server!.Stop();
-                    _loginTcs.TrySetResult(true);
+                    await server.Start();
+                    var request = new LoginRequest(new Uri(_redirect), clientId, LoginRequest.ResponseType.Code)
+                    {
+                        State = state,
+                        Scope = SpotifyUserAuthorization.PlaylistScopes.Append(Scopes.PlaylistReadCollaborative).ToList(),
+                    };
+                    BrowserUtil.Open(request.ToUri());
+                    var code = await completion.Task.WaitAsync(deadline.Token);
+                    if (code == null) return false;
+                    var oauth = new OAuthClient();
+                    var response = await oauth.RequestToken(new AuthorizationCodeTokenRequest(clientId, secret, code, new Uri(_redirect)), deadline.Token);
+                    var auth = new SpotifyUserAuthorization(response,
+                        ct => RefreshUserTokenAsync(clientId, secret, response.RefreshToken, ct));
+                    if (!auth.CanWritePlaylists) return false;
+                    var userClient = new SpotifyClient(config.WithAuthenticator(auth));
+                    var profile = await userClient.UserProfile.Current(deadline.Token);
+                    deadline.Token.ThrowIfCancellationRequested();
+                    if (!ReferenceEquals(generation, authorizationGeneration) || string.IsNullOrEmpty(profile.Id)) return false;
+                    if (string.IsNullOrWhiteSpace(response.RefreshToken)) return false;
+                    await SaveUserSessionAsync(response, clientId, secret, profile.Id, generation);
+                    if (deadline.IsCancellationRequested && ReferenceEquals(generation, authorizationGeneration))
+                        await ClearUserAuthorizationAsync();
+                    deadline.Token.ThrowIfCancellationRequested();
+                    if (!ReferenceEquals(generation, authorizationGeneration)) return false;
+                    auth = CreateUserAuthorization(response, clientId, secret, profile.Id, generation);
+                    spotifyUser = new SpotifyClient(config.WithAuthenticator(auth));
+                    playlistUserId = profile.Id;
+                    userAuthorization = auth;
+                    return true;
                 }
-                catch (Exception ex) {
-                    Debug.Write("Failed to authenticate spotify user: " + ex.ToString());
-                    spotifyUser = null;
-                    _loginTcs.TrySetResult(false);
+                finally
+                {
+                    if (ReferenceEquals(activeUserLogin, deadline)) activeUserLogin = null;
+                    await server.Stop();
                 }
             }
-        }
-
-        private async Task OnErrorReceived(object sender, string error, string? state)
-        {
-            Debug.WriteLine($"Aborting authorization, error received: {error}");
-            await _server!.Stop();
+            catch (OperationCanceledException) when (!token.IsCancellationRequested) { return false; }
+            catch (OperationCanceledException) { throw; }
+            catch (Exception error)
+            {
+                Serilog.Log.Warning("Spotify user authorization failed: {ExceptionType}", error.GetType().Name);
+                return false;
+            }
+            finally { userLoginGate.Release(); }
         }
 
         private async Task<bool> CheckClient()
         {
+            if (CheckCatalogCredentialsAsync != null) return await CheckCatalogCredentialsAsync();
             try
             {
                 var responseTask = spotify.Search.Item(new SearchRequest(SearchRequest.Types.Track, "test"));
@@ -623,12 +742,11 @@ namespace FluentDL.Services.Sources
             }
         }
 
-        public async Task AddTracksFromLink(ICollection<SongSearchObject> itemSource, string url, CancellationToken token, UrlStatusUpdateCallback? statusUpdate, bool userLogin, bool albumMode = false)
+        public async Task AddTracksFromLink(ICollection<SongSearchObject> itemSource, string url, CancellationToken token, UrlStatusUpdateCallback? statusUpdate, bool albumMode = false)
         {
-            if (!IsInitialized)
+            if (!IsInitialized && spotifyUser == null)
             {
-                statusUpdate?.Invoke(StatusLevel.Error, "Spotify API not initialized. Go to settings to authenticate.");
-                return;
+                throw new SourceSignInRequiredException(SourceIds.Spotify, "Spotify access is not configured. Configure Spotify in Settings.");
             }
 
             var id = url.Split("/").Last();
@@ -641,6 +759,7 @@ namespace FluentDL.Services.Sources
             if (url.StartsWith("https://open.spotify.com/playlist/"))
             {
                 ISpotifyWebService webServiceInstance = spotifyWebService ?? injectedWebService;
+                var userLogin = spotifyUser != null && userAuthorization != null;
 
                 statusUpdate?.Invoke(StatusLevel.Informational, $"<b>Spotify</b>   Loading <a href='{url}'>playlist</a>", -1);
 
@@ -649,25 +768,15 @@ namespace FluentDL.Services.Sources
                 {
                     if (userLogin)
                     {
-                        await PromptUserLogin();
-                        var status = await _loginTcs.Task.WaitAsync(TimeSpan.FromSeconds(60)); // Wait for user to login, with timeout
-
-                        if (!status || spotifyUser == null)
-                        {
-                            statusUpdate?.Invoke(StatusLevel.Error, $"<b>Spotify</b>   Authentication failed. Cannot load playlist <a href='{url}'>{url}</a>");
-                            return;
-                        }
-
                         var playlistName = await GetPlaylistName(id);
                         if (playlistName == null)
                         {
-                            statusUpdate?.Invoke(StatusLevel.Error, $"<b>Spotify</b>   Failed to load playlist <a href='{url}'>{url}</a>");
-                            return;
+                            throw new InvalidOperationException("Spotify could not read this playlist with the signed-in account.");
                         }
 
                         statusUpdate?.Invoke(StatusLevel.Informational, $"<b>Spotify</b>   Loading playlist <a href='{url}'>{playlistName}</a>", -1);
 
-                        var pages = await spotifyUser.Playlists.GetPlaylistItems(id, cancel: token);
+                        var pages = await spotifyUser!.Playlists.GetPlaylistItems(id, cancel: token);
                         var allPages = await spotifyUser.PaginateAll(pages, cancellationToken: token);
 
                         // Debug: loop and print all tracks
@@ -699,6 +808,8 @@ namespace FluentDL.Services.Sources
                         statusUpdate?.Invoke(StatusLevel.Success, $"<b>Spotify</b>   Loaded <a href='{url}'>playlist</a>");
                     }
                 }
+                catch (OperationCanceledException) { throw; }
+                catch (SourceSignInRequiredException) { throw; }
                 catch (Exception ex)
                 {
                     if (userLogin)  // Attempt webservice fallback
@@ -711,13 +822,16 @@ namespace FluentDL.Services.Sources
                             }
                             statusUpdate?.Invoke(StatusLevel.Warning, $"<b>Spotify</b>   Error: {ex.Message}. Loaded <a href='{url}'>playlist</a> using fallback method.", 10);
                         }
+                        catch (OperationCanceledException) { throw; }
+                        catch (SourceSignInRequiredException) { throw; }
                         catch (Exception ex2)
                         {
                             statusUpdate?.Invoke(StatusLevel.Error, $"<b>Spotify</b>   Failed to load with both methods. Error 1: {ex.Message} | Error 2: {ex2.Message}", 10);
                         }
                     } else
                     {
-                        statusUpdate?.Invoke(StatusLevel.Error, $"<b>Spotify</b>   Failed to load playlist: {ex.Message}", 10);
+                        throw new SourceSignInRequiredException(SourceIds.Spotify,
+                            "Spotify could not read this playlist anonymously. If it is private, sign in through Settings and paste the link again.");
                     }
                 }
             }

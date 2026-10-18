@@ -25,6 +25,7 @@
         <views:PathToVisibilityConverter x:Key="PathToVisibilityConverter" />
         <helpers:NullVisibilityConverter x:Key="NullVisibilityConverter" />
         <helpers:ObjectToImageSourceConverter x:Key="ObjectToImageSourceConverter" />
+        <helpers:CoverImageConverter x:Key="CoverImageConverter" />
         <helpers:InverseNullVisibilityConverter x:Key="InverseNullVisibilityConverter" />
         <helpers:SourceToColorConverter x:Key="SourceToColorConverter" />
         <helpers:LocalSourceToVisibilityConverter x:Key="LocalSourceToVisibilityConverter" />
@@ -88,50 +89,63 @@
             <ColumnDefinition Width="*" />
             <ColumnDefinition Width="Auto" />
         </Grid.ColumnDefinitions>
-        <controls1:DockPanel Grid.Row="0" Grid.Column="0">
-            <ToggleButton
-                x:Name="CompactQueueButton"
-                MinWidth="32"
-                MinHeight="32"
-                Margin="0,0,4,0"
-                Padding="8,4"
-                VerticalAlignment="Center"
-                AutomationProperties.AutomationId="CompactQueueButton"
-                AutomationProperties.Name="List layout"
-                Click="CompactQueueButton_Click"
-                IsChecked="{x:Bind ViewModel.QueueDisplay.IsCompact, Mode=OneWay}"
-                IsEnabled="{x:Bind ViewModel.QueueDisplay.CanChangeLayout, Mode=OneWay}"
-                ToolTipService.ToolTip="Compact queue">
-                <StackPanel Orientation="Horizontal" Spacing="8">
+        <Grid x:Name="QueueToolbar" Grid.Row="0" Grid.Column="0" ColumnSpacing="8" SizeChanged="QueueToolbar_SizeChanged">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <StackPanel x:Name="QueueToolbarInfo" Orientation="Horizontal" SizeChanged="QueueToolbar_SizeChanged">
+                <ToggleButton
+                    x:Name="CompactQueueButton"
+                    MinWidth="32"
+                    MinHeight="32"
+                    Margin="0,0,4,0"
+                    Padding="8,4"
+                    VerticalAlignment="Center"
+                    AutomationProperties.AutomationId="CompactQueueButton"
+                    AutomationProperties.Name="List layout"
+                    Click="CompactQueueButton_Click"
+                    IsChecked="{x:Bind ViewModel.QueueDisplay.IsCompact, Mode=OneWay}"
+                    IsEnabled="{x:Bind ViewModel.QueueDisplay.CanChangeLayout, Mode=OneWay}"
+                    ToolTipService.ToolTip="Compact queue">
                     <FontIcon VerticalAlignment="Center" FontSize="16" Glyph="&#xE8FD;" />
-                    <TextBlock VerticalAlignment="Center" Text="List" />
-                </StackPanel>
-            </ToggleButton>
-            <Button
-                x:Name="CountTextButton"
-                Margin="0,0,0,0"
-                VerticalAlignment="Center"
-                Background="Transparent"
-                BorderBrush="Transparent">
-                <TextBlock
-                    x:Name="CountText"
-                    Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"
-                    Text="No tracks in queue" />
-            </Button>
-            <Button
-                x:Name="ProgressTextButton"
-                Margin="0,0,0,0"
-                VerticalAlignment="Center"
-                Background="Transparent"
-                BorderBrush="Transparent"
-                Visibility="Collapsed">
-                <TextBlock x:Name="ProgressText" Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}" />
-            </Button>
-
-            <StackPanel
+                </ToggleButton>
+                <Button
+                    x:Name="CountTextButton"
+                    Margin="0,0,0,0"
+                    Padding="4"
+                    VerticalAlignment="Center"
+                    Background="Transparent"
+                    BorderBrush="Transparent">
+                    <TextBlock
+                        x:Name="CountText"
+                        Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"
+                        TextWrapping="Wrap"
+                        Text="No tracks" />
+                </Button>
+                <Button
+                    x:Name="ProgressTextButton"
+                    Margin="0,0,0,0"
+                    Padding="4"
+                    VerticalAlignment="Center"
+                    Background="Transparent"
+                    BorderBrush="Transparent"
+                    Visibility="Collapsed">
+                    <TextBlock x:Name="ProgressText" Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}" TextWrapping="Wrap" />
+                </Button>
+            </StackPanel>
+            <controls1:WrapPanel
+                x:Name="QueueToolbarActions"
+                Grid.Column="1"
                 HorizontalAlignment="Right"
                 Orientation="Horizontal"
-                Spacing="8">
+                HorizontalSpacing="8"
+                VerticalSpacing="8"
+                SizeChanged="QueueToolbar_SizeChanged">
                 <Button
                     x:Name="ConvertDialogOpenButton"
                     VerticalAlignment="Center"
@@ -164,6 +178,18 @@
                             FontSize="16"
                             Glyph="&#xE896;" />
                         <TextBlock Text="Download" />
+                    </StackPanel>
+                </Button>
+                <Button
+                    x:Name="CreatePlaylistButton"
+                    VerticalAlignment="Center"
+                    AutomationProperties.AutomationId="CreatePlaylistButton"
+                    AutomationProperties.Name="Upload playlist"
+                    ToolTipService.ToolTip="Create a playlist or add queued tracks to an existing playlist"
+                    Click="CreatePlaylistButton_Click">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <FontIcon FontSize="16" Glyph="&#xE898;" />
+                        <TextBlock Text="Upload" />
                     </StackPanel>
                 </Button>
                 <Button
@@ -215,8 +241,8 @@
                             Text="Stop" />
                     </StackPanel>
                 </Button>
-            </StackPanel>
-        </controls1:DockPanel>
+            </controls1:WrapPanel>
+        </Grid>
 
         <ProgressBar
             x:Name="QueueProgress"
@@ -284,16 +310,17 @@
                             </Border.Background>
                         </Border>
 
-                        <marqueeTextRns:MarqueeText
+                        <TextBlock
                             Grid.Row="0"
                             Grid.Column="1"
                             Margin="12,0,0,0"
+                            AutomationProperties.AutomationId="QueueCardTitle"
                             VerticalAlignment="Center"
-                            Behavior="Looping"
-                            Direction="Left"
                             FontFamily="Segoe UI Variable Display"
                             FontWeight="Semibold"
-                            RepeatBehavior="Forever"
+                            TextTrimming="CharacterEllipsis"
+                            MaxLines="1"
+                            ToolTipService.ToolTip="{x:Bind Title}"
                             Text="{x:Bind Title}" />
 
                         <Grid
@@ -308,14 +335,15 @@
                                 Margin="0,0,6,0"
                                 VerticalAlignment="Center"
                                 Visibility="{x:Bind Explicit, Converter={StaticResource VisibilityConverter}}" />
-                            <marqueeTextRns:MarqueeText
+                            <TextBlock
                                 Grid.Column="1"
+                                AutomationProperties.AutomationId="QueueCardArtists"
                                 VerticalAlignment="Center"
-                                Behavior="Looping"
-                                Direction="Left"
                                 FontFamily="Segoe UI Variable Display"
                                 Foreground="{ThemeResource TextFillColorSecondary}"
-                                RepeatBehavior="Forever"
+                                TextTrimming="CharacterEllipsis"
+                                MaxLines="1"
+                                ToolTipService.ToolTip="{x:Bind Artists}"
                                 Text="{x:Bind Artists}" />
                         </Grid>
 
@@ -628,10 +656,14 @@
             <StackPanel Spacing="12">
                 <InfoBar
                     x:Name="RestoreQueueDialogInfoBar"
+                    HorizontalContentAlignment="Stretch"
                     IsClosable="False"
                     IsOpen="True"
-                    Message="Restore from an automatic backup or import a user-created backup. Automatic backups are created on clear and can be enabled in settings.&#x0a;For manual backup, use browse to import and press export to create a backup for the current queue state."
-                    Severity="Informational" />
+                    Severity="Informational">
+                    <InfoBar.Content>
+                        <TextBlock x:Name="QueueBackupNoticeText" Style="{StaticResource DialogInfoBarTextStyle}" />
+                    </InfoBar.Content>
+                </InfoBar>
                 <ComboBox
                     x:Name="RestoreQueueBackupComboBox"
                     HorizontalAlignment="Stretch"
@@ -825,7 +857,7 @@
                                             </Grid.ColumnDefinitions>
                                             <Border Height="76" CornerRadius="4">
                                                 <Border.Background>
-                                                    <ImageBrush ImageSource="{x:Bind ImageLocation}" Stretch="UniformToFill" />
+                                                    <ImageBrush ImageSource="{x:Bind CoverSource, Mode=OneWay, Converter={StaticResource CoverImageConverter}}" Stretch="UniformToFill" />
                                                 </Border.Background>
                                             </Border>
 

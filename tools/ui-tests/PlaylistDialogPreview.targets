@@ -1,0 +1,9 @@
+<Project>
+  <!-- Opt-in, isolated UI-test build. Normal builds never compile the fake HTTP handler. -->
+  <PropertyGroup Condition="'$(MSBuildProjectName)' == 'FluentDL' And '$(FluentDLPlaylistUiPreview)' == 'true'">
+    <DefineConstants>$(DefineConstants);FLUENTDL_PLAYLIST_UI_TESTS</DefineConstants>
+  </PropertyGroup>
+  <ItemGroup Condition="'$(MSBuildProjectName)' == 'FluentDL' And '$(FluentDLPlaylistUiPreview)' == 'true'">
+    <Compile Include="$(MSBuildThisFileDirectory)PlaylistDialogTestSupport.cs" Link="PlaylistDialogTestSupport.cs" />
+  </ItemGroup>
+</Project>

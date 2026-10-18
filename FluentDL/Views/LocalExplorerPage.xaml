@@ -567,7 +567,7 @@
                     </InfoBar.OpacityTransition>
                     <InfoBar.Content>
                         <Grid x:Name="ConversionInfobarContent" VerticalAlignment="Center">
-                            <TextBlock x:Name="ConversionInfobarText" Margin="0,0,12,0" />
+                            <TextBlock x:Name="ConversionInfobarText" Style="{StaticResource DialogInfoBarTextStyle}" />
                             <ProgressBar
                                 x:Name="ConversionInfobarProgress"
                                 Margin="0,0,12,-8"
@@ -848,7 +848,7 @@
                     </InfoBar.OpacityTransition>
                     <InfoBar.Content>
                         <Grid x:Name="LyricsInfobarContent" VerticalAlignment="Center">
-                            <TextBlock x:Name="LyricsInfobarText" Margin="0,0,12,0" />
+                            <TextBlock x:Name="LyricsInfobarText" Style="{StaticResource DialogInfoBarTextStyle}" />
                             <ProgressBar
                                 x:Name="LyricsInfobarProgress"
                                 Margin="0,0,12,-8"

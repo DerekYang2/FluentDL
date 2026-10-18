@@ -7,15 +7,29 @@
     xmlns:local="using:CommunityToolkit.WinUI.Controls"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:ui="using:CommunityToolkit.WinUI.UI"
+    xmlns:viewModels="using:FluentDL.ViewModels"
+    xmlns:views="using:FluentDL.Views"
     xmlns:xaml="using:Microsoft.UI.Xaml"
     mc:Ignorable="d">
     <Page.Resources>
         <helpers:EnumToBooleanConverter x:Key="EnumToBooleanConverter" />
         <helpers:BooleanInverterConverter x:Key="BooleanInverterconverter" />
+        <helpers:SourceToColorConverter x:Key="SourceToColorConverter" />
         <Style x:Key="TextBlockSectionStyle" TargetType="TextBlock">
             <Setter Property="FontSize" Value="16" />
             <Setter Property="FontWeight" Value="SemiBold" />
         </Style>
+        <DataTemplate x:Key="ProviderCapabilityTemplate" x:DataType="viewModels:ProviderCapability">
+            <Grid ColumnSpacing="8" ToolTipService.ToolTip="{x:Bind Details, Mode=OneTime}" AutomationProperties.Name="{x:Bind Description, Mode=OneTime}">
+                <Grid.ColumnDefinitions><ColumnDefinition Width="8" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
+                <Grid VerticalAlignment="Center" Width="8" Height="8">
+                    <Ellipse Fill="{ThemeResource SystemFillColorSuccessBrush}" Visibility="{x:Bind views:SettingsPage.CapabilityVisible(IsReady), Mode=OneTime}" />
+                    <Ellipse Fill="{ThemeResource SystemFillColorCautionBrush}" Visibility="{x:Bind views:SettingsPage.CapabilityVisible(IsWarning), Mode=OneTime}" />
+                    <Ellipse Fill="{ThemeResource SystemFillColorCriticalBrush}" Visibility="{x:Bind views:SettingsPage.CapabilityVisible(IsUnavailable), Mode=OneTime}" />
+                </Grid>
+                <TextBlock Grid.Column="1" Text="{x:Bind Label, Mode=OneTime}" TextWrapping="Wrap" />
+            </Grid>
+        </DataTemplate>
     </Page.Resources>
     <Grid>
         <ScrollViewer Margin="0,0,0,12" Padding="0,0,16,0">
@@ -778,6 +792,54 @@
                     <!--  Auth SETTINGS __________________________________________________________________________________________________  -->
                     <TextBlock Style="{StaticResource TextBlockSectionStyle}" Text="Authentication" />
 
+                    <local:SettingsCard x:Name="ServiceSupportCard" Header="Service Access"
+                        Description="Hover over a cell for more details. Based on the accounts and credentials configured below."
+                        ContentAlignment="Vertical" HorizontalContentAlignment="Stretch">
+                        <local:SettingsCard.HeaderIcon>
+                            <FontIcon FontFamily="{ThemeResource SymbolThemeFontFamily}" Glyph="&#xE779;" />
+                        </local:SettingsCard.HeaderIcon>
+                        <StackPanel Spacing="12">
+                            <ScrollViewer HorizontalScrollBarVisibility="Auto" HorizontalScrollMode="Auto"
+                                VerticalScrollBarVisibility="Disabled" VerticalScrollMode="Disabled">
+                                <StackPanel MinWidth="788" Spacing="4">
+                                    <Grid Padding="8" ColumnSpacing="12">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="96" /><ColumnDefinition Width="140" /><ColumnDefinition Width="164" />
+                                            <ColumnDefinition Width="184" /><ColumnDefinition Width="140" />
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Text="Service" Style="{ThemeResource CaptionTextBlockStyle}" />
+                                        <TextBlock Grid.Column="1" Text="Search" Style="{ThemeResource CaptionTextBlockStyle}" />
+                                        <TextBlock Grid.Column="2" Text="Playlist URLs" Style="{ThemeResource CaptionTextBlockStyle}" />
+                                        <TextBlock Grid.Column="3" Text="Downloads" Style="{ThemeResource CaptionTextBlockStyle}" />
+                                        <TextBlock Grid.Column="4" Text="Playlist upload" Style="{ThemeResource CaptionTextBlockStyle}" />
+                                    </Grid>
+                                    <ItemsRepeater ItemsSource="{x:Bind ViewModel.ProviderCapabilities, Mode=OneWay}">
+                                        <ItemsRepeater.ItemTemplate>
+                                            <DataTemplate x:DataType="viewModels:ProviderCapabilityRow">
+                                                <Grid Padding="8" ColumnSpacing="12" AutomationProperties.Name="{x:Bind Description, Mode=OneTime}">
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="96" /><ColumnDefinition Width="140" /><ColumnDefinition Width="164" />
+                                                        <ColumnDefinition Width="184" /><ColumnDefinition Width="140" />
+                                                    </Grid.ColumnDefinitions>
+                                                    <StackPanel Orientation="Horizontal" Spacing="8">
+                                                        <Ellipse Width="8" Height="8" VerticalAlignment="Center"
+                                                            Fill="{x:Bind SourceId, Mode=OneTime, Converter={StaticResource SourceToColorConverter}}"
+                                                            Stroke="{ThemeResource ControlStrongStrokeColorDefaultBrush}" StrokeThickness="0.5" />
+                                                        <TextBlock Text="{x:Bind Provider, Mode=OneTime}" FontWeight="SemiBold" />
+                                                    </StackPanel>
+                                                    <ContentControl Grid.Column="1" Content="{x:Bind Search, Mode=OneTime}" ContentTemplate="{StaticResource ProviderCapabilityTemplate}" HorizontalContentAlignment="Stretch" />
+                                                    <ContentControl Grid.Column="2" Content="{x:Bind PlaylistUrls, Mode=OneTime}" ContentTemplate="{StaticResource ProviderCapabilityTemplate}" HorizontalContentAlignment="Stretch" />
+                                                    <ContentControl Grid.Column="3" Content="{x:Bind Downloads, Mode=OneTime}" ContentTemplate="{StaticResource ProviderCapabilityTemplate}" HorizontalContentAlignment="Stretch" />
+                                                    <ContentControl Grid.Column="4" Content="{x:Bind PlaylistUpload, Mode=OneTime}" ContentTemplate="{StaticResource ProviderCapabilityTemplate}" HorizontalContentAlignment="Stretch" />
+                                                </Grid>
+                                            </DataTemplate>
+                                        </ItemsRepeater.ItemTemplate>
+                                    </ItemsRepeater>
+                                </StackPanel>
+                            </ScrollViewer>
+                        </StackPanel>
+                    </local:SettingsCard>
+
                     <local:SettingsExpander
                         x:Name="DeezerExpander"
                         VerticalAlignment="Top"
@@ -785,16 +847,18 @@
                         Description="Sign into Deezer"
                         Header="Deezer">
                         <local:SettingsExpander.HeaderIcon>
-                            <FontIcon Glyph="&#xE72E;" />
+                            <FontIcon FontFamily="{ThemeResource SymbolThemeFontFamily}" Glyph="{x:Bind helpers:AuthenticationIcons.ProviderGlyph, Mode=OneTime}" />
                         </local:SettingsExpander.HeaderIcon>
                         <Grid HorizontalAlignment="Stretch">
-                            <Button x:Name="DeezerInfoButton" IsEnabled="False">
+                            <Button x:Name="DeezerInfoButton" AutomationProperties.Name="Deezer info">
                                 <Button.Flyout>
                                     <Flyout>
                                         <StackPanel>
-                                            <TextBlock Text="User Info" />
+                                            <TextBlock Text="Authentication" Style="{ThemeResource BodyStrongTextBlockStyle}" />
                                             <TextBlock
                                                 x:Name="DeezerInfoText"
+                                                Text="Loading authentication details..."
+                                                MaxWidth="480" TextWrapping="Wrap" IsTextSelectionEnabled="True"
                                                 Foreground="{ThemeResource TextFillColorSecondary}"
                                                 Style="{ThemeResource CaptionTextBlockStyle}" />
                                         </StackPanel>
@@ -805,8 +869,8 @@
                                         x:Name="DeezerInfoIcon"
                                         Margin="0,0,8,0"
                                         FontSize="16"
-                                        Glyph="&#xEA39;" />
-                                    <TextBlock x:Name="DeezerInfoButtonText" Text="Not Logged In" />
+                                        Glyph="&#xE946;" />
+                                    <TextBlock x:Name="DeezerInfoButtonText" Text="Info" />
                                 </StackPanel>
                             </Button>
                         </Grid>
@@ -842,7 +906,7 @@
                         HorizontalContentAlignment="Stretch"
                         Header="Qobuz">
                         <local:SettingsExpander.HeaderIcon>
-                            <FontIcon Glyph="&#xE72E;" />
+                            <FontIcon FontFamily="{ThemeResource SymbolThemeFontFamily}" Glyph="{x:Bind helpers:AuthenticationIcons.ProviderGlyph, Mode=OneTime}" />
                         </local:SettingsExpander.HeaderIcon>
                         <local:SettingsExpander.Description>
                             <TextBlock>
@@ -850,13 +914,15 @@
                                 &#8291;Use a fixed App ID/Secret to keep ID/Token working across Qobuz web player updates.</TextBlock>
                         </local:SettingsExpander.Description>
                         <Grid HorizontalAlignment="Stretch">
-                            <Button x:Name="QobuzInfoButton" IsEnabled="False">
+                            <Button x:Name="QobuzInfoButton" AutomationProperties.Name="Qobuz info">
                                 <Button.Flyout>
                                     <Flyout>
                                         <StackPanel>
-                                            <TextBlock Text="User Info" />
+                                            <TextBlock Text="Authentication" Style="{ThemeResource BodyStrongTextBlockStyle}" />
                                             <TextBlock
                                                 x:Name="QobuzInfoText"
+                                                Text="Loading authentication details..."
+                                                MaxWidth="480" TextWrapping="Wrap" IsTextSelectionEnabled="True"
                                                 Foreground="{ThemeResource TextFillColorSecondary}"
                                                 Style="{ThemeResource CaptionTextBlockStyle}" />
                                         </StackPanel>
@@ -867,8 +933,8 @@
                                         x:Name="QobuzInfoIcon"
                                         Margin="0,0,8,0"
                                         FontSize="16"
-                                        Glyph="&#xEA39;" />
-                                    <TextBlock x:Name="QobuzInfoButtonText" Text="Not Logged In" />
+                                        Glyph="&#xE946;" />
+                                    <TextBlock x:Name="QobuzInfoButtonText" Text="Info" />
                                 </StackPanel>
                             </Button>
                         </Grid>
@@ -974,16 +1040,18 @@
                                 (requires premium subscription). This method is more stable.</TextBlock>
                         </local:SettingsExpander.Description>
                         <local:SettingsExpander.HeaderIcon>
-                            <FontIcon Glyph="&#xE72E;" />
+                            <FontIcon FontFamily="{ThemeResource SymbolThemeFontFamily}" Glyph="{x:Bind helpers:AuthenticationIcons.ProviderGlyph, Mode=OneTime}" />
                         </local:SettingsExpander.HeaderIcon>
                         <Grid HorizontalAlignment="Stretch">
-                            <Button x:Name="SpotifyInfoButton" IsEnabled="False">
+                            <Button x:Name="SpotifyInfoButton" AutomationProperties.Name="Spotify info">
                                 <Button.Flyout>
                                     <Flyout>
                                         <StackPanel>
-                                            <TextBlock Text="User Info" />
+                                            <TextBlock Text="Authentication" Style="{ThemeResource BodyStrongTextBlockStyle}" />
                                             <TextBlock
                                                 x:Name="SpotifyInfoText"
+                                                Text="Loading authentication details..."
+                                                MaxWidth="480" TextWrapping="Wrap" IsTextSelectionEnabled="True"
                                                 Foreground="{ThemeResource TextFillColorSecondary}"
                                                 Style="{ThemeResource CaptionTextBlockStyle}" />
                                         </StackPanel>
@@ -994,18 +1062,41 @@
                                         x:Name="SpotifyInfoIcon"
                                         Margin="0,0,8,0"
                                         FontSize="16"
-                                        Glyph="&#xEA39;" />
-                                    <TextBlock x:Name="SpotifyInfoButtonText" Text="Not Logged In" />
+                                        Glyph="&#xE946;" />
+                                    <TextBlock x:Name="SpotifyInfoButtonText" Text="Info" />
                                 </StackPanel>
                             </Button>
                         </Grid>
                         <local:SettingsExpander.Items>
-                            <local:SettingsCard HorizontalContentAlignment="Stretch" Header="Private Playlist Prompt">
+                            <local:SettingsCard
+                                HorizontalContentAlignment="Stretch"
+                                Header="Client ID">
+                                <TextBox x:Name="ClientIdInput" Width="500" Margin="0,0,0,4" Header="Client ID" ToolTipService.ToolTip="Client ID">
+                                    <TextBox.HeaderTemplate>
+                                        <DataTemplate>
+                                            <TextBlock Margin="0,2,0,-2" Foreground="{ThemeResource TextFillColorSecondary}"
+                                                Style="{ThemeResource CaptionTextBlockStyle}" Text="{Binding}" />
+                                        </DataTemplate>
+                                    </TextBox.HeaderTemplate>
+                                </TextBox>
+                            </local:SettingsCard>
+                            <local:SettingsCard
+                                x:Name="ClientSecretCard"
+                                HorizontalContentAlignment="Stretch"
+                                Header="Client secret">
+                                <helpers:CustomPasswordBox x:Name="SpotifySecretInput" Width="500" VerticalAlignment="Center"
+                                    Header="Client secret" Tooltip="Spotify client secret" />
+                            </local:SettingsCard>
+                            <local:SettingsCard x:Name="SpotifyUpdateCard" HorizontalContentAlignment="Stretch" Header="Save changes">
+                                <Button x:Name="SpotifyUpdateButton" Click="SpotifyUpdateButton_Click" Content="Save" />
+                            </local:SettingsCard>
+                            <local:SettingsCard HorizontalContentAlignment="Stretch" Header="Sign in (optional)">
                                 <local:SettingsCard.Description>
                                     <StackPanel Spacing="4">
+                                        <TextBlock Text="Read private playlists and upload playlists." />
+                                        <TextBlock Text="Development Mode: add your account under Developer Dashboard &gt; your app &gt; Settings &gt; Users Management. The app owner needs Spotify Premium." TextWrapping="Wrap" />
                                         <TextBlock>
-                                            Optional: prompt for private playlist access using official API. Click&#32;<Hyperlink NavigateUri="https://github.com/DerekYang2/FluentDL/wiki/Authentication#about-playlists">here</Hyperlink>
-                                            for details. Add the URI below in your Spotify app redirect URIs:</TextBlock>
+                                            Add this redirect URI to your&#32;<Hyperlink NavigateUri="https://github.com/DerekYang2/FluentDL/wiki/Authentication#about-playlists">Spotify app</Hyperlink>:</TextBlock>
                                         <Border
                                             Padding="4,4"
                                             HorizontalAlignment="Left"
@@ -1036,53 +1127,7 @@
                                         </Border>
                                     </StackPanel>
                                 </local:SettingsCard.Description>
-                                <ToggleSwitch
-                                    x:Name="SpotifyPlaylistPromptToggle"
-                                    OffContent=""
-                                    OnContent=""
-                                    Toggled="SpotifyPlaylistPromptToggle_OnToggled" />
-                            </local:SettingsCard>
-                            <local:SettingsCard
-                                HorizontalContentAlignment="Stretch"
-                                Description="Enter your client ID string"
-                                Header="Client ID">
-                                <TextBox
-                                    x:Name="ClientIdInput"
-                                    Width="500"
-                                    Margin="0,0,0,4"
-                                    Header="Client ID"
-                                    ToolTipService.ToolTip="Client ID">
-                                    <TextBox.HeaderTemplate>
-                                        <DataTemplate>
-                                            <TextBlock
-                                                Margin="0,2,0,-2"
-                                                Foreground="{ThemeResource TextFillColorSecondary}"
-                                                Style="{ThemeResource CaptionTextBlockStyle}"
-                                                Text="{Binding}" />
-                                        </DataTemplate>
-                                    </TextBox.HeaderTemplate>
-                                </TextBox>
-                            </local:SettingsCard>
-                            <local:SettingsCard
-                                x:Name="ClientSecretCard"
-                                HorizontalContentAlignment="Stretch"
-                                Description="Enter your client secret string"
-                                Header="Client Secret">
-                                <helpers:CustomPasswordBox
-                                    x:Name="SpotifySecretInput"
-                                    Width="500"
-                                    VerticalAlignment="Center"
-                                    Header="Client secret"
-                                    Tooltip="Spotify client secret" />
-                            </local:SettingsCard>
-                            <local:SettingsCard
-                                x:Name="SpotifyUpdateCard"
-                                HorizontalContentAlignment="Stretch"
-                                Header="Save Changes">
-                                <Button
-                                    x:Name="SpotifyUpdateButton"
-                                    Click="SpotifyUpdateButton_Click"
-                                    Content="Save" />
+                                <Button x:Name="SpotifySignInButton" Content="Sign in" IsEnabled="False" Click="SpotifySignInButton_Click" />
                             </local:SettingsCard>
                         </local:SettingsExpander.Items>
                     </local:SettingsExpander>
@@ -1097,16 +1142,17 @@
                                 Sign in to download from TIDAL. Optional: if searches are rate limited, use your own&#32;<Hyperlink NavigateUri="https://developer.tidal.com/dashboard">developer app credentials</Hyperlink> for Search API access.</TextBlock>
                         </local:SettingsExpander.Description>
                         <local:SettingsExpander.HeaderIcon>
-                            <FontIcon Glyph="&#xE72E;" />
+                            <FontIcon FontFamily="{ThemeResource SymbolThemeFontFamily}" Glyph="{x:Bind helpers:AuthenticationIcons.ProviderGlyph, Mode=OneTime}" />
                         </local:SettingsExpander.HeaderIcon>
                         <Grid HorizontalAlignment="Stretch">
-                            <Button x:Name="TidalInfoButton" IsEnabled="False">
+                            <Button x:Name="TidalInfoButton" AutomationProperties.Name="TIDAL info">
                                 <Button.Flyout>
                                     <Flyout>
                                         <StackPanel>
-                                            <TextBlock Text="Status" />
+                                            <TextBlock Text="Authentication" Style="{ThemeResource BodyStrongTextBlockStyle}" />
                                             <TextBlock
                                                 x:Name="TidalInfoText"
+                                                Text="Loading authentication details..."
                                                 TextWrapping="Wrap"
                                                 IsTextSelectionEnabled="True"
                                                 MaxWidth="480"
@@ -1120,8 +1166,8 @@
                                         x:Name="TidalInfoIcon"
                                         Margin="0,0,8,0"
                                         FontSize="16"
-                                        Glyph="&#xEA39;" />
-                                    <TextBlock x:Name="TidalInfoButtonText" Text="Not Logged In" />
+                                        Glyph="&#xE946;" />
+                                    <TextBlock x:Name="TidalInfoButtonText" Text="Info" />
                                 </StackPanel>
                             </Button>
                         </Grid>
@@ -1129,28 +1175,33 @@
                             <Border Padding="16,10" Background="{ThemeResource CardBackgroundFillColorSecondaryBrush}">
                                 <!-- A local style stops SettingsExpander applying its SettingsCard style, which crashes on a Border. -->
                                 <Border.Style><Style TargetType="Border" /></Border.Style>
-                                <TextBlock Style="{ThemeResource BodyStrongTextBlockStyle}" Text="Downloads" />
+                                <TextBlock Style="{ThemeResource BodyStrongTextBlockStyle}" Text="Account" />
                             </Border>
-                            <local:SettingsCard x:Name="TidalDownloadAccountCard" Header="Download account" HorizontalContentAlignment="Stretch"
-                                Description="Sign in to download from TIDAL. Full tracks need a TIDAL subscription or trial.">
+                            <local:SettingsCard x:Name="TidalDownloadAccountCard" Header="Sign in" HorizontalContentAlignment="Stretch"
+                                Description="Use this account for full downloads, private playlist access and playlist uploads. Full tracks need a TIDAL subscription or trial. Catalog search and public links do not require this account sign-in.">
                                 <StackPanel Orientation="Horizontal" Spacing="8">
                                     <Border x:Name="TidalDownloadStatusBox" Padding="4" VerticalAlignment="Center"
                                         Background="{ThemeResource ControlFillColorSecondaryBrush}" CornerRadius="4">
                                         <TextBlock x:Name="TidalDownloadStatus" Margin="4,0" VerticalAlignment="Center" FontSize="12"
                                             IsTextSelectionEnabled="True" Text="Not signed in" />
                                     </Border>
-                                    <Button x:Name="TidalDownloadLoginButton" Content="Sign in for downloads" Click="TidalDownloadLogin_Click" />
+                                    <Button x:Name="TidalDownloadLoginButton" Content="Sign in" Click="TidalDownloadLogin_Click" />
                                 </StackPanel>
                             </local:SettingsCard>
                             <local:SettingsCard x:Name="TidalDownloadClientCard" Header="Override download client ID" HorizontalContentAlignment="Stretch"
-                                Description="Optional. Leave empty to use the default download client ID. Only change this if TIDAL downloads stop working.">
-                                <TextBox x:Name="TidalDownloadClientIdInput" Width="500" AutomationProperties.Name="TIDAL download client ID" />
+                                Description="Optional. Leave empty to use the default account sign-in client. This is separate from the Search API credentials.">
+                                <TextBox x:Name="TidalDownloadClientIdInput" Width="500" AutomationProperties.Name="TIDAL download client ID"
+                                    ToolTipService.ToolTip="An override must support PKCE with redirect URI https://tidal.com/android/login/auth" />
                             </local:SettingsCard>
 
                             <Border Padding="16,10" Background="{ThemeResource CardBackgroundFillColorSecondaryBrush}"
                                 BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="0,1,0,0">
                                 <Border.Style><Style TargetType="Border" /></Border.Style>
-                                <TextBlock Style="{ThemeResource BodyStrongTextBlockStyle}" Text="Search API (optional)" />
+                                <StackPanel Spacing="4">
+                                    <TextBlock Style="{ThemeResource BodyStrongTextBlockStyle}" Text="Search API (optional)" />
+                                    <TextBlock Style="{ThemeResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                        Text="Client credentials; no redirect URI required." />
+                                </StackPanel>
                             </Border>
                             <!-- API account sign-in (PKCE) is off for now. To bring it back, restore this card, the commented
                                  code in SettingsPage.xaml.cs, and default TidalApi.AccountLoginEnabled to true.

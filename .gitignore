@@ -19,3 +19,6 @@ FluentDL.Characterization.Tests/Baselines/*.actual.json
 /.vs/CopilotSnapshots/
 
 *.bak
+
+# Local research notes
+/research/

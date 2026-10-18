@@ -216,7 +216,8 @@ namespace FluentDL.Services.CustomSpotify
                     !content.TryGetProperty("items", out var itemsElement) ||
                     itemsElement.ValueKind != JsonValueKind.Array)
                 {
-                    yield break;
+                    throw new FluentDL.Contracts.Sources.SourceSignInRequiredException(FluentDL.Core.Sources.SourceIds.Spotify,
+                        "Spotify did not expose this playlist. If it is private, sign in through Settings and paste the link again.");
                 }
                 int count = 0;
                 foreach (var item in itemsElement.EnumerateArray())

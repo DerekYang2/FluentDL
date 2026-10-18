@@ -4,21 +4,35 @@ using FluentDL.Core.Contracts.Services;
 using FluentDL.Core.Sources;
 using FluentDL.Helpers;
 using FluentDL.Models;
+using FluentDL.Services.Playlists;
 
 namespace FluentDL.Services.Sources;
 
-internal sealed partial class DeezerSource : ISourceSession, ISearchSource, ILinkSource, IConversionTarget, ICatalogSource, IPreviewSource, IDownloadSource, ITagSource, IAlbumUpcSource
+internal sealed partial class DeezerSource : ISourceSession, ISearchSource, ILinkSource, IConversionTarget, ICatalogSource, IPreviewSource, IDownloadSource, ITagSource, IAlbumUpcSource, IPlaylistWriter
 {
     public SourceDescriptor Descriptor { get; } = SourceCatalog.Find(SourceIds.Deezer)!;
 
     private readonly ILocalSettingsService settings;
     private readonly IAudioConverter audioConverter;
+    private readonly DeezerPlaylistClient playlists;
 
-    public DeezerSource(ILocalSettingsService settings, IAudioConverter audioConverter)
+    public DeezerSource(ILocalSettingsService settings, IAudioConverter audioConverter) : this(settings, audioConverter, null) { }
+
+    internal DeezerSource(ILocalSettingsService settings, IAudioConverter audioConverter, DeezerPlaylistClient? playlistClient)
     {
         this.settings = settings;
         this.audioConverter = audioConverter;
+        playlists = playlistClient ?? new DeezerPlaylistClient(() => IsInitialized && deezerClient.GWApi.ActiveUserData?["checkForm"]?.ToString() is { Length: > 0 } apiToken
+            ? new(deezerClient.ActiveARL, deezerClient.SID, apiToken, deezerClient, deezerClient.GWApi.ActiveUserData!["USER"]!["USER_ID"]!.ToString()) : null);
     }
+
+    public IReadOnlyList<PlaylistVisibility> SupportedPlaylistVisibilities => DeezerPlaylistClient.Visibilities;
+    public string PlaylistSignInHint => "Sign in at Settings > Authentication > Deezer with your ARL.";
+    public int PlaylistNameMaxLength => 50;
+    public Task<IReadOnlyList<OwnedPlaylist>> GetOwnedPlaylistsAsync(CancellationToken token) => playlists.GetOwnedAsync(token);
+    public Task<IReadOnlyList<string>> GetPlaylistTrackIdsAsync(string playlistId, CancellationToken token) => playlists.GetOwnedTrackIdsAsync(playlistId, token);
+    public Task<bool> CanCreatePlaylistAsync(CancellationToken token) { token.ThrowIfCancellationRequested(); return Task.FromResult(playlists.CanCreate); }
+    public Task<PlaylistCreationResult> CreatePlaylistAsync(PlaylistCreationRequest request, IProgress<int>? progress, CancellationToken token) => playlists.CreateAsync(request, progress, token);
 
     public bool IsConnected => IsInitialized;
 

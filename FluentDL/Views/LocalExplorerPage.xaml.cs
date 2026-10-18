@@ -1060,13 +1060,26 @@ public sealed partial class LocalExplorerPage : Page
 
     // Lyrics dialog related methods ------------------------------------------------
 
+    private void ShowLyricsNotice(string message)
+    {
+        var text = LyricsDialog.IsPrimaryButtonEnabled
+            ? message + " Configure lyric downloads at " + SettingsNavigation.Link(SettingsSection.Lyrics) + "." : message;
+        UrlParser.ParseTextBlock(LyricsInfobarText, text, section =>
+        {
+            if (!LyricsDialog.IsPrimaryButtonEnabled) return;
+            shouldCloseLyrics = true;
+            LyricsDialog.Hide();
+            SettingsNavigation.Open(section);
+        });
+    }
+
     private async void LyricsDialogOpenButton_OnClick(object sender, RoutedEventArgs e)
     {
         LyricsDialog.XamlRoot = this.XamlRoot;
         if (LyricsInfobarProgress.Visibility == Visibility.Collapsed)
         {
             LyricsInfobar.Severity = InfoBarSeverity.Informational;
-            UrlParser.ParseTextBlock(LyricsInfobarText, "Download lyrics for tracks in Local Explorer. Configure lyric downloads in Settings.");
+            ShowLyricsNotice("Download lyrics for tracks in Local Explorer.");
         }
 
         await LyricsDialog.ShowAsync();
@@ -1074,12 +1087,15 @@ public sealed partial class LocalExplorerPage : Page
 
     private async void LyricsDialog_OnPrimaryButtonClick(ContentDialog sender, ContentDialogButtonClickEventArgs args)
     {
+        if (!LyricsDialog.IsPrimaryButtonEnabled) return;
+        LyricsDialog.IsPrimaryButtonEnabled = false;
         shouldCloseLyrics = false;
 
         if (LocalExplorerViewModel.OriginalList.Count == 0)
         {
             LyricsInfobar.Severity = InfoBarSeverity.Warning;
-            UrlParser.ParseTextBlock(LyricsInfobarText, "No tracks available. Configure lyric downloads in Settings.");
+            LyricsDialog.IsPrimaryButtonEnabled = true;
+            ShowLyricsNotice("No tracks available.");
             return;
         }
 
@@ -1089,12 +1105,13 @@ public sealed partial class LocalExplorerPage : Page
         if (!string.IsNullOrWhiteSpace(lyricsDirectorySetting) && !Directory.Exists(lyricsDirectorySetting))
         {
             LyricsInfobar.Severity = InfoBarSeverity.Warning;
-            UrlParser.ParseTextBlock(LyricsInfobarText, "Lyrics directory does not exist. Configure lyric downloads in Settings.");
+            LyricsDialog.IsPrimaryButtonEnabled = true;
+            ShowLyricsNotice("Lyrics directory does not exist.");
             return;
         }
 
         LyricsInfobar.Severity = InfoBarSeverity.Informational;
-        UrlParser.ParseTextBlock(LyricsInfobarText, $"Downloading <b>0 of {LocalExplorerViewModel.OriginalList.Count}</b> lyrics. Configure lyric downloads in Settings.");
+        ShowLyricsNotice($"Downloading <b>0 of {LocalExplorerViewModel.OriginalList.Count}</b> lyrics.");
         LyricsInfobarProgress.Visibility = Visibility.Visible;
         LyricsInfobarProgress.IsIndeterminate = true;
         LyricsDialog.IsPrimaryButtonEnabled = false;
@@ -1153,10 +1170,8 @@ public sealed partial class LocalExplorerPage : Page
         {
             LyricsInfobarProgress.Visibility = Visibility.Collapsed;
             LyricsInfobar.Severity = token.IsCancellationRequested ? InfoBarSeverity.Informational : InfoBarSeverity.Success;
-            UrlParser.ParseTextBlock(LyricsInfobarText, token.IsCancellationRequested
-                ? "Lyrics download cancelled. Configure lyric downloads in Settings."
-                : "Lyrics download complete. Configure lyric downloads in Settings.");
             LyricsDialog.IsPrimaryButtonEnabled = true;
+            ShowLyricsNotice(token.IsCancellationRequested ? "Lyrics download cancelled." : "Lyrics download complete.");
         });
     }
 
@@ -1168,8 +1183,8 @@ public sealed partial class LocalExplorerPage : Page
         {
             LyricsInfobarProgress.Visibility = Visibility.Collapsed;
             LyricsInfobar.Severity = InfoBarSeverity.Informational;
-            UrlParser.ParseTextBlock(LyricsInfobarText, "Lyrics download cancelled. Configure lyric downloads in Settings.");
             LyricsDialog.IsPrimaryButtonEnabled = true;
+            ShowLyricsNotice("Lyrics download cancelled.");
         });
     }
 

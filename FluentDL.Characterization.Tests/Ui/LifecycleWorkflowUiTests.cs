@@ -51,7 +51,7 @@ public class LifecycleWorkflowUiTests
                 WaitUntil(() => Find(dev, "RestoreQueueBackupComboBox").AsComboBox().SelectedItem?.Text.Contains("exported-queue") == true,
                     DefaultTimeout, "the imported file to be selected");
                 Invoke(Find(dev, "PrimaryButton"));
-                WaitUntil(() => Text(Find(dev, "CountText")) == "1 track, 1 album in queue", DefaultTimeout, "the exported queue to restore");
+                WaitUntil(() => Text(Find(dev, "CountText")) == Views.QueuePage.FormatQueueCount(1, 1), DefaultTimeout, "the exported queue to restore");
                 CollectionAssert.AreEqual(expected, WaitSaved(2));
             });
             PreviewEveryRow(dev, expected, "export-imported");

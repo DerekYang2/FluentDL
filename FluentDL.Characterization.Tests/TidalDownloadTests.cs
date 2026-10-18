@@ -169,8 +169,9 @@ public class TidalDownloadTests
     public void StatusSeparatelyLabelsCatalogAndDownloadAccounts()
     {
         var text = Views.SettingsPage.FormatTidalAccountInfo("catalog@example.test", "downloads@example.test", true, "Active");
-        StringAssert.Contains(text, "API:\ncatalog@example.test\nOnly searching.");
-        StringAssert.Contains(text, "Downloading:\ndownloads@example.test");
+        StringAssert.Contains(text, "Catalog access:\ncatalog@example.test");
+        StringAssert.Contains(text, "User account:\ndownloads@example.test");
+        Assert.IsFalse(text.Contains("Only searching."));
         StringAssert.Contains(text, "Subscription: Active");
         Assert.IsFalse(text.Contains("Direct downloads"), "Downloads have no on/off setting any more.");
     }
@@ -195,9 +196,10 @@ public class TidalDownloadTests
     public async Task SignedOutDownloadSaysToSignInWithoutCallingTidal()
     {
         var handler = new FakeHttp();
-        var error = await Assert.ThrowsExceptionAsync<TidalDownloadUnavailableException>(() =>
+        var error = await Assert.ThrowsExceptionAsync<FluentDL.Contracts.Sources.SourceSignInRequiredException>(() =>
             Client(new TidalParsingTests.DictionarySettings([]), handler).DownloadAsync("1", "unused", null));
-        StringAssert.Contains(error.Message, "Sign in for TIDAL downloads");
+        StringAssert.Contains(error.Message, "Settings > Authentication > TIDAL");
+        Assert.AreEqual(SourceIds.Tidal, error.SourceId);
         Assert.AreEqual(0, handler.RequestCount);
     }
 
@@ -358,14 +360,20 @@ public class TidalDownloadTests
         try
         {
             var track = new SongSearchObject { Source = SourceIds.Tidal, Id = "1", Title = "Track 1", Artists = "Artist" };
+            if (!fallback)
+            {
+                var required = await Assert.ThrowsExceptionAsync<FluentDL.Contracts.Sources.SourceSignInRequiredException>(() =>
+                    downloads.DownloadObject(track, folder, new Progress<ProgressData>(), (level, _, message) => reports.Add((level, message))));
+                Assert.AreEqual(SourceIds.Tidal, required.SourceId);
+                Assert.AreEqual(0, reports.Count, "Readiness failure must not mark queue rows as processed.");
+                Assert.AreEqual(0, Directory.GetFiles(folder).Length);
+                return;
+            }
             var path = await downloads.DownloadObject(track, folder, new Progress<ProgressData>(), (level, _, message) => reports.Add((level, message)));
             Assert.AreEqual(string.Empty, path);
             var errors = reports.Where(r => r.Level == StatusLevel.Error).Select(r => r.Message ?? "").ToArray();
             Assert.IsTrue(errors.Length > 0);
-            if (fallback)
-                Assert.IsFalse(errors.Any(m => m.Contains("Sign in")), "The equivalent route ran instead of reporting the sign-in.");
-            else
-                CollectionAssert.AreEqual(new[] { "Sign in for TIDAL downloads in Settings." }, errors, "Report why, like Deezer and Qobuz.");
+            Assert.IsFalse(errors.Any(m => m.Contains("Sign in")), "The equivalent route ran instead of reporting the sign-in.");
             Assert.AreEqual(0, Directory.GetFiles(folder).Length);
         }
         finally

@@ -15,6 +15,7 @@ public static class SettingKeys
     public const string QobuzAppSecret = "qobuz_app_secret";
     public const string SpotifyClientId = "spotify_client_Id";
     public const string SpotifyClientSecret = "spotify_client_secret";
+    public const string SpotifyUserSession = "spotify_user_session";
     public const string SpotifyPlaylistPrompt = "spotify_playlist_prompt";
     public const string TidalClientId = "tidal_client_id";
     public const string TidalClientSecret = "tidal_client_secret";

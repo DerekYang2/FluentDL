@@ -4,10 +4,11 @@ using FluentDL.Core.Helpers;
 using FluentDL.Core.Sources;
 using FluentDL.Models;
 using FluentDL.Services.CustomSpotify;
+using FluentDL.Services.Playlists;
 
 namespace FluentDL.Services.Sources;
 
-internal sealed partial class SpotifySource : ISourceSession, ISearchSource, ILinkSource, IConversionTarget, ICatalogSource, IPreviewSource, IIsrcSource, ITagSource
+internal sealed partial class SpotifySource : ISourceSession, ISearchSource, ILinkSource, IConversionTarget, ICatalogSource, IPreviewSource, IIsrcSource, ITagSource, IPlaylistWriter, IPlaylistAuthorization
 {
     private static readonly HttpClient httpClient = new();
 
@@ -17,13 +18,36 @@ internal sealed partial class SpotifySource : ISourceSession, ISearchSource, ILi
     // Web player mode clears spotifyWebService and spotifyISRCService and fills them again from these.
     private readonly ISpotifyWebService injectedWebService;
     private readonly ISpotifyISRCService injectedIsrcService;
+    private readonly SpotifyPlaylistClient playlists;
+    private readonly SpotifyUserSessionStore userSessions;
 
     public SpotifySource(ILocalSettingsService settings, ISpotifyWebService webService, ISpotifyISRCService isrcService)
     {
         this.settings = settings;
+        userSessions = new(settings);
         injectedWebService = webService;
         injectedIsrcService = isrcService;
+        playlists = new SpotifyPlaylistClient(() => userAuthorization is { CanWritePlaylists: true } auth && playlistUserId != null
+            ? new(playlistUserId, auth, auth.GetAccessTokenAsync) : null);
     }
+
+    public IReadOnlyList<PlaylistVisibility> SupportedPlaylistVisibilities => SpotifyPlaylistClient.Visibilities;
+    public string PlaylistSignInHint => "Sign in at Settings > Authentication > Spotify to upload playlists. Anonymous web-player and developer app access alone cannot write playlists.";
+    public int PlaylistNameMaxLength => 100;
+    public string NormalizePlaylistTrackId(string id) => id;
+    public async Task<bool> CanCreatePlaylistAsync(CancellationToken token)
+    {
+        var current = userAuthorization;
+        try { return await playlists.CanCreateAsync(token); }
+        catch (Exception error) when (error is PlaylistWriteRejected or System.Net.Http.HttpRequestException { StatusCode: System.Net.HttpStatusCode.Unauthorized })
+        {
+            if (ReferenceEquals(current, userAuthorization)) await ClearUserAuthorizationAsync();
+            return false;
+        }
+    }
+    public Task<IReadOnlyList<OwnedPlaylist>> GetOwnedPlaylistsAsync(CancellationToken token) => playlists.GetOwnedAsync(token);
+    public Task<IReadOnlyList<string>> GetPlaylistTrackIdsAsync(string id, CancellationToken token) => playlists.GetOwnedTrackIdsAsync(id, token);
+    public Task<PlaylistCreationResult> CreatePlaylistAsync(PlaylistCreationRequest request, IProgress<int>? progress, CancellationToken token) => playlists.CreateAsync(request, progress, token);
 
     public bool IsConnected => IsInitialized;
 
@@ -50,9 +74,7 @@ internal sealed partial class SpotifySource : ISourceSession, ISearchSource, ILi
         {
             return;
         }
-        // With the prompt on, private playlists open a browser sign-in.
-        var userLogin = await settings.ReadSettingAsync<bool>(SettingKeys.SpotifyPlaylistPrompt);
-        await AddTracksFromLink(results, url, token, status, userLogin, request.AlbumMode);
+        await AddTracksFromLink(results, url, token, status, request.AlbumMode);
     }
 
     // GetSpotifyTrack reads song.Isrc itself and never used a looked-up ISRC, so the passed one is ignored.

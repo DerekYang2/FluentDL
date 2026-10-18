@@ -132,6 +132,10 @@ public partial class App : Application
                     services.AddSource<YoutubeSource>();
             services.AddSingleton<FluentDL.Services.Tidal.TidalApi>();
             services.AddSingleton<FluentDL.Services.Tidal.TidalDownloadClient>();
+            services.AddSingleton<FluentDL.Services.Tidal.TidalPlaylistClient>();
+#if FLUENTDL_PLAYLIST_UI_TESTS
+            PlaylistDialogTestSupport.Register(services); // Compiled only by tools/ui-tests/PlaylistDialogPreview.targets.
+#endif
             services.AddSource<TidalSource>();
                     services.AddSingleton<SourceRegistry>();
                     services.AddSingleton<ConversionService>();

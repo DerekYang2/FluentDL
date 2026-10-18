@@ -21,7 +21,7 @@ internal sealed partial class DeezerSource
 {
     public static readonly string baseURL = "https://api.deezer.com";
     private DeezerClient deezerClient = new DeezerClient();
-    public RestHelper restClient = new RestHelper(baseURL, 5); // 5 seconds timeout
+    public RestHelper restClient = new RestHelper(baseURL, 30); // Catalog retries use a 30-second attempt timeout.
     public bool IsInitialized = false;
     private string? loginString = null;
     public bool IsPremium = false;
@@ -46,7 +46,7 @@ internal sealed partial class DeezerSource
                 {
                     IsInitialized = true;
 
-                    loginString = data?["OFFER_NAME"]?.ToString() ?? "Unknown Offer";
+                    loginString = $"Account ID: {userId}\n" + (data?["OFFER_NAME"]?.ToString() ?? "Unknown Offer");
 
                     // Sound quality (is lossless/320kbps available)
                     var soundQualityOptions = data?["USER"]?["OPTIONS"]?["web_sound_quality"];
@@ -109,7 +109,7 @@ internal sealed partial class DeezerSource
             }
 
             var trackId = url.Split('/').Last(); // Get the last part of the url
-            var songObj = await GetTrack(trackId);
+            var songObj = await GetTrack(trackId, token);
             if (songObj != null)
             {
                 list.Add(songObj);
@@ -156,7 +156,7 @@ internal sealed partial class DeezerSource
                         return;
                     }
 
-                    var songObj = await GetTrack(trackId.ToString());
+                    var songObj = await GetTrack(trackId.ToString(), token);
                     if (songObj != null)
                     {
                         list.Add(songObj);
@@ -185,7 +185,7 @@ internal sealed partial class DeezerSource
         req += $"%20&limit={limit}&index={offset}"; // Added limit and offset to the query 
         req = req.Replace("%28", "").Replace("%29", ""); // Remove brackets, causes issues occasionally for some reason
 
-        var jsonObject = await restClient.FetchJsonElement(req);
+        var jsonObject = await restClient.FetchJsonElement(req, token);
 
         foreach (var trackJson in jsonObject.GetProperty("data").EnumerateArray())
         {
@@ -195,7 +195,7 @@ internal sealed partial class DeezerSource
             }
 
             var trackId = trackJson.GetProperty("id").ToString();
-            var songObj = albumMode ? await GetAlbum(trackId) : await GetTrack(trackId);
+            var songObj = albumMode ? await GetAlbum(trackId, token) : await GetTrack(trackId, token);
             if (songObj != null)
             {
                 itemSource.Add(songObj);
@@ -263,10 +263,11 @@ internal sealed partial class DeezerSource
     /// <param name="isrc">The ISRC to match by first. ConversionService looks it up for songs that don't carry one.</param>
     public async Task<SongSearchObject?> GetDeezerTrack(SongSearchObject song, string? isrc, CancellationToken token = default, ConversionUpdateCallback? callback = null, bool onlyISRC = false)
     {
+        token.ThrowIfCancellationRequested();
         // Try to find by ISRC first
         if (isrc != null)
         {
-            var songObj = await GetTrackFromISRC(isrc);
+            var songObj = await GetTrackFromISRC(isrc, token);
 
             if (songObj != null)
             {
@@ -297,7 +298,7 @@ internal sealed partial class DeezerSource
         // Adds the results by one of the song's artists. False when cancelled.
         async Task<bool> AddCandidates(string req)
         {
-            var jsonObject = await restClient.FetchJsonElement(req); // Create json object from the response
+            var jsonObject = await restClient.FetchJsonElement(req, token); // Create json object from the response
             if (!jsonObject.TryGetProperty("data", out var dataElement))
             {
                 return true;
@@ -352,7 +353,7 @@ internal sealed partial class DeezerSource
             {
                 if (TextNormalization.PruneFeaturing(albumName).Replace(" ", "").Equals(TextNormalization.PruneFeaturing(songObj.AlbumName).Replace(" ", ""))) // If the album name is exact match
                 {
-                    var fullTrack = await GetTrack(songObj.Id);
+                    var fullTrack = await GetTrack(songObj.Id, token);
                     if (fullTrack != null)
                     {
                         callback?.Invoke(StatusLevel.Warning, fullTrack);
@@ -371,7 +372,7 @@ internal sealed partial class DeezerSource
 
         if (closeMatchObj != null)
         {
-            var fullTrack = await GetTrack(closeMatchObj.Id);
+            var fullTrack = await GetTrack(closeMatchObj.Id, token);
             if (fullTrack != null) // If the track was found
             {
                 callback?.Invoke(StatusLevel.Warning, fullTrack);
@@ -405,7 +406,7 @@ internal sealed partial class DeezerSource
 
         if (closeMatchObj != null)
         {
-            var fullTrack = await GetTrack(closeMatchObj.Id);
+            var fullTrack = await GetTrack(closeMatchObj.Id, token);
             if (fullTrack != null) // If the track was found
             {
                 callback?.Invoke(StatusLevel.Warning, fullTrack);
@@ -435,7 +436,7 @@ internal sealed partial class DeezerSource
         }
 
         var req = PlainSearchRequest(artistName, trackName, albumName) + $"&limit={limit}&index={offset}";
-        var jsonObject = await restClient.FetchJsonElement(req); // Create json object from the response
+        var jsonObject = await restClient.FetchJsonElement(req, token); // Create json object from the response
 
         foreach (var track in jsonObject.GetProperty("data").EnumerateArray())
         {
@@ -445,7 +446,7 @@ internal sealed partial class DeezerSource
             }
 
             var trackId = track.GetProperty("id").ToString();
-            var songObj = await GetTrack(trackId);
+            var songObj = await GetTrack(trackId, token);
             // The artist is only a search word, so results by other artists are dropped here. A page can come back
             // with fewer than `limit` tracks.
             if (songObj != null && (artistName.Length == 0 || FuzzyMatch.AnyArtistMatches(artistName, songObj.Artists)))
@@ -622,21 +623,21 @@ internal sealed partial class DeezerSource
         };
     }
 
-    public async Task<SongSearchObject?> GetTrack(string trackId)
+    public async Task<SongSearchObject?> GetTrack(string trackId, CancellationToken token = default)
     {
-        var jsonObject = await restClient.FetchJsonElement("track/" + trackId);
+        var jsonObject = await restClient.FetchJsonElement("track/" + trackId, token);
         return GetTrackFromJsonElement(jsonObject);
     }
 
-    public async Task<AlbumSearchObject?> GetAlbum(string albumId)
+    public async Task<AlbumSearchObject?> GetAlbum(string albumId, CancellationToken token = default)
     {
-        var jsonObject = await restClient.FetchJsonElement("album/" + albumId);
+        var jsonObject = await restClient.FetchJsonElement("album/" + albumId, token);
         return GetAlbumFromJsonElement(jsonObject);
     }
 
-    public async Task<SongSearchObject?> GetTrackFromISRC(string ISRC)
+    public async Task<SongSearchObject?> GetTrackFromISRC(string ISRC, CancellationToken token = default)
     {
-        var jsonObject = await restClient.FetchJsonElement("track/isrc:" + ISRC);
+        var jsonObject = await restClient.FetchJsonElement("track/isrc:" + ISRC, token);
         if (jsonObject.TryGetProperty("error", out var errorObj)) // Has an error field
         {
             Debug.WriteLine($"Error getting track {ISRC}: {errorObj}");
@@ -646,9 +647,9 @@ internal sealed partial class DeezerSource
         return GetTrackFromJsonElement(jsonObject);
     }
 
-    public async Task<AlbumSearchObject?> GetAlbumFromUPC(string UPC)
+    public async Task<AlbumSearchObject?> GetAlbumFromUPC(string UPC, CancellationToken token = default)
     {
-        var jsonObject = await restClient.FetchJsonElement("album/upc:" + UPC);
+        var jsonObject = await restClient.FetchJsonElement("album/upc:" + UPC, token);
         if (jsonObject.TryGetProperty("error", out var errorObj)) // Has an error field
         {
             Debug.WriteLine($"Error getting album {UPC}: {errorObj}");
@@ -657,7 +658,7 @@ internal sealed partial class DeezerSource
         return GetAlbumFromJsonElement(jsonObject);
     }
 
-    public Task<AlbumSearchObject?> GetAlbumByUpcAsync(string upc, CancellationToken token) => GetAlbumFromUPC(upc);
+    public Task<AlbumSearchObject?> GetAlbumByUpcAsync(string upc, CancellationToken token) => GetAlbumFromUPC(upc, token);
 
     public async Task<string> DownloadTrack(string filePath, SongSearchObject? song, DeezNET.Data.Bitrate? bitrateEnum = null, bool use128Fallback = false, IProgress<ProgressData>? progress = null)
     {

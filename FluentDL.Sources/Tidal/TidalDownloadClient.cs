@@ -6,6 +6,7 @@ using System.Text;
 using System.Text.Json;
 using FluentDL.Core.Contracts.Services;
 using FluentDL.Core.Sources;
+using FluentDL.Contracts.Sources;
 
 namespace FluentDL.Services.Tidal;
 
@@ -123,14 +124,14 @@ public sealed class TidalDownloadClient
     }
 
     /// <summary>
-    /// Downloads the full track. Throws <see cref="TidalDownloadUnavailableException"/> when TIDAL can't provide it:
-    /// signed out, an expired sign-in, playback denied, a preview only, or audio FluentDL can't save.
+    /// Downloads the full track. Missing or expired sign-in throws <see cref="SourceSignInRequiredException"/>.
+    /// Playback denial, preview-only access or unsupported audio throws <see cref="TidalDownloadUnavailableException"/>.
     /// </summary>
     public async Task<string> DownloadAsync(string trackId, string pathWithoutExtension, IProgress<ProgressData>? progress,
         CancellationToken token = default)
     {
         var account = await GetSessionAsync(token)
-            ?? throw new TidalDownloadUnavailableException("Sign in for TIDAL downloads in Settings.");
+            ?? throw new SourceSignInRequiredException(FluentDL.Core.Sources.SourceIds.Tidal, "Sign in at Settings > Authentication > TIDAL for full downloads.");
         var quality = await settings.ReadSettingAsync<string>(SettingKeys.TidalDownloadQuality) ?? "HI_RES_LOSSLESS";
         if (quality is not ("LOW" or "HIGH" or "LOSSLESS" or "HI_RES_LOSSLESS")) quality = "HI_RES_LOSSLESS";
         using var request = new HttpRequestMessage(HttpMethod.Get,
@@ -140,7 +141,7 @@ public sealed class TidalDownloadClient
         if (response.StatusCode == HttpStatusCode.Unauthorized)
         {
             await LogoutAsync();
-            throw new TidalDownloadUnavailableException("Your TIDAL download sign-in expired. Sign in again in Settings.");
+            throw new SourceSignInRequiredException(FluentDL.Core.Sources.SourceIds.Tidal, "Your TIDAL account sign-in expired. Sign in again at Settings > Authentication > TIDAL.");
         }
         if (response.StatusCode == HttpStatusCode.Forbidden)
             throw new TidalDownloadUnavailableException("TIDAL doesn't allow playing this track on this account or in this country.");
@@ -206,7 +207,12 @@ public sealed class TidalDownloadClient
         }
     }
 
-    private async Task<Session?> GetSessionAsync(CancellationToken token)
+    // Catalog requests share the download session, including its original OAuth client and refresh-token storage.
+    // A rejected access token forces one refresh, unless another caller already refreshed it.
+    internal Task<Session?> GetApiSessionAsync(CancellationToken token, string? rejectedAccessToken = null) =>
+        GetSessionAsync(token, rejectedAccessToken);
+
+    private async Task<Session?> GetSessionAsync(CancellationToken token, string? rejectedAccessToken = null)
     {
         await authLock.WaitAsync(token);
         try
@@ -227,7 +233,8 @@ public sealed class TidalDownloadClient
                     return null;
                 }
             }
-            if (session == null || session.Expires > DateTimeOffset.UtcNow.AddMinutes(5) && !string.IsNullOrEmpty(session.AccountName)) return session;
+            if (session == null || session.Expires > DateTimeOffset.UtcNow.AddMinutes(5)
+                && !string.IsNullOrEmpty(session.AccountName) && session.AccessToken != rejectedAccessToken) return session;
             try
             {
                 // Refresh under the original client, even if the Gist has since changed.

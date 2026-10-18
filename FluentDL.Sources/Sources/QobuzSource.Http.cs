@@ -9,12 +9,15 @@ using System.Runtime.Intrinsics.Arm;
 using System.Runtime.Intrinsics.X86;
 using System.Text;
 using System.Threading.Tasks;
+using FluentDL.Helpers;
+using System.Net;
 
 namespace FluentDL.Services.Sources
 {
     internal sealed partial class QobuzSource
     {
         private bool HttpClientInitialized = false;
+        internal ProviderRequestPolicy CatalogRequests { get; set; } = ProviderRequests.Qobuz;
         public const string BaseUrl = "https://www.qobuz.com/api.json/0.2";
         public enum EnumQobuzSearchType
         {
@@ -52,8 +55,7 @@ namespace FluentDL.Services.Sources
             // /playlist/get?playlist_id=2049430&extra=track_ids
             var requestUrl = $"{BaseUrl}/playlist/get?playlist_id={playlistId}&extra=track_ids";
 
-            using HttpRequestMessage request = new(HttpMethod.Get, requestUrl);
-            var response = await QobuzHttpClient.SendAsync(request, cancellationToken);
+            using var response = await CatalogRequests.SendAsync(QobuzHttpClient, () => new(HttpMethod.Get, requestUrl), cancellationToken);
             if (response?.IsSuccessStatusCode ?? false)
             {
                 var jsonResultString = await response.Content.ReadAsStringAsync(cancellationToken);
@@ -66,7 +68,8 @@ namespace FluentDL.Services.Sources
             return null;
         }
 
-        public async IAsyncEnumerable<T> ApiSearch<T>(string query, int offset = 0, int limit = 25, EnumQobuzSearchType searchType = EnumQobuzSearchType.None)
+        public async IAsyncEnumerable<T> ApiSearch<T>(string query, int offset = 0, int limit = 25, EnumQobuzSearchType searchType = EnumQobuzSearchType.None,
+            [EnumeratorCancellation] CancellationToken cancellationToken = default)
         {
             if (!HttpClientInitialized)
                 yield break;
@@ -96,12 +99,12 @@ namespace FluentDL.Services.Sources
                 int currentLimit = Math.Min(searchChunkSize, limit - offset);
                 var requestUrl = $"{BaseUrl}/{(isTrack ? "track" : "album")}/search?query={Uri.EscapeDataString(query)}{searchTypeString}&offset={offset}&limit={currentLimit}";
 
-                using HttpRequestMessage request = new(HttpMethod.Get, requestUrl);
-                var response = await QobuzHttpClient.SendAsync(request);
+                using var response = await CatalogRequests.SendAsync(QobuzHttpClient, () => new(HttpMethod.Get, requestUrl), cancellationToken);
+                response.EnsureSuccessStatusCode();
 
                 if (response?.IsSuccessStatusCode ?? false)
                 {
-                    var jsonResultString = await response.Content.ReadAsStringAsync();
+                    var jsonResultString = await response.Content.ReadAsStringAsync(cancellationToken);
                     if (string.IsNullOrWhiteSpace(jsonResultString))
                         yield break;
 
@@ -145,7 +148,7 @@ namespace FluentDL.Services.Sources
 
         // Qobuz has no ISRC lookup, only a text search, so a result counts only when its ISRC is the one asked for
         // (bug 8: the top result was returned unchecked, and the HTTP client was used before sign-in).
-        public async Task<Track?> SearchISRC(string isrc)
+        public async Task<Track?> SearchISRC(string isrc, CancellationToken cancellationToken = default)
         {
             if (!HttpClientInitialized)
             {
@@ -156,11 +159,11 @@ namespace FluentDL.Services.Sources
             {
                 var requestUrl = $"{BaseUrl}/track/search?query={Uri.EscapeDataString(isrc)}&limit=10";
 
-                using HttpRequestMessage request = new(HttpMethod.Get, requestUrl);
-                var response = await QobuzHttpClient.SendAsync(request);
+                using var response = await CatalogRequests.SendAsync(QobuzHttpClient, () => new(HttpMethod.Get, requestUrl), cancellationToken);
+                response.EnsureSuccessStatusCode();
                 if (response?.IsSuccessStatusCode ?? false) {
                 
-                    var jsonResultString = await response.Content.ReadAsStringAsync();
+                    var jsonResultString = await response.Content.ReadAsStringAsync(cancellationToken);
                     if (string.IsNullOrWhiteSpace(jsonResultString))
                         return null;
                     // Create JSON object from the response
@@ -180,15 +183,27 @@ namespace FluentDL.Services.Sources
                     if (jsonArray != null)
                     {
                         return jsonArray.Select(item => item.ToObject<Track>())
-                            .FirstOrDefault(track => string.Equals(track?.Isrc, isrc, StringComparison.OrdinalIgnoreCase));
+                            .FirstOrDefault(track => IsAvailableConversionTrack(track)
+                                && string.Equals(track!.Isrc, isrc, StringComparison.OrdinalIgnoreCase));
                     }
                 }
             }
+            catch (OperationCanceledException) { throw; }
             catch (Exception ex)
             {
                 Debug.WriteLine("Error searching ISRC: " + ex.ToString());
             }
             return null;
+        }
+
+        private async Task<T?> GetCatalogAsync<T>(string endpoint, CancellationToken token = default)
+        {
+            if (!HttpClientInitialized) return default;
+            using var response = await CatalogRequests.SendAsync(QobuzHttpClient,
+                () => new(HttpMethod.Get, BaseUrl + "/" + endpoint.TrimStart('/')), token);
+            if (response.StatusCode == HttpStatusCode.NotFound) return default;
+            response.EnsureSuccessStatusCode();
+            return JsonConvert.DeserializeObject<T>(await response.Content.ReadAsStringAsync(token));
         }
     }
 }
