@@ -148,7 +148,7 @@
                     AutomationProperties.Name="Open spectrogram"
                     Click="SpectrogramButton_Click"
                     Tag="{x:Bind Item, Mode=OneWay}"
-                    ToolTipService.ToolTip="Open with Spek"
+                    ToolTipService.ToolTip="View spectrogram"
                     Visibility="{x:Bind Item.Source, Mode=OneWay, Converter={StaticResource LocalSourceToVisibilityConverter}}">
                     <FontIcon FontSize="20" Glyph="&#xE9D2;" />
                 </Button>

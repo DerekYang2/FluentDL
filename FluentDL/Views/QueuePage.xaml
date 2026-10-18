@@ -62,7 +62,7 @@
                 x:Name="CompactQueueOpenSpekItem"
                 AutomationProperties.AutomationId="CompactQueueOpenSpek"
                 Click="OpenSpekButton_Click"
-                Text="Open with Spek" />
+                Text="View spectrogram" />
             <MenuFlyoutItem
                 x:Name="CompactQueueOpenLocalItem"
                 AutomationProperties.AutomationId="CompactQueueOpenLocal"
@@ -450,12 +450,14 @@
                                     Visibility="{x:Bind Source, Converter={StaticResource LocalSourceToVisibilityConverter}, Mode=OneWay}">
                                     <Button
                                         x:Name="OpenSpekButton"
+                                        AutomationProperties.AutomationId="QueueSpectrogram"
+                                        AutomationProperties.Name="Open spectrogram"
                                         Padding="4,4,3,3"
                                         HorizontalAlignment="Right"
                                         VerticalAlignment="Bottom"
                                         Click="OpenSpekButton_Click"
                                         Tag="{Binding}"
-                                        ToolTipService.ToolTip="Open with Spek">
+                                        ToolTipService.ToolTip="View spectrogram">
                                         <FontIcon FontSize="20" Glyph="&#xE9D2;" />
                                     </Button>
                                     <Button

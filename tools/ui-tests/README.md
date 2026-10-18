@@ -89,3 +89,19 @@ The Search download cases also check Local Explorer's count on its first visit, 
 ## Finding control names
 
 `UiProbe` (`TestCategory=UIProbe`) writes the dev app's UI Automation tree to `%TEMP%\opencode\fluentdl-ui-tree.txt`. WinUI uses `x:Name` as the AutomationId, so most named controls in the XAML are directly addressable. Flyouts and ContentDialogs only appear in the tree while open.
+
+## Spectrogram integration smoke test
+
+`Test-Spectrogram.ps1` checks the Spek.NET dialog with a generated local stereo FLAC. It requires WinApp CLI 0.7+ and no music-service credentials. Start a dev package in Sandbox, push a fixture with title `Spectrogram sample` into `C:\WinApp\work\SpekFixtures\spectrogram.flac`, then pass the guest PID and target together:
+
+```powershell
+pwsh .\tools\ui-tests\Test-Spectrogram.ps1 -Target sandbox -AppPid <guestPID> `
+    -FixturePath C:\WinApp\work\SpekFixtures\spectrogram.flac `
+    -ArtifactDirectory "$env:TEMP\opencode\spectrogram-results"
+```
+
+The script checks opening from Local Explorer, changing the palette, FFT size and channel, zoom/reset, selection, inspection options, PNG export, closing/reopening, and both queue layouts. Results and screenshots go to the chosen artifact folder. Review the screenshots as well as the assertions.
+
+The dialog uses the published Spek.NET.WinUI 0.3.0-preview.1 package. Its title stays left, with a right-aligned wrapping group of buttons and centered button labels. MP3 references, spectrum profile, cutoff marker and Reset zoom controls are below that header. The leftmost zoom percentage precedes fixed-width time, frequency and level fields. A two-axis minimap appears above 100% zoom and shows a progress ring during refinement. Initial analysis and completed refinement have no progress/ready text. The spectrum caption includes the selected passage's times or whole-track context without a duplicate footer row. Clear selection appears only while the profile is enabled and a time passage is selected. It restores whole-track inspection without changing zoom. Turning the profile off also clears the passage and its highlight. The dB fields use inline spinners rather than floating spinner popups.
+
+Matching axes show one zoom percentage, such as `Zoom: 150%`; different axes show `X: 150% / Y: 100%`. The minimap and readout keep separate space, including when Clear selection appears. Ctrl+scroll zooms time and frequency around the pointer; +/- still zooms around the center but is not advertised in the hint row. After a 350 ms pause, the control refines the visible time range in the background without changing the FFT size. Whole-file and light zoom views keep fast analysis. At 4× time zoom, refinement uses the detailed file-anchored grid. Reset zoom restores both axes and the cached overview. Save exports the current image without waiting for pending refinement.

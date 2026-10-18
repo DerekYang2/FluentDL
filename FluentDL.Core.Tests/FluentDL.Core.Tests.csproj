@@ -20,5 +20,6 @@
     <EmbeddedResource Include="..\FluentDL\Views\ExplicitBadge.xaml" LogicalName="ExplicitBadge.xaml" />
     <EmbeddedResource Include="..\FluentDL\Views\Search.xaml" LogicalName="Search.xaml" />
     <EmbeddedResource Include="..\FluentDL\Views\LocalExplorerPage.xaml" LogicalName="LocalExplorerPage.xaml" />
+    <EmbeddedResource Include="..\FluentDL\Views\SpectrogramDialog.xaml" LogicalName="SpectrogramDialog.xaml" />
   </ItemGroup>
 </Project>

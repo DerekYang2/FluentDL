@@ -170,3 +170,7 @@ See the [authentication wiki](https://github.com/DerekYang2/FluentDL/wiki/Authen
 Only needed for developers who wish to customize source code.
 
 To build and run the project on Visual Studio, see [development wiki](https://github.com/DerekYang2/FluentDL/wiki/Development).
+
+## License
+
+FluentDL is distributed under [GPL-3.0](LICENSE) with its Spek.NET spectrogram component. See the [third-party notices](FluentDL/THIRD-PARTY-NOTICES.md) for the component's source and the retained MIT notice for earlier code.
