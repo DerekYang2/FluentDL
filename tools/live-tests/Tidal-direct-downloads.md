@@ -1,10 +1,14 @@
 # TIDAL direct downloads
 
-The download client is a port of the single-file PKCE experiment. Open Settings under **TIDAL** and choose **Sign in for downloads** in the Downloads group. There is no on/off switch: a signed-in account downloads TIDAL tracks directly. The optional Search API group below only takes your own developer app's client ID and secret.
+The download client uses the single-file PKCE experiment's flow. Open Settings > Authentication > TIDAL and choose Sign in in the Account group. This account supports full downloads and playlist uploads. There is no automatic login prompt. When an action needs an account, its InfoBar contains a clickable Settings path. The optional Search API group below takes your own developer app's client ID and secret; catalog search and public links can work without an account sign-in.
+
+Search API client credentials do not use a redirect URI. Account sign-in is a separate PKCE flow with the fixed redirect `https://tidal.com/android/login/auth`, which the embedded dialog or browser fallback handles. Normal users do not need to register a redirect for this built-in account client. An optional account client-ID override must support that redirect and the existing PKCE flow; the Search API ID/secret fields do not configure it.
 
 The embedded browser catches the Android redirect. If it is blocked, choose **Open in my browser instead**, sign in, and paste the full Page not found address into the dialog. The address contains a short-lived authorization code. The app stores the resulting session with Windows DPAPI.
 
-The status button separates API and downloading identities. It displays the account email when TIDAL supplies one, or the username otherwise. Anonymous catalog access has no account email and instead identifies bundled or custom developer credentials. Download sign-in and sign-out messages identify the account. The account identity is part of the encrypted session, not the app log.
+The status button shows API and downloading identities. When signed in for downloads, official catalog requests prefer that same account token, including searches, metadata and previews. It displays the account email when TIDAL supplies one, or the username otherwise. Without a download session, catalog access uses the optional separate API account flow if enabled, then custom developer credentials, then bundled credentials. Anonymous catalog access has no account email. Download sign-in and sign-out messages identify the account. The account identity is part of the encrypted session, not the app log.
+
+Catalog requests use the same `TidalDownloadClient` instance as downloads, so the next request observes sign-in, sign-out and token refresh. Country settings still override the account's country. A revoked refresh token clears the download session and lets catalog requests use app credentials. An official API 401 forces one download-token refresh; if the refreshed token is also rejected, catalog access falls back without deleting a download session that may still work for audio. Permissions errors, rate limits and temporary refresh failures do not trigger a credential switch. Rate limits respect `Retry-After` with bounded retries. Sharing account tokens does not establish that TIDAL rate limits are per user rather than per client or IP.
 
 The download subscription check uses `premiumAccess`, not the account's `ACTIVE` status, which can also describe a free account. The UI reports Active, Not active or Unavailable. Active includes trial access and does not mean the user has been charged. Successful checks are cached for one minute.
 
@@ -31,6 +35,8 @@ A saved refresh token belongs to the client ID used to create it. Updating the G
 ## Verification
 
 `TidalDownloadTests` covers manifest ordering, returned codecs, encryption rejection, PKCE, refresh, Gist caching, the failure reasons with the fallback on and off, and partial-file cleanup without network access.
+
+`TidalCatalogSessionTests` covers account preference, sign-in/out changes without restarting, refresh under the original client ID, concurrent refresh, revoked sessions, catalog 401s, 403/429 responses, transient refresh failure and cancellation. `TidalCatalogLiveTests` uses `FLUENTDL_TIDAL_DOWNLOAD_TEST_SESSION` for an opt-in read-only check through the real source code. It disables app credentials and verifies search pagination, advanced search, metadata, covers, preview manifests, album/playlist paging and ISRC/UPC lookup. Any rotated session is saved back to the supplied encrypted test file; app settings are not touched.
 
 `TidalDirectLiveTests` is an explicit manual test. Set `FLUENTDL_TIDAL_DOWNLOAD_TEST_SESSION` to a file containing the DPAPI-protected download session before running it. It downloads a full track through DownloadService and checks the duration, bit depth and tags. The file must belong to the same Windows user. The normal test run does not need this session.
 
