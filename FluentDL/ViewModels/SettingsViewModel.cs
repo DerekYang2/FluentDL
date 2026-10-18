@@ -47,7 +47,6 @@ public partial class SettingsViewModel : ObservableRecipient
         AutoPlay = "auto_play",
         PreviewPlayerVolume = "preview_player_volume",
         NotifyUpdate = "notify_update",
-        SpotifyPlaylistPrompt = SettingKeys.SpotifyPlaylistPrompt,
         DownloadLyrics = "download_lyrics",
         LyricsPreference = "lyrics_preference",
         LyricsExtension = "lyrics_extension",
@@ -101,6 +100,10 @@ public partial class SettingsViewModel : ObservableRecipient
     private readonly IThemeSelectorService _themeSelectorService;
 
     public QueueDisplaySettings QueueDisplay { get; }
+    private IReadOnlyList<ProviderCapabilityRow> providerCapabilities = ProviderCapabilityRow.Create(new());
+    public IReadOnlyList<ProviderCapabilityRow> ProviderCapabilities => providerCapabilities;
+    public void UpdateProviderCapabilities(ProviderAccessSnapshot access) =>
+        SetProperty(ref providerCapabilities, ProviderCapabilityRow.Create(access), nameof(ProviderCapabilities));
 
     [ObservableProperty] private ElementTheme _elementTheme;
 
@@ -159,7 +162,6 @@ public partial class SettingsViewModel : ObservableRecipient
         await SaveSettingsAsyncIfNull<bool?>(AutoPlay, true);
         await SaveSettingsAsyncIfNull<double?>(PreviewPlayerVolume, 1.0);
         await SaveSettingsAsyncIfNull<bool?>(NotifyUpdate, true);
-        await SaveSettingsAsyncIfNull<bool?>(SpotifyPlaylistPrompt, false);
         await SaveSettingsAsyncIfNull<string?>(DownloadDirectory, null);
         await SaveSettingsAsyncIfNull<string?>(FFmpegPath, null);
         await SaveSettingsAsyncIfNull<string?>(YtdlpPath, null);

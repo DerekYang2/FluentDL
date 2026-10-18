@@ -66,6 +66,12 @@
         <Setter Property="FontFamily" Value="Segoe UI Variable Display" />
     </Style>
 
+    <Style x:Key="DialogInfoBarTextStyle" TargetType="TextBlock" BasedOn="{StaticResource BodyTextBlockStyle}">
+        <Setter Property="Margin" Value="0,14,16,14" />
+        <Setter Property="TextWrapping" Value="Wrap" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+
 
     <Style x:Key="HeaderText" TargetType="TextBlock">
         <Setter Property="FontSize" Value="16" />

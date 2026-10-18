@@ -80,6 +80,17 @@ public class QueueDisplayBindingTests
     }
 
     [TestMethod]
+    public void ConversionSummaryPrefersCachedCoversAndTracksBothImageInputs()
+    {
+        var summary = ReadMarkup("QueuePage.xaml").Descendants(Xaml + "ListView")
+            .Single(element => (string?)element.Attribute(X + "Name") == "ConversionListView");
+        var image = summary.Descendants(Xaml + "ImageBrush").Single();
+        Assert.AreEqual("{x:Bind CoverSource, Mode=OneWay, Converter={StaticResource CoverImageConverter}}",
+            (string?)image.Attribute("ImageSource"));
+        Assert.AreEqual("UniformToFill", (string?)image.Attribute("Stretch"));
+    }
+
+    [TestMethod]
     public void CompactRow_UpdatesEveryItemBinding_WhenTheRowIsRecycled()
     {
         // Arrange

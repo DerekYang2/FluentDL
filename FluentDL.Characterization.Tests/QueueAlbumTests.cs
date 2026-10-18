@@ -55,13 +55,25 @@ public class QueueAlbumTests
     }
 
     [TestMethod]
-    [DataRow(0, 0, "No tracks in queue")]
-    [DataRow(1, 0, "1 track in queue")]
-    [DataRow(12, 0, "12 tracks in queue")]
-    [DataRow(0, 1, "1 album in queue")]
-    [DataRow(3, 2, "3 tracks, 2 albums in queue")]
+    [DataRow(0, 0, "No tracks")]
+    [DataRow(1, 0, "1 track")]
+    [DataRow(12, 0, "12 tracks")]
+    [DataRow(0, 1, "1 album")]
+    [DataRow(0, 6, "6 albums")]
+    [DataRow(1, 1, "1 track, 1 album")]
+    [DataRow(1, 6, "1 track, 6 albums")]
+    [DataRow(20, 1, "20 tracks, 1 album")]
+    [DataRow(20, 6, "20 tracks, 6 albums")]
+    [DataRow(3, 2, "3 tracks, 2 albums")]
     public void CountTextNamesTracksAndAlbums(int tracks, int albums, string expected) =>
         Assert.AreEqual(expected, Views.QueuePage.FormatQueueCount(tracks, albums));
+
+    [TestMethod]
+    [DataRow(25, 1, 4, "25.0% (1 / 4)")]
+    [DataRow(25, 250, 1000, "25.0% (0250 / 1000)")]
+    [DataRow(100, 4, 4, "100% (4 / 4)")]
+    public void ConversionPercentUsesTheDownloadCountFormat(double percent, int completed, int total, string expected) =>
+        Assert.AreEqual(expected, DownloadProgressHelper.FormatCountedPercent(percent, completed, total));
 
     [TestMethod]
     public void EtaOnlyShowsForLongOperations()
@@ -70,10 +82,47 @@ public class QueueAlbumTests
         Assert.IsNull(eta.Update(0.5, TimeSpan.FromSeconds(4)), "Too early.");
         Assert.IsNull(eta.Update(0.02, TimeSpan.FromSeconds(60)), "Too little progress to estimate.");
         Assert.IsNull(eta.Update(0.5, TimeSpan.FromSeconds(20)), "20 s left is short; skip it.");
-        Assert.AreEqual("about 2 min left", eta.Update(0.2, TimeSpan.FromSeconds(30)));
-        Assert.AreEqual("about 20 s left", eta.Update(0.6, TimeSpan.FromSeconds(30)), "Once shown, it stays until under 10 s.");
+        Assert.AreEqual("Estimated time: 2 min 0 sec", eta.Update(0.2, TimeSpan.FromSeconds(30)));
+        Assert.AreEqual("Estimated time: 20 sec", eta.Update(0.6, TimeSpan.FromSeconds(30)), "Once shown, it stays until under 5 s.");
         Assert.IsNull(eta.Update(0.9, TimeSpan.FromSeconds(30)));
-        Assert.AreEqual("about 1 h 30 min left", EtaEstimator.Format(5400));
+        Assert.AreEqual("Estimated time: 1 h 30 min", EtaEstimator.Format(5400));
+    }
+
+    [TestMethod]
+    [DataRow(5, "Estimated time: 5 sec")]
+    [DataRow(5.1, "Estimated time: 6 sec")]
+    [DataRow(10, "Estimated time: 10 sec")]
+    [DataRow(54, "Estimated time: 54 sec")]
+    [DataRow(59.1, "Estimated time: 1 min 0 sec")]
+    [DataRow(64, "Estimated time: 1 min 4 sec")]
+    [DataRow(89, "Estimated time: 1 min 29 sec")]
+    [DataRow(90, "Estimated time: 1 min 30 sec")]
+    [DataRow(174, "Estimated time: 2 min 54 sec")]
+    [DataRow(3599, "Estimated time: 59 min 59 sec")]
+    [DataRow(3599.1, "Estimated time: 1 h 0 min")]
+    [DataRow(3600, "Estimated time: 1 h 0 min")]
+    [DataRow(5454, "Estimated time: 1 h 30 min")]
+    public void EtaUsesBriefEstimatedTimeWording(double seconds, string expected) =>
+        Assert.AreEqual(expected, EtaEstimator.Format(seconds));
+
+    [TestMethod]
+    public void EtaReappearsOnlyAfterTheEstimateReturnsToThirtySeconds()
+    {
+        var eta = new EtaEstimator();
+        Assert.IsNotNull(eta.Update(0.2, TimeSpan.FromSeconds(30)));
+        Assert.IsNull(eta.Update(0.9, TimeSpan.FromSeconds(40)));
+        Assert.IsNull(eta.Update(0.95, TimeSpan.FromSeconds(380)));
+        Assert.IsNotNull(eta.Update(0.96, TimeSpan.FromSeconds(1000)));
+    }
+
+    [TestMethod]
+    public void EtaRemainsVisibleAtFiveSecondsAndHidesBelowIt()
+    {
+        var eta = new EtaEstimator();
+        Assert.IsNotNull(eta.Update(0.2, TimeSpan.FromSeconds(30)));
+        Assert.AreEqual("Estimated time: 6 sec", eta.Update(0.9, TimeSpan.FromSeconds(54)), "Six seconds remaining stays visible.");
+        Assert.AreEqual("Estimated time: 5 sec", eta.Update(0.9375, TimeSpan.FromSeconds(75)), "Exactly five seconds remaining stays visible.");
+        Assert.IsNull(eta.Update(0.96, TimeSpan.FromSeconds(96)), "Four seconds remaining hides the estimate.");
     }
 
     [TestMethod]

@@ -547,6 +547,10 @@ public sealed partial class Search : Page
                         searchOffset += searchLimit;
                     }
                 }
+                catch (SourceSignInRequiredException error)
+                {
+                    ShowSignInRequired(error);
+                }
                 catch (OperationCanceledException)
                 {
                     // Stopped by the user; keep what loaded.
@@ -845,6 +849,9 @@ public sealed partial class Search : Page
             return;
         }
 
+        try { await downloads.EnsureDownloadAccessAsync([songObj]); }
+        catch (SourceSignInRequiredException error) { ShowSignInRequired(error); return; }
+
         // Create a folder picker (for download directory)
         var directory = await SettingsViewModel.GetSetting<string>(SettingsViewModel.DownloadDirectory);
 
@@ -854,7 +861,7 @@ public sealed partial class Search : Page
             directory = await StoragePickerHelper.GetDirectory();
             if (directory == null)
             {
-                ShowInfoBar(InfoBarSeverity.Warning, "No download directory selected", 3);
+                ShowSettingsNotice("No download directory selected.", SettingsSection.Downloads);
                 return;
             }
         }
@@ -885,7 +892,14 @@ public sealed partial class Search : Page
             try
             {
                 paths = await downloads.DownloadAlbum(albumObj, directory, progress);
-            } catch (Exception ex)
+            }
+            catch (SourceSignInRequiredException error)
+            {
+                downloadHelper.StopLoop();
+                ShowSignInRequired(error);
+                return;
+            }
+            catch (Exception ex)
             {
                 ShowInfoBar(InfoBarSeverity.Error, ex.Message, seconds: 10);
                 paths = null;  // Set to null (error happened)
@@ -942,7 +956,10 @@ public sealed partial class Search : Page
             var progress = new Progress<ProgressData>(downloadHelper.UpdateProgressLoop);
             downloadHelper.StartLoop();
 
-            string path = await downloads.DownloadObject(songObj, directory, progress, (severity, song, location) =>
+            string path;
+            try
+            {
+                path = await downloads.DownloadObject(songObj, directory, progress, (severity, song, location) =>
             {
                 dispatcher.TryEnqueue(() =>
                 {
@@ -968,8 +985,14 @@ public sealed partial class Search : Page
                         ShowInfoBar(severity.ToSeverity(), $"Downloaded a possible equivalent of <a href='{location}'>{songObj.Title}</a>", 10, buttonText: "View Download", onButtonClick: navigateLocalExplorer);
                     }
                 });
-            });
-
+                });
+            }
+            catch (SourceSignInRequiredException error)
+            {
+                downloadHelper.StopLoop();
+                ShowSignInRequired(error);
+                return;
+            }
             if (!string.IsNullOrWhiteSpace(path) && System.IO.File.Exists(path))
             {
                 try
@@ -988,6 +1011,19 @@ public sealed partial class Search : Page
                 InfobarProgress.Visibility = Visibility.Collapsed;
             }
         }
+    }
+
+    private RoutedEventHandler? infoBarClick;
+    private void ShowSignInRequired(SourceSignInRequiredException error)
+    {
+        if (SettingsNavigation.ForSource(error.SourceId) is not { } section) return;
+        ShowSettingsNotice(error.Message, section);
+    }
+
+    private void ShowSettingsNotice(string message, SettingsSection section)
+    {
+        ShowInfoBarPermanent(InfoBarSeverity.Warning, SettingsNavigation.WithLink(message, section), isIndeterminate: false);
+        InfobarProgress.Visibility = Visibility.Collapsed;
     }
 
     private void ShowInfoBar(InfoBarSeverity severity, string message, int seconds = 2, string title = "", string buttonText = "", Action? onButtonClick = null)
@@ -1011,14 +1047,14 @@ public sealed partial class Search : Page
                 UrlParser.ParseTextBlock(InfoBarTextBlock, message);
             }
 
+            if (infoBarClick != null) InfobarButton.Click -= infoBarClick;
+            infoBarClick = null;
             if (onButtonClick != null)
             {
                 InfobarButton.Visibility = Visibility.Visible;
                 InfobarButton.Content = buttonText;
-                InfobarButton.Click += (s, e) =>
-                {
-                    onButtonClick?.Invoke();
-                };
+                infoBarClick = (_, _) => onButtonClick();
+                InfobarButton.Click += infoBarClick;
             }
             else
             {
@@ -1031,6 +1067,7 @@ public sealed partial class Search : Page
 
     private void ShowInfoBarPermanent(InfoBarSeverity severity, string message, string title = "", string buttonText = "", Action? onButtonClick = null, bool isIndeterminate = true, double progressPercent = 0)
     {
+        dispatcherTimer.Stop();
         title = title.Trim();
         message = message.Trim();
         dispatcher.TryEnqueue(() =>
@@ -1051,14 +1088,14 @@ public sealed partial class Search : Page
                 UrlParser.ParseTextBlock(InfoBarTextBlock, message);
             }
 
+            if (infoBarClick != null) InfobarButton.Click -= infoBarClick;
+            infoBarClick = null;
             if (onButtonClick != null)
             {
                 InfobarButton.Visibility = Visibility.Visible;
                 InfobarButton.Content = buttonText;
-                InfobarButton.Click += (s, e) =>
-                {
-                    onButtonClick?.Invoke();
-                };
+                infoBarClick = (_, _) => onButtonClick();
+                InfobarButton.Click += infoBarClick;
             }
             else
             {

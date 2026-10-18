@@ -1,0 +1,159 @@
+<ContentDialog
+    x:Class="FluentDL.Views.CreatePlaylistDialog"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:FluentDL.Views"
+    xmlns:viewModels="using:FluentDL.ViewModels"
+    Title="Upload playlist"
+    Style="{StaticResource DefaultContentDialogStyle}"
+    HorizontalContentAlignment="Stretch"
+    AutomationProperties.AutomationId="CreatePlaylistDialog"
+    CloseButtonText="{x:Bind ViewModel.CloseText, Mode=OneWay}"
+    Closing="Dialog_Closing"
+    Closed="Dialog_Closed"
+    Opened="Dialog_Opened"
+    DefaultButton="Primary"
+    IsPrimaryButtonEnabled="{x:Bind ViewModel.CanUsePrimary, Mode=OneWay}"
+    PrimaryButtonText="{x:Bind ViewModel.PrimaryText, Mode=OneWay}"
+    PrimaryButtonStyle="{StaticResource AccentButtonStyle}"
+    PrimaryButtonClick="Dialog_PrimaryButtonClick">
+    <ContentDialog.Resources>
+        <x:Double x:Key="ContentDialogMaxWidth">520</x:Double>
+        <Style x:Key="PlaylistFieldLabelStyle" TargetType="TextBlock" BasedOn="{StaticResource CaptionTextBlockStyle}">
+            <Setter Property="Foreground" Value="{ThemeResource TextFillColorSecondaryBrush}" />
+        </Style>
+        <DataTemplate x:Key="PlaylistFieldHeaderTemplate">
+            <TextBlock Text="{Binding}" Style="{StaticResource PlaylistFieldLabelStyle}" />
+        </DataTemplate>
+    </ContentDialog.Resources>
+    <Grid x:Name="PlaylistContent" Width="440" RowSpacing="12">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+        <InfoBar
+            AutomationProperties.AutomationId="PlaylistStatus"
+            IsOpen="True"
+            IsClosable="False"
+            HorizontalContentAlignment="Stretch"
+            Severity="{x:Bind local:CreatePlaylistDialog.NoticeSeverity(ViewModel.Severity), Mode=OneWay}">
+            <InfoBar.Content>
+                <TextBlock x:Name="PlaylistStatusText" Style="{StaticResource DialogInfoBarTextStyle}" />
+            </InfoBar.Content>
+        </InfoBar>
+        <Grid Grid.Row="1">
+            <StackPanel Spacing="12" HorizontalAlignment="Stretch">
+                <StackPanel Spacing="12" Visibility="{x:Bind local:CreatePlaylistDialog.FormVisibility(ViewModel.HasResult), Mode=OneWay}">
+                    <ComboBox
+                        x:Name="PlaylistSourceInput"
+                        Header="Source"
+                        HeaderTemplate="{StaticResource PlaylistFieldHeaderTemplate}"
+                        AutomationProperties.AutomationId="PlaylistSource"
+                        HorizontalAlignment="Stretch"
+                        IsEnabled="{x:Bind ViewModel.CanChooseSource, Mode=OneWay}"
+                        ItemsSource="{x:Bind ViewModel.Destinations}"
+                        SelectedItem="{x:Bind ViewModel.SelectedDestination, Mode=TwoWay}">
+                        <ComboBox.ItemTemplate>
+                            <DataTemplate x:DataType="viewModels:PlaylistDestination">
+                                <TextBlock Text="{x:Bind DisplayName}" />
+                            </DataTemplate>
+                        </ComboBox.ItemTemplate>
+                    </ComboBox>
+                    <StackPanel Spacing="8">
+                        <TextBlock Text="Playlist" Style="{StaticResource PlaylistFieldLabelStyle}" />
+                        <Grid ColumnSpacing="8">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <ComboBox x:Name="PlaylistTargetInput" MinHeight="32" AutomationProperties.AutomationId="PlaylistTarget" AutomationProperties.Name="Playlist"
+                                HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
+                                IsEnabled="{x:Bind ViewModel.CanChoosePlaylist, Mode=OneWay}"
+                                ItemsSource="{x:Bind ViewModel.Playlists}" SelectedItem="{x:Bind ViewModel.SelectedPlaylist, Mode=TwoWay}">
+                                <ComboBox.ItemTemplate>
+                                    <DataTemplate x:DataType="viewModels:PlaylistChoice">
+                                        <TextBlock Text="{x:Bind DisplayName}" TextTrimming="CharacterEllipsis" ToolTipService.ToolTip="{x:Bind Details}" />
+                                    </DataTemplate>
+                                </ComboBox.ItemTemplate>
+                            </ComboBox>
+                            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Stretch">
+                                <Button x:Name="OpenSelectedPlaylistButton" MinHeight="32" VerticalAlignment="Stretch"
+                                    AutomationProperties.AutomationId="OpenSelectedPlaylist" AutomationProperties.Name="Open selected playlist"
+                                    ToolTipService.ToolTip="Open selected playlist"
+                                    Visibility="{x:Bind local:CreatePlaylistDialog.Visible(ViewModel.HasSelectedPlaylist), Mode=OneWay}"
+                                    IsEnabled="{x:Bind ViewModel.CanOpenSelectedPlaylist, Mode=OneWay}" Click="OpenSelectedPlaylist_Click">
+                                    <FontIcon Glyph="&#xE8A7;" FontSize="16" />
+                                </Button>
+                                <Button x:Name="RefreshPlaylistsButton" MinHeight="32" VerticalAlignment="Stretch" AutomationProperties.AutomationId="RefreshPlaylists"
+                                    AutomationProperties.Name="Refresh playlists" ToolTipService.ToolTip="Refresh playlists"
+                                    IsEnabled="{x:Bind ViewModel.CanRefreshPlaylists, Mode=OneWay}" Click="RefreshPlaylists_Click">
+                                    <FontIcon Glyph="&#xE72C;" FontSize="16" />
+                                </Button>
+                            </StackPanel>
+                        </Grid>
+                    </StackPanel>
+                    <StackPanel Spacing="8">
+                        <TextBlock Text="Preview changes" AutomationProperties.AutomationId="PlaylistPreviewHeader" Style="{StaticResource PlaylistFieldLabelStyle}" />
+                        <TextBlock AutomationProperties.AutomationId="PlaylistSummary" Text="{x:Bind ViewModel.Summary, Mode=OneWay}" TextWrapping="Wrap" />
+                    </StackPanel>
+                    <Grid RowSpacing="12" HorizontalAlignment="Stretch" Visibility="{x:Bind local:CreatePlaylistDialog.Visible(ViewModel.IsNewPlaylist), Mode=OneWay}">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+                        <TextBox
+                            x:Name="PlaylistNameInput"
+                            Header="Playlist name"
+                            HorizontalAlignment="Stretch"
+                            HeaderTemplate="{StaticResource PlaylistFieldHeaderTemplate}"
+                            AutomationProperties.AutomationId="PlaylistName"
+                            IsEnabled="{x:Bind ViewModel.CanEdit, Mode=OneWay}"
+                            MaxLength="{x:Bind ViewModel.NameMaxLength, Mode=OneWay}"
+                            Text="{x:Bind ViewModel.Name, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                        <TextBox
+                            x:Name="PlaylistDescriptionInput"
+                            Grid.Row="1"
+                            Header="Description (optional)"
+                            HorizontalAlignment="Stretch"
+                            HeaderTemplate="{StaticResource PlaylistFieldHeaderTemplate}"
+                            AutomationProperties.AutomationId="PlaylistDescription"
+                            IsEnabled="{x:Bind ViewModel.CanEdit, Mode=OneWay}"
+                            MaxLength="500"
+                            AcceptsReturn="True"
+                            MinHeight="48"
+                            MaxHeight="100"
+                            TextWrapping="Wrap"
+                            Text="{x:Bind ViewModel.Description, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                        <ComboBox
+                            x:Name="PlaylistVisibilityInput"
+                            Grid.Row="2"
+                            Header="Visibility"
+                            HeaderTemplate="{StaticResource PlaylistFieldHeaderTemplate}"
+                            AutomationProperties.AutomationId="PlaylistVisibility"
+                            HorizontalAlignment="Stretch"
+                            IsEnabled="{x:Bind ViewModel.CanEdit, Mode=OneWay}"
+                            ItemsSource="{x:Bind ViewModel.VisibilityOptions, Mode=OneWay}"
+                            SelectedIndex="{x:Bind ViewModel.VisibilityIndex, Mode=TwoWay}">
+                            <ComboBox.ItemTemplate>
+                                <DataTemplate x:DataType="viewModels:PlaylistVisibilityOption">
+                                    <TextBlock Text="{x:Bind DisplayName}" />
+                                </DataTemplate>
+                            </ComboBox.ItemTemplate>
+                        </ComboBox>
+                    </Grid>
+                </StackPanel>
+                <StackPanel Spacing="8" Visibility="{x:Bind local:CreatePlaylistDialog.Visible(ViewModel.HasResult), Mode=OneWay}">
+                    <TextBlock AutomationProperties.AutomationId="PlaylistResultLabel" Text="{x:Bind ViewModel.ResultLabel, Mode=OneWay}" Style="{StaticResource PlaylistFieldLabelStyle}" TextWrapping="Wrap" />
+                    <Border Padding="8" Background="{ThemeResource ControlFillColorSecondaryBrush}" CornerRadius="{ThemeResource ControlCornerRadius}">
+                        <TextBlock AutomationProperties.AutomationId="PlaylistResultName" IsTextSelectionEnabled="True"
+                            Text="{x:Bind ViewModel.ResultName, Mode=OneWay}" TextWrapping="Wrap" />
+                    </Border>
+                </StackPanel>
+                <ProgressBar
+                    AutomationProperties.AutomationId="PlaylistProgress"
+                    Visibility="{x:Bind local:CreatePlaylistDialog.Visible(ViewModel.IsBusy), Mode=OneWay}"
+                    IsIndeterminate="{x:Bind ViewModel.IsIndeterminate, Mode=OneWay}"
+                    Value="{x:Bind ViewModel.Percent, Mode=OneWay}" />
+            </StackPanel>
+        </Grid>
+    </Grid>
+</ContentDialog>

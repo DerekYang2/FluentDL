@@ -66,7 +66,7 @@ public class QueueConversionUiTests
             }
 
             Navigate(dev, "Queue");
-            WaitUntil(() => Text(Find(dev, "CountText")) == $"{Links.Length} tracks in queue", TimeSpan.FromSeconds(30), "the queue to fill");
+            WaitUntil(() => Text(Find(dev, "CountText")) == Views.QueuePage.FormatQueueCount(Links.Length, 0), TimeSpan.FromSeconds(30), "the queue to fill");
             state["Before"] = ReadQueueRows(dev);
         });
 
@@ -103,12 +103,12 @@ public class QueueConversionUiTests
     {
         Navigate(dev, "Queue");
         var count = Find(dev, "CountText");
-        if (Text(count) == "No tracks in queue") return;
+        if (Text(count) == "No tracks") return;
 
         Invoke(Find(dev, "ClearButton"));
         WaitUntil(() => FindAll(dev, cf => cf.ByControlType(ControlType.CheckBox)).Length > 0, DefaultTimeout, "the clear dialog's checkboxes");
         Invoke(Find(dev, "PrimaryButton"));
-        WaitUntil(() => Text(Find(dev, "CountText")) == "No tracks in queue", TimeSpan.FromSeconds(30), "the queue to clear");
+        WaitUntil(() => Text(Find(dev, "CountText")) == "No tracks", TimeSpan.FromSeconds(30), "the queue to clear");
     }
 
     // A track link loads one result; wait for it before adding. The previous link's row stays until replaced, and two

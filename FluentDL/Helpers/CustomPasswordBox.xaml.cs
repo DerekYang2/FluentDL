@@ -79,5 +79,11 @@ namespace FluentDL.Helpers
             get => PasswordBox.Password;
             set => PasswordBox.Password = value;
         }
+
+        public event RoutedEventHandler PasswordChanged
+        {
+            add => PasswordBox.PasswordChanged += value;
+            remove => PasswordBox.PasswordChanged -= value;
+        }
     }
 }

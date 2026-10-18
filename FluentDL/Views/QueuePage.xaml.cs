@@ -53,6 +53,7 @@ public sealed partial class QueuePage : Page
     private CancellationTokenSource cancellationTokenSource;
     private readonly ConversionService conversions = App.GetService<ConversionService>();
     private readonly DownloadService downloads = App.GetService<DownloadService>();
+    private bool playlistDialogOpen;
 
     // Conversion variables
     private ConcurrentDictionary<SongSearchObject, int> successSource, warningSource, errorSource;
@@ -290,11 +291,11 @@ public sealed partial class QueuePage : Page
 
     internal static string FormatQueueCount(int tracks, int albums)
     {
-        if (tracks == 0 && albums == 0) return "No tracks in queue";
+        if (tracks == 0 && albums == 0) return "No tracks";
         var parts = new List<string>();
         if (tracks > 0) parts.Add(tracks == 1 ? "1 track" : $"{tracks} tracks");
         if (albums > 0) parts.Add(albums == 1 ? "1 album" : $"{albums} albums");
-        return string.Join(", ", parts) + " in queue";
+        return string.Join(", ", parts);
     }
 
     private void OnQueueSourceChange()
@@ -302,6 +303,84 @@ public sealed partial class QueuePage : Page
         SetCountText();
         NoItemsText.Visibility = QueueViewModel.Source.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
         ClearButton.IsEnabled = QueueViewModel.Source.Count > 0;
+        dispatcherQueue.TryEnqueue(DispatcherQueuePriority.Low, UpdateQueueToolbarLayout);
+    }
+
+    private void QueueToolbar_SizeChanged(object sender, SizeChangedEventArgs e) => UpdateQueueToolbarLayout();
+    private bool updatingQueueToolbar;
+    private readonly Dictionary<Button, Thickness> queueActionPadding = [];
+    private readonly Dictionary<Button, (string Text, double FontSize, double Width)> queueLabelWidths = [];
+
+    private void UpdateQueueToolbarLayout()
+    {
+        if (QueueToolbarInfo == null || QueueToolbarActions == null || QueueToolbar.ActualWidth <= 0) return;
+        if (updatingQueueToolbar) return;
+        updatingQueueToolbar = true;
+        try
+        {
+            var countWidth = Math.Max(0, QueueToolbar.ActualWidth - CompactQueueButton.ActualWidth - 8);
+            CountTextButton.MaxWidth = countWidth;
+            ProgressTextButton.MaxWidth = countWidth;
+            var actions = QueueToolbarActions.Children.OfType<Button>().Where(child => child.Visibility == Visibility.Visible).ToList();
+            var fullWidth = 0d;
+            foreach (var button in actions)
+            {
+                if (!queueActionPadding.ContainsKey(button)) queueActionPadding.Add(button, button.Padding);
+                if (button.Content is not StackPanel panel || panel.Children.OfType<TextBlock>().FirstOrDefault() is not { } label) continue;
+                if (!queueLabelWidths.TryGetValue(button, out var measured) || measured.Text != label.Text || measured.FontSize != label.FontSize)
+                {
+                    var measure = new TextBlock { Text = label.Text, FontSize = label.FontSize, FontFamily = label.FontFamily, FontWeight = label.FontWeight };
+                    measure.Measure(new Windows.Foundation.Size(double.PositiveInfinity, double.PositiveInfinity));
+                    measured = (label.Text, label.FontSize, measure.DesiredSize.Width);
+                    queueLabelWidths[button] = measured;
+                }
+                var padding = queueActionPadding[button];
+                fullWidth += Math.Max(32, padding.Left + padding.Right + button.BorderThickness.Left + button.BorderThickness.Right + 16 + 8 + measured.Width);
+                Microsoft.UI.Xaml.Automation.AutomationProperties.SetAutomationId(button, button.Name);
+                if (string.IsNullOrEmpty(Microsoft.UI.Xaml.Automation.AutomationProperties.GetName(button)))
+                    Microsoft.UI.Xaml.Automation.AutomationProperties.SetName(button, label.Text);
+            }
+            fullWidth += Math.Max(0, actions.Count - 1) * 8;
+            var iconOnly = QueueToolbar.ActualWidth < fullWidth;
+            foreach (var button in actions)
+            {
+                if (button.Content is not StackPanel panel) continue;
+                foreach (var label in panel.Children.OfType<TextBlock>()) label.Visibility = iconOnly ? Visibility.Collapsed : Visibility.Visible;
+                foreach (var icon in panel.Children.OfType<FontIcon>()) icon.Margin = new Thickness(0);
+                panel.Spacing = iconOnly ? 0 : 8;
+                button.Padding = iconOnly ? new Thickness(8, 4, 8, 4) : queueActionPadding[button];
+                button.MinWidth = 32;
+            }
+            var actionWidth = iconOnly ? actions.Count * 32 + Math.Max(0, actions.Count - 1) * 8 : fullWidth;
+            var stacked = QueueToolbar.ActualWidth < QueueToolbarInfo.DesiredSize.Width + actionWidth + 8;
+            var row = stacked ? 1 : 0;
+            if (Grid.GetRow(QueueToolbarActions) == row) return;
+            // Keep icon-only actions together below the count if the first row still cannot fit them.
+            Grid.SetRow(QueueToolbarActions, row);
+            Grid.SetColumn(QueueToolbarActions, stacked ? 0 : 1);
+            Grid.SetColumnSpan(QueueToolbarActions, stacked ? 2 : 1);
+            Grid.SetColumnSpan(QueueToolbarInfo, stacked ? 2 : 1);
+            QueueToolbarActions.Margin = new Thickness(0, stacked ? 8 : 0, 0, 0);
+        }
+        finally { updatingQueueToolbar = false; }
+    }
+
+    private async void CreatePlaylistButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (playlistDialogOpen) return;
+        if (IsConverting)
+        {
+            ShowInfoBar(InfoBarSeverity.Warning, "Wait for the queue task to finish before creating a playlist.");
+            return;
+        }
+        playlistDialogOpen = true;
+        try
+        {
+            var model = new PlaylistDialogViewModel(App.GetService<SourceRegistry>().All<IPlaylistWriter>(), QueueViewModel.Source.ToArray());
+            var dialog = new CreatePlaylistDialog(model) { XamlRoot = XamlRoot, RequestedTheme = ActualTheme };
+            await dialog.ShowAsync();
+        }
+        finally { playlistDialogOpen = false; }
     }
 
     private void InitPreviewPanelButtons()
@@ -637,6 +716,14 @@ public sealed partial class QueuePage : Page
         RestoreQueueDialog.DefaultButton = ContentDialogButton.Primary;
         RestoreQueueBackupComboBox.ItemsSource = backupOptions;
         RestoreQueueBackupComboBox.SelectedIndex = -1;
+        UrlParser.ParseTextBlock(QueueBackupNoticeText,
+            "Restore an automatic backup or import a user-created backup. Configure automatic backups at "
+            + SettingsNavigation.Link(SettingsSection.Backups)
+            + ".\nUse Browse to import a backup, or Export to save the current queue.", section =>
+            {
+                RestoreQueueDialog.Hide();
+                SettingsNavigation.Open(section);
+            });
 
         await RestoreQueueDialog.ShowAsync();
     }
@@ -838,6 +925,7 @@ public sealed partial class QueuePage : Page
             PageInfoBar.IsOpen = true;
             PageInfoBar.Opacity = 1;
             PageInfoBar.Severity = severity;
+            PageInfoBar.ActionButton = null;
             InfoBarWidth.Update(InfobarContent, hold: false);
             //PageInfoBar.Title = title;
 
@@ -863,6 +951,7 @@ public sealed partial class QueuePage : Page
             PageInfoBar.IsOpen = true;
             PageInfoBar.Opacity = 1;
             PageInfoBar.Severity = severity;
+            PageInfoBar.ActionButton = null;
             InfoBarWidth.Update(InfobarContent, hold: IsConverting); // progress text changes during a run
 
             //PageInfoBar.Title = title;
@@ -903,6 +992,22 @@ public sealed partial class QueuePage : Page
                     Debug.WriteLine(ex.Message);
                 }
             });
+        });
+    }
+
+    private void ShowSignInRequired(SourceSignInRequiredException error)
+    {
+        if (SettingsNavigation.ForSource(error.SourceId) is not { } section) return;
+        ShowSettingsNotice(error.Message, section);
+    }
+
+    private void ShowSettingsNotice(string message, SettingsSection section)
+    {
+        dispatcherTimer.Stop();
+        ShowInfoBarPermanent(InfoBarSeverity.Warning, SettingsNavigation.WithLink(message, section));
+        dispatcherQueue.TryEnqueue(() =>
+        {
+            InfobarProgress.Visibility = Visibility.Collapsed;
         });
     }
 
@@ -1083,6 +1188,12 @@ public sealed partial class QueuePage : Page
             return;
         }
 
+        if (outputSource == SourceIds.Local)
+        {
+            try { await downloads.EnsureDownloadAccessAsync(songsToConvert.Select(item => (SongSearchObject)item.Song)); }
+            catch (SourceSignInRequiredException error) { ShowSignInRequired(error); return; }
+        }
+
         // Set download location if output is local and ask before download is enabled or download directory is not set
         var directory = await SettingsViewModel.GetSetting<string>(SettingsViewModel.DownloadDirectory);
         if (outputSource == SourceIds.Local && (await SettingsViewModel.GetSetting<bool>(SettingsViewModel.AskBeforeDownload) || string.IsNullOrWhiteSpace(directory)))
@@ -1090,7 +1201,7 @@ public sealed partial class QueuePage : Page
             directory = await StoragePickerHelper.GetDirectory();
             if (directory == null)
             {
-                ShowInfoBar(InfoBarSeverity.Warning, "No download directory selected", 3);
+                ShowSettingsNotice("No download directory selected.", SettingsSection.Downloads);
                 return;
             }
         }
@@ -1163,7 +1274,7 @@ public sealed partial class QueuePage : Page
             }
 
             // Prepare UI
-            DownloadAllButton.Visibility = ConvertDialogOpenButton.Visibility = ClearButton.Visibility = RestoreQueueButton.Visibility = Visibility.Collapsed; // Hide buttons
+            DownloadAllButton.Visibility = ConvertDialogOpenButton.Visibility = ClearButton.Visibility = RestoreQueueButton.Visibility = CreatePlaylistButton.Visibility = Visibility.Collapsed; // Hide buttons
             ConvertStopButton.Visibility = Visibility.Visible; // Show stop button
 
             // Other initialization
@@ -1304,7 +1415,7 @@ public sealed partial class QueuePage : Page
                                 QueueProgress.Value = 100.0 * processCaptured / totalCount; // Update the progress bar
                                 var eta = conversionEta.Update((double)processCaptured / totalCount, elapsedCaptured);
                                 ShowInfoBarPermanent(InfoBarSeverity.Informational,
-                                    $"Converting to {GetOutputSource()} \u2022 {processCaptured} of {totalCount}{(eta != null ? " \u2022 " + eta : "")}",
+                                    $"Converting to {GetOutputSource()} \u2022 {DownloadProgressHelper.FormatCountedPercent(QueueProgress.Value, processCaptured, totalCount)}{(eta != null ? " \u2022 " + eta : "")}",
                                     title: "Conversion in Progress");
                             }
                         });
@@ -1337,7 +1448,7 @@ public sealed partial class QueuePage : Page
                 QueueProgress.Value = 0;  // Ensures this happens after currently queued progress changes
             });
 
-            DownloadAllButton.Visibility = ConvertDialogOpenButton.Visibility = ClearButton.Visibility = RestoreQueueButton.Visibility = Visibility.Visible; // Show buttons
+            DownloadAllButton.Visibility = ConvertDialogOpenButton.Visibility = ClearButton.Visibility = RestoreQueueButton.Visibility = CreatePlaylistButton.Visibility = Visibility.Visible; // Show buttons
             ConvertStopText.Text = "Stop"; // Reset stop button text
             ConvertStopButton.Visibility = Visibility.Collapsed; // Hide stop button
             IsConverting = false;

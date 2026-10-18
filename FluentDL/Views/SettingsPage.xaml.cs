@@ -17,6 +17,7 @@ using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Controls.Primitives;
 using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
+using Microsoft.UI.Xaml.Navigation;
 using Microsoft.Extensions.Logging;
 using QobuzApiSharp.Service;
 using System.Diagnostics;
@@ -54,7 +55,10 @@ public sealed partial class SettingsPage : Page
 
         ViewModel = App.GetService<SettingsViewModel>();
         InitializeComponent();
+        ClientIdInput.TextChanged += (_, _) => UpdateSpotifySignInAvailability();
+        SpotifySecretInput.PasswordChanged += (_, _) => UpdateSpotifySignInAvailability();
         this.Loaded += SettingsPage_Loaded;
+        this.Unloaded += (_, _) => _spotifyLogin?.Cancel();
         // WinUI moves focus only to focusable controls, so clicking a card or the page background left a text box
         // focused. The page takes focus itself then, without a focus outline.
         IsTabStop = true;
@@ -68,7 +72,37 @@ public sealed partial class SettingsPage : Page
 
     private async void SettingsPage_Loaded(object sender, RoutedEventArgs e)
     {
+        if (_requestedSection is { } section) RevealSection(section);
         await InitializeAsync();
+    }
+
+    private SettingsSection? _requestedSection;
+    protected override void OnNavigatedTo(NavigationEventArgs e)
+    {
+        base.OnNavigatedTo(e);
+        _requestedSection = e.Parameter is SettingsSection section ? section : null;
+        if (IsLoaded && _requestedSection is { } requested) RevealSection(requested);
+    }
+
+    internal void RevealSection(SettingsSection section)
+    {
+        _requestedSection = section;
+        FrameworkElement element = section switch
+        {
+            SettingsSection.Spotify => SpotifyExpander,
+            SettingsSection.Tidal => TidalExpander,
+            SettingsSection.Deezer => DeezerExpander,
+            SettingsSection.Qobuz => QobuzExpander,
+            SettingsSection.Downloads => LocationCard,
+            SettingsSection.Lyrics => LyricsExpander,
+            SettingsSection.Backups => BackupExpander,
+            SettingsSection.FFmpeg => FFmpegExpander,
+            SettingsSection.Ytdlp => YtdlpExpander,
+            _ => throw new ArgumentOutOfRangeException(nameof(section)),
+        };
+        if (element is SettingsExpander expander) expander.IsExpanded = true;
+        UpdateLayout();
+        element.StartBringIntoView(new BringIntoViewOptions { AnimationDesired = false, VerticalAlignmentRatio = 0 });
     }
 
     private async Task InitializeAsync()
@@ -157,14 +191,16 @@ public sealed partial class SettingsPage : Page
         NotificationsToggle.IsOn = await localSettings.ReadSettingAsync<bool>(SettingsViewModel.Notifications);
         AutoPlayToggle.IsOn = await localSettings.ReadSettingAsync<bool>(SettingsViewModel.AutoPlay);
         NotifyUpdateToggle.IsOn = await localSettings.ReadSettingAsync<bool>(SettingsViewModel.NotifyUpdate);
-        SpotifyPlaylistPromptToggle.IsOn = await localSettings.ReadSettingAsync<bool>(SettingsViewModel.SpotifyPlaylistPrompt);
         AutoBackupToggle.IsOn = await localSettings.ReadSettingAsync<bool>(SettingsViewModel.AutoBackupEnabled);
         UseYtdlpToggle.IsOn = await localSettings.ReadSettingAsync<bool>(SettingsViewModel.UseYtdlp);
         AutoUpdateYtdlpToggle.IsOn = await localSettings.ReadSettingAsync<bool>(SettingsViewModel.AutoUpdateYtdlp);
 
         // Set Ids/Secrets
-        ClientIdInput.Text = (await localSettings.ReadSettingAsync<string?>(SettingsViewModel.SpotifyClientId)) ?? "";
-        SpotifySecretInput.Password = (await localSettings.ReadSettingAsync<string?>(SettingsViewModel.SpotifyClientSecret)) ?? "";
+        _spotifySavedClientId = (await localSettings.ReadSettingAsync<string?>(SettingsViewModel.SpotifyClientId)) ?? "";
+        _spotifySavedClientSecret = (await localSettings.ReadSettingAsync<string?>(SettingsViewModel.SpotifyClientSecret)) ?? "";
+        ClientIdInput.Text = _spotifySavedClientId;
+        SpotifySecretInput.Password = _spotifySavedClientSecret;
+        UpdateSpotifySignInAvailability();
         TidalClientIdInput.Text = await localSettings.ReadSettingAsync<string?>(SettingsViewModel.TidalClientId) ?? "";
         TidalSecretInput.Password = await localSettings.ReadSettingAsync<string?>(SettingsViewModel.TidalClientSecret) ?? "";
         TidalCountryInput.Text = await localSettings.ReadSettingAsync<string?>(SettingsViewModel.TidalCountry) ?? "";
@@ -281,66 +317,128 @@ public sealed partial class SettingsPage : Page
 
     private void SetDeezerAuthInfo(bool isInitialized)
     {
-        if (isInitialized)
-        {
-            DeezerInfoButton.IsEnabled = true;
-            DeezerInfoButtonText.Text = "Logged In";
-            DeezerInfoText.Text = Session(SourceIds.Deezer).StatusText ?? "No Info";
-            DeezerInfoIcon.Glyph = "\uE946";
-        }
-        else
-        {
-            DeezerInfoButton.IsEnabled = false;
-            DeezerInfoButtonText.Text = "Not Logged In";
-            DeezerInfoIcon.Glyph = "\uEA39";
-        }
+        DeezerInfoText.Text = isInitialized
+            ? "Authentication: ARL session\n" + (Session(SourceIds.Deezer).StatusText ?? "Signed in")
+            : "Account: not signed in\nAuthentication method: ARL session";
+        UpdateProviderCapabilities();
     }
 
     private void SetQobuzAuthInfo(bool isInitialized)
     {
-        if (isInitialized)
-        {
-            QobuzInfoButton.IsEnabled = true;
-            QobuzInfoButtonText.Text = "Logged In";
-            QobuzInfoText.Text = Session(SourceIds.Qobuz).StatusText ?? "No Info";
-            QobuzInfoIcon.Glyph = "\uE946";
-        }
-        else
-        {
-            QobuzInfoButton.IsEnabled = false;
-            QobuzInfoButtonText.Text = "Not Logged In";
-            QobuzInfoIcon.Glyph = "\uEA39";
-        }
+        QobuzInfoText.Text = isInitialized
+            ? "Authentication: user ID and token\n" + (Session(SourceIds.Qobuz).StatusText ?? "Signed in")
+            : "Account: not signed in\nAuthentication method: user ID and token";
+        UpdateProviderCapabilities();
     }
 
     private void SetSpotifyAuthInfo(bool isInitialized)
     {
-        if (isInitialized)
-        {
-            SpotifyInfoButton.IsEnabled = true;
-            SpotifyInfoButtonText.Text = "Logged In";
-            SpotifyInfoText.Text = Session(SourceIds.Spotify).StatusText ?? "No Info";
-            SpotifyInfoIcon.Glyph = "\uE946";
-        }
-        else
-        {
-            SpotifyInfoButton.IsEnabled = false;
-            SpotifyInfoButtonText.Text = "Not Logged In";
-            SpotifyInfoIcon.Glyph = "\uEA39";
-        }
+        var source = (SpotifySource)Session(SourceIds.Spotify);
+        var userSignedIn = source.IsSignedInForPlaylists;
+        if (_spotifyLogin == null)
+            SpotifySignInButton.Content = userSignedIn ? "Sign out" : "Sign in";
+        SpotifyInfoText.Text = FormatSpotifyAccountInfo(isInitialized ? source.StatusText ?? "Connected" : "Not connected",
+            userSignedIn ? source.UserAccountId ?? "Signed in" : null);
+        UpdateSpotifySignInAvailability();
+        UpdateProviderCapabilities();
     }
+
+    internal static string FormatSpotifyAccountInfo(string catalogIdentity, string? userAccount) =>
+        $"Catalog access:\n{catalogIdentity}\n\nUser account:\n{userAccount ?? "Not signed in"}";
 
     private async void SpotifyUpdateButton_Click(object sender, RoutedEventArgs e)
     {
-        if (SpotifyPlaylistPromptToggle.IsOn && (string.IsNullOrWhiteSpace(ClientIdInput.Text) || string.IsNullOrWhiteSpace(SpotifySecretInput.Password)))
+        if (_spotifySaving || _spotifyLogin != null) return;
+        var id = ClientIdInput.Text.Trim();
+        var secret = SpotifySecretInput.Password.Trim();
+        _spotifySaving = true;
+        SpotifyUpdateButton.IsEnabled = false;
+        UpdateSpotifySignInAvailability();
+        try
         {
-            ShowInfoBar(InfoBarSeverity.Warning, "Private playlist prompt requires Spotify client ID and client secret.", 4, "Spotify");
+            if (id != _spotifySavedClientId || secret != _spotifySavedClientSecret)
+                await ((SpotifySource)Session(SourceIds.Spotify)).ClearUserAuthorizationAsync();
+            await localSettings.SaveSettingAsync(SettingsViewModel.SpotifyClientId, id);
+            await localSettings.SaveSettingAsync(SettingsViewModel.SpotifyClientSecret, secret);
+            _spotifySavedClientId = id;
+            _spotifySavedClientSecret = secret;
+            ShowConnectResult(await Session(SourceIds.Spotify).ConnectAsync(), "Spotify", SetSpotifyAuthInfo);
+        }
+        catch (Exception)
+        {
+            _spotifySavedClientId = "";
+            _spotifySavedClientSecret = "";
+            ShowInfoBar(InfoBarSeverity.Error, "Could not save Spotify credentials.", 5, "Spotify");
+        }
+        finally
+        {
+            _spotifySaving = false;
+            SpotifyUpdateButton.IsEnabled = true;
+            UpdateSpotifySignInAvailability();
+        }
+    }
+
+    private string _spotifySavedClientId = "";
+    private string _spotifySavedClientSecret = "";
+    private bool _spotifySaving;
+
+    internal static bool SpotifyCredentialsMatch(string? savedId, string? savedSecret, string enteredId, string enteredSecret) =>
+        !string.IsNullOrWhiteSpace(savedId) && !string.IsNullOrWhiteSpace(savedSecret)
+        && savedId == enteredId.Trim() && savedSecret == enteredSecret.Trim();
+
+    private void UpdateSpotifySignInAvailability()
+    {
+        SpotifySignInButton.IsEnabled = !_spotifySaving && (_spotifyLogin != null
+            || ((SpotifySource)Session(SourceIds.Spotify)).IsSignedInForPlaylists
+            || SpotifyCredentialsMatch(_spotifySavedClientId, _spotifySavedClientSecret, ClientIdInput.Text, SpotifySecretInput.Password));
+    }
+
+    private CancellationTokenSource? _spotifyLogin;
+    private async void SpotifySignInButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (_spotifyLogin != null) { _spotifyLogin.Cancel(); return; }
+        var source = (SpotifySource)Session(SourceIds.Spotify);
+        if (source.IsSignedInForPlaylists)
+        {
+            try
+            {
+                await source.ClearUserAuthorizationAsync();
+                ShowInfoBar(InfoBarSeverity.Informational, "Signed out of Spotify playlist access.", 5, "Spotify");
+            }
+            catch (Exception)
+            {
+                ShowInfoBar(InfoBarSeverity.Error, "Signed out for this session, but FluentDL could not clear the saved Spotify sign-in. It may return after restarting the app.", 10, "Spotify");
+            }
+            SetSpotifyAuthInfo(source.IsConnected);
             return;
         }
-
-        await localSettings.SaveSettingAsync(SettingsViewModel.SpotifyClientId, ClientIdInput.Text.Trim());
-        await localSettings.SaveSettingAsync(SettingsViewModel.SpotifyClientSecret, SpotifySecretInput.Password.Trim());
-        ShowConnectResult(await Session(SourceIds.Spotify).ConnectAsync(), "Spotify", SetSpotifyAuthInfo);
+        var id = await localSettings.ReadSettingAsync<string>(SettingsViewModel.SpotifyClientId);
+        var secret = await localSettings.ReadSettingAsync<string>(SettingsViewModel.SpotifyClientSecret);
+        if (_spotifySaving || !SpotifyCredentialsMatch(id, secret, ClientIdInput.Text, SpotifySecretInput.Password))
+        {
+            _spotifySavedClientId = id ?? "";
+            _spotifySavedClientSecret = secret ?? "";
+            UpdateSpotifySignInAvailability();
+            return;
+        }
+        using var cancellation = _spotifyLogin = new CancellationTokenSource();
+        SpotifySignInButton.Content = "Cancel sign-in";
+        SpotifyUpdateButton.IsEnabled = false;
+        ShowInfoBar(InfoBarSeverity.Informational, "Complete authorization in your browser. For Development Mode, this Spotify account must be in Developer Dashboard > your app > Settings > Users Management.", 15, "Spotify");
+        try
+        {
+            var ready = await source.AuthorizePlaylistAsync(cancellation.Token);
+            ShowInfoBar(ready ? InfoBarSeverity.Success : InfoBarSeverity.Warning,
+                ready ? "Spotify user sign-in verified. Private playlists and playlist uploads are available."
+                    : "Spotify sign-in could not be verified. Check the saved credentials, redirect URI and Users Management allowlist. Browser consent alone is not enough.", 10, "Spotify");
+        }
+        catch (OperationCanceledException) { ShowInfoBar(InfoBarSeverity.Informational, "Spotify sign-in cancelled.", 4, "Spotify"); }
+        finally
+        {
+            _spotifyLogin = null;
+            SpotifyUpdateButton.IsEnabled = true;
+            SetSpotifyAuthInfo(source.IsConnected);
+        }
     }
 
     private CancellationTokenSource? _tidalLogin;
@@ -370,7 +468,7 @@ public sealed partial class SettingsPage : Page
             ? $"{_tidalDownloadAccount ?? "Saved account"}  ·  Subscription: {_tidalDownloadSubscription}"
             : "Not signed in";
         TidalDownloadStatusBox.Visibility = saved ? Visibility.Visible : Visibility.Collapsed;
-        TidalDownloadLoginButton.Content = saved ? "Sign out of downloads" : "Sign in for downloads";
+        TidalDownloadLoginButton.Content = saved ? "Sign out" : "Sign in";
         TidalDownloadLoginButton.IsEnabled = true;
         SetTidalAuthInfo(Session(SourceIds.Tidal).IsConnected);
     }
@@ -391,6 +489,7 @@ public sealed partial class SettingsPage : Page
             {
                 var account = _tidalDownloadAccount ?? "the download account";
                 await TidalDownloads.LogoutAsync();
+                await Session(SourceIds.Tidal).ConnectAsync();
                 ShowInfoBar(InfoBarSeverity.Informational, $"Signed out of TIDAL downloads for {account}.", 4, "TIDAL");
             }
             else
@@ -400,6 +499,7 @@ public sealed partial class SettingsPage : Page
                 await dialog.ShowAsync();
                 if (dialog.SignedIn)
                 {
+                    await Session(SourceIds.Tidal).ConnectAsync();
                     await UpdateTidalDownloadStatusAsync();
                     ShowInfoBar(InfoBarSeverity.Success, $"Signed in for TIDAL downloads as {_tidalDownloadAccount ?? "TIDAL account"}.", 5, "TIDAL");
                 }
@@ -451,26 +551,30 @@ public sealed partial class SettingsPage : Page
 
     private void SetTidalAuthInfo(bool isInitialized)
     {
-        var login = (IAccountLogin)Session(SourceIds.Tidal);
         var catalogStatus = isInitialized ? Session(SourceIds.Tidal).StatusText ?? "Connected" : "Not connected to the API.";
-        var apiIdentity = login.AccountName ?? (isInitialized ? catalogStatus.Split('\n')[0] : "Not signed in");
-        TidalInfoText.Text = FormatTidalAccountInfo(apiIdentity, _tidalDownloadAccount, _tidalDownloadSaved, _tidalDownloadSubscription);
-        if (isInitialized || _tidalDownloadSaved)
-        {
-            TidalInfoButton.IsEnabled = true;
-            TidalInfoButtonText.Text = isInitialized ? "Logged In" : "Downloads signed in";
-            TidalInfoIcon.Glyph = "\uE946";
-        }
-        else
-        {
-            TidalInfoButton.IsEnabled = false;
-            TidalInfoButtonText.Text = "Not Logged In";
-            TidalInfoIcon.Glyph = "\uEA39";
-        }
+        TidalInfoText.Text = FormatTidalAccountInfo(catalogStatus, _tidalDownloadAccount, _tidalDownloadSaved, _tidalDownloadSubscription);
+        UpdateProviderCapabilities();
     }
 
+    private void UpdateProviderCapabilities()
+    {
+        var deezer = (DeezerSource)Session(SourceIds.Deezer);
+        var qobuz = (QobuzSource)Session(SourceIds.Qobuz);
+        var spotify = (SpotifySource)Session(SourceIds.Spotify);
+        var qobuzAccess = qobuz.StreamingAccess;
+        ViewModel.UpdateProviderCapabilities(new(
+            DeezerSignedIn: deezer.IsConnected, DeezerLossless: deezer.IsPremium,
+            QobuzCatalog: qobuz.HasCatalogAccess, QobuzSignedIn: qobuz.IsConnected,
+            QobuzFullTracks: qobuzAccess.FullTracks, QobuzLossless: qobuzAccess.Lossless,
+            SpotifyCatalog: spotify.IsConnected, SpotifySignedIn: spotify.IsSignedInForPlaylists,
+            TidalCatalog: Session(SourceIds.Tidal).IsConnected, TidalSignedIn: _tidalDownloadSaved,
+            TidalSubscription: _tidalDownloadSubscription switch { "Active" => true, "Not active" => false, _ => null }));
+    }
+
+    public static Visibility CapabilityVisible(bool visible) => visible ? Visibility.Visible : Visibility.Collapsed;
+
     internal static string FormatTidalAccountInfo(string apiIdentity, string? downloadAccount, bool downloadSaved, string subscription) =>
-        $"API:\n{apiIdentity}\nOnly searching.\n\nDownloading:\n{(downloadSaved ? downloadAccount ?? "Saved account" : "Not signed in")}\nSubscription: {(downloadSaved ? subscription : "Not signed in")}";
+        $"Catalog access:\n{apiIdentity}\n\nUser account:\n{(downloadSaved ? downloadAccount ?? "Saved account" : "Not signed in")}\nSubscription: {(downloadSaved ? subscription : "Not signed in")}";
 
     private async void TidalUpdateButton_Click(object sender, RoutedEventArgs e)
     {
@@ -950,12 +1054,6 @@ public sealed partial class SettingsPage : Page
     {
         var isToggled = (sender as ToggleSwitch).IsOn;
         await localSettings.SaveSettingAsync(SettingsViewModel.NotifyUpdate, isToggled);
-    }
-
-    private async void SpotifyPlaylistPromptToggle_OnToggled(object sender, RoutedEventArgs e)
-    {
-        var isToggled = (sender as ToggleSwitch).IsOn;
-        await localSettings.SaveSettingAsync(SettingsViewModel.SpotifyPlaylistPrompt, isToggled);
     }
 
     private async void DownloadLyricsToggle_Toggled(object sender, RoutedEventArgs e)

@@ -2,21 +2,54 @@ using FluentDL.Contracts.Sources;
 using FluentDL.Core.Contracts.Services;
 using FluentDL.Core.Sources;
 using FluentDL.Models;
+using FluentDL.Services.Playlists;
 
 namespace FluentDL.Services.Sources;
 
-internal sealed partial class QobuzSource : ISourceSession, ISearchSource, ILinkSource, IConversionTarget, ICatalogSource, IPreviewSource, IDownloadSource, ITagSource
+internal sealed partial class QobuzSource : ISourceSession, ISearchSource, ILinkSource, IConversionTarget, ICatalogSource, IPreviewSource, IDownloadSource, ITagSource, IPlaylistWriter
 {
     public SourceDescriptor Descriptor { get; } = SourceCatalog.Find(SourceIds.Qobuz)!;
 
     private readonly ILocalSettingsService settings;
+    private readonly QobuzPlaylistClient playlists;
 
-    public QobuzSource(ILocalSettingsService settings)
+    public QobuzSource(ILocalSettingsService settings) : this(settings, null) { }
+
+    internal QobuzSource(ILocalSettingsService settings, QobuzPlaylistClient? playlistClient)
     {
         this.settings = settings;
+        playlists = playlistClient ?? new QobuzPlaylistClient(() => IsInitialized && loginResult != null && !string.IsNullOrEmpty(apiService.UserAuthToken)
+            ? new(apiService.AppId, apiService.UserAuthToken, apiService, loginResult.User.Id.ToString()) : null);
     }
 
+    public IReadOnlyList<PlaylistVisibility> SupportedPlaylistVisibilities => QobuzPlaylistClient.Visibilities;
+    public string PlaylistSignInHint => "Sign in at Settings > Authentication > Qobuz with your ID and token.";
+    public int PlaylistNameMaxLength => 250;
+    public Task<IReadOnlyList<OwnedPlaylist>> GetOwnedPlaylistsAsync(CancellationToken token) => playlists.GetOwnedAsync(token);
+    public Task<IReadOnlyList<string>> GetPlaylistTrackIdsAsync(string playlistId, CancellationToken token) => playlists.GetOwnedTrackIdsAsync(playlistId, token);
+    public Task<bool> CanCreatePlaylistAsync(CancellationToken token) { token.ThrowIfCancellationRequested(); return Task.FromResult(playlists.CanCreate); }
+    public Task<PlaylistCreationResult> CreatePlaylistAsync(PlaylistCreationRequest request, IProgress<int>? progress, CancellationToken token) => playlists.CreateAsync(request, progress, token);
+
     public bool IsConnected => IsInitialized;
+    internal bool HasCatalogAccess => HttpClientInitialized;
+    internal (bool FullTracks, bool Lossless) StreamingAccess
+    {
+        get
+        {
+            var rights = loginResult?.User?.Credential?.Parameters;
+            var subscription = loginResult?.User?.Subscription;
+            return EvaluateStreamingAccess(IsInitialized, rights?.LossyStreaming, rights?.LosslessStreaming, rights?.HiresStreaming,
+                subscription?.StartDate, subscription?.EndDate, DateTimeOffset.UtcNow);
+        }
+    }
+
+    internal static (bool FullTracks, bool Lossless) EvaluateStreamingAccess(bool signedIn, bool? lossy, bool? lossless, bool? hires,
+        DateTimeOffset? starts, DateTimeOffset? ends, DateTimeOffset now)
+    {
+        if (!signedIn || starts > now || ends <= now) return (false, false);
+        var fullLossless = lossless == true || hires == true;
+        return (lossy == true || fullLossless, fullLossless);
+    }
 
     public string? StatusText => LoginString();
 

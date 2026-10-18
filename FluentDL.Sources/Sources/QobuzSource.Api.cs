@@ -122,6 +122,8 @@ internal sealed partial class QobuzSource
         }
 
         string str = string.Empty;
+        str += "Account ID: " + loginResult.User.Id + "\n";
+        str += "App ID: " + apiService.AppId + "\n";
         str += "User Zone: " + loginResult.User.Zone + "\n";
         str += "Qobuz Credential Description: " + loginResult.User.Credential.Description + "\n";
 
@@ -143,8 +145,10 @@ internal sealed partial class QobuzSource
         }
         else
         {
-            str += "No active subscriptions, only sample downloads possible!";
+            str += "Subscription: none";
         }
+        var access = StreamingAccess;
+        str += "\nStreaming entitlement: " + (access.Lossless ? "lossless" : access.FullTracks ? "lossy only" : "not enabled");
         return str;
     }
 

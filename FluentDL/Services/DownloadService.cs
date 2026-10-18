@@ -35,6 +35,13 @@ public sealed class DownloadService(SourceRegistry sources, EquivalentDownloader
     /// </summary>
     internal static bool TidalEquivalentFallback { get; set; } = false;
 
+    public async Task EnsureDownloadAccessAsync(IEnumerable<SongSearchObject> tracks, CancellationToken token = default)
+    {
+        if (!TidalEquivalentFallback && tracks.Any(track => track.Source == SourceIds.Tidal)
+            && (tidalDownloads == null || await tidalDownloads.GetApiSessionAsync(token) == null))
+            throw new SourceSignInRequiredException(SourceIds.Tidal, "Sign in to TIDAL through Settings before downloading full tracks or albums.");
+    }
+
     private static string GetTrackSubfolderPath(SongSearchObject song, string baseDirectory, string? trackWildcard)
     {
         var wildCardStr = trackWildcard;
@@ -247,7 +254,7 @@ public sealed class DownloadService(SourceRegistry sources, EquivalentDownloader
                             : throw new Tidal.TidalDownloadUnavailableException("TIDAL downloads aren't available in this build.");
                         direct = true;
                     }
-                    catch (Tidal.TidalDownloadUnavailableException e) when (TidalEquivalentFallback)
+                    catch (Exception e) when (TidalEquivalentFallback && e is Tidal.TidalDownloadUnavailableException or SourceSignInRequiredException)
                     {
                         Log.Information("TIDAL direct download unavailable; using an equivalent: {Reason}", e.Message);
                     }
@@ -267,7 +274,13 @@ public sealed class DownloadService(SourceRegistry sources, EquivalentDownloader
 
                 callback?.Invoke(StatusLevel.Error, song); // Null - error
                 Log.Error("{Provider} equivalent-track download returned no result", catalogOnly.Descriptor.DisplayName);
-            } catch (Exception e)
+            }
+            catch (SourceSignInRequiredException)
+            {
+                downloadTcs.TrySetResult(false);
+                throw;
+            }
+            catch (Exception e)
             {
                 Log.Error(e, "{Provider} equivalent-track download or post-processing failed", catalogOnly.Descriptor.DisplayName);
                 callback?.Invoke(StatusLevel.Error, song, e.Message);
@@ -284,6 +297,7 @@ public sealed class DownloadService(SourceRegistry sources, EquivalentDownloader
 
     public async Task<string> DownloadObject(SongSearchObject song, string directory, IProgress<ProgressData> progress, ConversionUpdateCallback? callback = default)
     {
+        await EnsureDownloadAccessAsync([song]);
         // Resolve a lightweight YouTube row before folder templates as well as the filename use its year.
         if (song.Source == SourceIds.YouTube && string.IsNullOrWhiteSpace(song.ReleaseDate)
             && sources.TryGet<ICatalogSource>(song.Source, out var youtubeCatalog))
@@ -327,6 +341,7 @@ public sealed class DownloadService(SourceRegistry sources, EquivalentDownloader
 
     public async Task<List<string>> DownloadAlbum(AlbumSearchObject album, string directory, IProgress<ProgressData> progress, ConversionUpdateCallback? callback = default)
     {
+        await EnsureDownloadAccessAsync([album]);
         var originalDirectory = directory;
         bool createAlbumSubfolder = await SettingsViewModel.GetSetting<bool>(SettingsViewModel.AlbumSubfolders);
         var createTrackSubfolder = await SettingsViewModel.GetSetting<bool>(SettingsViewModel.Subfolders);

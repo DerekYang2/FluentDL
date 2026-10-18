@@ -74,7 +74,7 @@ public class SourceUiTests
                 Navigate(dev, "Queue");
                 var queueText = WaitForStable(() => Text(Find(dev, "CountText")), TimeSpan.FromSeconds(2), TimeSpan.FromSeconds(20), "queue count");
                 // YouTube's count varies (see below), so check the queue against what was added instead of a fixed number.
-                state["QueueCountEqualsAddedResults"] = queueText == $"{added} tracks in queue";
+                state["QueueCountEqualsAddedResults"] = queueText == Views.QueuePage.FormatQueueCount(added, 0);
                 Console.WriteLine($"Expected queue: {added}; actual: {queueText}");
                 state["ConversionDialog"] = ReadConversionDialog(dev);
                 state["ClearDialog"] = ReadClearDialog(dev);

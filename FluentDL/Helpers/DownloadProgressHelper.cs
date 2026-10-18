@@ -130,8 +130,8 @@ internal class ValueDamper
 }
 
 /// <summary>
-/// "About 3 min left" for long operations. The estimate uses the average rate since the start, so it does not swing
-/// with each burst. It appears only after 5 s and 5% progress, when at least 30 s remain, and hides below 10 s.
+/// Estimates time remaining from elapsed time and overall progress. It appears after 5 s and 5% progress,
+/// when at least 30 s remain, and hides below 5 s.
 /// </summary>
 internal sealed class EtaEstimator
 {
@@ -146,15 +146,17 @@ internal sealed class EtaEstimator
         }
         var remaining = elapsed.TotalSeconds * (1 - fraction) / fraction;
         if (!_showing && remaining >= 30) _showing = true;
-        else if (_showing && remaining < 10) _showing = false;
+        else if (_showing && remaining < 5) _showing = false;
         return _showing ? Format(remaining) : null;
     }
 
     internal static string Format(double seconds)
     {
-        if (seconds >= 3600) return $"about {(int)(seconds / 3600)} h {(int)(seconds % 3600 / 60)} min left";
-        if (seconds >= 90) return $"about {Math.Round(seconds / 60)} min left";
-        return $"about {Math.Max(10, Math.Round(seconds / 10) * 10)} s left";
+        // Ignore sub-nanosecond arithmetic noise before rounding up to a whole second.
+        double wholeSeconds = Math.Max(0, Math.Ceiling(seconds - 1e-9));
+        if (wholeSeconds >= 3600) return $"Estimated time: {(int)(wholeSeconds / 3600)} h {(int)(wholeSeconds % 3600 / 60)} min";
+        if (wholeSeconds >= 60) return $"Estimated time: {(int)(wholeSeconds / 60)} min {(int)(wholeSeconds % 60)} sec";
+        return $"Estimated time: {wholeSeconds:0} sec";
     }
 }
 
@@ -197,6 +199,12 @@ internal class DownloadProgressHelper
         _ => percent.ToString("0.0") + "%",
     };
 
+    internal static string FormatTrackCount(int completed, int total) =>
+        $"{completed.ToString($"D{Math.Max(1, total).ToString().Length}")} / {total}";
+
+    internal static string FormatCountedPercent(double percent, int completed, int total) =>
+        $"{FormatPercent(percent)} ({FormatTrackCount(completed, total)})";
+
     public string GenerateDisplayString(double percent, double? speedMBPS, string? status = null, string? eta = null)
     {
         string percentDisplay = status ?? FormatPercent(percent);
@@ -208,7 +216,7 @@ internal class DownloadProgressHelper
             : null;
 
         string? trackDisplay = _tracksCount > 1
-            ? $"{_completed.Count.ToString($"D{_tracksCount.ToString().Length}")} / {_tracksCount}"
+            ? FormatTrackCount(_completed.Count, _tracksCount)
             : null;
 
         var parts = new List<string>

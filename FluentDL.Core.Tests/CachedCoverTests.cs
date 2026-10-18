@@ -37,5 +37,23 @@ public class CachedCoverTests
 
         StringAssert.Contains(json, "\"Title\":\"Get Lucky\"");
         Assert.IsFalse(json.Contains(nameof(SongSearchObject.LocalBitmapImage)), json);
+        Assert.IsFalse(json.Contains(nameof(SongSearchObject.CoverSource)), json);
+    }
+
+    [TestMethod]
+    public void CoverSourcePrefersTheCachedImageAndFallsBackWhenItIsCleared()
+    {
+        var song = new SongSearchObject { Source = "local", Id = "test", ImageLocation = "https://example.test/cover.jpg" };
+        var image = new object();
+        var changes = 0;
+        song.PropertyChanged += (_, args) => { if (args.PropertyName == nameof(SongSearchObject.CoverSource)) changes++; };
+        Assert.AreEqual(song.ImageLocation, song.CoverSource);
+        song.LocalBitmapImage = image;
+        Assert.AreSame(image, song.CoverSource);
+        song.ImageLocation = "https://example.test/new.jpg";
+        Assert.AreSame(image, song.CoverSource);
+        song.LocalBitmapImage = null;
+        Assert.AreEqual(song.ImageLocation, song.CoverSource);
+        Assert.AreEqual(3, changes);
     }
 }

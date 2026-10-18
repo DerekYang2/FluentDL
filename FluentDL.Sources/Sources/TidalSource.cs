@@ -13,10 +13,10 @@ using static FluentDL.Services.Tidal.JsonApiDocument;
 namespace FluentDL.Services.Sources;
 
 /// <summary>
-/// TIDAL through its official API. It only reads the catalog: search, lookups and links, with audio from other
-/// sources (see ADR-003). Signs in with a client id and secret for now; a TIDAL account login (PKCE) comes later.
+/// TIDAL catalog search, lookups and links through the official API. Prefers the download account's token,
+/// with developer app credentials for signed-out users. Full audio downloads use TidalDownloadClient separately.
 /// </summary>
-internal sealed class TidalSource : ISourceSession, IAccountLogin, ISearchSource, ILinkSource, ICatalogSource, IPreviewSource, IConversionTarget, ITagSource, IAlbumUpcSource
+internal sealed class TidalSource : ISourceSession, IAccountLogin, ISearchSource, ILinkSource, ICatalogSource, IPreviewSource, IConversionTarget, ITagSource, IAlbumUpcSource, IPlaylistWriter
 {
     private const string TrackIncludes = "tracks,tracks.artists,tracks.albums.coverArt";
     private const string AlbumIncludes = "albums,albums.artists,albums.coverArt";
@@ -28,13 +28,25 @@ internal sealed class TidalSource : ISourceSession, IAccountLogin, ISearchSource
         RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
     private readonly TidalApi api;
+    private readonly TidalPlaylistClient? playlists;
     private readonly SemaphoreSlim searchLock = new(1, 1);
     private SearchCursor? lastSearch;
 
-    public TidalSource(TidalApi api)
+    public TidalSource(TidalApi api, TidalPlaylistClient? playlists = null)
     {
         this.api = api;
+        this.playlists = playlists;
     }
+
+    public Task<bool> CanCreatePlaylistAsync(CancellationToken token) => playlists?.CanCreateAsync(token) ?? Task.FromResult(false);
+    public IReadOnlyList<PlaylistVisibility> SupportedPlaylistVisibilities { get; } = [PlaylistVisibility.Unlisted, PlaylistVisibility.Public];
+    public string PlaylistSignInHint => "Sign in at Settings > Authentication > TIDAL to upload playlists. This is the same account used for full downloads; API client credentials alone cannot write playlists.";
+    public int PlaylistNameMaxLength => 250;
+    public Task<IReadOnlyList<OwnedPlaylist>> GetOwnedPlaylistsAsync(CancellationToken token) => playlists?.GetOwnedAsync(token) ?? Task.FromResult<IReadOnlyList<OwnedPlaylist>>([]);
+    public Task<IReadOnlyList<string>> GetPlaylistTrackIdsAsync(string playlistId, CancellationToken token) => playlists?.GetOwnedTrackIdsAsync(playlistId, token) ?? Task.FromResult<IReadOnlyList<string>>([]);
+
+    public Task<PlaylistCreationResult> CreatePlaylistAsync(PlaylistCreationRequest request, IProgress<int>? progress, CancellationToken token) =>
+        playlists?.CreateAsync(request, progress, token) ?? throw new InvalidOperationException("TIDAL playlist creation is not configured.");
 
     public SourceDescriptor Descriptor { get; } = SourceCatalog.Find(SourceIds.Tidal)!;
 
@@ -42,7 +54,7 @@ internal sealed class TidalSource : ISourceSession, IAccountLogin, ISearchSource
 
     public string? StatusText => !IsConnected ? null : api.Access switch
     {
-        TidalAccess.Account => $"Signed in as {AccountName}\nCountry: {api.CountryCode}",
+        TidalAccess.Account or TidalAccess.DownloadAccount => $"Signed in as {AccountName}\nCountry: {api.CountryCode}",
         TidalAccess.OwnApp => $"Using your client ID and secret\nCountry: {api.CountryCode}",
         _ => $"Using FluentDL's built-in access\nCountry: {api.CountryCode}",
     };
@@ -186,6 +198,13 @@ internal sealed class TidalSource : ISourceSession, IAccountLogin, ISearchSource
                     status?.Invoke(StatusLevel.Success, $"<b>TIDAL</b>   Loaded playlist <a href='{url}'>{name}</a>");
                     break;
             }
+        }
+        catch (Exception e) when (kind == "playlist" && api.Access is not (TidalAccess.Account or TidalAccess.DownloadAccount)
+            && (e is HttpRequestException { StatusCode: HttpStatusCode.Unauthorized or HttpStatusCode.Forbidden }
+                || e is InvalidOperationException))
+        {
+            throw new SourceSignInRequiredException(SourceIds.Tidal,
+                "TIDAL could not read this playlist with public API access. If it is private, sign in through Settings and paste the link again.");
         }
         catch (Exception e) when (e is not OperationCanceledException)
         {

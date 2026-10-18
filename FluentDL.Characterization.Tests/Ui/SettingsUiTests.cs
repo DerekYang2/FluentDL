@@ -51,9 +51,9 @@ public class SettingsUiTests
             Assert.IsFalse(infoButton.Properties.IsOffscreen.ValueOrDefault);
             Invoke(infoButton);
             var status = Text(Find(dev, "TidalInfoText"));
-            StringAssert.Contains(status, "API:");
-            StringAssert.Contains(status, "Only searching.");
-            StringAssert.Contains(status, "Downloading:\ndownloads@example.test");
+            StringAssert.Contains(status, "Catalog access:");
+            Assert.IsFalse(status.Contains("Only searching."));
+            StringAssert.Contains(status, "User account:\ndownloads@example.test");
             Assert.IsFalse(status.Contains("Direct downloads"), "Downloads have no on/off setting any more.");
             var folder = Path.Combine(Path.GetTempPath(), "opencode", "tidal-combined-ui");
             Directory.CreateDirectory(folder);
@@ -167,7 +167,7 @@ public class SettingsUiTests
         Expand(dev, "TidalExpander");
         var login = FindScrolling(dev, "TidalDownloadLoginButton");
         Assert.IsTrue(login.IsEnabled);
-        StringAssert.Contains(Text(login), "downloads"); // "Sign in for downloads" or, with a saved session, "Sign out of downloads"
+        Assert.IsTrue(Text(login) is "Sign in" or "Sign out", "The shared account action should have an explicit sign-in or sign-out label.");
         Assert.IsNull(TryFind(dev, cf => cf.ByAutomationId("TidalDirectToggle")));
         var folder = Path.Combine(Path.GetTempPath(), "opencode", "tidal-direct-ui");
         Directory.CreateDirectory(folder);
@@ -228,7 +228,16 @@ public class SettingsUiTests
         Snapshot.Match("Ui.SignInFromSettings", state);
     }
 
-    private static string LoginState(DevApp dev, string source) => Text(Find(dev, $"{source}InfoButtonText"));
+    private static string LoginState(DevApp dev, string source)
+    {
+        var button = FindScrolling(dev, $"{source}InfoButton");
+        Assert.IsTrue(button.IsEnabled, "Authentication details must be accessible even when signed out.");
+        Assert.AreEqual("Info", Text(Find(dev, $"{source}InfoButtonText")));
+        Invoke(button);
+        var details = Text(Find(dev, $"{source}InfoText"));
+        FlaUI.Core.Input.Keyboard.Type(FlaUI.Core.WindowsAPI.VirtualKeyShort.ESCAPE);
+        return details;
+    }
 
     // The first new message in the page's info bar, or null if none shows within 30 s (a source can report nothing).
     // Messages close after a few seconds, and a closed bar reads as empty, so the first non-empty new text counts.

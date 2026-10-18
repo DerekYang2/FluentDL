@@ -46,7 +46,7 @@ internal sealed partial class DeezerSource
                 {
                     IsInitialized = true;
 
-                    loginString = data?["OFFER_NAME"]?.ToString() ?? "Unknown Offer";
+                    loginString = $"Account ID: {userId}\n" + (data?["OFFER_NAME"]?.ToString() ?? "Unknown Offer");
 
                     // Sound quality (is lossless/320kbps available)
                     var soundQualityOptions = data?["USER"]?["OPTIONS"]?["web_sound_quality"];
