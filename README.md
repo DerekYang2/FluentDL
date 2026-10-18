@@ -1,8 +1,6 @@
 <h1 align="center">
-    <a href="https://github.com/DerekYang2/FluentDL">
-        <img alt="FluentDL" src="./Branding/readme-dark.png#gh-dark-mode-only" height="44">
-        <img alt="FluentDL" src="./Branding/readme-light.png#gh-light-mode-only" height="44">
-    </a>
+    <a href="https://github.com/DerekYang2/FluentDL#gh-dark-mode-only"><img alt="FluentDL" src="./Branding/readme-dark.png" height="44" /></a>
+    <a href="https://github.com/DerekYang2/FluentDL#gh-light-mode-only"><img alt="FluentDL" src="./Branding/readme-light.png" height="44" /></a>
 </h1>
 
 <p align="center">

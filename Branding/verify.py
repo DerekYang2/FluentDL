@@ -77,8 +77,16 @@ class ArtworkTests(unittest.TestCase):
         for src in re.findall(r'src="([^"]+)"', preview):
             self.assertTrue((HERE / src).is_file(), src)
         readme = (ROOT / "README.md").read_text(encoding="utf-8")
+        header = ET.fromstring(readme.split("</h1>", 1)[0] + "</h1>")
+        links = header.findall("a")
+        self.assertEqual(len(links), 2)
         for theme in ("dark", "light"):
-            self.assertIn(f"./Branding/readme-{theme}.png#gh-{theme}-mode-only", readme)
+            matching = [link for link in links if link.attrib["href"].endswith(f"#gh-{theme}-mode-only")]
+            self.assertEqual(len(matching), 1)
+            images = matching[0].findall("img")
+            self.assertEqual(len(images), 1)
+            self.assertEqual(images[0].attrib["src"], f"./Branding/readme-{theme}.png")
+            self.assertTrue((ROOT / images[0].attrib["src"]).is_file())
         self.assertNotIn("prefers-color-scheme", readme)
 
     def test_master_is_self_contained(self):

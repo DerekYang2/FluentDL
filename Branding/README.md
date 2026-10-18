@@ -36,7 +36,8 @@ to build or run FluentDL.
 
 ## README themes
 
-The root README uses GitHub's `#gh-dark-mode-only` and `#gh-light-mode-only`
-image suffixes. This follows GitHub's selected theme rather than relying only
-on the browser's `prefers-color-scheme`. Other Markdown viewers may show both
-images if they do not support GitHub's theme suffixes.
+The root README puts GitHub's `#gh-dark-mode-only` and `#gh-light-mode-only`
+suffixes on the links around the header images. GitHub's stylesheet selects
+these links by `href`, not the images by `src`. This follows GitHub's selected
+theme. Other Markdown viewers may show both images if they do not support
+GitHub's theme suffixes.
