@@ -9,6 +9,7 @@ using System.Text;
 using System.Text.Json;
 using FluentDL.Core.Contracts.Services;
 using FluentDL.Core.Sources;
+using FluentDL.Helpers;
 
 namespace FluentDL.Services.Tidal;
 
@@ -25,11 +26,15 @@ public enum TidalAccess
 
     /// <summary>FluentDL's own client ID and secret, built into release builds. No setup.</summary>
     BuiltIn,
+
+    /// <summary>The existing download account session, also accepted by the official catalog API.</summary>
+    DownloadAccount,
 }
 
 /// <summary>
 /// Requests to TIDAL's official API (openapi.tidal.com/v2). It tries, in order:
 /// <list type="number">
+/// <item>The download account session, when signed in. Its tokens stay under the original download OAuth client.</item>
 /// <item>The user's TIDAL account: a one-time sign-in in the browser with FluentDL's TIDAL app (authorization code
 /// with PKCE, which needs no secret). The refresh token is saved encrypted for the Windows user, so later starts sign
 /// in without the browser.</item>
@@ -51,23 +56,34 @@ public sealed class TidalApi
     private static readonly TimeSpan LoginTimeout = TimeSpan.FromMinutes(5);
 
     private readonly HttpClient http;
+    private readonly ProviderRequestPolicy requests;
     private readonly ILocalSettingsService settings;
+    private readonly TidalDownloadClient downloads;
     private readonly int loginPort;
     private readonly SemaphoreSlim tokenLock = new(1, 1);
     private string? token;
     private DateTimeOffset tokenExpires;
     private string? accountCountry;
+    private string? rejectedDownloadToken;
 
     public TidalApi(ILocalSettingsService settings)
         : this(settings, new HttpClient(new SocketsHttpHandler { PooledConnectionLifetime = TimeSpan.FromMinutes(5) }))
     {
     }
 
+    public TidalApi(ILocalSettingsService settings, TidalDownloadClient downloads)
+        : this(settings, new HttpClient(new SocketsHttpHandler { PooledConnectionLifetime = TimeSpan.FromMinutes(5) }), downloadClient: downloads)
+    {
+    }
+
     /// <param name="loginPort">Tests use another port, so a running FluentDL doesn't get in the way.</param>
-    internal TidalApi(ILocalSettingsService settings, HttpClient http, int loginPort = LoginPort)
+    internal TidalApi(ILocalSettingsService settings, HttpClient http, int loginPort = LoginPort, TidalDownloadClient? downloadClient = null,
+        ProviderRequestPolicy? requests = null)
     {
         this.settings = settings;
         this.http = http;
+        this.requests = requests ?? ProviderRequests.Tidal;
+        downloads = downloadClient ?? new TidalDownloadClient(settings);
         this.loginPort = loginPort;
         CountryCode = ResolveCountry(null, RegionInfo.CurrentRegion.TwoLetterISORegionName);
     }
@@ -78,7 +94,7 @@ public sealed class TidalApi
     /// </summary>
     public string CountryCode { get; private set; }
 
-    public bool IsSignedIn => token != null;
+    public bool IsSignedIn => Access == TidalAccess.DownloadAccount || token != null;
 
     /// <summary>How the current token was obtained.</summary>
     public TidalAccess Access { get; private set; }
@@ -117,8 +133,7 @@ public sealed class TidalApi
     private string RedirectUri => $"http://127.0.0.1:{loginPort}/callback";
 
     /// <summary>
-    /// Gets a fresh token: from the saved account sign-in when there is one, else with the user's client ID and
-    /// secret, else with the built-in ones. Throws with the reason when none works.
+    /// Prefers the download account, then a separate API account if enabled, then the user's app, then the bundled app.
     /// </summary>
     public async Task SignInAsync(CancellationToken cancellationToken = default)
     {
@@ -126,12 +141,16 @@ public sealed class TidalApi
         try
         {
             token = null;
-            await RequestTokenAsync(cancellationToken);
+            Access = TidalAccess.None;
+            AccountName = null;
+            AccountEmail = null;
+            accountCountry = null;
         }
         finally
         {
             tokenLock.Release();
         }
+        await GetTokenAsync(cancellationToken);
         await ReadAccountAsync(cancellationToken);
         await ReadCountryAsync();
     }
@@ -206,32 +225,48 @@ public sealed class TidalApi
     /// <summary>GETs a path under openapi.tidal.com/v2 (or a "next" link, which starts with "/"), as JSON:API.</summary>
     internal async Task<JsonApiDocument> GetAsync(string pathAndQuery, CancellationToken cancellationToken)
     {
-        var url = ApiBase + pathAndQuery.TrimStart('/');
-        if (!url.Contains("countryCode="))
+        string? refreshDownloadToken = null;
+        var refreshedDownload = false;
+        var refreshedApp = false;
+
+        while (true)
         {
-            url += (url.Contains('?') ? "&" : "?") + "countryCode=" + await ReadCountryAsync();
-        }
-
-        for (var attempt = 1; ; attempt++)
-        {
-            using var request = new HttpRequestMessage(HttpMethod.Get, url);
-            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", await GetTokenAsync(cancellationToken));
-            request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/vnd.api+json"));
-            using var response = await http.SendAsync(request, cancellationToken);
-
-            // An expired or revoked token: sign in again once.
-            if (response.StatusCode == HttpStatusCode.Unauthorized && attempt == 1)
+            var (accessToken, usesDownload) = await GetTokenAsync(cancellationToken, refreshDownloadToken);
+            refreshDownloadToken = null;
+            // Token selection sets the account's country, including after a sign-in or sign-out.
+            var url = ApiBase + pathAndQuery.TrimStart('/');
+            if (!url.Contains("countryCode="))
+                url += (url.Contains('?') ? "&" : "?") + "countryCode=" + await ReadCountryAsync();
+            using var response = await requests.SendAsync(http, () =>
             {
-                token = null;
-                continue;
-            }
-            // No rate limit showed up in testing (40 requests in 2 s), but TIDAL documents 429 with Retry-After.
-            if (response.StatusCode == HttpStatusCode.TooManyRequests && attempt <= 3)
-            {
-                await Task.Delay(response.Headers.RetryAfter?.Delta ?? TimeSpan.FromSeconds(2 * attempt), cancellationToken);
-                continue;
-            }
+                var request = new HttpRequestMessage(HttpMethod.Get, url);
+                request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+                request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/vnd.api+json"));
+                return request;
+            }, cancellationToken);
 
+            if (response.StatusCode == HttpStatusCode.Unauthorized)
+            {
+                if (usesDownload && !refreshedDownload)
+                {
+                    refreshedDownload = true;
+                    refreshDownloadToken = accessToken;
+                    continue;
+                }
+                if (usesDownload)
+                {
+                    // This token may still work for downloads. Don't sign that account out on a catalog rejection.
+                    rejectedDownloadToken = accessToken;
+                    Serilog.Log.Warning("TIDAL catalog rejected the refreshed download token; using catalog app access");
+                    continue;
+                }
+                if (!refreshedApp)
+                {
+                    refreshedApp = true;
+                    token = null;
+                    continue;
+                }
+            }
             var body = await response.Content.ReadAsStringAsync(cancellationToken);
             if (!response.IsSuccessStatusCode)
             {
@@ -247,6 +282,7 @@ public sealed class TidalApi
     // The account's username and country, when signed in to an account.
     private async Task ReadAccountAsync(CancellationToken cancellationToken)
     {
+        if (Access == TidalAccess.DownloadAccount) return; // Identity and country come from the shared session.
         AccountName = null;
         AccountEmail = null;
         accountCountry = null;
@@ -264,11 +300,28 @@ public sealed class TidalApi
         }
     }
 
-    private async Task<string> GetTokenAsync(CancellationToken cancellationToken)
+    private async Task<(string Value, bool DownloadAccount)> GetTokenAsync(CancellationToken cancellationToken, string? refreshDownloadToken = null)
     {
+        var download = await downloads.GetApiSessionAsync(cancellationToken, refreshDownloadToken);
+        if (download != null && download.AccessToken != rejectedDownloadToken)
+        {
+            Access = TidalAccess.DownloadAccount;
+            AccountName = download.AccountName ?? "TIDAL account";
+            AccountEmail = download.AccountName?.Contains('@') == true ? download.AccountName : null;
+            accountCountry = download.Country;
+            return (download.AccessToken, true);
+        }
+        if (Access == TidalAccess.DownloadAccount)
+        {
+            token = null;
+            Access = TidalAccess.None;
+            AccountName = null;
+            AccountEmail = null;
+            accountCountry = null;
+        }
         if (token != null && DateTimeOffset.UtcNow < tokenExpires - RenewBefore)
         {
-            return token;
+            return (token, false);
         }
 
         await tokenLock.WaitAsync(cancellationToken);
@@ -278,7 +331,7 @@ public sealed class TidalApi
             {
                 await RequestTokenAsync(cancellationToken);
             }
-            return token!;
+            return (token!, false);
         }
         finally
         {

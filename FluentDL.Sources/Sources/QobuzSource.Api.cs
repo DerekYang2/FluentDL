@@ -177,7 +177,7 @@ internal sealed partial class QobuzSource
         {
             if (albumMode)
             {   
-                await foreach (var album in ApiSearch<Album>(query, offset, limit))
+                await foreach (var album in ApiSearch<Album>(query, offset, limit).WithCancellation(token))
                 {
                     if (token.IsCancellationRequested) return;
                     var albumObj = ConvertAlbumSearchObject(album);
@@ -189,7 +189,7 @@ internal sealed partial class QobuzSource
             }
             else
             {
-                await foreach (var track in ApiSearch<Track>(query, offset, limit))
+                await foreach (var track in ApiSearch<Track>(query, offset, limit).WithCancellation(token))
                 {
                     if (token.IsCancellationRequested) return;
                     var song = ConvertSongSearchObject(track);
@@ -236,7 +236,7 @@ internal sealed partial class QobuzSource
         if (!string.IsNullOrWhiteSpace(albumName))
         {
             var albumResults = new List<Album>();
-            await foreach (var album in ApiSearch<Album>(albumName, offset, limit))
+            await foreach (var album in ApiSearch<Album>(albumName, offset, limit).WithCancellation(token))
             {
                 albumResults.Add(album);
             }
@@ -318,7 +318,7 @@ internal sealed partial class QobuzSource
         {
             if (isTrackSpecified && isArtistSpecified) // If artist and track are specified
             {
-                await foreach (var track in ApiSearch<Track>(artistName + " " + trackName, offset, limit))
+                await foreach (var track in ApiSearch<Track>(artistName + " " + trackName, offset, limit).WithCancellation(token))
                 {
                     if (token.IsCancellationRequested) return; // Check if task is cancelled
                     if (track.Id == null) continue;
@@ -341,7 +341,7 @@ internal sealed partial class QobuzSource
             {
                 var query = isTrackSpecified ? trackName : artistName; 
                 var searchType = isTrackSpecified ? EnumQobuzSearchType.ByReleaseName : EnumQobuzSearchType.ByMainArtist;
-                await foreach (var track in ApiSearch<Track>(query, offset, limit, searchType))
+                await foreach (var track in ApiSearch<Track>(query, offset, limit, searchType).WithCancellation(token))
                 {
                     if (token.IsCancellationRequested) return; // Check if task is cancelled
                     if (track.Id == null) continue;
@@ -788,7 +788,7 @@ internal sealed partial class QobuzSource
     public async Task<SongSearchObject?> GetTrackAsync(string? id, CancellationToken token = default)
     {
         if (id == null) return null;
-        var track = await Task.Run(() => apiService.GetTrack(id, withAuth: true), token);
+        var track = await GetCatalogAsync<Track>("track/get?track_id=" + Uri.EscapeDataString(id), token);
         if (track == null)
         {
             return null;
@@ -811,7 +811,7 @@ internal sealed partial class QobuzSource
         // First attempt exact isrc search
         if (isrc != null)
         {
-            var foundTrack = await SearchISRC(isrc);
+            var foundTrack = await SearchISRC(isrc, token);
             if (foundTrack != null)
             {
                 var retObj = ConvertSongSearchObject(foundTrack);
@@ -839,17 +839,7 @@ internal sealed partial class QobuzSource
         var trackName = songObj.Title;
 
         // Search by album
-        var albumResults = await Task.Run(() =>
-        {
-            try
-            {
-                return apiService.SearchAlbums(albumName, 5, withAuth: true);
-            }
-            catch
-            {
-                return null;
-            }
-        }, token);
+        var albumResults = await GetCatalogAsync<SearchResult>("album/search?query=" + Uri.EscapeDataString(albumName) + "&limit=5&offset=0", token);
 
         if (token.IsCancellationRequested) return null; // Check if task is cancelled
 
@@ -873,7 +863,7 @@ internal sealed partial class QobuzSource
 
             if (oneArtistMatch && CloseMatch(albumName, album.Title)) // Album close match
             {
-                var fullAlbumObj = await Task.Run(() => apiService.GetAlbum(album.Id, withAuth: true), token);
+                var fullAlbumObj = await GetCatalogAsync<Album>("album/get?album_id=" + Uri.EscapeDataString(album.Id) + "&limit=1200&offset=0", token);
 
                 if (fullAlbumObj == null || fullAlbumObj.Tracks == null || fullAlbumObj.Tracks.Items.Count == 0) continue;
 
@@ -895,9 +885,10 @@ internal sealed partial class QobuzSource
 
                     if (oneArtistMatch && CloseMatch(trackName, GetFullTitle(track))) // Album close match, artist match, title close match
                     {
-                        var retObj = await GetTrackAsync(track.Id);
-                        if (retObj != null)
+                        var candidate = await GetCatalogAsync<Track>("track/get?track_id=" + track.Id.Value, token);
+                        if (IsAvailableConversionTrack(candidate))
                         {
+                            var retObj = ConvertSongSearchObject(candidate!);
                             callback?.Invoke(StatusLevel.Warning, retObj); // Not found by ISRC
                             return retObj;
                         }
@@ -909,9 +900,10 @@ internal sealed partial class QobuzSource
         // Try searching without album, same as above
         if (token.IsCancellationRequested) return null; // Check if task is cancelled
 
-        await foreach (var result in ApiSearch<Track>(query, 28))
+        await foreach (var result in ApiSearch<Track>(query, limit: 28, cancellationToken: token))
         {
             if (token.IsCancellationRequested) return null;
+            if (!IsAvailableConversionTrack(result)) continue;
 
             // Check if at least one pair of artists match
             foreach (var artist in artists)
@@ -930,6 +922,10 @@ internal sealed partial class QobuzSource
         callback?.Invoke(StatusLevel.Error, songObj); // Show an error message with original object
         return null;
     }
+
+    // Search results can retain withdrawn IDs that match the ISRC but return 404 when fetched or added to a playlist.
+    private static bool IsAvailableConversionTrack(Track? track) =>
+        track is { Id: > 0, Streamable: true, Displayable: true };
 
     public string? GetPreviewUri(string trackId)
     {

@@ -206,7 +206,12 @@ public sealed class TidalDownloadClient
         }
     }
 
-    private async Task<Session?> GetSessionAsync(CancellationToken token)
+    // Catalog requests share the download session, including its original OAuth client and refresh-token storage.
+    // A rejected access token forces one refresh, unless another caller already refreshed it.
+    internal Task<Session?> GetApiSessionAsync(CancellationToken token, string? rejectedAccessToken = null) =>
+        GetSessionAsync(token, rejectedAccessToken);
+
+    private async Task<Session?> GetSessionAsync(CancellationToken token, string? rejectedAccessToken = null)
     {
         await authLock.WaitAsync(token);
         try
@@ -227,7 +232,8 @@ public sealed class TidalDownloadClient
                     return null;
                 }
             }
-            if (session == null || session.Expires > DateTimeOffset.UtcNow.AddMinutes(5) && !string.IsNullOrEmpty(session.AccountName)) return session;
+            if (session == null || session.Expires > DateTimeOffset.UtcNow.AddMinutes(5)
+                && !string.IsNullOrEmpty(session.AccountName) && session.AccessToken != rejectedAccessToken) return session;
             try
             {
                 // Refresh under the original client, even if the Gist has since changed.
