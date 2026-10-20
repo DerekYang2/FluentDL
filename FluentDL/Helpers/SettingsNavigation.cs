@@ -5,7 +5,7 @@ using FluentDL.Views;
 
 namespace FluentDL.Helpers;
 
-public enum SettingsSection { Spotify, Tidal, Deezer, Qobuz, Downloads, Lyrics, Backups, FFmpeg, Ytdlp }
+public enum SettingsSection { Spotify, Tidal, Deezer, Qobuz, Downloads, Lyrics, Backups, FFmpeg, Ytdlp, Updates }
 
 internal static class SettingsNavigation
 {
@@ -29,6 +29,7 @@ internal static class SettingsNavigation
         SettingsSection.Backups => "Settings > General > Backups",
         SettingsSection.FFmpeg => "Settings > General > FFmpeg",
         SettingsSection.Ytdlp => "Settings > General > yt-dlp",
+        SettingsSection.Updates => "Settings > About > FluentDL > App updates",
         _ => throw new ArgumentOutOfRangeException(nameof(section)),
     };
 

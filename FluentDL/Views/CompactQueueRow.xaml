@@ -144,6 +144,20 @@
                     MinWidth="32"
                     MinHeight="32"
                     Padding="4"
+                    AutomationProperties.AutomationId="CompactQueueExpandAlbum"
+                    AutomationProperties.Name="Expand album into tracks"
+                    Click="ExpandAlbumButton_Click"
+                    Tag="{x:Bind Item, Mode=OneWay}"
+                    ToolTipService.ToolTip="Replace album with individual tracks"
+                    Visibility="{x:Bind Item.IsAlbum, Mode=OneWay, Converter={StaticResource VisibilityConverter}}">
+                    <FontIcon FontSize="20" Glyph="&#xE8A9;" />
+                </Button>
+                <Button
+                    Width="32"
+                    Height="32"
+                    MinWidth="32"
+                    MinHeight="32"
+                    Padding="4"
                     AutomationProperties.AutomationId="CompactQueueSpectrogram"
                     AutomationProperties.Name="Open spectrogram"
                     Click="SpectrogramButton_Click"
@@ -161,7 +175,7 @@
                 HorizontalAlignment="Center"
                 VerticalAlignment="Center"
                 AutomationProperties.AutomationId="CompactQueueProgress"
-                AutomationProperties.Name="Converting track"
+                AutomationProperties.Name="Processing queue item"
                 IsActive="{x:Bind Item.IsRunning, Mode=OneWay}"
                 Visibility="{x:Bind Item.IsRunning, Mode=OneWay, Converter={StaticResource VisibilityConverter}}" />
         </Grid>

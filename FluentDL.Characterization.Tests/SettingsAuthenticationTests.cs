@@ -17,6 +17,7 @@ public class SettingsAuthenticationTests
     [DataRow(SettingsSection.Lyrics, "Settings > Downloads > Lyrics")]
     [DataRow(SettingsSection.Backups, "Settings > General > Backups")]
     [DataRow(SettingsSection.Downloads, "Settings > Downloads > Location")]
+    [DataRow(SettingsSection.Updates, "Settings > About > FluentDL > App updates")]
     public void SettingsNoticesUseOneClickablePathWithoutDuplicatingIt(SettingsSection section, string path)
     {
         Assert.AreEqual(path, SettingsNavigation.Path(section));

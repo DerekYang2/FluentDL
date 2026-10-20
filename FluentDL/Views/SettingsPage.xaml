@@ -5,6 +5,7 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:helpers="using:FluentDL.Helpers"
     xmlns:local="using:CommunityToolkit.WinUI.Controls"
+    xmlns:controls="using:CommunityToolkit.WinUI.UI.Controls"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:ui="using:CommunityToolkit.WinUI.UI"
     xmlns:viewModels="using:FluentDL.ViewModels"
@@ -741,7 +742,7 @@
                         Header="ReplayGain">
                         <local:SettingsExpander.Description>
                             <TextBlock>
-                                Write ReplayGain tags so players can play every track at the same loudness.&#32;<Hyperlink NavigateUri="https://github.com/DerekYang2/FluentDL/wiki/ReplayGain">Learn more</Hyperlink></TextBlock>
+                                Write ReplayGain tags so players can play every track at the same loudness.&#32;<Hyperlink NavigateUri="https://github.com/DerekYang2/FluentDL/wiki/ReplayGain">Learn more</Hyperlink>.</TextBlock>
                         </local:SettingsExpander.Description>
                         <local:SettingsExpander.HeaderIcon>
                             <FontIcon Glyph="&#xF4C3;" />
@@ -801,10 +802,10 @@
                         <StackPanel Spacing="12">
                             <ScrollViewer HorizontalScrollBarVisibility="Auto" HorizontalScrollMode="Auto"
                                 VerticalScrollBarVisibility="Disabled" VerticalScrollMode="Disabled">
-                                <StackPanel MinWidth="788" Spacing="4">
+                                <StackPanel MinWidth="832" Spacing="4">
                                     <Grid Padding="8" ColumnSpacing="12">
                                         <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="96" /><ColumnDefinition Width="140" /><ColumnDefinition Width="164" />
+                                            <ColumnDefinition Width="140" /><ColumnDefinition Width="140" /><ColumnDefinition Width="164" />
                                             <ColumnDefinition Width="184" /><ColumnDefinition Width="140" />
                                         </Grid.ColumnDefinitions>
                                         <TextBlock Text="Service" Style="{ThemeResource CaptionTextBlockStyle}" />
@@ -818,7 +819,7 @@
                                             <DataTemplate x:DataType="viewModels:ProviderCapabilityRow">
                                                 <Grid Padding="8" ColumnSpacing="12" AutomationProperties.Name="{x:Bind Description, Mode=OneTime}">
                                                     <Grid.ColumnDefinitions>
-                                                        <ColumnDefinition Width="96" /><ColumnDefinition Width="140" /><ColumnDefinition Width="164" />
+                                                        <ColumnDefinition Width="140" /><ColumnDefinition Width="140" /><ColumnDefinition Width="164" />
                                                         <ColumnDefinition Width="184" /><ColumnDefinition Width="140" />
                                                     </Grid.ColumnDefinitions>
                                                     <StackPanel Orientation="Horizontal" Spacing="8">
@@ -1094,7 +1095,7 @@
                                 <local:SettingsCard.Description>
                                     <StackPanel Spacing="4">
                                         <TextBlock Text="Read private playlists and upload playlists." />
-                                        <TextBlock Text="Development Mode: add your account under Developer Dashboard &gt; your app &gt; Settings &gt; Users Management. The app owner needs Spotify Premium." TextWrapping="Wrap" />
+                                        <TextBlock Text="Development Mode: add your account under Developer Dashboard &gt; your app &gt; Settings &gt; Users Management." TextWrapping="Wrap" />
                                         <TextBlock>
                                             Add this redirect URI to your&#32;<Hyperlink NavigateUri="https://github.com/DerekYang2/FluentDL/wiki/Authentication#about-playlists">Spotify app</Hyperlink>:</TextBlock>
                                         <Border
@@ -1519,6 +1520,7 @@
                     <TextBlock Style="{StaticResource TextBlockSectionStyle}" Text="About" />
 
                     <local:SettingsExpander
+                        x:Name="AboutExpander"
                         Description="{x:Bind ViewModel.VersionDescription, Mode=OneWay}"
                         Header="FluentDL"
                         HeaderIcon="{ui:BitmapIcon Source=ms-appx:///Assets/StoreLogo.scale-400.png}">
@@ -1536,6 +1538,22 @@
                                     OffContent=""
                                     OnContent=""
                                     Toggled="NotifyUpdateToggle_Toggled" />
+                            </local:SettingsCard>
+
+                            <local:SettingsCard x:Name="AppUpdatesCard" Header="App updates" ContentAlignment="Vertical" HorizontalContentAlignment="Stretch"
+                                Description="{x:Bind Updates.InstallationDescription, Mode=OneTime}">
+                                <StackPanel Spacing="12">
+                                    <TextBlock AutomationProperties.AutomationId="AppUpdateStatus" Text="{x:Bind Updates.Message, Mode=OneWay}" TextWrapping="Wrap" />
+                                    <ProgressBar AutomationProperties.AutomationId="AppUpdateProgress" Minimum="0" Maximum="100" Value="{x:Bind Updates.Percent, Mode=OneWay}"
+                                        IsIndeterminate="{x:Bind Updates.IsIndeterminate, Mode=OneWay}"
+                                        Visibility="{x:Bind views:SettingsPage.CapabilityVisible(Updates.IsBusy), Mode=OneWay}" />
+                                    <controls:WrapPanel HorizontalSpacing="8" VerticalSpacing="8">
+                                        <Button AutomationProperties.AutomationId="CheckAppUpdate" Content="Check for updates" IsEnabled="{x:Bind Updates.CanCheck, Mode=OneWay}" Click="CheckAppUpdate_Click" />
+                                        <Button AutomationProperties.AutomationId="AppUpdateAction" Content="{x:Bind Updates.ActionText, Mode=OneWay}" IsEnabled="{x:Bind Updates.CanAct, Mode=OneWay}" Click="AppUpdateAction_Click" />
+                                        <Button AutomationProperties.AutomationId="CancelAppUpdate" Content="Cancel" Visibility="{x:Bind views:SettingsPage.CapabilityVisible(Updates.CanCancel), Mode=OneWay}" Click="CancelAppUpdate_Click" />
+                                    </controls:WrapPanel>
+                                    <HyperlinkButton AutomationProperties.AutomationId="AppUpdateSourceLink" NavigateUri="{x:Bind Updates.HelpUri, Mode=OneTime}" Content="{x:Bind Updates.HelpLabel, Mode=OneTime}" HorizontalAlignment="Left" />
+                                </StackPanel>
                             </local:SettingsCard>
 
                             <local:SettingsCard

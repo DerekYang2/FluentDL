@@ -37,6 +37,7 @@ public sealed partial class SettingsPage : Page
     private readonly SourceRegistry sources = App.GetService<SourceRegistry>();
     private readonly ILogger<SettingsPage> _logger;
     private bool _updatingDiagnostics;
+    public AppUpdateViewModel Updates { get; } = App.GetService<AppUpdateViewModel>();
 
     public SettingsViewModel ViewModel
     {
@@ -76,6 +77,34 @@ public sealed partial class SettingsPage : Page
         await InitializeAsync();
     }
 
+    private async void CheckAppUpdate_Click(object sender, RoutedEventArgs e) => await Updates.CheckAsync();
+    private void CancelAppUpdate_Click(object sender, RoutedEventArgs e) => Updates.Cancel();
+    private async void AppUpdateAction_Click(object sender, RoutedEventArgs e)
+    {
+        if (!Updates.IsDownloaded) { await Updates.DownloadAsync(); return; }
+        var confirm = new ContentDialog
+        {
+            XamlRoot = XamlRoot, RequestedTheme = ActualTheme, Title = "Install FluentDL update?",
+            Content = "FluentDL will save a queue backup before installation. Windows may close the app. GitHub installations need administrator permission.",
+            PrimaryButtonText = "Install update", CloseButtonText = "Cancel", DefaultButton = ContentDialogButton.Close,
+        };
+        if (await confirm.ShowAsync() != ContentDialogResult.Primary) return;
+        var content = App.MainWindow.Content as Control;
+        var enabled = content?.IsEnabled ?? true;
+        if (content != null) content.IsEnabled = false;
+        try
+        {
+            await Updates.InstallAsync(ApplicationActivity.Gate, async token =>
+            {
+                await QueueViewModel.SaveForUpdateAsync(token);
+                var backup = Path.Combine(ApplicationData.Current.LocalFolder.Path, "Updates", "queue-before-update-" + Guid.NewGuid().ToString("N") + ".zip");
+                await DatabaseService.CreateBackupAtPath(backup);
+                token.ThrowIfCancellationRequested();
+            });
+        }
+        finally { if (content != null) content.IsEnabled = enabled; }
+    }
+
     private SettingsSection? _requestedSection;
     protected override void OnNavigatedTo(NavigationEventArgs e)
     {
@@ -87,6 +116,7 @@ public sealed partial class SettingsPage : Page
     internal void RevealSection(SettingsSection section)
     {
         _requestedSection = section;
+        if (section == SettingsSection.Updates) AboutExpander.IsExpanded = true;
         FrameworkElement element = section switch
         {
             SettingsSection.Spotify => SpotifyExpander,
@@ -98,6 +128,7 @@ public sealed partial class SettingsPage : Page
             SettingsSection.Backups => BackupExpander,
             SettingsSection.FFmpeg => FFmpegExpander,
             SettingsSection.Ytdlp => YtdlpExpander,
+            SettingsSection.Updates => AppUpdatesCard,
             _ => throw new ArgumentOutOfRangeException(nameof(section)),
         };
         if (element is SettingsExpander expander) expander.IsExpanded = true;

@@ -216,7 +216,7 @@ public sealed class DownloadService(SourceRegistry sources, EquivalentDownloader
 
         // Run lyrics download in parallel
         var downloadTcs = new TaskCompletionSource<bool>();
-        _ = Task.Run(async () => await DownloadLyricsAsync(song, directory, fileName, downloadTcs));
+        _ = FluentDL.Helpers.ApplicationActivity.RunBackground(async () => await DownloadLyricsAsync(song, directory, fileName, downloadTcs));
 
 
         if (sources.TryGet<IDownloadSource>(song.Source, out var downloader))
@@ -297,6 +297,7 @@ public sealed class DownloadService(SourceRegistry sources, EquivalentDownloader
 
     public async Task<string> DownloadObject(SongSearchObject song, string directory, IProgress<ProgressData> progress, ConversionUpdateCallback? callback = default)
     {
+        using var activity = FluentDL.Helpers.ApplicationActivity.Gate.EnterWork();
         await EnsureDownloadAccessAsync([song]);
         // Resolve a lightweight YouTube row before folder templates as well as the filename use its year.
         if (song.Source == SourceIds.YouTube && string.IsNullOrWhiteSpace(song.ReleaseDate)
@@ -341,6 +342,7 @@ public sealed class DownloadService(SourceRegistry sources, EquivalentDownloader
 
     public async Task<List<string>> DownloadAlbum(AlbumSearchObject album, string directory, IProgress<ProgressData> progress, ConversionUpdateCallback? callback = default)
     {
+        using var activity = FluentDL.Helpers.ApplicationActivity.Gate.EnterWork();
         await EnsureDownloadAccessAsync([album]);
         var originalDirectory = directory;
         bool createAlbumSubfolder = await SettingsViewModel.GetSetting<bool>(SettingsViewModel.AlbumSubfolders);
@@ -443,7 +445,7 @@ public sealed class DownloadService(SourceRegistry sources, EquivalentDownloader
 
         // Download cover if subfolder, fire and forget
 #pragma warning disable CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
-        Task.Run(async () =>
+        FluentDL.Helpers.ApplicationActivity.RunBackground(async () =>
         {
             var downloadCoverArt = await SettingsViewModel.GetSetting<bool>(SettingsViewModel.DownloadAlbumCoverArt);
             if (!downloadCoverArt)

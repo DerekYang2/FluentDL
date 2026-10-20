@@ -118,6 +118,18 @@ Update:
 winget upgrade --id 9MX44KM97X7X --source msstore --exact --include-unknown --accept-package-agreements --accept-source-agreements
 ```
 
+### Expanding queued albums
+
+Album rows have an Expand album into tracks button in both queue layouts. The compact layout also has this action in its right-click menu. Confirming replaces the album with its individual tracks without downloading audio. New rows keep the album's position and track order; tracks already queued stay in their existing positions and are skipped.
+
+The album stays unchanged if the source cannot return its complete track list or the saved replacement fails. Finish active tasks before committing the expansion. This is a one-way replacement, not a collapsible album group.
+
+### Updating from FluentDL
+
+Open Settings > About > FluentDL > App updates to check for an update, download it and choose when to install. Store installations use Microsoft Store updates. GitHub installations use the official release for the installed architecture and require administrator permission on Windows 11. Development builds do not update themselves.
+
+Installation is blocked while work is active. Finish that work, then choose Install update again. FluentDL saves a queue backup before Windows can close the app. It does not resume an interrupted job or bypass Store availability. Automatic update notifications do not install updates automatically.
+
 ## Authentication
 
 > [!NOTE]  

@@ -65,6 +65,8 @@ public sealed class TidalApi
     private DateTimeOffset tokenExpires;
     private string? accountCountry;
     private string? rejectedDownloadToken;
+    private readonly bool clientCredentialsOnly;
+    private TidalApi? previewApi;
 
     public TidalApi(ILocalSettingsService settings)
         : this(settings, new HttpClient(new SocketsHttpHandler { PooledConnectionLifetime = TimeSpan.FromMinutes(5) }))
@@ -78,13 +80,14 @@ public sealed class TidalApi
 
     /// <param name="loginPort">Tests use another port, so a running FluentDL doesn't get in the way.</param>
     internal TidalApi(ILocalSettingsService settings, HttpClient http, int loginPort = LoginPort, TidalDownloadClient? downloadClient = null,
-        ProviderRequestPolicy? requests = null)
+        ProviderRequestPolicy? requests = null, bool clientCredentialsOnly = false)
     {
         this.settings = settings;
         this.http = http;
         this.requests = requests ?? ProviderRequests.Tidal;
         downloads = downloadClient ?? new TidalDownloadClient(settings);
         this.loginPort = loginPort;
+        this.clientCredentialsOnly = clientCredentialsOnly;
         CountryCode = ResolveCountry(null, RegionInfo.CurrentRegion.TwoLetterISORegionName);
     }
 
@@ -141,6 +144,7 @@ public sealed class TidalApi
         try
         {
             token = null;
+            Interlocked.Exchange(ref previewApi, null);
             Access = TidalAccess.None;
             AccountName = null;
             AccountEmail = null;
@@ -220,6 +224,22 @@ public sealed class TidalApi
         {
             tokenLock.Release();
         }
+    }
+
+    // Account tokens can return FairPlay-protected full tracks for the same manifest request.
+    // A separate client-credentials token requests previews without changing catalog or download authentication.
+    internal async Task<JsonApiDocument> GetPreviewManifestAsync(string trackId, CancellationToken cancellationToken)
+    {
+        var client = LazyInitializer.EnsureInitialized(ref previewApi, () => new TidalApi(settings, http,
+            downloadClient: downloads, requests: requests, clientCredentialsOnly: true)
+        {
+            BuiltInClientId = BuiltInClientId,
+            BuiltInClientSecret = BuiltInClientSecret,
+        });
+        var country = await ReadCountryAsync();
+        return await client.GetAsync(
+            $"trackManifests/{Uri.EscapeDataString(trackId)}?manifestType=HLS&formats=HEAACV1&uriScheme=HTTPS&usage=PLAYBACK&adaptive=false&countryCode={Uri.EscapeDataString(country)}",
+            cancellationToken);
     }
 
     /// <summary>GETs a path under openapi.tidal.com/v2 (or a "next" link, which starts with "/"), as JSON:API.</summary>
@@ -302,7 +322,7 @@ public sealed class TidalApi
 
     private async Task<(string Value, bool DownloadAccount)> GetTokenAsync(CancellationToken cancellationToken, string? refreshDownloadToken = null)
     {
-        var download = await downloads.GetApiSessionAsync(cancellationToken, refreshDownloadToken);
+        var download = clientCredentialsOnly ? null : await downloads.GetApiSessionAsync(cancellationToken, refreshDownloadToken);
         if (download != null && download.AccessToken != rejectedDownloadToken)
         {
             Access = TidalAccess.DownloadAccount;
@@ -343,7 +363,7 @@ public sealed class TidalApi
     private async Task RequestTokenAsync(CancellationToken cancellationToken)
     {
         // A sign-in belongs to the app it was made with, so a build without FluentDL's app skips it.
-        if (CanLogin && await ReadRefreshTokenAsync() is { } refreshToken)
+        if (!clientCredentialsOnly && CanLogin && await ReadRefreshTokenAsync() is { } refreshToken)
         {
             try
             {
@@ -426,7 +446,7 @@ public sealed class TidalApi
         using var json = JsonDocument.Parse(body);
         token = json.RootElement.GetProperty("access_token").GetString();
         tokenExpires = DateTimeOffset.UtcNow.AddSeconds(json.RootElement.GetProperty("expires_in").GetInt32());
-        if (json.RootElement.TryGetProperty("refresh_token", out var refresh) && refresh.GetString() is { Length: > 0 } newRefreshToken)
+        if (!clientCredentialsOnly && json.RootElement.TryGetProperty("refresh_token", out var refresh) && refresh.GetString() is { Length: > 0 } newRefreshToken)
         {
             await settings.SaveSettingAsync(SettingKeys.TidalRefreshToken, Protect(newRefreshToken));
         }

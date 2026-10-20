@@ -11,6 +11,157 @@ namespace FluentDL.Characterization.Tests;
 public class TidalCatalogSessionTests
 {
     [TestMethod]
+    [DataRow(false)]
+    [DataRow(true)]
+    public async Task PreviewUsesAnIsolatedAppTokenWithoutRefreshingOrChangingTheDownloadSession(bool expired)
+    {
+        var settings = Settings();
+        await SaveSession(settings, expired);
+        var saved = await settings.ReadSettingAsync<string>(SettingKeys.TidalDownloadSession);
+        var http = new FakeTidal();
+        var (api, _) = Clients(settings, http);
+        var source = new FluentDL.Services.Sources.TidalSource(api);
+
+        var uri = await source.GetPreviewAudioAsync(new() { Source = SourceIds.Tidal, Id = "1" });
+
+        Assert.AreEqual("https://preview.example.test/30-seconds.m3u8", uri);
+        Assert.AreEqual("app", http.Catalog.Single().Token);
+        Assert.AreEqual("client_credentials", http.Grants.Single()["grant_type"]);
+        Assert.AreEqual(saved, await settings.ReadSettingAsync<string>(SettingKeys.TidalDownloadSession));
+        Assert.AreEqual(TidalAccess.None, api.Access, "Loading a preview must not change the main client's account state.");
+    }
+
+    [TestMethod]
+    public async Task PreviewPreservesAccountIdentityAndCountryAndCatalogStillUsesTheAccount()
+    {
+        var settings = Settings();
+        await SaveSession(settings);
+        var http = new FakeTidal();
+        var (api, _) = Clients(settings, http);
+        await api.SignInAsync();
+
+        await api.GetPreviewManifestAsync("1", CancellationToken.None);
+        Assert.AreEqual(TidalAccess.DownloadAccount, api.Access);
+        Assert.AreEqual("account@example.test", api.AccountEmail);
+        StringAssert.EndsWith(http.Catalog[0].Url, "countryCode=GB");
+        await api.GetAsync("tracks/1", CancellationToken.None);
+
+        CollectionAssert.AreEqual(new[] { "app", "download" }, http.Catalog.Select(request => request.Token).ToArray());
+        Assert.AreEqual(1, http.Grants.Count);
+    }
+
+    [TestMethod]
+    public async Task PreviewUsesBundledCredentialsAndSharesOneTokenAcrossConcurrentRequests()
+    {
+        var settings = new TidalParsingTests.DictionarySettings([]);
+        await SaveSession(settings);
+        var http = new FakeTidal();
+        var api = new TidalApi(settings, new HttpClient(http)) { BuiltInClientId = "bundled-client", BuiltInClientSecret = "bundled-secret" };
+
+        await Task.WhenAll(Enumerable.Range(0, 12).Select(i => api.GetPreviewManifestAsync(i.ToString(), CancellationToken.None)));
+
+        Assert.AreEqual(1, http.Grants.Count);
+        Assert.IsTrue(http.Catalog.All(request => request.Token == "app"));
+        Assert.AreEqual(12, http.Catalog.Count);
+    }
+
+    [TestMethod]
+    public async Task ReconnectingInvalidatesThePreviewTokenWithoutClearingTheDownloadLogin()
+    {
+        var settings = Settings();
+        await SaveSession(settings);
+        var saved = await settings.ReadSettingAsync<string>(SettingKeys.TidalDownloadSession);
+        var http = new FakeTidal();
+        var (api, _) = Clients(settings, http);
+        await api.GetPreviewManifestAsync("1", CancellationToken.None);
+
+        await api.SignInAsync();
+        await api.GetPreviewManifestAsync("1", CancellationToken.None);
+
+        Assert.AreEqual(2, http.Grants.Count);
+        Assert.IsTrue(http.Grants.All(grant => grant["grant_type"] == "client_credentials"));
+        Assert.AreEqual(saved, await settings.ReadSettingAsync<string>(SettingKeys.TidalDownloadSession));
+        Assert.AreEqual(TidalAccess.DownloadAccount, api.Access);
+    }
+
+    [TestMethod]
+    public async Task PreviewNeverUsesTheSeparateApiAccountRefreshTokenEither()
+    {
+        var settings = Settings();
+        var saved = Convert.ToBase64String(ProtectedData.Protect(System.Text.Encoding.UTF8.GetBytes("api-refresh"), null, DataProtectionScope.CurrentUser));
+        await settings.SaveSettingAsync(SettingKeys.TidalRefreshToken, saved);
+        var http = new FakeTidal { AppRefreshReturned = true };
+        var api = new TidalApi(settings, new HttpClient(http))
+        {
+            AccountLoginEnabled = true, BuiltInClientId = "bundled-client", BuiltInClientSecret = "bundled-secret",
+        };
+
+        await api.GetPreviewManifestAsync("1", CancellationToken.None);
+
+        Assert.AreEqual("client_credentials", http.Grants.Single()["grant_type"]);
+        Assert.AreEqual(saved, await settings.ReadSettingAsync<string>(SettingKeys.TidalRefreshToken));
+        Assert.AreEqual(TidalAccess.None, api.Access);
+    }
+
+    [TestMethod]
+    public async Task PreviewWithoutAppCredentialsFailsRatherThanUsingTheAccountForFullPlayback()
+    {
+        var settings = new TidalParsingTests.DictionarySettings([]);
+        await SaveSession(settings);
+        var http = new FakeTidal();
+        var (api, _) = Clients(settings, http);
+
+        await Assert.ThrowsExceptionAsync<InvalidOperationException>(() => api.GetPreviewManifestAsync("1", CancellationToken.None));
+
+        Assert.AreEqual(0, http.Catalog.Count);
+        Assert.AreEqual(0, http.Grants.Count);
+        Assert.IsFalse(string.IsNullOrEmpty(await settings.ReadSettingAsync<string>(SettingKeys.TidalDownloadSession)));
+    }
+
+    [TestMethod]
+    [DataRow("FULL")]
+    [DataRow("")]
+    public async Task PreviewRefusesFullOrUnknownPresentations(string presentation)
+    {
+        var settings = Settings();
+        var http = new FakeTidal { ManifestPresentation = presentation };
+        var (api, _) = Clients(settings, http);
+        var source = new FluentDL.Services.Sources.TidalSource(api);
+
+        Assert.IsNull(await source.GetPreviewAudioAsync(new() { Source = SourceIds.Tidal, Id = "1" }));
+    }
+
+    [TestMethod]
+    public async Task PreviewAuthorizationFailureRetriesOnlyAppTokensAndLeavesTheAccountIntact()
+    {
+        var settings = Settings();
+        await SaveSession(settings);
+        var saved = await settings.ReadSettingAsync<string>(SettingKeys.TidalDownloadSession);
+        var http = new FakeTidal { CatalogResponse = _ => HttpStatusCode.Unauthorized };
+        var (api, _) = Clients(settings, http);
+
+        await Assert.ThrowsExceptionAsync<HttpRequestException>(() => api.GetPreviewManifestAsync("1", CancellationToken.None));
+
+        Assert.AreEqual(2, http.Catalog.Count);
+        Assert.IsTrue(http.Catalog.All(request => request.Token == "app"));
+        Assert.AreEqual(2, http.Grants.Count);
+        Assert.IsTrue(http.Grants.All(grant => grant["grant_type"] == "client_credentials"));
+        Assert.AreEqual(saved, await settings.ReadSettingAsync<string>(SettingKeys.TidalDownloadSession));
+    }
+
+    [TestMethod]
+    public async Task MissingPreviewReturnsNullWithoutSwitchingToAccountPlayback()
+    {
+        var settings = Settings();
+        await SaveSession(settings);
+        var http = new FakeTidal { CatalogResponse = _ => HttpStatusCode.NotFound };
+        var (api, _) = Clients(settings, http);
+
+        Assert.IsNull(await new FluentDL.Services.Sources.TidalSource(api).GetPreviewAudioAsync(new() { Source = SourceIds.Tidal, Id = "1" }));
+        Assert.AreEqual("app", http.Catalog.Single().Token);
+    }
+
+    [TestMethod]
     [DataRow(null, "GB")]
     [DataRow("US", "US")]
     public async Task DownloadAccountBeatsAppCredentialsAndSuppliesTheCountry(string? country, string expected)
@@ -254,6 +405,8 @@ public class TidalCatalogSessionTests
         public List<(string Url, string? Token)> Catalog { get; } = [];
         public HttpStatusCode RefreshStatus { get; init; } = HttpStatusCode.OK;
         public Func<string?, HttpStatusCode> CatalogResponse { get; init; } = _ => HttpStatusCode.OK;
+        public string ManifestPresentation { get; init; } = "PREVIEW";
+        public bool AppRefreshReturned { get; init; }
 
         protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
@@ -262,12 +415,17 @@ public class TidalCatalogSessionTests
                 var form = System.Web.HttpUtility.ParseQueryString(await request.Content!.ReadAsStringAsync(cancellationToken));
                 lock (Grants) Grants.Add(form.AllKeys.ToDictionary(k => k!, k => form[k]!));
                 await Task.Yield(); // Let concurrent requests contend for the shared session refresh.
-                if (form["grant_type"] == "client_credentials") return Json(HttpStatusCode.OK, """{"access_token":"app","expires_in":14400}""");
+                if (form["grant_type"] == "client_credentials") return Json(HttpStatusCode.OK, AppRefreshReturned
+                    ? """{"access_token":"app","expires_in":14400,"refresh_token":"must-not-replace-account-token"}"""
+                    : """{"access_token":"app","expires_in":14400}""");
                 return Json(RefreshStatus, """{"access_token":"renewed-download","refresh_token":"rotated-refresh","expires_in":14400,"user":{"userId":7,"email":"account@example.test","countryCode":"GB"}}""");
             }
             var bearer = request.Headers.Authorization?.Parameter;
             lock (Catalog) Catalog.Add((request.RequestUri.ToString(), bearer));
-            var response = Json(CatalogResponse(bearer), """{"data":{"id":"1","type":"tracks","attributes":{}}}""");
+            var body = request.RequestUri.AbsolutePath.Contains("/trackManifests/")
+                ? JsonSerializer.Serialize(new { data = new { id = "1", type = "trackManifests", attributes = new { trackPresentation = bearer == "app" ? ManifestPresentation : "FULL", uri = "https://preview.example.test/30-seconds.m3u8" } } })
+                : """{"data":{"id":"1","type":"tracks","attributes":{}}}""";
+            var response = Json(CatalogResponse(bearer), body);
             if (response.StatusCode == HttpStatusCode.TooManyRequests) response.Headers.RetryAfter = new RetryConditionHeaderValue(TimeSpan.Zero);
             return response;
         }

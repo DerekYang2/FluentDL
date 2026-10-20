@@ -98,6 +98,7 @@ namespace FluentDL.Views
                 }
                 
                 mediaPlayer.VolumeChanged -= MediaPlayer_VolumeChanged;
+                mediaPlayer.MediaFailed -= MediaPlayer_MediaFailed;
 
                 if (mediaPlayer.PlaybackSession.CanPause)
                 {
@@ -158,10 +159,12 @@ namespace FluentDL.Views
                 SongPreviewPlayer.MediaPlayer.VolumeChanged -= MediaPlayer_VolumeChanged;
                 SongPreviewPlayer.MediaPlayer.Volume = currentVolume;
                 SongPreviewPlayer.MediaPlayer.VolumeChanged += MediaPlayer_VolumeChanged;
+                SongPreviewPlayer.MediaPlayer.MediaFailed += MediaPlayer_MediaFailed;
             }
             catch (Exception ex)
             {
                 Debug.WriteLine("Failed to set media player source: " + ex.Message);
+                Serilog.Log.Warning("Could not set preview media source; exception {ExceptionType}, HRESULT {HResult}", ex.GetType().Name, ex.HResult);
             }
         }
 
@@ -170,6 +173,12 @@ namespace FluentDL.Views
             // Save the updated volume to settings
             currentVolume = sender.Volume;
             await localSettings.SaveSettingAsync(SettingsViewModel.PreviewPlayerVolume, currentVolume);
+        }
+
+        private void MediaPlayer_MediaFailed(Windows.Media.Playback.MediaPlayer sender, Windows.Media.Playback.MediaPlayerFailedEventArgs args)
+        {
+            // Do not log the media URI or exception message; signed preview URLs can contain credentials.
+            Serilog.Log.Warning("Preview playback failed; error {MediaError}, HRESULT {HResult}", args.Error, args.ExtendedErrorCode?.HResult);
         }
 
         public void SetPlayerSource(Stream? stream, string? mime)
@@ -185,6 +194,7 @@ namespace FluentDL.Views
             _ras = _originalStream.AsRandomAccessStream();
 
             SongPreviewPlayer.Source = MediaSource.CreateFromStream(_ras, mime);
+            SongPreviewPlayer.MediaPlayer.MediaFailed += MediaPlayer_MediaFailed;
         }
 
         public void SetAppBarButtons(List<AppBarButton> appBarButtons)
@@ -474,10 +484,20 @@ namespace FluentDL.Views
                 await LoadYouTubeAudioPreviewAsync(source, track, requestId, token);
                 return;
             }
-            var previewUri = await source.GetPreviewAudioAsync(track);
-            if (token.IsCancellationRequested || requestId != Interlocked.Read(ref _currentRequestId))
-                return;
-            SetPlayerSource(previewUri);
+            try
+            {
+                var previewUri = await source.GetPreviewAudioAsync(track);
+                if (token.IsCancellationRequested || requestId != Interlocked.Read(ref _currentRequestId))
+                    return;
+                SetPlayerSource(previewUri);
+            }
+            catch (OperationCanceledException) when (token.IsCancellationRequested) { }
+            catch (Exception error)
+            {
+                if (token.IsCancellationRequested || requestId != Interlocked.Read(ref _currentRequestId)) return;
+                Serilog.Log.Warning("Could not load {Provider} preview; exception {ExceptionType}, HRESULT {HResult}", track.Source, error.GetType().Name, error.HResult);
+                ClearMediaPlayerSource();
+            }
         }
         
         private async Task LoadYouTubeAudioPreviewAsync(IPreviewSource source, SongSearchObject track, long requestId, CancellationToken token)

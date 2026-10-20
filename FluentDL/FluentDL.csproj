@@ -55,6 +55,8 @@
   </ItemGroup>
   <ItemGroup>
     <Manifest Include="$(ApplicationManifest)" />
+    <Content Include="Assets\Updater\InstallUpdate.ps1" CopyToOutputDirectory="PreserveNewest" Condition="'$(FluentDLPackageChannel)' != 'Store'" />
+    <Content Remove="Assets\Updater\**" Condition="'$(FluentDLPackageChannel)' == 'Store'" />
     <None Remove="LICENSE.txt;LICENSE-MIT.txt;THIRD-PARTY-NOTICES.md" />
     <Content Include="LICENSE.txt;LICENSE-MIT.txt;THIRD-PARTY-NOTICES.md" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>

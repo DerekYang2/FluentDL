@@ -180,10 +180,11 @@ public sealed partial class Search : Page
         if (checkForUpdate && await ViewModel.GetNotifyUpdate()) {
             try 
             {
-                var latestRelease = await GithubAPI.GetLatestRelease();
-                if (latestRelease != null && latestRelease > Version.Parse(SettingsViewModel.GetVersionDescription()))
+                using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(20));
+                var update = await App.GetService<FluentDL.Contracts.Services.IAppUpdateService>().CheckAsync(deadline.Token);
+                if (update != null)
                 {  
-                    ShowInfoBar(InfoBarSeverity.Informational, $"New version available: <a href='https://github.com/derekyang2/fluentdl/releases'>FluentDL {latestRelease}</a>", 5, 
+                    ShowInfoBar(InfoBarSeverity.Informational, $"{update.DisplayVersion}. Check {SettingsNavigation.Link(SettingsSection.Updates)} to download and install.", 10,
                                 buttonText: "Don't Show Again", 
                                 onButtonClick: () => 
                                 {
@@ -194,7 +195,7 @@ public sealed partial class Search : Page
             }
             catch (Exception ex)
             {
-                Serilog.Log.Debug(ex, "Could not check GitHub for a newer FluentDL release");
+                Serilog.Log.Debug("Could not check for a FluentDL update: {ExceptionType}", ex.GetType().Name);
             }
         }
     }
@@ -837,6 +838,8 @@ public sealed partial class Search : Page
 
     async Task DownloadSong(SongSearchObject? songObj)
     {
+        if (ApplicationActivity.Gate.IsInstalling) { ShowInfoBar(InfoBarSeverity.Warning, "Wait for the app update to finish."); return; }
+        using var activity = ApplicationActivity.Gate.EnterWork();
         if (songObj == null)
         {
             ShowInfoBar(InfoBarSeverity.Error, "Failed to download track");

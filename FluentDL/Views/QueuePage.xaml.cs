@@ -54,6 +54,7 @@ public sealed partial class QueuePage : Page
     private readonly ConversionService conversions = App.GetService<ConversionService>();
     private readonly DownloadService downloads = App.GetService<DownloadService>();
     private bool playlistDialogOpen;
+    private bool albumExpansionBusy;
 
     // Conversion variables
     private ConcurrentDictionary<SongSearchObject, int> successSource, warningSource, errorSource;
@@ -124,7 +125,7 @@ public sealed partial class QueuePage : Page
         };
 
         NoItemsText.Visibility = QueueViewModel.Source.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
-        ClearButton.IsEnabled = QueueViewModel.Source.Count > 0;
+        ClearButton.IsEnabled = QueueViewModel.Source.Count > 0 && !albumExpansionBusy;
 
         // Set conversion variables
         successSource = new ConcurrentDictionary<SongSearchObject, int>();
@@ -235,6 +236,8 @@ public sealed partial class QueuePage : Page
         var outputVisibility = song.ResultString is null ? Visibility.Collapsed : Visibility.Visible;
         CompactQueueOutputSeparator.Visibility = outputVisibility;
         CompactQueueOutputItem.Visibility = outputVisibility;
+        CompactQueueExpandAlbumItem.Visibility = song.IsAlbum ? Visibility.Visible : Visibility.Collapsed;
+        CompactQueueExpandAlbumItem.IsEnabled = !song.IsRunning && !IsConverting && !albumExpansionBusy;
 
         if (e.TryGetPosition(container, out var position))
         {
@@ -302,7 +305,7 @@ public sealed partial class QueuePage : Page
     {
         SetCountText();
         NoItemsText.Visibility = QueueViewModel.Source.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
-        ClearButton.IsEnabled = QueueViewModel.Source.Count > 0;
+        ClearButton.IsEnabled = QueueViewModel.Source.Count > 0 && !albumExpansionBusy;
         dispatcherQueue.TryEnqueue(DispatcherQueuePriority.Low, UpdateQueueToolbarLayout);
     }
 
@@ -367,6 +370,7 @@ public sealed partial class QueuePage : Page
 
     private async void CreatePlaylistButton_Click(object sender, RoutedEventArgs e)
     {
+        if (albumExpansionBusy) { ShowInfoBar(InfoBarSeverity.Warning, "Wait for the album expansion to finish."); return; }
         if (playlistDialogOpen) return;
         if (IsConverting)
         {
@@ -399,6 +403,66 @@ public sealed partial class QueuePage : Page
         AnimationHelper.AttachScaleAnimation(removeButton);
 
         PreviewPanel.SetAppBarButtons(new List<AppBarButton> { downloadCoverButton, shareLinkButton, removeButton });
+    }
+
+    private async void ExpandAlbumButton_Click(object sender, RoutedEventArgs e)
+    {
+        if ((sender as FrameworkElement)?.Tag is not QueueObject { IsAlbum: true } album || albumExpansionBusy) return;
+        if (IsConverting || album.IsRunning || playlistDialogOpen || ApplicationActivity.Gate.IsInstalling)
+        {
+            ShowInfoBar(InfoBarSeverity.Warning, "Finish the current queue task or app update before expanding an album.");
+            return;
+        }
+        albumExpansionBusy = true;
+        var actions = new[] { ConvertDialogOpenButton, DownloadAllButton, CreatePlaylistButton, RestoreQueueButton, ClearButton };
+        var enabledActions = actions.ToDictionary(button => button, button => button.IsEnabled);
+        foreach (var button in actions) button.IsEnabled = false;
+        try
+        {
+            var confirm = new ContentDialog
+            {
+                XamlRoot = XamlRoot, RequestedTheme = ActualTheme, Title = "Expand album into tracks?",
+                Content = $"Replace \"{album.Title}\" with its individual tracks. Tracks already in the queue stay where they are and won't be added again. This does not download audio.",
+                PrimaryButtonText = "Expand album", CloseButtonText = "Cancel", DefaultButton = ContentDialogButton.Close,
+            };
+            if (await confirm.ShowAsync() != ContentDialogResult.Primary) return;
+            album.IsRunning = true;
+            ShowInfoBarPermanent(InfoBarSeverity.Informational, "Loading album tracks...");
+            IReadOnlyList<SongSearchObject> tracks;
+            using (ApplicationActivity.Gate.EnterWork())
+                tracks = await new QueueAlbumExpansion(App.GetService<SourceRegistry>()).LoadAsync(album);
+
+            var selected = ReferenceEquals(CustomListView.SelectedItem, album);
+            var content = App.MainWindow.Content as Control;
+            var enabled = content?.IsEnabled ?? true;
+            QueueAlbumExpansionPlan? plan;
+            if (content != null) content.IsEnabled = false;
+            try { plan = await QueueViewModel.ExpandAlbumAsync(album, tracks); }
+            finally { if (content != null) content.IsEnabled = enabled; }
+            if (plan == null)
+            {
+                ShowInfoBar(InfoBarSeverity.Informational, "The album was removed while its tracks were loading. No tracks were added.");
+                return;
+            }
+            if (selected && plan.Rows.Count > 0)
+            {
+                CustomListView.SelectedItem = plan.Rows[0];
+                CustomListView.ScrollIntoView(plan.Rows[0]);
+            }
+            ShowInfoBar(InfoBarSeverity.Success, $"Expanded album. Added {plan.Rows.Count} tracks; skipped {plan.Skipped} already queued or repeated tracks.", 8);
+        }
+        catch (Exception error)
+        {
+            Serilog.Log.Warning(error, "Could not expand a queued album");
+            ShowInfoBar(InfoBarSeverity.Error, error is InvalidOperationException ? error.Message : "Could not expand or save the album. The album was left unchanged.", 8);
+        }
+        finally
+        {
+            album.IsRunning = false;
+            albumExpansionBusy = false;
+            foreach (var button in actions) button.IsEnabled = enabledActions[button];
+            ClearButton.IsEnabled = QueueViewModel.Source.Count > 0;
+        }
     }
 
     private void ShareLinkButton_OnClick(object sender, RoutedEventArgs e)
@@ -1176,6 +1240,9 @@ public sealed partial class QueuePage : Page
 
     private async Task ConversionTask(IEnumerable<string> selectedSources, string outputSource)
     {
+        if (albumExpansionBusy) { ShowInfoBar(InfoBarSeverity.Warning, "Wait for the album expansion to finish."); return; }
+        if (ApplicationActivity.Gate.IsInstalling) { ShowInfoBar(InfoBarSeverity.Warning, "Wait for the app update to finish."); return; }
+        using var activity = ApplicationActivity.Gate.EnterWork();
         var songsWithOriginalIndex = QueueViewModel.Source
             .Select((song, originalIndex) => new { Song = song, OriginalIndex = originalIndex });
         var songsToConvert = songsWithOriginalIndex
@@ -1295,6 +1362,7 @@ public sealed partial class QueuePage : Page
             {
                 var song = x.Song;
                 var index = x.OriginalIndex;
+                var outcome = new QueueConversionOutcome(conversionUpdateCallback);
                 try
                 {
                     bool isReleased = false;
@@ -1317,7 +1385,7 @@ public sealed partial class QueuePage : Page
                         }
                         if (outputSource == SourceIds.Local) // Conversion to local, download the track
                         {
-                            fileLocation = await downloads.DownloadObject(song, directory, progress, conversionUpdateCallback);
+                            fileLocation = await downloads.DownloadObject(song, directory, progress, outcome.Report);
                             newSongObj = song;
                         }
                         else
@@ -1326,13 +1394,13 @@ public sealed partial class QueuePage : Page
                             switch (match.Kind)
                             {
                                 case MatchKind.Exact:
-                                    conversionUpdateCallback(StatusLevel.Success, match.Track!);
+                                    outcome.Report(StatusLevel.Success, match.Track!);
                                     break;
                                 case MatchKind.Close:
-                                    conversionUpdateCallback(StatusLevel.Warning, match.Track!);
+                                    outcome.Report(StatusLevel.Warning, match.Track!);
                                     break;
                                 case MatchKind.NotFound:
-                                    conversionUpdateCallback(StatusLevel.Error, song);
+                                    outcome.Report(StatusLevel.Error, song);
                                     break;
                             }
                             newSongObj = match.Track;
@@ -1370,12 +1438,12 @@ public sealed partial class QueuePage : Page
 
                                     if (queueObj != null)
                                     {
-                                        if (successSource.ContainsKey(newSongObj)) queueObj.ConvertBadgeColor = new SolidColorBrush(Windows.UI.Color.FromArgb(255, 108, 203, 95));
-                                        else if (warningSource.ContainsKey(newSongObj)) queueObj.ConvertBadgeColor = new SolidColorBrush(Windows.UI.Color.FromArgb(255, 252, 225, 0));
-                                        else // Assume failure
+                                        queueObj.ConvertBadgeColor = new SolidColorBrush(outcome.Level switch
                                         {
-                                            queueObj.ConvertBadgeColor = new SolidColorBrush(Windows.UI.Color.FromArgb(255, 255, 153, 164));
-                                        }
+                                            StatusLevel.Success => BadgeSuccess,
+                                            StatusLevel.Warning => BadgeWarning,
+                                            _ => BadgeError,
+                                        });
                                     }
                                 }
                                 else // Failed conversion, set current object badge to error

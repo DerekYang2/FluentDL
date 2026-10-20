@@ -331,10 +331,16 @@ internal sealed class TidalSource : ISourceSession, IAccountLogin, ISearchSource
     /// </summary>
     public async Task<string?> GetPreviewAudioAsync(SongSearchObject track)
     {
-        var document = await GetOrNullAsync(
-            $"trackManifests/{Uri.EscapeDataString(track.Id)}?manifestType=HLS&formats=HEAACV1&uriScheme=HTTPS&usage=PLAYBACK&adaptive=false",
-            CancellationToken.None);
-        return document?.Data.FirstOrDefault() is { ValueKind: JsonValueKind.Object } manifest ? Attribute(manifest, "uri") : null;
+        JsonApiDocument document;
+        try { document = await api.GetPreviewManifestAsync(track.Id, CancellationToken.None); }
+        catch (HttpRequestException error) when (error.StatusCode == HttpStatusCode.NotFound) { return null; }
+        if (document.Data.FirstOrDefault() is not { ValueKind: JsonValueKind.Object } manifest) return null;
+        if (Attribute(manifest, "trackPresentation") != "PREVIEW")
+        {
+            Serilog.Log.Warning("TIDAL did not return a preview presentation; refusing full-track media in the preview player");
+            return null;
+        }
+        return Attribute(manifest, "uri");
     }
 
     /// <summary>A public playlist's name and tracks, in order. Videos in the playlist are left out.</summary>

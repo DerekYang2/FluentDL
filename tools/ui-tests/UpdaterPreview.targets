@@ -1,0 +1,8 @@
+<Project>
+  <PropertyGroup Condition="'$(MSBuildProjectName)' == 'FluentDL' And '$(FluentDLUpdaterUiPreview)' == 'true'">
+    <DefineConstants>$(DefineConstants);FLUENTDL_UPDATER_UI_TESTS</DefineConstants>
+  </PropertyGroup>
+  <ItemGroup Condition="'$(MSBuildProjectName)' == 'FluentDL' And '$(FluentDLUpdaterUiPreview)' == 'true'">
+    <Compile Include="$(MSBuildThisFileDirectory)UpdaterTestSupport.cs" Link="UpdaterTestSupport.cs" />
+  </ItemGroup>
+</Project>

@@ -4,6 +4,7 @@ using FluentDL.Contracts.Services;
 using FluentDL.Core.Services;
 using FluentDL.Core.Contracts.Services;
 using FluentDL.Core.Helpers;
+using FluentDL.Helpers;
 using FluentDL.Models;
 using FluentDL.Services;
 using Microsoft.UI.Xaml;
@@ -290,6 +291,7 @@ public partial class QueueViewModel : ObservableRecipient
 
     public static async Task<QueueObject?> CreateQueueObject(SongSearchObject song, int? queueCounter, int? subOrder = null)
     {
+        using var activity = ApplicationActivity.Gate.EnterWork();
         var queueObj = new QueueObject(song)
         {
             QueueCounter = queueCounter,
@@ -304,10 +306,10 @@ public partial class QueueViewModel : ObservableRecipient
             await bitmapImage.SetSourceAsync(memoryStream);
             queueObj.LocalBitmapImage = bitmapImage; // Set the local bitmap image
 
-            _ = DatabaseService.QueueSave(GetHash(queueObj), queueObj.ToString(), memoryStream);
+            await DatabaseService.QueueSave(GetHash(queueObj), queueObj.ToString(), memoryStream);
         } else
         {
-            _ = DatabaseService.QueueSave(GetHash(queueObj), queueObj.ToString(), null);
+            await DatabaseService.QueueSave(GetHash(queueObj), queueObj.ToString(), null);
         }
 
         return queueObj;
@@ -315,6 +317,8 @@ public partial class QueueViewModel : ObservableRecipient
 
     public static QueueObject? Add(SongSearchObject? song)
     {
+        if (ApplicationActivity.Gate.IsInstalling) return null;
+        using var activity = ApplicationActivity.Gate.EnterWork();
         if (song == null || trackSet.Contains(GetHash(song)))
         {
             return null;
@@ -328,7 +332,7 @@ public partial class QueueViewModel : ObservableRecipient
 
         if (queueObj.LocalBitmapImage == null)  // Create a bitmapimage to prevent disappearing listview images
         {
-            _ = Task.Run(async () =>
+            _ = ApplicationActivity.RunBackground(async () =>
             {
                 try
                 {
@@ -363,6 +367,7 @@ public partial class QueueViewModel : ObservableRecipient
 
     public static async Task Remove(SongSearchObject song)
     {
+        using var activity = ApplicationActivity.Gate.EnterWork();
         var hash = GetHash(song);
         trackSet.Remove(hash);
         Source.Remove(Source.First(x => GetHash(x) == hash));
@@ -371,6 +376,7 @@ public partial class QueueViewModel : ObservableRecipient
 
     public static async Task Replace(int index, QueueObject? queueObj)
     {
+        using var activity = ApplicationActivity.Gate.EnterWork();
         if (queueObj == null || index < 0) return; // a negative index: the row was removed meanwhile
 
         var oldHash = GetHash(Source[index]);
@@ -382,6 +388,7 @@ public partial class QueueViewModel : ObservableRecipient
 
     public static async Task Clear()
     {
+        using var activity = ApplicationActivity.Gate.EnterWork();
         Source.Clear();
         trackSet.Clear();
         await DatabaseService.Clear();
@@ -389,6 +396,7 @@ public partial class QueueViewModel : ObservableRecipient
 
     public static async Task ClearSources(HashSet<string> sources)
     {
+        using var activity = ApplicationActivity.Gate.EnterWork();
         if (sources == null) throw new ArgumentNullException(nameof(sources));
         if (sources.Count == 0) return;
 
@@ -432,12 +440,37 @@ public partial class QueueViewModel : ObservableRecipient
         return (QueueObject.IsAlbumItem(song) ? "album:" : "") + song.Source + song.Id;
     }
 
+    internal static Task SaveForUpdateAsync(CancellationToken token) => DatabaseService.SaveForUpdateAsync(
+        Source.Select(row => (GetHash(row), row.ToString())).ToArray(), token);
+
+    internal static async Task<QueueAlbumExpansionPlan?> ExpandAlbumAsync(QueueObject album, IReadOnlyList<SongSearchObject> tracks)
+    {
+        using var exclusive = ApplicationActivity.Gate.TryEnterExclusiveWork()
+            ?? throw new InvalidOperationException("Finish active downloads, conversions or playlist uploads before expanding an album.");
+        var index = Source.IndexOf(album);
+        if (index < 0) return null;
+        var plan = QueueAlbumExpansion.Plan(album, tracks, Source);
+        // Save the current queue first, including any row whose cover could not be fetched.
+        // The exclusive gate prevents new work until storage and the collection agree.
+        await SaveForUpdateAsync(CancellationToken.None);
+        await DatabaseService.ReplaceAlbumAsync(GetHash(album), plan.Rows.Select(row => (GetHash(row), row.ToString())).ToArray());
+        trackSet.Remove(GetHash(album));
+        Source.RemoveAt(index);
+        foreach (var row in plan.Rows)
+        {
+            trackSet.Add(GetHash(row));
+            Source.Insert(index++, row);
+        }
+        return plan;
+    }
+
     /// <summary>
     /// Replaces the album row at <paramref name="index"/> with the rows it expanded into, in order. They keep the album's
     /// position through restarts.
     /// </summary>
     public static async Task ReplaceWithMany(int index, IReadOnlyList<QueueObject> rows)
     {
+        using var activity = ApplicationActivity.Gate.EnterWork();
         if (index < 0) return; // the album row was removed meanwhile
         var album = Source[index];
         trackSet.Remove(GetHash(album));
@@ -455,6 +488,7 @@ public partial class QueueViewModel : ObservableRecipient
 
     public static async Task LoadSaveQueue() 
     {
+        using var activity = ApplicationActivity.Gate.EnterWork();
         try
         {
             Source.Clear();

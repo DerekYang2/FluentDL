@@ -142,9 +142,27 @@ public class QueueDisplayBindingTests
 
         // Assert
         CollectionAssert.AreEquivalent(
-            new[] { "ShareLinkButton_OnClick", "DownloadCoverButton_OnClick", "RemoveButton_OnClick", "OpenSpekButton_Click", "OpenLocalButton_Click", "OutputButton_OnClick" },
+            new[] { "ShareLinkButton_OnClick", "DownloadCoverButton_OnClick", "RemoveButton_OnClick", "OpenSpekButton_Click", "OpenLocalButton_Click", "OutputButton_OnClick", "ExpandAlbumButton_Click" },
             handlers);
         Assert.IsFalse(row.Descendants(Xaml + "MenuFlyout").Any(), "Rows use the shared menu so the requested row, not the selection, is the target.");
+    }
+
+    [TestMethod]
+    public void AlbumExpansionButtonsAreLabeledAndAvailableInBothLayouts()
+    {
+        var page = ReadMarkup("QueuePage.xaml");
+        var regular = StandardTemplate(page).Descendants(Xaml + "Button").Single(element => (string?)element.Attribute("Click") == "ExpandAlbumButton_Click");
+        var compact = ReadMarkup("CompactQueueRow.xaml").Descendants(Xaml + "Button").Single(element => (string?)element.Attribute("Click") == "ExpandAlbumButton_Click");
+        foreach (var button in new[] { regular, compact })
+        {
+            Assert.AreEqual("Expand album into tracks", (string?)button.Attribute("AutomationProperties.Name"));
+            Assert.IsFalse(string.IsNullOrWhiteSpace((string?)button.Attribute("AutomationProperties.AutomationId")));
+            var visibility = ParseXBind((string?)button.Attribute("Visibility"));
+            Assert.IsTrue(visibility.Path.EndsWith("IsAlbum"));
+            Assert.AreEqual("OneWay", visibility.Mode);
+        }
+        var row = page.Descendants(Views + "CompactQueueRow").Single();
+        Assert.AreEqual("ExpandAlbumButton_Click", (string?)row.Attribute("ExpandAlbumClick"));
     }
 
     [TestMethod]

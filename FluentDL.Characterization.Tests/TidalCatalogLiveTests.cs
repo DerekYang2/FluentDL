@@ -49,7 +49,9 @@ public class TidalCatalogLiveTests
         Assert.IsTrue(track.ImageLocation.StartsWith("https://"));
         var preview = await source.GetPreviewAsync(track);
         Assert.IsTrue(preview.CoverUrl?.StartsWith("https://") == true);
-        Assert.IsFalse(string.IsNullOrWhiteSpace(await source.GetPreviewAudioAsync(track)));
+        // An account-only client must not feed full-track DRM into the preview player.
+        // TidalSignedInPreviewTests covers playback with separate preview credentials.
+        await Assert.ThrowsExceptionAsync<InvalidOperationException>(() => source.GetPreviewAudioAsync(track));
 
         var album = await source.GetAlbumAsync("293301129", token);
         Assert.IsNotNull(album);
@@ -61,7 +63,7 @@ public class TidalCatalogLiveTests
         var (_, playlist) = await source.GetPlaylistAsync("05182a0b-f4e4-474e-9363-6155171a1519", token);
         Assert.IsTrue(playlist.Count > 20, "playlist pagination must still work");
         Assert.AreEqual(TidalAccess.DownloadAccount, api.Access);
-        Console.WriteLine("Download account passed catalog search/paging, advanced search, metadata, covers, preview manifest, album/playlist paging, ISRC and UPC lookup. No playlists changed.");
+        Console.WriteLine("Download account passed catalog search/paging, advanced search, metadata, covers, preview metadata, album/playlist paging, ISRC and UPC lookup. Preview playback without app credentials was rejected. No playlists changed.");
     }
 
     internal sealed class SessionSettings(string path) : ILocalSettingsService

@@ -113,6 +113,11 @@ public partial class App : Application
                     services.AddSingleton<IAppNotificationService, AppNotificationService>();
                     services.AddSingleton<ILocalSettingsService, LocalSettingsService>();
                     services.AddSingleton<QueueDisplaySettings>();
+                    services.AddSingleton<IAppUpdateService, AppUpdateService>();
+                    services.AddSingleton<AppUpdateViewModel>();
+#if FLUENTDL_UPDATER_UI_TESTS
+                    UpdaterTestSupport.Register(services);
+#endif
                     services.AddSingleton<IThemeSelectorService, ThemeSelectorService>();
                     services.AddTransient<INavigationViewService, NavigationViewService>();
 
