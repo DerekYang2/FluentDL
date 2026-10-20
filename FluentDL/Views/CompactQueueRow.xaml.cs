@@ -24,6 +24,8 @@ public sealed partial class CompactQueueRow : UserControl
 
     // Raised with the clicked button as the sender. The button's Tag holds the row's track.
     public event RoutedEventHandler? SpectrogramClick;
+    public event RoutedEventHandler? ExpandAlbumClick;
 
     private void SpectrogramButton_Click(object sender, RoutedEventArgs e) => SpectrogramClick?.Invoke(sender, e);
+    private void ExpandAlbumButton_Click(object sender, RoutedEventArgs e) => ExpandAlbumClick?.Invoke(sender, e);
 }

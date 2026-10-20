@@ -227,6 +227,8 @@ public sealed class PlaylistDialogViewModel : ObservableObject
     public async Task CreateAsync()
     {
         if (!CanCreate || SelectedDestination is not { } selected) return;
+        if (ApplicationActivity.Gate.IsInstalling) { SetMessage(PlaylistNoticeLevel.Warning, "Wait for the app update to finish."); return; }
+        using var activity = ApplicationActivity.Gate.EnterWork();
         using var current = operation = new CancellationTokenSource();
         isBusy = true;
         Changed();

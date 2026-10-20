@@ -14,9 +14,9 @@ namespace FluentDL.Services
 {
     internal class DatabaseService
     {
-        private static Channel<(string Hash, string Json, byte[]? Bytes)> _saveQueue =
-        Channel.CreateUnbounded<(string, string, byte[]?)>();
-        private static Task? _consumerTask = null;
+        private sealed record AlbumReplacement(string Hash, IReadOnlyList<(string Hash, string Json)> Tracks);
+        private sealed record QueueWrite(string Hash, string Json, byte[]? Bytes, IReadOnlyList<(string Hash, string Json)>? Snapshot = null, AlbumReplacement? Replacement = null);
+        private static FluentDL.Core.Updates.AsyncPersistenceQueue<QueueWrite>? _writes;
         private static SqliteConnection? _consumerConnection;
         private static SqliteConnection Conn => _consumerConnection
             ?? throw new InvalidOperationException("Database not initialized. Call InitDatabase first.");
@@ -34,8 +34,13 @@ namespace FluentDL.Services
 
         public static void StartConsumerTask()
         {
-            _saveQueue = Channel.CreateUnbounded<(string, string, byte[]?)>();
-            _consumerTask = Task.Run(ProcessQueueAsync);
+            _writes = new(async item =>
+            {
+                if (item.Replacement != null) await QueueAlbumPersistence.ReplaceAsync(Conn, item.Replacement.Hash, item.Replacement.Tracks);
+                else if (item.Snapshot != null) await SaveSnapshotAsync(item.Snapshot);
+                else await SaveAsync(item.Hash, item.Json, item.Bytes);
+            },
+                error => Log.Error(error, "Queue persistence failed"));
         } 
 
         public static async Task<string?> InitDatabase()
@@ -102,10 +107,8 @@ namespace FluentDL.Services
         {
             try
             {
-                if (!_saveQueue.Writer.TryWrite((hash, json, await ConvertStream(stream))))
-                {
-                    Log.Error("Queue item could not be scheduled for persistence");
-                }
+                var queue = _writes ?? throw new InvalidOperationException("Queue persistence is not initialized.");
+                await queue.EnqueueAsync(async () => new QueueWrite(hash, json, await ConvertStream(stream)));
             }
             catch (Exception ex)
             {
@@ -113,22 +116,52 @@ namespace FluentDL.Services
             }
         }
 
-        private static async Task ProcessQueueAsync()
+        internal static async Task SaveForUpdateAsync(IReadOnlyList<(string Hash, string Json)> snapshot, CancellationToken token)
         {
-            while (await _saveQueue.Reader.WaitToReadAsync())
+            var queue = _writes ?? throw new InvalidOperationException("Queue persistence is not initialized.");
+            await queue.FlushAsync(token);
+            await queue.EnqueueAsync(() => Task.FromResult(new QueueWrite("", "", null, snapshot))).WaitAsync(token);
+            await queue.FlushAsync(token);
+        }
+
+        internal static Task ReplaceAlbumAsync(string hash, IReadOnlyList<(string Hash, string Json)> tracks)
+        {
+            var queue = _writes ?? throw new InvalidOperationException("Queue persistence is not initialized.");
+            return queue.EnqueueAsync(() => Task.FromResult(new QueueWrite("", "", null, Replacement: new(hash, tracks))));
+        }
+
+        private static async Task SaveSnapshotAsync(IReadOnlyList<(string Hash, string Json)> snapshot)
+        {
+            using var transaction = Conn.BeginTransaction();
+            var hashes = snapshot.Select(item => item.Hash).ToHashSet(StringComparer.Ordinal);
+            var stale = new List<string>();
+            using (var select = Conn.CreateCommand())
             {
-                while (_saveQueue.Reader.TryRead(out var item))
-                {
-                    try
-                    {
-                        await SaveAsync(item.Hash, item.Json, item.Bytes);
-                    }
-                    catch (Exception ex)
-                    {
-                        Log.Error(ex, "Background queue-item persistence failed");
-                    }
-                }
+                select.Transaction = transaction;
+                select.CommandText = "SELECT Hash FROM Items";
+                await using var reader = await select.ExecuteReaderAsync();
+                while (await reader.ReadAsync()) if (!hashes.Contains(reader.GetString(0))) stale.Add(reader.GetString(0));
             }
+            foreach (var hash in stale)
+            {
+                using var remove = Conn.CreateCommand();
+                remove.Transaction = transaction;
+                remove.CommandText = "DELETE FROM Items WHERE Hash = @h";
+                remove.Parameters.AddWithValue("@h", hash);
+                await remove.ExecuteNonQueryAsync();
+            }
+            foreach (var item in snapshot)
+            {
+                using var save = Conn.CreateCommand();
+                save.Transaction = transaction;
+                save.CommandText = "INSERT INTO Items (Hash, JsonText, Image, CreatedUtc) VALUES (@h, @j, NULL, @t) "
+                    + "ON CONFLICT(Hash) DO UPDATE SET JsonText = excluded.JsonText";
+                save.Parameters.AddWithValue("@h", item.Hash);
+                save.Parameters.AddWithValue("@j", item.Json);
+                save.Parameters.AddWithValue("@t", DateTime.UtcNow.ToString("o"));
+                await save.ExecuteNonQueryAsync();
+            }
+            transaction.Commit();
         }
 
         // Save image bytes (from IRandomAccessStream) plus metadata into DB
@@ -435,10 +468,9 @@ namespace FluentDL.Services
             try
             {
                 // Wait for tasks to finish
-                if (_consumerTask != null)
+                if (_writes != null)
                 {
-                    _saveQueue.Writer.Complete();
-                    await _saveQueue.Reader.Completion;
+                    await _writes.CompleteAsync();
                 }
 
                 // Close global consumer connection

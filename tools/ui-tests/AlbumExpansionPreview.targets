@@ -1,0 +1,12 @@
+<Project>
+  <!-- Opt-in test identity. No fake provider or installer is added to the app. -->
+  <Import Project="$(MSBuildThisFileDirectory)DevPackage.targets" />
+  <PropertyGroup Condition="'$(MSBuildProjectName)' == 'FluentDL'">
+    <FluentDLDevToastClsid>6e71e8d2-b830-45ea-8c4b-2201d5bfa486</FluentDLDevToastClsid>
+    <FluentDLDevPhoneProductId>49a67d1a-b36a-4482-9548-bc1b42281cb1</FluentDLDevPhoneProductId>
+  </PropertyGroup>
+  <Target Name="FluentDLUseAlbumExpansionTestIdentity" AfterTargets="FluentDLUseDevManifest" Condition="'$(MSBuildProjectName)' == 'FluentDL'">
+    <XmlPoke XmlInputPath="$(FluentDLDevManifest)" Namespaces="$(FluentDLDevNamespaces)" Query="/m:Package/m:Identity/@Name" Value="DerekYang2.FluentDL.AlbumExpansionTest" />
+    <XmlPoke XmlInputPath="$(FluentDLDevManifest)" Namespaces="$(FluentDLDevNamespaces)" Query="/m:Package/m:Properties/m:DisplayName" Value="FluentDL album expansion test" />
+  </Target>
+</Project>

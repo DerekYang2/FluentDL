@@ -6,6 +6,14 @@ They run against a separate **FluentDL (Dev)** package (`DerekYang2.FluentDL.Dev
 
 By default the tests run inside the Windows Sandbox that WinApp CLI manages, so the dev app never opens on your desktop and the dev package installed on your PC is left alone. `-Local` runs them on your desktop instead.
 
+## Album expansion checks
+
+`Test-QueueAlbumExpansion.ps1` tests the standard and compact expand buttons, confirmation cancellation, duplicate skipping and preservation of an incomplete album. It uses synthetic cached YouTube album tracks, not provider credentials or audio downloads.
+
+Build and launch the app with `winapp run FluentDL/FluentDL.csproj --on sandbox --arch x64 --detach --json`. Pass `CustomAfterMicrosoftCommonTargets` as the absolute path to `tools/ui-tests/AlbumExpansionPreview.targets`, with separate `IntermediateOutputPath=obj\album-expansion-ui\` and `OutputPath=bin\album-expansion-ui\` properties. The target gives this build the separate `DerekYang2.FluentDL.AlbumExpansionTest` identity.
+
+Copy `sandbox/Set-AlbumExpansionFixture.ps1` into the guest with `winapp target push`. Run it through `winapp target exec sandbox` with the reported guest process ID. It closes only the isolated test app, refuses to overwrite an existing queue, seeds the fixture and relaunches the app. Use its new process ID with `Test-QueueAlbumExpansion.ps1 -AppPid <guest-process-id>`. Its `-ReadOnly` mode returns saved queue rows for persistence checks. Do not use the seed helper against a normal installation.
+
 ## Requirements
 
 - WinApp CLI 0.7+ and the Windows Sandbox feature, for the default Sandbox runs. The first run in a new Sandbox downloads the .NET SDK into it (about 300 MB). Later runs only copy files that changed. The guest script first turns off Smart App Control inside the Sandbox, Microsoft's workaround for very slow installs there ([Windows-Sandbox#68](https://github.com/microsoft/Windows-Sandbox/issues/68)). It never changes this PC.
