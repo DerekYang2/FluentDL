@@ -1,3 +1,4 @@
+using System.Buffers;
 using PhotoSauce.MagicScaler;
 using PhotoSauce.NativeCodecs.Libwebp;
 
@@ -12,23 +13,44 @@ internal static class ArtworkThumbnail
     // Static initialization serializes registration before either thumbnail caller starts decoding.
     static ArtworkThumbnail() => CodecManager.Configure(codecs => codecs.UseLibwebp());
 
+    internal static async Task<MemoryStream> DownloadAsync(HttpClient client, string uri, CancellationToken token = default)
+    {
+        // GetByteArrayAsync buffers once under the client's size limit and whole-response timeout.
+        // Unlike GetAsync followed by ReadAsByteArrayAsync, it does not copy an already buffered response.
+        return new MemoryStream(await client.GetByteArrayAsync(uri, token), writable: false);
+    }
+
     internal static async Task<byte[]> CreateJpegAsync(Stream source, uint minimumEdge, CancellationToken token = default)
     {
         ArgumentNullException.ThrowIfNull(source);
         if (minimumEdge is 0 or > 512) throw new ArgumentOutOfRangeException(nameof(minimumEdge));
 
-        // HTTP response streams need not seek. Keep a bounded copy without taking ownership of the source.
-        using var input = new MemoryStream();
-        var buffer = new byte[81920];
-        var total = 0;
-        int read;
-        while ((read = await source.ReadAsync(buffer, token)) != 0)
+        token.ThrowIfCancellationRequested();
+        var remaining = source.CanSeek ? source.Length - source.Position : (long?)null;
+        if (remaining > MaximumEncodedBytes)
+            throw new InvalidDataException("Album artwork exceeds the supported file size.");
+
+        // Downloaded and embedded artwork already have seekable buffers. Decode them in place.
+        // Only copy streams that cannot seek or that start partway through another stream.
+        using var buffered = source.CanSeek && source.Position == 0 ? null
+            : new MemoryStream(remaining is >= 0 ? checked((int)remaining.Value) : 0);
+        var input = (Stream?)buffered ?? source;
+        if (buffered != null)
         {
-            total = checked(total + read);
-            if (total > MaximumEncodedBytes) throw new InvalidDataException("Album artwork exceeds the supported file size.");
-            await input.WriteAsync(buffer.AsMemory(0, read), token);
+            var buffer = ArrayPool<byte>.Shared.Rent(81920);
+            try
+            {
+                int read;
+                while ((read = await source.ReadAsync(buffer.AsMemory(), token)) != 0)
+                {
+                    if (buffered.Length + read > MaximumEncodedBytes)
+                        throw new InvalidDataException("Album artwork exceeds the supported file size.");
+                    buffered.Write(buffer, 0, read);
+                }
+                buffered.Position = 0;
+            }
+            finally { ArrayPool<byte>.Shared.Return(buffer); }
         }
-        input.Position = 0;
 
         // MagicScaler is synchronous. Keep native decoding and resizing off the UI thread.
         return await Task.Run(() =>

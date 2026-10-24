@@ -248,9 +248,7 @@ public partial class QueueViewModel : ObservableRecipient
         if (string.IsNullOrWhiteSpace(uri)) return null;
         try
         {
-            using var response = await _httpClient.GetAsync(uri);
-            response.EnsureSuccessStatusCode();
-            return new MemoryStream(await response.Content.ReadAsByteArrayAsync(), writable: false);
+            return await ArtworkThumbnail.DownloadAsync(_httpClient, uri);
         }
         catch (Exception e)
         {

@@ -118,7 +118,30 @@ public class ArtworkCodecCompatibilityTests
         using var input = new MemoryStream(Convert.FromBase64String(Webp));
         using var cancellation = new CancellationTokenSource();
         cancellation.Cancel();
-        await Assert.ThrowsExceptionAsync<TaskCanceledException>(() => ArtworkThumbnail.CreateJpegAsync(input, 76, cancellation.Token));
+        await Assert.ThrowsExceptionAsync<OperationCanceledException>(() => ArtworkThumbnail.CreateJpegAsync(input, 76, cancellation.Token));
+        Assert.IsTrue(input.CanRead);
+    }
+
+    [TestMethod]
+    public async Task SeekableArtworkIsDecodedWithoutAnAsyncInputCopy()
+    {
+        using var input = new DecodeOnlyStream(await EncodeAsync(BitmapEncoder.PngEncoderId, 320, 160));
+        var jpeg = await ArtworkThumbnail.CreateJpegAsync(input, 76);
+        Assert.IsTrue(jpeg.Length > 0);
+        Assert.IsTrue(input.CanRead, "Decoding in place must not close the caller's stream.");
+    }
+
+    [TestMethod]
+    public async Task SeekableArtworkAtANonzeroPositionUsesOnlyTheRemainingBytes()
+    {
+        var bytes = Convert.FromBase64String(Webp);
+        using var input = new MemoryStream(new byte[23].Concat(bytes).ToArray());
+        input.Position = 23;
+        using var output = new MemoryStream(await ArtworkThumbnail.CreateJpegAsync(input, 76));
+        using var random = output.AsRandomAccessStream();
+        var decoded = await BitmapDecoder.CreateAsync(random);
+        Assert.AreEqual(152u, decoded.PixelWidth);
+        Assert.AreEqual(76u, decoded.PixelHeight);
         Assert.IsTrue(input.CanRead);
     }
 
@@ -172,5 +195,11 @@ public class ArtworkCodecCompatibilityTests
         public override void SetLength(long value) => throw new NotSupportedException();
         public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
         protected override void Dispose(bool disposing) { if (disposing) source.Dispose(); base.Dispose(disposing); }
+    }
+
+    private sealed class DecodeOnlyStream(byte[] bytes) : MemoryStream(bytes, writable: false)
+    {
+        public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken token = default)
+            => throw new AssertFailedException("Seekable artwork must not be copied into a second input buffer.");
     }
 }
