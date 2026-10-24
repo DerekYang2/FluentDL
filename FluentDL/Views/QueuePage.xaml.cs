@@ -1013,6 +1013,7 @@ public sealed partial class QueuePage : Page
         message = message.Trim();
         dispatcherQueue.TryEnqueue(() =>
         {
+            dispatcherTimer.Stop();
             PageInfoBar.IsOpen = true;
             PageInfoBar.Opacity = 1;
             PageInfoBar.Severity = severity;
@@ -1028,9 +1029,9 @@ public sealed partial class QueuePage : Page
             {
                 UrlParser.ParseTextBlock(InfoBarTextBlock, message);
             }
+            dispatcherTimer.Interval = TimeSpan.FromSeconds(seconds);
+            dispatcherTimer.Start();
         });
-        dispatcherTimer.Interval = TimeSpan.FromSeconds(seconds);
-        dispatcherTimer.Start();
     }
 
     private void ShowInfoBarPermanent(InfoBarSeverity severity, string message, string title = "", string buttonText = "")
@@ -1039,6 +1040,7 @@ public sealed partial class QueuePage : Page
         message = message.Trim();
         dispatcherQueue.TryEnqueue(() =>
         {
+            dispatcherTimer.Stop();
             PageInfoBar.IsOpen = true;
             PageInfoBar.Opacity = 1;
             PageInfoBar.Severity = severity;
@@ -1094,7 +1096,6 @@ public sealed partial class QueuePage : Page
 
     private void ShowSettingsNotice(string message, SettingsSection section)
     {
-        dispatcherTimer.Stop();
         ShowInfoBarPermanent(InfoBarSeverity.Warning, SettingsNavigation.WithLink(message, section));
         dispatcherQueue.TryEnqueue(() =>
         {
@@ -1295,7 +1296,7 @@ public sealed partial class QueuePage : Page
             directory = await StoragePickerHelper.GetDirectory();
             if (directory == null)
             {
-                ShowSettingsNotice("No download directory selected.", SettingsSection.Downloads);
+                ShowInfoBar(InfoBarSeverity.Informational, "Download cancelled. No folder selected.");
                 return;
             }
         }

@@ -1,0 +1,10 @@
+<Project>
+  <Import Project="$(MSBuildThisFileDirectory)DevPackage.targets" />
+  <PropertyGroup Condition="'$(MSBuildProjectName)' == 'FluentDL'">
+    <DefineConstants>$(DefineConstants);FLUENTDL_PICKER_UI_TESTS</DefineConstants>
+  </PropertyGroup>
+  <ItemGroup Condition="'$(MSBuildProjectName)' == 'FluentDL'">
+    <Compile Include="$(MSBuildThisFileDirectory)LocalPickerTestSupport.cs" Link="LocalPickerTestSupport.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)LocalPickerPageFixture.cs" Link="LocalPickerPageFixture.cs" />
+  </ItemGroup>
+</Project>

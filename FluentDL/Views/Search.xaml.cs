@@ -864,7 +864,7 @@ public sealed partial class Search : Page
             directory = await StoragePickerHelper.GetDirectory();
             if (directory == null)
             {
-                ShowSettingsNotice("No download directory selected.", SettingsSection.Downloads);
+                ShowInfoBar(InfoBarSeverity.Informational, "Download cancelled. No folder selected.");
                 return;
             }
         }
@@ -1035,6 +1035,7 @@ public sealed partial class Search : Page
         message = message.Trim();
         dispatcher.TryEnqueue(() =>
         {
+            dispatcherTimer.Stop();
             PageInfoBar.IsOpen = true;
             PageInfoBar.Opacity = 1;
             PageInfoBar.Severity = severity;
@@ -1063,18 +1064,18 @@ public sealed partial class Search : Page
             {
                 InfobarButton.Visibility = Visibility.Collapsed;
             }
+            dispatcherTimer.Interval = TimeSpan.FromSeconds(seconds);
+            dispatcherTimer.Start();
         });
-        dispatcherTimer.Interval = TimeSpan.FromSeconds(seconds);
-        dispatcherTimer.Start();
     }
 
     private void ShowInfoBarPermanent(InfoBarSeverity severity, string message, string title = "", string buttonText = "", Action? onButtonClick = null, bool isIndeterminate = true, double progressPercent = 0)
     {
-        dispatcherTimer.Stop();
         title = title.Trim();
         message = message.Trim();
         dispatcher.TryEnqueue(() =>
         {
+            dispatcherTimer.Stop();
             PageInfoBar.IsOpen = true;
             PageInfoBar.Opacity = 1;
             PageInfoBar.Severity = severity;

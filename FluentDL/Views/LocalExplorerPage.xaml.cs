@@ -1,4 +1,5 @@
 ﻿using FluentDL.Helpers;
+using FluentDL.Core.Services;
 using FluentDL.Models;
 using FluentDL.Services;
 using FluentDL.ViewModels;
@@ -61,7 +62,13 @@ public sealed partial class LocalExplorerPage : Page
 {
     private DispatcherQueue dispatcher;
     private DispatcherTimer dispatcherTimer;
-    private CancellationTokenSource? cancellationTokenSource = null;
+    private long infoBarVersion;
+    private CancellationTokenSource? conversionCancellation;
+    private readonly LocalConversionBatch<ConversionInput> conversionBatch = new(ApplicationActivity.Gate);
+    private readonly ILocalFormatConverter formatConverter = App.GetService<ILocalFormatConverter>();
+    private bool conversionBusy;
+    private long conversionGeneration;
+    private sealed record ConversionInput(SongSearchObject Song, string Path);
     private CancellationTokenSource? lyricCancellationTokenSource = null;
 
     public LocalExplorerViewModel ViewModel
@@ -106,6 +113,7 @@ public sealed partial class LocalExplorerPage : Page
 
         FileListView.ItemsSource = LocalExplorerViewModel.Source;
         ConversionResults = new ObservableCollection<LocalConversionResult>();
+        ConversionDialog.IsSecondaryButtonEnabled = false;
         LyricResults = new ObservableCollection<LocalLyricResult>();
         InitPreviewPanelButtons();
         InitializeAnimations();
@@ -310,7 +318,8 @@ public sealed partial class LocalExplorerPage : Page
         }
         else
         {
-            ShowInfoBar(InfoBarSeverity.Warning, "No folder selected");
+            ShowInfoBar(InfoBarSeverity.Informational, "Folder selection cancelled.");
+            return;
         }
 
         SortListView();
@@ -359,7 +368,8 @@ public sealed partial class LocalExplorerPage : Page
         }
         else
         {
-            ShowInfoBar(InfoBarSeverity.Warning, "No files selected");
+            ShowInfoBar(InfoBarSeverity.Informational, "File selection cancelled.");
+            return;
         }
 
         // Create thread to process the files
@@ -547,6 +557,8 @@ public sealed partial class LocalExplorerPage : Page
         message = message.Trim();
         dispatcher.TryEnqueue(() =>
         {
+            infoBarVersion++;
+            dispatcherTimer.Stop();
             PageInfoBar.IsOpen = true;
             PageInfoBar.Opacity = 1;
             PageInfoBar.Severity = severity;
@@ -560,9 +572,9 @@ public sealed partial class LocalExplorerPage : Page
             {
                 UrlParser.ParseTextBlock(InfoBarTextBlock, message);
             }
+            dispatcherTimer.Interval = TimeSpan.FromSeconds(seconds);
+            dispatcherTimer.Start();
         });
-        dispatcherTimer.Interval = TimeSpan.FromSeconds(seconds);
-        dispatcherTimer.Start();
     }
 
     private void ShowInfoBarPermanent(InfoBarSeverity severity, string message, string title = "")
@@ -571,6 +583,8 @@ public sealed partial class LocalExplorerPage : Page
         message = message.Trim();
         dispatcher.TryEnqueue(() =>
         {
+            infoBarVersion++;
+            dispatcherTimer.Stop();
             PageInfoBar.IsOpen = true;
             PageInfoBar.Opacity = 1;
             PageInfoBar.Severity = severity;
@@ -586,23 +600,20 @@ public sealed partial class LocalExplorerPage : Page
         });
     }
 
-    private void dispatcherTimer_Tick(object sender, object e)
+    private async void dispatcherTimer_Tick(object sender, object e)
     {
+        dispatcherTimer.Stop();
+        var version = infoBarVersion;
         PageInfoBar.Opacity = 0;
-        (sender as DispatcherTimer).Stop();
-        // Set IsOpen to false after 0.25 seconds
-        Task.Factory.StartNew(() =>
-        {
-            System.Threading.Thread.Sleep(250);
-            dispatcher.TryEnqueue(() =>
-            {
-                PageInfoBar.IsOpen = false;
-            });
-        });
+        await Task.Delay(250);
+        // An older fade must not close a newer notice or a permanent scan-progress message.
+        if (version == infoBarVersion) PageInfoBar.IsOpen = false;
     }
 
     private void PageInfoBar_OnCloseButtonClick(InfoBar sender, object args)
     {
+        infoBarVersion++;
+        dispatcherTimer.Stop();
         PageInfoBar.Opacity = 0;
     }
 
@@ -778,11 +789,11 @@ public sealed partial class LocalExplorerPage : Page
     private async void ConvertDialogOpenButton_OnClick(object sender, RoutedEventArgs e)
     {
         ConversionDialog.XamlRoot = this.XamlRoot;
-        if (ConversionInfobarProgress.Visibility == Visibility.Collapsed) // If no conversion is in progress
+        if (!conversionBusy)
         {
             // Set to default message
             ConversionInfobar.Severity = InfoBarSeverity.Informational;
-            UrlParser.ParseTextBlock(ConversionInfobarText, "Convert tracks in Local Explorer to new audio formats");
+            UrlParser.ParseTextBlock(ConversionInfobarText, "Convert tracks in Local to new audio formats");
             OutputComboBox.SelectedIndex = -1; // Reset combobox
             // Conversion list is not cleared as user may refer to conversions later even after closing dialog
         }
@@ -796,131 +807,118 @@ public sealed partial class LocalExplorerPage : Page
     private async void ConversionDialog_OnPrimaryButtonClick(ContentDialog sender, ContentDialogButtonClickEventArgs args)
     {
         shouldClose = false;
+        if (conversionBusy || conversionBatch.IsRunning) return;
         var selectedIndex = OutputComboBox.SelectedIndex;
         var outputFormat = OutputComboBox.SelectedItem as string;
         var outputDirectory = OutputTextBox.Text;
+        var subsettingIndex = SubsettingComboBox.SelectedIndex;
+        // Freeze both the batch membership and paths on the UI thread before workers start.
+        var tracks = LocalExplorerViewModel.OriginalList.Select(song => new ConversionInput(song, song.Id)).ToArray();
 
-        // Handle input issues
         if (outputFormat == null)
         {
             ConversionInfobar.Severity = InfoBarSeverity.Warning;
             UrlParser.ParseTextBlock(ConversionInfobarText, "No output format selected");
             return;
         }
-
-        if (!(await Task.Run(() => Directory.Exists(outputDirectory))))
+        if (tracks.Length == 0)
         {
             ConversionInfobar.Severity = InfoBarSeverity.Warning;
-            UrlParser.ParseTextBlock(ConversionInfobarText, "Output directory does not exist");
+            UrlParser.ParseTextBlock(ConversionInfobarText, "There are no tracks in Local to convert.");
             return;
         }
 
-        // Get the subsetting index
-        var subsettingIndex = SubsettingComboBox.SelectedIndex;
-
-        // Set infobar message to running
-        ConversionInfobar.Severity = InfoBarSeverity.Informational;
-        UrlParser.ParseTextBlock(ConversionInfobarText, $"Converting <b>0 of {LocalExplorerViewModel.OriginalList.Count}</b> tracks to {outputFormat}");
-        ConversionInfobarProgress.Visibility = Visibility.Visible;
-
-        // Disable conversion button and hide conversion settings
+        // Guard the preparation awaits too, so a second click cannot start a second run.
+        conversionBusy = true;
+        var generation = ++conversionGeneration;
+        using var cancellation = new CancellationTokenSource();
+        conversionCancellation = cancellation;
+        var token = cancellation.Token;
+        var acceptingProgress = true;
+        var shown = new HashSet<int>();
+        var conversionEta = new OperationEta(App.GetService<TimeProvider>());
         ConversionDialog.IsPrimaryButtonEnabled = false;
+        ConversionDialog.IsSecondaryButtonEnabled = true;
         ConversionSettingStackPanel.Visibility = Visibility.Collapsed;
+        ConversionInfobarProgress.Visibility = Visibility.Visible;
+        ConversionInfobar.Severity = InfoBarSeverity.Informational;
+        UrlParser.ParseTextBlock(ConversionInfobarText, "Preparing conversion...");
 
-        // End conversion lambda
-        var EndConversionLambda = new Action(() => dispatcher.TryEnqueue(() =>
+        void AddResult(LocalConversionItemResult<ConversionInput> result)
         {
-            // Unset infobar message
-            ConversionInfobarProgress.Visibility = Visibility.Collapsed;
-            ConversionInfobar.Severity = InfoBarSeverity.Success;
-            UrlParser.ParseTextBlock(ConversionInfobarText, "Conversion complete");
+            if (!shown.Add(result.Index)) return;
+            if (result.Error != null) Serilog.Log.Warning(result.Error, "Local audio conversion failed");
+            ConversionResults.Add(new LocalConversionResult(result.Item.Song, result.OutputPath));
+        }
 
-            // Enable conversion button and show conversion settings
-            ConversionDialog.IsPrimaryButtonEnabled = true;
-            ConversionSettingStackPanel.Visibility = Visibility.Visible;
-        }));
-
-        // Cancellation token
-        cancellationTokenSource?.Dispose();
-        cancellationTokenSource = new CancellationTokenSource();
-        var token = cancellationTokenSource.Token;
-
-        // Start the conversion
-        ConversionListView.ItemsSource = ConversionResults;
-        ConversionResults.Clear();
-
-
-        var threadCount = await SettingsViewModel.GetSetting<int?>(SettingsViewModel.AudioConversionThreads) ?? 1;
-
-        int index = 0;
-        int completedCount = 0;
-        var conversionClock = System.Diagnostics.Stopwatch.StartNew();
-        var conversionEta = new EtaEstimator();
-
-        for (int threadNum = 0; threadNum < threadCount; threadNum++)
+        try
         {
-            Thread t = new Thread(() =>
+            if (!await Task.Run(() => Directory.Exists(outputDirectory)))
             {
-                int i;
-                do
-                {
-                    i = Interlocked.Increment(ref index) - 1;
-                    if (i >= LocalExplorerViewModel.OriginalList.Count || token.IsCancellationRequested)
-                        break;
-
-                    var song = LocalExplorerViewModel.OriginalList[i];
-                    var resultPath = selectedIndex switch
-                    {
-                        0 => FFmpegRunner.CreateFlac(song.Id, outputDirectory),
-                        1 => CreateMp3Helper(song, outputDirectory, subsettingIndex),
-                        2 => CreateAacHelper(song, outputDirectory, subsettingIndex),
-                        3 => FFmpegRunner.CreateAlac(song.Id, outputDirectory),
-                        4 => CreateVorbisHelper(song, outputDirectory, subsettingIndex),
-                        5 => CreateOpusHelper(song, outputDirectory, subsettingIndex),
-                        _ => null,
-                    };
-
-                    if (token.IsCancellationRequested)
-                        break;
-
-                    dispatcher.TryEnqueue(() =>
-                    {
-                        ConversionResults.Add(new LocalConversionResult(song, resultPath));
-                        // Update infobar converting message
-                        var total = LocalExplorerViewModel.OriginalList.Count;
-                        var eta = conversionEta.Update((double)ConversionResults.Count / total, conversionClock.Elapsed);
-                        UrlParser.ParseTextBlock(ConversionInfobarText, $"Converting <b>{ConversionResults.Count} of {total}</b> tracks to {outputFormat}{(eta != null ? " \u2022 " + eta : "")}");
-                    });
-
-                    var countCatpured = Interlocked.Increment(ref completedCount);
-                    if (countCatpured == LocalExplorerViewModel.OriginalList.Count && !token.IsCancellationRequested)
-                    {
-                        EndConversionLambda();
-                        break;
-                    }
-                } while (i + 1 < LocalExplorerViewModel.OriginalList.Count);
+                ConversionInfobar.Severity = InfoBarSeverity.Warning;
+                UrlParser.ParseTextBlock(ConversionInfobarText, "Output directory does not exist");
+                return;
+            }
+            token.ThrowIfCancellationRequested();
+            var threadCount = Math.Clamp(await SettingsViewModel.GetSetting<int?>(SettingsViewModel.AudioConversionThreads) ?? 1, 1, 10);
+            token.ThrowIfCancellationRequested();
+            ConversionListView.ItemsSource = ConversionResults;
+            ConversionResults.Clear();
+            conversionEta.Update(0, tracks.Length);
+            UrlParser.ParseTextBlock(ConversionInfobarText, $"Converting <b>0 of {tracks.Length}</b> tracks to {outputFormat}");
+            var progress = new Progress<LocalConversionProgress<ConversionInput>>(update =>
+            {
+                if (!acceptingProgress || generation != conversionGeneration) return;
+                AddResult(update.Result);
+                if (token.IsCancellationRequested) return;
+                var eta = conversionEta.Update(shown.Count, tracks.Length);
+                UrlParser.ParseTextBlock(ConversionInfobarText, $"Converting <b>{shown.Count} of {tracks.Length}</b> tracks to {outputFormat}{(eta != null ? " \u2022 " + eta : "")}");
             });
-            t.Priority = ThreadPriority.AboveNormal;
-            t.Start();
+            var result = await conversionBatch.RunAsync(tracks, threadCount,
+                item => Task.FromResult(formatConverter.Convert(item.Path, outputDirectory, selectedIndex, subsettingIndex)), progress, token);
+            acceptingProgress = false;
+            // Progress callbacks can still be queued. Reconcile final rows before dropping late callbacks.
+            foreach (var item in result.Results) AddResult(item);
+            var failed = result.Results.Count(item => !item.Succeeded);
+            var converted = result.Results.Count - failed;
+            ConversionInfobar.Severity = failed > 0 ? InfoBarSeverity.Warning
+                : result.Cancelled ? InfoBarSeverity.Informational : InfoBarSeverity.Success;
+            var message = result.Cancelled ? $"Conversion cancelled. Converted {converted} of {tracks.Length} tracks."
+                : $"Conversion complete. Converted {converted} of {tracks.Length} tracks.";
+            if (failed > 0) message += $" {failed} failed.";
+            UrlParser.ParseTextBlock(ConversionInfobarText, message);
+        }
+        catch (OperationCanceledException) when (token.IsCancellationRequested)
+        {
+            ConversionInfobar.Severity = InfoBarSeverity.Informational;
+            UrlParser.ParseTextBlock(ConversionInfobarText, "Conversion cancelled. No files started.");
+        }
+        catch (Exception error)
+        {
+            Serilog.Log.Warning(error, "Local conversion batch failed");
+            ConversionInfobar.Severity = InfoBarSeverity.Error;
+            UrlParser.ParseTextBlock(ConversionInfobarText, "Could not complete the conversion. See the log for details.");
+        }
+        finally
+        {
+            acceptingProgress = false;
+            conversionCancellation = null;
+            conversionBusy = false;
+            ConversionInfobarProgress.Visibility = Visibility.Collapsed;
+            ConversionDialog.IsPrimaryButtonEnabled = true;
+            ConversionDialog.IsSecondaryButtonEnabled = false;
+            ConversionSettingStackPanel.Visibility = Visibility.Visible;
         }
     }
 
     private void ConversionDialog_SecondaryButtonClick(ContentDialog sender, ContentDialogButtonClickEventArgs args)
     {
         shouldClose = false;
-        cancellationTokenSource?.Cancel();
-        // Display end conversion
-        dispatcher.TryEnqueue(() =>
-        {
-            // Unset infobar message
-            ConversionInfobarProgress.Visibility = Visibility.Collapsed;
-            ConversionInfobar.Severity = InfoBarSeverity.Informational;
-            UrlParser.ParseTextBlock(ConversionInfobarText, "Conversion cancelled");
-
-            // Enable conversion button and show conversion settings
-            ConversionDialog.IsPrimaryButtonEnabled = true;
-            ConversionSettingStackPanel.Visibility = Visibility.Visible;
-        });
+        if (!conversionBusy) return;
+        conversionCancellation?.Cancel();
+        ConversionDialog.IsSecondaryButtonEnabled = false;
+        ConversionInfobar.Severity = InfoBarSeverity.Informational;
+        UrlParser.ParseTextBlock(ConversionInfobarText, "Stopping conversion. Finishing current files before another run can start...");
     }
 
     private void OpenConversionButton_OnClick(object sender, RoutedEventArgs e)
@@ -1002,60 +1000,10 @@ public sealed partial class LocalExplorerPage : Page
         }
     }
 
-    private string? CreateMp3Helper(SongSearchObject song, string? outputDirectory, int subsettingIndex)
-    {
-        return subsettingIndex switch
-        {
-            0 => FFmpegRunner.CreateMp3(song.Id, outputDirectory),
-            1 => FFmpegRunner.CreateMp3(song.Id, 128, outputDirectory),
-            2 => FFmpegRunner.CreateMp3(song.Id, 192, outputDirectory),
-            3 => FFmpegRunner.CreateMp3(song.Id, 256, outputDirectory),
-            4 => FFmpegRunner.CreateMp3(song.Id, 320, outputDirectory),
-            _ => string.Empty,
-        };
-    }
-
-    private string? CreateAacHelper(SongSearchObject song, string? outputDirectory, int subsettingIndex)
-    {
-        return subsettingIndex switch
-        {
-            0 => FFmpegRunner.CreateAac(song.Id, 128, outputDirectory),
-            1 => FFmpegRunner.CreateAac(song.Id, 192, outputDirectory),
-            2 => FFmpegRunner.CreateAac(song.Id, 256, outputDirectory),
-            3 => FFmpegRunner.CreateAac(song.Id, 320, outputDirectory),
-            _ => string.Empty,
-        };
-    }
-
-    private string? CreateVorbisHelper(SongSearchObject song, string? outputDirectory, int subsettingIndex)
-    {
-        return subsettingIndex switch
-        {
-            0 => FFmpegRunner.CreateVorbisVBR(song.Id, 5, outputDirectory),
-            1 => FFmpegRunner.CreateVorbisVBR(song.Id, 8, outputDirectory),
-            2 => FFmpegRunner.CreateVorbisVBR(song.Id, 10, outputDirectory),
-            3 => FFmpegRunner.CreateVorbis(song.Id, 128, outputDirectory),
-            4 => FFmpegRunner.CreateVorbis(song.Id, 192, outputDirectory),
-            5 => FFmpegRunner.CreateVorbis(song.Id, 256, outputDirectory),
-            _ => string.Empty,
-        };
-    }
-
-    private string? CreateOpusHelper(SongSearchObject song, string? outputDirectory, int subsettingIndex)
-    {
-        return subsettingIndex switch
-        {
-            0 => FFmpegRunner.CreateOpus(song.Id, 96, outputDirectory),
-            1 => FFmpegRunner.CreateOpus(song.Id, 128, outputDirectory),
-            2 => FFmpegRunner.CreateOpus(song.Id, 192, outputDirectory),
-            _ => string.Empty,
-        };
-    }
-
     private async void SelectOutputButton_OnClick(object sender, RoutedEventArgs e)
     {
         var folder = await StoragePickerHelper.PickFolderAsync(PickerLocationId.MusicLibrary);
-        OutputTextBox.Text = folder?.Path ?? "";
+        if (folder != null) OutputTextBox.Text = folder.Path;
     }
 
     // Lyrics dialog related methods ------------------------------------------------
@@ -1079,7 +1027,7 @@ public sealed partial class LocalExplorerPage : Page
         if (LyricsInfobarProgress.Visibility == Visibility.Collapsed)
         {
             LyricsInfobar.Severity = InfoBarSeverity.Informational;
-            ShowLyricsNotice("Download lyrics for tracks in Local Explorer.");
+            ShowLyricsNotice("Download lyrics for tracks in Local.");
         }
 
         await LyricsDialog.ShowAsync();

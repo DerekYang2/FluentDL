@@ -69,6 +69,7 @@ public sealed partial class ReplayGainDialog : UserControl
     // The scan waiting for Write tags, and the options it was calculated with. Set only in the Analyzed state.
     private ReplayGainScan? scan;
     private ReplayGainOptions? scanOptions;
+    private readonly OperationEta progressEta = new(App.GetService<TimeProvider>());
 
     public ObservableCollection<ReplayGainRow> Rows { get; } = new();
 
@@ -94,7 +95,7 @@ public sealed partial class ReplayGainDialog : UserControl
             OffsetSlider.Value = await SettingsViewModel.GetSetting<double?>(SettingsViewModel.ReplayGainOffset) ?? 0;
             ClipCheckBox.IsChecked = await SettingsViewModel.GetSetting<bool?>(SettingsViewModel.ReplayGainPreventClipping) ?? false;
             SetInfo(InfoBarSeverity.Informational,
-                $"Measure the loudness of the <b>{songs.Count}</b> tracks in Local Explorer. <a href='{WikiLink}'>Read more on the wiki</a>.");
+                $"Measure the loudness of the <b>{songs.Count}</b> tracks in Local. <a href='{WikiLink}'>Read more on the wiki</a>.");
         }
 
         await Dialog.ShowAsync();
@@ -134,7 +135,7 @@ public sealed partial class ReplayGainDialog : UserControl
         var options = ReadOptions();
         if (songs.Count == 0)
         {
-            SetInfo(InfoBarSeverity.Warning, "There are no tracks in Local Explorer to analyze.");
+            SetInfo(InfoBarSeverity.Warning, "There are no tracks in Local to analyze.");
             return;
         }
 
@@ -259,10 +260,10 @@ public sealed partial class ReplayGainDialog : UserControl
 
         var written = 0;
         var failed = 0;
+        ShowProgress("Writing tags to", 0, toWrite.Count);
         foreach (var track in toWrite)
         {
             if (token.IsCancellationRequested) break;
-            ShowProgress("Writing tags to", written + failed, toWrite.Count);
             string? error = null;
             try
             {
@@ -275,6 +276,7 @@ public sealed partial class ReplayGainDialog : UserControl
                 failed++;
             }
             UpdateRowAfterWrite(track.Path, error);
+            ShowProgress("Writing tags to", written + failed, toWrite.Count);
         }
 
         SetState(State.Ready);
@@ -469,6 +471,7 @@ public sealed partial class ReplayGainDialog : UserControl
     private void SetState(State next)
     {
         state = next;
+        progressEta.Reset();
         var busy = next is State.Analyzing or State.Writing;
         InfoProgress.Visibility = busy ? Visibility.Visible : Visibility.Collapsed;
         InfoProgress.IsIndeterminate = true;
@@ -486,9 +489,11 @@ public sealed partial class ReplayGainDialog : UserControl
 
     private void ShowProgress(string action, int completed, int total)
     {
+        if (total <= 0) return;
         InfoProgress.IsIndeterminate = false;
         InfoProgress.Value = (double)completed / total * 100;
-        UrlParser.ParseTextBlock(InfoText, $"{action} <b>{completed} of {total}</b> tracks ...");
+        var eta = progressEta.Update(completed, total);
+        UrlParser.ParseTextBlock(InfoText, $"{action} <b>{completed} of {total}</b> tracks{(eta != null ? " \u2022 " + eta : " ...")}");
     }
 
     private void SetInfo(InfoBarSeverity severity, string text)

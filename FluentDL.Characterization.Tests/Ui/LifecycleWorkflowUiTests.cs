@@ -190,7 +190,7 @@ public class LifecycleWorkflowUiTests
                 TimeSpan.FromMinutes(2), "the Search download result");
             Assert.AreEqual(count, Directory.GetFiles(fixture.Folder, "*.mp3").Length);
             Assert.IsTrue(TryFind(dev, cf => cf.ByAutomationId("InfobarProgress")) is not { IsOffscreen: false }, "The download progress must be hidden at completion.");
-            Navigate(dev, "Local Explorer");
+            Navigate(dev, "Local");
             WaitUntil(() => Find(dev, "FileListView").FindAllChildren(cf => cf.ByControlType(FlaUI.Core.Definitions.ControlType.ListItem)).Length > 0,
                 DefaultTimeout, "the downloaded files in Local Explorer");
             WaitUntil(() => Text(Find(dev, "ResultsText")) == $"Add {count} to queue", DefaultTimeout,
@@ -198,7 +198,7 @@ public class LifecycleWorkflowUiTests
             Assert.IsTrue(Find(dev, "ClearButton").IsEnabled);
             Capture(dev, album ? "search-album-local-explorer.png" : "search-track-local-explorer.png");
             Navigate(dev, "Search");
-            Navigate(dev, "Local Explorer");
+            Navigate(dev, "Local");
             Assert.AreEqual($"Add {count} to queue", Text(Find(dev, "ResultsText")), "Navigating back keeps the count.");
             Invoke(Find(dev, "ClearButton"));
             WaitUntil(() => Text(Find(dev, "ResultsText")) == "No results" && !Find(dev, "ClearButton").IsEnabled,

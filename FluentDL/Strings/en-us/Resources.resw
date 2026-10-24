@@ -130,7 +130,7 @@
     <value>Queue</value>
   </data>
   <data name="Shell_LocalExplorer.Content" xml:space="preserve">
-    <value>Local Explorer</value>
+    <value>Local</value>
   </data>
   <data name="Settings_Personalization.Text" xml:space="preserve">
     <value>Personalization</value>

@@ -115,6 +115,20 @@ dotnet build .\FluentDL.Characterization.Tests\FluentDL.Characterization.Tests.c
 
 Check each command's exit code before continuing. The Sandbox client must be connected for keyboard input and screenshots. The script writes `test-results.json` and four screenshots into its artifact directory. Review every screenshot. Only this fixture build includes the test toolbar; normal builds do not compile `PreviewVolumeTestSupport`. Registering the fixture resets only the Sandbox development package's data, not the installed host app.
 
+## Local conversion cancellation and ETAs
+
+`Test-LocalConversion.ps1` runs only in Sandbox against the explicit `LocalConversionPreview.targets` build. Use the same build, test-assembly and Sandbox-registration steps above, with that targets file instead of `PreviewVolumePreview.targets`, then run:
+
+```powershell
+.\tools\ui-tests\Test-LocalConversion.ps1
+```
+
+The fixture replaces the encoder with a controlled test implementation and uses a manual clock. It checks the fixed input snapshot, Convert staying disabled while canceled work finishes, update-installation blocking, restart results, and the conversion ETA. Separate ReplayGain display cases exercise analysis and tag-writing ETA text without changing audio files or loudness calculations. Results and five screenshots go into the artifact directory. Review all five images. The fixture types and ReplayGain display methods are absent from normal builds. Native format encoding has separate characterization tests with generated WAV inputs and the bundled FFmpeg.
+
+## Native picker cancellation
+
+`Test-PickerCancellation.ps1` uses the explicit `PickerCancellationPreview.targets` build in Sandbox. Follow the same build and Sandbox-registration steps above with that targets file, then run the script. It cancels the actual folder, multi-file, conversion-output, Settings import and Settings export dialogs. Each picker is selected by its PickerHost process and its owner HWND, never by a host-desktop window. It also checks background-thread notices, empty-file processing and replacement of a fading notice. The report contains eight checks and five screenshots. No files are selected or imported. Normal builds do not include the fixture toolbar or page methods.
+
 ## Finding control names
 
 `UiProbe` (`TestCategory=UIProbe`) writes the dev app's UI Automation tree to `%TEMP%\opencode\fluentdl-ui-tree.txt`. WinUI uses `x:Name` as the AutomationId, so most named controls in the XAML are directly addressable. Flyouts and ContentDialogs only appear in the tree while open.
