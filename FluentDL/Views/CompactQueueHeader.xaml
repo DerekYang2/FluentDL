@@ -24,8 +24,10 @@
         </Grid.ColumnDefinitions>
         <TextBlock
             Grid.Column="1"
+            AutomationProperties.AutomationId="CompactQueueTitleHeader"
             Style="{StaticResource HeadingTextStyle}"
-            Text="Title" />
+            Text="Title"
+            TextWrapping="NoWrap" />
         <TextBlock
             Grid.Column="2"
             Style="{StaticResource HeadingTextStyle}"

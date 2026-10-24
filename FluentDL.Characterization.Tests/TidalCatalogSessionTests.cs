@@ -11,6 +11,22 @@ namespace FluentDL.Characterization.Tests;
 public class TidalCatalogSessionTests
 {
     [TestMethod]
+    public async Task UninitializedExpiryCannotUnderflowDuringConcurrentTokenPublication()
+    {
+        var settings = Settings();
+        var http = new FakeTidal();
+        var (api, _) = Clients(settings, http);
+        // Reproduce a caller observing the token before its expiry has been initialized.
+        typeof(TidalApi).GetField("token", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)!
+            .SetValue(api, "partially-published-token");
+
+        await api.GetAsync("tracks/1", CancellationToken.None);
+
+        Assert.AreEqual("app", http.Catalog.Single().Token);
+        Assert.AreEqual("client_credentials", http.Grants.Single()["grant_type"]);
+    }
+
+    [TestMethod]
     [DataRow(false)]
     [DataRow(true)]
     public async Task PreviewUsesAnIsolatedAppTokenWithoutRefreshingOrChangingTheDownloadSession(bool expired)

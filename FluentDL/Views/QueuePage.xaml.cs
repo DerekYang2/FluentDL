@@ -55,6 +55,7 @@ public sealed partial class QueuePage : Page
     private readonly DownloadService downloads = App.GetService<DownloadService>();
     private bool playlistDialogOpen;
     private bool albumExpansionBusy;
+    private bool updatingPreviewLayout;
 
     // Conversion variables
     private ConcurrentDictionary<SongSearchObject, int> successSource, warningSource, errorSource;
@@ -162,6 +163,7 @@ public sealed partial class QueuePage : Page
     protected async override void OnNavigatedTo(NavigationEventArgs e)
     {
         OnQueueSourceChange();
+        UpdateQueuePreviewLayout();
 
         // Get the selected item
         var selectedSong = (SongSearchObject)CustomListView.SelectedItem;
@@ -310,6 +312,30 @@ public sealed partial class QueuePage : Page
     }
 
     private void QueueToolbar_SizeChanged(object sender, SizeChangedEventArgs e) => UpdateQueueToolbarLayout();
+
+    private void QueueLayout_SizeChanged(object sender, SizeChangedEventArgs e) => UpdateQueuePreviewLayout();
+
+    private void UpdateQueuePreviewLayout()
+    {
+        if (updatingPreviewLayout || QueueLayout == null || PreviewPanel == null || CustomListView == null
+            || QueueListRow == null || QueuePreviewRow == null || QueueLayout.ActualWidth <= 0) return;
+        updatingPreviewLayout = true;
+        try
+        {
+            var layout = QueuePreviewLayout.ForWidth(QueueLayout.ActualWidth);
+            var showPreview = !layout.IsStacked || CustomListView.SelectedItem != null;
+            Grid.SetRow(PreviewPanel, layout.IsStacked ? 4 : 0);
+            Grid.SetRowSpan(PreviewPanel, layout.IsStacked ? 1 : 4);
+            Grid.SetColumn(PreviewPanel, layout.IsStacked ? 0 : 1);
+            Grid.SetColumnSpan(PreviewPanel, layout.IsStacked ? 2 : 1);
+            PreviewPanel.Margin = layout.IsStacked ? new Thickness(0, 12, 0, 12) : new Thickness(12, -2, 0, 12);
+            PreviewPanel.Visibility = showPreview ? Visibility.Visible : Visibility.Collapsed;
+            QueueListRow.Height = new GridLength(1, GridUnitType.Star);
+            QueuePreviewRow.Height = layout.IsStacked && showPreview ? new GridLength(1, GridUnitType.Star) : new GridLength(0);
+            PreviewPanel.SetResponsiveLayout(layout.IsStacked, layout.AvailablePreviewWidth);
+        }
+        finally { updatingPreviewLayout = false; }
+    }
     private bool updatingQueueToolbar;
     private readonly Dictionary<Button, Thickness> queueActionPadding = [];
     private readonly Dictionary<Button, (string Text, double FontSize, double Width)> queueLabelWidths = [];
@@ -627,6 +653,7 @@ public sealed partial class QueuePage : Page
 
     private async void CustomListView_OnSelectionChanged(object sender, SelectionChangedEventArgs e)
     {
+        UpdateQueuePreviewLayout();
         // Get the selected item
         var selectedSong = (SongSearchObject)CustomListView.SelectedItem;
         if (selectedSong == null)

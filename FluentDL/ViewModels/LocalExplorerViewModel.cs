@@ -15,9 +15,6 @@ using FluentDL.Services;
 using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Media.Imaging;
-using SixLabors.ImageSharp;
-using SixLabors.ImageSharp.Formats.Jpeg;
-using SixLabors.ImageSharp.Processing;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Text.RegularExpressions;
@@ -331,18 +328,8 @@ public partial class LocalExplorerViewModel : ObservableRecipient
         {
             return null;
         }
-        using var image = Image.Load(byteArr);
-        await Task.Run(() => image.Mutate(ctx => ctx.Resize(new ResizeOptions
-        {
-            Size = new Size(120, 120),
-            Mode = ResizeMode.Min,
-            Sampler = KnownResamplers.Lanczos3
-        })));
-
-        var ms = new MemoryStream();
-        await image.SaveAsJpegAsync(ms, new JpegEncoder { Quality = 80 });
-        ms.Position = 0;
-        return ms;
+        using var source = new MemoryStream(byteArr, writable: false);
+        return new MemoryStream(await ArtworkThumbnail.CreateJpegAsync(source, 120));
     }
 
     public static readonly HashSet<string> SupportedExtensions = FluentDL.Core.Helpers.AudioFiles.SupportedExtensions;

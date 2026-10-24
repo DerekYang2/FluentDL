@@ -339,7 +339,7 @@ public sealed class TidalApi
             AccountEmail = null;
             accountCountry = null;
         }
-        if (token != null && DateTimeOffset.UtcNow < tokenExpires - RenewBefore)
+        if (token != null && tokenExpires > DateTimeOffset.UtcNow + RenewBefore)
         {
             return (token, false);
         }
@@ -347,7 +347,7 @@ public sealed class TidalApi
         await tokenLock.WaitAsync(cancellationToken);
         try
         {
-            if (token == null || DateTimeOffset.UtcNow >= tokenExpires - RenewBefore)
+            if (token == null || tokenExpires <= DateTimeOffset.UtcNow + RenewBefore)
             {
                 await RequestTokenAsync(cancellationToken);
             }
@@ -444,8 +444,8 @@ public sealed class TidalApi
         }
 
         using var json = JsonDocument.Parse(body);
-        token = json.RootElement.GetProperty("access_token").GetString();
         tokenExpires = DateTimeOffset.UtcNow.AddSeconds(json.RootElement.GetProperty("expires_in").GetInt32());
+        token = json.RootElement.GetProperty("access_token").GetString();
         if (!clientCredentialsOnly && json.RootElement.TryGetProperty("refresh_token", out var refresh) && refresh.GetString() is { Length: > 0 } newRefreshToken)
         {
             await settings.SaveSettingAsync(SettingKeys.TidalRefreshToken, Protect(newRefreshToken));

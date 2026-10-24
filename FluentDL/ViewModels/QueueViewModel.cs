@@ -11,10 +11,7 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Imaging;
 using Newtonsoft.Json;
-using SixLabors.ImageSharp;
-using SixLabors.ImageSharp.Formats.Jpeg;
-using SixLabors.ImageSharp.Formats.Webp;
-using SixLabors.ImageSharp.Processing;
+using System.Runtime.InteropServices.WindowsRuntime;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
@@ -172,7 +169,7 @@ public class QueueObject : SongSearchObject, INotifyPropertyChanged
 
 public partial class QueueViewModel : ObservableRecipient
 {
-    private static readonly HttpClient _httpClient = new();
+    private static readonly HttpClient _httpClient = new() { MaxResponseContentBufferSize = ArtworkThumbnail.MaximumEncodedBytes };
     private static readonly BitmapImage UnloadedPlaceholder = new(new Uri("ms-appx:///Assets/Unloaded.jpg"));
     public static ObservableCollection<QueueObject> Source
     {
@@ -251,10 +248,9 @@ public partial class QueueViewModel : ObservableRecipient
         if (string.IsNullOrWhiteSpace(uri)) return null;
         try
         {
-            HttpClient httpClient = new();
-            var response = await httpClient.GetAsync(uri);
+            using var response = await _httpClient.GetAsync(uri);
             response.EnsureSuccessStatusCode();
-            return await response.Content.ReadAsStreamAsync();
+            return new MemoryStream(await response.Content.ReadAsByteArrayAsync(), writable: false);
         }
         catch (Exception e)
         {
@@ -268,19 +264,15 @@ public partial class QueueViewModel : ObservableRecipient
         using var stream = await GetStreamFromUrl(uri);
         if (stream == null) return null;
 
-        using var image = await Image.LoadAsync(stream);
-        await Task.Run(()=>image.Mutate(ctx => ctx.Resize(new ResizeOptions { 
-            Size = new Size(76, 76), 
-            Mode = ResizeMode.Min, 
-            Sampler = KnownResamplers.Lanczos3 
-        })));
+        var jpeg = await ArtworkThumbnail.CreateJpegAsync(stream, 76);
         var ras = new InMemoryRandomAccessStream();
-        var outStream = ras.AsStreamForWrite();
-        await image.SaveAsJpegAsync(outStream, new JpegEncoder { Quality = 80 });
-        await outStream.FlushAsync();
-
-        ras.Seek(0);
-        return ras;
+        try
+        {
+            await ras.WriteAsync(jpeg.AsBuffer());
+            ras.Seek(0);
+            return ras;
+        }
+        catch { ras.Dispose(); throw; }
     }
 
     public static int GetNextOrderCounter()

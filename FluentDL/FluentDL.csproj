@@ -59,6 +59,11 @@
     <Content Remove="Assets\Updater\**" Condition="'$(FluentDLPackageChannel)' == 'Store'" />
     <None Remove="LICENSE.txt;LICENSE-MIT.txt;THIRD-PARTY-NOTICES.md" />
     <Content Include="LICENSE.txt;LICENSE-MIT.txt;THIRD-PARTY-NOTICES.md" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="$(NuGetPackageRoot)photosauce.magicscaler\0.15.0\license" Link="Assets\licenses\MagicScaler-MIT.txt" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="$(NuGetPackageRoot)photosauce.magicscaler\0.15.0\third-party-notices" Link="Assets\licenses\MagicScaler-notices.txt" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="$(NuGetPackageRoot)photosauce.nativecodecs.libwebp\1.6.0-preview1\license" Link="Assets\licenses\PhotoSauce-Libwebp-MIT.txt" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="$(NuGetPackageRoot)photosauce.nativecodecs.libwebp\1.6.0-preview1\third-party-notices" Link="Assets\licenses\PhotoSauce-Libwebp-notices.txt" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="Assets\licenses\libwebp-BSD.txt" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\FluentDL.Core\FluentDL.Core.csproj" />
@@ -128,8 +133,9 @@
     <PackageReference Include="Microsoft.WindowsAppSDK.Search" Version="2.5.5" ExcludeAssets="all" />
     <PackageReference Include="Microsoft.Windows.AI.MachineLearning" Version="2.1.74" ExcludeAssets="all" />
     <PackageReference Include="Microsoft.Xaml.Behaviors.WinUI.Managed" Version="2.0.9" />
+    <PackageReference Include="PhotoSauce.MagicScaler" Version="0.15.0" />
+    <PackageReference Include="PhotoSauce.NativeCodecs.Libwebp" Version="1.6.0-preview1" />
     <PackageReference Include="Serilog.Extensions.Logging" Version="8.0.0" />
-    <PackageReference Include="SixLabors.ImageSharp" Version="3.1.12" />
     <PackageReference Include="Spek.NET.WinUI" Version="0.3.0-preview.1" />
     <PackageReference Include="System.Security.Cryptography.ProtectedData" Version="9.0.10" />
     <PackageReference Include="TagLibSharp" Version="2.3.0" />
