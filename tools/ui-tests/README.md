@@ -97,6 +97,24 @@ The Search download cases also check Local Explorer's count on its first visit, 
 | `sandbox\Invoke-SandboxUiTests.ps1` | Builds here, copies the dev package, test binaries, baselines, Windows App SDK runtime and secrets into the Sandbox, runs the guest script, pulls the results back, and deletes the secrets from the guest. |
 | `sandbox\Run-InGuest.ps1` | Runs in the Sandbox: installs the .NET SDK and Windows App SDK runtime the first time, registers a fresh dev package, and runs the tests. |
 
+## Shared preview volume
+
+`Test-PreviewVolume.ps1` uses `winapp ui` in Windows Sandbox. It visits the actual cached Search, Queue and Local Explorer pages with a generated silent WAV. It changes the native volume sliders, checks both URI and stream previews, then closes and restarts the app to verify saved zero volume. It does not download provider audio.
+
+Build the explicit fixture package, build the normal test assembly, and register the fixture in Sandbox:
+
+```powershell
+$targets = (Resolve-Path .\tools\ui-tests\PreviewVolumePreview.targets).Path
+dotnet build .\FluentDL\FluentDL.csproj -p:Platform=x64 `
+    "-p:CustomAfterMicrosoftCommonTargets=$targets" `
+    '-p:IntermediateOutputPath=obj\uitest\' '-p:OutputPath=bin\uitest\'
+dotnet build .\FluentDL.Characterization.Tests\FluentDL.Characterization.Tests.csproj -p:Platform=x64
+.\tools\ui-tests\sandbox\Invoke-SandboxUiTests.ps1 -SkipBuild -TestFilter 'FullyQualifiedName~CoverImageTests'
+.\tools\ui-tests\Test-PreviewVolume.ps1
+```
+
+Check each command's exit code before continuing. The Sandbox client must be connected for keyboard input and screenshots. The script writes `test-results.json` and four screenshots into its artifact directory. Review every screenshot. Only this fixture build includes the test toolbar; normal builds do not compile `PreviewVolumeTestSupport`. Registering the fixture resets only the Sandbox development package's data, not the installed host app.
+
 ## Finding control names
 
 `UiProbe` (`TestCategory=UIProbe`) writes the dev app's UI Automation tree to `%TEMP%\opencode\fluentdl-ui-tree.txt`. WinUI uses `x:Name` as the AutomationId, so most named controls in the XAML are directly addressable. Flyouts and ContentDialogs only appear in the tree while open.
