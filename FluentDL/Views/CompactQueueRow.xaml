@@ -46,6 +46,8 @@
         </Border>
         <Grid
             Grid.Column="1"
+            AutomationProperties.AutomationId="CompactQueueTitle"
+            AutomationProperties.Name="Title and artist"
             Margin="0,0,16,0"
             VerticalAlignment="Center"
             RowSpacing="2">

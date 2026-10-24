@@ -24,6 +24,8 @@
 
     <Grid
         x:Name="RelativePreviewPanel"
+        AutomationProperties.AutomationId="PreviewContent"
+        AutomationProperties.Name="Track preview"
         MinWidth="340"
         MaxWidth="740"
         Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
@@ -41,6 +43,7 @@
         </Grid.RowDefinitions>
 
         <controls2:ContentSizer
+            x:Name="PreviewWidthSizer"
             Grid.Row="0"
             Grid.RowSpan="3"
             Grid.Column="0"
@@ -70,11 +73,19 @@
             CornerRadius="8"
             VerticalScrollBarVisibility="Auto"
             Visibility="Visible">
-            <StackPanel
+            <Grid
+                x:Name="PreviewDetailsLayout"
                 Height="Auto"
-                VerticalAlignment="Top"
-                Orientation="Vertical">
-                <Grid>
+                VerticalAlignment="Top">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition x:Name="PreviewArtworkColumn" Width="0" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <Grid x:Name="PreviewArtwork" Grid.ColumnSpan="2">
                     <!--  Background image  -->
                     <Border
                         x:Name="BackgroundImageContainer"
@@ -122,6 +133,8 @@
 
                 <StackPanel
                     x:Name="PreviewInfoStack"
+                    Grid.Row="1"
+                    Grid.ColumnSpan="2"
                     Margin="16,0,16,12"
                     HorizontalAlignment="Stretch"
                     VerticalAlignment="Top"
@@ -283,7 +296,7 @@
                         </ListView>
                     </StackPanel>
                 </StackPanel>
-            </StackPanel>
+            </Grid>
         </ScrollView>
 
         <Grid

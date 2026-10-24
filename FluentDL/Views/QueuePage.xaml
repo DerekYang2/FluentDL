@@ -83,12 +83,13 @@
         </MenuFlyout>
     </Page.Resources>
 
-    <Grid>
+    <Grid x:Name="QueueLayout" SizeChanged="QueueLayout_SizeChanged">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
-            <RowDefinition Height="*" />
+            <RowDefinition x:Name="QueueListRow" Height="*" />
+            <RowDefinition x:Name="QueuePreviewRow" Height="0" />
         </Grid.RowDefinitions>
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="*" />
@@ -273,6 +274,7 @@
 
         <ListView
             x:Name="CustomListView"
+            AutomationProperties.AutomationId="CustomListView"
             Grid.Row="3"
             Grid.Column="0"
             Margin="0,0,0,12"
@@ -567,6 +569,7 @@
 
         <views:PreviewPane
             x:Name="PreviewPanel"
+            AutomationProperties.AutomationId="PreviewPanel"
             Grid.Row="0"
             Grid.RowSpan="4"
             Grid.Column="1"
@@ -578,7 +581,7 @@
         <InfoBar
             x:Name="PageInfoBar"
             Grid.Row="0"
-            Grid.RowSpan="4"
+            Grid.RowSpan="5"
             Grid.Column="0"
             Grid.ColumnSpan="2"
             Margin="12"

@@ -25,9 +25,20 @@ $runName = (Get-Date -Format 'yyyyMMdd-HHmmss') + '-' + [guid]::NewGuid().ToStri
 $hostResults = Join-Path $env:TEMP "opencode\sandbox-ui-results\$runName"
 $testProject = Join-Path $repo 'FluentDL.Characterization.Tests\FluentDL.Characterization.Tests.csproj'
 
-function Invoke-WinApp([string[]]$Arguments) {
-    & winapp.exe @Arguments
-    if ($LASTEXITCODE -ne 0) { throw "winapp $($Arguments -join ' ') failed (exit $LASTEXITCODE)." }
+function Invoke-WinApp([string[]]$Arguments, [switch]$AllowFailure) {
+    # Windows PowerShell treats native stderr progress as an error when output is redirected.
+    # Let WinApp finish, then use its exit code to distinguish progress from failure.
+    $previous = $ErrorActionPreference
+    try {
+        $ErrorActionPreference = 'Continue'
+        $global:LASTEXITCODE = $null
+        & winapp.exe @Arguments
+        $code = $global:LASTEXITCODE
+    }
+    finally { $ErrorActionPreference = $previous }
+    if ($null -eq $code) { throw "winapp $($Arguments -join ' ') did not return an exit code." }
+    $script:winAppExitCode = $code
+    if ($code -ne 0 -and -not $AllowFailure) { throw "winapp $($Arguments -join ' ') failed (exit $code)." }
 }
 
 if (-not (Get-Command winapp -ErrorAction SilentlyContinue)) { throw 'WinApp CLI 0.7+ is required (winget install Microsoft.WinAppCli).' }
@@ -70,15 +81,14 @@ $code = 1
 try {
     $guestArgs = @('-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', "C:\WinApp\work\$guestRoot\Run-InGuest.ps1", '-Filter', $TestFilter)
     if ($Record) { $guestArgs += '-Record' }
-    & winapp.exe target exec sandbox -- powershell.exe @guestArgs
-    $code = $LASTEXITCODE
+    Invoke-WinApp (@('target','exec','sandbox','--','powershell.exe') + $guestArgs) -AllowFailure
+    $code = $script:winAppExitCode
 }
 finally {
-    & winapp.exe target exec sandbox -- powershell.exe -NoProfile -Command "Remove-Item -Recurse -Force C:\WinApp\work\$guestRoot\secrets" | Out-Null
+    Invoke-WinApp @('target','exec','sandbox','--','powershell.exe','-NoProfile','-Command',"Remove-Item -Recurse -Force C:\WinApp\work\$guestRoot\secrets") | Out-Null
 }
 
-& winapp.exe target pull sandbox "$guestRoot/results" $hostResults | Out-Null
-if ($LASTEXITCODE -ne 0) { throw 'Failed to pull Sandbox test results. Leave the guest open to recover the evidence.' }
+Invoke-WinApp @('target','pull','sandbox',"$guestRoot/results",$hostResults) | Out-Null
 $baselines = Join-Path $repo 'FluentDL.Characterization.Tests\Baselines'
 Get-ChildItem $baselines -Filter '*.actual.json' | Remove-Item
 Get-ChildItem (Join-Path $hostResults 'baselines') -Filter '*.json' -ErrorAction SilentlyContinue | Copy-Item -Destination $baselines

@@ -33,6 +33,9 @@ Copy `sandbox/Set-AlbumExpansionFixture.ps1` into the guest with `winapp target 
 # Queue workflows, using TIDAL, Qobuz and Spotify web player mode
 .\tools\ui-tests\Run-UiTests.ps1 -Filter CatalogWorkflowUiTests
 
+# Responsive queue layout with synthetic cached albums, without audio downloads
+.\tools\ui-tests\Run-UiTests.ps1 -Filter QueueResponsiveUiTests
+
 # Shared lifecycle workflows, represented by Qobuz
 .\tools\ui-tests\Run-UiTests.ps1 -Filter LifecycleWorkflowUiTests
 

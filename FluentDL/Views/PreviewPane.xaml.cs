@@ -68,6 +68,8 @@ namespace FluentDL.Views
         private string? _previewPath;
         // Volume
         private double currentVolume = 1.0;
+        private bool stackedLayout;
+        private double sidePaneWidth;
 
 
         private CancellationToken BeginNewRequest()
@@ -145,6 +147,26 @@ namespace FluentDL.Views
             currentVolume = Task.Run(() => SettingsViewModel.GetSetting<double?>(SettingsViewModel.PreviewPlayerVolume)).GetAwaiter().GetResult() ?? 1.0;
         }
 
+        public void SetResponsiveLayout(bool stacked, double availableWidth)
+        {
+            if (stacked && !stackedLayout) sidePaneWidth = RelativePreviewPanel.Width;
+            var width = Math.Clamp(availableWidth - Padding.Left - Padding.Right, 0, 740);
+            RelativePreviewPanel.MinWidth = Math.Min(340, width);
+            RelativePreviewPanel.MaxWidth = width;
+            var preferred = !stacked && stackedLayout ? sidePaneWidth : RelativePreviewPanel.Width;
+            RelativePreviewPanel.Width = stacked ? width : Math.Clamp(preferred, RelativePreviewPanel.MinWidth, width);
+            PreviewWidthSizer.Visibility = stacked ? Visibility.Collapsed : Visibility.Visible;
+            PreviewArtworkColumn.Width = new GridLength(stacked ? 112 : 0);
+            PreviewArtwork.MaxHeight = stacked ? 112 : double.PositiveInfinity;
+            PreviewArtwork.VerticalAlignment = stacked ? VerticalAlignment.Top : VerticalAlignment.Stretch;
+            Grid.SetColumnSpan(PreviewArtwork, stacked ? 1 : 2);
+            Grid.SetRow(PreviewInfoStack, stacked ? 0 : 1);
+            Grid.SetColumn(PreviewInfoStack, stacked ? 1 : 0);
+            Grid.SetColumnSpan(PreviewInfoStack, stacked ? 1 : 2);
+            PreviewInfoStack.Margin = stacked ? new Thickness(12) : new Thickness(16, 0, 16, 12);
+            stackedLayout = stacked;
+        }
+
         public void SetPlayerSource(string? uriStr)
         {
             ClearMediaPlayerSource();
@@ -154,6 +176,7 @@ namespace FluentDL.Views
             }
             try
             {
+                SongPreviewPlayer.Visibility = Visibility.Visible;
                 SongPreviewPlayer.Source = MediaSource.CreateFromUri(new Uri(uriStr));
                 // Set volume
                 SongPreviewPlayer.MediaPlayer.VolumeChanged -= MediaPlayer_VolumeChanged;
@@ -194,6 +217,7 @@ namespace FluentDL.Views
             _ras = _originalStream.AsRandomAccessStream();
 
             SongPreviewPlayer.Source = MediaSource.CreateFromStream(_ras, mime);
+            SongPreviewPlayer.Visibility = Visibility.Visible;
             SongPreviewPlayer.MediaPlayer.MediaFailed += MediaPlayer_MediaFailed;
         }
 
@@ -290,6 +314,7 @@ namespace FluentDL.Views
 
                 if (selectedSong is AlbumSearchObject)
                 {
+                    SongPreviewPlayer.Visibility = Visibility.Collapsed;
                     TrackListHeader.Text = info.AlbumTrackCount switch
                     {
                         0 => "No Tracks",
