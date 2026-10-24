@@ -58,6 +58,9 @@ public class ActivationService : IActivationService
         // Switch from splash screen to shell
         App.MainWindow.Content = _shell ?? new Frame();
         App.MainWindow.Activate();
+#if FLUENTDL_PREVIEW_VOLUME_UI_TESTS
+        PreviewVolumeTestSupport.Attach(_shell);
+#endif
         App.MainWindow.Closed += (s, e) => QueueSaver.Close();
 
         // Execute tasks after activation
@@ -136,6 +139,7 @@ public class ActivationService : IActivationService
             }
 
             await App.GetService<QueueDisplaySettings>().LoadAsync();
+            await App.GetService<PreviewVolumeSettings>().LoadAsync();
             await QueueViewModel.UpdateShortcutVisibility();
             // Fetch previous command list
             //await LocalCommands.Init();

@@ -113,6 +113,7 @@ public partial class App : Application
                     services.AddSingleton<IAppNotificationService, AppNotificationService>();
                     services.AddSingleton<ILocalSettingsService, LocalSettingsService>();
                     services.AddSingleton<QueueDisplaySettings>();
+                    services.AddSingleton<PreviewVolumeSettings>();
                     services.AddSingleton<IAppUpdateService, AppUpdateService>();
                     services.AddSingleton<AppUpdateViewModel>();
 #if FLUENTDL_UPDATER_UI_TESTS

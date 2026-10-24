@@ -1,5 +1,6 @@
 ﻿using CommunityToolkit.Labs.WinUI.MarqueeTextRns;
 using FluentDL.Core.Sources;
+using FluentDL.Core.Services;
 using FluentDL.Contracts.Services;
 using FluentDL.Contracts.Sources;
 using FluentDL.Core.Contracts.Services;
@@ -21,6 +22,7 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using Windows.Media.Core;
+using Windows.Media.Playback;
 
 
 // To learn more about WinUI, the WinUI project structure,
@@ -30,7 +32,7 @@ namespace FluentDL.Views
 {
     public sealed partial class PreviewPane : UserControl, INotifyPropertyChanged
     {
-        private ILocalSettingsService localSettings;
+        private readonly PreviewVolumeSettings previewVolume = App.GetService<PreviewVolumeSettings>();
 
         private readonly SourceRegistry sources = App.GetService<SourceRegistry>();
         private double rankValue = 0;
@@ -66,8 +68,7 @@ namespace FluentDL.Views
         private Stream? _originalStream;
         private Windows.Storage.Streams.IRandomAccessStream? _ras;
         private string? _previewPath;
-        // Volume
-        private double currentVolume = 1.0;
+        private MediaPlayer? activePlayer;
         private bool stackedLayout;
         private double sidePaneWidth;
 
@@ -94,13 +95,19 @@ namespace FluentDL.Views
             {
                 var mediaPlayer = SongPreviewPlayer.MediaPlayer;
                 var source = SongPreviewPlayer.Source;
-                if (mediaPlayer == null || source == null) // Already cleared
+                if (mediaPlayer == null) // Already cleared
                 {
                     return;
                 }
                 
                 mediaPlayer.VolumeChanged -= MediaPlayer_VolumeChanged;
                 mediaPlayer.MediaFailed -= MediaPlayer_MediaFailed;
+                if (ReferenceEquals(mediaPlayer, activePlayer))
+                {
+                    // Capture the last slider value even if its native event is still queued during navigation.
+                    _ = SaveVolumeAsync(mediaPlayer.Volume);
+                    activePlayer = null;
+                }
 
                 if (mediaPlayer.PlaybackSession.CanPause)
                 {
@@ -142,9 +149,7 @@ namespace FluentDL.Views
             dispatcher = DispatcherQueue.GetForCurrentThread();
             Clear();
             // Set settings
-            localSettings = App.GetService<ILocalSettingsService>();
             SongPreviewPlayer.AutoPlay = Task.Run(() => SettingsViewModel.GetSetting<bool>(SettingsViewModel.AutoPlay)).GetAwaiter().GetResult();
-            currentVolume = Task.Run(() => SettingsViewModel.GetSetting<double?>(SettingsViewModel.PreviewPlayerVolume)).GetAwaiter().GetResult() ?? 1.0;
         }
 
         public void SetResponsiveLayout(bool stacked, double availableWidth)
@@ -177,12 +182,7 @@ namespace FluentDL.Views
             try
             {
                 SongPreviewPlayer.Visibility = Visibility.Visible;
-                SongPreviewPlayer.Source = MediaSource.CreateFromUri(new Uri(uriStr));
-                // Set volume
-                SongPreviewPlayer.MediaPlayer.VolumeChanged -= MediaPlayer_VolumeChanged;
-                SongPreviewPlayer.MediaPlayer.Volume = currentVolume;
-                SongPreviewPlayer.MediaPlayer.VolumeChanged += MediaPlayer_VolumeChanged;
-                SongPreviewPlayer.MediaPlayer.MediaFailed += MediaPlayer_MediaFailed;
+                SetMediaSource(MediaSource.CreateFromUri(new Uri(uriStr)));
             }
             catch (Exception ex)
             {
@@ -191,11 +191,36 @@ namespace FluentDL.Views
             }
         }
 
-        private async void MediaPlayer_VolumeChanged(Windows.Media.Playback.MediaPlayer sender, object args)
+        private void SetMediaSource(MediaSource source)
         {
-            // Save the updated volume to settings
-            currentVolume = sender.Volume;
-            await localSettings.SaveSettingAsync(SettingsViewModel.PreviewPlayerVolume, currentVolume);
+            // Set volume before attaching the source so autoplay cannot start at the default full volume.
+            var player = new MediaPlayer { AutoPlay = SongPreviewPlayer.AutoPlay, Volume = previewVolume.Volume };
+            SongPreviewPlayer.SetMediaPlayer(player);
+            activePlayer = player;
+            player.VolumeChanged += MediaPlayer_VolumeChanged;
+            player.MediaFailed += MediaPlayer_MediaFailed;
+            SongPreviewPlayer.Source = source;
+        }
+
+        private void MediaPlayer_VolumeChanged(MediaPlayer sender, object args)
+        {
+            // Native events may arrive off-thread. Serialize them with navigation and player disposal.
+            dispatcher.TryEnqueue(() =>
+            {
+                if (!ReferenceEquals(sender, activePlayer)) return;
+                try { _ = SaveVolumeAsync(sender.Volume); }
+                catch (Exception error) { Serilog.Log.Warning(error, "Could not read the preview volume"); }
+            });
+        }
+
+        private async Task SaveVolumeAsync(double value)
+        {
+            try
+            {
+                if (previewVolume.Volume != value)
+                    await previewVolume.SetVolumeAsync(value);
+            }
+            catch (Exception error) { Serilog.Log.Warning(error, "Could not save the shared preview volume"); }
         }
 
         private void MediaPlayer_MediaFailed(Windows.Media.Playback.MediaPlayer sender, Windows.Media.Playback.MediaPlayerFailedEventArgs args)
@@ -216,9 +241,8 @@ namespace FluentDL.Views
             _originalStream = stream;
             _ras = _originalStream.AsRandomAccessStream();
 
-            SongPreviewPlayer.Source = MediaSource.CreateFromStream(_ras, mime);
+            SetMediaSource(MediaSource.CreateFromStream(_ras, mime));
             SongPreviewPlayer.Visibility = Visibility.Visible;
-            SongPreviewPlayer.MediaPlayer.MediaFailed += MediaPlayer_MediaFailed;
         }
 
         public void SetAppBarButtons(List<AppBarButton> appBarButtons)

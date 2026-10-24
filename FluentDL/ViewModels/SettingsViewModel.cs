@@ -45,7 +45,7 @@ public partial class SettingsViewModel : ObservableRecipient
         AudioConversionThreads = "audio_conversion_threads",
         Notifications = "notifications",
         AutoPlay = "auto_play",
-        PreviewPlayerVolume = "preview_player_volume",
+        PreviewPlayerVolume = PreviewVolumeSettings.SettingsKey,
         NotifyUpdate = "notify_update",
         DownloadLyrics = "download_lyrics",
         LyricsPreference = "lyrics_preference",
