@@ -124,9 +124,11 @@ public sealed partial class QueuePage : Page
         {
             OnQueueSourceChange();
         };
+        QueueViewModel.BulkAddProgressChanged += UpdateBulkAddProgress;
+        UpdateBulkAddProgress();
 
         NoItemsText.Visibility = QueueViewModel.Source.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
-        ClearButton.IsEnabled = QueueViewModel.Source.Count > 0 && !albumExpansionBusy;
+        ClearButton.IsEnabled = QueueViewModel.Source.Count > 0 && !albumExpansionBusy && !QueueViewModel.IsBulkAdding;
 
         // Set conversion variables
         successSource = new ConcurrentDictionary<SongSearchObject, int>();
@@ -303,12 +305,46 @@ public sealed partial class QueuePage : Page
         return string.Join(", ", parts);
     }
 
+    private bool queueRefreshPending;
+    private bool showingBulkAdd;
+
     private void OnQueueSourceChange()
     {
-        SetCountText();
-        NoItemsText.Visibility = QueueViewModel.Source.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
-        ClearButton.IsEnabled = QueueViewModel.Source.Count > 0 && !albumExpansionBusy;
-        dispatcherQueue.TryEnqueue(DispatcherQueuePriority.Low, UpdateQueueToolbarLayout);
+        if (QueueViewModel.IsClosing) return;
+        if (queueRefreshPending) return;
+        queueRefreshPending = true;
+        dispatcherQueue.TryEnqueue(DispatcherQueuePriority.Low, () =>
+        {
+            if (QueueViewModel.IsClosing) return;
+            queueRefreshPending = false;
+            SetCountText();
+            NoItemsText.Visibility = QueueViewModel.Source.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
+            ClearButton.IsEnabled = QueueViewModel.Source.Count > 0 && !albumExpansionBusy && !QueueViewModel.IsBulkAdding;
+            UpdateQueueToolbarLayout();
+        });
+    }
+
+    private void UpdateBulkAddProgress()
+    {
+        if (QueueViewModel.IsClosing || IsConverting) return;
+        OnQueueSourceChange();
+        if (QueueViewModel.IsBulkAdding)
+        {
+            showingBulkAdd = true;
+            ProgressTextButton.Visibility = Visibility.Visible;
+            CountTextButton.Visibility = Visibility.Collapsed;
+            ProgressText.Text = QueueViewModel.BulkAddText;
+            QueueProgress.Value = QueueViewModel.BulkAddProgress;
+        }
+        else if (showingBulkAdd)
+        {
+            showingBulkAdd = false;
+            ProgressTextButton.Visibility = Visibility.Collapsed;
+            CountTextButton.Visibility = Visibility.Visible;
+            QueueProgress.Value = 0;
+            ShowInfoBar(QueueViewModel.BulkAddSeverity, QueueViewModel.BulkAddText, 5);
+        }
+        ConvertDialogOpenButton.IsEnabled = DownloadAllButton.IsEnabled = !QueueViewModel.IsBulkAdding;
     }
 
     private void QueueToolbar_SizeChanged(object sender, SizeChangedEventArgs e) => UpdateQueueToolbarLayout();
@@ -1013,6 +1049,7 @@ public sealed partial class QueuePage : Page
         message = message.Trim();
         dispatcherQueue.TryEnqueue(() =>
         {
+            if (QueueViewModel.IsClosing) return;
             dispatcherTimer.Stop();
             PageInfoBar.IsOpen = true;
             PageInfoBar.Opacity = 1;
@@ -1040,6 +1077,7 @@ public sealed partial class QueuePage : Page
         message = message.Trim();
         dispatcherQueue.TryEnqueue(() =>
         {
+            if (QueueViewModel.IsClosing) return;
             dispatcherTimer.Stop();
             PageInfoBar.IsOpen = true;
             PageInfoBar.Opacity = 1;

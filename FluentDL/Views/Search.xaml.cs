@@ -138,6 +138,8 @@ public sealed partial class Search : Page
         dispatcher = DispatcherQueue.GetForCurrentThread();
         dispatcherTimer = new DispatcherTimer();
         dispatcherTimer.Tick += dispatcherTimer_Tick;
+        QueueViewModel.BulkAddProgressChanged += () => { if (!QueueViewModel.IsClosing) AddToQueueButton.IsEnabled = !QueueViewModel.IsBulkAdding; };
+        AddToQueueButton.IsEnabled = !QueueViewModel.IsBulkAdding;
         CustomListView.ItemsSource = new ObservableCollection<SongSearchObject>();
         AttachCollectionChangedEvent((ObservableCollection<SongSearchObject>)CustomListView.ItemsSource);
         originalList = new ObservableCollection<SongSearchObject>();
@@ -623,7 +625,9 @@ public sealed partial class Search : Page
 
     private async void AddToQueueButton_OnClick(object sender, RoutedEventArgs e)
     {
-        var listViewCount = (CustomListView.ItemsSource as ObservableCollection<SongSearchObject>).Count;
+        if (QueueViewModel.IsBulkAdding) return;
+        var snapshot = ((ObservableCollection<SongSearchObject>)CustomListView.ItemsSource).ToArray();
+        var listViewCount = snapshot.Length;
 
         if (listViewCount == 0)
         {
@@ -631,22 +635,24 @@ public sealed partial class Search : Page
             return;
         }
 
-        AddToQueueButton.IsEnabled = false;
-
-        ShowInfoBarPermanent(InfoBarSeverity.Informational, $"Adding all search tracks to queue");
-        InfobarProgress.Visibility = Visibility.Visible;
+        var large = listViewCount >= QueueViewModel.BulkAddThreshold;
+        if (large) AddToQueueButton.IsEnabled = false;
         try
         {
-            var beforeCount = QueueViewModel.Source.Count;
-            // Albums stay albums in the queue.
-            foreach (var song in ((ObservableCollection<SongSearchObject>)CustomListView.ItemsSource).ToList())
+            var addedCount = await QueueViewModel.AddManyAsync(snapshot, text =>
             {
-                QueueViewModel.Add(song);
+                dispatcherTimer.Stop();
+                InfobarProgress.Visibility = Visibility.Visible;
+                ShowInfoBarPermanent(InfoBarSeverity.Informational, text,
+                    isIndeterminate: false, progressPercent: QueueViewModel.BulkAddProgress / 100);
+            });
+            if (QueueViewModel.IsClosing) return;
+
+            if (large)
+            {
+                ShowInfoBar(QueueViewModel.BulkAddSeverity, QueueViewModel.BulkAddText, 5);
             }
-
-            var addedCount = QueueViewModel.Source.Count - beforeCount;
-
-            if (addedCount < listViewCount)
+            else if (addedCount < listViewCount)
             {
                 ShowInfoBar(InfoBarSeverity.Informational, $"Added {addedCount} {(addedCount == 1 ? "item" : "items")} to queue (duplicates ignored)");
             }
@@ -657,12 +663,16 @@ public sealed partial class Search : Page
         }
         catch (Exception ex)
         {
-            ShowInfoBar(InfoBarSeverity.Error, $"Error adding to queue: {ex.Message}");
+            if (!QueueViewModel.IsClosing) ShowInfoBar(InfoBarSeverity.Error, $"Error adding to queue: {ex.Message}");
         }
         finally
         {
-            AddToQueueButton.IsEnabled = true;
-            InfobarProgress.Visibility = Visibility.Collapsed;
+            if (!QueueViewModel.IsClosing)
+            {
+                AddToQueueButton.IsEnabled = !QueueViewModel.IsBulkAdding;
+                InfobarProgress.Visibility = Visibility.Collapsed;
+                InfobarProgress.IsIndeterminate = true;
+            }
         }
     }
 
@@ -686,6 +696,7 @@ public sealed partial class Search : Page
     // Event handler to close the info bar and stop the timer (only ticks once)
     private void dispatcherTimer_Tick(object sender, object e)
     {
+        if (QueueViewModel.IsClosing) { dispatcherTimer.Stop(); return; }
         PageInfoBar.Opacity = 0;
         (sender as DispatcherTimer).Stop();
         // Set IsOpen to false after 0.25 seconds
@@ -694,6 +705,7 @@ public sealed partial class Search : Page
             System.Threading.Thread.Sleep(250);
             dispatcher.TryEnqueue(() =>
             {
+                if (QueueViewModel.IsClosing) return;
                 try
                 {
                     PageInfoBar.IsOpen = false;
@@ -1075,6 +1087,7 @@ public sealed partial class Search : Page
         message = message.Trim();
         dispatcher.TryEnqueue(() =>
         {
+            if (QueueViewModel.IsClosing) return;
             dispatcherTimer.Stop();
             PageInfoBar.IsOpen = true;
             PageInfoBar.Opacity = 1;

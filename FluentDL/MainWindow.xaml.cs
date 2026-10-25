@@ -1,4 +1,5 @@
 ﻿using FluentDL.Helpers;
+using FluentDL.ViewModels;
 using Windows.UI.ViewManagement;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
@@ -33,6 +34,8 @@ public sealed partial class MainWindow : WindowEx
     private Microsoft.UI.Dispatching.DispatcherQueue dispatcherQueue;
 
     private UISettings settings;
+    private bool closeRequested;
+    private bool closeReady;
 
     public MainWindow()
     {
@@ -46,6 +49,24 @@ public sealed partial class MainWindow : WindowEx
         dispatcherQueue = Microsoft.UI.Dispatching.DispatcherQueue.GetForCurrentThread();
         settings = new UISettings();
         settings.ColorValuesChanged += Settings_ColorValuesChanged; // cannot use FrameworkElement.ActualThemeChanged event
+        AppWindow.Closing += AppWindow_Closing;
+        Closed += async (_, _) =>
+        {
+            settings.ColorValuesChanged -= Settings_ColorValuesChanged;
+            try { await QueueViewModel.ShutdownAsync(); }
+            catch (Exception error) { Serilog.Log.Error(error, "Queue shutdown failed"); }
+        };
+    }
+
+    private async void AppWindow_Closing(AppWindow sender, AppWindowClosingEventArgs args)
+    {
+        if (closeReady) return;
+        args.Cancel = true;
+        if (closeRequested) return;
+        closeRequested = true;
+        try { await QueueViewModel.ShutdownAsync(); }
+        catch (Exception error) { Serilog.Log.Error(error, "Queue metadata could not be flushed before closing"); }
+        finally { closeReady = true; Close(); }
     }
 
     // this handles updating the caption button colors correctly when indows system theme is changed

@@ -8,6 +8,7 @@ using FluentDL.Helpers;
 using FluentDL.Models;
 using FluentDL.Services;
 using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Imaging;
 using Newtonsoft.Json;
@@ -22,6 +23,18 @@ namespace FluentDL.ViewModels;
 
 public class QueueObject : SongSearchObject, INotifyPropertyChanged
 {
+    private QueueArtworkState artworkState;
+    [JsonIgnore]
+    public QueueArtworkState ArtworkState
+    {
+        get => artworkState;
+        set
+        {
+            if (artworkState == value) return;
+            artworkState = value;
+            OnPropertyChanged();
+        }
+    }
     [JsonIgnore]
     private string? _resultString;
     
@@ -151,6 +164,7 @@ public class QueueObject : SongSearchObject, INotifyPropertyChanged
         ResultString = null;
         IsRunning = false;
         LocalBitmapImage = song.LocalBitmapImage;
+        ArtworkState = song.LocalBitmapImage != null ? QueueArtworkState.Ready : QueueArtworkState.Unavailable;
         Isrc = song.Isrc;
         QueueCounter = song.QueueCounter;
         AudioFormat = song.AudioFormat;
@@ -171,6 +185,7 @@ public partial class QueueViewModel : ObservableRecipient
 {
     private static readonly HttpClient _httpClient = new() { MaxResponseContentBufferSize = ArtworkThumbnail.MaximumEncodedBytes };
     private static readonly BitmapImage UnloadedPlaceholder = new(new Uri("ms-appx:///Assets/Unloaded.jpg"));
+    internal static BitmapImage ArtworkPlaceholder => UnloadedPlaceholder;
     public static ObservableCollection<QueueObject> Source
     {
         get;
@@ -225,6 +240,141 @@ public partial class QueueViewModel : ObservableRecipient
 
     public static DispatcherQueue dispatcher = DispatcherQueue.GetForCurrentThread();
     private static HashSet<string> trackSet = new HashSet<string>();
+    private static QueueArtworkLoader? artwork;
+    private static bool artworkNetworkStarted;
+    internal static int ArtworkEntryCount => artwork?.EntryCount ?? 0;
+    private static QueueArtworkLoader Artwork => artwork ??= CreateArtworkLoader();
+    private static QueueArtworkLoader CreateArtworkLoader()
+    {
+        var loader = new QueueArtworkLoader(Source, dispatcher, UnloadedPlaceholder);
+        loader.ArtworkChanged += url => ArtworkChanged?.Invoke(url);
+        if (artworkNetworkStarted) loader.StartNetwork();
+        return loader;
+    }
+
+    internal static void StartArtworkNetwork()
+    {
+        artworkNetworkStarted = true;
+        artwork?.StartNetwork();
+    }
+
+    public const int BulkAddThreshold = 100;
+    public static bool IsBulkAdding { get; private set; }
+    public static string BulkAddText { get; private set; } = string.Empty;
+    public static double BulkAddProgress { get; private set; }
+    public static int BulkArtworkFailures { get; private set; }
+    public static InfoBarSeverity BulkAddSeverity { get; private set; } = InfoBarSeverity.Success;
+    public static event Action? BulkAddProgressChanged;
+    private static CancellationTokenSource? bulkCancellation;
+    public static bool IsClosing { get; private set; }
+    private static Task? shutdown;
+
+    internal static Task ShutdownAsync()
+    {
+        if (shutdown != null) return shutdown;
+        IsClosing = true;
+        bulkCancellation?.Cancel();
+        return shutdown = FinishShutdownAsync();
+    }
+
+    internal static event Action<string>? ArtworkChanged;
+    internal static bool TryGetArtwork(string url, out BitmapImage? image, out QueueArtworkState state)
+    {
+        image = null;
+        state = QueueArtworkState.Unavailable;
+        return artwork != null && artwork.TryGet(url, out image, out state);
+    }
+
+    private static async Task FinishShutdownAsync()
+    {
+        if (artwork != null) await artwork.StopAsync();
+        await DatabaseService.FlushOnCloseAsync();
+    }
+
+    public static async Task<int> AddManyAsync(IReadOnlyList<SongSearchObject> songs, Action<string>? progress = null)
+    {
+        if (IsClosing) return 0;
+        if (IsBulkAdding) throw new InvalidOperationException("Wait for the current queue addition to finish.");
+        using var activity = ApplicationActivity.Gate.EnterWork();
+        var added = 0;
+        var large = songs.Count >= BulkAddThreshold;
+        if (!large)
+        {
+            foreach (var song in songs) if (Add(song) != null) added++;
+            return added;
+        }
+        using var cancellation = new CancellationTokenSource();
+        bulkCancellation = cancellation;
+        IsBulkAdding = true;
+        BulkArtworkFailures = 0;
+        BulkAddSeverity = InfoBarSeverity.Success;
+        void Report(string text, double fraction)
+        {
+            if (IsClosing) return;
+            BulkAddText = text;
+            BulkAddProgress = fraction * 100;
+            progress?.Invoke(text);
+            if (!IsClosing) BulkAddProgressChanged?.Invoke();
+        }
+        try
+        {
+            var covers = new HashSet<Task<bool>>();
+            Report($"Adding to queue... 0 of {songs.Count:N0}", 0);
+            await Task.Delay(1);
+            for (var i = 0; i < songs.Count; i++)
+            {
+                cancellation.Token.ThrowIfCancellationRequested();
+                var row = Add(songs[i]);
+                if (row != null)
+                {
+                    added++;
+                    if (Artwork.CompletionFor(row) is { } cover) covers.Add(cover);
+                }
+                if ((i + 1) % 25 == 0 || i + 1 == songs.Count)
+                {
+                    Report($"Adding to queue... {i + 1:N0} of {songs.Count:N0}", (i + 1d) / songs.Count);
+                    await Task.Delay(1);
+                }
+            }
+            await DatabaseService.FlushAsync();
+            var total = covers.Count;
+            var completed = 0;
+            Report($"Caching artwork... 0 of {total:N0} covers", 0);
+            while (covers.Count > 0)
+            {
+                var done = await Task.WhenAny(covers).WaitAsync(cancellation.Token);
+                covers.Remove(done);
+                if (!await done) BulkArtworkFailures++;
+                completed++;
+                Report($"Caching artwork... {completed:N0} of {total:N0} covers", completed / (double)total);
+            }
+            await DatabaseService.FlushAsync();
+            var duplicates = songs.Count - added;
+            if (BulkArtworkFailures > 0) BulkAddSeverity = InfoBarSeverity.Warning;
+            BulkAddText = $"Added {added:N0} items to queue"
+                + (duplicates > 0 ? $" ({duplicates:N0} duplicates ignored)" : "")
+                + (BulkArtworkFailures > 0 ? $". {BulkArtworkFailures:N0} {(BulkArtworkFailures == 1 ? "cover" : "covers")} could not be cached and will retry after restart." : ". Artwork cached.");
+            return added;
+        }
+        catch (OperationCanceledException)
+        {
+            BulkAddSeverity = InfoBarSeverity.Informational;
+            BulkAddText = "Adding to queue cancelled.";
+            return added;
+        }
+        catch
+        {
+            BulkAddSeverity = InfoBarSeverity.Error;
+            BulkAddText = "Could not finish adding to queue. Some items may have been added.";
+            throw;
+        }
+        finally
+        {
+            IsBulkAdding = false;
+            bulkCancellation = null;
+            if (!IsClosing) BulkAddProgressChanged?.Invoke();
+        }
+    }
 
 
     public QueueDisplaySettings QueueDisplay { get; }
@@ -287,27 +437,14 @@ public partial class QueueViewModel : ObservableRecipient
             QueueCounter = queueCounter,
             QueueSubOrder = subOrder,
         };
-        if (queueObj.LocalBitmapImage == null) // Create a local bitmap image for queue objects to prevent disappearing listview images
-        {
-            using var memoryStream = await GetRandomAccessStreamOptimized(queueObj.ImageLocation); // Get the memory stream from the url
-            if (memoryStream == null) return null;
-
-            var bitmapImage = new BitmapImage { DecodePixelHeight = 76 }; // Create a new bitmap image
-            await bitmapImage.SetSourceAsync(memoryStream);
-            queueObj.LocalBitmapImage = bitmapImage; // Set the local bitmap image
-
-            await DatabaseService.QueueSave(GetHash(queueObj), queueObj.ToString(), memoryStream);
-        } else
-        {
-            await DatabaseService.QueueSave(GetHash(queueObj), queueObj.ToString(), null);
-        }
-
+        _ = Artwork;
+        await DatabaseService.SaveMetadataAsync(GetHash(queueObj), queueObj.ToString());
         return queueObj;
     }
 
     public static QueueObject? Add(SongSearchObject? song)
     {
-        if (ApplicationActivity.Gate.IsInstalling) return null;
+        if (IsClosing || ApplicationActivity.Gate.IsInstalling) return null;
         using var activity = ApplicationActivity.Gate.EnterWork();
         if (song == null || trackSet.Contains(GetHash(song)))
         {
@@ -317,42 +454,18 @@ public partial class QueueViewModel : ObservableRecipient
         var hash = GetHash(song);
         var queueObj = new QueueObject(song);
         queueObj.QueueCounter ??= GetNextOrderCounter();  // Only set order if new addition
+        _ = Artwork;
+        _ = SaveMetadataAsync(queueObj);
         Source.Add(queueObj);
         trackSet.Add(hash);
 
-        if (queueObj.LocalBitmapImage == null)  // Create a bitmapimage to prevent disappearing listview images
-        {
-            _ = ApplicationActivity.RunBackground(async () =>
-            {
-                try
-                {
-                    // Background
-                    var memoryStream = await GetRandomAccessStreamOptimized(queueObj.ImageLocation);
-                    if (memoryStream == null) return;
-
-                    // Save the bitmap
-                    await DatabaseService.QueueSave(hash, queueObj.ToString(), memoryStream);
-
-                    // UI Thread
-                    dispatcher.TryEnqueue(async () =>
-                    {
-                        var bitmapImage = new BitmapImage { DecodePixelHeight = 76 };
-                        await bitmapImage.SetSourceAsync(memoryStream);
-                        queueObj.LocalBitmapImage = bitmapImage;
-                        memoryStream.Dispose();
-                    });
-                }
-                catch (Exception ex)
-                {
-                    Serilog.Log.Warning(ex, "Background queue image load failed");
-                }
-            });
-        } else if (queueObj.Source == SourceIds.Local)
-        {
-            _ = DatabaseService.QueueSave(hash, queueObj.ToString(), null);
-        }
-
         return queueObj;
+    }
+
+    private static async Task SaveMetadataAsync(QueueObject row)
+    {
+        try { await DatabaseService.SaveMetadataAsync(GetHash(row), row.ToString()); }
+        catch (Exception error) { Serilog.Log.Error(error, "Queue metadata could not be saved"); }
     }
 
     public static async Task Remove(SongSearchObject song)
@@ -367,17 +480,17 @@ public partial class QueueViewModel : ObservableRecipient
     public static async Task Replace(int index, QueueObject? queueObj)
     {
         using var activity = ApplicationActivity.Gate.EnterWork();
-        if (queueObj == null || index < 0) return; // a negative index: the row was removed meanwhile
-
+        if (queueObj == null || index < 0) return;
         var oldHash = GetHash(Source[index]);
-        trackSet.Remove(oldHash); // Remove old from trackset
-        Source[index] = queueObj; // Set to new object
-        trackSet.Add(GetHash(queueObj)); // Add new hash to trackset
+        trackSet.Remove(oldHash);
+        Source[index] = queueObj;
+        trackSet.Add(GetHash(queueObj));
         await DatabaseService.Remove(oldHash);
     }
 
     public static async Task Clear()
     {
+        bulkCancellation?.Cancel();
         using var activity = ApplicationActivity.Gate.EnterWork();
         Source.Clear();
         trackSet.Clear();
@@ -424,9 +537,8 @@ public partial class QueueViewModel : ObservableRecipient
         }
     }
 
-    private static string GetHash(SongSearchObject song)
+    internal static string GetHash(SongSearchObject song)
     {
-        // Albums get their own key, so an album and a track with the same id can both be queued.
         return (QueueObject.IsAlbumItem(song) ? "album:" : "") + song.Source + song.Id;
     }
 
@@ -470,7 +582,6 @@ public partial class QueueViewModel : ObservableRecipient
         for (var i = 0; i < rows.Count; i++)
         {
             var row = rows[i];
-            // CreateQueueObject already saved the row with its image and order.
             if (!trackSet.Add(GetHash(row))) continue; // already in the queue elsewhere
             Source.Insert(position++, row);
         }
@@ -526,22 +637,7 @@ public partial class QueueViewModel : ObservableRecipient
                 else
                 {
                     song.LocalBitmapImage = UnloadedPlaceholder;
-                    var queueObj = Add(song);
-                    // Get the bitmap image from the queue
-                    if (queueObj != null)
-                    {
-                        _ = Task.Run(async () =>
-                        {
-                            var image = await DatabaseService.GetBitmapAsync(hash, dispatcher);
-                            if (image != null)
-                            {
-                                dispatcher.TryEnqueue(() =>
-                                {
-                                    queueObj.LocalBitmapImage = image;
-                                });
-                            }
-                        });
-                    }
+                    Add(song);
                 }
             }
             Serilog.Log.Information("Queue restored with {ItemCount} items", Source.Count);

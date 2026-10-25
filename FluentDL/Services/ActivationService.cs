@@ -54,6 +54,7 @@ public class ActivationService : IActivationService
 
         // Initialize APIs
         await InitAPIs(splashScreen);
+        if (QueueViewModel.IsClosing) return;
 
         // Switch from splash screen to shell
         App.MainWindow.Content = _shell ?? new Frame();
@@ -67,6 +68,13 @@ public class ActivationService : IActivationService
 #if FLUENTDL_PICKER_UI_TESTS
         LocalPickerTestSupport.Attach(_shell);
 #endif
+#if FLUENTDL_COMPACT_LAYOUT_UI_TESTS
+        CompactLayoutTestSupport.Attach(_shell);
+#endif
+#if FLUENTDL_QUEUE_LOAD_UI_TESTS
+        QueueLoadTestSupport.Attach(_shell);
+#endif
+        QueueViewModel.StartArtworkNetwork();
         App.MainWindow.Closed += (s, e) => QueueSaver.Close();
 
         // Execute tasks after activation
