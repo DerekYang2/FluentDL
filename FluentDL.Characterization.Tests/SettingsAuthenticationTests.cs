@@ -64,6 +64,24 @@ public class SettingsAuthenticationTests
     }
 
     [TestMethod]
+    [DataRow(false, null, FluentDL.ViewModels.CapabilityState.Limited)]
+    [DataRow(false, true, FluentDL.ViewModels.CapabilityState.Limited)]
+    [DataRow(true, null, FluentDL.ViewModels.CapabilityState.Unknown)]
+    [DataRow(true, false, FluentDL.ViewModels.CapabilityState.Limited)]
+    [DataRow(true, true, FluentDL.ViewModels.CapabilityState.Ready)]
+    public void DeezerPlaylistIndicatorUsesTheSignedInReadCheck(bool signedIn, bool? checkedAccess, FluentDL.ViewModels.CapabilityState expected)
+    {
+        var row = FluentDL.ViewModels.ProviderCapabilityRow.Create(new(DeezerSignedIn: signedIn,
+            DeezerPlaylistReadAccess: checkedAccess)).Single(row => row.Provider == "Deezer");
+        Assert.AreEqual(expected, row.PlaylistUrls.State);
+        if (expected == FluentDL.ViewModels.CapabilityState.Ready)
+        {
+            StringAssert.Contains(row.PlaylistUrls.Details, "was checked");
+            StringAssert.Contains(row.PlaylistUrls.Details, "Individual playlist permissions");
+        }
+    }
+
+    [TestMethod]
     public void SignedOutPublicPlaylistAccessIsLimitedAndSearchUsesOneLabel()
     {
         var rows = FluentDL.ViewModels.ProviderCapabilityRow.Create(new(QobuzCatalog: true, SpotifyCatalog: true, TidalCatalog: true));

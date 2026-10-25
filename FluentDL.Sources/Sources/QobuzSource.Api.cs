@@ -444,62 +444,7 @@ internal sealed partial class QobuzSource
         }
         else if (isPlaylist)
         {
-            Playlist? playlist = null;
-            try
-            {
-                playlist = await GetPlaylistAsync(id, token);
-            }
-            catch (Exception e)
-            {
-                Debug.WriteLine("Failed to get qobuz playlist: " + e.Message);
-            }
-
-            if (playlist?.TrackIds != null && (playlist.TrackIds?.Count ?? 0) > 0)
-            {
-                statusUpdate?.Invoke(StatusLevel.Informational, $"<b>Qobuz</b>   Loading playlist <a href='{url}'>{playlist.Name}</a>", -1); // Show an informational message
-
-                int failedCount = 0; // Count of failed tracks
-                foreach (var trackId in playlist?.TrackIds!) // Need to recreate the tracks so they have album objects
-                {
-                    if (token.IsCancellationRequested)
-                    {
-                        statusUpdate?.Invoke(StatusLevel.Warning, $"<b>Qobuz</b>   Cancelled loading playlist <a href='{url}'>{playlist.Name}</a>"); // Show a warning message
-                        return;
-                    }
-
-                    var track = await Task.Run(() =>
-                    {
-                        try
-                        {
-                            return apiService.GetTrack(trackId.ToString(), withAuth: true);
-                        }
-                        catch
-                        {
-                            Debug.WriteLine($"Failed to get qobuz track: {trackId}");
-                            failedCount++;
-                            return null;
-                        }
-                    });
-
-                    if (track != null)
-                    {
-                        itemSource.Add(ConvertSongSearchObject(track));
-                    }
-                }
-
-                if (failedCount == 0)
-                {
-                    statusUpdate?.Invoke(StatusLevel.Success, $"<b>Qobuz</b>   Loaded playlist <a href='{url}'>{playlist.Name}</a>"); // Show a success message
-                }
-                else
-                {
-                    statusUpdate?.Invoke(StatusLevel.Warning, $"<b>Qobuz</b>   Loaded playlist <a href='{url}'>{playlist.Name}</a>, with {failedCount} track{(failedCount > 1 ? "s" : "")} failing to load."); // Show a warning message
-                }
-            }
-            else
-            {
-                statusUpdate?.Invoke(StatusLevel.Error, $"<b>Qobuz</b>   Playlist may not exist or is private.");
-            }
+            await ImportPlaylistAsync(itemSource, url, id, statusUpdate, token);
         }
     }
 
@@ -656,20 +601,7 @@ internal sealed partial class QobuzSource
 
     public SongSearchObject ConvertSongSearchObject(Track track, string? mainArtist = null)
     {
-        var listedArtist = track.Performer?.Name ?? "unlisted";
-        var contribList = GetAllContributorsList(track.Performers);
-
-        if ((contribList == null || contribList.Count == 0) && !string.IsNullOrWhiteSpace(mainArtist)) // If no contributors, fallback
-        {
-            contribList = [mainArtist];
-        }   
-        contribList ??= [];
-
-        if (contribList.Contains(listedArtist)) // Move listed artist to the front
-        {
-            contribList.Remove(listedArtist);
-            contribList.Insert(0, listedArtist);
-        }
+        var contribList = GetTrackArtists(track, mainArtist);
 
         return new SongSearchObject()
         {
@@ -690,19 +622,7 @@ internal sealed partial class QobuzSource
 
     public SongSearchObject CreateSongSearchObject(Track track, Album album)
     {
-        var listedArtist = track.Performer?.Name ?? "unlisted";
-        var contribList = GetAllContributorsList(track.Performers);
-
-        if ((contribList == null || contribList.Count == 0) && !string.IsNullOrEmpty(album.Artist?.Name))
-        {
-            contribList = [album.Artist.Name];
-        }
-        contribList ??= [];
-        if (contribList.Contains(listedArtist)) // Move listed artist to the front
-        {
-            contribList.Remove(listedArtist);
-            contribList.Insert(0, listedArtist);
-        }
+        var contribList = GetTrackArtists(track, album.Artist?.Name);
 
         return new SongSearchObject()
         {
@@ -943,7 +863,25 @@ internal sealed partial class QobuzSource
         }
     }
 
-    public List<string> GetAllContributorsList(string performerStr)
+    private List<string> GetTrackArtists(Track? track, string? fallback = null)
+    {
+        var artists = GetAllContributorsList(track?.Performers);
+        var primary = track?.Performer?.Name?.Trim();
+        if (!string.IsNullOrWhiteSpace(primary)
+            && (artists.Count == 0 || artists.Any(name => string.Equals(name, primary, StringComparison.OrdinalIgnoreCase))))
+        {
+            artists.RemoveAll(name => string.Equals(name, primary, StringComparison.OrdinalIgnoreCase));
+            artists.Insert(0, primary);
+        }
+        else if (artists.Count == 0)
+        {
+            var name = string.IsNullOrWhiteSpace(fallback) ? track?.Album?.Artist?.Name : fallback;
+            if (!string.IsNullOrWhiteSpace(name)) artists.Add(name.Trim());
+        }
+        return artists;
+    }
+
+    public List<string> GetAllContributorsList(string? performerStr)
     {
         if (string.IsNullOrWhiteSpace(performerStr))  // Issue with QobuzAPI, should be nullable but is not
         {
@@ -955,14 +893,12 @@ internal sealed partial class QobuzSource
             .Select(performer => performer.Split(',')) // Split name & roles in best effort by ',', first part is name, next parts roles
             .GroupBy(parts => parts[0].Trim()) // Group performers by name since they can occur multiple times
             .ToDictionary(group => group.Key, group => group.SelectMany(parts => parts.Skip(1).Select(role => role.Trim())).Distinct().ToList()); // Flatten roles by performer and remove duplicates
-        var artistRoles = new HashSet<string>
+        var artistRoles = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
         {
             "MainArtist",
-            "main-artist",
             "Performer",
             "FeaturedArtist",
-            "Featuring",
-            "featured-artist"
+            "Featuring"
         };
 
         var artistList = new SortedSet<string>();
@@ -972,7 +908,8 @@ internal sealed partial class QobuzSource
             var name = performer.Key;
             var roles = performer.Value; // List of the roles for this person
 
-            if (roles.Any(role => artistRoles.Contains(role))) // If at least one role is an artist role
+            // Qobuz returns both API-style roles and spaced display labels such as "Main Artist".
+            if (roles.Any(role => artistRoles.Contains(string.Concat(role.Where(character => !char.IsWhiteSpace(character) && character != '-')))))
             {
                 artistList.Add(name);
             }
@@ -1041,20 +978,7 @@ internal sealed partial class QobuzSource
     {
         var track = await GetInternalTrack(trackId);
 
-        var listedArtist = track?.Performer?.Name ?? "unlisted";
-        var contribList = GetAllContributorsList(track?.Performers ?? "");
-        if ((contribList == null || contribList.Count == 0) && !string.IsNullOrWhiteSpace(track?.Album?.Artist?.Name))
-        {
-            contribList = [track.Album.Artist.Name];
-        }
-
-        contribList ??= [];
-
-        if (contribList.Contains(listedArtist)) // Move listed artist to the front
-        {
-            contribList.Remove(listedArtist);
-            contribList.Insert(0, listedArtist);
-        }
+        var contribList = GetTrackArtists(track);
 
         var metadata = new MetadataObject(filePath)
         {

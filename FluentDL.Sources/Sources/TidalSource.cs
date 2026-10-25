@@ -1,4 +1,5 @@
 using System.Net;
+using System.Runtime.CompilerServices;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Xml;
@@ -150,6 +151,7 @@ internal sealed class TidalSource : ISourceSession, IAccountLogin, ISearchSource
             return;
         }
         var (kind, id) = (match.Groups[1].Value.ToLowerInvariant(), match.Groups[2].Value);
+        var playlistItemsAdded = 0;
 
         try
         {
@@ -190,14 +192,19 @@ internal sealed class TidalSource : ISourceSession, IAccountLogin, ISearchSource
 
                 case "playlist":
                     status?.Invoke(StatusLevel.Informational, $"<b>TIDAL</b>   Loading playlist <a href='{url}'>{url}</a>", -1);
-                    var (name, tracks) = await GetPlaylistAsync(id, token);
-                    foreach (var playlistTrack in tracks)
+                    var name = id;
+                    await foreach (var playlistTrack in ReadPlaylistTracksAsync(id, value => name = value, token))
                     {
                         results.Add(playlistTrack);
+                        playlistItemsAdded++;
                     }
                     status?.Invoke(StatusLevel.Success, $"<b>TIDAL</b>   Loaded playlist <a href='{url}'>{name}</a>");
                     break;
             }
+        }
+        catch (Exception e) when (kind == "playlist" && playlistItemsAdded > 0 && e is not OperationCanceledException)
+        {
+            status?.Invoke(StatusLevel.Warning, $"<b>TIDAL</b>   Loaded {playlistItemsAdded:N0} tracks, but could not finish the playlist. Results are incomplete. Try loading the link again.", 10);
         }
         catch (Exception e) when (kind == "playlist" && api.Access is not (TidalAccess.Account or TidalAccess.DownloadAccount)
             && (e is HttpRequestException { StatusCode: HttpStatusCode.Unauthorized or HttpStatusCode.Forbidden }
@@ -346,17 +353,24 @@ internal sealed class TidalSource : ISourceSession, IAccountLogin, ISearchSource
     /// <summary>A public playlist's name and tracks, in order. Videos in the playlist are left out.</summary>
     public async Task<(string Name, List<SongSearchObject> Tracks)> GetPlaylistAsync(string id, CancellationToken token)
     {
+        var name = id;
+        var tracks = new List<SongSearchObject>();
+        await foreach (var track in ReadPlaylistTracksAsync(id, value => name = value, token)) tracks.Add(track);
+        return (name, tracks);
+    }
+
+    private async IAsyncEnumerable<SongSearchObject> ReadPlaylistTracksAsync(string id, Action<string> nameFound,
+        [EnumeratorCancellation] CancellationToken token)
+    {
         const string itemIncludes = "items,items.artists,items.albums.coverArt";
         var document = await GetOrNullAsync($"playlists/{Uri.EscapeDataString(id)}?include={itemIncludes}", token);
         if (document?.Data.FirstOrDefault() is not { ValueKind: JsonValueKind.Object } playlist)
         {
             throw new InvalidOperationException("TIDAL has no public playlist with this id.");
         }
-        var tracks = (await AllRelatedAsync(document, playlist, "items", itemIncludes, token))
-            .Where(item => TypeOf(item.Resource) == "tracks")
-            .Select(item => ConvertTrack(item.Document, item.Resource))
-            .ToList();
-        return (Attribute(playlist, "name") ?? id, tracks);
+        nameFound(Attribute(playlist, "name") ?? id);
+        await foreach (var item in RelatedItemsAsync(document, playlist, "items", itemIncludes, token))
+            if (TypeOf(item.Resource) == "tracks") yield return ConvertTrack(item.Document, item.Resource);
     }
 
     public async Task<string?> GetLargestCoverUrlAsync(AlbumSearchObject album) =>
@@ -479,27 +493,38 @@ internal sealed class TidalSource : ISourceSession, IAccountLogin, ISearchSource
         JsonApiDocument first, JsonElement owner, string relationship, string pageIncludes, CancellationToken token)
     {
         var items = new List<(JsonApiDocument, JsonElement, JsonElement)>();
+        await foreach (var item in RelatedItemsAsync(first, owner, relationship, pageIncludes, token)) items.Add(item);
+        return items;
+    }
+
+    private async IAsyncEnumerable<(JsonApiDocument Document, JsonElement Reference, JsonElement Resource)> RelatedItemsAsync(
+        JsonApiDocument first, JsonElement owner, string relationship, string pageIncludes, [EnumeratorCancellation] CancellationToken token)
+    {
         foreach (var reference in References(owner, relationship))
         {
+            token.ThrowIfCancellationRequested();
             if (first.Find(reference) is { } resource)
             {
-                items.Add((first, reference, resource));
+                yield return (first, reference, resource);
             }
         }
         var next = RelationshipNextLink(owner, relationship);
+        var seen = new HashSet<string>(StringComparer.Ordinal);
         while (next != null)
         {
-            var page = await api.GetAsync(next.Contains("include=") ? next : next + "&include=" + pageIncludes, token);
+            if (!seen.Add(next)) throw new InvalidOperationException("TIDAL repeated a playlist or album page.");
+            await Task.Delay(1, token);
+            var page = await api.GetAsync(next.Contains("include=") ? next : next + (next.Contains('?') ? "&" : "?") + "include=" + pageIncludes, token);
             foreach (var reference in page.Data)
             {
+                token.ThrowIfCancellationRequested();
                 if (page.Find(reference) is { } resource)
                 {
-                    items.Add((page, reference, resource));
+                    yield return (page, reference, resource);
                 }
             }
             next = page.NextLink;
         }
-        return items;
     }
 
     // The search the Search page is paging through. TIDAL pages by cursor, 20 results a page; the page asks by offset

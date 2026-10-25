@@ -479,15 +479,16 @@ namespace FluentDL.Services.Sources
             }
         }
 
-        public async Task<string?> GetPlaylistName(string playlistId)
+        public async Task<string?> GetPlaylistName(string playlistId, CancellationToken token = default)
         {
             if (spotifyUser == null) return null;
             try
             {
-                var playlist = await spotifyUser.Playlists.Get(playlistId);
+                var playlist = await spotifyUser.Playlists.Get(playlistId, cancel: token);
                 var playlistName = playlist.Name;
                 return playlistName;
             }
+            catch (OperationCanceledException) { throw; }
             catch (Exception e)
             {
                 Debug.WriteLine("Failed to get playlist name: " + e.Message);
@@ -760,6 +761,7 @@ namespace FluentDL.Services.Sources
             {
                 ISpotifyWebService webServiceInstance = spotifyWebService ?? injectedWebService;
                 var userLogin = spotifyUser != null && userAuthorization != null;
+                var published = 0;
 
                 statusUpdate?.Invoke(StatusLevel.Informational, $"<b>Spotify</b>   Loading <a href='{url}'>playlist</a>", -1);
 
@@ -768,7 +770,7 @@ namespace FluentDL.Services.Sources
                 {
                     if (userLogin)
                     {
-                        var playlistName = await GetPlaylistName(id);
+                        var playlistName = await GetPlaylistName(id, token);
                         if (playlistName == null)
                         {
                             throw new InvalidOperationException("Spotify could not read this playlist with the signed-in account.");
@@ -777,10 +779,7 @@ namespace FluentDL.Services.Sources
                         statusUpdate?.Invoke(StatusLevel.Informational, $"<b>Spotify</b>   Loading playlist <a href='{url}'>{playlistName}</a>", -1);
 
                         var pages = await spotifyUser!.Playlists.GetPlaylistItems(id, cancel: token);
-                        var allPages = await spotifyUser.PaginateAll(pages, cancellationToken: token);
-
-                        // Debug: loop and print all tracks
-                        foreach (PlaylistTrack<IPlayableItem> item in allPages)
+                        await foreach (var item in spotifyUser.Paginate(pages, cancel: token))
                         {
                             if (item.Item is FullTrack track)
                             {
@@ -790,10 +789,12 @@ namespace FluentDL.Services.Sources
                                     return; // Stop if cancelled
                                 }
 
-                                var songObj = await Task.Run(() => ConvertSongSearchObject(track), token);
+                                var songObj = ConvertSongSearchObject(track);
                                 if (songObj != null)
                                 {
                                     itemSource.Add(songObj);
+                                    published++;
+                                    if (published % 50 == 0) await Task.Delay(1, token);
                                 }
                             }
                         }
@@ -812,6 +813,11 @@ namespace FluentDL.Services.Sources
                 catch (SourceSignInRequiredException) { throw; }
                 catch (Exception ex)
                 {
+                    if (published > 0)
+                    {
+                        statusUpdate?.Invoke(StatusLevel.Warning, $"<b>Spotify</b>   Loaded {published:N0} tracks, but could not finish the playlist. Results are incomplete. Try loading the link again.", 10);
+                        return;
+                    }
                     if (userLogin)  // Attempt webservice fallback
                     {
                         try
