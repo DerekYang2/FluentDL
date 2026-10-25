@@ -429,7 +429,7 @@ public partial class QueueViewModel : ObservableRecipient
         return (Source.Last().QueueCounter ?? 0) + 1;
     }
 
-    public static async Task<QueueObject?> CreateQueueObject(SongSearchObject song, int? queueCounter, int? subOrder = null)
+    public static Task<QueueObject?> CreateQueueObject(SongSearchObject song, int? queueCounter, int? subOrder = null)
     {
         using var activity = ApplicationActivity.Gate.EnterWork();
         var queueObj = new QueueObject(song)
@@ -437,9 +437,8 @@ public partial class QueueViewModel : ObservableRecipient
             QueueCounter = queueCounter,
             QueueSubOrder = subOrder,
         };
-        _ = Artwork;
-        await DatabaseService.SaveMetadataAsync(GetHash(queueObj), queueObj.ToString());
-        return queueObj;
+        // Persist only after collision resolution chooses the row and position to retain.
+        return Task.FromResult<QueueObject?>(queueObj);
     }
 
     public static QueueObject? Add(SongSearchObject? song)
@@ -480,12 +479,11 @@ public partial class QueueViewModel : ObservableRecipient
     public static async Task Replace(int index, QueueObject? queueObj)
     {
         using var activity = ApplicationActivity.Gate.EnterWork();
-        if (queueObj == null || index < 0) return;
-        var oldHash = GetHash(Source[index]);
-        trackSet.Remove(oldHash);
-        Source[index] = queueObj;
-        trackSet.Add(GetHash(queueObj));
-        await DatabaseService.Remove(oldHash);
+        if (queueObj == null || IsClosing) return;
+        _ = Artwork;
+        var result = QueueTrackReplacement.Apply(Source, trackSet, index, queueObj);
+        if (result == null) return;
+        await DatabaseService.ReplaceTrackAsync(result.RemovedHash, GetHash(result.Row), result.Row.ToString());
     }
 
     public static async Task Clear()
@@ -539,7 +537,7 @@ public partial class QueueViewModel : ObservableRecipient
 
     internal static string GetHash(SongSearchObject song)
     {
-        return (QueueObject.IsAlbumItem(song) ? "album:" : "") + song.Source + song.Id;
+        return QueueTrackReplacement.KeyOf(song);
     }
 
     internal static Task SaveForUpdateAsync(CancellationToken token) => DatabaseService.SaveForUpdateAsync(
@@ -577,14 +575,16 @@ public partial class QueueViewModel : ObservableRecipient
         var album = Source[index];
         trackSet.Remove(GetHash(album));
         Source.RemoveAt(index);
-        await DatabaseService.Remove(GetHash(album));
+        var writes = new List<Task> { DatabaseService.Remove(GetHash(album)) };
         var position = index;
         for (var i = 0; i < rows.Count; i++)
         {
             var row = rows[i];
             if (!trackSet.Add(GetHash(row))) continue; // already in the queue elsewhere
+            writes.Add(DatabaseService.SaveMetadataAsync(GetHash(row), row.ToString()));
             Source.Insert(position++, row);
         }
+        await Task.WhenAll(writes);
     }
 
     public static async Task LoadSaveQueue() 

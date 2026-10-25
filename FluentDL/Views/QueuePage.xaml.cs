@@ -1494,7 +1494,7 @@ public sealed partial class QueuePage : Page
                                         if (localSong != null)
                                         {
                                             localSong.LocalBitmapImage = await LocalExplorerViewModel.GetBitmapImageAsync(fileLocation);
-                                            queueObj = await QueueViewModel.CreateQueueObject(localSong, song.QueueCounter);
+                                            queueObj = await QueueViewModel.CreateQueueObject(localSong, song.QueueCounter, song.QueueSubOrder);
                                             await QueueViewModel.Replace(QueueViewModel.Source.IndexOf(song), queueObj);
                                         }
                                         else // Can happen when trying to parse opus files
@@ -1504,7 +1504,7 @@ public sealed partial class QueuePage : Page
                                     }
                                     else
                                     {
-                                        queueObj = await QueueViewModel.CreateQueueObject(newSongObj, song.QueueCounter);
+                                        queueObj = await QueueViewModel.CreateQueueObject(newSongObj, song.QueueCounter, song.QueueSubOrder);
                                         await QueueViewModel.Replace(QueueViewModel.Source.IndexOf(song), queueObj);
                                     }
 
