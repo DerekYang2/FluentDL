@@ -84,10 +84,12 @@ public class QueueDisplayBindingTests
     {
         var summary = ReadMarkup("QueuePage.xaml").Descendants(Xaml + "ListView")
             .Single(element => (string?)element.Attribute(X + "Name") == "ConversionListView");
-        var image = summary.Descendants(Xaml + "ImageBrush").Single();
-        Assert.AreEqual("{x:Bind CoverSource, Mode=OneWay, Converter={StaticResource CoverImageConverter}}",
-            (string?)image.Attribute("ImageSource"));
-        Assert.AreEqual("UniformToFill", (string?)image.Attribute("Stretch"));
+        Assert.AreEqual(1, summary.Descendants(Views + "CompactResultRow").Count());
+        var result = summary.Descendants(Views + "CompactResultRow").Single();
+        Assert.AreEqual("True", (string?)result.Attribute("CachedArtworkOnly"));
+        var artwork = ReadMarkup("CompactTrackIdentity.xaml").Descendants(Views + "QueueArtworkTile").Single();
+        Assert.AreEqual("{x:Bind Item, Mode=OneWay}", (string?)artwork.Attribute("Item"));
+        StringAssert.Contains((string)artwork.Attribute("UseUrlFallback")!, "CachedArtworkOnly");
     }
 
     [TestMethod]

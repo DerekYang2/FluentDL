@@ -1,0 +1,19 @@
+<UserControl
+    x:Class="FluentDL.Views.QueueArtworkTile"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    IsTabStop="False"
+    AutomationProperties.AccessibilityView="Raw"
+    Loaded="Tile_Loaded"
+    Unloaded="Tile_Unloaded"
+    EffectiveViewportChanged="Tile_EffectiveViewportChanged">
+    <Grid>
+        <Border x:Name="Skeleton" CornerRadius="4" Margin="1"
+                Background="{ThemeResource ControlStrongFillColorDefaultBrush}"
+                BorderBrush="{ThemeResource ControlStrongStrokeColorDefaultBrush}"
+                BorderThickness="1" Visibility="Collapsed" />
+        <Border CornerRadius="4">
+            <Image x:Name="CoverImage" Stretch="UniformToFill" />
+        </Border>
+    </Grid>
+</UserControl>

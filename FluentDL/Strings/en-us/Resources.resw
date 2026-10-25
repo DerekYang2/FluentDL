@@ -185,4 +185,10 @@
   <data name="Shell_SplashScreen.Content" xml:space="preserve">
     <value>SplashScreen</value>
   </data>
+  <data name="QueueCoverLoading" xml:space="preserve">
+    <value>Loading cover...</value>
+  </data>
+  <data name="QueueCoverUnavailable" xml:space="preserve">
+    <value>Artwork unavailable</value>
+  </data>
 </root>

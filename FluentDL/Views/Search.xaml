@@ -394,16 +394,8 @@
                                 <ColumnDefinition Width="Auto" />
                             </Grid.ColumnDefinitions>
 
-                            <Border
-                                Grid.Row="0"
-                                Grid.RowSpan="3"
-                                Grid.Column="0"
-                                Height="76"
-                                CornerRadius="4">
-                                <Border.Background>
-                                    <ImageBrush ImageSource="{x:Bind ImageLocation}" Stretch="UniformToFill" />
-                                </Border.Background>
-                            </Border>
+                            <views:QueueArtworkTile Grid.Row="0" Grid.RowSpan="3" Grid.Column="0" Width="76" Height="76"
+                                                    Item="{x:Bind Mode=OneWay}" UseUrlFallback="True" />
 
                             <marqueeTextRns:MarqueeText
                                 Grid.Row="0"

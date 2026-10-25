@@ -33,17 +33,8 @@
             <ColumnDefinition Width="{x:Bind Columns.SourceWidth, Mode=OneWay}" />
             <ColumnDefinition Width="{x:Bind Columns.ActionWidth}" />
         </Grid.ColumnDefinitions>
-        <Border
-            Width="44"
-            Height="44"
-            HorizontalAlignment="Left"
-            VerticalAlignment="Center"
-            CornerRadius="4"
-            Visibility="{x:Bind Item.LocalBitmapImage, Mode=OneWay, Converter={StaticResource NullVisibilityConverter}}">
-            <Border.Background>
-                <ImageBrush ImageSource="{x:Bind Item.LocalBitmapImage, Mode=OneWay, Converter={StaticResource ObjectToImageSourceConverter}}" Stretch="UniformToFill" />
-            </Border.Background>
-        </Border>
+        <views:QueueArtworkTile Width="44" Height="44" HorizontalAlignment="Left" VerticalAlignment="Center"
+                                Item="{x:Bind Item, Mode=OneWay}" />
         <Grid
             Grid.Column="1"
             AutomationProperties.AutomationId="CompactQueueTitle"

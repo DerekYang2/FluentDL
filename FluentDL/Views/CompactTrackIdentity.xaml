@@ -1,0 +1,38 @@
+<UserControl
+    x:Class="FluentDL.Views.CompactTrackIdentity"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:helpers="using:FluentDL.Helpers"
+    xmlns:views="using:FluentDL.Views">
+    <UserControl.Resources>
+        <helpers:VisibilityConverter x:Key="VisibilityConverter" />
+    </UserControl.Resources>
+    <Grid MinHeight="44" AutomationProperties.Name="{x:Bind Item.Title, Mode=OneWay}">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="56" />
+            <ColumnDefinition Width="*" />
+        </Grid.ColumnDefinitions>
+        <views:QueueArtworkTile Width="44" Height="44" HorizontalAlignment="Left" VerticalAlignment="Center"
+                                Item="{x:Bind Item, Mode=OneWay}"
+                                UseUrlFallback="{x:Bind views:CompactTrackIdentity.AllowUrlArtwork(CachedArtworkOnly), Mode=OneWay}" />
+        <Grid Grid.Column="1" Margin="0,0,12,0" VerticalAlignment="Center" RowSpacing="2">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+            <TextBlock AutomationProperties.AutomationId="CompactTrackTitle" Style="{StaticResource BodyStrongTextBlockStyle}"
+                       Text="{x:Bind Item.Title, Mode=OneWay}" MaxLines="1" TextTrimming="CharacterEllipsis"
+                       ToolTipService.ToolTip="{x:Bind Item.Title, Mode=OneWay}" />
+            <Grid Grid.Row="1">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <views:ExplicitBadge Margin="0,0,6,0" VerticalAlignment="Center" Visibility="{x:Bind Item.Explicit, Mode=OneWay, Converter={StaticResource VisibilityConverter}}" />
+                <TextBlock Grid.Column="1" Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                           Text="{x:Bind Item.Artists, Mode=OneWay}" MaxLines="1" TextTrimming="CharacterEllipsis"
+                           ToolTipService.ToolTip="{x:Bind Item.Artists, Mode=OneWay}" />
+            </Grid>
+        </Grid>
+    </Grid>
+</UserControl>
