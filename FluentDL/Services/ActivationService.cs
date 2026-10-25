@@ -61,6 +61,12 @@ public class ActivationService : IActivationService
 #if FLUENTDL_PREVIEW_VOLUME_UI_TESTS
         PreviewVolumeTestSupport.Attach(_shell);
 #endif
+#if FLUENTDL_LOCAL_CONVERSION_UI_TESTS
+        LocalConversionTestSupport.Attach(_shell);
+#endif
+#if FLUENTDL_PICKER_UI_TESTS
+        LocalPickerTestSupport.Attach(_shell);
+#endif
         App.MainWindow.Closed += (s, e) => QueueSaver.Close();
 
         // Execute tasks after activation

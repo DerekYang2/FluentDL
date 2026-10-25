@@ -84,7 +84,7 @@ try {
     Ui @('send-keys','escape','--via','send-input') | Out-Null
     Test 'Prime all cached pages at the saved starting volume' {
         Navigate 'Queue'; Load 'Stream'; Assert-Volume '1.00'
-        Navigate 'Local Explorer'; Load 'Uri'; Assert-Volume '1.00'
+        Navigate 'Local'; Load 'Uri'; Assert-Volume '1.00'
         Navigate 'Search'; Load 'Uri'; Assert-Volume '1.00'
     }
     Test 'Search volume saves through the native slider' {
@@ -97,7 +97,7 @@ try {
         Capture '02-queue-stream-40.png'
     }
     Test 'Local Explorer uses and updates the shared volume' {
-        Navigate 'Local Explorer'; Load 'Uri'; Assert-Volume '0.40'
+        Navigate 'Local'; Load 'Uri'; Assert-Volume '0.40'
         Set-Volume 60
         Capture '03-local-60.png'
     }
@@ -116,7 +116,7 @@ try {
         Load 'Uri'; Assert-Volume '0.00'
         Capture '04-restarted-search-zero.png'
         Navigate 'Queue'; Load 'Stream'; Assert-Volume '0.00'
-        Navigate 'Local Explorer'; Load 'Uri'; Assert-Volume '0.00'
+        Navigate 'Local'; Load 'Uri'; Assert-Volume '0.00'
     }
 }
 catch {

@@ -1374,8 +1374,8 @@
                                 x:Name="LocalExplorerPageShortcuts"
                                 HorizontalContentAlignment="Left"
                                 ContentAlignment="Vertical"
-                                Description="Enabled shortcut buttons for Local Explorer"
-                                Header="Local Explorer Page">
+                                Description="Enabled shortcut buttons for Local"
+                                Header="Local page">
                                 <local:SettingsCard.HeaderIcon>
                                     <FontIcon Glyph="&#xEC50;" />
                                 </local:SettingsCard.HeaderIcon>

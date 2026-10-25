@@ -91,10 +91,10 @@ try {
     $main = $windows | Where-Object className -eq 'WinUIDesktopWin32WindowClass' | Select-Object -First 1
     if (-not $main) { throw 'No app window in the selected target.' }
     $script:mainWindow = $main.hwnd
-    Ui @('wait-for', 'Local Explorer', '-t', '60000') | Out-Null
+    Ui @('wait-for', 'Local', '-t', '60000') | Out-Null
 
     Test-Ui 'Local Explorer opens the incremental dialog' {
-        Ui @('invoke', 'Local Explorer')
+        Ui @('invoke', 'Local')
         Picker 'UploadFileButton' $FixturePath
         Ui @('wait-for', 'FileListView', '-t', '5000')
         Ui @('wait-for', 'Spectrogram sample', '-t', '5000')

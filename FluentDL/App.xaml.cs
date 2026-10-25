@@ -114,6 +114,11 @@ public partial class App : Application
                     services.AddSingleton<ILocalSettingsService, LocalSettingsService>();
                     services.AddSingleton<QueueDisplaySettings>();
                     services.AddSingleton<PreviewVolumeSettings>();
+                    services.AddSingleton(TimeProvider.System);
+                    services.AddSingleton<ILocalFormatConverter, LocalFormatConverter>();
+#if FLUENTDL_LOCAL_CONVERSION_UI_TESTS
+                    LocalConversionTestSupport.Register(services);
+#endif
                     services.AddSingleton<IAppUpdateService, AppUpdateService>();
                     services.AddSingleton<AppUpdateViewModel>();
 #if FLUENTDL_UPDATER_UI_TESTS

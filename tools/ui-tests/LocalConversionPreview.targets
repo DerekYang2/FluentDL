@@ -1,0 +1,10 @@
+<Project>
+  <Import Project="$(MSBuildThisFileDirectory)DevPackage.targets" />
+  <PropertyGroup Condition="'$(MSBuildProjectName)' == 'FluentDL'">
+    <DefineConstants>$(DefineConstants);FLUENTDL_LOCAL_CONVERSION_UI_TESTS</DefineConstants>
+  </PropertyGroup>
+  <ItemGroup Condition="'$(MSBuildProjectName)' == 'FluentDL'">
+    <Compile Include="$(MSBuildThisFileDirectory)LocalConversionTestSupport.cs" Link="LocalConversionTestSupport.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)ReplayGainEtaTestSupport.cs" Link="ReplayGainEtaTestSupport.cs" />
+  </ItemGroup>
+</Project>

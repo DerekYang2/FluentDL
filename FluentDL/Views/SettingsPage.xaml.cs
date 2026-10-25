@@ -1253,6 +1253,7 @@ public sealed partial class SettingsPage : Page
         message = message.Trim();
         dispatcher.TryEnqueue(() =>
         {
+            dispatcherTimer.Stop();
             PageInfoBar.IsOpen = true;
             PageInfoBar.Opacity = 1;
             PageInfoBar.Severity = severity;
@@ -1266,9 +1267,9 @@ public sealed partial class SettingsPage : Page
             {
                 UrlParser.ParseTextBlock(InfoBarTextBlock, message);
             }
+            dispatcherTimer.Interval = TimeSpan.FromSeconds(seconds);
+            dispatcherTimer.Start();
         });
-        dispatcherTimer.Interval = TimeSpan.FromSeconds(seconds);
-        dispatcherTimer.Start();
     }
 
     private async void UploadImportFile_Click(object sender, RoutedEventArgs e)
@@ -1302,7 +1303,7 @@ public sealed partial class SettingsPage : Page
                 }
             } else
             {
-                ShowInfoBar(InfoBarSeverity.Warning, "No import file selected.");
+                ShowInfoBar(InfoBarSeverity.Informational, "Settings import cancelled.");
             }
         } catch (Exception ex)
         {
@@ -1320,6 +1321,10 @@ public sealed partial class SettingsPage : Page
                 string content = await localSettings.ExportSettingsAsync();
                 await FileIO.WriteTextAsync(file, content);
                 ShowInfoBar(InfoBarSeverity.Success, $"Settings saved to <a href='{file.Path}'>{file.Name}</a>.", seconds: 3, title: "Export Successful");
+            }
+            else
+            {
+                ShowInfoBar(InfoBarSeverity.Informational, "Settings export cancelled.");
             }
         }
         catch (Exception ex)
