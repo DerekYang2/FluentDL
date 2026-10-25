@@ -595,6 +595,7 @@ public sealed partial class SettingsPage : Page
         var qobuzAccess = qobuz.StreamingAccess;
         ViewModel.UpdateProviderCapabilities(new(
             DeezerSignedIn: deezer.IsConnected, DeezerLossless: deezer.IsPremium,
+            DeezerPlaylistReadAccess: deezer.PlaylistReadAccess,
             QobuzCatalog: qobuz.HasCatalogAccess, QobuzSignedIn: qobuz.IsConnected,
             QobuzFullTracks: qobuzAccess.FullTracks, QobuzLossless: qobuzAccess.Lossless,
             SpotifyCatalog: spotify.IsConnected, SpotifySignedIn: spotify.IsSignedInForPlaylists,

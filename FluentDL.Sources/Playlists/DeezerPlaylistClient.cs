@@ -6,13 +6,82 @@ using FluentDL.Contracts.Sources;
 namespace FluentDL.Services.Playlists;
 
 internal sealed record DeezerPlaylistSession(string Arl, string Sid, string ApiToken, object Identity, string UserId = "");
+internal sealed record DeezerPlaylistContents(string Name, IReadOnlyList<string> TrackIds, object SessionIdentity);
 
 /// <summary>Uses DeezNET's signed-in session, but does not replay gateway writes after gateway/token errors.</summary>
 internal sealed class DeezerPlaylistClient(Func<DeezerPlaylistSession?> session, HttpClient? transport = null)
 {
     private readonly HttpClient http = transport ?? new(new SocketsHttpHandler { AllowAutoRedirect = false, UseCookies = false, PooledConnectionLifetime = TimeSpan.FromMinutes(5) });
     internal static IReadOnlyList<PlaylistVisibility> Visibilities { get; } = [PlaylistVisibility.Private, PlaylistVisibility.Public];
-    internal bool CanCreate => session() is { Arl.Length: > 0, Sid.Length: > 0, ApiToken.Length: > 0 };
+    internal bool CanRead => session() is { Arl.Length: > 0, Sid.Length: > 0, ApiToken.Length: > 0 };
+    internal object? ReadSessionIdentity => session() is { Arl.Length: > 0, Sid.Length: > 0, ApiToken.Length: > 0 } active ? active.Identity : null;
+    internal bool CanCreate => CanRead;
+    private sealed record ReadCheck(object Identity, bool Available);
+    private ReadCheck? readCheck;
+    internal bool? ReadAccess => readCheck is { } check && ReferenceEquals(check.Identity, session()?.Identity)
+        ? check.Available : null;
+
+    internal async Task CheckReadAccessAsync(CancellationToken token)
+    {
+        token.ThrowIfCancellationRequested();
+        var active = session();
+        readCheck = null;
+        if (!CanRead || active == null) return;
+        try
+        {
+            if (!long.TryParse(active.UserId, out var user) || user <= 0) throw new JsonException("The Deezer account could not be identified.");
+            using var account = await Call("deezer.getUserData", new { }, active, token, verification: true);
+            if (account.RootElement.GetProperty("USER").GetProperty("USER_ID").ToString() != active.UserId)
+                throw new JsonException("The Deezer session does not match the signed-in account.");
+            if (!ReferenceEquals(active.Identity, session()?.Identity)) return;
+            using var page = await Call("deezer.pageProfile", new { USER_ID = user, tab = "playlists", nb = 1, start = 0 }, active, token, verification: true);
+            var list = page.RootElement.GetProperty("TAB").GetProperty("playlists");
+            if (list.GetProperty("data").ValueKind != JsonValueKind.Array || list.GetProperty("total").GetInt32() < 0)
+                throw new JsonException("Invalid playlist listing.");
+            readCheck = new(active.Identity, true);
+        }
+        catch (Exception error) when (error is HttpRequestException or JsonException or KeyNotFoundException or InvalidOperationException or FormatException)
+        {
+            readCheck = new(active.Identity, false);
+        }
+    }
+
+    internal async Task<DeezerPlaylistContents> ReadPlaylistAsync(string id, CancellationToken token)
+    {
+        token.ThrowIfCancellationRequested();
+        if (!long.TryParse(id, out var number) || number <= 0 || !id.All(char.IsAsciiDigit))
+            throw new PlaylistWriteRejected("Choose a valid Deezer playlist link.");
+        var active = session();
+        if (!CanRead || active == null) throw new PlaylistWriteRejected("Sign in to Deezer with your ARL in Settings to load private playlists.");
+        using var page = await Call("deezer.pagePlaylist", new { PLAYLIST_ID = number, lang = "en" }, active, token, verification: true);
+        var name = page.RootElement.GetProperty("DATA").GetProperty("TITLE").GetString() ?? "Untitled playlist";
+        // Import is read-only. Deezer decides which public or private playlists this account can read.
+        var ids = await ReadTracks(id, active, token);
+        if (!ReferenceEquals(active.Identity, session()?.Identity))
+            throw new PlaylistWriteRejected("The Deezer sign-in changed. Load the playlist again.");
+        return new(name, ids, active.Identity);
+    }
+
+    internal const int MetadataBatchSize = 50;
+
+    internal DeezerPlaylistSession RequireReadSession(object identity)
+    {
+        var active = session();
+        if (active is not { Arl.Length: > 0, Sid.Length: > 0, ApiToken.Length: > 0 } || !ReferenceEquals(identity, active.Identity))
+            throw new PlaylistWriteRejected("The Deezer sign-in changed. Load the playlist again.");
+        return active;
+    }
+
+    internal async Task<IReadOnlyList<JsonElement>> ReadTrackBatchAsync(IReadOnlyList<string> ids, object identity, CancellationToken token)
+    {
+        token.ThrowIfCancellationRequested();
+        var active = RequireReadSession(identity);
+        if (ids.Count is < 1 or > MetadataBatchSize || ids.Any(id => !long.TryParse(id, out var number) || number <= 0 || !id.All(char.IsAsciiDigit)))
+            throw new ArgumentException("Invalid Deezer metadata batch.", nameof(ids));
+        using var result = await Call("song.getListData", new { SNG_IDS = ids.Select(long.Parse).ToArray() }, active, token, verification: true);
+        RequireReadSession(identity);
+        return result.RootElement.GetProperty("data").EnumerateArray().Select(track => track.Clone()).ToArray();
+    }
 
     internal Task<PlaylistCreationResult> CreateAsync(PlaylistCreationRequest request, IProgress<int>? progress, CancellationToken token)
     {
@@ -116,6 +185,9 @@ internal sealed class DeezerPlaylistClient(Func<DeezerPlaylistSession?> session,
         var actual = new List<string>();
         while (true)
         {
+            token.ThrowIfCancellationRequested();
+            if (!ReferenceEquals(active.Identity, session()?.Identity))
+                throw new PlaylistWriteRejected("The Deezer sign-in changed. Load the playlist again.");
             using var page = await Call("playlist.getSongs", new { PLAYLIST_ID = long.Parse(id), nb = 1000, start = actual.Count }, active, token, verification: true);
             var data = page.RootElement.GetProperty("data");
             actual.AddRange(data.EnumerateArray().Select(track => track.GetProperty("SNG_ID").ToString()));

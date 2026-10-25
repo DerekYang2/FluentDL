@@ -22,7 +22,8 @@ public sealed record ProviderAccessSnapshot(
     bool DeezerSignedIn = false, bool DeezerLossless = false,
     bool QobuzCatalog = false, bool QobuzSignedIn = false, bool QobuzFullTracks = false, bool QobuzLossless = false,
     bool SpotifyCatalog = false, bool SpotifySignedIn = false,
-    bool TidalCatalog = false, bool TidalSignedIn = false, bool? TidalSubscription = null);
+    bool TidalCatalog = false, bool TidalSignedIn = false, bool? TidalSubscription = null,
+    bool? DeezerPlaylistReadAccess = null);
 
 public sealed record ProviderCapabilityRow(string Provider, ProviderCapability Search, ProviderCapability Downloads,
     ProviderCapability PlaylistUrls, ProviderCapability PlaylistUpload)
@@ -46,7 +47,7 @@ public sealed record ProviderCapabilityRow(string Provider, ProviderCapability S
         new("Deezer", new(CapabilityState.NotApplicable, "Public search needs no account sign-in."),
             !access.DeezerSignedIn ? Account(false) : access.DeezerLossless ? Account(true)
                 : new(CapabilityState.Limited, "This account is limited to 128 kbps MP3."),
-            new(CapabilityState.Limited, "Public playlist links. Private playlist access is not verified by this importer."), Account(access.DeezerSignedIn)),
+            DeezerImport(access), Account(access.DeezerSignedIn)),
         new("Qobuz", Catalog(access.QobuzCatalog),
             !access.QobuzSignedIn ? Account(false) : !access.QobuzFullTracks
                 ? new(CapabilityState.Unavailable, "This account has no full-track streaming entitlement. Samples do not count as full downloads.")
@@ -60,4 +61,13 @@ public sealed record ProviderCapabilityRow(string Provider, ProviderCapability S
             : new(CapabilityState.Unknown, "The account is saved, but its full-track subscription could not be checked."),
             Import(access.TidalCatalog, access.TidalSignedIn), Account(access.TidalSignedIn)),
     ];
+
+    private static ProviderCapability DeezerImport(ProviderAccessSnapshot access) => !access.DeezerSignedIn
+        ? new(CapabilityState.Limited, "Public playlist links only. Sign in with your Deezer ARL to load private playlists your account can access.")
+        : access.DeezerPlaylistReadAccess switch
+        {
+            true => new(CapabilityState.Ready, "Signed-in playlist access was checked. Public playlists and private playlists your account can access are supported. Individual playlist permissions still apply."),
+            false => new(CapabilityState.Limited, "The signed-in playlist access check failed. Public playlist links remain supported. Try signing in to Deezer again."),
+            _ => new(CapabilityState.Unknown, "Signed in, but playlist access has not been checked. Private playlist access is not confirmed."),
+        };
 }

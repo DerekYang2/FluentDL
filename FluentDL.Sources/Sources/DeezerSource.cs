@@ -35,6 +35,7 @@ internal sealed partial class DeezerSource : ISourceSession, ISearchSource, ILin
     public Task<PlaylistCreationResult> CreatePlaylistAsync(PlaylistCreationRequest request, IProgress<int>? progress, CancellationToken token) => playlists.CreateAsync(request, progress, token);
 
     public bool IsConnected => IsInitialized;
+    public bool? PlaylistReadAccess => IsInitialized ? playlists.ReadAccess : null;
 
     public string? StatusText => LoginString();
 

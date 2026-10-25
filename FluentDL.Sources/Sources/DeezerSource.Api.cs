@@ -5,6 +5,7 @@ using FluentDL.Core.Sources;
 using FluentDL.Core.Matching;
 using FluentDL.Helpers;
 using FluentDL.Models;
+using FluentDL.Services.Playlists;
 using RestSharp;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
@@ -76,6 +77,12 @@ internal sealed partial class DeezerSource
                 authCallback?.Invoke(StatusLevel.Error, "Log in failure: " +  e.Message);
             }
         }
+        if (IsInitialized)
+        {
+            using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+            try { await playlists.CheckReadAccessAsync(timeout.Token); }
+            catch (OperationCanceledException) { }
+        }
     }
 
     public string? LoginString()
@@ -93,6 +100,30 @@ internal sealed partial class DeezerSource
                 statusUpdate?.Invoke(StatusLevel.Error, "Invalid Deezer URL");
                 return;
             }
+        }
+
+        if (TryGetPlaylistId(url, out var playlistId) && playlists.CanRead)
+        {
+            try
+            {
+                var contents = await playlists.ReadPlaylistAsync(playlistId, token);
+                statusUpdate?.Invoke(StatusLevel.Informational, $"<b>Deezer</b>   Loading playlist <a href='{url}'>{contents.Name}</a>", -1);
+                var missingTracks = 0;
+                await foreach (var track in LoadPlaylistMetadataAsync(contents, token))
+                {
+                    if (track != null) list.Add(track);
+                    else missingTracks++;
+                }
+                statusUpdate?.Invoke(missingTracks == 0 ? StatusLevel.Success : StatusLevel.Warning,
+                    $"<b>Deezer</b>   Loaded playlist <a href='{url}'>{contents.Name}</a>"
+                    + (missingTracks == 0 ? "" : $". Could not load metadata for {missingTracks} tracks."));
+            }
+            catch (OperationCanceledException) { throw; }
+            catch (Exception error) when (error is HttpRequestException or JsonException or KeyNotFoundException or InvalidOperationException or PlaylistWriteRejected)
+            {
+                statusUpdate?.Invoke(StatusLevel.Error, "Deezer could not load this playlist with your signed-in account. Check that the playlist still exists and your account can open it, then try signing in again in Settings.");
+            }
+            return;
         }
 
         if (Regex.IsMatch(url, @"https://www\.deezer\.com(/[^/]+)?/track/.*"))
@@ -142,7 +173,13 @@ internal sealed partial class DeezerSource
                 }
             } else if (DeezerURL.TryParse(url, out var urlData))
             {
-                var tracksInAlbum = await urlData.GetAssociatedTracks(deezerClient, 1000, token);
+                List<long> tracksInAlbum;
+                try { tracksInAlbum = (await urlData.GetAssociatedTracks(deezerClient, 1000, token)).ToList(); }
+                catch (DeezNET.Exceptions.PermissionException) when (url.Contains("/playlist/"))
+                {
+                    statusUpdate?.Invoke(StatusLevel.Error, "Deezer could not read this playlist through its public API. For private playlists, sign in with your ARL in Settings and try again.");
+                    return;
+                }
 
                 // Send message to infobar
                 var listName = await urlData.GetTitle(deezerClient);
@@ -168,6 +205,17 @@ internal sealed partial class DeezerSource
         }
     }
 
+    internal static bool TryGetPlaylistId(string url, out string id)
+    {
+        id = string.Empty;
+        if (!Uri.TryCreate(url, UriKind.Absolute, out var uri) || uri.Scheme != Uri.UriSchemeHttps
+            || !uri.Host.Equals("www.deezer.com", StringComparison.OrdinalIgnoreCase)) return false;
+        var match = Regex.Match(uri.AbsolutePath, @"^/(?:[a-zA-Z-]+/)?playlist/([0-9]+)/?$");
+        if (!match.Success || !long.TryParse(match.Groups[1].Value, out var number) || number <= 0) return false;
+        id = match.Groups[1].Value;
+        return true;
+    }
+
     // Moved to FluentDL.Core.Matching.TitleNormalizer. These wrappers keep existing callers unchanged.
     public string PruneTitle(string title) => TitleNormalizer.Compact(title);
 
@@ -187,6 +235,14 @@ internal sealed partial class DeezerSource
 
         var jsonObject = await restClient.FetchJsonElement(req, token);
 
+        if (!albumMode)
+        {
+            var ids = jsonObject.GetProperty("data").EnumerateArray().Select(track => track.GetProperty("id").ToString()).ToArray();
+            await foreach (var track in LoadTrackMetadataAsync(ids, playlists.ReadSessionIdentity, token))
+                if (track != null) itemSource.Add(track);
+            return;
+        }
+
         foreach (var trackJson in jsonObject.GetProperty("data").EnumerateArray())
         {
             if (token.IsCancellationRequested) // Stop the search
@@ -195,7 +251,7 @@ internal sealed partial class DeezerSource
             }
 
             var trackId = trackJson.GetProperty("id").ToString();
-            var songObj = albumMode ? await GetAlbum(trackId, token) : await GetTrack(trackId, token);
+            var songObj = await GetAlbum(trackId, token);
             if (songObj != null)
             {
                 itemSource.Add(songObj);
