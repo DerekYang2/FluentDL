@@ -1,0 +1,11 @@
+<Project>
+  <Import Project="$(MSBuildThisFileDirectory)DevPackage.targets" />
+  <PropertyGroup Condition="'$(MSBuildProjectName)' == 'FluentDL'">
+    <DefineConstants>$(DefineConstants);FLUENTDL_QUEUE_LOAD_UI_TESTS</DefineConstants>
+  </PropertyGroup>
+  <ItemGroup Condition="'$(MSBuildProjectName)' == 'FluentDL'">
+    <Compile Include="$(MSBuildThisFileDirectory)QueueLoadTestSupport.cs" Link="QueueLoadTestSupport.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)QueueArtworkResultFixture.cs" Link="QueueArtworkResultFixture.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)QueueConversionStopFixture.cs" Link="QueueConversionStopFixture.cs" />
+  </ItemGroup>
+</Project>
