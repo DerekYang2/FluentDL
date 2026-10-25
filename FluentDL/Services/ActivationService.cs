@@ -74,6 +74,9 @@ public class ActivationService : IActivationService
 #if FLUENTDL_QUEUE_LOAD_UI_TESTS
         QueueLoadTestSupport.Attach(_shell);
 #endif
+#if FLUENTDL_HELP_UI_TESTS
+        ShellHelpTestSupport.Attach(_shell);
+#endif
         QueueViewModel.StartArtworkNetwork();
         App.MainWindow.Closed += (s, e) => QueueSaver.Close();
 
