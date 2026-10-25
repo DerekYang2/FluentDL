@@ -165,6 +165,19 @@ public class ProgressivePlaylistImportTests
         Assert.AreEqual(StatusLevel.Warning, fixture.Status.Last());
     }
 
+    [TestMethod]
+    public async Task QobuzPlaylistPublishesSpacedArtistCreditsWithoutExtraDetailRequests()
+    {
+        using var fixture = new Fixture("qobuz");
+        fixture.Http.SpacedArtistCredits = true;
+        fixture.Http.Release.TrySetResult();
+        var items = new List<SongSearchObject>();
+        await fixture.Load(items, CancellationToken.None);
+        CollectionAssert.AreEqual(new[] { "1", "1", "2" }, items.Select(item => item.Id).ToArray());
+        Assert.IsTrue(items.All(item => item.Artists == "Calvin Harris, Disciples"));
+        Assert.AreEqual(0, fixture.Http.DetailRequests);
+    }
+
     private sealed class Fixture : IDisposable
     {
         internal readonly Handler Http;
@@ -221,6 +234,7 @@ public class ProgressivePlaylistImportTests
         internal readonly TaskCompletionSource NextEntered = new(TaskCreationOptions.RunContinuationsAsynchronously);
         internal readonly TaskCompletionSource Release = new(TaskCreationOptions.RunContinuationsAsynchronously);
         internal bool FailNext, IncompleteTrack, IncompleteDetail, LegacyIds, LegacyMap, RejectTrackPages;
+        internal bool SpacedArtistCredits;
         internal string? LaterPageShape;
         internal int Pages, DetailRequests, LegacyRequests;
         protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken token)
@@ -269,6 +283,11 @@ public class ProgressivePlaylistImportTests
                 if (next && LaterPageShape == "empty") return Reply(new { name = "Playlist", tracks = new { items = Array.Empty<object>(), offset = 2, total = 3 } });
                 if (next && LaterPageShape == "repeated") return Reply(new { name = "Playlist", tracks = new { items = new[] { QobuzTrack(1) }, offset = 0, total = 3 } });
                 var track = JObject.FromObject(QobuzTrack(next ? 2 : 1));
+                if (SpacedArtistCredits)
+                {
+                    track["performers"] = QobuzArtistCreditTests.HowDeepCredits;
+                    track["performer"] = new JObject { ["name"] = "Calvin Harris" };
+                }
                 if (!next && IncompleteTrack) track.Remove("isrc");
                 return Reply(new { name = "Playlist", tracks_count = 3, tracks = new { items = next ? new[] { track } : new[] { track, track }, offset = next ? 2 : 0, total = 3 } });
             }
