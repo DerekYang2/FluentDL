@@ -148,7 +148,8 @@ public partial class SettingsViewModel : ObservableRecipient
     {  
         Serilog.Log.Debug("Initializing missing settings defaults");
         await SaveSettingsAsyncIfNull<bool?>(DiagnosticLogging.VerboseSettingKey, false);
-        await SaveSettingsAsyncIfNull<bool?>(QueueDisplaySettings.SettingsKey, false);
+        await SaveSettingsAsyncIfNull<bool?>(QueueDisplaySettings.SettingsKey, true);
+        await SaveSettingsAsyncIfNull<bool?>(LocalDisplaySettings.SettingsKey, true);
         await SaveSettingsAsyncIfNull<int?>(CommandThreads, 1);
         await SaveSettingsAsyncIfNull<int?>(ConversionThreads, 3);
         await SaveSettingsAsyncIfNull<int?>(AudioConversionThreads, 6);

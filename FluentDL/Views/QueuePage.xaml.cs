@@ -58,7 +58,7 @@ public sealed partial class QueuePage : Page
     private bool updatingPreviewLayout;
 
     // Conversion variables
-    private ConcurrentDictionary<SongSearchObject, int> successSource, warningSource, errorSource;
+    private ConcurrentDictionary<SongSearchObject, (int Queue, int Track)> successSource, warningSource, errorSource;
 
     // One checkbox per source in the clear and conversion dialogs, in catalog order.
     public IReadOnlyList<SourceOption> ClearOptions { get; } = SourceCatalog.All.Select(s => new SourceOption(s) { IsChecked = true }).ToList();
@@ -131,9 +131,9 @@ public sealed partial class QueuePage : Page
         ClearButton.IsEnabled = QueueViewModel.Source.Count > 0 && !albumExpansionBusy && !QueueViewModel.IsBulkAdding;
 
         // Set conversion variables
-        successSource = new ConcurrentDictionary<SongSearchObject, int>();
-        warningSource = new ConcurrentDictionary<SongSearchObject, int>();
-        errorSource = new ConcurrentDictionary<SongSearchObject, int>();
+        successSource = new ConcurrentDictionary<SongSearchObject, (int Queue, int Track)>();
+        warningSource = new ConcurrentDictionary<SongSearchObject, (int Queue, int Track)>();
+        errorSource = new ConcurrentDictionary<SongSearchObject, (int Queue, int Track)>();
 
         // Create callback
         queueRunCallback = (severity, message) =>
@@ -1312,7 +1312,7 @@ public sealed partial class QueuePage : Page
         var songsWithOriginalIndex = QueueViewModel.Source
             .Select((song, originalIndex) => new { Song = song, OriginalIndex = originalIndex });
         var songsToConvert = songsWithOriginalIndex
-            .Where(x => selectedSources.Contains(x.Song.Source) && outputSource != x.Song.Source);
+            .Where(x => selectedSources.Contains(x.Song.Source) && outputSource != x.Song.Source).ToList();
 
         int totalCount = songsToConvert.Count();
         if (totalCount == 0)
@@ -1358,18 +1358,18 @@ public sealed partial class QueuePage : Page
         QueueViewModel.ResetConversionResults(); // Clear all badges and results on queue objects
         ViewModel.SuccessCount = ViewModel.WarningCount = ViewModel.ErrorCount = 0; // Reset the counts
 
-        void conversionUpdateCallback(StatusLevel level, SongSearchObject song, string? location = null)
+        void conversionUpdateCallback(StatusLevel level, SongSearchObject song, (int Queue, int Track) order)
         {
             switch (level)
             {
                 case StatusLevel.Success:
-                    successSource.TryAdd(song, 0);
+                    successSource.TryAdd(song, order);
                     break;
                 case StatusLevel.Warning:
-                    warningSource.TryAdd(song, 0);
+                    warningSource.TryAdd(song, order);
                     break;
                 case StatusLevel.Error:
-                    errorSource.TryAdd(song, 0);
+                    errorSource.TryAdd(song, order);
                     break;
                 default:
                     throw new Exception("Unspecified severity in callback");
@@ -1428,7 +1428,13 @@ public sealed partial class QueuePage : Page
             {
                 var song = x.Song;
                 var index = x.OriginalIndex;
-                var outcome = new QueueConversionOutcome(conversionUpdateCallback);
+                void Report(StatusLevel level, SongSearchObject result, string? location = null)
+                {
+                    var trackOrder = outputSource == SourceIds.Local && QueueObject.Unwrap(song) is AlbumSearchObject album
+                        ? AlbumOrder(album.TrackList ?? [], result) : 0;
+                    conversionUpdateCallback(level, result, (index, trackOrder));
+                }
+                var outcome = new QueueConversionOutcome(Report);
                 try
                 {
                     bool isReleased = false;
@@ -1446,7 +1452,7 @@ public sealed partial class QueuePage : Page
                         string? fileLocation = null;
                         if (outputSource == SourceIds.Local && song.IsAlbum)
                         {
-                            await DownloadQueuedAlbumAsync(song, directory, progress, conversionUpdateCallback);
+                            await DownloadQueuedAlbumAsync(song, directory, progress, Report);
                             return; // the finally below releases the slot and counts the row
                         }
                         if (outputSource == SourceIds.Local) // Conversion to local, download the track
@@ -1637,31 +1643,39 @@ public sealed partial class QueuePage : Page
     }
 
     private void ConversionTabView_OnSelectionChanged(object sender, SelectionChangedEventArgs e)
+        => RefreshConversionResults();
+
+    private void RefreshConversionResults()
     {
         var selectedItem = ConversionTabView.SelectedItem as TabViewItem;
         // Set items source based on selected tab
         if (selectedItem == SuccessTab)
         {
-            ConversionListView.ItemsSource = successSource.Keys;
+            ConversionListView.ItemsSource = OrderedConversionResults(successSource);
             TabInfoBar.Severity = InfoBarSeverity.Success;
             TabInfoBar.Content = "Exact conversions using ISRC or other ids";
             NoConversionText.Visibility = successSource.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
         }
         else if (selectedItem == WarningTab)
         {
-            ConversionListView.ItemsSource = warningSource.Keys;
+            ConversionListView.ItemsSource = OrderedConversionResults(warningSource);
             TabInfoBar.Severity = InfoBarSeverity.Warning;
             TabInfoBar.Content = "Attempted conversions using metadata";
             NoConversionText.Visibility = warningSource.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
         }
         else if (selectedItem == ErrorTab)
         {
-            ConversionListView.ItemsSource = errorSource.Keys;
+            ConversionListView.ItemsSource = OrderedConversionResults(errorSource);
             TabInfoBar.Severity = InfoBarSeverity.Error;
             TabInfoBar.Content = "Failed conversions";
             NoConversionText.Visibility = errorSource.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
         }
     }
+
+    internal static IReadOnlyList<SongSearchObject> OrderedConversionResults(
+        IEnumerable<KeyValuePair<SongSearchObject, (int Queue, int Track)>> results) =>
+        results.OrderBy(result => result.Value.Queue).ThenBy(result => result.Value.Track)
+            .Select(result => result.Key).ToList();
 
     private async Task ShowConversionDialog()
     {
@@ -1688,6 +1702,7 @@ public sealed partial class QueuePage : Page
         try
         {
             // Show the dialog
+            RefreshConversionResults();
             await ConversionResultsDialog.ShowAsync();
         }
         catch (Exception e)

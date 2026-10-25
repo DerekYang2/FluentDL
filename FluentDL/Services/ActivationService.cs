@@ -153,6 +153,7 @@ public class ActivationService : IActivationService
             }
 
             await App.GetService<QueueDisplaySettings>().LoadAsync();
+            await App.GetService<LocalDisplaySettings>().LoadAsync();
             await App.GetService<PreviewVolumeSettings>().LoadAsync();
             await QueueViewModel.UpdateShortcutVisibility();
             // Fetch previous command list

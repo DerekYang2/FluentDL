@@ -21,10 +21,20 @@
         <helpers:DateToYearConverter x:Key="DateToYearConverter" />
         <helpers:DurationConverter x:Key="DurationConverter" />
         <helpers:VisibilityConverter x:Key="VisibilityConverter" />
+        <helpers:CollapsedConverter x:Key="CollapsedConverter" />
         <helpers:NullVisibilityConverter x:Key="NullVisibilityConverter" />
         <helpers:ObjectToImageSourceConverter x:Key="ObjectToImageSourceConverter" />
         <helpers:InverseNullVisibilityConverter x:Key="InverseNullVisibilityConverter" />
         <helpers:StringNullorEmptyVisibilityConverter x:Key="StringNullorEmptyVisibilityConverter" />
+        <DataTemplate x:Key="CompactLocalItemTemplate" x:DataType="models1:SongSearchObject">
+            <views:CompactLocalRow Item="{x:Bind}" />
+        </DataTemplate>
+        <MenuFlyout x:Name="CompactLocalMenu">
+            <MenuFlyoutItem AutomationProperties.AutomationId="CompactLocalAdd" Text="Add to queue" Click="AddToQueueShortcutButton_OnClick" />
+            <MenuFlyoutItem AutomationProperties.AutomationId="CompactLocalEdit" Text="Edit metadata" Click="EditButton_OnClick" />
+            <MenuFlyoutItem AutomationProperties.AutomationId="CompactLocalAnalyze" Text="View spectrogram" Click="CompactLocalAnalyze_Click" />
+            <MenuFlyoutItem AutomationProperties.AutomationId="CompactLocalOpen" Text="Open in File Explorer" Click="OpenInBrowserButton_OnClick" />
+        </MenuFlyout>
     </Page.Resources>
 
     <Grid x:Name="ContentArea">
@@ -117,7 +127,7 @@
         </ContentDialog>
 
         <!--  Main grid  -->
-        <Grid>
+        <Grid x:Name="LocalLayout" SizeChanged="LocalLayout_SizeChanged">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*" />
                 <ColumnDefinition Width="Auto" />
@@ -127,7 +137,9 @@
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
-                <RowDefinition Height="*" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition x:Name="LocalListRow" Height="*" />
+                <RowDefinition x:Name="LocalPreviewRow" Height="0" />
             </Grid.RowDefinitions>
 
             <!--  ROW 1 of 4: Command buttons  -->
@@ -231,6 +243,14 @@
 
             <!--  ROW 2 of 4: Second row and sort boxes  -->
             <controls:DockPanel Grid.Row="1" Grid.Column="0">
+                <StackPanel Orientation="Horizontal" Spacing="4">
+                    <ToggleButton x:Name="CompactLocalButton" MinWidth="32" MinHeight="32" Padding="8,4" VerticalAlignment="Center"
+                                  AutomationProperties.AutomationId="CompactLocalButton" AutomationProperties.Name="List layout"
+                                  ToolTipService.ToolTip="Compact Local list" Click="CompactLocalButton_Click"
+                                  IsChecked="{x:Bind ViewModel.LocalDisplay.IsCompact, Mode=OneWay}"
+                                  IsEnabled="{x:Bind ViewModel.LocalDisplay.CanChangeLayout, Mode=OneWay}">
+                        <FontIcon FontSize="16" Glyph="&#xE8FD;" />
+                    </ToggleButton>
                 <Button
                     x:Name="AddToQueueButton"
                     Margin="0,0,0,0"
@@ -249,6 +269,7 @@
                     </StackPanel>
                 </Button>
 
+                </StackPanel>
                 <StackPanel HorizontalAlignment="Right" Orientation="Horizontal">
                     <ComboBox
                         x:Name="SortOrderComboBox"
@@ -314,15 +335,20 @@
                 Value="0" />
 
             <!--  ROW 4 or 4: List view  -->
+            <views:CompactLocalHeader Grid.Row="3" Grid.Column="0" Margin="12,0,24,8"
+                                      Visibility="{x:Bind ViewModel.LocalDisplay.IsCompact, Mode=OneWay, Converter={StaticResource VisibilityConverter}}" />
             <ListView
                 x:Name="FileListView"
-                Grid.Row="3"
+                AutomationProperties.AutomationId="FileListView"
+                Grid.Row="4"
                 Grid.Column="0"
                 Margin="0,0,0,12"
                 Padding="0,0,12,0"
                 BorderBrush="{ThemeResource ControlStrongStrokeColorDefaultBrush}"
                 BorderThickness="0"
                 CornerRadius="8"
+                ContextRequested="FileListView_ContextRequested"
+                ShowsScrollingPlaceholders="True"
                 SelectionChanged="FileListView_OnSelectionChanged">
                 <ListView.ItemTemplate>
                     <DataTemplate x:DataType="models1:SongSearchObject">
@@ -481,7 +507,7 @@
 
             <TextBlock
                 x:Name="NoItemsText"
-                Grid.Row="3"
+                Grid.Row="4"
                 Grid.Column="0"
                 Margin="0,-8,0,0"
                 HorizontalAlignment="Center"
@@ -493,7 +519,7 @@
             <views:PreviewPane
                 x:Name="PreviewPanel"
                 Grid.Row="0"
-                Grid.RowSpan="4"
+                Grid.RowSpan="5"
                 Grid.Column="1"
                 Margin="12,0,0,12"
                 Padding="12"
@@ -660,6 +686,7 @@
                         <Grid>
                             <ListView
                                 x:Name="ConversionListView"
+                                ItemContainerStyle="{StaticResource CompactTrackListItemStyle}"
                                 Height="300"
                                 Margin="0,0,0,0"
                                 Padding="2,0,12,0"
@@ -670,137 +697,9 @@
                                 CornerRadius="4">
                                 <ListView.ItemTemplate>
                                     <DataTemplate x:DataType="views:LocalConversionResult">
-                                        <Grid
-                                            Height="76"
-                                            Margin="0,12,0,12"
-                                            AutomationProperties.Name="{x:Bind Song.Title}">
-                                            <Grid.RowDefinitions>
-                                                <RowDefinition Height="Auto" />
-                                                <RowDefinition Height="Auto" />
-                                                <RowDefinition Height="*" />
-                                            </Grid.RowDefinitions>
-
-                                            <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="76" />
-                                                <ColumnDefinition Width="*" />
-                                                <ColumnDefinition Width="Auto" />
-                                            </Grid.ColumnDefinitions>
-
-                                            <Border
-                                                Grid.Row="0"
-                                                Grid.RowSpan="3"
-                                                Grid.Column="0"
-                                                Height="76"
-                                                CornerRadius="4">
-                                                <Border.Background>
-                                                    <ImageBrush ImageSource="{x:Bind Song.LocalBitmapImage, Mode=OneWay, Converter={StaticResource ObjectToImageSourceConverter}}" Stretch="UniformToFill" />
-                                                </Border.Background>
-                                            </Border>
-
-                                            <marqueeTextRns:MarqueeText
-                                                Grid.Row="0"
-                                                Grid.Column="1"
-                                                Margin="12,0,0,0"
-                                                VerticalAlignment="Center"
-                                                Behavior="Looping"
-                                                Direction="Left"
-                                                FontFamily="Segoe UI Variable Display"
-                                                FontWeight="Semibold"
-                                                RepeatBehavior="Forever"
-                                                Text="{x:Bind Song.Title}" />
-
-                                            <marqueeTextRns:MarqueeText
-                                                Grid.Row="1"
-                                                Grid.Column="1"
-                                                Margin="12,0,0,0"
-                                                VerticalAlignment="Center"
-                                                Behavior="Looping"
-                                                Direction="Left"
-                                                FontFamily="Segoe UI Variable Display"
-                                                RepeatBehavior="Forever"
-                                                Text="{x:Bind Song.Artists}" />
-
-                                            <StackPanel
-                                                Grid.Row="2"
-                                                Grid.Column="1"
-                                                Margin="12,0,0,0"
-                                                VerticalAlignment="Bottom"
-                                                Orientation="Horizontal">
-                                                <TextBlock
-                                                    Margin="0,0,0,0"
-                                                    HorizontalAlignment="Left"
-                                                    FontFamily="Segoe UI Variable Display"
-                                                    Foreground="{ThemeResource TextFillColorSecondary}"
-                                                    Style="{ThemeResource BodyTextBlockStyle}"
-                                                    Text="{x:Bind Song.ReleaseDate, Converter={StaticResource DateToYearConverter}}" />
-                                                <TextBlock
-                                                    HorizontalAlignment="Left"
-                                                    FontFamily="Segoe UI Variable Display"
-                                                    Foreground="{ThemeResource TextFillColorSecondary}"
-                                                    Style="{ThemeResource BodyTextBlockStyle}"
-                                                    Text="&#160;&#x2022;&#160;&#xfeff;"
-                                                    Visibility="{x:Bind Song.ReleaseDate, Converter={StaticResource StringNullorEmptyVisibilityConverter}}" />
-                                                <TextBlock
-                                                    HorizontalAlignment="Left"
-                                                    FontFamily="Segoe UI Variable Display"
-                                                    Foreground="{ThemeResource TextFillColorSecondary}"
-                                                    Style="{ThemeResource BodyTextBlockStyle}"
-                                                    Text="{x:Bind Song.Duration, Converter={StaticResource DurationConverter}}" />
-                                            </StackPanel>
-
-                                            <StackPanel
-                                                Grid.Row="0"
-                                                Grid.Column="2"
-                                                Margin="12,0,0,0"
-                                                HorizontalAlignment="Right"
-                                                Orientation="Horizontal"
-                                                Spacing="12">
-                                                <views:ExplicitBadge
-                                                    Margin="0,-2,0,0"
-                                                    HorizontalAlignment="Right"
-                                                    VerticalAlignment="Center"
-                                                    Visibility="{x:Bind Song.Explicit, Converter={StaticResource VisibilityConverter}}" />
-                                            </StackPanel>
-
-                                            <StackPanel
-                                                Grid.Row="2"
-                                                Grid.Column="2"
-                                                HorizontalAlignment="Right"
-                                                VerticalAlignment="Bottom"
-                                                Orientation="Horizontal"
-                                                Spacing="4">
-                                                <Button
-                                                    x:Name="OpenConversionButton"
-                                                    HorizontalAlignment="Right"
-                                                    VerticalAlignment="Bottom"
-                                                    Click="OpenConversionButton_OnClick"
-                                                    Tag="{Binding}"
-                                                    ToolTipService.ToolTip="Open in explorer"
-                                                    Visibility="{x:Bind NewPath, Converter={StaticResource NullVisibilityConverter}}">
-                                                    <StackPanel Orientation="Horizontal" Spacing="8">
-                                                        <FontIcon FontSize="16" Glyph="&#xE8DA;" />
-                                                        <TextBlock>Open</TextBlock>
-                                                    </StackPanel>
-                                                </Button>
-                                                <Border
-                                                    x:Name="FailedConversion"
-                                                    Padding="12,6"
-                                                    HorizontalAlignment="Right"
-                                                    VerticalAlignment="Bottom"
-                                                    Background="{ThemeResource SystemFillColorCriticalBackgroundBrush}"
-                                                    CornerRadius="4"
-                                                    ToolTipService.ToolTip="Conversion failed"
-                                                    Visibility="{x:Bind NewPath, Converter={StaticResource InverseNullVisibilityConverter}}">
-                                                    <StackPanel Orientation="Horizontal" Spacing="8">
-                                                        <FontIcon
-                                                            FontSize="16"
-                                                            Foreground="{ThemeResource SystemFillColorCriticalBrush}"
-                                                            Glyph="&#xEB90;" />
-                                                        <TextBlock>Failed</TextBlock>
-                                                    </StackPanel>
-                                                </Border>
-                                            </StackPanel>
-                                        </Grid>
+                                        <views:CompactResultRow Item="{x:Bind Song}" OutputPath="{x:Bind NewPath}" OpenTag="{x:Bind}" CachedArtworkOnly="True"
+                                                                OpenClick="OpenConversionButton_OnClick"
+                                                                FailureVisibility="{x:Bind NewPath, Converter={StaticResource InverseNullVisibilityConverter}}" />
                                     </DataTemplate>
                                 </ListView.ItemTemplate>
                             </ListView>

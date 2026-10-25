@@ -24,6 +24,11 @@
                 <ResourceDictionary Source="ms-appx:///Styles/Thickness.xaml" />
                 <ResourceDictionary Source="ms-appx:///Styles/TextBlock.xaml" />
             </ResourceDictionary.MergedDictionaries>
+            <Style x:Key="CompactTrackListItemStyle" TargetType="ListViewItem" BasedOn="{StaticResource DefaultListViewItemStyle}">
+                <Setter Property="Padding" Value="12,0" />
+                <Setter Property="MinHeight" Value="0" />
+                <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+            </Style>
         </ResourceDictionary>
     </Application.Resources>
 </Application>

@@ -1,0 +1,31 @@
+<UserControl
+    x:Class="FluentDL.Views.CompactLocalRow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:helpers="using:FluentDL.Helpers"
+    xmlns:views="using:FluentDL.Views">
+    <UserControl.Resources>
+        <helpers:DateToYearConverter x:Key="Year" />
+        <helpers:DurationConverterShort x:Key="Duration" />
+    </UserControl.Resources>
+    <Grid MinHeight="44" Margin="0,6" AutomationProperties.AutomationId="CompactLocalRow" AutomationProperties.Name="{x:Bind Item.Title, Mode=OneWay}">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="{x:Bind Columns.TitleWidth}" />
+            <ColumnDefinition Width="{x:Bind Columns.AlbumWidth, Mode=OneWay}" />
+            <ColumnDefinition Width="{x:Bind Columns.YearWidth, Mode=OneWay}" />
+            <ColumnDefinition Width="{x:Bind Columns.DurationWidth}" />
+            <ColumnDefinition Width="{x:Bind Columns.FormatWidth}" />
+        </Grid.ColumnDefinitions>
+        <views:CompactTrackIdentity Item="{x:Bind Item, Mode=OneWay}" />
+        <TextBlock Grid.Column="1" Margin="0,0,16,0" VerticalAlignment="Center" Text="{x:Bind Item.AlbumName, Mode=OneWay}"
+                   Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextTrimming="CharacterEllipsis"
+                   Visibility="{x:Bind Columns.AlbumVisibility, Mode=OneWay}" ToolTipService.ToolTip="{x:Bind Item.AlbumName, Mode=OneWay}" />
+        <TextBlock Grid.Column="2" VerticalAlignment="Center" Text="{x:Bind Item.ReleaseDate, Mode=OneWay, Converter={StaticResource Year}}"
+                   Foreground="{ThemeResource TextFillColorSecondaryBrush}" Visibility="{x:Bind Columns.YearVisibility, Mode=OneWay}" />
+        <TextBlock Grid.Column="3" Margin="0,0,12,0" VerticalAlignment="Center" HorizontalAlignment="Right"
+                   Foreground="{ThemeResource TextFillColorSecondaryBrush}" Text="{x:Bind Item.Duration, Mode=OneWay, Converter={StaticResource Duration}}" />
+        <TextBlock Grid.Column="4" VerticalAlignment="Center" Text="{x:Bind Item.AudioFormat, Mode=OneWay}"
+                   AutomationProperties.AutomationId="CompactLocalFormat" Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                   TextTrimming="CharacterEllipsis" ToolTipService.ToolTip="{x:Bind Item.AudioFormat, Mode=OneWay}" />
+    </Grid>
+</UserControl>

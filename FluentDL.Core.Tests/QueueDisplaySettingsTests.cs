@@ -9,7 +9,7 @@ namespace FluentDL.Core.Tests;
 public class QueueDisplaySettingsTests
 {
     [TestMethod]
-    public void Constructor_UsesStandardLayout_AndRejectsMissingSettings()
+    public void Constructor_UsesCompactLayout_AndRejectsMissingSettings()
     {
         // Arrange
         var settings = new Mock<ILocalSettingsService>(MockBehavior.Strict);
@@ -19,7 +19,7 @@ public class QueueDisplaySettingsTests
         var error = Assert.ThrowsException<ArgumentNullException>(() => new QueueDisplaySettings(null!));
 
         // Assert
-        Assert.IsFalse(display.IsCompact);
+        Assert.IsTrue(display.IsCompact);
         Assert.IsTrue(display.CanChangeLayout);
         Assert.AreEqual("settings", error.ParamName);
         settings.VerifyNoOtherCalls();
@@ -27,7 +27,7 @@ public class QueueDisplaySettingsTests
 
     // The settings service returns null for both a missing and an unreadable value; it never throws on read.
     [DataTestMethod]
-    [DataRow(null, false)]
+    [DataRow(null, true)]
     [DataRow(false, false)]
     [DataRow(true, true)]
     public async Task LoadAsync_ReadsPreference_WithoutWritingDefaults(bool? saved, bool expected)
@@ -45,7 +45,7 @@ public class QueueDisplaySettingsTests
         // Assert
         Assert.AreEqual(expected, display.IsCompact);
         Assert.IsTrue(display.CanChangeLayout);
-        Assert.AreEqual(expected ? 1 : 0, changes.Count(name => name == nameof(display.IsCompact)));
+        Assert.AreEqual(expected ? 0 : 1, changes.Count(name => name == nameof(display.IsCompact)));
         settings.Verify(value => value.ReadSettingAsync<bool?>(QueueDisplaySettings.SettingsKey), Times.Once);
         settings.VerifyNoOtherCalls();
     }
@@ -67,7 +67,7 @@ public class QueueDisplaySettingsTests
 
         // Assert
         Assert.IsFalse(afterReset);
-        Assert.IsFalse(display.IsCompact);
+        Assert.IsTrue(display.IsCompact);
         settings.Verify(value => value.ReadSettingAsync<bool?>(QueueDisplaySettings.SettingsKey), Times.Exactly(3));
         settings.VerifyNoOtherCalls();
     }
@@ -79,10 +79,10 @@ public class QueueDisplaySettingsTests
         var save = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         bool? saved = null;
         var settings = new Mock<ILocalSettingsService>(MockBehavior.Strict);
-        settings.Setup(value => value.SaveSettingAsync(QueueDisplaySettings.SettingsKey, true)).Returns(async () =>
+        settings.Setup(value => value.SaveSettingAsync(QueueDisplaySettings.SettingsKey, false)).Returns(async () =>
         {
             await save.Task;
-            saved = true;
+            saved = false;
         });
         settings.Setup(value => value.ReadSettingAsync<bool?>(QueueDisplaySettings.SettingsKey)).ReturnsAsync(() => saved);
         var display = new QueueDisplaySettings(settings.Object);
@@ -90,7 +90,7 @@ public class QueueDisplaySettingsTests
         display.PropertyChanged += (_, e) => { if (e.PropertyName == nameof(display.IsCompact)) layoutChanges++; };
 
         // Act
-        var update = display.SetCompactAsync(true);
+        var update = display.SetCompactAsync(false);
         var beforeSaving = display.IsCompact;
         var enabledDuringSave = display.CanChangeLayout;
         save.SetResult();
@@ -99,13 +99,13 @@ public class QueueDisplaySettingsTests
         await reopened.LoadAsync();
 
         // Assert
-        Assert.IsFalse(beforeSaving);
+        Assert.IsTrue(beforeSaving);
         Assert.IsFalse(enabledDuringSave);
-        Assert.IsTrue(display.IsCompact);
+        Assert.IsFalse(display.IsCompact);
         Assert.IsTrue(display.CanChangeLayout);
         Assert.AreEqual(1, layoutChanges);
-        Assert.IsTrue(reopened.IsCompact);
-        settings.Verify(value => value.SaveSettingAsync(QueueDisplaySettings.SettingsKey, true), Times.Once);
+        Assert.IsFalse(reopened.IsCompact);
+        settings.Verify(value => value.SaveSettingAsync(QueueDisplaySettings.SettingsKey, false), Times.Once);
         settings.Verify(value => value.ReadSettingAsync<bool?>(QueueDisplaySettings.SettingsKey), Times.Once);
         settings.VerifyNoOtherCalls();
     }
@@ -149,19 +149,19 @@ public class QueueDisplaySettingsTests
     {
         // Arrange
         var settings = new Mock<ILocalSettingsService>(MockBehavior.Strict);
-        settings.Setup(value => value.SaveSettingAsync(QueueDisplaySettings.SettingsKey, false)).Returns(Task.CompletedTask);
+        settings.Setup(value => value.SaveSettingAsync(QueueDisplaySettings.SettingsKey, true)).Returns(Task.CompletedTask);
         var display = new QueueDisplaySettings(settings.Object);
         var changes = 0;
         display.PropertyChanged += (_, e) => { if (e.PropertyName == nameof(display.IsCompact)) changes++; };
 
         // Act
-        await display.SetCompactAsync(false);
+        await display.SetCompactAsync(true);
 
         // Assert
-        Assert.IsFalse(display.IsCompact);
+        Assert.IsTrue(display.IsCompact);
         Assert.IsTrue(display.CanChangeLayout);
         Assert.AreEqual(0, changes);
-        settings.Verify(value => value.SaveSettingAsync(QueueDisplaySettings.SettingsKey, false), Times.Once);
+        settings.Verify(value => value.SaveSettingAsync(QueueDisplaySettings.SettingsKey, true), Times.Once);
         settings.VerifyNoOtherCalls();
     }
 
@@ -227,7 +227,7 @@ public class QueueDisplaySettingsTests
         Assert.IsTrue(wasWaiting);
         Assert.AreEqual(next, display.IsCompact);
         Assert.IsTrue(display.CanChangeLayout);
-        CollectionAssert.AreEqual(next ? new[] { true } : Array.Empty<bool>(), publishedStates.ToArray(),
+        CollectionAssert.AreEqual(next ? Array.Empty<bool>() : new[] { false }, publishedStates.ToArray(),
             "Only successfully persisted changes should be published.");
         settings.Verify(value => value.SaveSettingAsync(QueueDisplaySettings.SettingsKey, true),
             Times.Exactly(next ? 2 : 1));
