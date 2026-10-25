@@ -185,4 +185,28 @@
   <data name="Shell_SplashScreen.Content" xml:space="preserve">
     <value>SplashScreen</value>
   </data>
+  <data name="QueueCoverLoading" xml:space="preserve">
+    <value>Loading cover...</value>
+  </data>
+  <data name="QueueCoverUnavailable" xml:space="preserve">
+    <value>Artwork unavailable</value>
+  </data>
+  <data name="Shell_Help.Content" xml:space="preserve">
+    <value>Help</value>
+  </data>
+  <data name="Shell_Help_Name" xml:space="preserve">
+    <value>Help</value>
+  </data>
+  <data name="Shell_Help_Tooltip" xml:space="preserve">
+    <value>Open the FluentDL wiki in your browser</value>
+  </data>
+  <data name="Shell_Help_ErrorTitle" xml:space="preserve">
+    <value>Could not open Help</value>
+  </data>
+  <data name="Shell_Help_ErrorMessage" xml:space="preserve">
+    <value>Check that a default web browser is configured, or visit https://github.com/DerekYang2/FluentDL/wiki.</value>
+  </data>
+  <data name="Shell_Help_Close" xml:space="preserve">
+    <value>Close</value>
+  </data>
 </root>

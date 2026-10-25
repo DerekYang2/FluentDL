@@ -15,6 +15,7 @@
     <ProjectReference Include="..\FluentDL.Core\FluentDL.Core.csproj" />
   </ItemGroup>
   <ItemGroup>
+    <EmbeddedResource Include="..\FluentDL\Views\ShellPage.xaml" LogicalName="ShellPage.xaml" />
     <EmbeddedResource Include="..\FluentDL\Views\QueuePage.xaml" LogicalName="QueuePage.xaml" />
     <EmbeddedResource Include="..\FluentDL\Views\CompactQueueRow.xaml" LogicalName="CompactQueueRow.xaml" />
     <EmbeddedResource Include="..\FluentDL\Views\ExplicitBadge.xaml" LogicalName="ExplicitBadge.xaml" />
@@ -23,6 +24,12 @@
     <EmbeddedResource Include="..\FluentDL\Views\SpectrogramDialog.xaml" LogicalName="SpectrogramDialog.xaml" />
     <EmbeddedResource Include="..\FluentDL\Views\SettingsPage.xaml" LogicalName="SettingsPage.xaml" />
     <EmbeddedResource Include="..\FluentDL\Strings\en-us\Resources.resw" LogicalName="AppResources.resw" />
+    <EmbeddedResource Include="..\FluentDL\App.xaml" LogicalName="AppStyles.xaml" />
+    <EmbeddedResource Include="..\FluentDL\Views\CompactTrackIdentity.xaml" LogicalName="CompactTrackIdentity.xaml" />
+    <EmbeddedResource Include="..\FluentDL\Views\CompactLocalRow.xaml" LogicalName="CompactLocalRow.xaml" />
+    <EmbeddedResource Include="..\FluentDL\Views\CompactLocalHeader.xaml" LogicalName="CompactLocalHeader.xaml" />
+    <EmbeddedResource Include="..\FluentDL\Views\CompactResultRow.xaml" LogicalName="CompactResultRow.xaml" />
+    <EmbeddedResource Include="..\FluentDL\Views\QueueArtworkTile.xaml" LogicalName="QueueArtworkTile.xaml" />
     <EmbeddedResource Include="..\FluentDL\Assets\Updater\InstallUpdate.ps1" LogicalName="InstallUpdate.ps1" />
     <EmbeddedResource Include="..\FluentDL\FluentDL.csproj" LogicalName="UpdaterProject.xml" />
   </ItemGroup>

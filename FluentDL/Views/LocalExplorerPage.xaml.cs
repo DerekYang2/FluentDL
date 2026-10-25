@@ -10,9 +10,12 @@ using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Documents;
 using Microsoft.UI.Xaml.Media.Imaging;
+using Microsoft.UI.Xaml.Input;
+using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Navigation;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Linq.Expressions;
 using System.Text.RegularExpressions;
@@ -63,6 +66,10 @@ public sealed partial class LocalExplorerPage : Page
     private DispatcherQueue dispatcher;
     private DispatcherTimer dispatcherTimer;
     private long infoBarVersion;
+    private readonly DataTemplate regularLocalTemplate;
+    private readonly Style? regularLocalItemStyle;
+    private bool changingLocalTemplate;
+    private bool updatingLocalLayout;
     private CancellationTokenSource? conversionCancellation;
     private readonly LocalConversionBatch<ConversionInput> conversionBatch = new(ApplicationActivity.Gate);
     private readonly ILocalFormatConverter formatConverter = App.GetService<ILocalFormatConverter>();
@@ -93,10 +100,16 @@ public sealed partial class LocalExplorerPage : Page
     {
         ViewModel = App.GetService<LocalExplorerViewModel>();
         InitializeComponent();
+        regularLocalTemplate = FileListView.ItemTemplate;
+        regularLocalItemStyle = FileListView.ItemContainerStyle;
+        ViewModel.LocalDisplay.PropertyChanged += LocalDisplay_PropertyChanged;
+        ApplyLocalLayout();
 
         dispatcher = DispatcherQueue.GetForCurrentThread();
         dispatcherTimer = new DispatcherTimer();
         dispatcherTimer.Tick += dispatcherTimer_Tick;
+        QueueViewModel.BulkAddProgressChanged += () => { if (!QueueViewModel.IsClosing) AddToQueueButton.IsEnabled = !QueueViewModel.IsBulkAdding; };
+        AddToQueueButton.IsEnabled = !QueueViewModel.IsBulkAdding;
 
         SortComboBox.SelectedIndex = 0;
         SortOrderComboBox.SelectedIndex = 0;
@@ -161,7 +174,85 @@ public sealed partial class LocalExplorerPage : Page
     private async void LocalExplorerPage_Loaded(object sender, RoutedEventArgs e)
     {
         await ViewModel.InitializeAsync();
+        UpdateLocalPreviewLayout();
     }
+
+    private void LocalDisplay_PropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(LocalDisplaySettings.IsCompact)) ApplyLocalLayout();
+    }
+
+    private void ApplyLocalLayout()
+    {
+        var template = ViewModel.LocalDisplay.IsCompact ? (DataTemplate)Resources["CompactLocalItemTemplate"] : regularLocalTemplate;
+        if (FileListView.ItemTemplate == template) return;
+        var first = (FileListView.ItemsPanelRoot as ItemsStackPanel)?.FirstVisibleIndex ?? -1;
+        var anchor = first > 0 && first < FileListView.Items.Count ? FileListView.Items[first] : null;
+        var selected = FileListView.SelectedItem;
+        changingLocalTemplate = true;
+        try
+        {
+            FileListView.ItemContainerStyle = ViewModel.LocalDisplay.IsCompact
+                ? (Style)Application.Current.Resources["CompactTrackListItemStyle"] : regularLocalItemStyle;
+            FileListView.ItemTemplate = template;
+            FileListView.SelectedItem = selected;
+            if (anchor != null) FileListView.ScrollIntoView(anchor, ScrollIntoViewAlignment.Leading);
+        }
+        finally { changingLocalTemplate = false; }
+        UpdateLocalPreviewLayout();
+    }
+
+    private async void CompactLocalButton_Click(object sender, RoutedEventArgs e)
+    {
+        try { await ViewModel.LocalDisplay.SetCompactAsync(CompactLocalButton.IsChecked == true); }
+        catch (Exception error)
+        {
+            Serilog.Log.Warning(error, "Could not save the Local display preference");
+            CompactLocalButton.IsChecked = ViewModel.LocalDisplay.IsCompact;
+            ShowInfoBar(InfoBarSeverity.Error, "Could not save the Local display preference. The previous layout is still active.", 5);
+        }
+    }
+
+    private void LocalLayout_SizeChanged(object sender, SizeChangedEventArgs e) => UpdateLocalPreviewLayout();
+
+    private void UpdateLocalPreviewLayout()
+    {
+        if (updatingLocalLayout || LocalLayout == null || PreviewPanel == null || FileListView == null
+            || LocalListRow == null || LocalPreviewRow == null || LocalLayout.ActualWidth <= 0) return;
+        updatingLocalLayout = true;
+        try
+        {
+            var layout = QueuePreviewLayout.ForWidth(LocalLayout.ActualWidth);
+            var visible = !layout.IsStacked || FileListView.SelectedItem != null;
+            Grid.SetRow(PreviewPanel, layout.IsStacked ? 5 : 0);
+            Grid.SetRowSpan(PreviewPanel, layout.IsStacked ? 1 : 5);
+            Grid.SetColumn(PreviewPanel, layout.IsStacked ? 0 : 1);
+            Grid.SetColumnSpan(PreviewPanel, layout.IsStacked ? 2 : 1);
+            PreviewPanel.Margin = layout.IsStacked ? new Thickness(0, 12, 0, 12) : new Thickness(12, 0, 0, 12);
+            PreviewPanel.Visibility = visible ? Visibility.Visible : Visibility.Collapsed;
+            LocalListRow.Height = new GridLength(1, GridUnitType.Star);
+            LocalPreviewRow.Height = layout.IsStacked && visible ? new GridLength(1, GridUnitType.Star) : new GridLength(0);
+            PreviewPanel.SetResponsiveLayout(layout.IsStacked, layout.AvailablePreviewWidth);
+        }
+        finally { updatingLocalLayout = false; }
+    }
+
+    private void FileListView_ContextRequested(UIElement sender, ContextRequestedEventArgs e)
+    {
+        if (!ViewModel.LocalDisplay.IsCompact) return;
+        var element = e.OriginalSource as DependencyObject;
+        while (element != null && element != FileListView && element is not ListViewItem)
+            element = VisualTreeHelper.GetParent(element);
+        if (element is not ListViewItem row || FileListView.ItemFromContainer(row) is not SongSearchObject song) return;
+        foreach (var item in CompactLocalMenu.Items) item.Tag = song;
+        if (e.TryGetPosition(row, out var position))
+            CompactLocalMenu.ShowAt(row, new Microsoft.UI.Xaml.Controls.Primitives.FlyoutShowOptions { Position = position });
+        else CompactLocalMenu.ShowAt(row);
+        e.Handled = true;
+    }
+
+    private async void CompactLocalAnalyze_Click(object sender, RoutedEventArgs e) =>
+        await OpenSpectrogramDialog((sender as FrameworkElement)?.Tag as SongSearchObject);
 
     private void InitializeAnimations()
     {
@@ -178,6 +269,7 @@ public sealed partial class LocalExplorerPage : Page
 
     protected async override void OnNavigatedTo(NavigationEventArgs e) // Navigated to page
     {
+        UpdateLocalPreviewLayout();
         // Get the selected item
         var selectedSong = (SongSearchObject)FileListView.SelectedItem;
         if (selectedSong != null)
@@ -222,7 +314,7 @@ public sealed partial class LocalExplorerPage : Page
     private void AddToQueueShortcutButton_OnClick(object sender, RoutedEventArgs e)
     {
         // Get the button that was clicked
-        var button = sender as Button;
+        var button = sender as FrameworkElement;
 
         // Retrieve the item from the tag property
         var song = button?.Tag as SongSearchObject;
@@ -232,7 +324,7 @@ public sealed partial class LocalExplorerPage : Page
     private void EditButton_OnClick(object sender, RoutedEventArgs e)
     {
         // Get the button that was clicked
-        var button = sender as Button;
+        var button = sender as FrameworkElement;
 
         // Retrieve the item from the tag property
         var song = button?.Tag as SongSearchObject;
@@ -242,7 +334,7 @@ public sealed partial class LocalExplorerPage : Page
     private void OpenInBrowserButton_OnClick(object sender, RoutedEventArgs e)
     {
         // Get the button that was clicked
-        var button = sender as Button;
+        var button = sender as FrameworkElement;
 
         // Retrieve the item from the tag property
         var song = button?.Tag as SongSearchObject;
@@ -492,6 +584,8 @@ public sealed partial class LocalExplorerPage : Page
 
     private async void FileListView_OnSelectionChanged(object sender, SelectionChangedEventArgs e)
     {
+        if (changingLocalTemplate) return;
+        UpdateLocalPreviewLayout();
         // Get the selected item
         var selectedSong = (SongSearchObject)FileListView.SelectedItem;
         if (selectedSong == null)
@@ -557,6 +651,7 @@ public sealed partial class LocalExplorerPage : Page
         message = message.Trim();
         dispatcher.TryEnqueue(() =>
         {
+            if (QueueViewModel.IsClosing) return;
             infoBarVersion++;
             dispatcherTimer.Stop();
             PageInfoBar.IsOpen = true;
@@ -583,6 +678,7 @@ public sealed partial class LocalExplorerPage : Page
         message = message.Trim();
         dispatcher.TryEnqueue(() =>
         {
+            if (QueueViewModel.IsClosing) return;
             infoBarVersion++;
             dispatcherTimer.Stop();
             PageInfoBar.IsOpen = true;
@@ -602,6 +698,7 @@ public sealed partial class LocalExplorerPage : Page
 
     private async void dispatcherTimer_Tick(object sender, object e)
     {
+        if (QueueViewModel.IsClosing) { dispatcherTimer.Stop(); return; }
         dispatcherTimer.Stop();
         var version = infoBarVersion;
         PageInfoBar.Opacity = 0;
@@ -634,24 +731,34 @@ public sealed partial class LocalExplorerPage : Page
 
     private async void AddToQueueButton_OnClick(object sender, RoutedEventArgs e)
     {
+        if (QueueViewModel.IsBulkAdding) return;
         if (LocalExplorerViewModel.OriginalList.Count == 0)
         {
             ShowInfoBar(InfoBarSeverity.Warning, "No tracks to add");
             return;
         }
 
-        var beforeCount = QueueViewModel.Source.Count;
+        var snapshot = LocalExplorerViewModel.OriginalList.ToArray();
+        var large = snapshot.Length >= QueueViewModel.BulkAddThreshold;
+        if (large) AddToQueueButton.IsEnabled = false;
 
         try
         {
-            foreach (var song in LocalExplorerViewModel.OriginalList)
+            var addedCount = await QueueViewModel.AddManyAsync(snapshot, text =>
             {
-                QueueViewModel.Add(song);
+                dispatcherTimer.Stop();
+                InfobarProgress.IsIndeterminate = false;
+                InfobarProgress.Value = QueueViewModel.BulkAddProgress;
+                InfobarProgress.Visibility = Visibility.Visible;
+                ShowInfoBarPermanent(InfoBarSeverity.Informational, text);
+            });
+            if (QueueViewModel.IsClosing) return;
+
+            if (large)
+            {
+                ShowInfoBar(QueueViewModel.BulkAddSeverity, QueueViewModel.BulkAddText, 5);
             }
-
-            var addedCount = QueueViewModel.Source.Count - beforeCount;
-
-            if (addedCount < LocalExplorerViewModel.OriginalList.Count)
+            else if (addedCount < snapshot.Length)
             {
                 ShowInfoBar(InfoBarSeverity.Informational, $"Added {addedCount} tracks to queue (duplicates ignored)");
             }
@@ -661,7 +768,15 @@ public sealed partial class LocalExplorerPage : Page
             }
         } catch (Exception ex)
         {
-            ShowInfoBar(InfoBarSeverity.Error, $"Failed to add tracks to queue: {ex.Message}");
+            if (!QueueViewModel.IsClosing) ShowInfoBar(InfoBarSeverity.Error, $"Failed to add tracks to queue: {ex.Message}");
+        }
+        finally
+        {
+            if (!QueueViewModel.IsClosing)
+            {
+                AddToQueueButton.IsEnabled = !QueueViewModel.IsBulkAdding;
+                if (large) { InfobarProgress.Visibility = Visibility.Collapsed; InfobarProgress.IsIndeterminate = true; }
+            }
         }
     }
 

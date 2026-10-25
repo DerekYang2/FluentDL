@@ -1291,6 +1291,7 @@ public sealed partial class SettingsPage : Page
                     string? result = await localSettings.ImportSettingsAsync(content);
                     await SettingsViewModel.SetMissingDefaults();  // Fills in any null/improper values with defaults
                     await ViewModel.QueueDisplay.LoadAsync();
+                    await App.GetService<FluentDL.Core.Services.LocalDisplaySettings>().LoadAsync();
                     await App.GetService<FluentDL.Core.Services.PreviewVolumeSettings>().LoadAsync();
                     await InitializeAsync();
 
@@ -1340,6 +1341,7 @@ public sealed partial class SettingsPage : Page
         {
             await SettingsViewModel.ResetSettings();
             await ViewModel.QueueDisplay.LoadAsync();
+            await App.GetService<FluentDL.Core.Services.LocalDisplaySettings>().LoadAsync();
             await App.GetService<FluentDL.Core.Services.PreviewVolumeSettings>().LoadAsync();
             await InitializeAsync();
             ShowInfoBar(InfoBarSeverity.Success, "You may need to restart the application for all changes to apply.", seconds: 3, title: "Reset Successful");

@@ -1,0 +1,36 @@
+<UserControl
+    x:Class="FluentDL.Views.CompactResultRow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:helpers="using:FluentDL.Helpers"
+    xmlns:views="using:FluentDL.Views">
+    <UserControl.Resources>
+        <helpers:DurationConverterShort x:Key="Duration" />
+    </UserControl.Resources>
+    <Grid MinHeight="44" Margin="0,6" ColumnSpacing="12" AutomationProperties.AutomationId="CompactResultRow" AutomationProperties.Name="{x:Bind Item.Title, Mode=OneWay}">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="72" />
+            <ColumnDefinition Width="Auto" />
+        </Grid.ColumnDefinitions>
+        <views:CompactTrackIdentity Item="{x:Bind Item, Mode=OneWay}" CachedArtworkOnly="{x:Bind CachedArtworkOnly, Mode=OneWay}" />
+        <StackPanel Grid.Column="1" VerticalAlignment="Center" HorizontalAlignment="Right" Spacing="2">
+            <TextBlock AutomationProperties.AutomationId="CompactResultTrackCount" Text="{x:Bind views:CompactResultRow.TrackCount(Item), Mode=OneWay}" HorizontalAlignment="Right" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+            <TextBlock Text="{x:Bind Item.Duration, Mode=OneWay, Converter={StaticResource Duration}}" HorizontalAlignment="Right" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+        </StackPanel>
+        <Button Grid.Column="2" MinWidth="32" MinHeight="32" Padding="8,4" VerticalAlignment="Center"
+                AutomationProperties.AutomationId="OpenConversionButton" AutomationProperties.Name="Open converted file"
+                ToolTipService.ToolTip="Open converted file in File Explorer" Tag="{x:Bind OpenTag, Mode=OneWay}"
+                Visibility="{x:Bind views:CompactResultRow.OpenVisibility(OutputPath), Mode=OneWay}" Click="OpenButton_Click">
+            <FontIcon FontSize="16" Glyph="&#xE8DA;" />
+        </Button>
+        <Border Grid.Column="2" Padding="8,4" VerticalAlignment="Center" CornerRadius="4"
+                ToolTipService.ToolTip="Conversion failed"
+                Background="{ThemeResource SystemFillColorCriticalBackgroundBrush}" Visibility="{x:Bind FailureVisibility, Mode=OneWay}">
+            <StackPanel Orientation="Horizontal" Spacing="6">
+                <FontIcon FontSize="16" Foreground="{ThemeResource SystemFillColorCriticalBrush}" Glyph="&#xEB90;" />
+                <TextBlock AutomationProperties.AutomationId="FailedConversion" Text="Failed" />
+            </StackPanel>
+        </Border>
+    </Grid>
+</UserControl>

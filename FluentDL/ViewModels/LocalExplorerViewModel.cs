@@ -9,6 +9,7 @@ using FluentDL.Contracts.Services;
 using FluentDL.Contracts.ViewModels;
 using FluentDL.Core.Contracts.Services;
 using FluentDL.Core.Models;
+using FluentDL.Core.Services;
 using FluentDL.Helpers;
 using FluentDL.Models;
 using FluentDL.Services;
@@ -60,8 +61,11 @@ public partial class LocalExplorerViewModel : ObservableRecipient
         set;
     }
 
-    public LocalExplorerViewModel()
+    public LocalDisplaySettings LocalDisplay { get; }
+
+    public LocalExplorerViewModel(LocalDisplaySettings localDisplay)
     {
+        LocalDisplay = localDisplay;
         localSettings = App.GetService<ILocalSettingsService>();
     }
 

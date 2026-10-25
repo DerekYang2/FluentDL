@@ -161,6 +161,7 @@ namespace FluentDL.Views
             var preferred = !stacked && stackedLayout ? sidePaneWidth : RelativePreviewPanel.Width;
             RelativePreviewPanel.Width = stacked ? width : Math.Clamp(preferred, RelativePreviewPanel.MinWidth, width);
             PreviewWidthSizer.Visibility = stacked ? Visibility.Collapsed : Visibility.Visible;
+            SongPreviewPlayer.TransportControls.IsCompact = stacked;
             PreviewArtworkColumn.Width = new GridLength(stacked ? 112 : 0);
             PreviewArtwork.MaxHeight = stacked ? 112 : double.PositiveInfinity;
             PreviewArtwork.VerticalAlignment = stacked ? VerticalAlignment.Top : VerticalAlignment.Stretch;

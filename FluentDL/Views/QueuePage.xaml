@@ -303,19 +303,8 @@
                             <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
 
-                        <Border
-                            Grid.Row="0"
-                            Grid.RowSpan="3"
-                            Grid.Column="0"
-                            Height="76"
-                            Margin="0"
-                            Padding="0"
-                            CornerRadius="4"
-                            Visibility="{x:Bind LocalBitmapImage, Mode=OneWay, Converter={StaticResource NullVisibilityConverter}}">
-                            <Border.Background>
-                                <ImageBrush ImageSource="{x:Bind LocalBitmapImage, Mode=OneWay, Converter={StaticResource ObjectToImageSourceConverter}}" Stretch="UniformToFill" />
-                            </Border.Background>
-                        </Border>
+                        <views:QueueArtworkTile Grid.Row="0" Grid.RowSpan="3" Grid.Column="0" Width="76" Height="76"
+                                                Item="{x:Bind Mode=OneWay}" />
 
                         <TextBlock
                             Grid.Row="0"
@@ -861,6 +850,7 @@
                         <Grid>
                             <ListView
                                 x:Name="ConversionListView"
+                                ItemContainerStyle="{StaticResource CompactTrackListItemStyle}"
                                 Height="400"
                                 Margin="0,0,0,0"
                                 Padding="2,0,12,0"
@@ -871,62 +861,7 @@
                                 CornerRadius="4">
                                 <ListView.ItemTemplate>
                                     <DataTemplate x:DataType="models:SongSearchObject">
-                                        <Grid Margin="0,12,0,12" AutomationProperties.Name="{x:Bind Title}">
-                                            <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="76" />
-                                                <ColumnDefinition Width="*" />
-                                            </Grid.ColumnDefinitions>
-                                            <Border Height="76" CornerRadius="4">
-                                                <Border.Background>
-                                                    <ImageBrush ImageSource="{x:Bind CoverSource, Mode=OneWay, Converter={StaticResource CoverImageConverter}}" Stretch="UniformToFill" />
-                                                </Border.Background>
-                                            </Border>
-
-                                            <StackPanel Grid.Column="1" Margin="12,0,0,0">
-                                                <StackPanel Orientation="Horizontal">
-                                                    <TextBlock
-                                                        Margin="0,0,8,0"
-                                                        HorizontalAlignment="Left"
-                                                        FontFamily="Segoe UI Variable Display"
-                                                        MaxLines="1"
-                                                        Style="{ThemeResource BodyStrongTextBlockStyle}"
-                                                        Text="{x:Bind Title}"
-                                                        TextTrimming="CharacterEllipsis" />
-                                                    <views:ExplicitBadge VerticalAlignment="Center" Visibility="{x:Bind Explicit, Converter={StaticResource VisibilityConverter}}" />
-                                                </StackPanel>
-                                                <TextBlock
-                                                    FontFamily="Segoe UI Variable Display"
-                                                    MaxLines="1"
-                                                    Style="{ThemeResource BodyTextBlockStyle}"
-                                                    Text="{x:Bind Artists}"
-                                                    TextTrimming="CharacterEllipsis" />
-                                            </StackPanel>
-
-                                            <StackPanel
-                                                Grid.Column="1"
-                                                Margin="12,0,0,0"
-                                                VerticalAlignment="Bottom"
-                                                Orientation="Horizontal">
-                                                <TextBlock
-                                                    Margin="0,0,0,0"
-                                                    HorizontalAlignment="Left"
-                                                    FontFamily="Segoe UI Variable Display"
-                                                    Style="{ThemeResource BodyTextBlockStyle}"
-                                                    Text="{x:Bind ReleaseDate, Converter={StaticResource DateToYearConverter}}" />
-                                                <TextBlock
-                                                    HorizontalAlignment="Left"
-                                                    FontFamily="Segoe UI Variable Display"
-                                                    Style="{ThemeResource BodyTextBlockStyle}"
-                                                    Text="&#160;&#x2022;&#160;&#xfeff;"
-                                                    Visibility="{x:Bind ReleaseDate, Converter={StaticResource StringNullorEmptyVisibilityConverter}}" />
-                                                <TextBlock
-                                                    Margin="5,0,0,0"
-                                                    HorizontalAlignment="Left"
-                                                    FontFamily="Segoe UI Variable Display"
-                                                    Style="{ThemeResource BodyTextBlockStyle}"
-                                                    Text="{x:Bind Duration, Converter={StaticResource DurationConverter}}" />
-                                            </StackPanel>
-                                        </Grid>
+                                        <views:CompactResultRow Item="{x:Bind}" CachedArtworkOnly="True" />
                                     </DataTemplate>
                                 </ListView.ItemTemplate>
                             </ListView>

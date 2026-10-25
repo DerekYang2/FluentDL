@@ -1,0 +1,10 @@
+<Project>
+  <Import Project="$(MSBuildThisFileDirectory)DevPackage.targets" />
+  <PropertyGroup Condition="'$(MSBuildProjectName)' == 'FluentDL'">
+    <DefineConstants>$(DefineConstants);FLUENTDL_COMPACT_LAYOUT_UI_TESTS</DefineConstants>
+  </PropertyGroup>
+  <ItemGroup Condition="'$(MSBuildProjectName)' == 'FluentDL'">
+    <Compile Include="$(MSBuildThisFileDirectory)CompactLayoutTestSupport.cs" Link="CompactLayoutTestSupport.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)CompactSummaryFixture.cs" Link="CompactSummaryFixture.cs" />
+  </ItemGroup>
+</Project>

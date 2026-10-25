@@ -32,6 +32,7 @@
             IsBackEnabled="{x:Bind ViewModel.IsBackEnabled, Mode=OneWay}"
             SelectedItem="{x:Bind ViewModel.Selected, Mode=OneWay}"
             IsSettingsVisible="True"
+            ItemInvoked="NavigationViewControl_ItemInvoked"
             ExpandedModeThresholdWidth="1368"
             DisplayModeChanged="NavigationViewControl_DisplayModeChanged"
             Header="{x:Bind ((ContentControl)ViewModel.Selected).Content, Mode=OneWay}"
@@ -61,6 +62,11 @@
                     </NavigationViewItem.Icon>
                 </NavigationViewItem>
             </NavigationView.MenuItems>
+            <NavigationView.FooterMenuItems>
+                <NavigationViewItem x:Name="HelpNavigationItem" x:Uid="Shell_Help"
+                                    AutomationProperties.AutomationId="HelpNavigationItem"
+                                    Icon="Help" SelectsOnInvoked="False" ToolTipService.Placement="Right" />
+            </NavigationView.FooterMenuItems>
             <NavigationView.HeaderTemplate>
                 <DataTemplate>
                     <Grid>

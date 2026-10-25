@@ -50,15 +50,15 @@ public sealed partial class QueuePage : Page
     // Create dispatcher queue
     private DispatcherQueue dispatcherQueue;
     private DispatcherTimer dispatcherTimer;
-    private CancellationTokenSource cancellationTokenSource;
-    private readonly ConversionService conversions = App.GetService<ConversionService>();
+    private CancellationTokenSource? cancellationTokenSource;
+    private readonly ConversionService conversions;
     private readonly DownloadService downloads = App.GetService<DownloadService>();
     private bool playlistDialogOpen;
     private bool albumExpansionBusy;
     private bool updatingPreviewLayout;
 
     // Conversion variables
-    private ConcurrentDictionary<SongSearchObject, int> successSource, warningSource, errorSource;
+    private ConcurrentDictionary<SongSearchObject, (int Queue, int Track)> successSource, warningSource, errorSource;
 
     // One checkbox per source in the clear and conversion dialogs, in catalog order.
     public IReadOnlyList<SourceOption> ClearOptions { get; } = SourceCatalog.All.Select(s => new SourceOption(s) { IsChecked = true }).ToList();
@@ -90,8 +90,11 @@ public sealed partial class QueuePage : Page
         get;
     }
 
-    public QueuePage()
+    public QueuePage() : this(App.GetService<ConversionService>()) { }
+
+    internal QueuePage(ConversionService conversions)
     {
+        this.conversions = conversions;
         ViewModel = App.GetService<QueueViewModel>();
         InitializeComponent();
         _regularQueueItemTemplate = CustomListView.ItemTemplate;
@@ -104,7 +107,6 @@ public sealed partial class QueuePage : Page
         dispatcherTimer.Tick += DispatcherTimer_Tick;
 
         CustomListView.ItemsSource = QueueViewModel.Source;
-        cancellationTokenSource = new CancellationTokenSource();
         InitPreviewPanelButtons();
         InitializeAnimations();
         OutputComboBox.ItemsSource = SourceCatalog.All.Select(s => s.DisplayName).ToList();
@@ -124,14 +126,16 @@ public sealed partial class QueuePage : Page
         {
             OnQueueSourceChange();
         };
+        QueueViewModel.BulkAddProgressChanged += UpdateBulkAddProgress;
+        UpdateBulkAddProgress();
 
         NoItemsText.Visibility = QueueViewModel.Source.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
-        ClearButton.IsEnabled = QueueViewModel.Source.Count > 0 && !albumExpansionBusy;
+        ClearButton.IsEnabled = QueueViewModel.Source.Count > 0 && !albumExpansionBusy && !QueueViewModel.IsBulkAdding;
 
         // Set conversion variables
-        successSource = new ConcurrentDictionary<SongSearchObject, int>();
-        warningSource = new ConcurrentDictionary<SongSearchObject, int>();
-        errorSource = new ConcurrentDictionary<SongSearchObject, int>();
+        successSource = new ConcurrentDictionary<SongSearchObject, (int Queue, int Track)>();
+        warningSource = new ConcurrentDictionary<SongSearchObject, (int Queue, int Track)>();
+        errorSource = new ConcurrentDictionary<SongSearchObject, (int Queue, int Track)>();
 
         // Create callback
         queueRunCallback = (severity, message) =>
@@ -303,12 +307,46 @@ public sealed partial class QueuePage : Page
         return string.Join(", ", parts);
     }
 
+    private bool queueRefreshPending;
+    private bool showingBulkAdd;
+
     private void OnQueueSourceChange()
     {
-        SetCountText();
-        NoItemsText.Visibility = QueueViewModel.Source.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
-        ClearButton.IsEnabled = QueueViewModel.Source.Count > 0 && !albumExpansionBusy;
-        dispatcherQueue.TryEnqueue(DispatcherQueuePriority.Low, UpdateQueueToolbarLayout);
+        if (QueueViewModel.IsClosing) return;
+        if (queueRefreshPending) return;
+        queueRefreshPending = true;
+        dispatcherQueue.TryEnqueue(DispatcherQueuePriority.Low, () =>
+        {
+            if (QueueViewModel.IsClosing) return;
+            queueRefreshPending = false;
+            SetCountText();
+            NoItemsText.Visibility = QueueViewModel.Source.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
+            ClearButton.IsEnabled = QueueViewModel.Source.Count > 0 && !albumExpansionBusy && !QueueViewModel.IsBulkAdding;
+            UpdateQueueToolbarLayout();
+        });
+    }
+
+    private void UpdateBulkAddProgress()
+    {
+        if (QueueViewModel.IsClosing || IsConverting) return;
+        OnQueueSourceChange();
+        if (QueueViewModel.IsBulkAdding)
+        {
+            showingBulkAdd = true;
+            ProgressTextButton.Visibility = Visibility.Visible;
+            CountTextButton.Visibility = Visibility.Collapsed;
+            ProgressText.Text = QueueViewModel.BulkAddText;
+            QueueProgress.Value = QueueViewModel.BulkAddProgress;
+        }
+        else if (showingBulkAdd)
+        {
+            showingBulkAdd = false;
+            ProgressTextButton.Visibility = Visibility.Collapsed;
+            CountTextButton.Visibility = Visibility.Visible;
+            QueueProgress.Value = 0;
+            ShowInfoBar(QueueViewModel.BulkAddSeverity, QueueViewModel.BulkAddText, 5);
+        }
+        ConvertDialogOpenButton.IsEnabled = DownloadAllButton.IsEnabled = !QueueViewModel.IsBulkAdding;
     }
 
     private void QueueToolbar_SizeChanged(object sender, SizeChangedEventArgs e) => UpdateQueueToolbarLayout();
@@ -1013,6 +1051,7 @@ public sealed partial class QueuePage : Page
         message = message.Trim();
         dispatcherQueue.TryEnqueue(() =>
         {
+            if (QueueViewModel.IsClosing) return;
             dispatcherTimer.Stop();
             PageInfoBar.IsOpen = true;
             PageInfoBar.Opacity = 1;
@@ -1040,6 +1079,7 @@ public sealed partial class QueuePage : Page
         message = message.Trim();
         dispatcherQueue.TryEnqueue(() =>
         {
+            if (QueueViewModel.IsClosing) return;
             dispatcherTimer.Stop();
             PageInfoBar.IsOpen = true;
             PageInfoBar.Opacity = 1;
@@ -1274,7 +1314,7 @@ public sealed partial class QueuePage : Page
         var songsWithOriginalIndex = QueueViewModel.Source
             .Select((song, originalIndex) => new { Song = song, OriginalIndex = originalIndex });
         var songsToConvert = songsWithOriginalIndex
-            .Where(x => selectedSources.Contains(x.Song.Source) && outputSource != x.Song.Source);
+            .Where(x => selectedSources.Contains(x.Song.Source) && outputSource != x.Song.Source).ToList();
 
         int totalCount = songsToConvert.Count();
         if (totalCount == 0)
@@ -1311,7 +1351,8 @@ public sealed partial class QueuePage : Page
         CountTextButton.Visibility = Visibility.Visible;
         QueueProgress.Value = 0;
 
-        cancellationTokenSource = new CancellationTokenSource(); // Create a new cancellation token source
+        using var conversionCancellation = new CancellationTokenSource();
+        cancellationTokenSource = conversionCancellation;
 
         // Clear the conversion results
         successSource.Clear();
@@ -1320,18 +1361,18 @@ public sealed partial class QueuePage : Page
         QueueViewModel.ResetConversionResults(); // Clear all badges and results on queue objects
         ViewModel.SuccessCount = ViewModel.WarningCount = ViewModel.ErrorCount = 0; // Reset the counts
 
-        void conversionUpdateCallback(StatusLevel level, SongSearchObject song, string? location = null)
+        void conversionUpdateCallback(StatusLevel level, SongSearchObject song, (int Queue, int Track) order)
         {
             switch (level)
             {
                 case StatusLevel.Success:
-                    successSource.TryAdd(song, 0);
+                    successSource.TryAdd(song, order);
                     break;
                 case StatusLevel.Warning:
-                    warningSource.TryAdd(song, 0);
+                    warningSource.TryAdd(song, order);
                     break;
                 case StatusLevel.Error:
-                    errorSource.TryAdd(song, 0);
+                    errorSource.TryAdd(song, order);
                     break;
                 default:
                     throw new Exception("Unspecified severity in callback");
@@ -1379,158 +1420,143 @@ public sealed partial class QueuePage : Page
             }
             IsConverting = true;
             int processedCount = 0;
-            var token = cancellationTokenSource.Token;
+            var token = conversionCancellation.Token;
             var conversionClock = Stopwatch.StartNew();
             var conversionEta = new EtaEstimator();
 
             var downloadThreads = await SettingsViewModel.GetSetting<int?>(SettingsViewModel.ConversionThreads) ?? 1;
-            using var semaphore = new SemaphoreSlim(downloadThreads);
-
-            var tasks = songsToConvert.Select(async (x) =>
+            await QueueConversionBatch.RunAsync(songsToConvert, Math.Max(1, downloadThreads), async (x, workerToken) =>
             {
                 var song = x.Song;
                 var index = x.OriginalIndex;
-                var outcome = new QueueConversionOutcome(conversionUpdateCallback);
+                void Report(StatusLevel level, SongSearchObject result, string? location = null)
+                {
+                    var trackOrder = outputSource == SourceIds.Local && QueueObject.Unwrap(song) is AlbumSearchObject album
+                        ? AlbumOrder(album.TrackList ?? [], result) : 0;
+                    conversionUpdateCallback(level, result, (index, trackOrder));
+                }
+                var outcome = new QueueConversionOutcome(Report);
                 try
                 {
-                    bool isReleased = false;
-                    await semaphore.WaitAsync(token);
-                    try
+                    workerToken.ThrowIfCancellationRequested();
+                    dispatcherQueue.TryEnqueue(() =>
                     {
-                        // Set song to running (progress ring will appear)
-                        dispatcherQueue.TryEnqueue(() =>
-                        {
-                            song.IsRunning = true;
-                        });
+                        if (!QueueViewModel.IsClosing && !workerToken.IsCancellationRequested) song.IsRunning = true;
+                    });
 
-                        // Convert the track and get new song object
-                        SongSearchObject? newSongObj = null;
-                        string? fileLocation = null;
-                        if (outputSource == SourceIds.Local && song.IsAlbum)
-                        {
-                            await DownloadQueuedAlbumAsync(song, directory, progress, conversionUpdateCallback);
-                            return; // the finally below releases the slot and counts the row
-                        }
-                        if (outputSource == SourceIds.Local) // Conversion to local, download the track
-                        {
-                            fileLocation = await downloads.DownloadObject(song, directory, progress, outcome.Report);
-                            newSongObj = song;
-                        }
-                        else
-                        {
-                            var match = await conversions.FindEquivalentAsync(QueueObject.Unwrap(song), outputSource, token);
-                            switch (match.Kind)
-                            {
-                                case MatchKind.Exact:
-                                    outcome.Report(StatusLevel.Success, match.Track!);
-                                    break;
-                                case MatchKind.Close:
-                                    outcome.Report(StatusLevel.Warning, match.Track!);
-                                    break;
-                                case MatchKind.NotFound:
-                                    outcome.Report(StatusLevel.Error, song);
-                                    break;
-                            }
-                            newSongObj = match.Track;
-                        }
+                    SongSearchObject? newSongObj = null;
+                    MatchKind? matchKind = null;
+                    string? fileLocation = null;
+                    if (outputSource == SourceIds.Local && song.IsAlbum)
+                    {
+                        await DownloadQueuedAlbumAsync(song, directory, progress, Report);
+                        return;
+                    }
+                    if (outputSource == SourceIds.Local)
+                    {
+                        fileLocation = await downloads.DownloadObject(song, directory, progress, outcome.Report);
+                        newSongObj = song;
+                    }
+                    else
+                    {
+                        var match = await conversions.FindEquivalentAsync(QueueObject.Unwrap(song), outputSource, workerToken);
+                        workerToken.ThrowIfCancellationRequested();
+                        matchKind = match.Kind;
+                        newSongObj = match.Track;
+                    }
 
-                        var tcs = new TaskCompletionSource();
-                        // Update the UI with the new song object or set error badge if conversion failed
-                        dispatcherQueue.TryEnqueue(async () =>
+                    var tcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+                    if (!dispatcherQueue.TryEnqueue(async () =>
+                    {
+                        try
                         {
-                            try
+                            if (QueueViewModel.IsClosing) return;
+                            // Completed downloads still need their queue/file bookkeeping after Stop.
+                            if (outputSource != SourceIds.Local && (workerToken.IsCancellationRequested || matchKind == MatchKind.NotReported)) return;
+                            if (newSongObj != null)
                             {
-                                if (newSongObj != null)
+                                QueueObject? queueObj;
+                                if (outputSource == SourceIds.Local)
                                 {
-                                    QueueObject? queueObj;
-                                    if (outputSource == SourceIds.Local)
-                                    {
-                                        var localSong = LocalExplorerViewModel.ParseFile(fileLocation);
+                                    var localSong = LocalExplorerViewModel.ParseFile(fileLocation);
 
-                                        if (localSong != null)
-                                        {
-                                            localSong.LocalBitmapImage = await LocalExplorerViewModel.GetBitmapImageAsync(fileLocation);
-                                            queueObj = await QueueViewModel.CreateQueueObject(localSong, song.QueueCounter);
-                                            await QueueViewModel.Replace(QueueViewModel.Source.IndexOf(song), queueObj);
-                                        }
-                                        else // Can happen when trying to parse opus files
-                                        {
-                                            queueObj = song; // Set to the initial object so badge is shown below
-                                        }
-                                    }
-                                    else
+                                    if (localSong != null)
                                     {
-                                        queueObj = await QueueViewModel.CreateQueueObject(newSongObj, song.QueueCounter);
+                                        localSong.LocalBitmapImage = await LocalExplorerViewModel.GetBitmapImageAsync(fileLocation);
+                                        queueObj = await QueueViewModel.CreateQueueObject(localSong, song.QueueCounter, song.QueueSubOrder);
                                         await QueueViewModel.Replace(QueueViewModel.Source.IndexOf(song), queueObj);
                                     }
-
-                                    if (queueObj != null)
+                                    else // Can happen when trying to parse opus files
                                     {
-                                        queueObj.ConvertBadgeColor = new SolidColorBrush(outcome.Level switch
-                                        {
-                                            StatusLevel.Success => BadgeSuccess,
-                                            StatusLevel.Warning => BadgeWarning,
-                                            _ => BadgeError,
-                                        });
+                                        queueObj = song;
                                     }
                                 }
-                                else // Failed conversion, set current object badge to error
+                                else
                                 {
-                                    song.ConvertBadgeColor = new SolidColorBrush(Windows.UI.Color.FromArgb(255, 255, 153, 164));
+                                    queueObj = await QueueViewModel.CreateQueueObject(newSongObj, song.QueueCounter, song.QueueSubOrder);
+                                    await QueueViewModel.Replace(QueueViewModel.Source.IndexOf(song), queueObj);
+                                }
+
+                                if (outputSource != SourceIds.Local)
+                                    outcome.Report(matchKind == MatchKind.Exact ? StatusLevel.Success : StatusLevel.Warning, newSongObj);
+                                if (queueObj != null)
+                                {
+                                    queueObj.ConvertBadgeColor = new SolidColorBrush(outcome.Level switch
+                                    {
+                                        StatusLevel.Success => BadgeSuccess,
+                                        StatusLevel.Warning => BadgeWarning,
+                                        _ => BadgeError,
+                                    });
                                 }
                             }
-                            finally
+                            else
                             {
-                                tcs.TrySetResult();
+                                if (outputSource != SourceIds.Local) outcome.Report(StatusLevel.Error, song);
+                                song.ConvertBadgeColor = new SolidColorBrush(Windows.UI.Color.FromArgb(255, 255, 153, 164));
                             }
-                        });
-
-                        // No need to wait for dispatcher/ui update to complete
-                        semaphore.Release();
-                        isReleased = true;
-
-                        await tcs.Task.WaitAsync(TimeSpan.FromSeconds(5));
-                    }
-                    catch (Exception ex)
-                    {
-                        dispatcherQueue.TryEnqueue(() =>
-                        {
-                            // Exception color code
-                            song.ConvertBadgeColor = new SolidColorBrush(Windows.UI.Color.FromArgb(255, 255, 0, 0));
-                        });
-                    }
-                    finally
-                    {
-                        var processCaptured = Interlocked.Increment(ref processedCount); // Increment the processed count
-                        var elapsedCaptured = conversionClock.Elapsed;
-                        dispatcherQueue.TryEnqueue(() =>
-                        {
-                            song.IsRunning = false; // Set song to not running
-                            if (outputSource != SourceIds.Local && IsConverting)
-                            {
-                                QueueProgress.Value = 100.0 * processCaptured / totalCount; // Update the progress bar
-                                var eta = conversionEta.Update((double)processCaptured / totalCount, elapsedCaptured);
-                                ShowInfoBarPermanent(InfoBarSeverity.Informational,
-                                    $"Converting to {GetOutputSource()} \u2022 {DownloadProgressHelper.FormatCountedPercent(QueueProgress.Value, processCaptured, totalCount)}{(eta != null ? " \u2022 " + eta : "")}",
-                                    title: "Conversion in Progress");
-                            }
-                        });
-
-                        if (!isReleased)
-                        {
-                            semaphore.Release();
                         }
-                    }
+                        catch (Exception error) { tcs.TrySetException(error); }
+                        finally { tcs.TrySetResult(); }
+                    })) tcs.TrySetException(new InvalidOperationException("The queue UI is no longer available."));
+
+                    // Keep each worker's slot until its UI and persistence work has drained.
+                    await tcs.Task;
                 }
-                catch (OperationCanceledException)
+                catch (OperationCanceledException) when (workerToken.IsCancellationRequested)
                 {
-                    // Handle cancellation if needed
+                    // Stop is not a failed conversion. Leave the queued track and its badge unchanged.
                 }
-            });
+                catch (Exception ex)
+                {
+                    Serilog.Log.Warning(ex, "Queued track conversion failed");
+                    outcome.Report(StatusLevel.Error, song);
+                    dispatcherQueue.TryEnqueue(() =>
+                    {
+                        if (QueueViewModel.IsClosing) return;
+                        song.ConvertBadgeColor = new SolidColorBrush(Windows.UI.Color.FromArgb(255, 255, 0, 0));
+                    });
+                }
+                finally
+                {
+                    var processCaptured = Interlocked.Increment(ref processedCount);
+                    var elapsedCaptured = conversionClock.Elapsed;
+                    dispatcherQueue.TryEnqueue(() =>
+                    {
+                        if (QueueViewModel.IsClosing) return;
+                        song.IsRunning = false;
+                        if (outputSource != SourceIds.Local && IsConverting && !workerToken.IsCancellationRequested)
+                        {
+                            QueueProgress.Value = 100.0 * processCaptured / totalCount;
+                            var eta = conversionEta.Update((double)processCaptured / totalCount, elapsedCaptured);
+                            ShowInfoBarPermanent(InfoBarSeverity.Informational,
+                                $"Converting to {GetOutputSource()} \u2022 {DownloadProgressHelper.FormatCountedPercent(QueueProgress.Value, processCaptured, totalCount)}{(eta != null ? " \u2022 " + eta : "")}",
+                                title: "Conversion in Progress");
+                        }
+                    });
+                }
+            }, token);
 
-            await Task.WhenAll(tasks);
-
-            if (await SettingsViewModel.GetSetting<bool?>(SettingsViewModel.Notifications) ?? false)
+            if (!token.IsCancellationRequested && (await SettingsViewModel.GetSetting<bool?>(SettingsViewModel.Notifications) ?? false))
             {
                 App.GetService<IAppNotificationService>().Show(string.Format("QueueCompletePayload".GetLocalized(), AppContext.BaseDirectory));
             }
@@ -1546,6 +1572,7 @@ public sealed partial class QueuePage : Page
 
             DownloadAllButton.Visibility = ConvertDialogOpenButton.Visibility = ClearButton.Visibility = RestoreQueueButton.Visibility = CreatePlaylistButton.Visibility = Visibility.Visible; // Show buttons
             ConvertStopText.Text = "Stop"; // Reset stop button text
+            ConvertStopButton.IsEnabled = true;
             ConvertStopButton.Visibility = Visibility.Collapsed; // Hide stop button
             IsConverting = false;
 
@@ -1593,37 +1620,46 @@ public sealed partial class QueuePage : Page
     {
         if (IsConverting) // If currently converting
         {
-            cancellationTokenSource.Cancel(); // Cancel the conversion
             ConvertStopText.Text = "Stopping ...";
+            ConvertStopButton.IsEnabled = false;
+            cancellationTokenSource?.Cancel();
         }
     }
 
     private void ConversionTabView_OnSelectionChanged(object sender, SelectionChangedEventArgs e)
+        => RefreshConversionResults();
+
+    private void RefreshConversionResults()
     {
         var selectedItem = ConversionTabView.SelectedItem as TabViewItem;
         // Set items source based on selected tab
         if (selectedItem == SuccessTab)
         {
-            ConversionListView.ItemsSource = successSource.Keys;
+            ConversionListView.ItemsSource = OrderedConversionResults(successSource);
             TabInfoBar.Severity = InfoBarSeverity.Success;
             TabInfoBar.Content = "Exact conversions using ISRC or other ids";
             NoConversionText.Visibility = successSource.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
         }
         else if (selectedItem == WarningTab)
         {
-            ConversionListView.ItemsSource = warningSource.Keys;
+            ConversionListView.ItemsSource = OrderedConversionResults(warningSource);
             TabInfoBar.Severity = InfoBarSeverity.Warning;
             TabInfoBar.Content = "Attempted conversions using metadata";
             NoConversionText.Visibility = warningSource.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
         }
         else if (selectedItem == ErrorTab)
         {
-            ConversionListView.ItemsSource = errorSource.Keys;
+            ConversionListView.ItemsSource = OrderedConversionResults(errorSource);
             TabInfoBar.Severity = InfoBarSeverity.Error;
             TabInfoBar.Content = "Failed conversions";
             NoConversionText.Visibility = errorSource.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
         }
     }
+
+    internal static IReadOnlyList<SongSearchObject> OrderedConversionResults(
+        IEnumerable<KeyValuePair<SongSearchObject, (int Queue, int Track)>> results) =>
+        results.OrderBy(result => result.Value.Queue).ThenBy(result => result.Value.Track)
+            .Select(result => result.Key).ToList();
 
     private async Task ShowConversionDialog()
     {
@@ -1646,6 +1682,8 @@ public sealed partial class QueuePage : Page
         {
             ConversionTabView.SelectedItem = ErrorTab;
         }
+
+        RefreshConversionResults();
 
         try
         {

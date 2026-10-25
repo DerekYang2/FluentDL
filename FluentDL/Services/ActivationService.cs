@@ -54,6 +54,7 @@ public class ActivationService : IActivationService
 
         // Initialize APIs
         await InitAPIs(splashScreen);
+        if (QueueViewModel.IsClosing) return;
 
         // Switch from splash screen to shell
         App.MainWindow.Content = _shell ?? new Frame();
@@ -67,6 +68,16 @@ public class ActivationService : IActivationService
 #if FLUENTDL_PICKER_UI_TESTS
         LocalPickerTestSupport.Attach(_shell);
 #endif
+#if FLUENTDL_COMPACT_LAYOUT_UI_TESTS
+        CompactLayoutTestSupport.Attach(_shell);
+#endif
+#if FLUENTDL_QUEUE_LOAD_UI_TESTS
+        QueueLoadTestSupport.Attach(_shell);
+#endif
+#if FLUENTDL_HELP_UI_TESTS
+        ShellHelpTestSupport.Attach(_shell);
+#endif
+        QueueViewModel.StartArtworkNetwork();
         App.MainWindow.Closed += (s, e) => QueueSaver.Close();
 
         // Execute tasks after activation
@@ -145,6 +156,7 @@ public class ActivationService : IActivationService
             }
 
             await App.GetService<QueueDisplaySettings>().LoadAsync();
+            await App.GetService<LocalDisplaySettings>().LoadAsync();
             await App.GetService<PreviewVolumeSettings>().LoadAsync();
             await QueueViewModel.UpdateShortcutVisibility();
             // Fetch previous command list

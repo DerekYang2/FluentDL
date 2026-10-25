@@ -1,0 +1,9 @@
+<Project>
+  <Import Project="$(MSBuildThisFileDirectory)DevPackage.targets" />
+  <PropertyGroup Condition="'$(MSBuildProjectName)' == 'FluentDL'">
+    <DefineConstants>$(DefineConstants);FLUENTDL_HELP_UI_TESTS</DefineConstants>
+  </PropertyGroup>
+  <ItemGroup Condition="'$(MSBuildProjectName)' == 'FluentDL'">
+    <Compile Include="$(MSBuildThisFileDirectory)ShellHelpTestSupport.cs" Link="ShellHelpTestSupport.cs" />
+  </ItemGroup>
+</Project>
