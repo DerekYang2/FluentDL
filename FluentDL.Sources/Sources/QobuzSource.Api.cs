@@ -444,62 +444,7 @@ internal sealed partial class QobuzSource
         }
         else if (isPlaylist)
         {
-            Playlist? playlist = null;
-            try
-            {
-                playlist = await GetPlaylistAsync(id, token);
-            }
-            catch (Exception e)
-            {
-                Debug.WriteLine("Failed to get qobuz playlist: " + e.Message);
-            }
-
-            if (playlist?.TrackIds != null && (playlist.TrackIds?.Count ?? 0) > 0)
-            {
-                statusUpdate?.Invoke(StatusLevel.Informational, $"<b>Qobuz</b>   Loading playlist <a href='{url}'>{playlist.Name}</a>", -1); // Show an informational message
-
-                int failedCount = 0; // Count of failed tracks
-                foreach (var trackId in playlist?.TrackIds!) // Need to recreate the tracks so they have album objects
-                {
-                    if (token.IsCancellationRequested)
-                    {
-                        statusUpdate?.Invoke(StatusLevel.Warning, $"<b>Qobuz</b>   Cancelled loading playlist <a href='{url}'>{playlist.Name}</a>"); // Show a warning message
-                        return;
-                    }
-
-                    var track = await Task.Run(() =>
-                    {
-                        try
-                        {
-                            return apiService.GetTrack(trackId.ToString(), withAuth: true);
-                        }
-                        catch
-                        {
-                            Debug.WriteLine($"Failed to get qobuz track: {trackId}");
-                            failedCount++;
-                            return null;
-                        }
-                    });
-
-                    if (track != null)
-                    {
-                        itemSource.Add(ConvertSongSearchObject(track));
-                    }
-                }
-
-                if (failedCount == 0)
-                {
-                    statusUpdate?.Invoke(StatusLevel.Success, $"<b>Qobuz</b>   Loaded playlist <a href='{url}'>{playlist.Name}</a>"); // Show a success message
-                }
-                else
-                {
-                    statusUpdate?.Invoke(StatusLevel.Warning, $"<b>Qobuz</b>   Loaded playlist <a href='{url}'>{playlist.Name}</a>, with {failedCount} track{(failedCount > 1 ? "s" : "")} failing to load."); // Show a warning message
-                }
-            }
-            else
-            {
-                statusUpdate?.Invoke(StatusLevel.Error, $"<b>Qobuz</b>   Playlist may not exist or is private.");
-            }
+            await ImportPlaylistAsync(itemSource, url, id, statusUpdate, token);
         }
     }
 
