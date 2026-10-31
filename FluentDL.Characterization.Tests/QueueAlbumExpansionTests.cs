@@ -100,6 +100,26 @@ public class QueueAlbumExpansionTests
     }
 
     [TestMethod]
+    [DataRow("tidal")]
+    [DataRow("local")]
+    public void RestoredTrackAdmissionKeepsThePersistedAlbumSubOrder(string source)
+    {
+        var original = new QueueObject(Track(source, "second")) { QueueCounter = 7, QueueSubOrder = 2 };
+        for (var restart = 0; restart < 3; restart++)
+        {
+            var parsed = QueueObject.ParseSaved(original.ToString())!.Value;
+            // LoadSaveQueue uses this constructor without replacing saved metadata from the local file.
+            var admitted = new QueueObject(parsed.Song);
+            Assert.AreEqual(7, admitted.QueueCounter);
+            Assert.AreEqual(2, admitted.QueueSubOrder);
+            Assert.AreEqual(2, QueueObject.ParseSaved(admitted.ToString())!.Value.SubOrder);
+            Assert.AreEqual(original.Id, admitted.Id);
+            Assert.AreEqual(original.Title, admitted.Title);
+            original = admitted;
+        }
+    }
+
+    [TestMethod]
     public void AllDuplicateTracksProduceNoNewRows()
     {
         var album = Album("tidal");

@@ -96,10 +96,11 @@ public sealed partial class SettingsPage : Page
         {
             await Updates.InstallAsync(ApplicationActivity.Gate, async token =>
             {
-                await QueueViewModel.SaveForUpdateAsync(token);
+                await DatabaseService.FlushAsync().WaitAsync(token);
                 var backup = Path.Combine(ApplicationData.Current.LocalFolder.Path, "Updates", "queue-before-update-" + Guid.NewGuid().ToString("N") + ".zip");
                 await DatabaseService.CreateBackupAtPath(backup);
                 token.ThrowIfCancellationRequested();
+                await QueueViewModel.SaveForUpdateAsync(token);
             });
         }
         finally { if (content != null) content.IsEnabled = enabled; }

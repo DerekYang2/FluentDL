@@ -135,6 +135,8 @@ public class QueueObject : SongSearchObject, INotifyPropertyChanged
             song = album;
         }
         var subOrder = saved["QueueSubOrder"] is { Type: Newtonsoft.Json.Linq.JTokenType.Integer } sub ? (int)sub : 0;
+        if (song is not AlbumSearchObject)
+            song = new QueueObject(song) { QueueSubOrder = saved["QueueSubOrder"]?.Type == Newtonsoft.Json.Linq.JTokenType.Integer ? subOrder : null };
         return (song, subOrder);
     }
 
@@ -441,7 +443,9 @@ public partial class QueueViewModel : ObservableRecipient
         return Task.FromResult<QueueObject?>(queueObj);
     }
 
-    public static QueueObject? Add(SongSearchObject? song)
+    public static QueueObject? Add(SongSearchObject? song) => Admit(song, persist: true);
+
+    private static QueueObject? Admit(SongSearchObject? song, bool persist)
     {
         if (IsClosing || ApplicationActivity.Gate.IsInstalling) return null;
         using var activity = ApplicationActivity.Gate.EnterWork();
@@ -454,7 +458,7 @@ public partial class QueueViewModel : ObservableRecipient
         var queueObj = new QueueObject(song);
         queueObj.QueueCounter ??= GetNextOrderCounter();  // Only set order if new addition
         _ = Artwork;
-        _ = SaveMetadataAsync(queueObj);
+        if (persist) _ = SaveMetadataAsync(queueObj);
         Source.Add(queueObj);
         trackSet.Add(hash);
 
@@ -609,35 +613,25 @@ public partial class QueueViewModel : ObservableRecipient
                 string hash = pair.Item1;
                 SongSearchObject song = pair.Item2;
 
-                // If local, set the local bitmap image
+                // Keep the saved metadata and order even when a local file is temporarily unavailable.
+                song.LocalBitmapImage = UnloadedPlaceholder;
+                var queueObj = Admit(song, persist: false);
                 if (song.Source == SourceIds.Local)
                 {
-                    var localSong = LocalExplorerViewModel.ParseFile(song.Id);  // Re-parse the file
-                    if (localSong != null)
+                    if (queueObj != null && LocalExplorerViewModel.ParseFile(song.Id) != null)
                     {
-                        localSong.LocalBitmapImage = UnloadedPlaceholder;
-                        var queueObj = Add(localSong);
-                        // Get the bitmap image from the file
-                        if (queueObj != null)
+                        _ = Task.Run(async () =>
                         {
-                            _ = Task.Run(async () =>
+                            var image = await LocalExplorerViewModel.GetBitmapImageBackground(song.Id, dispatcher);
+                            if (image != null)
                             {
-                                var image = await LocalExplorerViewModel.GetBitmapImageBackground(song.Id, dispatcher);
-                                if (image != null)
+                                dispatcher.TryEnqueue(() =>
                                 {
-                                    dispatcher.TryEnqueue(() =>
-                                    {
-                                        queueObj.LocalBitmapImage = image;
-                                    });
-                                }
-                            });
-                        }
+                                    queueObj.LocalBitmapImage = image;
+                                });
+                            }
+                        });
                     }
-                }
-                else
-                {
-                    song.LocalBitmapImage = UnloadedPlaceholder;
-                    Add(song);
                 }
             }
             Serilog.Log.Information("Queue restored with {ItemCount} items", Source.Count);

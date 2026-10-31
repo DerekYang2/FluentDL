@@ -84,6 +84,8 @@ namespace FluentDL.Services
                 return null;
             } catch (Exception ex)
             {
+                if (_consumerConnection != null) await _consumerConnection.DisposeAsync();
+                _consumerConnection = null;
                 Log.Error(ex, "Queue database initialization failed");
                 return $"Failed to initialize queue database: {ex.Message}";
             }
@@ -167,39 +169,8 @@ namespace FluentDL.Services
             return await command.ExecuteScalarAsync() as byte[];
         }
 
-        private static async Task SaveSnapshotAsync(IReadOnlyList<(string Hash, string Json)> snapshot)
-        {
-            using var transaction = Conn.BeginTransaction();
-            var hashes = snapshot.Select(item => item.Hash).ToHashSet(StringComparer.Ordinal);
-            var stale = new List<string>();
-            using (var select = Conn.CreateCommand())
-            {
-                select.Transaction = transaction;
-                select.CommandText = "SELECT Hash FROM Items";
-                await using var reader = await select.ExecuteReaderAsync();
-                while (await reader.ReadAsync()) if (!hashes.Contains(reader.GetString(0))) stale.Add(reader.GetString(0));
-            }
-            foreach (var hash in stale)
-            {
-                using var remove = Conn.CreateCommand();
-                remove.Transaction = transaction;
-                remove.CommandText = "DELETE FROM Items WHERE Hash = @h";
-                remove.Parameters.AddWithValue("@h", hash);
-                await remove.ExecuteNonQueryAsync();
-            }
-            foreach (var item in snapshot)
-            {
-                using var save = Conn.CreateCommand();
-                save.Transaction = transaction;
-                save.CommandText = "INSERT INTO Items (Hash, JsonText, Image, CreatedUtc) VALUES (@h, @j, NULL, @t) "
-                    + "ON CONFLICT(Hash) DO UPDATE SET JsonText = excluded.JsonText";
-                save.Parameters.AddWithValue("@h", item.Hash);
-                save.Parameters.AddWithValue("@j", item.Json);
-                save.Parameters.AddWithValue("@t", DateTime.UtcNow.ToString("o"));
-                await save.ExecuteNonQueryAsync();
-            }
-            transaction.Commit();
-        }
+        private static Task SaveSnapshotAsync(IReadOnlyList<(string Hash, string Json)> snapshot) =>
+            QueueItemPersistence.SaveSnapshotAsync(Conn, snapshot);
 
         // Save image bytes (from IRandomAccessStream) plus metadata into DB
         private static async Task SaveAsync(string hash, string jsonText, byte[]? bytes)

@@ -143,6 +143,21 @@ public class ActivationService : IActivationService
 
     private async Task InitAPIs(SplashScreenPage splashScreen)
     {
+        // Local persistence must not depend on provider connections or other startup services.
+        try
+        {
+            splashScreen.SetText("Loading Queue State ...");
+            var error = await DatabaseService.InitDatabase();
+            if (error != null) throw new InvalidOperationException(error);
+            await QueueViewModel.LoadSaveQueue();
+        }
+        catch (Exception error)
+        {
+            _logger.LogError(error, "Local queue initialization failed");
+            splashScreen.SetText("ERROR: Could not load the saved queue");
+            await Task.Delay(2000);
+        }
+
         try
         {
             try
@@ -192,16 +207,10 @@ public class ActivationService : IActivationService
 
                 await Task.WhenAll(tasks.Select(t => t.WaitAsync(TimeSpan.FromSeconds(30))));
 
-                
-                // Init queue database
-                splashScreen.ClearRows();
-                splashScreen.SetText("Loading Queue State ...");
-                await DatabaseService.InitDatabase();
-                await QueueViewModel.LoadSaveQueue();
             }
             catch (TimeoutException)
             {
-                _logger.LogWarning("Provider initialization exceeded the 30 second timeout; some startup work may be incomplete");
+                _logger.LogWarning("Provider initialization exceeded the 30 second timeout; the local queue is already initialized");
                 splashScreen.ClearRows();
                 splashScreen.SetText("ERROR: One or more APIs timed out");
                 await Task.Delay(2000);  // So user can see the message

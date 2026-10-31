@@ -6,12 +6,31 @@ internal static class QueueItemPersistence
 {
     internal const string CoverExpression = "CASE WHEN json_valid(JsonText) THEN json_extract(JsonText, '$.ImageLocation') END";
 
+    internal static async Task SaveSnapshotAsync(SqliteConnection connection, IReadOnlyList<(string Hash, string Json)> snapshot)
+    {
+        using var transaction = connection.BeginTransaction();
+        // An incomplete restore is not evidence that a saved row was removed. Explicit removals have their own writes.
+        foreach (var item in snapshot)
+        {
+            // Restored models can normalize a missing cover URL to the placeholder. A snapshot must not discard the saved image.
+            using var save = connection.CreateCommand();
+            save.Transaction = transaction;
+            save.CommandText = "INSERT INTO Items (Hash, JsonText, Image, CreatedUtc) VALUES (@h, @j, NULL, @t) "
+                + "ON CONFLICT(Hash) DO UPDATE SET JsonText=excluded.JsonText";
+            save.Parameters.AddWithValue("@h", item.Hash);
+            save.Parameters.AddWithValue("@j", item.Json);
+            save.Parameters.AddWithValue("@t", DateTime.UtcNow.ToString("o"));
+            await save.ExecuteNonQueryAsync();
+        }
+        transaction.Commit();
+    }
+
     internal static async Task SaveMetadataAsync(SqliteConnection connection, string hash, string json, SqliteTransaction? transaction = null)
     {
         using var command = connection.CreateCommand();
         command.Transaction = transaction;
         command.CommandText = $"INSERT INTO Items (Hash, JsonText, Image, CreatedUtc) VALUES (@h, @j, NULL, @t) "
-            + $"ON CONFLICT(Hash) DO UPDATE SET JsonText=excluded.JsonText, Image=CASE WHEN ({CoverExpression})=json_extract(excluded.JsonText, '$.ImageLocation') THEN Items.Image ELSE NULL END";
+            + $"ON CONFLICT(Hash) DO UPDATE SET JsonText=excluded.JsonText, Image=CASE WHEN ({CoverExpression}) IS json_extract(excluded.JsonText, '$.ImageLocation') THEN Items.Image ELSE NULL END";
         command.Parameters.AddWithValue("@h", hash);
         command.Parameters.AddWithValue("@j", json);
         command.Parameters.AddWithValue("@t", DateTime.UtcNow.ToString("o"));
