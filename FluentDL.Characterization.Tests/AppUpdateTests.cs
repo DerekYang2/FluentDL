@@ -1,5 +1,6 @@
 using FluentDL.Contracts.Services;
 using FluentDL.Core.Updates;
+using FluentDL.Helpers;
 using FluentDL.ViewModels;
 
 namespace FluentDL.Characterization.Tests;
@@ -116,6 +117,35 @@ public class AppUpdateTests
         Assert.IsFalse(model.CanCancel);
         Assert.IsTrue(model.CanCheck);
         Assert.AreEqual(0, backend.Installs);
+    }
+
+    [TestMethod]
+    public async Task AFileWriterBlocksInstallationUntilItReturnsAfterCancellation()
+    {
+        var backend = new FakeUpdates();
+        var model = await Downloaded(backend);
+        using var release = new ManualResetEventSlim();
+        var entered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        using var cancellation = new CancellationTokenSource();
+        var writer = ApplicationActivity.RunFileWriteAsync(() =>
+        {
+            entered.TrySetResult();
+            if (!release.Wait(TimeSpan.FromSeconds(10))) throw new TimeoutException("Synthetic writer was not released.");
+        });
+        try
+        {
+            await entered.Task.WaitAsync(TimeSpan.FromSeconds(5));
+            var waiting = writer.WaitAsync(cancellation.Token);
+            cancellation.Cancel();
+            try { await waiting; Assert.Fail("The caller's cancelled wait completed."); }
+            catch (OperationCanceledException) { }
+            await model.InstallAsync(ApplicationActivity.Gate, _ => throw new AssertFailedException("The file writer is still active."));
+            Assert.AreEqual(0, backend.Installs);
+            Assert.IsFalse(writer.IsCompleted);
+        }
+        finally { release.Set(); await writer; }
+        await model.InstallAsync(ApplicationActivity.Gate, _ => Task.CompletedTask);
+        Assert.AreEqual(1, backend.Installs);
     }
 
     private static async Task<AppUpdateViewModel> Downloaded(FakeUpdates backend)

@@ -56,7 +56,7 @@ public sealed class AppUpdateViewModel(IAppUpdateService service) : ObservableOb
     {
         if (!CanAct || !downloaded || offer == null) return;
         using var reservation = gate.TryEnterInstallation();
-        if (reservation == null) { message = "Finish active downloads, conversions or playlist uploads before installing."; Changed(); return; }
+        if (reservation == null) { message = "Finish active downloads, conversions, playlist uploads or file writes before installing."; Changed(); return; }
         busy = true;
         message = "Saving the queue and preparing installation...";
         Changed();

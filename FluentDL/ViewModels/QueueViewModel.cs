@@ -276,7 +276,7 @@ public partial class QueueViewModel : ObservableRecipient
         if (shutdown != null) return shutdown;
         IsClosing = true;
         bulkCancellation?.Cancel();
-        return shutdown = FinishShutdownAsync();
+        return shutdown = FinishShutdownAsync(ApplicationActivity.StopFileWritesAsync());
     }
 
     internal static event Action<string>? ArtworkChanged;
@@ -287,8 +287,10 @@ public partial class QueueViewModel : ObservableRecipient
         return artwork != null && artwork.TryGet(url, out image, out state);
     }
 
-    private static async Task FinishShutdownAsync()
+    private static async Task FinishShutdownAsync(Task fileWrites)
     {
+        try { await fileWrites; }
+        catch (Exception error) { Serilog.Log.Warning(error, "A file writer failed while the app was closing"); }
         if (artwork != null) await artwork.StopAsync();
         await DatabaseService.FlushOnCloseAsync();
     }

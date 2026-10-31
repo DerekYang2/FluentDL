@@ -258,6 +258,9 @@ public sealed partial class ReplayGainDialog : UserControl
 
     private async Task WriteAsync()
     {
+        if (QueueViewModel.IsClosing) return;
+        // Cancellation stops between files. Keep the lease until an in-progress tag writer has returned.
+        using var activity = ApplicationActivity.Gate.EnterWork();
         var options = scanOptions!;
         // Files that already have these exact values aren't saved again.
         var toWrite = scan!.Results.Where(track => !ReplayGainScanner.HasTags(track, options)).ToList();
@@ -273,11 +276,11 @@ public sealed partial class ReplayGainDialog : UserControl
         ShowProgress("Writing tags to", 0, toWrite.Count);
         foreach (var track in toWrite)
         {
-            if (token.IsCancellationRequested) break;
+            if (token.IsCancellationRequested || QueueViewModel.IsClosing) break;
             string? error = null;
             try
             {
-                await Task.Run(() => ReplayGainScanner.WriteTags(track, options));
+                await ApplicationActivity.RunFileWriteAsync(() => ReplayGainScanner.WriteTags(track, options));
                 written++;
             }
             catch (Exception e)
