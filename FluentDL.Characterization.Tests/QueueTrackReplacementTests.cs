@@ -166,7 +166,7 @@ public class QueueTrackReplacementTests
         command.CommandText = "SELECT JsonText FROM Items ORDER BY json_extract(JsonText, '$.QueueCounter')";
         using var reader = await command.ExecuteReaderAsync();
         var rows = new List<SongSearchObject>();
-        while (await reader.ReadAsync()) rows.Add(QueueObject.ParseSaved(reader.GetString(0))!.Value.Song);
+        while (await reader.ReadAsync()) rows.Add(QueueObject.ParseSaved(reader.GetString(0))!);
         return rows;
     }
 }

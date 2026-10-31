@@ -13,30 +13,24 @@ namespace FluentDL.Characterization.Tests;
 [TestClass]
 public class QueueAlbumTests
 {
-    // Rows as DatabaseService stores them: QueueObject JSON. Albums carry AlbumTracksCount. Older expanded tracks also carry QueueSubOrder.
+    // Rows as DatabaseService stores them: QueueObject JSON. Albums carry AlbumTracksCount.
     [TestMethod]
     public void SavedAlbumRowsRestoreAsAlbumsAndOldTrackRowsStayTracks()
     {
         var album = QueueObject.ParseSaved("""
             {"Title":"Random Access Memories","Id":"6575789","Source":"deezer","Artists":"Daft Punk","Isrc":"886443927087",
-             "QueueCounter":4,"AlbumTracksCount":13,"QueueSubOrder":null}
-            """)!.Value;
-        var albumObject = album.Song as AlbumSearchObject;
+             "QueueCounter":4,"AlbumTracksCount":13}
+            """)!;
+        var albumObject = album as AlbumSearchObject;
         Assert.IsNotNull(albumObject, "An album row must restore as an album.");
         Assert.AreEqual(13, albumObject.TracksCount);
         Assert.AreEqual("886443927087", albumObject.Upc);
         Assert.AreEqual(4, albumObject.QueueCounter);
-        Assert.IsNull(album.LegacySubOrder);
 
-        // Rows saved before this change have neither field.
-        var track = QueueObject.ParseSaved("""{"Title":"Get Lucky","Id":"67238735","Source":"deezer","QueueCounter":5}""")!.Value;
-        Assert.IsNotInstanceOfType(track.Song, typeof(AlbumSearchObject));
-        Assert.IsNull(track.LegacySubOrder);
-
-        var expanded = QueueObject.ParseSaved("""{"Title":"Track 3","Id":"3","Source":"qobuz","QueueCounter":4,"AlbumTracksCount":null,"QueueSubOrder":2}""")!.Value;
-        Assert.IsNotInstanceOfType(expanded.Song, typeof(AlbumSearchObject));
-        Assert.AreEqual(2, expanded.LegacySubOrder);
-        Assert.IsFalse(new QueueObject(expanded.Song).ToString().Contains("QueueSubOrder"), "New saves must not write the old sub-order field.");
+        // Rows saved before albums could be queued have no track count.
+        var track = QueueObject.ParseSaved("""{"Title":"Get Lucky","Id":"67238735","Source":"deezer","QueueCounter":5}""")!;
+        Assert.IsNotInstanceOfType(track, typeof(AlbumSearchObject));
+        Assert.AreEqual(5, track.QueueCounter);
 
         Assert.IsNull(QueueObject.ParseSaved("{not json"), "A corrupt row is skipped, not the whole queue.");
     }
@@ -181,7 +175,7 @@ public class QueueAlbumTests
             TrackList = [new() { Source = SourceIds.Spotify, Id = "t1", Title = "Give Life Back to Music" }, new() { Source = SourceIds.Spotify, Id = "t2", Title = "The Game of Love" }],
         };
         var row = new QueueObject(spotifyAlbum) { QueueCounter = 7 };
-        var restored = (AlbumSearchObject)QueueObject.ParseSaved(row.ToString())!.Value.Song;
+        var restored = (AlbumSearchObject)QueueObject.ParseSaved(row.ToString())!;
         foreach (var album in new[] { (AlbumSearchObject)QueueObject.Unwrap(row), restored })
         {
             // The preview crashed on an empty cover address before; Spotify reads the cover and track list from these.
@@ -198,12 +192,12 @@ public class QueueAlbumTests
             Source = SourceIds.YouTube, Id = "MPREb", Title = "Album", Artists = "Artist", TracksCount = 1,
             TrackList = [new() { Source = SourceIds.YouTube, Id = "v1", Title = "Song" }],
         };
-        var youtubeRestored = (AlbumSearchObject)QueueObject.ParseSaved(new QueueObject(youtubeAlbum).ToString())!.Value.Song;
+        var youtubeRestored = (AlbumSearchObject)QueueObject.ParseSaved(new QueueObject(youtubeAlbum).ToString())!;
         CollectionAssert.AreEqual(new[] { "v1" }, (await TestSources.Youtube.GetAlbumTracksAsync(youtubeRestored)).Select(t => t.Id).ToArray());
 
         // Track rows keep their source fields too, such as Deezer's preview address.
         var track = new QueueObject(new SongSearchObject { Source = SourceIds.Deezer, Id = "d1", AdditionalFields = new() { ["preview"] = "https://cdns-preview.example/x.mp3" } });
-        var trackRestored = QueueObject.ParseSaved(track.ToString())!.Value.Song;
+        var trackRestored = QueueObject.ParseSaved(track.ToString())!;
         Assert.IsNotInstanceOfType(trackRestored, typeof(AlbumSearchObject));
         Assert.AreEqual("https://cdns-preview.example/x.mp3", trackRestored.AdditionalFields!["preview"]);
     }

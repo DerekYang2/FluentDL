@@ -129,9 +129,6 @@ namespace FluentDL.Services
         internal static Task ReplaceAlbumAsync(string hash, int position, int shift, IReadOnlyList<(string Hash, string Json)> tracks) =>
             EnqueueAsync(connection => QueueItemPersistence.ReplaceAlbumAsync(connection, hash, position, shift, tracks));
 
-        internal static Task RenumberAsync(IReadOnlyList<(string Hash, int Position)> rows) =>
-            EnqueueAsync(connection => QueueItemPersistence.RenumberAsync(connection, rows));
-
         internal static Task SaveMetadataAsync(string hash, string json) =>
             EnqueueAsync(connection => QueueItemPersistence.SaveMetadataAsync(connection, hash, json));
 

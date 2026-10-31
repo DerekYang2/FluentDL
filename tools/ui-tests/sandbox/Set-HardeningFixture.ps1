@@ -35,12 +35,11 @@ if (Test-Path -LiteralPath $dbPath) { throw 'Refusing to overwrite an existing q
 $db = [IntPtr]::Zero
 if ([HardeningSqlite]::sqlite3_open_v2($dbPath,[ref]$db,6,[IntPtr]::Zero) -ne 0) { throw 'Cannot create the fixture database.' }
 try {
-    # Older versions saved expanded album tracks with a shared position and a sub-order. Restore must convert them.
     $rows = @(0..2 | ForEach-Object {
         $id = @('first','second','third')[$_]
-        @{ Source='local'; Id="Z:\fixture-missing\$id.flac"; Title="Missing-drive $id"; Artists='Saved fixture metadata'; AlbumName='Saved album'; Duration='1'; QueueCounter=4; QueueSubOrder=$_ }
+        @{ Source='local'; Id="Z:\fixture-missing\$id.flac"; Title="Missing-drive $id"; Artists='Saved fixture metadata'; AlbumName='Saved album'; Duration='1'; QueueCounter=$_ }
     })
-    $rows += @{ Source='deezer'; Id='fixture-album'; Title='Mixed-outcome album'; Artists='Fixture'; Duration='3'; AlbumTracksCount=3; QueueCounter=7 }
+    $rows += @{ Source='deezer'; Id='fixture-album'; Title='Mixed-outcome album'; Artists='Fixture'; Duration='3'; AlbumTracksCount=3; QueueCounter=3 }
     $cover = [IO.File]::ReadAllBytes((Join-Path $package.InstallLocation 'Assets\Unloaded.jpg'))
     $hex = [BitConverter]::ToString($cover).Replace('-','')
     $sql = 'CREATE TABLE Items (Hash TEXT PRIMARY KEY, JsonText TEXT NOT NULL, Image BLOB, CreatedUtc TEXT NOT NULL); BEGIN;'

@@ -63,23 +63,6 @@ internal static class QueueItemPersistence
         transaction.Commit();
     }
 
-    /// <summary>Sets saved positions without rewriting other saved fields, and drops the old album sub-order field.</summary>
-    internal static async Task RenumberAsync(SqliteConnection connection, IReadOnlyList<(string Hash, int Position)> rows)
-    {
-        using var transaction = connection.BeginTransaction();
-        foreach (var row in rows)
-        {
-            using var command = connection.CreateCommand();
-            command.Transaction = transaction;
-            command.CommandText = "UPDATE Items SET JsonText=json_remove(json_set(JsonText, '$.QueueCounter', @position), '$.QueueSubOrder') "
-                + "WHERE Hash=@h AND json_valid(JsonText)";
-            command.Parameters.AddWithValue("@h", row.Hash);
-            command.Parameters.AddWithValue("@position", row.Position);
-            await command.ExecuteNonQueryAsync();
-        }
-        transaction.Commit();
-    }
-
     internal static Task RemoveAsync(SqliteConnection connection, string hash) => DeleteAsync(connection, null, hash);
 
     internal static async Task ClearAsync(SqliteConnection connection)

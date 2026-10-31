@@ -54,11 +54,11 @@ function Assert-Restored($State,[int]$Count) {
     if (($positions -join ',') -ne ((0..($Count - 1)) -join ',')) { throw "Rows do not have consecutive positions: $($positions -join ',')." }
     $missing = @($State.State.Rows | Where-Object Source -eq 'local' | Where-Object Id -like 'Z:*')
     if (($missing.Title -join '|') -ne 'Missing-drive first|Missing-drive second|Missing-drive third') { throw 'Missing-drive rows or saved order changed.' }
-    if (($missing.QueueCounter -join ',') -ne '0,1,2') { throw 'The old shared album position was not converted to separate positions.' }
+    if (($missing.QueueCounter -join ',') -ne '0,1,2') { throw 'The missing-drive rows lost their saved positions.' }
     foreach ($row in $missing) {
         $saved = $State.State.Saved.('local' + $row.Id) | ConvertFrom-Json
-        if ($saved.QueueCounter -ne $row.QueueCounter -or $null -ne $saved.PSObject.Properties['QueueSubOrder'] -or $saved.Artists -ne 'Saved fixture metadata') {
-            throw 'The saved missing-drive row lost its metadata or kept the old sub-order.'
+        if ($saved.QueueCounter -ne $row.QueueCounter -or $saved.Artists -ne 'Saved fixture metadata') {
+            throw 'The saved missing-drive row lost its metadata or position.'
         }
     }
     if (-not $State.State.Saved.'corrupt-fixture') { throw 'The snapshot deleted the unreadable saved row.' }

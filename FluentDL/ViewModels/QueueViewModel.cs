@@ -108,11 +108,8 @@ public class QueueObject : SongSearchObject, INotifyPropertyChanged
     public static SongSearchObject Unwrap(SongSearchObject song) =>
         song is QueueObject { IsAlbum: true } row ? ToAlbum(row, row.AlbumTracksCount!.Value) : song;
 
-    /// <summary>
-    /// Restores a saved row: an album when it was saved with a track count, else a track. Older versions saved expanded
-    /// album tracks with a shared position and a sub-order, returned here only so restore can order them once.
-    /// </summary>
-    internal static (SongSearchObject Song, int? LegacySubOrder)? ParseSaved(string json)
+    /// <summary>Restores a saved row: an album when it was saved with a track count, else a track.</summary>
+    internal static SongSearchObject? ParseSaved(string json)
     {
         SongSearchObject? song;
         Newtonsoft.Json.Linq.JObject saved;
@@ -134,8 +131,7 @@ public class QueueObject : SongSearchObject, INotifyPropertyChanged
             album.TracksCount = (int)count;
             song = album;
         }
-        int? legacySubOrder = saved["QueueSubOrder"] is { Type: Newtonsoft.Json.Linq.JTokenType.Integer } sub ? (int)sub : null;
-        return (song, legacySubOrder);
+        return song;
     }
 
     public static AlbumSearchObject ToAlbum(SongSearchObject song, int tracksCount) => new()
@@ -589,27 +585,6 @@ public partial class QueueViewModel : ObservableRecipient
         await write;
     }
 
-    /// <summary>
-    /// Orders saved rows by position, giving each its own consecutive position. Returns the rows whose saved position
-    /// must change, including tracks from older versions that shared their album's position.
-    /// </summary>
-    internal static IReadOnlyList<(string Hash, int Position)> OrderRestoredRows(List<(string Hash, SongSearchObject Song, int? LegacySubOrder)> rows)
-    {
-        rows.Sort((a, b) =>
-        {
-            var order = Nullable.Compare(a.Song.QueueCounter, b.Song.QueueCounter);
-            if (order == 0) order = (a.LegacySubOrder ?? 0).CompareTo(b.LegacySubOrder ?? 0);
-            return order != 0 ? order : string.CompareOrdinal(a.Hash, b.Hash);
-        });
-        var changed = new List<(string Hash, int Position)>();
-        for (var i = 0; i < rows.Count; i++)
-        {
-            if (rows[i].Song.QueueCounter != i || rows[i].LegacySubOrder != null) changed.Add((rows[i].Hash, i));
-            rows[i].Song.QueueCounter = i;
-        }
-        return changed;
-    }
-
     public static async Task LoadSaveQueue() 
     {
         using var activity = ApplicationActivity.Gate.EnterWork();
@@ -618,17 +593,16 @@ public partial class QueueViewModel : ObservableRecipient
             Source.Clear();
             trackSet.Clear();
             var items = await DatabaseService.LoadQueueJSON();
-            var sortedList = new List<(string Hash, SongSearchObject Song, int? LegacySubOrder)>();
+            var sortedList = new List<(string Hash, SongSearchObject Song)>();
 
             foreach (var item in items)
             {
                 var saved = await Task.Run(() => QueueObject.ParseSaved(item.Value));
                 if (saved == null) continue;
-                sortedList.Add((item.Key, saved.Value.Song, saved.Value.LegacySubOrder));
+                sortedList.Add((item.Key, saved));
             }
 
-            var renumbered = OrderRestoredRows(sortedList);
-            foreach (var pair in sortedList)
+            foreach (var pair in sortedList.OrderBy(pair => pair.Song.QueueCounter).ThenBy(pair => pair.Hash, StringComparer.Ordinal))
             {
                 SongSearchObject song = pair.Song;
 
@@ -653,8 +627,6 @@ public partial class QueueViewModel : ObservableRecipient
                     }
                 }
             }
-            // Only positions change. Other saved fields, including cached artwork, stay as they were.
-            if (renumbered.Count > 0) await DatabaseService.RenumberAsync(renumbered);
             Serilog.Log.Information("Queue restored with {ItemCount} items", Source.Count);
         } catch (Exception ex)
         {
