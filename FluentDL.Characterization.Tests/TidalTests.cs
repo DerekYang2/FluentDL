@@ -182,6 +182,44 @@ public class TidalParsingTests
         Assert.AreEqual("GB", api.CountryCode);
     }
 
+    [TestMethod]
+    [DataRow("https://openapi.tidal.com/v2/tracks/1?cursor=next")]
+    [DataRow("/v2/tracks/1?cursor=next")]
+    [DataRow("tracks/1?cursor=next")]
+    [DataRow("/tracks/1?cursor=next")]
+    [DataRow("v2/tracks/1?cursor=next")]
+    public async Task PaginationLinksResolveToExactlyOneOfficialV2Path(string next)
+    {
+        var handler = new RecordingHandler();
+        var api = new TidalApi(new DictionarySettings(new()
+        {
+            [Core.Sources.SettingKeys.TidalClientId] = "id",
+            [Core.Sources.SettingKeys.TidalClientSecret] = "secret",
+            [Core.Sources.SettingKeys.TidalCountry] = "US",
+        }), new HttpClient(handler));
+        await api.GetAsync(next, CancellationToken.None);
+        Assert.AreEqual("https://openapi.tidal.com/v2/tracks/1?cursor=next&countryCode=US", handler.Requests.Last());
+    }
+
+    [TestMethod]
+    [DataRow("https://other.example/v2/tracks/1")]
+    [DataRow("http://openapi.tidal.com/v2/tracks/1")]
+    [DataRow("https://openapi.tidal.com/v1/tracks/1")]
+    [DataRow("//other.example/v2/tracks/1")]
+    [DataRow("https://user@openapi.tidal.com/v2/tracks/1")]
+    [DataRow("https://openapi.tidal.com:8443/v2/tracks/1")]
+    [DataRow("https://openapi.tidal.com/v2/tracks/1#fragment")]
+    [DataRow("https://openapi.tidal.com/v2/../v1/tracks/1")]
+    [DataRow("https://[invalid/v2/tracks/1")]
+    [DataRow("")]
+    public async Task UntrustedPaginationLinksSendNoRequest(string next)
+    {
+        var handler = new RecordingHandler();
+        var api = new TidalApi(new DictionarySettings([]), new HttpClient(handler));
+        await Assert.ThrowsExceptionAsync<ArgumentException>(() => api.GetAsync(next, CancellationToken.None));
+        Assert.AreEqual(0, handler.Requests.Count);
+    }
+
     // Without a client ID and secret, conversion to TIDAL reports no match (a red badge), not an error.
     [TestMethod]
     public async Task ConversionWithoutCredentialsReportsNotFound()
