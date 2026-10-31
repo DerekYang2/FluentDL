@@ -805,6 +805,7 @@ namespace FluentDL.Services.Sources
                         await foreach (var song in webServiceInstance.GetPlaylistAsync(id, token))
                         {
                             itemSource.Add(song);
+                            published++;
                         }
                         statusUpdate?.Invoke(StatusLevel.Success, StatusMarkup.Format($"<b>Spotify</b>   Loaded <a href='{url}'>playlist</a>"));
                     }
@@ -815,7 +816,7 @@ namespace FluentDL.Services.Sources
                 {
                     if (published > 0)
                     {
-                        statusUpdate?.Invoke(StatusLevel.Warning, $"<b>Spotify</b>   Loaded {published:N0} tracks, but could not finish the playlist. Results are incomplete. Try loading the link again.", 10);
+                        statusUpdate?.Invoke(StatusLevel.Warning, StatusMarkup.Format($"<b>Spotify</b>   Loaded {published:N0} {(published == 1 ? "track" : "tracks")}, but could not finish the playlist. Results are incomplete. Try loading the link again."), 10);
                         return;
                     }
                     if (userLogin)  // Attempt webservice fallback

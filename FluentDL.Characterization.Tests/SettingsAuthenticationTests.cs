@@ -256,9 +256,32 @@ public class SettingsAuthenticationTests
             "https://open.spotify.com/playlist/1234567890123456789012", new(true, new(0, 50), false), null, cancellation.Token));
     }
 
+    [TestMethod]
+    public async Task PartialAnonymousSpotifyImportReportsIncompleteResultsWithoutRequestingSignIn()
+    {
+        var source = new SpotifySource(new TidalParsingTests.DictionarySettings([]), new PlaylistWebService { FailAfterTrack = true }, null!)
+        { IsInitialized = true };
+        var rows = new List<SongSearchObject>();
+        var notices = new List<(StatusLevel Level, string Message)>();
+        Exception? failure = null;
+        try
+        {
+            await source.AddFromLinkAsync(rows, "https://open.spotify.com/playlist/1234567890123456789012", new(true, new(0, 50), false),
+                (level, message, _) => notices.Add((level, message)), CancellationToken.None);
+        }
+        catch (Exception error) { failure = error; }
+        Assert.AreEqual(1, rows.Count, "The completed prefix must remain available.");
+        Assert.IsNull(failure, "A later page failure must not turn the partially loaded public playlist into a sign-in request.");
+        Assert.AreEqual(StatusLevel.Warning, notices.Last().Level);
+        StringAssert.Contains(notices.Last().Message, "Results are incomplete");
+        StringAssert.Contains(notices.Last().Message, "Loaded 1");
+        Assert.IsFalse(source.IsSignedInForPlaylists);
+    }
+
     private sealed class PlaylistWebService : ISpotifyWebService
     {
         internal bool Private;
+        internal bool FailAfterTrack;
         internal int PlaylistReads;
         public async IAsyncEnumerable<SongSearchObject> GetPlaylistAsync(string id, [EnumeratorCancellation] CancellationToken cancellationToken = default)
         {
@@ -267,6 +290,7 @@ public class SettingsAuthenticationTests
             if (Private) throw new HttpRequestException("Playlist is not publicly readable.");
             await Task.Yield();
             yield return new SongSearchObject { Id = "track", Source = SourceIds.Spotify, Title = "Public track" };
+            if (FailAfterTrack) throw new HttpRequestException("Synthetic later playlist page failure.");
         }
         public IAsyncEnumerable<SongSearchObject> SearchAnonymousAsync(string searchTerm, int offset = 0, int limit = 20, CancellationToken cancellationToken = default) => throw new AssertFailedException();
         public Task<SongSearchObject?> GetTrack(string id, CancellationToken cancellationToken = default) => throw new AssertFailedException();
