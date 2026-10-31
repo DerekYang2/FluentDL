@@ -518,7 +518,7 @@ public sealed partial class QueuePage : Page
         catch (Exception error)
         {
             Serilog.Log.Warning(error, "Could not expand a queued album");
-            ShowInfoBar(InfoBarSeverity.Error, error is InvalidOperationException ? error.Message : "Could not expand or save the album. The album was left unchanged.", 8);
+            ShowInfoBar(InfoBarSeverity.Error, error is InvalidOperationException ? error.Message : "Could not expand or save the album. Restart FluentDL to reload the saved queue.", 8);
         }
         finally
         {
@@ -1262,10 +1262,10 @@ public sealed partial class QueuePage : Page
                 }
 
                 var rows = new List<QueueObject>();
-                foreach (var (entry, i) in entries.OrderBy(e => e.Order).Select((e, i) => (e, i)))
+                foreach (var entry in entries.OrderBy(e => e.Order))
                 {
-                    var created = await QueueViewModel.CreateQueueObject(entry.Song, row.QueueCounter, i)
-                        ?? new QueueObject(entry.Song) { QueueCounter = row.QueueCounter, QueueSubOrder = i };
+                    // ReplaceWithMany gives each track its own position.
+                    var created = await QueueViewModel.CreateQueueObject(entry.Song, row.QueueCounter) ?? new QueueObject(entry.Song);
                     created.ConvertBadgeColor = new SolidColorBrush(entry.Badge);
                     rows.Add(created);
                 }
@@ -1275,7 +1275,7 @@ public sealed partial class QueuePage : Page
             {
                 Serilog.Log.Error(ex, "Could not show the downloaded album's tracks in the queue");
                 row.ConvertBadgeColor = new SolidColorBrush(BadgeWarning);
-                ShowInfoBar(InfoBarSeverity.Error, $"Could not update the downloaded album in the queue: {ex.Message}. The album was kept.", 10);
+                ShowInfoBar(InfoBarSeverity.Error, $"Could not update the downloaded album in the queue: {ex.Message}. Restart FluentDL to reload the saved queue.", 10);
             }
             finally
             {
@@ -1486,7 +1486,7 @@ public sealed partial class QueuePage : Page
                                     if (localSong != null)
                                     {
                                         localSong.LocalBitmapImage = await LocalExplorerViewModel.GetBitmapImageAsync(fileLocation);
-                                        queueObj = await QueueViewModel.CreateQueueObject(localSong, song.QueueCounter, song.QueueSubOrder);
+                                        queueObj = await QueueViewModel.CreateQueueObject(localSong, song.QueueCounter);
                                         await QueueViewModel.Replace(QueueViewModel.Source.IndexOf(song), queueObj);
                                     }
                                     else // Can happen when trying to parse opus files
@@ -1496,7 +1496,7 @@ public sealed partial class QueuePage : Page
                                 }
                                 else
                                 {
-                                    queueObj = await QueueViewModel.CreateQueueObject(newSongObj, song.QueueCounter, song.QueueSubOrder);
+                                    queueObj = await QueueViewModel.CreateQueueObject(newSongObj, song.QueueCounter);
                                     await QueueViewModel.Replace(QueueViewModel.Source.IndexOf(song), queueObj);
                                 }
 

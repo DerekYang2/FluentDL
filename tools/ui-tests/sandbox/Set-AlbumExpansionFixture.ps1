@@ -31,7 +31,7 @@ if ($ReadOnly) {
     if (-not (Test-Path -LiteralPath $marker)) { throw 'The fixture ownership marker is missing.' }
     $db = [IntPtr]::Zero
     if ([AlbumSqlite]::sqlite3_open_v2((Join-Path $folder 'fluentdl.db'),[ref]$db,1,[IntPtr]::Zero) -ne 0) { throw 'Cannot open the fixture read-only.' }
-    try { @(Read-Rows $db) | Sort-Object QueueCounter,QueueSubOrder | Select-Object Id,Title,Source,QueueCounter,QueueSubOrder,AlbumTracksCount | ConvertTo-Json -Depth 5 }
+    try { @(Read-Rows $db) | Sort-Object QueueCounter | Select-Object Id,Title,Source,QueueCounter,AlbumTracksCount | ConvertTo-Json -Depth 5 }
     finally { [void][AlbumSqlite]::sqlite3_close($db) }
     exit 0
 }

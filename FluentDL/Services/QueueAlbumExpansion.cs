@@ -42,8 +42,7 @@ internal sealed class QueueAlbumExpansion(SourceRegistry sources)
             if (!existing.Add((track.Source, track.Id))) { skipped++; continue; }
             rows.Add(new QueueObject(track)
             {
-                QueueCounter = album.QueueCounter,
-                QueueSubOrder = i,
+                QueueCounter = album.QueueCounter + rows.Count,
                 LocalBitmapImage = track.LocalBitmapImage ?? album.LocalBitmapImage,
             });
         }

@@ -140,7 +140,7 @@ internal static class HardeningTestSupport
         var artwork = await command.ExecuteScalarAsync() as byte[];
         await File.WriteAllTextAsync(Path.Combine(Folder, "hardening-state.json"), JsonSerializer.Serialize(new
         {
-            Rows = QueueViewModel.Source.Select(row => new { row.Source, row.Id, row.Title, row.QueueCounter, row.QueueSubOrder, row.AlbumTracksCount }).ToArray(),
+            Rows = QueueViewModel.Source.Select(row => new { row.Source, row.Id, row.Title, row.QueueCounter, row.AlbumTracksCount }).ToArray(),
             Saved = saved, ArtworkLength = artwork?.Length ?? 0,
             ArtworkHash = artwork != null ? Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(artwork)) : null,
             WriterPending = writerTask is { IsCompleted: false }, FakeInstalls = updater.Installs,

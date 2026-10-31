@@ -99,9 +99,6 @@ public class QueueObject : SongSearchObject, INotifyPropertyChanged
     /// </summary>
     public List<SongSearchObject>? TrackList { get; set; }
 
-    /// <summary>Orders the tracks an album expanded into, which share the album's QueueCounter. Saved with the queue.</summary>
-    public int? QueueSubOrder { get; set; }
-
     [JsonIgnore]
     public bool IsAlbum => AlbumTracksCount != null;
 
@@ -111,8 +108,11 @@ public class QueueObject : SongSearchObject, INotifyPropertyChanged
     public static SongSearchObject Unwrap(SongSearchObject song) =>
         song is QueueObject { IsAlbum: true } row ? ToAlbum(row, row.AlbumTracksCount!.Value) : song;
 
-    /// <summary>Restores a saved row: an album when it was saved with a track count, else a track.</summary>
-    internal static (SongSearchObject Song, int SubOrder)? ParseSaved(string json)
+    /// <summary>
+    /// Restores a saved row: an album when it was saved with a track count, else a track. Older versions saved expanded
+    /// album tracks with a shared position and a sub-order, returned here only so restore can order them once.
+    /// </summary>
+    internal static (SongSearchObject Song, int? LegacySubOrder)? ParseSaved(string json)
     {
         SongSearchObject? song;
         Newtonsoft.Json.Linq.JObject saved;
@@ -134,10 +134,8 @@ public class QueueObject : SongSearchObject, INotifyPropertyChanged
             album.TracksCount = (int)count;
             song = album;
         }
-        var subOrder = saved["QueueSubOrder"] is { Type: Newtonsoft.Json.Linq.JTokenType.Integer } sub ? (int)sub : 0;
-        if (song is not AlbumSearchObject)
-            song = new QueueObject(song) { QueueSubOrder = saved["QueueSubOrder"]?.Type == Newtonsoft.Json.Linq.JTokenType.Integer ? subOrder : null };
-        return (song, subOrder);
+        int? legacySubOrder = saved["QueueSubOrder"] is { Type: Newtonsoft.Json.Linq.JTokenType.Integer } sub ? (int)sub : null;
+        return (song, legacySubOrder);
     }
 
     public static AlbumSearchObject ToAlbum(SongSearchObject song, int tracksCount) => new()
@@ -179,7 +177,6 @@ public class QueueObject : SongSearchObject, INotifyPropertyChanged
             QueueObject row => row.AlbumTracksCount,
             _ => null,
         };
-        if (song is QueueObject other) QueueSubOrder = other.QueueSubOrder;
     }
 }
 
@@ -433,14 +430,10 @@ public partial class QueueViewModel : ObservableRecipient
         return (Source.Last().QueueCounter ?? 0) + 1;
     }
 
-    public static Task<QueueObject?> CreateQueueObject(SongSearchObject song, int? queueCounter, int? subOrder = null)
+    public static Task<QueueObject?> CreateQueueObject(SongSearchObject song, int? queueCounter)
     {
         using var activity = ApplicationActivity.Gate.EnterWork();
-        var queueObj = new QueueObject(song)
-        {
-            QueueCounter = queueCounter,
-            QueueSubOrder = subOrder,
-        };
+        var queueObj = new QueueObject(song) { QueueCounter = queueCounter };
         // Persist only after collision resolution chooses the row and position to retain.
         return Task.FromResult<QueueObject?>(queueObj);
     }
@@ -559,44 +552,62 @@ public partial class QueueViewModel : ObservableRecipient
         // Save the current queue first, including any row whose cover could not be fetched.
         // The exclusive gate prevents new work until storage and the collection agree.
         await SaveForUpdateAsync(CancellationToken.None);
-        await DatabaseService.ReplaceAlbumAsync(GetHash(album), plan.Rows.Select(row => (GetHash(row), row.ToString())).ToArray());
+        await ReplaceAlbumRowsAsync(album, plan.Rows);
+        return plan;
+    }
+
+    /// <summary>Replaces <paramref name="album"/> with the rows it downloaded into, in album order.</summary>
+    public static async Task ReplaceWithMany(QueueObject album, IReadOnlyList<QueueObject> rows)
+    {
+        using var activity = ApplicationActivity.Gate.EnterWork();
+        await ReplaceAlbumRowsAsync(album, rows);
+    }
+
+    // Each track gets its own position, starting at the album's. Later rows move down to make room.
+    private static async Task ReplaceAlbumRowsAsync(QueueObject album, IReadOnlyList<QueueObject> rows)
+    {
+        var index = Source.IndexOf(album);
+        if (index < 0) return;
+        var position = album.QueueCounter ?? index;
+        var hashes = new HashSet<string>(trackSet, StringComparer.Ordinal);
+        var accepted = rows.Where(row => hashes.Add(GetHash(row))).ToArray();
+        for (var i = 0; i < accepted.Length; i++) accepted[i].QueueCounter = position + i;
+        var shift = Math.Max(0, accepted.Length - 1);
+        // Queue the storage transaction, then make the same change before yielding. Additions and conversions that run
+        // during the write then use the new positions, and their writes follow this one.
+        var write = DatabaseService.ReplaceAlbumAsync(GetHash(album), position, shift, accepted.Select(row => (GetHash(row), row.ToString())).ToArray());
         trackSet.Remove(GetHash(album));
         Source.RemoveAt(index);
-        foreach (var row in plan.Rows)
+        if (shift > 0)
+            foreach (var row in Source)
+                if (row.QueueCounter > position) row.QueueCounter += shift;
+        foreach (var row in accepted)
         {
             trackSet.Add(GetHash(row));
             Source.Insert(index++, row);
         }
-        return plan;
+        await write;
     }
 
     /// <summary>
-    /// Replaces <paramref name="album"/> with the rows it expanded into, in order. They keep the album's
-    /// position through restarts.
+    /// Orders saved rows by position, giving each its own consecutive position. Returns the rows whose saved position
+    /// must change, including tracks from older versions that shared their album's position.
     /// </summary>
-    public static async Task ReplaceWithMany(QueueObject album, IReadOnlyList<QueueObject> rows)
+    internal static IReadOnlyList<(string Hash, int Position)> OrderRestoredRows(List<(string Hash, SongSearchObject Song, int? LegacySubOrder)> rows)
     {
-        using var activity = ApplicationActivity.Gate.EnterWork();
-        if (!Source.Contains(album)) return;
-        var hashes = new HashSet<string>(trackSet, StringComparer.Ordinal);
-        var accepted = rows.Where(row => hashes.Add(GetHash(row))).ToArray();
-        await DatabaseService.ReplaceAlbumAsync(GetHash(album), accepted.Select(row => (GetHash(row), row.ToString())).ToArray());
-        var index = Source.IndexOf(album);
-        if (index < 0)
+        rows.Sort((a, b) =>
         {
-            // A clear or removal during the write also removes children not admitted elsewhere.
-            foreach (var row in accepted)
-                if (!trackSet.Contains(GetHash(row))) await DatabaseService.Remove(GetHash(row));
-            return;
-        }
-        trackSet.Remove(GetHash(album));
-        Source.RemoveAt(index);
-        var position = index;
-        foreach (var row in accepted)
+            var order = Nullable.Compare(a.Song.QueueCounter, b.Song.QueueCounter);
+            if (order == 0) order = (a.LegacySubOrder ?? 0).CompareTo(b.LegacySubOrder ?? 0);
+            return order != 0 ? order : string.CompareOrdinal(a.Hash, b.Hash);
+        });
+        var changed = new List<(string Hash, int Position)>();
+        for (var i = 0; i < rows.Count; i++)
         {
-            if (!trackSet.Add(GetHash(row))) continue; // already in the queue elsewhere
-            Source.Insert(position++, row);
+            if (rows[i].Song.QueueCounter != i || rows[i].LegacySubOrder != null) changed.Add((rows[i].Hash, i));
+            rows[i].Song.QueueCounter = i;
         }
+        return changed;
     }
 
     public static async Task LoadSaveQueue() 
@@ -607,19 +618,19 @@ public partial class QueueViewModel : ObservableRecipient
             Source.Clear();
             trackSet.Clear();
             var items = await DatabaseService.LoadQueueJSON();
-            var sortedList = new List<(string, SongSearchObject, int)>();
+            var sortedList = new List<(string Hash, SongSearchObject Song, int? LegacySubOrder)>();
 
             foreach (var item in items)
             {
                 var saved = await Task.Run(() => QueueObject.ParseSaved(item.Value));
                 if (saved == null) continue;
-                sortedList.Add((item.Key, saved.Value.Song, saved.Value.SubOrder));
+                sortedList.Add((item.Key, saved.Value.Song, saved.Value.LegacySubOrder));
             }
 
-            foreach (var pair in sortedList.OrderBy(pair => pair.Item2.QueueCounter).ThenBy(pair => pair.Item3))
+            var renumbered = OrderRestoredRows(sortedList);
+            foreach (var pair in sortedList)
             {
-                string hash = pair.Item1;
-                SongSearchObject song = pair.Item2;
+                SongSearchObject song = pair.Song;
 
                 // Keep the saved metadata and order even when a local file is temporarily unavailable.
                 song.LocalBitmapImage = UnloadedPlaceholder;
@@ -642,6 +653,8 @@ public partial class QueueViewModel : ObservableRecipient
                     }
                 }
             }
+            // Only positions change. Other saved fields, including cached artwork, stay as they were.
+            if (renumbered.Count > 0) await DatabaseService.RenumberAsync(renumbered);
             Serilog.Log.Information("Queue restored with {ItemCount} items", Source.Count);
         } catch (Exception ex)
         {

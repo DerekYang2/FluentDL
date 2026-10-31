@@ -14,11 +14,8 @@ namespace FluentDL.Services
 {
     internal class DatabaseService
     {
-        private sealed record AlbumReplacement(string Hash, IReadOnlyList<(string Hash, string Json)> Tracks);
-        private enum WriteKind { Full, Metadata, Artwork, Remove, Clear, ReplaceTrack }
-        private sealed record QueueWrite(string Hash, string Json, byte[]? Bytes, IReadOnlyList<(string Hash, string Json)>? Snapshot = null,
-            AlbumReplacement? Replacement = null, WriteKind Kind = WriteKind.Full, string? CoverUrl = null, string? RemovedHash = null);
-        private static FluentDL.Core.Updates.AsyncPersistenceQueue<QueueWrite>? _writes;
+        // Each queued write runs on the single consumer connection, in enqueue order.
+        private static FluentDL.Core.Updates.AsyncPersistenceQueue<Func<SqliteConnection, Task>>? _writes;
         private static SqliteConnection? _consumerConnection;
         private static SqliteConnection Conn => _consumerConnection
             ?? throw new InvalidOperationException("Database not initialized. Call InitDatabase first.");
@@ -36,24 +33,13 @@ namespace FluentDL.Services
 
         public static void StartConsumerTask()
         {
-            _writes = new(async item =>
-            {
-                if (item.Replacement != null) await QueueAlbumPersistence.ReplaceAsync(Conn, item.Replacement.Hash, item.Replacement.Tracks);
-                else if (item.Snapshot != null) await SaveSnapshotAsync(item.Snapshot);
-                else if (item.Kind == WriteKind.Metadata) await QueueItemPersistence.SaveMetadataAsync(Conn, item.Hash, item.Json);
-                else if (item.Kind == WriteKind.Artwork) await QueueItemPersistence.SetArtworkAsync(Conn, item.Hash, item.CoverUrl!, item.Bytes);
-                else if (item.Kind == WriteKind.ReplaceTrack) await QueueItemPersistence.ReplaceAsync(Conn, item.RemovedHash, item.Hash, item.Json);
-                else if (item.Kind is WriteKind.Remove or WriteKind.Clear)
-                {
-                    using var command = Conn.CreateCommand();
-                    command.CommandText = item.Kind == WriteKind.Clear ? "DELETE FROM Items" : "DELETE FROM Items WHERE Hash=@h";
-                    if (item.Kind == WriteKind.Remove) command.Parameters.AddWithValue("@h", item.Hash);
-                    await command.ExecuteNonQueryAsync();
-                }
-                else await SaveAsync(item.Hash, item.Json, item.Bytes);
-            },
-                error => Log.Error(error, "Queue persistence failed"));
-        } 
+            _writes = new(write => write(Conn), error => Log.Error(error, "Queue persistence failed"));
+        }
+
+        private static FluentDL.Core.Updates.AsyncPersistenceQueue<Func<SqliteConnection, Task>> Writes =>
+            _writes ?? throw new InvalidOperationException("Queue persistence is not initialized.");
+
+        private static Task EnqueueAsync(Func<SqliteConnection, Task> write) => Writes.EnqueueAsync(() => Task.FromResult(write));
 
         public static async Task<string?> InitDatabase()
         {
@@ -121,8 +107,11 @@ namespace FluentDL.Services
         {
             try
             {
-                var queue = _writes ?? throw new InvalidOperationException("Queue persistence is not initialized.");
-                await queue.EnqueueAsync(async () => new QueueWrite(hash, json, await ConvertStream(stream)));
+                await Writes.EnqueueAsync(async () =>
+                {
+                    var bytes = await ConvertStream(stream);
+                    return (Func<SqliteConnection, Task>)(connection => SaveAsync(connection, hash, json, bytes));
+                });
             }
             catch (Exception ex)
             {
@@ -132,31 +121,27 @@ namespace FluentDL.Services
 
         internal static async Task SaveForUpdateAsync(IReadOnlyList<(string Hash, string Json)> snapshot, CancellationToken token)
         {
-            var queue = _writes ?? throw new InvalidOperationException("Queue persistence is not initialized.");
-            await queue.FlushAsync(token);
-            await queue.EnqueueAsync(() => Task.FromResult(new QueueWrite("", "", null, snapshot))).WaitAsync(token);
-            await queue.FlushAsync(token);
+            await Writes.FlushAsync(token);
+            await EnqueueAsync(connection => QueueItemPersistence.SaveSnapshotAsync(connection, snapshot)).WaitAsync(token);
+            await Writes.FlushAsync(token);
         }
 
-        internal static Task ReplaceAlbumAsync(string hash, IReadOnlyList<(string Hash, string Json)> tracks)
-        {
-            var queue = _writes ?? throw new InvalidOperationException("Queue persistence is not initialized.");
-            return queue.EnqueueAsync(() => Task.FromResult(new QueueWrite("", "", null, Replacement: new(hash, tracks))));
-        }
+        internal static Task ReplaceAlbumAsync(string hash, int position, int shift, IReadOnlyList<(string Hash, string Json)> tracks) =>
+            EnqueueAsync(connection => QueueItemPersistence.ReplaceAlbumAsync(connection, hash, position, shift, tracks));
+
+        internal static Task RenumberAsync(IReadOnlyList<(string Hash, int Position)> rows) =>
+            EnqueueAsync(connection => QueueItemPersistence.RenumberAsync(connection, rows));
 
         internal static Task SaveMetadataAsync(string hash, string json) =>
-            (_writes ?? throw new InvalidOperationException("Queue persistence is not initialized."))
-                .EnqueueAsync(() => Task.FromResult(new QueueWrite(hash, json, null, Kind: WriteKind.Metadata)));
+            EnqueueAsync(connection => QueueItemPersistence.SaveMetadataAsync(connection, hash, json));
 
         internal static Task SaveArtworkAsync(string hash, string url, byte[]? bytes) =>
-            (_writes ?? throw new InvalidOperationException("Queue persistence is not initialized."))
-                .EnqueueAsync(() => Task.FromResult(new QueueWrite(hash, "", bytes, Kind: WriteKind.Artwork, CoverUrl: url)));
+            EnqueueAsync(connection => QueueItemPersistence.SetArtworkAsync(connection, hash, url, bytes));
 
         internal static Task ReplaceTrackAsync(string? removedHash, string hash, string json) =>
-            (_writes ?? throw new InvalidOperationException("Queue persistence is not initialized."))
-                .EnqueueAsync(() => Task.FromResult(new QueueWrite(hash, json, null, Kind: WriteKind.ReplaceTrack, RemovedHash: removedHash)));
+            EnqueueAsync(connection => QueueItemPersistence.ReplaceAsync(connection, removedHash, hash, json));
 
-        internal static Task FlushAsync() => (_writes ?? throw new InvalidOperationException("Queue persistence is not initialized.")).FlushAsync();
+        internal static Task FlushAsync() => Writes.FlushAsync();
         internal static Task FlushOnCloseAsync() => _writes?.FlushAsync() ?? Task.CompletedTask;
 
         internal static async Task<byte[]?> LoadArtworkByUrlAsync(string url)
@@ -169,16 +154,13 @@ namespace FluentDL.Services
             return await command.ExecuteScalarAsync() as byte[];
         }
 
-        private static Task SaveSnapshotAsync(IReadOnlyList<(string Hash, string Json)> snapshot) =>
-            QueueItemPersistence.SaveSnapshotAsync(Conn, snapshot);
-
         // Save image bytes (from IRandomAccessStream) plus metadata into DB
-        private static async Task SaveAsync(string hash, string jsonText, byte[]? bytes)
+        private static async Task SaveAsync(SqliteConnection connection, string hash, string jsonText, byte[]? bytes)
         {
             if (string.IsNullOrWhiteSpace(hash)) throw new ArgumentException("hash required", nameof(hash));
             ArgumentNullException.ThrowIfNull(jsonText);
 
-            await using var cmd = Conn.CreateCommand();
+            await using var cmd = connection.CreateCommand();
             cmd.CommandText = @"
                 INSERT OR REPLACE INTO Items (Hash, JsonText, Image, CreatedUtc)
                 VALUES (@h, @j, @b, @t);";
@@ -291,8 +273,7 @@ namespace FluentDL.Services
         {
             try
             {
-                await (_writes ?? throw new InvalidOperationException("Queue persistence is not initialized."))
-                    .EnqueueAsync(() => Task.FromResult(new QueueWrite("", "", null, Kind: WriteKind.Clear)));
+                await EnqueueAsync(QueueItemPersistence.ClearAsync);
                 Log.Information("Persisted queue cleared");
             }
             catch (Exception ex)
@@ -307,8 +288,7 @@ namespace FluentDL.Services
 
             try
             {
-                await (_writes ?? throw new InvalidOperationException("Queue persistence is not initialized."))
-                    .EnqueueAsync(() => Task.FromResult(new QueueWrite(hash, "", null, Kind: WriteKind.Remove)));
+                await EnqueueAsync(connection => QueueItemPersistence.RemoveAsync(connection, hash));
             }
             catch (Exception ex)
             {

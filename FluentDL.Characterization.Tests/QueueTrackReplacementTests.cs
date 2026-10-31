@@ -97,18 +97,16 @@ public class QueueTrackReplacementTests
     }
 
     [TestMethod]
-    public void ExpandedTrackKeepsItsSubOrderAndDoesNotCollideWithAnAlbumId()
+    public void ExpandedTrackKeepsItsPositionAndDoesNotCollideWithAnAlbumId()
     {
         var original = Row(SourceIds.Tidal, "input", 3);
-        original.QueueSubOrder = 2;
         var album = new QueueObject(new AlbumSearchObject { Source = SourceIds.Spotify, Id = "target", TracksCount = 5 });
         var replacement = Row(SourceIds.Spotify, "target", 3);
-        replacement.QueueSubOrder = original.QueueSubOrder;
         var rows = new List<QueueObject> { original, album };
         var keys = rows.Select(QueueTrackReplacement.KeyOf).ToHashSet();
         var result = QueueTrackReplacement.Apply(rows, keys, 0, replacement)!;
         Assert.AreEqual(2, rows.Count);
-        Assert.AreEqual(2, result.Row.QueueSubOrder);
+        Assert.AreEqual(3, result.Row.QueueCounter);
         Assert.AreEqual(2, keys.Count);
     }
 

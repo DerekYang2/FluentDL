@@ -75,11 +75,10 @@ public class QueueAlbumExpansionTests
         var tracks = new[] { Track("tidal", "3"), Track("tidal", "2"), Track("tidal", "3"), Track("tidal", "1") };
         var plan = QueueAlbumExpansion.Plan(album, tracks, [album, existing, new(Track("deezer", "1"))]);
         CollectionAssert.AreEqual(new[] { "3", "1" }, plan.Rows.Select(row => row.Id).ToArray());
-        CollectionAssert.AreEqual(new int?[] { 0, 3 }, plan.Rows.Select(row => row.QueueSubOrder).ToArray());
-        Assert.IsTrue(plan.Rows.All(row => row.QueueCounter == 7 && !row.IsAlbum));
+        CollectionAssert.AreEqual(new int?[] { 7, 8 }, plan.Rows.Select(row => row.QueueCounter).ToArray());
+        Assert.IsTrue(plan.Rows.All(row => !row.IsAlbum));
         Assert.AreEqual(2, plan.Skipped);
         Assert.AreEqual(20, existing.QueueCounter);
-        Assert.IsNull(existing.QueueSubOrder);
         Assert.AreEqual(0, tracks[0].QueueCounter.GetValueOrDefault(), "Planning must not mutate the source's track objects.");
     }
 
@@ -93,30 +92,32 @@ public class QueueAlbumExpansionTests
         tracks[0].AdditionalFields = new() { ["preview_url"] = "https://preview.example.test/audio" };
         var plan = QueueAlbumExpansion.Plan(album, tracks, [album]);
         var restored = plan.Rows.Select(row => QueueObject.ParseSaved(row.ToString())!.Value).ToArray();
-        CollectionAssert.AreEqual(new[] { "b", "a", "c" }, restored.OrderBy(row => row.SubOrder).Select(row => row.Song.Id).ToArray());
+        CollectionAssert.AreEqual(new[] { "b", "a", "c" }, restored.OrderBy(row => row.Song.QueueCounter).Select(row => row.Song.Id).ToArray());
         Assert.AreEqual("https://preview.example.test/audio", restored[0].Song.AdditionalFields!["preview_url"]);
         Assert.IsTrue(plan.Rows.All(row => ReferenceEquals(cover, row.LocalBitmapImage)));
-        Assert.IsTrue(restored.All(row => row.Song.QueueCounter == 7));
+        CollectionAssert.AreEqual(new int?[] { 7, 8, 9 }, restored.Select(row => row.Song.QueueCounter).ToArray());
+        Assert.IsTrue(restored.All(row => row.LegacySubOrder == null));
     }
 
     [TestMethod]
-    [DataRow("tidal")]
-    [DataRow("local")]
-    public void RestoredTrackAdmissionKeepsThePersistedAlbumSubOrder(string source)
+    public void RestoreGivesOldSharedAlbumPositionsTheirOwnPositionsOnce()
     {
-        var original = new QueueObject(Track(source, "second")) { QueueCounter = 7, QueueSubOrder = 2 };
-        for (var restart = 0; restart < 3; restart++)
+        static SongSearchObject Row(string id, int? position) => new() { Source = "tidal", Id = id, Title = id, QueueCounter = position };
+        // An older queue: a track at 2, an album's tracks sharing 4 with sub-orders, and a later album at 7.
+        var rows = new List<(string Hash, SongSearchObject Song, int? LegacySubOrder)>
         {
-            var parsed = QueueObject.ParseSaved(original.ToString())!.Value;
-            // LoadSaveQueue uses this constructor without replacing saved metadata from the local file.
-            var admitted = new QueueObject(parsed.Song);
-            Assert.AreEqual(7, admitted.QueueCounter);
-            Assert.AreEqual(2, admitted.QueueSubOrder);
-            Assert.AreEqual(2, QueueObject.ParseSaved(admitted.ToString())!.Value.SubOrder);
-            Assert.AreEqual(original.Id, admitted.Id);
-            Assert.AreEqual(original.Title, admitted.Title);
-            original = admitted;
-        }
+            ("tidalthird", Row("third", 4), 2), ("album:tidallater", Row("later", 7), null), ("tidalfirst", Row("first", 4), 0),
+            ("tidalbefore", Row("before", 2), null), ("tidalsecond", Row("second", 4), 1),
+        };
+        var changed = QueueViewModel.OrderRestoredRows(rows);
+        CollectionAssert.AreEqual(new[] { "before", "first", "second", "third", "later" }, rows.Select(row => row.Song.Id).ToArray());
+        CollectionAssert.AreEqual(new int?[] { 0, 1, 2, 3, 4 }, rows.Select(row => row.Song.QueueCounter).ToArray());
+        CollectionAssert.AreEquivalent(new[] { "tidalbefore", "tidalfirst", "tidalsecond", "tidalthird", "album:tidallater" }, changed.Select(row => row.Hash).ToArray());
+
+        // The next restore reads the renumbered rows without old sub-orders and needs no further writes.
+        var next = rows.Select(row => (row.Hash, Row(row.Song.Id, row.Song.QueueCounter), (int?)null)).Reverse().ToList();
+        Assert.AreEqual(0, QueueViewModel.OrderRestoredRows(next).Count);
+        CollectionAssert.AreEqual(new[] { "before", "first", "second", "third", "later" }, next.Select(row => row.Item2.Id).ToArray());
     }
 
     [TestMethod]
@@ -133,7 +134,7 @@ public class QueueAlbumExpansionTests
     public async Task PersistenceReplacesTheAlbumAndCopiesItsCachedCover()
     {
         using var connection = await Database();
-        await QueueAlbumPersistence.ReplaceAsync(connection, "album:tidalalbum", [("tidal1", "track-one"), ("tidal2", "track-two")]);
+        await QueueItemPersistence.ReplaceAlbumAsync(connection, "album:tidalalbum", 7, 1, [("tidal1", "track-one"), ("tidal2", "track-two")]);
         CollectionAssert.AreEquivalent(new[] { "outside", "tidal1", "tidal2" }, (await Keys(connection)).ToArray());
         using var command = connection.CreateCommand();
         command.CommandText = "SELECT Image FROM Items WHERE Hash = 'tidal1'";
@@ -149,7 +150,7 @@ public class QueueAlbumExpansionTests
             reject.CommandText = "CREATE TRIGGER reject_second BEFORE INSERT ON Items WHEN NEW.Hash = 'tidal2' BEGIN SELECT RAISE(ABORT, 'synthetic failure'); END;";
             await reject.ExecuteNonQueryAsync();
         }
-        await Assert.ThrowsExceptionAsync<SqliteException>(() => QueueAlbumPersistence.ReplaceAsync(connection, "album:tidalalbum", [("tidal1", "track-one"), ("tidal2", "track-two")]));
+        await Assert.ThrowsExceptionAsync<SqliteException>(() => QueueItemPersistence.ReplaceAlbumAsync(connection, "album:tidalalbum", 7, 1, [("tidal1", "track-one"), ("tidal2", "track-two")]));
         CollectionAssert.AreEquivalent(new[] { "album:tidalalbum", "outside" }, (await Keys(connection)).ToArray());
     }
 
@@ -157,8 +158,78 @@ public class QueueAlbumExpansionTests
     public async Task MissingSavedAlbumCannotInsertOrphanTracks()
     {
         using var connection = await Database();
-        await Assert.ThrowsExceptionAsync<InvalidOperationException>(() => QueueAlbumPersistence.ReplaceAsync(connection, "missing", [("tidal1", "track-one")]));
+        await Assert.ThrowsExceptionAsync<InvalidOperationException>(() => QueueItemPersistence.ReplaceAlbumAsync(connection, "missing", 7, 0, [("tidal1", "track-one")]));
         CollectionAssert.AreEquivalent(new[] { "album:tidalalbum", "outside" }, (await Keys(connection)).ToArray());
+    }
+
+    [TestMethod]
+    [DataRow(false)]
+    [DataRow(true)]
+    public async Task ExpansionMovesOnlyLaterRowsAndRollsBackTheirPositionsOnFailure(bool fail)
+    {
+        using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+        using (var setup = connection.CreateCommand())
+        {
+            setup.CommandText = "CREATE TABLE Items (Hash TEXT PRIMARY KEY, JsonText TEXT NOT NULL, Image BLOB, CreatedUtc TEXT NOT NULL); "
+                + """INSERT INTO Items VALUES ('before', '{"Id":"before","QueueCounter":6}', NULL, 'now'), """
+                + """('album:tidalalbum', '{"Id":"album","QueueCounter":7,"AlbumTracksCount":3}', X'0102', 'now'), """
+                + """('after', '{"Id":"after","Title":"Kept","QueueCounter":8}', X'09', 'now'), ('corrupt', '{unreadable', NULL, 'now');""";
+            if (fail) setup.CommandText += "CREATE TRIGGER reject_last BEFORE INSERT ON Items WHEN NEW.Hash = 'tidal3' BEGIN SELECT RAISE(ABORT, 'synthetic failure'); END;";
+            await setup.ExecuteNonQueryAsync();
+        }
+        var tracks = new[] { ("tidal1", """{"Id":"1","QueueCounter":7}"""), ("tidal2", """{"Id":"2","QueueCounter":8}"""), ("tidal3", """{"Id":"3","QueueCounter":9}""") };
+        var replace = QueueItemPersistence.ReplaceAlbumAsync(connection, "album:tidalalbum", 7, 2, tracks);
+        if (fail) await Assert.ThrowsExceptionAsync<SqliteException>(() => replace);
+        else await replace;
+        using var read = connection.CreateCommand();
+        read.CommandText = "SELECT Hash, CASE WHEN json_valid(JsonText) THEN json_extract(JsonText, '$.QueueCounter') END, Image FROM Items ORDER BY Hash";
+        var rows = new Dictionary<string, (long? Position, byte[]? Image)>();
+        await using (var reader = await read.ExecuteReaderAsync())
+            while (await reader.ReadAsync())
+                rows[reader.GetString(0)] = (reader.IsDBNull(1) ? null : reader.GetInt64(1), reader.IsDBNull(2) ? null : (byte[])reader.GetValue(2));
+        Assert.AreEqual(6L, rows["before"].Position);
+        Assert.AreEqual(fail ? 8L : 10L, rows["after"].Position);
+        CollectionAssert.AreEqual(new byte[] { 9 }, rows["after"].Image);
+        Assert.IsNull(rows["corrupt"].Position);
+        if (fail)
+        {
+            Assert.IsTrue(rows.ContainsKey("album:tidalalbum"));
+            Assert.IsFalse(rows.ContainsKey("tidal1"));
+        }
+        else
+        {
+            Assert.IsFalse(rows.ContainsKey("album:tidalalbum"));
+            CollectionAssert.AreEqual(new long?[] { 7, 8, 9 }, new[] { "tidal1", "tidal2", "tidal3" }.Select(hash => rows[hash].Position).ToArray());
+            CollectionAssert.AreEqual(new byte[] { 1, 2 }, rows["tidal2"].Image);
+        }
+    }
+
+    [TestMethod]
+    public async Task RenumberingChangesOnlyThePositionAndDropsTheOldSubOrder()
+    {
+        using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+        using (var setup = connection.CreateCommand())
+        {
+            setup.CommandText = "CREATE TABLE Items (Hash TEXT PRIMARY KEY, JsonText TEXT NOT NULL, Image BLOB, CreatedUtc TEXT NOT NULL); "
+                + """INSERT INTO Items VALUES ('local', '{"Id":"Z:\\missing.flac","Title":"Saved title","QueueCounter":4,"QueueSubOrder":2}', X'0A0B', 'now'), """
+                + "('corrupt', '{unreadable', NULL, 'now');";
+            await setup.ExecuteNonQueryAsync();
+        }
+        await QueueItemPersistence.RenumberAsync(connection, [("local", 3), ("corrupt", 0)]);
+        using var read = connection.CreateCommand();
+        read.CommandText = "SELECT JsonText, Image FROM Items ORDER BY Hash";
+        await using var reader = await read.ExecuteReaderAsync();
+        Assert.IsTrue(await reader.ReadAsync());
+        Assert.AreEqual("{unreadable", reader.GetString(0));
+        Assert.IsTrue(await reader.ReadAsync());
+        var saved = Newtonsoft.Json.Linq.JObject.Parse(reader.GetString(0));
+        Assert.AreEqual(3, (int)saved["QueueCounter"]!);
+        Assert.IsNull(saved["QueueSubOrder"]);
+        Assert.AreEqual("Saved title", (string)saved["Title"]!);
+        Assert.AreEqual(@"Z:\missing.flac", (string)saved["Id"]!);
+        CollectionAssert.AreEqual(new byte[] { 10, 11 }, (byte[])reader.GetValue(1));
     }
 
     private static QueueObject Album(string source) => new(new AlbumSearchObject { Source = source, Id = "album", Title = "Album", TracksCount = 3 }) { QueueCounter = 7 };

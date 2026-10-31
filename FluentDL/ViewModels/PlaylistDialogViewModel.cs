@@ -34,7 +34,7 @@ public sealed class PlaylistDestination(IPlaylistWriter writer, IReadOnlyList<Qu
     // Capture immutable IDs, not live queue rows that a background task could replace.
     public IReadOnlyList<string> TrackIds { get; } = queue
         .Where(row => row.Source == writer.Descriptor.Id && !row.IsAlbum)
-        .OrderBy(row => row.QueueCounter).ThenBy(row => row.QueueSubOrder ?? 0)
+        .OrderBy(row => row.QueueCounter)
         .Select(row => row.Id).ToArray();
     public int ExcludedAlbums { get; } = queue.Count(row => row.Source == writer.Descriptor.Id && row.IsAlbum);
 }
@@ -69,7 +69,7 @@ public sealed class PlaylistDialogViewModel : ObservableObject
         Playlists.Add(selectedPlaylist);
         Destinations = writers.Select(writer => new PlaylistDestination(writer, queue)).ToArray();
         var firstSource = queue.Where(row => !row.IsAlbum && Destinations.Any(destination => destination.Writer.Descriptor.Id == row.Source))
-            .OrderBy(row => row.QueueCounter).ThenBy(row => row.QueueSubOrder ?? 0).FirstOrDefault()?.Source;
+            .OrderBy(row => row.QueueCounter).FirstOrDefault()?.Source;
         firstSource ??= queue.OrderBy(row => row.QueueCounter).FirstOrDefault(row => Destinations.Any(destination => destination.Writer.Descriptor.Id == row.Source))?.Source;
         selectedDestination = Destinations.FirstOrDefault(destination => destination.Writer.Descriptor.Id == firstSource) ?? Destinations.FirstOrDefault();
         isChecking = selectedDestination != null;

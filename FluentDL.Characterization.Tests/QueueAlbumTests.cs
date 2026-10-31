@@ -13,7 +13,7 @@ namespace FluentDL.Characterization.Tests;
 [TestClass]
 public class QueueAlbumTests
 {
-    // Rows as DatabaseService stores them: QueueObject JSON. Albums carry AlbumTracksCount, expanded tracks QueueSubOrder.
+    // Rows as DatabaseService stores them: QueueObject JSON. Albums carry AlbumTracksCount. Older expanded tracks also carry QueueSubOrder.
     [TestMethod]
     public void SavedAlbumRowsRestoreAsAlbumsAndOldTrackRowsStayTracks()
     {
@@ -26,15 +26,17 @@ public class QueueAlbumTests
         Assert.AreEqual(13, albumObject.TracksCount);
         Assert.AreEqual("886443927087", albumObject.Upc);
         Assert.AreEqual(4, albumObject.QueueCounter);
+        Assert.IsNull(album.LegacySubOrder);
 
         // Rows saved before this change have neither field.
         var track = QueueObject.ParseSaved("""{"Title":"Get Lucky","Id":"67238735","Source":"deezer","QueueCounter":5}""")!.Value;
         Assert.IsNotInstanceOfType(track.Song, typeof(AlbumSearchObject));
-        Assert.AreEqual(0, track.SubOrder);
+        Assert.IsNull(track.LegacySubOrder);
 
         var expanded = QueueObject.ParseSaved("""{"Title":"Track 3","Id":"3","Source":"qobuz","QueueCounter":4,"AlbumTracksCount":null,"QueueSubOrder":2}""")!.Value;
         Assert.IsNotInstanceOfType(expanded.Song, typeof(AlbumSearchObject));
-        Assert.AreEqual(2, expanded.SubOrder);
+        Assert.AreEqual(2, expanded.LegacySubOrder);
+        Assert.IsFalse(new QueueObject(expanded.Song).ToString().Contains("QueueSubOrder"), "New saves must not write the old sub-order field.");
 
         Assert.IsNull(QueueObject.ParseSaved("{not json"), "A corrupt row is skipped, not the whole queue.");
     }

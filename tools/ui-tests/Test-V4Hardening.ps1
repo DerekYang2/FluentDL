@@ -50,9 +50,17 @@ function Capture-State {
 }
 function Assert-Restored($State,[int]$Count) {
     if (@($State.State.Rows).Count -ne $Count) { throw "Expected $Count visible rows." }
+    $positions = @($State.State.Rows | ForEach-Object QueueCounter)
+    if (($positions -join ',') -ne ((0..($Count - 1)) -join ',')) { throw "Rows do not have consecutive positions: $($positions -join ',')." }
     $missing = @($State.State.Rows | Where-Object Source -eq 'local' | Where-Object Id -like 'Z:*')
     if (($missing.Title -join '|') -ne 'Missing-drive first|Missing-drive second|Missing-drive third') { throw 'Missing-drive rows or saved order changed.' }
-    if (($missing.QueueCounter -join ',') -ne '4,4,4' -or ($missing.QueueSubOrder -join ',') -ne '0,1,2') { throw 'Persisted order changed during admission.' }
+    if (($missing.QueueCounter -join ',') -ne '0,1,2') { throw 'The old shared album position was not converted to separate positions.' }
+    foreach ($row in $missing) {
+        $saved = $State.State.Saved.('local' + $row.Id) | ConvertFrom-Json
+        if ($saved.QueueCounter -ne $row.QueueCounter -or $null -ne $saved.PSObject.Properties['QueueSubOrder'] -or $saved.Artists -ne 'Saved fixture metadata') {
+            throw 'The saved missing-drive row lost its metadata or kept the old sub-order.'
+        }
+    }
     if (-not $State.State.Saved.'corrupt-fixture') { throw 'The snapshot deleted the unreadable saved row.' }
     if ($State.State.ArtworkLength -le 0) { throw 'The snapshot deleted cached artwork.' }
 }
@@ -95,8 +103,8 @@ try {
         Ui @('wait-for','CloseButton','--gone','-t','10000')
         $state = Capture-State
         Assert-Restored $state 6
-        $expanded = @($state.State.Rows | Where-Object QueueCounter -eq 7)
-        if (($expanded.QueueSubOrder -join ',') -ne '0,1,2' -or ($expanded.Source -join ',') -ne 'local,deezer,deezer' -or $expanded[1].Id -ne 'two' -or $expanded[2].Id -ne 'three') { throw 'Album input order or retry rows were lost.' }
+        $expanded = @($state.State.Rows | Select-Object -Skip 3 -First 3)
+        if (($expanded.QueueCounter -join ',') -ne '3,4,5' -or ($expanded.Source -join ',') -ne 'local,deezer,deezer' -or $expanded[1].Id -ne 'two' -or $expanded[2].Id -ne 'three') { throw 'Album input order or retry rows were lost.' }
         Shot '04-mixed-album-outcomes.png'
     }
     Test 'New queue admissions persist after provider startup times out' {
@@ -108,13 +116,13 @@ try {
     Fixture 'Fail' | Out-Null
     Launch
     Ui @('invoke','HardeningQueue') | Out-Null
-    Test 'A failed provider and a second restart preserve rows and album sub-order' {
+    Test 'A failed provider and a second restart preserve rows and album track positions' {
         Ui @('wait-for','CountText','--value','7 tracks','-t','10000')
         $state = Capture-State
         Assert-Restored $state 7
         if (-not $state.Startup.PersistenceReady -or $state.Startup.Restored -ne 7) { throw 'Provider failure skipped the restored queue.' }
-        $expanded = @($state.State.Rows | Where-Object QueueCounter -eq 7)
-        if (($expanded.QueueSubOrder -join ',') -ne '0,1,2') { throw 'Restart lost album sub-order.' }
+        $expanded = @($state.State.Rows | Select-Object -Skip 3 -First 3)
+        if (($expanded.QueueCounter -join ',') -ne '3,4,5' -or $expanded[1].Id -ne 'two' -or $expanded[2].Id -ne 'three') { throw 'Restart changed the album track order.' }
         Shot '05-restarted-after-provider-failure.png'
     }
     Test 'An update stays blocked while a cancelled caller leaves a file writer running' {

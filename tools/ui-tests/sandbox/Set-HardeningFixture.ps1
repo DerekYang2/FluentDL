@@ -35,6 +35,7 @@ if (Test-Path -LiteralPath $dbPath) { throw 'Refusing to overwrite an existing q
 $db = [IntPtr]::Zero
 if ([HardeningSqlite]::sqlite3_open_v2($dbPath,[ref]$db,6,[IntPtr]::Zero) -ne 0) { throw 'Cannot create the fixture database.' }
 try {
+    # Older versions saved expanded album tracks with a shared position and a sub-order. Restore must convert them.
     $rows = @(0..2 | ForEach-Object {
         $id = @('first','second','third')[$_]
         @{ Source='local'; Id="Z:\fixture-missing\$id.flac"; Title="Missing-drive $id"; Artists='Saved fixture metadata'; AlbumName='Saved album'; Duration='1'; QueueCounter=4; QueueSubOrder=$_ }
