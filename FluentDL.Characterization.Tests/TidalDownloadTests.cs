@@ -384,12 +384,171 @@ public class TidalDownloadTests
         }
     }
 
-    private sealed class AlbumCatalog : ICatalogSource
+    [TestMethod]
+    public async Task PlaybackRejectionRefreshesOnceAndKeepsTheSavedSignIn()
+    {
+        var settings = new TidalParsingTests.DictionarySettings([]);
+        var handler = new FakeHttp { Preview = true, RejectPlaybackCount = 1 };
+        var client = Client(settings, handler);
+        var login = await client.BeginLoginAsync();
+        await client.FinishLoginAsync(login, Callback(login));
+        await Assert.ThrowsExceptionAsync<TidalDownloadUnavailableException>(() => client.DownloadAsync("1", "unused", null));
+        Assert.IsTrue(await client.HasSessionAsync());
+        Assert.AreEqual(2, handler.PlaybackRequests);
+        Assert.AreEqual("refresh_token", handler.Forms.Last()["grant_type"]);
+    }
+
+    [TestMethod]
+    public async Task RepeatedPlaybackRejectionDoesNotDeleteARefreshableSession()
+    {
+        var settings = new TidalParsingTests.DictionarySettings([]);
+        var handler = new FakeHttp { RejectPlaybackCount = 2 };
+        var client = Client(settings, handler);
+        var login = await client.BeginLoginAsync();
+        await client.FinishLoginAsync(login, Callback(login));
+        await Assert.ThrowsExceptionAsync<TidalDownloadUnavailableException>(() => client.DownloadAsync("1", "unused", null));
+        Assert.IsTrue(await client.HasSessionAsync());
+        Assert.AreEqual(2, handler.PlaybackRequests);
+        Assert.AreEqual(2, handler.Forms.Count);
+    }
+
+    [TestMethod]
+    public async Task ARejectedOldRequestCannotEraseOrUseANewerLogin()
+    {
+        var settings = new TidalParsingTests.DictionarySettings([]);
+        var entered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var release = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var handler = new FakeHttp { PlaybackEntered = entered, PlaybackRelease = release };
+        var client = Client(settings, handler);
+        var first = await client.BeginLoginAsync();
+        await client.FinishLoginAsync(first, Callback(first));
+        var download = client.DownloadAsync("1", "unused", null);
+        await entered.Task.WaitAsync(TimeSpan.FromSeconds(5));
+        var next = await client.BeginLoginAsync();
+        await client.FinishLoginAsync(next, Callback(next));
+        var saved = await settings.ReadSettingAsync<string>(SettingKeys.TidalDownloadSession);
+        release.TrySetResult();
+        await Assert.ThrowsExceptionAsync<SourceSignInRequiredException>(() => download);
+        Assert.IsTrue(saved == await settings.ReadSettingAsync<string>(SettingKeys.TidalDownloadSession), "The old request erased the replacement session.");
+        Assert.IsTrue(await client.HasSessionAsync());
+        Assert.AreEqual(1, handler.PlaybackRequests);
+        Assert.AreEqual(2, handler.Forms.Count, "An old operation must not refresh or use the replacement login.");
+    }
+
+    [TestMethod]
+    public async Task PlaybackRefreshDenialClearsOnlyTheExpiredSignIn()
+    {
+        var settings = new TidalParsingTests.DictionarySettings([]);
+        var handler = new FakeHttp { RejectPlaybackCount = 1, RejectRefresh = true };
+        var client = Client(settings, handler);
+        var login = await client.BeginLoginAsync();
+        await client.FinishLoginAsync(login, Callback(login));
+        await Assert.ThrowsExceptionAsync<SourceSignInRequiredException>(() => client.DownloadAsync("1", "unused", null));
+        Assert.IsFalse(await client.HasSessionAsync());
+        Assert.AreEqual("", await settings.ReadSettingAsync<string>(SettingKeys.TidalDownloadSession));
+        Assert.AreEqual(1, handler.PlaybackRequests);
+        Assert.AreEqual(0, handler.MediaRequests);
+    }
+
+    [TestMethod]
+    public async Task CancellingPlaybackRefreshKeepsTheSavedSignIn()
+    {
+        var settings = new TidalParsingTests.DictionarySettings([]);
+        var entered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var release = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var handler = new FakeHttp { RejectPlaybackCount = 1, RefreshEntered = entered, RefreshRelease = release };
+        var client = Client(settings, handler);
+        var login = await client.BeginLoginAsync();
+        await client.FinishLoginAsync(login, Callback(login));
+        var saved = await settings.ReadSettingAsync<string>(SettingKeys.TidalDownloadSession);
+        using var cancellation = new CancellationTokenSource();
+        var download = client.DownloadAsync("1", "unused", null, cancellation.Token);
+        await entered.Task.WaitAsync(TimeSpan.FromSeconds(5));
+        cancellation.Cancel();
+        try { await download; Assert.Fail("The cancelled refresh completed."); }
+        catch (OperationCanceledException) { }
+        Assert.IsTrue(saved == await settings.ReadSettingAsync<string>(SettingKeys.TidalDownloadSession));
+        Assert.IsTrue(await client.HasSessionAsync());
+        Assert.AreEqual(1, handler.PlaybackRequests);
+        Assert.AreEqual(0, handler.MediaRequests);
+    }
+
+    [TestMethod]
+    public async Task AlbumMetadataFailureReportsEveryInputForRetry()
+    {
+        var settings = new TidalParsingTests.DictionarySettings(new() { ["conversion_threads"] = 3 });
+        var handler = new FakeHttp();
+        var client = Client(settings, handler);
+        var login = await client.BeginLoginAsync();
+        await client.FinishLoginAsync(login, Callback(login));
+        var registry = new SourceRegistry([new AlbumCatalog(failMetadata: true)]);
+        var downloads = new DownloadService(registry, new EquivalentDownloader(registry), new NoLyrics(), client);
+        var reports = new System.Collections.Concurrent.ConcurrentQueue<(StatusLevel Level, string Id)>();
+        var originalSettings = TestSources.Settings;
+        SourceServices.Configure(settings, new CopyConverter());
+        try
+        {
+            var album = new AlbumSearchObject { Source = SourceIds.Tidal, Id = "album", Title = "Album", TracksCount = 3 };
+            var paths = await downloads.DownloadAlbum(album, "unused", new RecordingProgress(), (level, song, _) => reports.Enqueue((level, song.Id)));
+            Assert.AreEqual(0, paths.Count);
+            CollectionAssert.AreEqual(new[] { "0", "1", "2" }, reports.Where(r => r.Level == StatusLevel.Error).Select(r => r.Id).Order().ToArray());
+            Assert.AreEqual(0, handler.PlaybackRequests);
+        }
+        finally { SourceServices.Configure(originalSettings, TestSources.AudioConverter); }
+    }
+
+    [TestMethod]
+    public async Task AnIncompleteAlbumListingCannotReplaceTheOriginalAlbum()
+    {
+        var settings = new TidalParsingTests.DictionarySettings(new() { ["conversion_threads"] = 2 });
+        var handler = new FakeHttp { Preview = true };
+        var client = Client(settings, handler);
+        var login = await client.BeginLoginAsync();
+        await client.FinishLoginAsync(login, Callback(login));
+        var registry = new SourceRegistry(new ISource[] { new AlbumCatalog(trackCount: 2) });
+        var downloads = new DownloadService(registry, new EquivalentDownloader(registry), new NoLyrics(), client);
+        var originalSettings = TestSources.Settings;
+        SourceServices.Configure(settings, new CopyConverter());
+        try
+        {
+            var album = new AlbumSearchObject { Source = SourceIds.Tidal, Id = "album", Title = "Album", TracksCount = 3 };
+            await Assert.ThrowsExceptionAsync<InvalidOperationException>(() => downloads.DownloadAlbum(album, "unused", new RecordingProgress()));
+            Assert.AreEqual(0, handler.PlaybackRequests, "An incomplete listing must fail before downloading or replacing any rows.");
+        }
+        finally { SourceServices.Configure(originalSettings, TestSources.AudioConverter); }
+    }
+
+    [TestMethod]
+    public async Task DownloadPreflightRefreshFailureReachesTheUiErrorHandlerWithoutStartingPlayback()
+    {
+        var settings = new TidalParsingTests.DictionarySettings([]);
+        var handler = new FakeHttp { ExpiresIn = 0, RefreshStatus = 503 };
+        var client = Client(settings, handler);
+        var login = await client.BeginLoginAsync();
+        await client.FinishLoginAsync(login, Callback(login));
+        var saved = await settings.ReadSettingAsync<string>(SettingKeys.TidalDownloadSession);
+        var registry = new SourceRegistry(new ISource[] { new AlbumCatalog() });
+        var downloads = new DownloadService(registry, new EquivalentDownloader(registry), new NoLyrics(), client);
+        Exception? reported = null;
+        var succeeded = await UiOperation.RunAsync(() => downloads.EnsureDownloadAccessAsync(new[]
+        {
+            new SongSearchObject { Source = SourceIds.Tidal, Id = "1", Title = "Synthetic preflight track" },
+        }), error => reported = error);
+        Assert.IsFalse(succeeded);
+        Assert.IsInstanceOfType<HttpRequestException>(reported);
+        Assert.IsTrue(saved == await settings.ReadSettingAsync<string>(SettingKeys.TidalDownloadSession));
+        Assert.AreEqual(0, handler.PlaybackRequests);
+        Assert.AreEqual(0, handler.MediaRequests);
+    }
+
+    private sealed class AlbumCatalog(bool failMetadata = false, int trackCount = 3) : ICatalogSource
     {
         public SourceDescriptor Descriptor => SourceCatalog.Find(SourceIds.Tidal)!;
-        public Task<SongSearchObject?> GetTrackAsync(string id) => Task.FromResult<SongSearchObject?>(Track(id));
+        public Task<SongSearchObject?> GetTrackAsync(string id) => failMetadata
+            ? Task.FromException<SongSearchObject?>(new HttpRequestException("Synthetic metadata failure"))
+            : Task.FromResult<SongSearchObject?>(Track(id));
         public Task<List<SongSearchObject>> GetAlbumTracksAsync(AlbumSearchObject album) =>
-            Task.FromResult(Enumerable.Range(0, 3).Select(i => Track(i.ToString())).ToList());
+            Task.FromResult(Enumerable.Range(0, trackCount).Select(i => Track(i.ToString())).ToList());
         public Task<string?> GetLargestCoverUrlAsync(AlbumSearchObject album) => Task.FromResult<string?>(null);
         private static SongSearchObject Track(string id) => new() { Source = SourceIds.Tidal, Id = id, Title = $"Track {id}", Artists = "Artist" };
     }
@@ -411,6 +570,11 @@ public class TidalDownloadTests
         public bool SingleFile, ChunkedMedia, UnknownMediaLength;
         public bool PremiumAccess = true;
         public int SubscriptionRequests;
+        public int RejectPlaybackCount, PlaybackRequests;
+        public TaskCompletionSource? PlaybackEntered, PlaybackRelease;
+        public bool RejectRefresh;
+        public int RefreshStatus = 200;
+        public TaskCompletionSource? RefreshEntered, RefreshRelease;
         public int ExpiresIn = 14400, MediaRequests, RequestCount;
         public string RemoteId = "remote-client";
         public string? TokenAuthorization;
@@ -425,6 +589,16 @@ public class TidalDownloadTests
                 TokenAuthorization = request.Headers.Authorization?.ToString();
                 var form = System.Web.HttpUtility.ParseQueryString(await request.Content!.ReadAsStringAsync(token));
                 Forms.Add(form);
+                if (form["grant_type"] == "refresh_token")
+                {
+                    if (RefreshRelease != null)
+                    {
+                        RefreshEntered!.TrySetResult();
+                        await RefreshRelease.Task.WaitAsync(token);
+                    }
+                    if (RejectRefresh) return Response(401, "{}");
+                    if (RefreshStatus != 200) return Response(RefreshStatus, "{}");
+                }
                 var refresh = form["grant_type"] == "refresh_token" ? "" : ",\"refresh_token\":\"refresh-value\"";
                 return Response(200, "{\"access_token\":\"access-value\",\"expires_in\":" + ExpiresIn + refresh + ",\"user_id\":7,\"user\":{\"countryCode\":\"CA\",\"email\":\"downloads@example.test\",\"username\":\"download-user\"}}");
             }
@@ -433,9 +607,20 @@ public class TidalDownloadTests
                 SubscriptionRequests++;
                 return Response(200, "{\"status\":\"ACTIVE\",\"premiumAccess\":" + (PremiumAccess ? "true" : "false") + "}");
             }
-            if (uri.Host == "api.tidal.com") return Response(200, SingleFile
-                ? StreamResponse("""{"encryptionType":"NONE","codecs":"mp4a.40.2","urls":["https://audio.example/track"]}""", !Preview, "application/vnd.tidal.bts")
-                : StreamResponse(Dash, !Preview));
+            if (uri.Host == "api.tidal.com")
+            {
+                PlaybackRequests++;
+                if (PlaybackRelease != null)
+                {
+                    PlaybackEntered!.TrySetResult();
+                    await PlaybackRelease.Task.WaitAsync(token);
+                    return Response(401, "{\"status\":401}");
+                }
+                if (PlaybackRequests <= RejectPlaybackCount) return Response(401, "{\"status\":401}");
+                return Response(200, SingleFile
+                    ? StreamResponse("""{"encryptionType":"NONE","codecs":"mp4a.40.2","urls":["https://audio.example/track"]}""", !Preview, "application/vnd.tidal.bts")
+                    : StreamResponse(Dash, !Preview));
+            }
             MediaRequests++;
             Assert.IsNull(request.Headers.Authorization, "Bearer tokens must not go to the media host.");
             if (ChunkedMedia && !(FailSegment && uri.AbsolutePath == "/8.mp4"))

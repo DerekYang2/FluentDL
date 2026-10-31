@@ -569,26 +569,32 @@ public partial class QueueViewModel : ObservableRecipient
     }
 
     /// <summary>
-    /// Replaces the album row at <paramref name="index"/> with the rows it expanded into, in order. They keep the album's
+    /// Replaces <paramref name="album"/> with the rows it expanded into, in order. They keep the album's
     /// position through restarts.
     /// </summary>
-    public static async Task ReplaceWithMany(int index, IReadOnlyList<QueueObject> rows)
+    public static async Task ReplaceWithMany(QueueObject album, IReadOnlyList<QueueObject> rows)
     {
         using var activity = ApplicationActivity.Gate.EnterWork();
-        if (index < 0) return; // the album row was removed meanwhile
-        var album = Source[index];
+        if (!Source.Contains(album)) return;
+        var hashes = new HashSet<string>(trackSet, StringComparer.Ordinal);
+        var accepted = rows.Where(row => hashes.Add(GetHash(row))).ToArray();
+        await DatabaseService.ReplaceAlbumAsync(GetHash(album), accepted.Select(row => (GetHash(row), row.ToString())).ToArray());
+        var index = Source.IndexOf(album);
+        if (index < 0)
+        {
+            // A clear or removal during the write also removes children not admitted elsewhere.
+            foreach (var row in accepted)
+                if (!trackSet.Contains(GetHash(row))) await DatabaseService.Remove(GetHash(row));
+            return;
+        }
         trackSet.Remove(GetHash(album));
         Source.RemoveAt(index);
-        var writes = new List<Task> { DatabaseService.Remove(GetHash(album)) };
         var position = index;
-        for (var i = 0; i < rows.Count; i++)
+        foreach (var row in accepted)
         {
-            var row = rows[i];
             if (!trackSet.Add(GetHash(row))) continue; // already in the queue elsewhere
-            writes.Add(DatabaseService.SaveMetadataAsync(GetHash(row), row.ToString()));
             Source.Insert(position++, row);
         }
-        await Task.WhenAll(writes);
     }
 
     public static async Task LoadSaveQueue() 

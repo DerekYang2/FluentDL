@@ -1221,17 +1221,10 @@ public sealed partial class QueuePage : Page
     private async Task DownloadQueuedAlbumAsync(QueueObject row, string directory, IProgress<ProgressData> progress, ConversionUpdateCallback callback)
     {
         var album = (AlbumSearchObject)QueueObject.Unwrap(row);
-        var downloaded = new ConcurrentDictionary<string, StatusLevel>(StringComparer.OrdinalIgnoreCase); // file -> result
-        var failedIds = new ConcurrentDictionary<string, byte>();
-        List<string> paths;
+        List<AlbumTrackDownloadOutcome> outcomes;
         try
         {
-            paths = await downloads.DownloadAlbum(album, directory, progress, (level, track, location) =>
-            {
-                callback(level, track, location);
-                if (level == StatusLevel.Error) failedIds.TryAdd(track.Source + track.Id, 0);
-                else if (!string.IsNullOrEmpty(location)) downloaded[location] = level;
-            });
+            outcomes = await downloads.DownloadAlbumWithOutcomesAsync(album, directory, progress);
         }
         catch (Exception ex)
         {
@@ -1245,23 +1238,23 @@ public sealed partial class QueuePage : Page
             return;
         }
 
-        var tracks = album.TrackList ?? [];
-        var files = paths.Concat(downloaded.Keys).Where(File.Exists).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
         var done = new TaskCompletionSource();
-        dispatcherQueue.TryEnqueue(async () =>
+        if (!dispatcherQueue.TryEnqueue(async () =>
         {
             try
             {
                 var entries = new List<(int Order, SongSearchObject Song, Windows.UI.Color Badge)>();
-                foreach (var file in files)
+                foreach (var resolved in QueueAlbumDownload.Resolve(outcomes, LocalExplorerViewModel.ParseFile))
                 {
-                    var local = LocalExplorerViewModel.ParseFile(file);
-                    if (local == null) continue;
-                    local.LocalBitmapImage = await LocalExplorerViewModel.GetBitmapImageAsync(file);
-                    var badge = downloaded.TryGetValue(file, out var level) && level == StatusLevel.Warning ? BadgeWarning : BadgeSuccess;
-                    entries.Add((AlbumOrder(tracks, local), local, badge));
+                    var outcome = outcomes[resolved.Order];
+                    callback(resolved.Level, outcome.Track, resolved.Level == StatusLevel.Error
+                        ? outcome.Error ?? "The downloaded audio file could not be read. The source track was kept for retry."
+                        : outcome.Path);
+                    if (resolved.Song.Source == SourceIds.Local)
+                        resolved.Song.LocalBitmapImage = await LocalExplorerViewModel.GetBitmapImageAsync(resolved.Song.Id);
+                    var badge = resolved.Level == StatusLevel.Warning ? BadgeWarning : resolved.Level == StatusLevel.Error ? BadgeError : BadgeSuccess;
+                    entries.Add((resolved.Order, resolved.Song, badge));
                 }
-                entries.AddRange(tracks.Where(t => failedIds.ContainsKey(t.Source + t.Id)).Select(t => (tracks.IndexOf(t), t, BadgeError)));
                 if (entries.Count == 0)
                 {
                     row.ConvertBadgeColor = new SolidColorBrush(BadgeError);
@@ -1276,26 +1269,29 @@ public sealed partial class QueuePage : Page
                     created.ConvertBadgeColor = new SolidColorBrush(entry.Badge);
                     rows.Add(created);
                 }
-                await QueueViewModel.ReplaceWithMany(QueueViewModel.Source.IndexOf(row), rows);
+                await QueueViewModel.ReplaceWithMany(row, rows);
             }
             catch (Exception ex)
             {
                 Serilog.Log.Error(ex, "Could not show the downloaded album's tracks in the queue");
                 row.ConvertBadgeColor = new SolidColorBrush(BadgeWarning);
+                ShowInfoBar(InfoBarSeverity.Error, $"Could not update the downloaded album in the queue: {ex.Message}. The album was kept.", 10);
             }
             finally
             {
                 done.TrySetResult();
             }
-        });
-        await done.Task.WaitAsync(TimeSpan.FromSeconds(30));
+        })) throw new InvalidOperationException("The queue window is no longer available.");
+        await done.Task;
     }
 
     // A downloaded file's place in the album: the track with the same ISRC, else the same title, else its track number
     // after the listed tracks.
     internal static int AlbumOrder(List<SongSearchObject> tracks, SongSearchObject local)
     {
-        var index = tracks.FindIndex(t => !string.IsNullOrWhiteSpace(local.Isrc) && string.Equals(t.Isrc, local.Isrc, StringComparison.OrdinalIgnoreCase));
+        var index = tracks.IndexOf(local);
+        if (index >= 0) return index;
+        index = tracks.FindIndex(t => !string.IsNullOrWhiteSpace(local.Isrc) && string.Equals(t.Isrc, local.Isrc, StringComparison.OrdinalIgnoreCase));
         if (index < 0)
         {
             var title = Core.Matching.TitleNormalizer.Compact(local.Title);
