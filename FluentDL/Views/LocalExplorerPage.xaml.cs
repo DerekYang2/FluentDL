@@ -14,6 +14,7 @@ using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Navigation;
 using System.Collections.ObjectModel;
+using FluentDL.Core.Sources;
 using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Diagnostics;
@@ -388,7 +389,7 @@ public sealed partial class LocalExplorerPage : Page
         if (folder != null)
         {
             StorageApplicationPermissions.FutureAccessList.AddOrReplace("PickedFolderToken", folder);
-            ShowInfoBarPermanent(InfoBarSeverity.Informational, $"Scanning <a href='{folder.Path}'>{folder.Name}</a> for audio files", "Upload");
+            ShowInfoBarPermanent(InfoBarSeverity.Informational, StatusMarkup.Format($"Scanning <a href='{folder.Path}'>{folder.Name}</a> for audio files"), "Upload", isMarkup: true);
             InfobarProgress.Visibility = Visibility.Visible;
             // Get all music files in the folder
             try
@@ -645,10 +646,10 @@ public sealed partial class LocalExplorerPage : Page
     }
 
     // Infobar related methods
-    private void ShowInfoBar(InfoBarSeverity severity, string message, int seconds = 2, string title = "")
+    private void ShowInfoBar(InfoBarSeverity severity, string message, int seconds = 2, string title = "", bool isMarkup = false)
     {
-        title = title.Trim();
-        message = message.Trim();
+        title = StatusMarkup.Text(title.Trim());
+        message = isMarkup ? message.Trim() : StatusMarkup.Text(message.Trim());
         dispatcher.TryEnqueue(() =>
         {
             if (QueueViewModel.IsClosing) return;
@@ -672,10 +673,10 @@ public sealed partial class LocalExplorerPage : Page
         });
     }
 
-    private void ShowInfoBarPermanent(InfoBarSeverity severity, string message, string title = "")
+    private void ShowInfoBarPermanent(InfoBarSeverity severity, string message, string title = "", bool isMarkup = false)
     {
-        title = title.Trim();
-        message = message.Trim();
+        title = StatusMarkup.Text(title.Trim());
+        message = isMarkup ? message.Trim() : StatusMarkup.Text(message.Trim());
         dispatcher.TryEnqueue(() =>
         {
             if (QueueViewModel.IsClosing) return;
@@ -816,7 +817,7 @@ public sealed partial class LocalExplorerPage : Page
         // Update the preview panel
         await PreviewPanel.Update(song, LocalExplorerViewModel.GetMetadataObject(song.Id));
 
-        ShowInfoBar(InfoBarSeverity.Success, $"Saved metadata for <a href='{song.Id}'>{song.Title}</a>");
+        ShowInfoBar(InfoBarSeverity.Success, StatusMarkup.Format($"Saved metadata for <a href='{song.Id}'>{song.Title}</a>"), isMarkup: true);
     }
 
     private void MetadataDialog_OnCloseButtonClick(ContentDialog sender, ContentDialogButtonClickEventArgs args)
@@ -878,15 +879,15 @@ public sealed partial class LocalExplorerPage : Page
 
             if (QueueViewModel.Source.Count == beforeCount) // No change
             {
-                ShowInfoBar(InfoBarSeverity.Warning, $"<a href='{ApiHelper.GetUrl(song)}'>{song.Title}</a> already in queue");
+                ShowInfoBar(InfoBarSeverity.Warning, StatusMarkup.Format($"<a href='{ApiHelper.GetUrl(song)}'>{song.Title}</a> already in queue"), isMarkup: true);
             }
             else
             {
-                ShowInfoBar(InfoBarSeverity.Success, $"<a href='{ApiHelper.GetUrl(song)}'>{song.Title}</a> added to queue");
+                ShowInfoBar(InfoBarSeverity.Success, StatusMarkup.Format($"<a href='{ApiHelper.GetUrl(song)}'>{song.Title}</a> added to queue"), isMarkup: true);
             }
         } catch (Exception ex)
         {
-            ShowInfoBar(InfoBarSeverity.Error, $"Error adding <a href='{ApiHelper.GetUrl(song)}'>{song.Title}</a> to queue: {ex.Message}");
+            ShowInfoBar(InfoBarSeverity.Error, StatusMarkup.Format($"Error adding <a href='{ApiHelper.GetUrl(song)}'>{song.Title}</a> to queue: {ex.Message}"), isMarkup: true);
         }
     }
 

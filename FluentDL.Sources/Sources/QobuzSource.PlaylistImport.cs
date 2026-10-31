@@ -64,7 +64,7 @@ internal sealed partial class QobuzSource
         }
         try
         {
-            status?.Invoke(StatusLevel.Informational, $"<b>Qobuz</b>   Loading playlist <a href='{url}'>{name}</a>", -1);
+            status?.Invoke(StatusLevel.Informational, StatusMarkup.Format($"<b>Qobuz</b>   Loading playlist <a href='{url}'>{name}</a>"), -1);
             JObject? first;
             try { first = await Read($"playlist/get?playlist_id={Uri.EscapeDataString(id)}&extra=tracks&offset=0&limit={pageSize}"); }
             catch (HttpRequestException error) when (error.StatusCode == HttpStatusCode.BadRequest) { first = null; }
@@ -106,7 +106,7 @@ internal sealed partial class QobuzSource
                     var total = container.Value<int?>("total") ?? page.Value<int?>("tracks_count")
                         ?? throw new JsonException("Qobuz did not report the playlist size.");
                     if (total < 0) throw new JsonException("Qobuz reported an invalid playlist size.");
-                    status?.Invoke(StatusLevel.Informational, $"<b>Qobuz</b>   Loading playlist <a href='{url}'>{name}</a>... {loaded:N0} tracks", -1);
+                    status?.Invoke(StatusLevel.Informational, StatusMarkup.Format($"<b>Qobuz</b>   Loading playlist <a href='{url}'>{name}</a>... {loaded:N0} tracks"), -1);
                     await Task.Delay(1, token);
                     if (offset >= total) break;
                     if (items.Count == 0) throw new JsonException("Qobuz returned an incomplete playlist page.");
@@ -114,7 +114,7 @@ internal sealed partial class QobuzSource
                 }
             }
             status?.Invoke(failed == 0 ? StatusLevel.Success : StatusLevel.Warning,
-                $"<b>Qobuz</b>   Loaded playlist <a href='{url}'>{name}</a>"
+                StatusMarkup.Format($"<b>Qobuz</b>   Loaded playlist <a href='{url}'>{name}</a>")
                 + (failed == 0 ? "" : $". {failed:N0} tracks could not be loaded."));
         }
         catch (OperationCanceledException) { throw; }

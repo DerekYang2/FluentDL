@@ -387,7 +387,7 @@ internal sealed partial class QobuzSource
 
             if (track != null) {
                 itemSource.Add(await Task.Run(() => ConvertSongSearchObject(track)));
-                statusUpdate?.Invoke(StatusLevel.Success, $"<b>Qobuz</b>   Loaded track <a href='{url}'>{GetFullTitle(track)}</a>"); 
+                statusUpdate?.Invoke(StatusLevel.Success, StatusMarkup.Format($"<b>Qobuz</b>   Loaded track <a href='{url}'>{GetFullTitle(track)}</a>"));
             }
             else
             {
@@ -411,7 +411,7 @@ internal sealed partial class QobuzSource
 
             if (album != null && album.Tracks != null && album.Tracks.Items.Count > 0)
             {
-                statusUpdate?.Invoke(StatusLevel.Informational, $"<b>Qobuz</b>   Loading album <a href='{url}'>{album.Title}</a>", -1); // Show an informational message
+                statusUpdate?.Invoke(StatusLevel.Informational, StatusMarkup.Format($"<b>Qobuz</b>   Loading album <a href='{url}'>{album.Title}</a>"), -1); // Show an informational message
 
                 if (albumMode)
                 {
@@ -427,7 +427,7 @@ internal sealed partial class QobuzSource
                     {
                         if (token.IsCancellationRequested)
                         {
-                            statusUpdate?.Invoke(StatusLevel.Warning, $"<b>Qobuz</b>   Cancelled loading album <a href='{url}'>{album.Title}</a>"); // Show a warning message
+                            statusUpdate?.Invoke(StatusLevel.Warning, StatusMarkup.Format($"<b>Qobuz</b>   Cancelled loading album <a href='{url}'>{album.Title}</a>")); // Show a warning message
                             return;
                         }
 
@@ -435,7 +435,7 @@ internal sealed partial class QobuzSource
                     }
                 }
 
-                statusUpdate?.Invoke(StatusLevel.Success, $"<b>Qobuz</b>   Loaded album <a href='{url}'>{album.Title}</a>"); // Show a success message
+                statusUpdate?.Invoke(StatusLevel.Success, StatusMarkup.Format($"<b>Qobuz</b>   Loaded album <a href='{url}'>{album.Title}</a>")); // Show a success message
             }
             else
             {
@@ -504,7 +504,7 @@ internal sealed partial class QobuzSource
     {
         if (token.IsCancellationRequested)
         {
-            statusUpdate?.Invoke(StatusLevel.Warning, $"<b>Qobuz</b>   Cancelled loading albums from <a href='{url}'>{url}</a>"); // Show a warning message
+            statusUpdate?.Invoke(StatusLevel.Warning, StatusMarkup.Format($"<b>Qobuz</b>   Cancelled loading albums from <a href='{url}'>{url}</a>")); // Show a warning message
             return;
         }
 

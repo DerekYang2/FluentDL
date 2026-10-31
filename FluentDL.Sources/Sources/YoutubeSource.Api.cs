@@ -386,7 +386,7 @@ namespace FluentDL.Services.Sources
             catch (Exception e) when (e is not OperationCanceledException)
             {
                 Debug.WriteLine(e);
-                statusUpdate?.Invoke(StatusLevel.Error, $"<b>YouTube</b>   Error loading <a href='{url}'>{url}</a>: {e.Message}");
+                statusUpdate?.Invoke(StatusLevel.Error, StatusMarkup.Format($"<b>YouTube</b>   Error loading <a href='{url}'>{url}</a>: {e.Message}"));
             }
         }
 
@@ -398,7 +398,7 @@ namespace FluentDL.Services.Sources
                 var songObj = await ConvertSongSearchObject(video);
                 if (songObj == null)  // Some error occurred
                 {
-                    statusUpdate?.Invoke(StatusLevel.Error, $"<b>YouTube</b>   Error loading track from <a href='{url}'>{url}</a>");
+                    statusUpdate?.Invoke(StatusLevel.Error, StatusMarkup.Format($"<b>YouTube</b>   Error loading track from <a href='{url}'>{url}</a>"));
                     return;
                 }
 
@@ -406,11 +406,11 @@ namespace FluentDL.Services.Sources
 
                 if (video.Description.StartsWith("Provided to YouTube by") && video.Description.Contains("\u2117")) // Song
                 {
-                    statusUpdate?.Invoke(StatusLevel.Success, $"<b>YouTube</b>   Loaded track <a href='{url}'>{songObj.Title}</a>");
+                    statusUpdate?.Invoke(StatusLevel.Success, StatusMarkup.Format($"<b>YouTube</b>   Loaded track <a href='{url}'>{songObj.Title}</a>"));
                 }
                 else // Video
                 {
-                    statusUpdate?.Invoke(StatusLevel.Success, $"<b>YouTube</b>   Loaded video <a href='{url}'>{songObj.Title}</a>");
+                    statusUpdate?.Invoke(StatusLevel.Success, StatusMarkup.Format($"<b>YouTube</b>   Loaded video <a href='{url}'>{songObj.Title}</a>"));
                 }
             }
 
@@ -420,7 +420,7 @@ namespace FluentDL.Services.Sources
                 var songObj = await ConvertSongSearchObject(video);
                 if (songObj == null)  // Some error occurred
                 {
-                    statusUpdate?.Invoke(StatusLevel.Error, $"<b>YouTube Music</b>   Error loading track from <a href='{url}'>{url}</a>");
+                    statusUpdate?.Invoke(StatusLevel.Error, StatusMarkup.Format($"<b>YouTube Music</b>   Error loading track from <a href='{url}'>{url}</a>"));
                     return;
                 }
 
@@ -428,11 +428,11 @@ namespace FluentDL.Services.Sources
 
                 if (video.Description.StartsWith("Provided to YouTube by") && video.Description.Contains("\u2117")) // Song
                 {
-                    statusUpdate?.Invoke(StatusLevel.Success, $"<b>YouTube Music</b>   Loaded track <a href='{url}'>{songObj.Title}</a>");
+                    statusUpdate?.Invoke(StatusLevel.Success, StatusMarkup.Format($"<b>YouTube Music</b>   Loaded track <a href='{url}'>{songObj.Title}</a>"));
                 }
                 else // Video
                 {
-                    statusUpdate?.Invoke(StatusLevel.Success, $"<b>YouTube Music</b>   Loaded video <a href='{url}'>{songObj.Title}</a>");
+                    statusUpdate?.Invoke(StatusLevel.Success, StatusMarkup.Format($"<b>YouTube Music</b>   Loaded video <a href='{url}'>{songObj.Title}</a>"));
                 }
             }
 
@@ -459,7 +459,7 @@ namespace FluentDL.Services.Sources
                 }
 
                 // Show a permanent, loading message
-                statusUpdate?.Invoke(StatusLevel.Informational, $"<b>YouTube</b>   Loading playlist <a href='{url}'>{playlistName}</a>", -1);
+                statusUpdate?.Invoke(StatusLevel.Informational, StatusMarkup.Format($"<b>YouTube</b>   Loading playlist <a href='{url}'>{playlistName}</a>"), -1);
 
                 var failCount = 0;
                 try
@@ -468,7 +468,7 @@ namespace FluentDL.Services.Sources
                     {
                         if (token.IsCancellationRequested)
                         {
-                            statusUpdate?.Invoke(StatusLevel.Warning, $"<b>YouTube</b>   Cancelled loading playlist <a href='{url}'>{playlistName}</a>");
+                            statusUpdate?.Invoke(StatusLevel.Warning, StatusMarkup.Format($"<b>YouTube</b>   Cancelled loading playlist <a href='{url}'>{playlistName}</a>"));
                             return;
                         }
 
@@ -488,23 +488,23 @@ namespace FluentDL.Services.Sources
                 {
                     if (token.IsCancellationRequested) // Can crash on cancel
                     {
-                        statusUpdate?.Invoke(StatusLevel.Warning, $"<b>YouTube</b>   Cancelled loading playlist <a href='{url}'>{playlistName}</a>");
+                        statusUpdate?.Invoke(StatusLevel.Warning, StatusMarkup.Format($"<b>YouTube</b>   Cancelled loading playlist <a href='{url}'>{playlistName}</a>"));
                         return;
                     }
 
                     Debug.WriteLine("Error loading playlist: " + e.Message);
-                    statusUpdate?.Invoke(StatusLevel.Error, $"<b>YouTube</b>   Error loading playlist <a href='{url}'>{playlistName}</a>");
+                    statusUpdate?.Invoke(StatusLevel.Error, StatusMarkup.Format($"<b>YouTube</b>   Error loading playlist <a href='{url}'>{playlistName}</a>"));
                     return;
                 }
 
                 // Replace the loading message with a result message
                 if (failCount > 0) // If some failed
                 {
-                    statusUpdate?.Invoke(StatusLevel.Warning, $"<b>YouTube</b>   Loaded playlist <a href='{url}'>{playlistName}</a> with {failCount} failed {(failCount == 1 ? "track" : "tracks")}");
+                    statusUpdate?.Invoke(StatusLevel.Warning, StatusMarkup.Format($"<b>YouTube</b>   Loaded playlist <a href='{url}'>{playlistName}</a> with {failCount} failed {(failCount == 1 ? "track" : "tracks")}"));
                 }
                 else // All loaded successfully
                 {
-                    statusUpdate?.Invoke(StatusLevel.Success, $"<b>YouTube</b>   Loaded playlist <a href='{url}'>{playlistName}</a>");
+                    statusUpdate?.Invoke(StatusLevel.Success, StatusMarkup.Format($"<b>YouTube</b>   Loaded playlist <a href='{url}'>{playlistName}</a>"));
                 }
             }
         }

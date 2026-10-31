@@ -763,7 +763,7 @@ namespace FluentDL.Services.Sources
                 var userLogin = spotifyUser != null && userAuthorization != null;
                 var published = 0;
 
-                statusUpdate?.Invoke(StatusLevel.Informational, $"<b>Spotify</b>   Loading <a href='{url}'>playlist</a>", -1);
+                statusUpdate?.Invoke(StatusLevel.Informational, StatusMarkup.Format($"<b>Spotify</b>   Loading <a href='{url}'>playlist</a>"), -1);
 
                 // Attempt official API (private or collaborative playlists only)
                 try
@@ -776,7 +776,7 @@ namespace FluentDL.Services.Sources
                             throw new InvalidOperationException("Spotify could not read this playlist with the signed-in account.");
                         }
 
-                        statusUpdate?.Invoke(StatusLevel.Informational, $"<b>Spotify</b>   Loading playlist <a href='{url}'>{playlistName}</a>", -1);
+                        statusUpdate?.Invoke(StatusLevel.Informational, StatusMarkup.Format($"<b>Spotify</b>   Loading playlist <a href='{url}'>{playlistName}</a>"), -1);
 
                         var pages = await spotifyUser!.Playlists.GetPlaylistItems(id, cancel: token);
                         await foreach (var item in spotifyUser.Paginate(pages, cancel: token))
@@ -785,7 +785,7 @@ namespace FluentDL.Services.Sources
                             {
                                 if (token.IsCancellationRequested)
                                 {
-                                    statusUpdate?.Invoke(StatusLevel.Warning, $"<b>Spotify</b>   Cancelled loading playlist <a href='{url}'>{playlistName}</a>");
+                                    statusUpdate?.Invoke(StatusLevel.Warning, StatusMarkup.Format($"<b>Spotify</b>   Cancelled loading playlist <a href='{url}'>{playlistName}</a>"));
                                     return; // Stop if cancelled
                                 }
 
@@ -798,7 +798,7 @@ namespace FluentDL.Services.Sources
                                 }
                             }
                         }
-                        statusUpdate?.Invoke(StatusLevel.Success, $"<b>Spotify</b>   Loaded playlist <a href='{url}'>{playlistName}</a>");
+                        statusUpdate?.Invoke(StatusLevel.Success, StatusMarkup.Format($"<b>Spotify</b>   Loaded playlist <a href='{url}'>{playlistName}</a>"));
                     }
                     else
                     {
@@ -806,7 +806,7 @@ namespace FluentDL.Services.Sources
                         {
                             itemSource.Add(song);
                         }
-                        statusUpdate?.Invoke(StatusLevel.Success, $"<b>Spotify</b>   Loaded <a href='{url}'>playlist</a>");
+                        statusUpdate?.Invoke(StatusLevel.Success, StatusMarkup.Format($"<b>Spotify</b>   Loaded <a href='{url}'>playlist</a>"));
                     }
                 }
                 catch (OperationCanceledException) { throw; }
@@ -826,13 +826,13 @@ namespace FluentDL.Services.Sources
                             {
                                 itemSource.Add(song);
                             }
-                            statusUpdate?.Invoke(StatusLevel.Warning, $"<b>Spotify</b>   Error: {ex.Message}. Loaded <a href='{url}'>playlist</a> using fallback method.", 10);
+                            statusUpdate?.Invoke(StatusLevel.Warning, StatusMarkup.Format($"<b>Spotify</b>   Error: {ex.Message}. Loaded <a href='{url}'>playlist</a> using fallback method."), 10);
                         }
                         catch (OperationCanceledException) { throw; }
                         catch (SourceSignInRequiredException) { throw; }
                         catch (Exception ex2)
                         {
-                            statusUpdate?.Invoke(StatusLevel.Error, $"<b>Spotify</b>   Failed to load with both methods. Error 1: {ex.Message} | Error 2: {ex2.Message}", 10);
+                            statusUpdate?.Invoke(StatusLevel.Error, StatusMarkup.Format($"<b>Spotify</b>   Failed to load with both methods. Error 1: {ex.Message} | Error 2: {ex2.Message}"), 10);
                         }
                     } else
                     {
@@ -846,7 +846,7 @@ namespace FluentDL.Services.Sources
             {
                 if (spotifyWebService != null) // The web player can't load albums (bug 9)
                 {
-                    statusUpdate?.Invoke(StatusLevel.Error, $"<b>Spotify</b>   Album links need a Spotify client ID and secret (Settings). Cannot load <a href='{url}'>{url}</a>");
+                    statusUpdate?.Invoke(StatusLevel.Error, StatusMarkup.Format($"<b>Spotify</b>   Album links need a Spotify client ID and secret (Settings). Cannot load <a href='{url}'>{url}</a>"));
                     return;
                 }
 
@@ -862,7 +862,7 @@ namespace FluentDL.Services.Sources
                     return;
                 }
 
-                statusUpdate?.Invoke(StatusLevel.Informational, $"<b>Spotify</b>   Loading album <a href='{url}'>{album.Name}</a>", -1);
+                statusUpdate?.Invoke(StatusLevel.Informational, StatusMarkup.Format($"<b>Spotify</b>   Loading album <a href='{url}'>{album.Name}</a>"), -1);
 
                 var pages = album.Tracks;
                 var allPages = await spotify.PaginateAll(pages, cancellationToken: token);
@@ -871,7 +871,7 @@ namespace FluentDL.Services.Sources
                 {
                     if (token.IsCancellationRequested)
                     {
-                        statusUpdate?.Invoke(StatusLevel.Warning, $"<b>Spotify</b>   Cancelled loading album <a href='{url}'>{album.Name}</a>");
+                        statusUpdate?.Invoke(StatusLevel.Warning, StatusMarkup.Format($"<b>Spotify</b>   Cancelled loading album <a href='{url}'>{album.Name}</a>"));
                         return; // Stop if cancelled
                     }
 
@@ -884,7 +884,7 @@ namespace FluentDL.Services.Sources
                     }
                 }
 
-                statusUpdate?.Invoke(StatusLevel.Success, $"<b>Spotify</b>   Loaded album <a href='{url}'>{album.Name}</a>");
+                statusUpdate?.Invoke(StatusLevel.Success, StatusMarkup.Format($"<b>Spotify</b>   Loaded album <a href='{url}'>{album.Name}</a>"));
             }
 
             if (url.StartsWith("https://open.spotify.com/track/")) // Single track, no need to clear item source
@@ -897,7 +897,7 @@ namespace FluentDL.Services.Sources
                         if (fullTrack != null)
                         {
                             itemSource.Add(fullTrack);
-                            statusUpdate?.Invoke(StatusLevel.Success, $"<b>Spotify</b>   Loaded track <a href='{url}'>{fullTrack.Title}</a>");
+                            statusUpdate?.Invoke(StatusLevel.Success, StatusMarkup.Format($"<b>Spotify</b>   Loaded track <a href='{url}'>{fullTrack.Title}</a>"));
                         }
                     }
                     else
@@ -907,12 +907,12 @@ namespace FluentDL.Services.Sources
                         if (songObj != null)
                         {
                             itemSource.Add(songObj);
-                            statusUpdate?.Invoke(StatusLevel.Success, $"<b>Spotify</b>   Loaded track <a href='{url}'>{fullTrack.Name}</a>");
+                            statusUpdate?.Invoke(StatusLevel.Success, StatusMarkup.Format($"<b>Spotify</b>   Loaded track <a href='{url}'>{fullTrack.Name}</a>"));
                         }
                     }
                 } catch (Exception ex)
                 {
-                    statusUpdate?.Invoke(StatusLevel.Error, $"<b>Spotify</b>   Error loading track: {ex.Message}");
+                    statusUpdate?.Invoke(StatusLevel.Error, StatusMarkup.Format($"<b>Spotify</b>   Error loading track: {ex.Message}"));
                 }
             }
         }

@@ -14,6 +14,16 @@ namespace FluentDL.Characterization.Tests;
 public class SettingsAuthenticationTests
 {
     [TestMethod]
+    public void SettingsNoticesEscapePublicTextAndKeepOnlyTheIntendedSettingsLink()
+    {
+        var notice = SettingsNavigation.WithLink("x</a><a href='x'>y", SettingsSection.Tidal);
+        var parts = StatusMarkup.Parse(notice);
+        Assert.AreEqual(1, parts.Count(part => part.Link != null));
+        StringAssert.StartsWith(string.Concat(parts.Select(part => part.Text)), "x</a><a href='x'>y");
+        Assert.AreEqual(notice, SettingsNavigation.WithLink(notice, SettingsSection.Tidal));
+    }
+
+    [TestMethod]
     [DataRow(SettingsSection.Lyrics, "Settings > Downloads > Lyrics")]
     [DataRow(SettingsSection.Backups, "Settings > General > Backups")]
     [DataRow(SettingsSection.Downloads, "Settings > Downloads > Location")]
@@ -167,7 +177,7 @@ public class SettingsAuthenticationTests
         var uri = new Uri("fluentdl://settings/" + expected.ToString().ToLowerInvariant());
         Assert.IsTrue(SettingsNavigation.TryParse(uri, out var actual));
         Assert.AreEqual(expected, actual);
-        StringAssert.Contains(SettingsNavigation.Link(expected), SettingsNavigation.Path(expected));
+        Assert.AreEqual(SettingsNavigation.Path(expected), StatusMarkup.Parse(SettingsNavigation.Link(expected)).Single().Text);
     }
 
     [TestMethod]

@@ -61,7 +61,7 @@ public sealed partial class CreatePlaylistDialog : ContentDialog
     {
         var destination = SettingsNavigation.ForSource(ViewModel.SignInSourceId ?? ViewModel.SelectedDestination?.Writer.Descriptor.Id);
         var message = destination is { } target && (ViewModel.NeedsSignIn || ViewModel.Message.Contains(SettingsNavigation.Path(target), StringComparison.Ordinal))
-            ? SettingsNavigation.WithLink(ViewModel.Message, target) : ViewModel.Message;
+            ? SettingsNavigation.WithLink(ViewModel.Message, target) : FluentDL.Core.Sources.StatusMarkup.Text(ViewModel.Message);
         UrlParser.ParseTextBlock(PlaylistStatusText, message, section =>
         {
             ViewModel.Cancel();

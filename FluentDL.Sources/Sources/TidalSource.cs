@@ -161,44 +161,44 @@ internal sealed class TidalSource : ISourceSession, IAccountLogin, ISearchSource
                     if (await GetTrackAsync(id, token) is { } track)
                     {
                         results.Add(track);
-                        status?.Invoke(StatusLevel.Success, $"<b>TIDAL</b>   Loaded track <a href='{url}'>{track.Title}</a>");
+                        status?.Invoke(StatusLevel.Success, StatusMarkup.Format($"<b>TIDAL</b>   Loaded track <a href='{url}'>{track.Title}</a>"));
                     }
                     else
                     {
-                        status?.Invoke(StatusLevel.Error, $"<b>TIDAL</b>   No track found at <a href='{url}'>{url}</a>");
+                        status?.Invoke(StatusLevel.Error, StatusMarkup.Format($"<b>TIDAL</b>   No track found at <a href='{url}'>{url}</a>"));
                     }
                     break;
 
                 case "album":
                     if (await GetAlbumAsync(id, token) is not { } album)
                     {
-                        status?.Invoke(StatusLevel.Error, $"<b>TIDAL</b>   No album found at <a href='{url}'>{url}</a>");
+                        status?.Invoke(StatusLevel.Error, StatusMarkup.Format($"<b>TIDAL</b>   No album found at <a href='{url}'>{url}</a>"));
                     }
                     else if (request.AlbumMode)
                     {
                         results.Add(album);
-                        status?.Invoke(StatusLevel.Success, $"<b>TIDAL</b>   Loaded album <a href='{url}'>{album.Title}</a>");
+                        status?.Invoke(StatusLevel.Success, StatusMarkup.Format($"<b>TIDAL</b>   Loaded album <a href='{url}'>{album.Title}</a>"));
                     }
                     else
                     {
-                        status?.Invoke(StatusLevel.Informational, $"<b>TIDAL</b>   Loading album <a href='{url}'>{album.Title}</a>", -1);
+                        status?.Invoke(StatusLevel.Informational, StatusMarkup.Format($"<b>TIDAL</b>   Loading album <a href='{url}'>{album.Title}</a>"), -1);
                         foreach (var albumTrack in await GetAlbumTracksAsync(album, token))
                         {
                             results.Add(albumTrack);
                         }
-                        status?.Invoke(StatusLevel.Success, $"<b>TIDAL</b>   Loaded album <a href='{url}'>{album.Title}</a>");
+                        status?.Invoke(StatusLevel.Success, StatusMarkup.Format($"<b>TIDAL</b>   Loaded album <a href='{url}'>{album.Title}</a>"));
                     }
                     break;
 
                 case "playlist":
-                    status?.Invoke(StatusLevel.Informational, $"<b>TIDAL</b>   Loading playlist <a href='{url}'>{url}</a>", -1);
+                    status?.Invoke(StatusLevel.Informational, StatusMarkup.Format($"<b>TIDAL</b>   Loading playlist <a href='{url}'>{url}</a>"), -1);
                     var name = id;
                     await foreach (var playlistTrack in ReadPlaylistTracksAsync(id, value => name = value, token))
                     {
                         results.Add(playlistTrack);
                         playlistItemsAdded++;
                     }
-                    status?.Invoke(StatusLevel.Success, $"<b>TIDAL</b>   Loaded playlist <a href='{url}'>{name}</a>");
+                    status?.Invoke(StatusLevel.Success, StatusMarkup.Format($"<b>TIDAL</b>   Loaded playlist <a href='{url}'>{name}</a>"));
                     break;
             }
         }
@@ -215,7 +215,7 @@ internal sealed class TidalSource : ISourceSession, IAccountLogin, ISearchSource
         }
         catch (Exception e) when (e is not OperationCanceledException)
         {
-            status?.Invoke(StatusLevel.Error, $"<b>TIDAL</b>   Error loading <a href='{url}'>{url}</a>: {e.Message}");
+            status?.Invoke(StatusLevel.Error, StatusMarkup.Format($"<b>TIDAL</b>   Error loading <a href='{url}'>{url}</a>: {e.Message}"));
         }
     }
 

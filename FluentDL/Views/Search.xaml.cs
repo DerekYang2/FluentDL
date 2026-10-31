@@ -186,13 +186,13 @@ public sealed partial class Search : Page
                 var update = await App.GetService<FluentDL.Contracts.Services.IAppUpdateService>().CheckAsync(deadline.Token);
                 if (update != null)
                 {  
-                    ShowInfoBar(InfoBarSeverity.Informational, $"{update.DisplayVersion}. Check {SettingsNavigation.Link(SettingsSection.Updates)} to download and install.", 10,
+                    ShowInfoBar(InfoBarSeverity.Informational, $"{StatusMarkup.Text(update.DisplayVersion)}. Check {SettingsNavigation.Link(SettingsSection.Updates)} to download and install.", 10,
                                 buttonText: "Don't Show Again", 
                                 onButtonClick: () => 
                                 {
                                     _ = ViewModel.SaveNotifyUpdate(false);
                                     ForceHideInfoBar();
-                                });
+                                }, isMarkup: true);
                 }
             }
             catch (Exception ex)
@@ -513,13 +513,13 @@ public sealed partial class Search : Page
                 {
                     if (duration == -1)
                     {
-                        ShowInfoBarPermanent(level.ToSeverity(), message);
+                        ShowInfoBarPermanent(level.ToSeverity(), message, isMarkup: true);
                         InfobarProgress.Visibility = Visibility.Visible;
                     }
                     else
                     {
                         InfobarProgress.Visibility = Visibility.Collapsed;
-                        ShowInfoBar(level.ToSeverity(), message, duration);
+                        ShowInfoBar(level.ToSeverity(), message, duration, isMarkup: true);
                     }
                 };
 
@@ -817,11 +817,11 @@ public sealed partial class Search : Page
 
         if (QueueViewModel.Source.Count == beforeCount) // No change
         {
-            ShowInfoBar(InfoBarSeverity.Warning, $"{label} <a href='{ApiHelper.GetUrl(song)}'>{song.Title}</a> already in queue");
+            ShowInfoBar(InfoBarSeverity.Warning, StatusMarkup.Format($"{label} <a href='{ApiHelper.GetUrl(song)}'>{song.Title}</a> already in queue"), isMarkup: true);
         }
         else
         {
-            ShowInfoBar(InfoBarSeverity.Success, $"{label} <a href='{ApiHelper.GetUrl(song)}'>{song.Title}</a> added to queue");
+            ShowInfoBar(InfoBarSeverity.Success, StatusMarkup.Format($"{label} <a href='{ApiHelper.GetUrl(song)}'>{song.Title}</a> added to queue"), isMarkup: true);
         }
     }
 
@@ -849,6 +849,23 @@ public sealed partial class Search : Page
     }
 
     async Task DownloadSong(SongSearchObject? songObj)
+    {
+        try
+        {
+            await UiOperation.RunAsync(() => DownloadSongCoreAsync(songObj), error =>
+            {
+                if (error is SourceSignInRequiredException signIn) ShowSignInRequired(signIn);
+                else ShowInfoBar(InfoBarSeverity.Error, $"Could not download: {error.Message}", 10);
+            });
+        }
+        finally
+        {
+            InfobarProgress.Visibility = Visibility.Collapsed;
+            InfobarProgress.IsIndeterminate = true;
+        }
+    }
+
+    private async Task DownloadSongCoreAsync(SongSearchObject? songObj)
     {
         if (ApplicationActivity.Gate.IsInstalling) { ShowInfoBar(InfoBarSeverity.Warning, "Wait for the app update to finish."); return; }
         using var activity = ApplicationActivity.Gate.EnterWork();
@@ -881,12 +898,12 @@ public sealed partial class Search : Page
             }
         }
 
-        ShowInfoBarPermanent(InfoBarSeverity.Informational, $"Saving <a href='{ApiHelper.GetUrl(songObj)}'>{songObj.Title}</a> to <a href='{directory}'>{directory}</a>", title: "Download in Progress");
+        ShowInfoBarPermanent(InfoBarSeverity.Informational, StatusMarkup.Format($"Saving <a href='{ApiHelper.GetUrl(songObj)}'>{songObj.Title}</a> to <a href='{directory}'>{directory}</a>"), title: "Download in Progress", isMarkup: true);
 
         InfobarProgress.Visibility = Visibility.Visible; // Show the infobar's progress bar
 
         // Download notification helper
-        var downloadHelper = new DownloadProgressHelper($"<a href='{ApiHelper.GetUrl(songObj)}'>{directory}</a>");
+        using var downloadHelper = new DownloadProgressHelper(StatusMarkup.Format($"<a href='{ApiHelper.GetUrl(songObj)}'>{directory}</a>"));
         downloadHelper.ProgressUpdated += (s, e) => {
             var finalStr = e.DisplayString;
             var progress = e.ProgressValue;
@@ -894,7 +911,7 @@ public sealed partial class Search : Page
             dispatcher.TryEnqueue(() =>
             {
                 if (!downloadHelper.IsRunning) return;
-                ShowInfoBarPermanent(InfoBarSeverity.Informational, finalStr, title: "Downloading", isIndeterminate: preparing, progressPercent: progress);
+                ShowInfoBarPermanent(InfoBarSeverity.Informational, finalStr, title: "Downloading", isIndeterminate: preparing, progressPercent: progress, isMarkup: true);
             });
         };
 
@@ -955,11 +972,11 @@ public sealed partial class Search : Page
                 }
                 else if (paths.Count - failedTracks < albumObj.TracksCount)
                 {
-                    ShowInfoBar(InfoBarSeverity.Warning, $"Downloaded {paths.Count - failedTracks} of {albumObj.TracksCount} tracks for album <a href='{albumDir}'>{albumObj.Title}</a>", 10, buttonText: "View Download", onButtonClick: navigateLocalExplorer);
+                    ShowInfoBar(InfoBarSeverity.Warning, StatusMarkup.Format($"Downloaded {paths.Count - failedTracks} of {albumObj.TracksCount} tracks for album <a href='{albumDir}'>{albumObj.Title}</a>"), 10, buttonText: "View Download", onButtonClick: navigateLocalExplorer, isMarkup: true);
                 }
                 else
                 {
-                    ShowInfoBar(InfoBarSeverity.Success, $"Successfully downloaded album <a href='{albumDir}'>{albumObj.Title}</a>.", 10, buttonText: "View Download", onButtonClick: navigateLocalExplorer);
+                    ShowInfoBar(InfoBarSeverity.Success, StatusMarkup.Format($"Successfully downloaded album <a href='{albumDir}'>{albumObj.Title}</a>."), 10, buttonText: "View Download", onButtonClick: navigateLocalExplorer, isMarkup: true);
                 }
             }
 
@@ -993,11 +1010,11 @@ public sealed partial class Search : Page
                     }
                     else if (severity == StatusLevel.Success)
                     {
-                        ShowInfoBar(severity.ToSeverity(), $"Successfully downloaded <a href='{location}'>{songObj.Title}</a>", 10, buttonText: "View Download", onButtonClick: navigateLocalExplorer);
+                        ShowInfoBar(severity.ToSeverity(), StatusMarkup.Format($"Successfully downloaded <a href='{location}'>{songObj.Title}</a>"), 10, buttonText: "View Download", onButtonClick: navigateLocalExplorer, isMarkup: true);
                     }
                     else if (severity == StatusLevel.Warning)
                     {
-                        ShowInfoBar(severity.ToSeverity(), $"Downloaded a possible equivalent of <a href='{location}'>{songObj.Title}</a>", 10, buttonText: "View Download", onButtonClick: navigateLocalExplorer);
+                        ShowInfoBar(severity.ToSeverity(), StatusMarkup.Format($"Downloaded a possible equivalent of <a href='{location}'>{songObj.Title}</a>"), 10, buttonText: "View Download", onButtonClick: navigateLocalExplorer, isMarkup: true);
                     }
                 });
                 });
@@ -1037,14 +1054,14 @@ public sealed partial class Search : Page
 
     private void ShowSettingsNotice(string message, SettingsSection section)
     {
-        ShowInfoBarPermanent(InfoBarSeverity.Warning, SettingsNavigation.WithLink(message, section), isIndeterminate: false);
+        ShowInfoBarPermanent(InfoBarSeverity.Warning, SettingsNavigation.WithLink(message, section), isIndeterminate: false, isMarkup: true);
         InfobarProgress.Visibility = Visibility.Collapsed;
     }
 
-    private void ShowInfoBar(InfoBarSeverity severity, string message, int seconds = 2, string title = "", string buttonText = "", Action? onButtonClick = null)
+    private void ShowInfoBar(InfoBarSeverity severity, string message, int seconds = 2, string title = "", string buttonText = "", Action? onButtonClick = null, bool isMarkup = false)
     {
-        title = title.Trim();
-        message = message.Trim();
+        title = StatusMarkup.Text(title.Trim());
+        message = isMarkup ? message.Trim() : StatusMarkup.Text(message.Trim());
         dispatcher.TryEnqueue(() =>
         {
             dispatcherTimer.Stop();
@@ -1081,10 +1098,10 @@ public sealed partial class Search : Page
         });
     }
 
-    private void ShowInfoBarPermanent(InfoBarSeverity severity, string message, string title = "", string buttonText = "", Action? onButtonClick = null, bool isIndeterminate = true, double progressPercent = 0)
+    private void ShowInfoBarPermanent(InfoBarSeverity severity, string message, string title = "", string buttonText = "", Action? onButtonClick = null, bool isIndeterminate = true, double progressPercent = 0, bool isMarkup = false)
     {
-        title = title.Trim();
-        message = message.Trim();
+        title = StatusMarkup.Text(title.Trim());
+        message = isMarkup ? message.Trim() : StatusMarkup.Text(message.Trim());
         dispatcher.TryEnqueue(() =>
         {
             if (QueueViewModel.IsClosing) return;

@@ -669,7 +669,7 @@ public sealed partial class QueuePage : Page
             }
 
             await File.WriteAllBytesAsync(file.Path, coverBytes);
-            ShowInfoBar(InfoBarSeverity.Success, $"Cover saved to <a href='{file.Path}'>{file.Name}</a>", 5);
+            ShowInfoBar(InfoBarSeverity.Success, StatusMarkup.Format($"Cover saved to <a href='{file.Path}'>{file.Name}</a>"), 5, isMarkup: true);
         }
 
     }
@@ -1045,10 +1045,10 @@ public sealed partial class QueuePage : Page
         PageInfoBar.Opacity = 0;
     }
 
-    private void ShowInfoBar(InfoBarSeverity severity, string message, int seconds = 2, string title = "")
+    private void ShowInfoBar(InfoBarSeverity severity, string message, int seconds = 2, string title = "", bool isMarkup = false)
     {
-        title = title.Trim();
-        message = message.Trim();
+        title = StatusMarkup.Text(title.Trim());
+        message = isMarkup ? message.Trim() : StatusMarkup.Text(message.Trim());
         dispatcherQueue.TryEnqueue(() =>
         {
             if (QueueViewModel.IsClosing) return;
@@ -1073,10 +1073,10 @@ public sealed partial class QueuePage : Page
         });
     }
 
-    private void ShowInfoBarPermanent(InfoBarSeverity severity, string message, string title = "", string buttonText = "")
+    private void ShowInfoBarPermanent(InfoBarSeverity severity, string message, string title = "", string buttonText = "", bool isMarkup = false)
     {
-        title = title.Trim();
-        message = message.Trim();
+        title = StatusMarkup.Text(title.Trim());
+        message = isMarkup ? message.Trim() : StatusMarkup.Text(message.Trim());
         dispatcherQueue.TryEnqueue(() =>
         {
             if (QueueViewModel.IsClosing) return;
@@ -1136,7 +1136,7 @@ public sealed partial class QueuePage : Page
 
     private void ShowSettingsNotice(string message, SettingsSection section)
     {
-        ShowInfoBarPermanent(InfoBarSeverity.Warning, SettingsNavigation.WithLink(message, section));
+        ShowInfoBarPermanent(InfoBarSeverity.Warning, SettingsNavigation.WithLink(message, section), isMarkup: true);
         dispatcherQueue.TryEnqueue(() =>
         {
             InfobarProgress.Visibility = Visibility.Collapsed;
@@ -1306,7 +1306,14 @@ public sealed partial class QueuePage : Page
         return tracks.Count + (int.TryParse(digits, out var number) ? number : 9999);
     }
 
-    private async Task ConversionTask(IEnumerable<string> selectedSources, string outputSource)
+    private Task ConversionTask(IEnumerable<string> selectedSources, string outputSource) =>
+        UiOperation.RunAsync(() => ConversionTaskCoreAsync(selectedSources, outputSource), error =>
+        {
+            if (error is SourceSignInRequiredException signIn) ShowSignInRequired(signIn);
+            else ShowInfoBar(InfoBarSeverity.Error, $"Could not start or complete the queue operation: {error.Message}", 10);
+        });
+
+    private async Task ConversionTaskCoreAsync(IEnumerable<string> selectedSources, string outputSource)
     {
         if (albumExpansionBusy) { ShowInfoBar(InfoBarSeverity.Warning, "Wait for the album expansion to finish."); return; }
         if (ApplicationActivity.Gate.IsInstalling) { ShowInfoBar(InfoBarSeverity.Warning, "Wait for the app update to finish."); return; }
@@ -1381,7 +1388,7 @@ public sealed partial class QueuePage : Page
 
         // For to local output. Each album counts as its tracks.
         var trackTotal = songsToConvert.Sum(x => x.Song.AlbumTracksCount is > 0 and var n ? n : 1);
-        var downloadHelper = new DownloadProgressHelper($"Queue to <a href='{directory}'>{directory}</a>", trackTotal);
+        using var downloadHelper = new DownloadProgressHelper(StatusMarkup.Format($"Queue to <a href='{directory}'>{directory}</a>"), trackTotal);
         downloadHelper.ProgressUpdated += (sender, args) =>
         {
             var finalStr = args.DisplayString;
@@ -1392,7 +1399,7 @@ public sealed partial class QueuePage : Page
                 if (!downloadHelper.IsRunning) return;
                 QueueProgress.IsIndeterminate = preparing;
                 QueueProgress.Value = Math.Clamp(progress * 100, 0, 100);
-                ShowInfoBarPermanent(InfoBarSeverity.Informational, finalStr, title: "Downloading");
+                ShowInfoBarPermanent(InfoBarSeverity.Informational, finalStr, title: "Downloading", isMarkup: true);
             });
         };
         var progress = new Progress<ProgressData>(downloadHelper.UpdateProgressLoop);
@@ -1402,7 +1409,7 @@ public sealed partial class QueuePage : Page
             // Infobar notification
             if (outputSource == SourceIds.Local)
             {
-                ShowInfoBarPermanent(InfoBarSeverity.Informational, $"Saving {trackTotal} tracks to <a href='{directory}'>{directory}</a>", title: "Download in Progress");
+                ShowInfoBarPermanent(InfoBarSeverity.Informational, StatusMarkup.Format($"Saving {trackTotal} tracks to <a href='{directory}'>{directory}</a>"), title: "Download in Progress", isMarkup: true);
             }
             else
             {

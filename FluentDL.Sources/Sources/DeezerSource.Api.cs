@@ -107,7 +107,7 @@ internal sealed partial class DeezerSource
             try
             {
                 var contents = await playlists.ReadPlaylistAsync(playlistId, token);
-                statusUpdate?.Invoke(StatusLevel.Informational, $"<b>Deezer</b>   Loading playlist <a href='{url}'>{contents.Name}</a>", -1);
+                statusUpdate?.Invoke(StatusLevel.Informational, StatusMarkup.Format($"<b>Deezer</b>   Loading playlist <a href='{url}'>{contents.Name}</a>"), -1);
                 var missingTracks = 0;
                 await foreach (var track in LoadPlaylistMetadataAsync(contents, token))
                 {
@@ -115,7 +115,7 @@ internal sealed partial class DeezerSource
                     else missingTracks++;
                 }
                 statusUpdate?.Invoke(missingTracks == 0 ? StatusLevel.Success : StatusLevel.Warning,
-                    $"<b>Deezer</b>   Loaded playlist <a href='{url}'>{contents.Name}</a>"
+                    StatusMarkup.Format($"<b>Deezer</b>   Loaded playlist <a href='{url}'>{contents.Name}</a>")
                     + (missingTracks == 0 ? "" : $". Could not load metadata for {missingTracks} tracks."));
             }
             catch (OperationCanceledException) { throw; }
@@ -145,7 +145,7 @@ internal sealed partial class DeezerSource
             {
                 list.Add(songObj);
                 // Send message to infobar
-                statusUpdate?.Invoke(StatusLevel.Success, $"<b>Deezer</b>   Loaded track <a href='{url}'>{songObj.Title}</a>");
+                statusUpdate?.Invoke(StatusLevel.Success, StatusMarkup.Format($"<b>Deezer</b>   Loaded track <a href='{url}'>{songObj.Title}</a>"));
             }
         }
 
@@ -169,7 +169,7 @@ internal sealed partial class DeezerSource
                 if (albumObj != null)
                 {
                     list.Add(albumObj);
-                    statusUpdate?.Invoke(StatusLevel.Success, $"<b>Deezer</b>   Loaded album <a href='{url}'>{albumObj.Title}</a>");
+                    statusUpdate?.Invoke(StatusLevel.Success, StatusMarkup.Format($"<b>Deezer</b>   Loaded album <a href='{url}'>{albumObj.Title}</a>"));
                 }
             } else if (DeezerURL.TryParse(url, out var urlData))
             {
@@ -183,13 +183,13 @@ internal sealed partial class DeezerSource
 
                 // Send message to infobar
                 var listName = await urlData.GetTitle(deezerClient);
-                statusUpdate?.Invoke(StatusLevel.Informational, $"<b>Deezer</b>   Loading {(url.Contains("/album/") ? "album" : "playlist")} <a href='{url}'>{listName}</a>", -1);
+                statusUpdate?.Invoke(StatusLevel.Informational, StatusMarkup.Format($"<b>Deezer</b>   Loading {(url.Contains("/album/") ? "album" : "playlist")} <a href='{url}'>{listName}</a>"), -1);
 
                 foreach (var trackId in tracksInAlbum)
                 {
                     if (token.IsCancellationRequested) // Stop the search
                     {
-                        statusUpdate?.Invoke(StatusLevel.Warning, $"<b>Deezer</b>   Cancelled loading {(url.Contains("/album/") ? "album" : "playlist")} <a href='{url}'>{listName}</a>");
+                        statusUpdate?.Invoke(StatusLevel.Warning, StatusMarkup.Format($"<b>Deezer</b>   Cancelled loading {(url.Contains("/album/") ? "album" : "playlist")} <a href='{url}'>{listName}</a>"));
                         return;
                     }
 
@@ -200,7 +200,7 @@ internal sealed partial class DeezerSource
                     }
                 }
 
-                statusUpdate?.Invoke(StatusLevel.Success, $"<b>Deezer</b>   Loaded {(url.Contains("/album/") ? "album" : "playlist")} <a href='{url}'>{listName}</a>");
+                statusUpdate?.Invoke(StatusLevel.Success, StatusMarkup.Format($"<b>Deezer</b>   Loaded {(url.Contains("/album/") ? "album" : "playlist")} <a href='{url}'>{listName}</a>"));
             }
         }
     }

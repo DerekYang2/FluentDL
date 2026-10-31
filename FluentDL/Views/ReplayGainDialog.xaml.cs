@@ -1,5 +1,6 @@
 using System.Collections.ObjectModel;
 using FluentDL.Core.ReplayGain;
+using FluentDL.Core.Sources;
 using FluentDL.Helpers;
 using FluentDL.Models;
 using FluentDL.ViewModels;
@@ -103,13 +104,22 @@ public sealed partial class ReplayGainDialog : UserControl
 
     private async void Dialog_PrimaryButtonClick(ContentDialog sender, ContentDialogButtonClickEventArgs args)
     {
-        if (state == State.Analyzed)
+        try
         {
-            await WriteAsync();
+            if (state == State.Analyzed)
+            {
+                await WriteAsync();
+            }
+            else
+            {
+                await AnalyzeAsync();
+            }
         }
-        else
+        catch (Exception error)
         {
-            await AnalyzeAsync();
+            Serilog.Log.Warning(error, "ReplayGain operation could not complete");
+            SetState(scan != null ? State.Analyzed : State.Ready);
+            SetInfo(InfoBarSeverity.Error, StatusMarkup.Format($"ReplayGain could not complete: {error.Message}"));
         }
     }
 
@@ -185,7 +195,7 @@ public sealed partial class ReplayGainDialog : UserControl
         {
             Serilog.Log.Warning(e, "ReplayGain analysis failed");
             SetState(State.Ready);
-            SetInfo(InfoBarSeverity.Error, $"Analysis failed: {e.Message}");
+            SetInfo(InfoBarSeverity.Error, StatusMarkup.Format($"Analysis failed: {e.Message}"));
             return;
         }
         finally
