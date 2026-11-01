@@ -6,8 +6,8 @@ namespace FluentDL.Characterization.Tests;
 public class UiOperationTests
 {
     [TestMethod]
-    public void NormalBuildExcludesTheHardeningProviderFixture() =>
-        Assert.IsNull(typeof(UiOperation).Assembly.GetType("FluentDL.HardeningTestSupport"));
+    public void NormalBuildExcludesTheQueueRecoveryProviderFixture() =>
+        Assert.IsNull(typeof(UiOperation).Assembly.GetType("FluentDL.QueueRecoveryTestSupport"));
 
     [TestMethod]
     [DataRow(false)]
