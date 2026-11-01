@@ -160,7 +160,7 @@ internal sealed class EtaEstimator
     }
 }
 
-internal class DownloadProgressHelper
+internal class DownloadProgressHelper : IDisposable
 {
     // A track with no live byte progress (Deezer, yt-dlp, link lookups) never estimates past this share.
     private const double MaxEstimate = 0.9;
@@ -374,6 +374,12 @@ internal class DownloadProgressHelper
     ~DownloadProgressHelper()
     {
         StopLoop();
+    }
+
+    public void Dispose()
+    {
+        StopLoop();
+        GC.SuppressFinalize(this);
     }
 }
 

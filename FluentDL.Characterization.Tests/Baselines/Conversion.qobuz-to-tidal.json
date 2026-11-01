@@ -99,7 +99,7 @@
     "OriginIsrc": "USSM10804556",
     "Result": {
       "Source": "tidal",
-      "Id": "17771055",
+      "Id": "2024977",
       "Title": "Halo",
       "Artists": "Beyoncé",
       "AlbumName": "I AM...SASHA FIERCE",
@@ -108,7 +108,7 @@
       "ReleaseDate": "2008-11-18",
       "Explicit": false,
       "TrackPosition": "1",
-      "ImageLocation": "https://resources.tidal.com/images/2d1308e1/b354/4b4b/8168/edaf576e0add/320x320.jpg",
+      "ImageLocation": "https://resources.tidal.com/images/c5ef2681/1efb/4f69/9843/8d79248c4eb0/320x320.jpg",
       "AdditionalFieldKeys": [
         "album_id",
         "cover_max",
@@ -120,7 +120,7 @@
         "Severity": "Success",
         "Song": {
           "Source": "tidal",
-          "Id": "17771055",
+          "Id": "2024977",
           "Title": "Halo",
           "Artists": "Beyoncé",
           "AlbumName": "I AM...SASHA FIERCE",
@@ -129,7 +129,7 @@
           "ReleaseDate": "2008-11-18",
           "Explicit": false,
           "TrackPosition": "1",
-          "ImageLocation": "https://resources.tidal.com/images/2d1308e1/b354/4b4b/8168/edaf576e0add/320x320.jpg",
+          "ImageLocation": "https://resources.tidal.com/images/c5ef2681/1efb/4f69/9843/8d79248c4eb0/320x320.jpg",
           "AdditionalFieldKeys": [
             "album_id",
             "cover_max",

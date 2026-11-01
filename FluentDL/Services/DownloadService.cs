@@ -20,6 +20,8 @@ using FluentDL.Services.Sources;
 
 namespace FluentDL.Services;
 
+internal sealed record AlbumTrackDownloadOutcome(SongSearchObject Track, int Order, StatusLevel Level, string? Path, string? Error);
+
 /// <summary>
 /// Downloads tracks and albums: naming, the per-source download, tags, lyrics, ReplayGain and the album cover. Moved
 /// unchanged from ApiHelper; Phase 6 replaces its calls into the source classes with role interfaces.
@@ -342,12 +344,30 @@ public sealed class DownloadService(SourceRegistry sources, EquivalentDownloader
 
     public async Task<List<string>> DownloadAlbum(AlbumSearchObject album, string directory, IProgress<ProgressData> progress, ConversionUpdateCallback? callback = default)
     {
+        var outcomes = await DownloadAlbumWithOutcomesAsync(album, directory, progress, callback);
+        return outcomes.Where(outcome => outcome.Path != null).Select(outcome => outcome.Path!).ToList();
+    }
+
+    internal async Task<List<AlbumTrackDownloadOutcome>> DownloadAlbumWithOutcomesAsync(AlbumSearchObject album, string directory,
+        IProgress<ProgressData> progress, ConversionUpdateCallback? callback = default)
+    {
         using var activity = FluentDL.Helpers.ApplicationActivity.Gate.EnterWork();
         await EnsureDownloadAccessAsync([album]);
         var originalDirectory = directory;
         bool createAlbumSubfolder = await SettingsViewModel.GetSetting<bool>(SettingsViewModel.AlbumSubfolders);
         var createTrackSubfolder = await SettingsViewModel.GetSetting<bool>(SettingsViewModel.Subfolders);
         var trackWildcard = await SettingsViewModel.GetSetting<string>(SettingsViewModel.SubfolderWildcard);
+
+        // The track list comes first, so an album with no listed tracks leaves no empty folder behind.
+        if (sources.TryGet<ICatalogSource>(album.Source, out var albumCatalog))
+        {
+            album.TrackList = await albumCatalog.GetAlbumTracksAsync(album);
+        }
+        if (album.TrackList == null || album.TrackList.Count == 0)
+        {
+            throw new InvalidOperationException("The source returned no tracks for this album. Try again later.");
+        }
+
         if (createAlbumSubfolder)
         {
             var wildCardStr = await SettingsViewModel.GetSetting<string>(SettingsViewModel.AlbumSubfolderWildcard);
@@ -372,37 +392,27 @@ public sealed class DownloadService(SourceRegistry sources, EquivalentDownloader
             directory = newDirectory;
         }
 
-        if (sources.TryGet<ICatalogSource>(album.Source, out var albumCatalog))
-        {
-            album.TrackList = await albumCatalog.GetAlbumTracksAsync(album);
-        }
-
-        if (album.TrackList == null)
-        {
-            return [];
-        }
-
         var downloadPaths = new ConcurrentQueue<string>();
 
-        bool allSuccess = true;
-        ConversionUpdateCallback conversionCallback = (severity, song, location) =>
-        {
-            if (severity != StatusLevel.Success)
-            {
-                allSuccess = false;
-            }
-            callback?.Invoke(severity, song, location);
-        };
-
+        var outcomes = new AlbumTrackDownloadOutcome[album.TrackList.Count];
         var allTasks = new List<Task>();
-        var throttler = new SemaphoreSlim(initialCount: await SettingsViewModel.GetSetting<int?>(SettingsViewModel.ConversionThreads) ?? 1);
+        using var throttler = new SemaphoreSlim(initialCount: Math.Max(1, await SettingsViewModel.GetSetting<int?>(SettingsViewModel.ConversionThreads) ?? 1));
 
-        foreach (var track in album.TrackList)
+        foreach (var (track, order) in album.TrackList.Select((track, index) => (track, index)))
         {
             await throttler.WaitAsync();
 
             allTasks.Add(Task.Run(async () =>
             {
+                var level = StatusLevel.Success;
+                string? error = null;
+                var reportedError = false;
+                void Report(StatusLevel severity, SongSearchObject song, string? location = null)
+                {
+                    if (severity == StatusLevel.Error) { level = severity; error = location; reportedError = true; }
+                    else if (severity == StatusLevel.Warning && level != StatusLevel.Error) level = severity;
+                    callback?.Invoke(severity, song, location);
+                }
                 try
                 {
                     // Fill missing info
@@ -419,15 +429,23 @@ public sealed class DownloadService(SourceRegistry sources, EquivalentDownloader
                     }
 
                     // Download the track
-                    var downloadPath = await DownloadTrackInternal(track, downloadDirectory, progress, conversionCallback);
+                    var downloadPath = await DownloadTrackInternal(track, downloadDirectory, progress, Report);
                     if (File.Exists(downloadPath))
                     {
                         downloadPaths.Enqueue(downloadPath);
+                        outcomes[order] = new(track, order, level, downloadPath, error);
+                    }
+                    else
+                    {
+                        if (!reportedError) Report(StatusLevel.Error, track, "The track did not produce a saved audio file.");
+                        outcomes[order] = new(track, order, StatusLevel.Error, null, error);
                     }
                 }
                 catch (Exception ex)
                 {
                     Log.Error(ex, "Album track could not be downloaded");
+                    outcomes[order] = new(track, order, StatusLevel.Error, null, ex.Message);
+                    if (!reportedError) Report(StatusLevel.Error, track, ex.Message);
                 }
                 finally
                 {
@@ -438,10 +456,9 @@ public sealed class DownloadService(SourceRegistry sources, EquivalentDownloader
         }
         await Task.WhenAll(allTasks);
 
-        // The album's tracks are tagged together, so album gain can use all of them. TrackList can be shorter than
-        // the album when a track couldn't be looked up, so the album's own track count decides if it's complete.
-        var albumTrackCount = Math.Max(album.TracksCount, album.TrackList.Count);
-        await ReplayGainDownloads.TagAlbumAsync(downloadPaths.ToList(), complete: downloadPaths.Count >= albumTrackCount);
+        // The album's tracks are tagged together, so album gain can use all of them. Album gain needs every listed
+        // track; the listed count is used because TIDAL's own count includes videos.
+        await ReplayGainDownloads.TagAlbumAsync(downloadPaths.ToList(), complete: downloadPaths.Count >= album.TrackList.Count);
 
         // Download cover if subfolder, fire and forget
 #pragma warning disable CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
@@ -486,7 +503,7 @@ public sealed class DownloadService(SourceRegistry sources, EquivalentDownloader
         });
 #pragma warning restore CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
 
-        return downloadPaths.ToList();
+        return outcomes.ToList();
     }
 
     private async Task<string?> GetAlbumArtLargest(AlbumSearchObject? album)

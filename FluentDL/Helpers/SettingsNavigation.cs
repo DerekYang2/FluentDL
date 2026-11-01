@@ -33,15 +33,19 @@ internal static class SettingsNavigation
         _ => throw new ArgumentOutOfRangeException(nameof(section)),
     };
 
-    internal static string Link(SettingsSection section) => $"<a href='fluentdl://settings/{section.ToString().ToLowerInvariant()}'>{Path(section)}</a>";
+    internal static string Link(SettingsSection section) => StatusMarkup.Format($"<a href='fluentdl://settings/{section.ToString().ToLowerInvariant()}'>{Path(section)}</a>");
 
     internal static string WithLink(string message, SettingsSection section)
     {
-        if (message.Contains(Link(section), StringComparison.Ordinal)) return message;
-        var path = Path(section);
-        return message.Contains(path, StringComparison.Ordinal)
-            ? message.Replace(path, Link(section), StringComparison.Ordinal)
-            : message.TrimEnd() + " " + Link(section);
+        var link = Link(section);
+        if (message.Contains(link, StringComparison.Ordinal))
+            return string.Join(link, message.Split(link, StringSplitOptions.None)
+                .Select(text => StatusMarkup.Text(System.Net.WebUtility.HtmlDecode(text))));
+        var escaped = StatusMarkup.Text(message);
+        var path = StatusMarkup.Text(Path(section));
+        return escaped.Contains(path, StringComparison.Ordinal)
+            ? escaped.Replace(path, link, StringComparison.Ordinal)
+            : escaped.TrimEnd() + " " + link;
     }
 
     internal static bool TryParse(Uri uri, out SettingsSection section)

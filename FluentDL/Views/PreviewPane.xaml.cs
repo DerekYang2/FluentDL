@@ -264,6 +264,7 @@ namespace FluentDL.Views
             PreviewScrollView.Visibility = Visibility.Collapsed;
             SongPreviewProgressBar.Visibility = Visibility.Collapsed;
             PreviewTitleText.Text = "";
+            PreviewErrorInfoBar.IsOpen = false;
             ImageSource = null;
             PreviewInfoControl.ItemsSource = new List<TrackDetail>();
             PreviewInfoControl2.ItemsSource = new List<TrackDetail>();
@@ -282,8 +283,23 @@ namespace FluentDL.Views
         {
             var token = BeginNewRequest();
             var requestId = Interlocked.Read(ref _currentRequestId);
+            PreviewErrorInfoBar.IsOpen = false;
+            await UiOperation.RunAsync(() => UpdateCoreAsync(selectedSong, trackInfoObj, requestId, token), error =>
+            {
+                if (token.IsCancellationRequested || requestId != Interlocked.Read(ref _currentRequestId)) return;
+                ClearMediaPlayerSource();
+                RankRatingControl.Visibility = SongPreviewProgressBar.Visibility = SongPreviewPlayer.Visibility = Visibility.Collapsed;
+                AlbumTrackListView.ItemsSource = Array.Empty<SongSearchObject>();
+                PreviewInfoControl2.ItemsSource = PreviewInfoControl.ItemsSource = Array.Empty<TrackDetail>();
+                PreviewErrorInfoBar.Message = error.Message;
+                PreviewErrorInfoBar.IsOpen = true;
+            }, token);
+        }
 
-            SongPreviewPlayer.AutoPlay = Task.Run(() => SettingsViewModel.GetSetting<bool>(SettingsViewModel.AutoPlay)).GetAwaiter().GetResult(); 
+        private async Task UpdateCoreAsync(SongSearchObject selectedSong, object? trackInfoObj, long requestId, CancellationToken token)
+        {
+            SongPreviewPlayer.AutoPlay = await SettingsViewModel.GetSetting<bool>(SettingsViewModel.AutoPlay);
+            if (token.IsCancellationRequested || requestId != Interlocked.Read(ref _currentRequestId)) return;
             ClearMediaPlayerSource();
             ImageSource = null; // Clear previous source
 
@@ -397,7 +413,7 @@ namespace FluentDL.Views
                 }
                 else
                 {
-                    throw new Exception("Metadata object is null");
+                    throw new InvalidOperationException("This local file is unavailable or its metadata could not be read.");
                 }
             }
         }
@@ -529,13 +545,15 @@ namespace FluentDL.Views
         // YouTube audio may come through yt-dlp (an app setting), so the pane loads it itself.
         private async Task LoadPreviewAudioAsync(IPreviewSource source, SongSearchObject track, long requestId, CancellationToken token)
         {
-            if (track.Source == SourceIds.YouTube)
-            {
-                await LoadYouTubeAudioPreviewAsync(source, track, requestId, token);
-                return;
-            }
+            if (token.IsCancellationRequested || requestId != Interlocked.Read(ref _currentRequestId)) return;
+            PreviewErrorInfoBar.IsOpen = false;
             try
             {
+                if (track.Source == SourceIds.YouTube)
+                {
+                    await LoadYouTubeAudioPreviewAsync(source, track, requestId, token);
+                    return;
+                }
                 var previewUri = await source.GetPreviewAudioAsync(track);
                 if (token.IsCancellationRequested || requestId != Interlocked.Read(ref _currentRequestId))
                     return;
@@ -547,6 +565,9 @@ namespace FluentDL.Views
                 if (token.IsCancellationRequested || requestId != Interlocked.Read(ref _currentRequestId)) return;
                 Serilog.Log.Warning("Could not load {Provider} preview; exception {ExceptionType}, HRESULT {HResult}", track.Source, error.GetType().Name, error.HResult);
                 ClearMediaPlayerSource();
+                PreviewErrorInfoBar.Message = error.Message;
+                PreviewErrorInfoBar.IsOpen = true;
+                SongPreviewPlayer.Visibility = Visibility.Collapsed;
             }
         }
         

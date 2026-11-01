@@ -99,9 +99,6 @@ public class QueueObject : SongSearchObject, INotifyPropertyChanged
     /// </summary>
     public List<SongSearchObject>? TrackList { get; set; }
 
-    /// <summary>Orders the tracks an album expanded into, which share the album's QueueCounter. Saved with the queue.</summary>
-    public int? QueueSubOrder { get; set; }
-
     [JsonIgnore]
     public bool IsAlbum => AlbumTracksCount != null;
 
@@ -112,7 +109,7 @@ public class QueueObject : SongSearchObject, INotifyPropertyChanged
         song is QueueObject { IsAlbum: true } row ? ToAlbum(row, row.AlbumTracksCount!.Value) : song;
 
     /// <summary>Restores a saved row: an album when it was saved with a track count, else a track.</summary>
-    internal static (SongSearchObject Song, int SubOrder)? ParseSaved(string json)
+    internal static SongSearchObject? ParseSaved(string json)
     {
         SongSearchObject? song;
         Newtonsoft.Json.Linq.JObject saved;
@@ -134,8 +131,7 @@ public class QueueObject : SongSearchObject, INotifyPropertyChanged
             album.TracksCount = (int)count;
             song = album;
         }
-        var subOrder = saved["QueueSubOrder"] is { Type: Newtonsoft.Json.Linq.JTokenType.Integer } sub ? (int)sub : 0;
-        return (song, subOrder);
+        return song;
     }
 
     public static AlbumSearchObject ToAlbum(SongSearchObject song, int tracksCount) => new()
@@ -177,7 +173,6 @@ public class QueueObject : SongSearchObject, INotifyPropertyChanged
             QueueObject row => row.AlbumTracksCount,
             _ => null,
         };
-        if (song is QueueObject other) QueueSubOrder = other.QueueSubOrder;
     }
 }
 
@@ -274,7 +269,7 @@ public partial class QueueViewModel : ObservableRecipient
         if (shutdown != null) return shutdown;
         IsClosing = true;
         bulkCancellation?.Cancel();
-        return shutdown = FinishShutdownAsync();
+        return shutdown = FinishShutdownAsync(ApplicationActivity.StopFileWritesAsync());
     }
 
     internal static event Action<string>? ArtworkChanged;
@@ -285,8 +280,10 @@ public partial class QueueViewModel : ObservableRecipient
         return artwork != null && artwork.TryGet(url, out image, out state);
     }
 
-    private static async Task FinishShutdownAsync()
+    private static async Task FinishShutdownAsync(Task fileWrites)
     {
+        try { await fileWrites; }
+        catch (Exception error) { Serilog.Log.Warning(error, "A file writer failed while the app was closing"); }
         if (artwork != null) await artwork.StopAsync();
         await DatabaseService.FlushOnCloseAsync();
     }
@@ -429,19 +426,17 @@ public partial class QueueViewModel : ObservableRecipient
         return (Source.Last().QueueCounter ?? 0) + 1;
     }
 
-    public static Task<QueueObject?> CreateQueueObject(SongSearchObject song, int? queueCounter, int? subOrder = null)
+    public static Task<QueueObject?> CreateQueueObject(SongSearchObject song, int? queueCounter)
     {
         using var activity = ApplicationActivity.Gate.EnterWork();
-        var queueObj = new QueueObject(song)
-        {
-            QueueCounter = queueCounter,
-            QueueSubOrder = subOrder,
-        };
+        var queueObj = new QueueObject(song) { QueueCounter = queueCounter };
         // Persist only after collision resolution chooses the row and position to retain.
         return Task.FromResult<QueueObject?>(queueObj);
     }
 
-    public static QueueObject? Add(SongSearchObject? song)
+    public static QueueObject? Add(SongSearchObject? song) => Admit(song, persist: true);
+
+    private static QueueObject? Admit(SongSearchObject? song, bool persist)
     {
         if (IsClosing || ApplicationActivity.Gate.IsInstalling) return null;
         using var activity = ApplicationActivity.Gate.EnterWork();
@@ -454,7 +449,7 @@ public partial class QueueViewModel : ObservableRecipient
         var queueObj = new QueueObject(song);
         queueObj.QueueCounter ??= GetNextOrderCounter();  // Only set order if new addition
         _ = Artwork;
-        _ = SaveMetadataAsync(queueObj);
+        if (persist) _ = SaveMetadataAsync(queueObj);
         Source.Add(queueObj);
         trackSet.Add(hash);
 
@@ -553,38 +548,41 @@ public partial class QueueViewModel : ObservableRecipient
         // Save the current queue first, including any row whose cover could not be fetched.
         // The exclusive gate prevents new work until storage and the collection agree.
         await SaveForUpdateAsync(CancellationToken.None);
-        await DatabaseService.ReplaceAlbumAsync(GetHash(album), plan.Rows.Select(row => (GetHash(row), row.ToString())).ToArray());
+        await ReplaceAlbumRowsAsync(album, plan.Rows);
+        return plan;
+    }
+
+    /// <summary>Replaces <paramref name="album"/> with the rows it downloaded into, in album order.</summary>
+    public static async Task ReplaceWithMany(QueueObject album, IReadOnlyList<QueueObject> rows)
+    {
+        using var activity = ApplicationActivity.Gate.EnterWork();
+        await ReplaceAlbumRowsAsync(album, rows);
+    }
+
+    // Each track gets its own position, starting at the album's. Later rows move down to make room.
+    private static async Task ReplaceAlbumRowsAsync(QueueObject album, IReadOnlyList<QueueObject> rows)
+    {
+        var index = Source.IndexOf(album);
+        if (index < 0) return;
+        var position = album.QueueCounter ?? index;
+        var hashes = new HashSet<string>(trackSet, StringComparer.Ordinal);
+        var accepted = rows.Where(row => hashes.Add(GetHash(row))).ToArray();
+        for (var i = 0; i < accepted.Length; i++) accepted[i].QueueCounter = position + i;
+        var shift = Math.Max(0, accepted.Length - 1);
+        // Queue the storage transaction, then make the same change before yielding. Additions and conversions that run
+        // during the write then use the new positions, and their writes follow this one.
+        var write = DatabaseService.ReplaceAlbumAsync(GetHash(album), position, shift, accepted.Select(row => (GetHash(row), row.ToString())).ToArray());
         trackSet.Remove(GetHash(album));
         Source.RemoveAt(index);
-        foreach (var row in plan.Rows)
+        if (shift > 0)
+            foreach (var row in Source)
+                if (row.QueueCounter > position) row.QueueCounter += shift;
+        foreach (var row in accepted)
         {
             trackSet.Add(GetHash(row));
             Source.Insert(index++, row);
         }
-        return plan;
-    }
-
-    /// <summary>
-    /// Replaces the album row at <paramref name="index"/> with the rows it expanded into, in order. They keep the album's
-    /// position through restarts.
-    /// </summary>
-    public static async Task ReplaceWithMany(int index, IReadOnlyList<QueueObject> rows)
-    {
-        using var activity = ApplicationActivity.Gate.EnterWork();
-        if (index < 0) return; // the album row was removed meanwhile
-        var album = Source[index];
-        trackSet.Remove(GetHash(album));
-        Source.RemoveAt(index);
-        var writes = new List<Task> { DatabaseService.Remove(GetHash(album)) };
-        var position = index;
-        for (var i = 0; i < rows.Count; i++)
-        {
-            var row = rows[i];
-            if (!trackSet.Add(GetHash(row))) continue; // already in the queue elsewhere
-            writes.Add(DatabaseService.SaveMetadataAsync(GetHash(row), row.ToString()));
-            Source.Insert(position++, row);
-        }
-        await Task.WhenAll(writes);
+        await write;
     }
 
     public static async Task LoadSaveQueue() 
@@ -595,49 +593,36 @@ public partial class QueueViewModel : ObservableRecipient
             Source.Clear();
             trackSet.Clear();
             var items = await DatabaseService.LoadQueueJSON();
-            var sortedList = new List<(string, SongSearchObject, int)>();
+            var sortedList = new List<(string Hash, SongSearchObject Song)>();
 
             foreach (var item in items)
             {
                 var saved = await Task.Run(() => QueueObject.ParseSaved(item.Value));
                 if (saved == null) continue;
-                sortedList.Add((item.Key, saved.Value.Song, saved.Value.SubOrder));
+                sortedList.Add((item.Key, saved));
             }
 
-            foreach (var pair in sortedList.OrderBy(pair => pair.Item2.QueueCounter).ThenBy(pair => pair.Item3))
+            foreach (var pair in sortedList.OrderBy(pair => pair.Song.QueueCounter).ThenBy(pair => pair.Hash, StringComparer.Ordinal))
             {
-                string hash = pair.Item1;
-                SongSearchObject song = pair.Item2;
-
-                // If local, set the local bitmap image
-                if (song.Source == SourceIds.Local)
+                SongSearchObject song = pair.Song;
+                var localFile = song.Source == SourceIds.Local ? QueueRestore.CurrentLocalFile(song, LocalExplorerViewModel.ParseFile) : null;
+                if (localFile != null) song = localFile;
+                song.LocalBitmapImage = UnloadedPlaceholder;
+                var queueObj = Admit(song, persist: false);
+                if (queueObj != null && localFile != null)
                 {
-                    var localSong = LocalExplorerViewModel.ParseFile(song.Id);  // Re-parse the file
-                    if (localSong != null)
+                    var path = song.Id;
+                    _ = Task.Run(async () =>
                     {
-                        localSong.LocalBitmapImage = UnloadedPlaceholder;
-                        var queueObj = Add(localSong);
-                        // Get the bitmap image from the file
-                        if (queueObj != null)
+                        var image = await LocalExplorerViewModel.GetBitmapImageBackground(path, dispatcher);
+                        if (image != null)
                         {
-                            _ = Task.Run(async () =>
+                            dispatcher.TryEnqueue(() =>
                             {
-                                var image = await LocalExplorerViewModel.GetBitmapImageBackground(song.Id, dispatcher);
-                                if (image != null)
-                                {
-                                    dispatcher.TryEnqueue(() =>
-                                    {
-                                        queueObj.LocalBitmapImage = image;
-                                    });
-                                }
+                                queueObj.LocalBitmapImage = image;
                             });
                         }
-                    }
-                }
-                else
-                {
-                    song.LocalBitmapImage = UnloadedPlaceholder;
-                    Add(song);
+                    });
                 }
             }
             Serilog.Log.Information("Queue restored with {ItemCount} items", Source.Count);

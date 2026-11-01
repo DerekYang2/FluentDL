@@ -149,6 +149,15 @@
                         Text=""
                         TextWrapping="WrapWholeWords" />
 
+                    <InfoBar
+                        x:Name="PreviewErrorInfoBar"
+                        Margin="0,0,0,8"
+                        AutomationProperties.AutomationId="PreviewErrorInfoBar"
+                        IsClosable="False"
+                        IsOpen="False"
+                        Severity="Error"
+                        Title="Preview unavailable" />
+
                     <controls:DockPanel>
                         <Border Margin="0,0,12,0">
                             <ItemsControl x:Name="PreviewInfoControl">

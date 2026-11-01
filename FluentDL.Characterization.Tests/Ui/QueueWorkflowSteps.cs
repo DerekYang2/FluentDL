@@ -74,16 +74,16 @@ internal static class QueueWorkflowSteps
         using var command = db.CreateCommand();
         command.CommandText = "SELECT JsonText FROM Items";
         using var reader = command.ExecuteReader();
-        var rows = new List<(int Position, int SubOrder, SavedRow Row)>();
+        var rows = new List<(int Position, SavedRow Row)>();
         while (reader.Read())
         {
             var json = JObject.Parse(reader.GetString(0));
             var count = json["AlbumTracksCount"];
-            rows.Add((json.Value<int?>("QueueCounter") ?? 0, json.Value<int?>("QueueSubOrder") ?? 0,
+            rows.Add((json.Value<int?>("QueueCounter") ?? 0,
                 new SavedRow(json.Value<string>("Source")!, json.Value<string>("Id")!, json.Value<string>("Title")!,
                     count?.Type == JTokenType.Integer, count?.Type == JTokenType.Integer ? count.Value<int>() : 0)));
         }
-        return rows.OrderBy(r => r.Position).ThenBy(r => r.SubOrder).Select(r => r.Row).ToArray();
+        return rows.OrderBy(r => r.Position).Select(r => r.Row).ToArray();
     }
 
     public static SavedRow[] WaitSaved(int count)

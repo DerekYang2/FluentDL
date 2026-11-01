@@ -14,6 +14,16 @@ namespace FluentDL.Characterization.Tests;
 public class SettingsAuthenticationTests
 {
     [TestMethod]
+    public void SettingsNoticesEscapePublicTextAndKeepOnlyTheIntendedSettingsLink()
+    {
+        var notice = SettingsNavigation.WithLink("x</a><a href='x'>y", SettingsSection.Tidal);
+        var parts = StatusMarkup.Parse(notice);
+        Assert.AreEqual(1, parts.Count(part => part.Link != null));
+        StringAssert.StartsWith(string.Concat(parts.Select(part => part.Text)), "x</a><a href='x'>y");
+        Assert.AreEqual(notice, SettingsNavigation.WithLink(notice, SettingsSection.Tidal));
+    }
+
+    [TestMethod]
     [DataRow(SettingsSection.Lyrics, "Settings > Downloads > Lyrics")]
     [DataRow(SettingsSection.Backups, "Settings > General > Backups")]
     [DataRow(SettingsSection.Downloads, "Settings > Downloads > Location")]
@@ -167,7 +177,7 @@ public class SettingsAuthenticationTests
         var uri = new Uri("fluentdl://settings/" + expected.ToString().ToLowerInvariant());
         Assert.IsTrue(SettingsNavigation.TryParse(uri, out var actual));
         Assert.AreEqual(expected, actual);
-        StringAssert.Contains(SettingsNavigation.Link(expected), SettingsNavigation.Path(expected));
+        Assert.AreEqual(SettingsNavigation.Path(expected), StatusMarkup.Parse(SettingsNavigation.Link(expected)).Single().Text);
     }
 
     [TestMethod]
@@ -246,9 +256,42 @@ public class SettingsAuthenticationTests
             "https://open.spotify.com/playlist/1234567890123456789012", new(true, new(0, 50), false), null, cancellation.Token));
     }
 
+    [TestMethod]
+    [DataRow("network")]
+    [DataRow("not-a-playlist-page")]
+    [DataRow("timeout")]
+    public async Task PartialAnonymousSpotifyImportReportsIncompleteResultsWithoutRequestingSignIn(string laterPage)
+    {
+        // A later page the web player can't read throws the sign-in exception, as an unreadable first page does.
+        Exception later = laterPage switch
+        {
+            "network" => new HttpRequestException("Synthetic later playlist page failure."),
+            "not-a-playlist-page" => new SourceSignInRequiredException(SourceIds.Spotify, "Spotify did not expose this playlist."),
+            _ => new TaskCanceledException("The request timed out."),
+        };
+        var source = new SpotifySource(new TidalParsingTests.DictionarySettings([]), new PlaylistWebService { LaterFailure = later }, null!)
+        { IsInitialized = true };
+        var rows = new List<SongSearchObject>();
+        var notices = new List<(StatusLevel Level, string Message)>();
+        Exception? failure = null;
+        try
+        {
+            await source.AddFromLinkAsync(rows, "https://open.spotify.com/playlist/1234567890123456789012", new(true, new(0, 50), false),
+                (level, message, _) => notices.Add((level, message)), CancellationToken.None);
+        }
+        catch (Exception error) { failure = error; }
+        Assert.AreEqual(1, rows.Count, "The completed prefix must remain available.");
+        Assert.IsNull(failure, "A later page failure must not turn the partially loaded public playlist into a sign-in request.");
+        Assert.AreEqual(StatusLevel.Warning, notices.Last().Level);
+        StringAssert.Contains(notices.Last().Message, "Results are incomplete");
+        StringAssert.Contains(notices.Last().Message, "Loaded 1");
+        Assert.IsFalse(source.IsSignedInForPlaylists);
+    }
+
     private sealed class PlaylistWebService : ISpotifyWebService
     {
         internal bool Private;
+        internal Exception? LaterFailure;
         internal int PlaylistReads;
         public async IAsyncEnumerable<SongSearchObject> GetPlaylistAsync(string id, [EnumeratorCancellation] CancellationToken cancellationToken = default)
         {
@@ -257,6 +300,7 @@ public class SettingsAuthenticationTests
             if (Private) throw new HttpRequestException("Playlist is not publicly readable.");
             await Task.Yield();
             yield return new SongSearchObject { Id = "track", Source = SourceIds.Spotify, Title = "Public track" };
+            if (LaterFailure != null) throw LaterFailure;
         }
         public IAsyncEnumerable<SongSearchObject> SearchAnonymousAsync(string searchTerm, int offset = 0, int limit = 20, CancellationToken cancellationToken = default) => throw new AssertFailedException();
         public Task<SongSearchObject?> GetTrack(string id, CancellationToken cancellationToken = default) => throw new AssertFailedException();

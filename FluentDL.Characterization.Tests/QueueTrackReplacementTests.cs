@@ -97,18 +97,16 @@ public class QueueTrackReplacementTests
     }
 
     [TestMethod]
-    public void ExpandedTrackKeepsItsSubOrderAndDoesNotCollideWithAnAlbumId()
+    public void ExpandedTrackKeepsItsPositionAndDoesNotCollideWithAnAlbumId()
     {
         var original = Row(SourceIds.Tidal, "input", 3);
-        original.QueueSubOrder = 2;
         var album = new QueueObject(new AlbumSearchObject { Source = SourceIds.Spotify, Id = "target", TracksCount = 5 });
         var replacement = Row(SourceIds.Spotify, "target", 3);
-        replacement.QueueSubOrder = original.QueueSubOrder;
         var rows = new List<QueueObject> { original, album };
         var keys = rows.Select(QueueTrackReplacement.KeyOf).ToHashSet();
         var result = QueueTrackReplacement.Apply(rows, keys, 0, replacement)!;
         Assert.AreEqual(2, rows.Count);
-        Assert.AreEqual(2, result.Row.QueueSubOrder);
+        Assert.AreEqual(3, result.Row.QueueCounter);
         Assert.AreEqual(2, keys.Count);
     }
 
@@ -168,7 +166,7 @@ public class QueueTrackReplacementTests
         command.CommandText = "SELECT JsonText FROM Items ORDER BY json_extract(JsonText, '$.QueueCounter')";
         using var reader = await command.ExecuteReaderAsync();
         var rows = new List<SongSearchObject>();
-        while (await reader.ReadAsync()) rows.Add(QueueObject.ParseSaved(reader.GetString(0))!.Value.Song);
+        while (await reader.ReadAsync()) rows.Add(QueueObject.ParseSaved(reader.GetString(0))!);
         return rows;
     }
 }

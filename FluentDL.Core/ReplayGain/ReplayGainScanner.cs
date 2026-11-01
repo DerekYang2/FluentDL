@@ -340,15 +340,17 @@ public static class ReplayGainScanner
 
     private static double? NullIfNaN(double value) => double.IsNaN(value) ? null : value;
 
-    // Measures one file and writes its track gain, as used after a download.
+    // Measures one file and writes its track gain, as used after a download. The app passes runWrite to track the
+    // write until it finishes; without it the write runs on the thread pool.
     public static async Task<ReplayGainResult> ApplyTrackGainAsync(
-        string path, double offset, bool preventClipping, CancellationToken cancellationToken = default)
+        string path, double offset, bool preventClipping, CancellationToken cancellationToken = default, Func<Action, Task>? runWrite = null)
     {
         var options = new ReplayGainOptions(TrackGain: true, AlbumGain: false, Offset: offset, PreventClipping: preventClipping);
         var scan = await ScanAsync([new ReplayGainTrack(path)], options, null, cancellationToken).ConfigureAwait(false);
         if (scan.Failures.Count > 0) throw new InvalidOperationException(scan.Failures[0].Message);
         var result = scan.Results[0];
-        await Task.Run(() => WriteTags(result, options), cancellationToken).ConfigureAwait(false);
+        cancellationToken.ThrowIfCancellationRequested();
+        await (runWrite ?? (write => Task.Run(write)))(() => WriteTags(result, options)).ConfigureAwait(false);
         return result;
     }
 

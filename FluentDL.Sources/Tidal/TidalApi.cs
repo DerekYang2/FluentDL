@@ -242,9 +242,24 @@ public sealed class TidalApi
             cancellationToken);
     }
 
-    /// <summary>GETs a path under openapi.tidal.com/v2 (or a "next" link, which starts with "/"), as JSON:API.</summary>
+    internal static Uri ResolveApiUri(string path)
+    {
+        if (string.IsNullOrWhiteSpace(path) || path.StartsWith("//", StringComparison.Ordinal))
+            throw new ArgumentException("Unexpected TIDAL pagination URL.", nameof(path));
+        var relative = path.TrimStart('/');
+        if (relative.StartsWith("v2/", StringComparison.Ordinal)) relative = "/" + relative;
+        if (!Uri.TryCreate(new Uri(ApiBase), relative, out var uri))
+            throw new ArgumentException("Unexpected TIDAL pagination URL.", nameof(path));
+        if (uri.Scheme != "https" || uri.Host != "openapi.tidal.com" || !uri.IsDefaultPort
+            || uri.UserInfo.Length != 0 || uri.Fragment.Length != 0 || !uri.AbsolutePath.StartsWith("/v2/", StringComparison.Ordinal))
+            throw new ArgumentException("Unexpected TIDAL pagination URL.", nameof(path));
+        return uri;
+    }
+
+    /// <summary>GETs an official v2 path or validated pagination link as JSON:API.</summary>
     internal async Task<JsonApiDocument> GetAsync(string pathAndQuery, CancellationToken cancellationToken)
     {
+        var uri = ResolveApiUri(pathAndQuery);
         string? refreshDownloadToken = null;
         var refreshedDownload = false;
         var refreshedApp = false;
@@ -254,7 +269,7 @@ public sealed class TidalApi
             var (accessToken, usesDownload) = await GetTokenAsync(cancellationToken, refreshDownloadToken);
             refreshDownloadToken = null;
             // Token selection sets the account's country, including after a sign-in or sign-out.
-            var url = ApiBase + pathAndQuery.TrimStart('/');
+            var url = uri.AbsoluteUri;
             if (!url.Contains("countryCode="))
                 url += (url.Contains('?') ? "&" : "?") + "countryCode=" + await ReadCountryAsync();
             using var response = await requests.SendAsync(http, () =>

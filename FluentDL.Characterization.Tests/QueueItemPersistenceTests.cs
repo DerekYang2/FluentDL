@@ -78,6 +78,65 @@ public class QueueItemPersistenceTests
         Assert.AreEqual(DBNull.Value, await Value(connection, "SELECT Image FROM Items WHERE Hash='one'"));
     }
 
+    [TestMethod]
+    public async Task PartialSnapshotKeepsUnloadedRowsAndTheirCachedArtwork()
+    {
+        await using var connection = await Database();
+        var unloaded = Metadata("https://example.test/unloaded.jpg", 2);
+        await QueueItemPersistence.SaveMetadataAsync(connection, "unloaded", unloaded);
+        await QueueItemPersistence.SetArtworkAsync(connection, "unloaded", "https://example.test/unloaded.jpg", [1, 2, 3]);
+        await QueueItemPersistence.SaveSnapshotAsync(connection, new[] { ("loaded", Metadata("https://example.test/loaded.jpg", 1)) });
+        Assert.AreEqual(unloaded, await Value(connection, "SELECT JsonText FROM Items WHERE Hash='unloaded'"));
+        CollectionAssert.AreEqual(new byte[] { 1, 2, 3 }, (byte[])(await Value(connection, "SELECT Image FROM Items WHERE Hash='unloaded'"))!);
+        Assert.AreEqual(2L, await Value(connection, "SELECT COUNT(*) FROM Items"));
+    }
+
+    [TestMethod]
+    public async Task EmptySnapshotDoesNotDeleteSavedRows()
+    {
+        await using var connection = await Database();
+        await QueueItemPersistence.SaveMetadataAsync(connection, "unavailable", Metadata("https://example.test/cover.jpg"));
+        await QueueItemPersistence.SaveSnapshotAsync(connection, Array.Empty<(string, string)>());
+        Assert.AreEqual(1L, await Value(connection, "SELECT COUNT(*) FROM Items"));
+    }
+
+    [TestMethod]
+    public async Task AFailedSnapshotRollsBackMetadataAndKeepsUnloadedArtwork()
+    {
+        await using var connection = await Database();
+        var original = Metadata("https://example.test/cover.jpg", 3);
+        await QueueItemPersistence.SaveMetadataAsync(connection, "one", original);
+        await QueueItemPersistence.SetArtworkAsync(connection, "one", "https://example.test/cover.jpg", [1, 2, 3]);
+        using (var trigger = connection.CreateCommand())
+        {
+            trigger.CommandText = "CREATE TRIGGER fail_snapshot BEFORE INSERT ON Items WHEN NEW.Hash='fail' BEGIN SELECT RAISE(ABORT, 'Synthetic snapshot failure'); END";
+            await trigger.ExecuteNonQueryAsync();
+        }
+        await Assert.ThrowsExceptionAsync<SqliteException>(() => QueueItemPersistence.SaveSnapshotAsync(connection,
+            new[] { ("one", Metadata("https://example.test/changed.jpg", 9)), ("fail", original) }));
+        Assert.AreEqual(original, await Value(connection, "SELECT JsonText FROM Items WHERE Hash='one'"));
+        CollectionAssert.AreEqual(new byte[] { 1, 2, 3 }, (byte[])(await Value(connection, "SELECT Image FROM Items WHERE Hash='one'"))!);
+        Assert.AreEqual(1L, await Value(connection, "SELECT COUNT(*) FROM Items"));
+    }
+
+    [TestMethod]
+    [DataRow(false)]
+    [DataRow(true)]
+    public async Task SnapshotKeepsLegacyArtworkWhenTheRestoredCoverIsMissingOrNormalized(bool normalized)
+    {
+        await using var connection = await Database();
+        const string json = "{\"Source\":\"local\",\"Id\":\"Z:\\\\missing.flac\",\"QueueCounter\":3}";
+        using (var seed = connection.CreateCommand())
+        {
+            seed.CommandText = "INSERT INTO Items VALUES ('local',@j,X'010203','now')";
+            seed.Parameters.AddWithValue("@j", json);
+            await seed.ExecuteNonQueryAsync();
+        }
+        var restored = normalized ? "{\"Source\":\"local\",\"ImageLocation\":\"ms-appx:///Assets/Unloaded.jpg\"}" : json;
+        await QueueItemPersistence.SaveSnapshotAsync(connection, new[] { ("local", restored) });
+        CollectionAssert.AreEqual(new byte[] { 1, 2, 3 }, (byte[])(await Value(connection, "SELECT Image FROM Items WHERE Hash='local'"))!);
+    }
+
     private static async Task<SqliteConnection> Database()
     {
         var connection = new SqliteConnection("Data Source=:memory:");

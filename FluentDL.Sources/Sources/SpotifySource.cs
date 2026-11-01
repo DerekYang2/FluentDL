@@ -83,17 +83,14 @@ internal sealed partial class SpotifySource : ISourceSession, ISearchSource, ILi
 
     public Task<string?> GetIsrcAsync(string trackId) => GetIsrcFromId(trackId);
 
-    // The album search result already lists its tracks; each one is loaded in full.
+    // Each listed track is loaded in full. A track that can't be loaded keeps what the album listed for it, so it
+    // still gets a queue row to retry instead of disappearing from the album.
     public async Task<List<SongSearchObject>> GetAlbumTracksAsync(AlbumSearchObject album)
     {
         List<SongSearchObject> albumTracks = [];
-        foreach (var t in album.TrackList ?? [])
+        foreach (var t in await ListAlbumTracksAsync(album))
         {
-            var songObj = await GetTrack(t.Id);
-            if (songObj != null)
-            {
-                albumTracks.Add(songObj);
-            }
+            albumTracks.Add(await GetTrack(t.Id) ?? t);
         }
         return albumTracks;
     }

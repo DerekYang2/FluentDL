@@ -146,11 +146,9 @@ public sealed class TidalPlaylistClient
 
     private async Task<JsonDocument> Send(HttpMethod method, string path, TidalDownloadClient.Session account, object? payload, CancellationToken token)
     {
-        // TIDAL next links can be relative to the API base, with a leading slash but without /v2.
-        if (path.StartsWith("//", StringComparison.Ordinal)) throw new JsonException("Unexpected TIDAL pagination URL.");
-        var uri = new Uri(new Uri(BaseUrl), path.StartsWith("/v2/", StringComparison.Ordinal) ? path : path.TrimStart('/'));
-        if (uri.Scheme != "https" || uri.Host != "openapi.tidal.com" || !uri.IsDefaultPort || !uri.AbsolutePath.StartsWith("/v2/", StringComparison.Ordinal) || uri.UserInfo.Length != 0)
-            throw new JsonException("Unexpected TIDAL pagination URL.");
+        Uri uri;
+        try { uri = TidalApi.ResolveApiUri(path); }
+        catch (ArgumentException error) { throw new JsonException("Unexpected TIDAL pagination URL.", error); }
         if (method == HttpMethod.Get && !uri.Query.Contains("countryCode=", StringComparison.Ordinal))
             uri = new Uri(uri.AbsoluteUri + (uri.Query.Length == 0 ? "?" : "&") + "countryCode=" + Uri.EscapeDataString(account.Country));
         using var request = new HttpRequestMessage(method, uri);

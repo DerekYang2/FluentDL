@@ -161,44 +161,44 @@ internal sealed class TidalSource : ISourceSession, IAccountLogin, ISearchSource
                     if (await GetTrackAsync(id, token) is { } track)
                     {
                         results.Add(track);
-                        status?.Invoke(StatusLevel.Success, $"<b>TIDAL</b>   Loaded track <a href='{url}'>{track.Title}</a>");
+                        status?.Invoke(StatusLevel.Success, StatusMarkup.Format($"<b>TIDAL</b>   Loaded track <a href='{url}'>{track.Title}</a>"));
                     }
                     else
                     {
-                        status?.Invoke(StatusLevel.Error, $"<b>TIDAL</b>   No track found at <a href='{url}'>{url}</a>");
+                        status?.Invoke(StatusLevel.Error, StatusMarkup.Format($"<b>TIDAL</b>   No track found at <a href='{url}'>{url}</a>"));
                     }
                     break;
 
                 case "album":
                     if (await GetAlbumAsync(id, token) is not { } album)
                     {
-                        status?.Invoke(StatusLevel.Error, $"<b>TIDAL</b>   No album found at <a href='{url}'>{url}</a>");
+                        status?.Invoke(StatusLevel.Error, StatusMarkup.Format($"<b>TIDAL</b>   No album found at <a href='{url}'>{url}</a>"));
                     }
                     else if (request.AlbumMode)
                     {
                         results.Add(album);
-                        status?.Invoke(StatusLevel.Success, $"<b>TIDAL</b>   Loaded album <a href='{url}'>{album.Title}</a>");
+                        status?.Invoke(StatusLevel.Success, StatusMarkup.Format($"<b>TIDAL</b>   Loaded album <a href='{url}'>{album.Title}</a>"));
                     }
                     else
                     {
-                        status?.Invoke(StatusLevel.Informational, $"<b>TIDAL</b>   Loading album <a href='{url}'>{album.Title}</a>", -1);
+                        status?.Invoke(StatusLevel.Informational, StatusMarkup.Format($"<b>TIDAL</b>   Loading album <a href='{url}'>{album.Title}</a>"), -1);
                         foreach (var albumTrack in await GetAlbumTracksAsync(album, token))
                         {
                             results.Add(albumTrack);
                         }
-                        status?.Invoke(StatusLevel.Success, $"<b>TIDAL</b>   Loaded album <a href='{url}'>{album.Title}</a>");
+                        status?.Invoke(StatusLevel.Success, StatusMarkup.Format($"<b>TIDAL</b>   Loaded album <a href='{url}'>{album.Title}</a>"));
                     }
                     break;
 
                 case "playlist":
-                    status?.Invoke(StatusLevel.Informational, $"<b>TIDAL</b>   Loading playlist <a href='{url}'>{url}</a>", -1);
+                    status?.Invoke(StatusLevel.Informational, StatusMarkup.Format($"<b>TIDAL</b>   Loading playlist <a href='{url}'>{url}</a>"), -1);
                     var name = id;
                     await foreach (var playlistTrack in ReadPlaylistTracksAsync(id, value => name = value, token))
                     {
                         results.Add(playlistTrack);
                         playlistItemsAdded++;
                     }
-                    status?.Invoke(StatusLevel.Success, $"<b>TIDAL</b>   Loaded playlist <a href='{url}'>{name}</a>");
+                    status?.Invoke(StatusLevel.Success, StatusMarkup.Format($"<b>TIDAL</b>   Loaded playlist <a href='{url}'>{name}</a>"));
                     break;
             }
         }
@@ -215,7 +215,7 @@ internal sealed class TidalSource : ISourceSession, IAccountLogin, ISearchSource
         }
         catch (Exception e) when (e is not OperationCanceledException)
         {
-            status?.Invoke(StatusLevel.Error, $"<b>TIDAL</b>   Error loading <a href='{url}'>{url}</a>: {e.Message}");
+            status?.Invoke(StatusLevel.Error, StatusMarkup.Format($"<b>TIDAL</b>   Error loading <a href='{url}'>{url}</a>: {e.Message}"));
         }
     }
 
@@ -380,7 +380,7 @@ internal sealed class TidalSource : ISourceSession, IAccountLogin, ISearchSource
     /// <summary>
     /// The same recording by ISRC (green badge). Otherwise one search for the first artist and the title; a result
     /// counts when one of its artists matches and its title matches once featuring credits and punctuation are
-    /// removed, and the one whose album name is closest wins (yellow badge). These are the two steps of Spotify's
+    /// removed. One on the same album wins, else TIDAL's first (yellow badge). These are the two steps of Spotify's
     /// matcher.
     /// </summary>
     public async Task<MatchResult> FindEquivalentAsync(SongSearchObject song, string? isrc, CancellationToken token, bool isrcOnly = false)
@@ -388,7 +388,7 @@ internal sealed class TidalSource : ISourceSession, IAccountLogin, ISearchSource
         try
         {
             isrc = string.IsNullOrWhiteSpace(isrc) ? song.Isrc : isrc;
-            if (!string.IsNullOrWhiteSpace(isrc) && await GetTrackByIsrcAsync(isrc, song.AlbumName, token) is { } byIsrc)
+            if (!string.IsNullOrWhiteSpace(isrc) && await GetTrackByIsrcAsync(isrc, song.AlbumName, token, song) is { } byIsrc)
             {
                 return new MatchResult(byIsrc, MatchKind.Exact);
             }
@@ -402,7 +402,8 @@ internal sealed class TidalSource : ISourceSession, IAccountLogin, ISearchSource
             var title = TitleNormalizer.Compact(song.Title).Replace("radioedit", "");
             var match = results
                 .Where(r => FuzzyMatch.AnyArtistMatches(song.Artists, r.Artists) && TitleNormalizer.Compact(r.Title).Replace("radioedit", "") == title)
-                .MinBy(r => AlbumDistance(song.AlbumName, r.AlbumName));
+                .OrderBy(r => AlbumNamesMatch(song.AlbumName, r.AlbumName) ? 0 : 1)
+                .FirstOrDefault();
             return new MatchResult(match, match != null ? MatchKind.Close : MatchKind.NotFound);
         }
         catch (OperationCanceledException)
@@ -447,25 +448,90 @@ internal sealed class TidalSource : ISourceSession, IAccountLogin, ISearchSource
     }
 
     /// <summary>
-    /// The track with this ISRC. TIDAL lists one recording on up to 20 releases here (the album, the single,
-    /// reissues, and many compilations), so the one whose album name is closest to <paramref name="albumName"/> wins.
-    /// With no album name, TIDAL's first.
+    /// The track with this ISRC. TIDAL's ISRC filter lists compilations first, and the artist's own release can be
+    /// hundreds of results in. A search for the song's first artist and title ranks the artist's releases first. If
+    /// none of those is on the named album, the album itself is looked up. Then the search's first release with this
+    /// ISRC that isn't credited to Various Artists is used, and finally the ISRC filter's first page. The search and
+    /// album lookup only choose between releases, so if either fails the ISRC filter still runs.
     /// </summary>
-    public async Task<SongSearchObject?> GetTrackByIsrcAsync(string isrc, string? albumName, CancellationToken token)
+    public async Task<SongSearchObject?> GetTrackByIsrcAsync(string isrc, string? albumName, CancellationToken token, SongSearchObject? song = null)
     {
-        var document = await api.GetAsync($"tracks?filter%5Bisrc%5D={Uri.EscapeDataString(isrc)}&include={TrackDetailIncludes}", token);
-        var tracks = document.Data.Select(t => ConvertTrack(document, t)).Where(t => string.Equals(t.Isrc, isrc, StringComparison.OrdinalIgnoreCase)).ToList();
-        return string.IsNullOrWhiteSpace(albumName) ? tracks.FirstOrDefault() : tracks.MinBy(t => AlbumDistance(albumName, t.AlbumName));
+        List<(SongSearchObject Track, bool Compilation)> searched = [];
+        if (song != null && !string.IsNullOrWhiteSpace(song.Title))
+        {
+            searched = await OptionalAsync(() => SearchIsrcCandidatesAsync(song, token), [], token);
+            var best = ChooseIsrcMatch(searched, isrc, albumName);
+            if (best != null && (string.IsNullOrWhiteSpace(albumName) || AlbumNamesMatch(albumName, best.AlbumName))) return best;
+            if (!string.IsNullOrWhiteSpace(albumName)
+                && await OptionalAsync(() => FindOnAlbumAsync(song.Artists, albumName, isrc, token), null, token) is { } onAlbum) return onAlbum;
+            if (best != null && searched.Any(c => c.Track == best && !c.Compilation)) return best;
+        }
+        var filtered = await api.GetAsync($"tracks?filter%5Bisrc%5D={Uri.EscapeDataString(isrc)}&include={TrackDetailIncludes},albums.artists", token);
+        return ChooseIsrcMatch(filtered.Data.Select(track => (ConvertTrack(filtered, track), IsCompilation(filtered, track))).Concat(searched), isrc, albumName);
     }
 
-    // How far an album name is from the one wanted, for ranking. Names that contain each other come first: Qobuz calls
-    // the radio edit's single "Get Lucky", which TIDAL calls "Get Lucky (Radio Edit - feat. ...)", and by edit distance
-    // alone a short compilation name ("Glad Musik") would be closer. Ties keep TIDAL's order.
-    private static (int, int) AlbumDistance(string wanted, string candidate)
+    // The first page of a search for the song's first artist and title, with whether each release is a compilation.
+    private async Task<List<(SongSearchObject Track, bool Compilation)>> SearchIsrcCandidatesAsync(SongSearchObject song, CancellationToken token)
     {
-        var (a, b) = (TitleNormalizer.Compact(wanted), TitleNormalizer.Compact(candidate));
-        return (a.Length > 0 && b.Length > 0 && (a.Contains(b) || b.Contains(a)) ? 0 : 1, FuzzyMatch.LevenshteinDistance(a, b));
+        var query = $"{song.Artists.Split(", ")[0]} {TitleNormalizer.ForSearchQuery(song.Title)}".Trim();
+        var document = await api.GetAsync($"searchResults?filter%5Bquery%5D={Uri.EscapeDataString(query)}&include={TrackIncludes},tracks.albums.artists", token);
+        return document.Data.FirstOrDefault() is { ValueKind: JsonValueKind.Object } results
+            ? document.Related(results, "tracks").Select(track => (ConvertTrack(document, track), IsCompilation(document, track))).ToList()
+            : [];
     }
+
+    private static async Task<T> OptionalAsync<T>(Func<Task<T>> lookup, T fallback, CancellationToken token)
+    {
+        try { return await lookup(); }
+        catch (Exception e) when (!token.IsCancellationRequested)
+        {
+            Serilog.Log.Warning(e, "A TIDAL lookup for choosing a release failed; using the ISRC filter");
+            return fallback;
+        }
+    }
+
+    // The track with this ISRC on the artist's album with this name, from the first matching album search result.
+    private async Task<SongSearchObject?> FindOnAlbumAsync(string artists, string albumName, string isrc, CancellationToken token)
+    {
+        var (albums, _) = await SearchFirstPageAsync($"{artists.Split(", ")[0]} {albumName}".Trim(), albumMode: true, token);
+        var album = albums.OfType<AlbumSearchObject>()
+            .FirstOrDefault(a => AlbumNamesMatch(albumName, a.Title) && FuzzyMatch.AnyArtistMatches(artists, a.Artists));
+        if (album == null) return null;
+        return (await GetAlbumTracksAsync(album, token)).FirstOrDefault(t => string.Equals(t.Isrc, isrc, StringComparison.OrdinalIgnoreCase));
+    }
+
+    /// <summary>
+    /// Among tracks with this ISRC: the artist's own release on the named album first, then any release not credited
+    /// to Various Artists, then a compilation with the album's name, then TIDAL's order. Similarity between unrelated
+    /// names is ignored.
+    /// </summary>
+    internal static SongSearchObject? ChooseIsrcMatch(IEnumerable<(SongSearchObject Track, bool Compilation)> candidates, string isrc, string? albumName) =>
+        candidates.Where(c => string.Equals(c.Track.Isrc, isrc, StringComparison.OrdinalIgnoreCase))
+            .Select((c, order) => (c.Track, Named: !string.IsNullOrWhiteSpace(albumName) && AlbumNamesMatch(albumName, c.Track.AlbumName), c.Compilation, order))
+            .OrderBy(c => c.Compilation ? (c.Named ? 2 : 3) : (c.Named ? 0 : 1)).ThenBy(c => c.order)
+            .Select(c => c.Track).FirstOrDefault();
+
+    // Names match when one's words start the other's: Qobuz calls the radio edit's single "Get Lucky", which TIDAL
+    // calls "Get Lucky (Radio Edit - feat. ...)", and editions add to the name. A name found further in doesn't
+    // count, so the album "21" doesn't match the compilation "Top Hits 2021".
+    internal static bool AlbumNamesMatch(string? wanted, string? candidate)
+    {
+        var (a, b) = (AlbumWords(wanted), AlbumWords(candidate));
+        var (shorter, longer) = a.Length <= b.Length ? (a, b) : (b, a);
+        return shorter.Length > 0 && longer.Take(shorter.Length).SequenceEqual(shorter);
+    }
+
+    // Apostrophes join a word ("Don't", "Don’t" and "Dont" are all "dont"); any other punctuation separates words,
+    // whether ASCII or not. Accents are removed from each word after splitting.
+    private static string[] AlbumWords(string? name) =>
+        Regex.Split(Regex.Replace(TextNormalization.TransliterateCyrillic((name ?? "").ToLowerInvariant()), @"['\u2018\u2019\u02BC`]", ""), @"[^\p{L}\p{M}\p{Nd}]+")
+            .Select(TextNormalization.RemoveAccentsAndSymbols)
+            .Where(word => word.Length > 0).ToArray();
+
+    private static bool IsCompilation(JsonApiDocument document, JsonElement track) =>
+        document.Related(track, "albums").FirstOrDefault() is { ValueKind: JsonValueKind.Object } album
+        && document.Related(album, "artists").Select(artist => Attribute(artist, "name")).ToList() is [var only]
+        && string.Equals(only, "Various Artists", StringComparison.OrdinalIgnoreCase);
 
     /// <summary>The album with this UPC (barcode), or null.</summary>
     public async Task<AlbumSearchObject?> GetAlbumByUpcAsync(string upc, CancellationToken token)

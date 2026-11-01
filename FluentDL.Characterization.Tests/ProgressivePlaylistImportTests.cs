@@ -22,6 +22,21 @@ public class ProgressivePlaylistImportTests
     [DataRow("spotify")]
     [DataRow("tidal")]
     [DataRow("qobuz")]
+    public async Task PublicPlaylistNamesCannotCreateStatusLinks(string provider)
+    {
+        using var fixture = new Fixture(provider);
+        fixture.Http.PlaylistName = "x</a><a href='x'>y & z";
+        fixture.Http.Release.TrySetResult();
+        await fixture.Load([], CancellationToken.None);
+        var status = fixture.Messages.Last(message => message.Contains("Loaded playlist", StringComparison.Ordinal));
+        Assert.IsFalse(status.Contains("<a href='x'>", StringComparison.Ordinal), "The public name created a second status link.");
+        Assert.IsTrue(status.Contains(System.Net.WebUtility.HtmlEncode(fixture.Http.PlaylistName), StringComparison.Ordinal));
+    }
+
+    [TestMethod]
+    [DataRow("spotify")]
+    [DataRow("tidal")]
+    [DataRow("qobuz")]
     public async Task CompleteFirstPageIsPublishedBeforeTheNextPageReturns(string provider)
     {
         using var fixture = new Fixture(provider);
@@ -182,6 +197,7 @@ public class ProgressivePlaylistImportTests
     {
         internal readonly Handler Http;
         internal readonly List<StatusLevel> Status = [];
+        internal readonly List<string> Messages = [];
         private readonly ILinkSource source;
         private readonly string url;
         private readonly HttpClient http;
@@ -223,7 +239,7 @@ public class ProgressivePlaylistImportTests
             }
         }
         internal Task Load(List<SongSearchObject> items, CancellationToken token) => source.AddFromLinkAsync(items, url,
-            new(true, new(0, 0), false), (level, _, _) => Status.Add(level), token);
+            new(true, new(0, 0), false), (level, message, _) => { Status.Add(level); Messages.Add(message); }, token);
         internal void InvalidateQobuzSession() => Set(source, "HttpClientInitialized", false);
         public void Dispose() { Http.Release.TrySetResult(); http.Dispose(); }
         private static void Set(object target, string name, object value) => target.GetType().GetField(name, BindingFlags.Instance | BindingFlags.NonPublic)!.SetValue(target, value);
@@ -236,13 +252,14 @@ public class ProgressivePlaylistImportTests
         internal bool FailNext, IncompleteTrack, IncompleteDetail, LegacyIds, LegacyMap, RejectTrackPages;
         internal bool SpacedArtistCredits;
         internal string? LaterPageShape;
+        internal string PlaylistName = "Playlist";
         internal int Pages, DetailRequests, LegacyRequests;
         protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken token)
         {
             var path = request.RequestUri!.AbsolutePath;
             if (request.RequestUri.Host == "auth.tidal.com") return Reply(new { access_token = "synthetic", expires_in = 3600, token_type = "Bearer" });
             Assert.AreEqual(HttpMethod.Get, request.Method, "Playlist imports must not send mutations.");
-            if (provider == "spotify" && !path.EndsWith("tracks") && !path.EndsWith("items")) return Reply(new { name = "Playlist" });
+            if (provider == "spotify" && !path.EndsWith("tracks") && !path.EndsWith("items")) return Reply(new { name = PlaylistName });
             if (path.EndsWith("track/get"))
             {
                 DetailRequests++;
@@ -289,7 +306,7 @@ public class ProgressivePlaylistImportTests
                     track["performer"] = new JObject { ["name"] = "Calvin Harris" };
                 }
                 if (!next && IncompleteTrack) track.Remove("isrc");
-                return Reply(new { name = "Playlist", tracks_count = 3, tracks = new { items = next ? new[] { track } : new[] { track, track }, offset = next ? 2 : 0, total = 3 } });
+                return Reply(new { name = PlaylistName, tracks_count = 3, tracks = new { items = next ? new[] { track } : new[] { track, track }, offset = next ? 2 : 0, total = 3 } });
             }
             var id = next ? "2" : "1";
             var reference = new { id, type = "tracks" };
@@ -298,7 +315,7 @@ public class ProgressivePlaylistImportTests
                 ? Reply(new { data = new[] { reference }, included })
                 : Reply(new
                 {
-                    data = new { id = "playlist", type = "playlists", attributes = new { name = "Playlist" }, relationships = new
+                    data = new { id = "playlist", type = "playlists", attributes = new { name = PlaylistName }, relationships = new
                     { items = new { data = new[] { reference, reference }, links = new { next = "https://openapi.tidal.com/v2/playlist-next?cursor=2" } } } },
                     included,
                 });

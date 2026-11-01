@@ -96,10 +96,11 @@ public sealed partial class SettingsPage : Page
         {
             await Updates.InstallAsync(ApplicationActivity.Gate, async token =>
             {
-                await QueueViewModel.SaveForUpdateAsync(token);
+                await DatabaseService.FlushAsync().WaitAsync(token);
                 var backup = Path.Combine(ApplicationData.Current.LocalFolder.Path, "Updates", "queue-before-update-" + Guid.NewGuid().ToString("N") + ".zip");
                 await DatabaseService.CreateBackupAtPath(backup);
                 token.ThrowIfCancellationRequested();
+                await QueueViewModel.SaveForUpdateAsync(token);
             });
         }
         finally { if (content != null) content.IsEnabled = enabled; }
@@ -679,7 +680,7 @@ public sealed partial class SettingsPage : Page
                 LocationCard.Description = folder.Path;
                 // Save to settings
                 await localSettings.SaveSettingAsync<string?>(SettingsViewModel.DownloadDirectory, folder.Path);
-                ShowInfoBar(InfoBarSeverity.Success, $"Set download directory to <a href='{folder.Path}'>{folder.Path}</a>");
+                ShowInfoBar(InfoBarSeverity.Success, StatusMarkup.Format($"Set download directory to <a href='{folder.Path}'>{folder.Path}</a>"), isMarkup: true);
             }
             else
             {
@@ -715,7 +716,7 @@ public sealed partial class SettingsPage : Page
                 // Update ffmpeg runner
                 await FFmpegRunner.Initialize();
 
-                ShowInfoBar(InfoBarSeverity.Success, $"Set FFmpeg path to <a href='{folder.Path}'>{folder.Path}</a>");
+                ShowInfoBar(InfoBarSeverity.Success, StatusMarkup.Format($"Set FFmpeg path to <a href='{folder.Path}'>{folder.Path}</a>"), isMarkup: true);
             }
             else
             {
@@ -777,7 +778,7 @@ public sealed partial class SettingsPage : Page
         // Refresh the UI with the new executable
         await RefreshYtdlpUIAsync(file.Path);
 
-        ShowInfoBar(InfoBarSeverity.Success, $"Set yt-dlp path to <a href='{file.Path}'>{file.Path}</a>");
+        ShowInfoBar(InfoBarSeverity.Success, StatusMarkup.Format($"Set yt-dlp path to <a href='{file.Path}'>{file.Path}</a>"), isMarkup: true);
     }
 
     private async void UpdateYtdlpButton_OnClick(object sender, RoutedEventArgs e)
@@ -1248,10 +1249,10 @@ public sealed partial class SettingsPage : Page
         });
     }
 
-    private void ShowInfoBar(InfoBarSeverity severity, string message, int seconds = 2, string title = "")
+    private void ShowInfoBar(InfoBarSeverity severity, string message, int seconds = 2, string title = "", bool isMarkup = false)
     {
-        title = title.Trim();
-        message = message.Trim();
+        title = StatusMarkup.Text(title.Trim());
+        message = isMarkup ? message.Trim() : StatusMarkup.Text(message.Trim());
         dispatcher.TryEnqueue(() =>
         {
             dispatcherTimer.Stop();
@@ -1322,7 +1323,7 @@ public sealed partial class SettingsPage : Page
             {
                 string content = await localSettings.ExportSettingsAsync();
                 await FileIO.WriteTextAsync(file, content);
-                ShowInfoBar(InfoBarSeverity.Success, $"Settings saved to <a href='{file.Path}'>{file.Name}</a>.", seconds: 3, title: "Export Successful");
+                ShowInfoBar(InfoBarSeverity.Success, StatusMarkup.Format($"Settings saved to <a href='{file.Path}'>{file.Name}</a>."), seconds: 3, title: "Export Successful", isMarkup: true);
             }
             else
             {

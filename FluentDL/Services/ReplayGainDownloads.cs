@@ -1,4 +1,5 @@
 using FluentDL.Core.ReplayGain;
+using FluentDL.Helpers;
 using FluentDL.ViewModels;
 using Serilog;
 
@@ -6,7 +7,8 @@ namespace FluentDL.Services;
 
 // Writes ReplayGain tags to finished downloads when Settings > ReplayGain > Tag Downloads is on.
 // Downloads get track gain only, except whole albums from Search when Album Gain for Album Downloads is on.
-// The queue holds single tracks, so it can't tell when an album is complete.
+// The queue holds single tracks, so it can't tell when an album is complete. Tag writes are tracked, so closing
+// the app waits for a file being rewritten, and no write starts once it is closing.
 internal static class ReplayGainDownloads
 {
     public static async Task TagTrackAsync(string path)
@@ -15,7 +17,7 @@ internal static class ReplayGainDownloads
         {
             if (await SettingsViewModel.GetSetting<bool?>(SettingsViewModel.ReplayGainAutoApply) != true) return;
             var (offset, preventClipping) = await ReadOptionsAsync();
-            var result = await ReplayGainScanner.ApplyTrackGainAsync(path, offset, preventClipping);
+            var result = await ReplayGainScanner.ApplyTrackGainAsync(path, offset, preventClipping, runWrite: ApplicationActivity.RunFileWriteAsync);
             Log.Debug("Wrote ReplayGain track gain {TrackGain:0.00} dB to a downloaded track", result.TrackGain);
         }
         catch (Exception e)
@@ -39,7 +41,8 @@ internal static class ReplayGainDownloads
             var options = new ReplayGainOptions(TrackGain: true, AlbumGain: albumGainOn && complete, SingleAlbum: true,
                 Offset: offset, PreventClipping: preventClipping);
             var scan = await ReplayGainScanner.ScanAsync(paths.Select(path => new ReplayGainTrack(path)).ToList(), options);
-            var writeFailures = await Task.Run(() => ReplayGainScanner.WriteTags(scan.Results, options));
+            List<ReplayGainFailure> writeFailures = [];
+            await ApplicationActivity.RunFileWriteAsync(() => writeFailures = ReplayGainScanner.WriteTags(scan.Results, options));
 
             var failed = scan.Failures.Count + writeFailures.Count;
             if (failed > 0) Log.Warning("Could not write ReplayGain tags to {FailedCount} of {TrackCount} album tracks", failed, paths.Count);
