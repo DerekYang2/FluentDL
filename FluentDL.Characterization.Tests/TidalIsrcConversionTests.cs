@@ -90,6 +90,29 @@ public class TidalIsrcConversionTests
         Assert.AreEqual(Single.TrackId, match.Track?.Id);
     }
 
+    // Album names match when one starts the other, word by word. "Get Lucky" in the middle of a compilation's name
+    // doesn't count, as the album "21" doesn't match "Top Hits 2021".
+    [TestMethod]
+    public async Task AnAlbumNameInsideACompilationsNameIsNotAMatch()
+    {
+        var hits = new Release("hits-track", "hits", "Hits of 2013: Get Lucky & More", "Various Artists");
+        var catalog = new FakeCatalog { TrackSearch = [hits, Album] };
+
+        var match = await Convert(catalog, Song("Get Lucky"));
+
+        Assert.AreEqual(Album.TrackId, match.Track?.Id);
+    }
+
+    [TestMethod]
+    [DataRow("Random Access Memories", "Random Access Memories (10th Anniversary Edition)", true)]
+    [DataRow("Get Lucky", "Get Lucky (Radio Edit - feat. Pharrell Williams and Nile Rodgers)", true)]
+    [DataRow("I Am... Sasha Fierce", "I AM...SASHA FIERCE", true)]
+    [DataRow("21", "Top Hits 2021", false)]
+    [DataRow("Get Lucky", "Hits of 2013: Get Lucky & More", false)]
+    [DataRow("Random Access Memories", "", false)]
+    public void AlbumNamesMatchWhenOneStartsTheOther(string wanted, string candidate, bool matches) =>
+        Assert.AreEqual(matches, TidalSource.AlbumNamesMatch(wanted, candidate));
+
     [TestMethod]
     public async Task ACompilationIsUsedOnlyWhenNothingElseHasTheRecording()
     {

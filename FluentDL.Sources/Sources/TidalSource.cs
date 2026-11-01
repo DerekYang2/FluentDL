@@ -493,13 +493,19 @@ internal sealed class TidalSource : ISourceSession, IAccountLogin, ISearchSource
             .OrderBy(c => c.Named ? 0 : 1).ThenBy(c => c.Compilation).ThenBy(c => c.order)
             .Select(c => c.Track).FirstOrDefault();
 
-    // Names that contain each other match: Qobuz calls the radio edit's single "Get Lucky", which TIDAL calls
-    // "Get Lucky (Radio Edit - feat. ...)".
-    private static bool AlbumNamesMatch(string wanted, string candidate)
+    // Names match when one's words start the other's: Qobuz calls the radio edit's single "Get Lucky", which TIDAL
+    // calls "Get Lucky (Radio Edit - feat. ...)", and editions add to the name. A name found further in doesn't
+    // count, so the album "21" doesn't match the compilation "Top Hits 2021".
+    internal static bool AlbumNamesMatch(string? wanted, string? candidate)
     {
-        var (a, b) = (TitleNormalizer.Compact(wanted), TitleNormalizer.Compact(candidate));
-        return a.Length > 0 && b.Length > 0 && (a.Contains(b) || b.Contains(a));
+        var (a, b) = (AlbumWords(wanted), AlbumWords(candidate));
+        var (shorter, longer) = a.Length <= b.Length ? (a, b) : (b, a);
+        return shorter.Length > 0 && longer.Take(shorter.Length).SequenceEqual(shorter);
     }
+
+    private static string[] AlbumWords(string? name) =>
+        Regex.Split(TextNormalization.RemoveAccentsAndSymbols(TextNormalization.TransliterateCyrillic((name ?? "").ToLowerInvariant())), @"[^\p{L}\p{Nd}]+")
+            .Where(word => word.Length > 0).ToArray();
 
     private static bool IsCompilation(JsonApiDocument document, JsonElement track) =>
         document.Related(track, "albums").FirstOrDefault() is { ValueKind: JsonValueKind.Object } album
