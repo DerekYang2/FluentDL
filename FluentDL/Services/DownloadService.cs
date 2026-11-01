@@ -357,6 +357,17 @@ public sealed class DownloadService(SourceRegistry sources, EquivalentDownloader
         bool createAlbumSubfolder = await SettingsViewModel.GetSetting<bool>(SettingsViewModel.AlbumSubfolders);
         var createTrackSubfolder = await SettingsViewModel.GetSetting<bool>(SettingsViewModel.Subfolders);
         var trackWildcard = await SettingsViewModel.GetSetting<string>(SettingsViewModel.SubfolderWildcard);
+
+        // The track list comes first, so an album with no listed tracks leaves no empty folder behind.
+        if (sources.TryGet<ICatalogSource>(album.Source, out var albumCatalog))
+        {
+            album.TrackList = await albumCatalog.GetAlbumTracksAsync(album);
+        }
+        if (album.TrackList == null || album.TrackList.Count == 0)
+        {
+            throw new InvalidOperationException("The source returned no tracks for this album. Try again later.");
+        }
+
         if (createAlbumSubfolder)
         {
             var wildCardStr = await SettingsViewModel.GetSetting<string>(SettingsViewModel.AlbumSubfolderWildcard);
@@ -380,18 +391,6 @@ public sealed class DownloadService(SourceRegistry sources, EquivalentDownloader
             }
             directory = newDirectory;
         }
-
-        if (sources.TryGet<ICatalogSource>(album.Source, out var albumCatalog))
-        {
-            album.TrackList = await albumCatalog.GetAlbumTracksAsync(album);
-        }
-
-        if (album.TrackList == null)
-        {
-            return [];
-        }
-        if (album.TrackList.Count < album.TracksCount)
-            throw new InvalidOperationException($"The source returned {album.TrackList.Count} of {album.TracksCount} album tracks. The album was left unchanged. Try loading it again.");
 
         var downloadPaths = new ConcurrentQueue<string>();
 
@@ -457,10 +456,9 @@ public sealed class DownloadService(SourceRegistry sources, EquivalentDownloader
         }
         await Task.WhenAll(allTasks);
 
-        // The album's tracks are tagged together, so album gain can use all of them. TrackList can be shorter than
-        // the album when a track couldn't be looked up, so the album's own track count decides if it's complete.
-        var albumTrackCount = Math.Max(album.TracksCount, album.TrackList.Count);
-        await ReplayGainDownloads.TagAlbumAsync(downloadPaths.ToList(), complete: downloadPaths.Count >= albumTrackCount);
+        // The album's tracks are tagged together, so album gain can use all of them. Album gain needs every listed
+        // track; the listed count is used because TIDAL's own count includes videos.
+        await ReplayGainDownloads.TagAlbumAsync(downloadPaths.ToList(), complete: downloadPaths.Count >= album.TrackList.Count);
 
         // Download cover if subfolder, fire and forget
 #pragma warning disable CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed

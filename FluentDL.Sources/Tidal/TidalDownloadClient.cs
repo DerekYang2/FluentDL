@@ -245,7 +245,12 @@ public sealed class TidalDownloadClient
                 }
             }
             if (expectedIdentity != null && !ReferenceEquals(expectedIdentity, session?.Identity))
-                throw new SourceSignInRequiredException(SourceIds.Tidal, "The TIDAL sign-in changed. Try the download again with the current account.");
+            {
+                // Signed out: a sign-in is needed. Signed in again or as another account: retrying is enough.
+                const string changed = "The TIDAL sign-in changed. Try the download again with the current account.";
+                if (session == null) throw new SourceSignInRequiredException(SourceIds.Tidal, changed);
+                throw new TidalDownloadUnavailableException(changed);
+            }
             if (session == null || session.Expires > DateTimeOffset.UtcNow.AddMinutes(5)
                 && !string.IsNullOrEmpty(session.AccountName) && session.AccessToken != rejectedAccessToken) return session;
             try

@@ -36,18 +36,16 @@ public class QueueAlbumTests
     }
 
     [TestMethod]
-    public void ExpandedTracksKeepAlbumOrder()
+    public void RestoredLocalRowsUseTheFilesCurrentTagsAndKeepTheirPosition()
     {
-        var tracks = new List<SongSearchObject>
-        {
-            new() { Id = "1", Title = "Give Life Back to Music", Isrc = "USQX91300101" },
-            new() { Id = "2", Title = "The Game of Love", Isrc = "USQX91300102" },
-            new() { Id = "3", Title = "Giorgio by Moroder", Isrc = "USQX91300103" },
-        };
-        // By ISRC, then by title when the tag has none, then by track number after the listed tracks.
-        Assert.AreEqual(1, Views.QueuePage.AlbumOrder(tracks, new SongSearchObject { Title = "anything", Isrc = "usqx91300102" }));
-        Assert.AreEqual(2, Views.QueuePage.AlbumOrder(tracks, new SongSearchObject { Title = "Giorgio By Moroder", TrackPosition = "9" }));
-        Assert.AreEqual(3 + 7, Views.QueuePage.AlbumOrder(tracks, new SongSearchObject { Title = "Bonus", TrackPosition = "7/14" }));
+        var saved = new SongSearchObject { Source = SourceIds.Local, Id = @"C:\Music\song.flac", Title = "Old title", QueueCounter = 6 };
+
+        var current = QueueRestore.CurrentLocalFile(saved, path => new SongSearchObject { Source = SourceIds.Local, Id = path, Title = "Edited title" });
+        var missing = QueueRestore.CurrentLocalFile(saved, _ => null);
+
+        Assert.AreEqual("Edited title", current?.Title);
+        Assert.AreEqual(6, current?.QueueCounter);
+        Assert.IsNull(missing, "A file that can't be read keeps its saved row.");
     }
 
     [TestMethod]

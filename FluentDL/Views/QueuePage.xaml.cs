@@ -1216,9 +1216,11 @@ public sealed partial class QueuePage : Page
 
     /// <summary>
     /// Downloads a queued album, then replaces its row with one row per track in album order: the local file for each
-    /// downloaded track, or the streaming track with an error badge for one that failed, so it can be retried.
+    /// downloaded track, or the streaming track with an error badge for one that failed, so it can be retried. Each
+    /// result is reported with its place in the album.
     /// </summary>
-    private async Task DownloadQueuedAlbumAsync(QueueObject row, string directory, IProgress<ProgressData> progress, ConversionUpdateCallback callback)
+    private async Task DownloadQueuedAlbumAsync(QueueObject row, string directory, IProgress<ProgressData> progress,
+        Action<StatusLevel, SongSearchObject, string?, int> callback)
     {
         var album = (AlbumSearchObject)QueueObject.Unwrap(row);
         List<AlbumTrackDownloadOutcome> outcomes;
@@ -1229,7 +1231,7 @@ public sealed partial class QueuePage : Page
         catch (Exception ex)
         {
             Serilog.Log.Warning(ex, "Queued album download failed");
-            callback(StatusLevel.Error, row);
+            callback(StatusLevel.Error, row, null, 0);
             dispatcherQueue.TryEnqueue(() =>
             {
                 row.ConvertBadgeColor = new SolidColorBrush(BadgeError);
@@ -1249,7 +1251,7 @@ public sealed partial class QueuePage : Page
                     var outcome = outcomes[resolved.Order];
                     callback(resolved.Level, outcome.Track, resolved.Level == StatusLevel.Error
                         ? outcome.Error ?? "The downloaded audio file could not be read. The source track was kept for retry."
-                        : outcome.Path);
+                        : outcome.Path, resolved.Order);
                     if (resolved.Song.Source == SourceIds.Local)
                         resolved.Song.LocalBitmapImage = await LocalExplorerViewModel.GetBitmapImageAsync(resolved.Song.Id);
                     var badge = resolved.Level == StatusLevel.Warning ? BadgeWarning : resolved.Level == StatusLevel.Error ? BadgeError : BadgeSuccess;
@@ -1283,23 +1285,6 @@ public sealed partial class QueuePage : Page
             }
         })) throw new InvalidOperationException("The queue window is no longer available.");
         await done.Task;
-    }
-
-    // A downloaded file's place in the album: the track with the same ISRC, else the same title, else its track number
-    // after the listed tracks.
-    internal static int AlbumOrder(List<SongSearchObject> tracks, SongSearchObject local)
-    {
-        var index = tracks.IndexOf(local);
-        if (index >= 0) return index;
-        index = tracks.FindIndex(t => !string.IsNullOrWhiteSpace(local.Isrc) && string.Equals(t.Isrc, local.Isrc, StringComparison.OrdinalIgnoreCase));
-        if (index < 0)
-        {
-            var title = Core.Matching.TitleNormalizer.Compact(local.Title);
-            index = tracks.FindIndex(t => Core.Matching.TitleNormalizer.Compact(t.Title) == title);
-        }
-        if (index >= 0) return index;
-        var digits = new string((local.TrackPosition ?? "").TakeWhile(char.IsDigit).ToArray());
-        return tracks.Count + (int.TryParse(digits, out var number) ? number : 9999);
     }
 
     private Task ConversionTask(IEnumerable<string> selectedSources, string outputSource) =>
@@ -1432,12 +1417,8 @@ public sealed partial class QueuePage : Page
             {
                 var song = x.Song;
                 var index = x.OriginalIndex;
-                void Report(StatusLevel level, SongSearchObject result, string? location = null)
-                {
-                    var trackOrder = outputSource == SourceIds.Local && QueueObject.Unwrap(song) is AlbumSearchObject album
-                        ? AlbumOrder(album.TrackList ?? [], result) : 0;
-                    conversionUpdateCallback(level, result, (index, trackOrder));
-                }
+                void Report(StatusLevel level, SongSearchObject result, string? location = null) =>
+                    conversionUpdateCallback(level, result, (index, 0));
                 var outcome = new QueueConversionOutcome(Report);
                 try
                 {
@@ -1452,7 +1433,8 @@ public sealed partial class QueuePage : Page
                     string? fileLocation = null;
                     if (outputSource == SourceIds.Local && song.IsAlbum)
                     {
-                        await DownloadQueuedAlbumAsync(song, directory, progress, Report);
+                        await DownloadQueuedAlbumAsync(song, directory, progress,
+                            (level, track, _, order) => conversionUpdateCallback(level, track, (index, order)));
                         return;
                     }
                     if (outputSource == SourceIds.Local)

@@ -428,7 +428,9 @@ public class TidalDownloadTests
         await client.FinishLoginAsync(next, Callback(next));
         var saved = await settings.ReadSettingAsync<string>(SettingKeys.TidalDownloadSession);
         release.TrySetResult();
-        await Assert.ThrowsExceptionAsync<SourceSignInRequiredException>(() => download);
+        // A newer login means retrying is enough, so this is not a sign-in request.
+        var changed = await Assert.ThrowsExceptionAsync<TidalDownloadUnavailableException>(() => download);
+        StringAssert.Contains(changed.Message, "sign-in changed");
         Assert.IsTrue(saved == await settings.ReadSettingAsync<string>(SettingKeys.TidalDownloadSession), "The old request erased the replacement session.");
         Assert.IsTrue(await client.HasSessionAsync());
         Assert.AreEqual(1, handler.PlaybackRequests);
@@ -497,25 +499,56 @@ public class TidalDownloadTests
         finally { SourceServices.Configure(originalSettings, TestSources.AudioConverter); }
     }
 
+    // TIDAL counts an album's videos in its track count but lists only its tracks, so a shorter listing still
+    // downloads every listed track.
     [TestMethod]
-    public async Task AnIncompleteAlbumListingCannotReplaceTheOriginalAlbum()
+    public async Task AnAlbumListingShorterThanItsCountDownloadsEveryListedTrack()
     {
-        var settings = new TidalParsingTests.DictionarySettings(new() { ["conversion_threads"] = 2 });
-        var handler = new FakeHttp { Preview = true };
-        var client = Client(settings, handler);
+        var settings = new TidalParsingTests.DictionarySettings(new()
+        {
+            ["conversion_threads"] = 2, ["file_naming_wildcard"] = "{title}", ["download_album_cover_art"] = false,
+        });
+        var client = Client(settings, new FakeHttp { ChunkedMedia = true });
         var login = await client.BeginLoginAsync();
         await client.FinishLoginAsync(login, Callback(login));
         var registry = new SourceRegistry(new ISource[] { new AlbumCatalog(trackCount: 2) });
         var downloads = new DownloadService(registry, new EquivalentDownloader(registry), new NoLyrics(), client);
+        var folder = Path.Combine(Path.GetTempPath(), "opencode", "tidal-album-short-listing-" + Guid.NewGuid());
+        Directory.CreateDirectory(folder);
         var originalSettings = TestSources.Settings;
         SourceServices.Configure(settings, new CopyConverter());
         try
         {
             var album = new AlbumSearchObject { Source = SourceIds.Tidal, Id = "album", Title = "Album", TracksCount = 3 };
-            await Assert.ThrowsExceptionAsync<InvalidOperationException>(() => downloads.DownloadAlbum(album, "unused", new RecordingProgress()));
-            Assert.AreEqual(0, handler.PlaybackRequests, "An incomplete listing must fail before downloading or replacing any rows.");
+            var paths = await downloads.DownloadAlbum(album, folder, new RecordingProgress());
+            Assert.AreEqual(2, paths.Count);
         }
-        finally { SourceServices.Configure(originalSettings, TestSources.AudioConverter); }
+        finally { SourceServices.Configure(originalSettings, TestSources.AudioConverter); Directory.Delete(folder, true); }
+    }
+
+    // An empty listing fails before the album folder is made, so a retry isn't stopped by an empty folder.
+    [TestMethod]
+    public async Task AnEmptyAlbumListingFailsWithoutMakingTheAlbumFolder()
+    {
+        var settings = new TidalParsingTests.DictionarySettings(new() { ["album_subfolders"] = true, ["overwrite"] = false });
+        var handler = new FakeHttp();
+        var client = Client(settings, handler);
+        var login = await client.BeginLoginAsync();
+        await client.FinishLoginAsync(login, Callback(login));
+        var registry = new SourceRegistry(new ISource[] { new AlbumCatalog(trackCount: 0) });
+        var downloads = new DownloadService(registry, new EquivalentDownloader(registry), new NoLyrics(), client);
+        var folder = Path.Combine(Path.GetTempPath(), "opencode", "tidal-album-empty-listing-" + Guid.NewGuid());
+        Directory.CreateDirectory(folder);
+        var originalSettings = TestSources.Settings;
+        SourceServices.Configure(settings, new CopyConverter());
+        try
+        {
+            var album = new AlbumSearchObject { Source = SourceIds.Tidal, Id = "album", Title = "Album", Artists = "Artist", TracksCount = 3 };
+            await Assert.ThrowsExceptionAsync<InvalidOperationException>(() => downloads.DownloadAlbum(album, folder, new RecordingProgress()));
+            Assert.AreEqual(0, Directory.GetDirectories(folder).Length, "No album folder may be left behind.");
+            Assert.AreEqual(0, handler.PlaybackRequests);
+        }
+        finally { SourceServices.Configure(originalSettings, TestSources.AudioConverter); Directory.Delete(folder, true); }
     }
 
     [TestMethod]

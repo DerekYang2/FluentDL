@@ -605,26 +605,24 @@ public partial class QueueViewModel : ObservableRecipient
             foreach (var pair in sortedList.OrderBy(pair => pair.Song.QueueCounter).ThenBy(pair => pair.Hash, StringComparer.Ordinal))
             {
                 SongSearchObject song = pair.Song;
-
-                // Keep the saved metadata and order even when a local file is temporarily unavailable.
+                var localFile = song.Source == SourceIds.Local ? QueueRestore.CurrentLocalFile(song, LocalExplorerViewModel.ParseFile) : null;
+                if (localFile != null) song = localFile;
                 song.LocalBitmapImage = UnloadedPlaceholder;
                 var queueObj = Admit(song, persist: false);
-                if (song.Source == SourceIds.Local)
+                if (queueObj != null && localFile != null)
                 {
-                    if (queueObj != null && LocalExplorerViewModel.ParseFile(song.Id) != null)
+                    var path = song.Id;
+                    _ = Task.Run(async () =>
                     {
-                        _ = Task.Run(async () =>
+                        var image = await LocalExplorerViewModel.GetBitmapImageBackground(path, dispatcher);
+                        if (image != null)
                         {
-                            var image = await LocalExplorerViewModel.GetBitmapImageBackground(song.Id, dispatcher);
-                            if (image != null)
+                            dispatcher.TryEnqueue(() =>
                             {
-                                dispatcher.TryEnqueue(() =>
-                                {
-                                    queueObj.LocalBitmapImage = image;
-                                });
-                            }
-                        });
-                    }
+                                queueObj.LocalBitmapImage = image;
+                            });
+                        }
+                    });
                 }
             }
             Serilog.Log.Information("Queue restored with {ItemCount} items", Source.Count);

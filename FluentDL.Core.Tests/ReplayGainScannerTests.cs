@@ -95,6 +95,23 @@ public class ReplayGainScannerTests
     }
 
     [TestMethod]
+    public async Task ApplyTrackGain_WritesThroughTheGivenRunner()
+    {
+        // Arrange: the app passes its file-write tracker, so closing waits for the write.
+        var path = MakeSine("tracked.flac", -23, "-c:a flac");
+        var runs = 0;
+        Task Run(Action write) { runs++; return Task.Run(write); }
+
+        // Act
+        var result = await ReplayGainScanner.ApplyTrackGainAsync(path, offset: 0, preventClipping: false, runWrite: Run);
+
+        // Assert
+        Assert.AreEqual(1, runs);
+        using var file = TagLib.File.Create(path);
+        Assert.AreEqual(result.TrackGain, file.Tag.ReplayGainTrackGain, 0.005);
+    }
+
+    [TestMethod]
     public async Task ScanAndWrite_UsesTheStandardTagNames()
     {
         // Arrange

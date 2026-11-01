@@ -45,18 +45,16 @@ public class QueueAlbumExpansionTests
 
     [TestMethod]
     [DataRow("empty")]
-    [DataRow("incomplete")]
     [DataRow("wrong-source")]
     [DataRow("missing-id")]
     [DataRow("nested-album")]
-    public async Task InvalidOrIncompleteResultsLeaveTheAlbumIntact(string failure)
+    public async Task InvalidResultsLeaveTheAlbumIntact(string failure)
     {
         var album = Album("tidal");
         var tracks = new List<SongSearchObject> { Track("tidal", "1"), Track("tidal", "2"), Track("tidal", "3") };
         switch (failure)
         {
             case "empty": tracks.Clear(); break;
-            case "incomplete": tracks.RemoveAt(2); break;
             case "wrong-source": tracks[0].Source = "deezer"; break;
             case "missing-id": tracks[0].Id = ""; break;
             case "nested-album": tracks[0] = new AlbumSearchObject { Source = "tidal", Id = "nested" }; break;
@@ -65,6 +63,18 @@ public class QueueAlbumExpansionTests
         Assert.IsTrue(album.IsAlbum);
         Assert.AreEqual("album", album.Id);
         Assert.IsNull(album.TrackList);
+    }
+
+    // TIDAL counts an album's videos in its track count but lists only its tracks.
+    [TestMethod]
+    public async Task AListingShorterThanTheAlbumsCountStillExpands()
+    {
+        var album = Album("tidal");
+        var tracks = new List<SongSearchObject> { Track("tidal", "1"), Track("tidal", "2") };
+
+        var loaded = await new QueueAlbumExpansion(new SourceRegistry([new FakeCatalog("tidal", tracks)])).LoadAsync(album);
+
+        Assert.AreEqual(2, loaded.Count);
     }
 
     [TestMethod]

@@ -107,11 +107,41 @@ public class TidalIsrcConversionTests
     [DataRow("Random Access Memories", "Random Access Memories (10th Anniversary Edition)", true)]
     [DataRow("Get Lucky", "Get Lucky (Radio Edit - feat. Pharrell Williams and Nile Rodgers)", true)]
     [DataRow("I Am... Sasha Fierce", "I AM...SASHA FIERCE", true)]
+    [DataRow("I Am\u2026 Sasha Fierce", "I AM...SASHA FIERCE", true)]
+    [DataRow("Don't Smile at Me", "Don\u2019t Smile at Me", true)]
+    [DataRow("Dont Smile at Me", "Don't Smile at Me (Deluxe)", true)]
+    [DataRow("Random\u00a0Access Memories", "Random Access Memories", true)]
     [DataRow("21", "Top Hits 2021", false)]
     [DataRow("Get Lucky", "Hits of 2013: Get Lucky & More", false)]
     [DataRow("Random Access Memories", "", false)]
     public void AlbumNamesMatchWhenOneStartsTheOther(string wanted, string candidate, bool matches) =>
         Assert.AreEqual(matches, TidalSource.AlbumNamesMatch(wanted, candidate));
+
+    // A compilation named like the album ranks below the artist's own release with the same recording.
+    [TestMethod]
+    public async Task TheArtistsOwnReleaseBeatsACompilationNamedLikeTheAlbum()
+    {
+        var match = await Convert(new FakeCatalog { TrackSearch = [Disco, Single] }, Song("Disco Hits"));
+
+        Assert.AreEqual(Single.TrackId, match.Track?.Id);
+    }
+
+    // The search and album lookup only choose a release; when they fail, the ISRC filter still finds the recording.
+    [TestMethod]
+    [DataRow(true, false)]
+    [DataRow(false, true)]
+    public async Task AFailedLookupFallsBackToTheIsrcFilter(bool failTrackSearch, bool failAlbumSearch)
+    {
+        var catalog = new FakeCatalog
+        {
+            TrackSearch = [Disco], FailTrackSearch = failTrackSearch, FailAlbumSearch = failAlbumSearch, IsrcFilter = [Disco, Single],
+        };
+
+        var match = await Convert(catalog, Song());
+
+        Assert.AreEqual(MatchKind.Exact, match.Kind);
+        Assert.AreEqual(Single.TrackId, match.Track?.Id);
+    }
 
     [TestMethod]
     public async Task ACompilationIsUsedOnlyWhenNothingElseHasTheRecording()
@@ -138,6 +168,8 @@ public class TidalIsrcConversionTests
         public List<Release> AlbumSearch { get; init; } = [];
         public Dictionary<string, List<Release>> AlbumTracks { get; } = [];
         public List<Release> IsrcFilter { get; init; } = [];
+        public bool FailTrackSearch { get; init; }
+        public bool FailAlbumSearch { get; init; }
         public List<string> Requests { get; } = [];
 
         protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
@@ -150,6 +182,8 @@ public class TidalIsrcConversionTests
             if (path.EndsWith("/searchResults"))
             {
                 var albums = query["include"]!.StartsWith("albums");
+                if (albums ? FailAlbumSearch : FailTrackSearch)
+                    return Task.FromResult(new HttpResponseMessage(HttpStatusCode.BadRequest) { Content = new StringContent("""{ "errors": [] }""") });
                 var hits = albums ? AlbumSearch : TrackSearch;
                 return Reply(new
                 {

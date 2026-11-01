@@ -451,26 +451,43 @@ internal sealed class TidalSource : ISourceSession, IAccountLogin, ISearchSource
     /// The track with this ISRC. TIDAL's ISRC filter lists compilations first, and the artist's own release can be
     /// hundreds of results in. A search for the song's first artist and title ranks the artist's releases first. If
     /// none of those is on the named album, the album itself is looked up. Then the search's first release with this
-    /// ISRC that isn't credited to Various Artists is used, and finally the ISRC filter's first page.
+    /// ISRC that isn't credited to Various Artists is used, and finally the ISRC filter's first page. The search and
+    /// album lookup only choose between releases, so if either fails the ISRC filter still runs.
     /// </summary>
     public async Task<SongSearchObject?> GetTrackByIsrcAsync(string isrc, string? albumName, CancellationToken token, SongSearchObject? song = null)
     {
         List<(SongSearchObject Track, bool Compilation)> searched = [];
         if (song != null && !string.IsNullOrWhiteSpace(song.Title))
         {
-            var query = $"{song.Artists.Split(", ")[0]} {TitleNormalizer.ForSearchQuery(song.Title)}".Trim();
-            var document = await api.GetAsync($"searchResults?filter%5Bquery%5D={Uri.EscapeDataString(query)}&include={TrackIncludes},tracks.albums.artists", token);
-            if (document.Data.FirstOrDefault() is { ValueKind: JsonValueKind.Object } results)
-            {
-                searched = document.Related(results, "tracks").Select(track => (ConvertTrack(document, track), IsCompilation(document, track))).ToList();
-            }
+            searched = await OptionalAsync(() => SearchIsrcCandidatesAsync(song, token), [], token);
             var best = ChooseIsrcMatch(searched, isrc, albumName);
             if (best != null && (string.IsNullOrWhiteSpace(albumName) || AlbumNamesMatch(albumName, best.AlbumName))) return best;
-            if (!string.IsNullOrWhiteSpace(albumName) && await FindOnAlbumAsync(song.Artists, albumName, isrc, token) is { } onAlbum) return onAlbum;
+            if (!string.IsNullOrWhiteSpace(albumName)
+                && await OptionalAsync(() => FindOnAlbumAsync(song.Artists, albumName, isrc, token), null, token) is { } onAlbum) return onAlbum;
             if (best != null && searched.Any(c => c.Track == best && !c.Compilation)) return best;
         }
         var filtered = await api.GetAsync($"tracks?filter%5Bisrc%5D={Uri.EscapeDataString(isrc)}&include={TrackDetailIncludes},albums.artists", token);
         return ChooseIsrcMatch(filtered.Data.Select(track => (ConvertTrack(filtered, track), IsCompilation(filtered, track))).Concat(searched), isrc, albumName);
+    }
+
+    // The first page of a search for the song's first artist and title, with whether each release is a compilation.
+    private async Task<List<(SongSearchObject Track, bool Compilation)>> SearchIsrcCandidatesAsync(SongSearchObject song, CancellationToken token)
+    {
+        var query = $"{song.Artists.Split(", ")[0]} {TitleNormalizer.ForSearchQuery(song.Title)}".Trim();
+        var document = await api.GetAsync($"searchResults?filter%5Bquery%5D={Uri.EscapeDataString(query)}&include={TrackIncludes},tracks.albums.artists", token);
+        return document.Data.FirstOrDefault() is { ValueKind: JsonValueKind.Object } results
+            ? document.Related(results, "tracks").Select(track => (ConvertTrack(document, track), IsCompilation(document, track))).ToList()
+            : [];
+    }
+
+    private static async Task<T> OptionalAsync<T>(Func<Task<T>> lookup, T fallback, CancellationToken token)
+    {
+        try { return await lookup(); }
+        catch (Exception e) when (!token.IsCancellationRequested)
+        {
+            Serilog.Log.Warning(e, "A TIDAL lookup for choosing a release failed; using the ISRC filter");
+            return fallback;
+        }
     }
 
     // The track with this ISRC on the artist's album with this name, from the first matching album search result.
@@ -484,13 +501,14 @@ internal sealed class TidalSource : ISourceSession, IAccountLogin, ISearchSource
     }
 
     /// <summary>
-    /// Among tracks with this ISRC: one on an album whose name matches <paramref name="albumName"/> first, then
-    /// releases not credited to Various Artists, then TIDAL's order. Similarity between unrelated names is ignored.
+    /// Among tracks with this ISRC: the artist's own release on the named album first, then any release not credited
+    /// to Various Artists, then a compilation with the album's name, then TIDAL's order. Similarity between unrelated
+    /// names is ignored.
     /// </summary>
     internal static SongSearchObject? ChooseIsrcMatch(IEnumerable<(SongSearchObject Track, bool Compilation)> candidates, string isrc, string? albumName) =>
         candidates.Where(c => string.Equals(c.Track.Isrc, isrc, StringComparison.OrdinalIgnoreCase))
             .Select((c, order) => (c.Track, Named: !string.IsNullOrWhiteSpace(albumName) && AlbumNamesMatch(albumName, c.Track.AlbumName), c.Compilation, order))
-            .OrderBy(c => c.Named ? 0 : 1).ThenBy(c => c.Compilation).ThenBy(c => c.order)
+            .OrderBy(c => c.Compilation ? (c.Named ? 2 : 3) : (c.Named ? 0 : 1)).ThenBy(c => c.order)
             .Select(c => c.Track).FirstOrDefault();
 
     // Names match when one's words start the other's: Qobuz calls the radio edit's single "Get Lucky", which TIDAL
@@ -503,8 +521,11 @@ internal sealed class TidalSource : ISourceSession, IAccountLogin, ISearchSource
         return shorter.Length > 0 && longer.Take(shorter.Length).SequenceEqual(shorter);
     }
 
+    // Apostrophes join a word ("Don't", "Don’t" and "Dont" are all "dont"); any other punctuation separates words,
+    // whether ASCII or not. Accents are removed from each word after splitting.
     private static string[] AlbumWords(string? name) =>
-        Regex.Split(TextNormalization.RemoveAccentsAndSymbols(TextNormalization.TransliterateCyrillic((name ?? "").ToLowerInvariant())), @"[^\p{L}\p{Nd}]+")
+        Regex.Split(Regex.Replace(TextNormalization.TransliterateCyrillic((name ?? "").ToLowerInvariant()), @"['\u2018\u2019\u02BC`]", ""), @"[^\p{L}\p{M}\p{Nd}]+")
+            .Select(TextNormalization.RemoveAccentsAndSymbols)
             .Where(word => word.Length > 0).ToArray();
 
     private static bool IsCompilation(JsonApiDocument document, JsonElement track) =>

@@ -23,8 +23,8 @@ internal sealed class QueueAlbumExpansion(SourceRegistry sources)
     private static void Validate(QueueObject row, IReadOnlyList<SongSearchObject> tracks)
     {
         if (!row.IsAlbum) throw new InvalidOperationException("This queue item is not an album.");
-        if (tracks.Count == 0 || tracks.Count < row.AlbumTracksCount.GetValueOrDefault())
-            throw new InvalidOperationException($"The source returned {tracks.Count} of {row.AlbumTracksCount} album tracks. The album was left unchanged.");
+        if (tracks.Count == 0)
+            throw new InvalidOperationException("The source returned no album tracks. The album was left unchanged.");
         if (tracks.Any(track => track == null || string.IsNullOrWhiteSpace(track.Id)
             || track.Source != row.Source || QueueObject.IsAlbumItem(track)))
             throw new InvalidOperationException("The source returned an invalid album track list. The album was left unchanged.");

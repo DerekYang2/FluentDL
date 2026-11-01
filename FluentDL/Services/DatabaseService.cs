@@ -77,48 +77,6 @@ namespace FluentDL.Services
             }
         }
 
-        // Read all bytes from an IRandomAccessStream
-        //private static async Task<byte[]> ConvertStream(IRandomAccessStream s)
-        //{
-        //    var dr = new DataReader(s.GetInputStreamAt(0));
-        //    var bytes = new byte[s.Size];
-        //    await dr.LoadAsync((uint)s.Size);
-        //    dr.ReadBytes(bytes);
-        //    return bytes;
-        //}
-        private static async Task<byte[]?> ConvertStream(IRandomAccessStream? s)
-        {
-            if (s == null) return null;
-            var originalPosition = s.Position;
-            try
-            {
-                s.Seek(0);
-                var bytes = new byte[s.Size];
-                await s.ReadAsync(bytes.AsBuffer(), (uint)s.Size, InputStreamOptions.None);
-                return bytes;
-            }
-            finally
-            {
-                s.Seek(originalPosition);
-            }
-        }
-
-        public static async Task QueueSave(string hash, string json, IRandomAccessStream? stream)
-        {
-            try
-            {
-                await Writes.EnqueueAsync(async () =>
-                {
-                    var bytes = await ConvertStream(stream);
-                    return (Func<SqliteConnection, Task>)(connection => SaveAsync(connection, hash, json, bytes));
-                });
-            }
-            catch (Exception ex)
-            {
-                Log.Error(ex, "Queue item could not be scheduled for persistence");
-            }
-        }
-
         internal static async Task SaveForUpdateAsync(IReadOnlyList<(string Hash, string Json)> snapshot, CancellationToken token)
         {
             await Writes.FlushAsync(token);
@@ -149,29 +107,6 @@ namespace FluentDL.Services
             command.CommandText = $"SELECT Image FROM Items WHERE Image IS NOT NULL AND ({QueueItemPersistence.CoverExpression})=@u LIMIT 1";
             command.Parameters.AddWithValue("@u", url);
             return await command.ExecuteScalarAsync() as byte[];
-        }
-
-        // Save image bytes (from IRandomAccessStream) plus metadata into DB
-        private static async Task SaveAsync(SqliteConnection connection, string hash, string jsonText, byte[]? bytes)
-        {
-            if (string.IsNullOrWhiteSpace(hash)) throw new ArgumentException("hash required", nameof(hash));
-            ArgumentNullException.ThrowIfNull(jsonText);
-
-            await using var cmd = connection.CreateCommand();
-            cmd.CommandText = @"
-                INSERT OR REPLACE INTO Items (Hash, JsonText, Image, CreatedUtc)
-                VALUES (@h, @j, @b, @t);";
-
-            cmd.Parameters.AddWithValue("@h", hash);
-            cmd.Parameters.AddWithValue("@j", jsonText);
-            var blobParam = cmd.CreateParameter();
-            blobParam.ParameterName = "@b";
-            blobParam.Value = bytes ?? (object)DBNull.Value;
-            cmd.Parameters.Add(blobParam);
-            cmd.Parameters.AddWithValue("@t", DateTime.UtcNow.ToString("o"));
-
-            await cmd.ExecuteNonQueryAsync(); 
-            Log.Debug("Queue item persisted");
         }
 
         public static async Task<Dictionary<string, string>> LoadQueueJSON()

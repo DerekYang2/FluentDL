@@ -724,6 +724,20 @@ namespace FluentDL.Services.Sources
             }
         }
 
+        // Every track the album lists. An album from search or a link carries only Spotify's first page of tracks
+        // (up to 50), so a longer album is loaded again with all of its pages.
+        private async Task<List<SongSearchObject>> ListAlbumTracksAsync(AlbumSearchObject album)
+        {
+            var listed = album.TrackList ?? [];
+            if (listed.Count >= album.TracksCount || spotifyWebService != null) // The web player can't load albums (bug 9)
+            {
+                return listed;
+            }
+            var full = await spotify.Albums.Get(album.Id);
+            var tracks = await spotify.PaginateAll(full.Tracks);
+            return tracks.Select(track => ConvertSongSearchObject(track, full)).OfType<SongSearchObject>().ToList();
+        }
+
         public async Task<FullAlbum?> GetAlbum(string id)
         {
             if (spotifyWebService != null) // The web player can't load albums (bug 9)
@@ -810,13 +824,15 @@ namespace FluentDL.Services.Sources
                         statusUpdate?.Invoke(StatusLevel.Success, StatusMarkup.Format($"<b>Spotify</b>   Loaded <a href='{url}'>playlist</a>"));
                     }
                 }
-                catch (OperationCanceledException) { throw; }
-                catch (SourceSignInRequiredException) { throw; }
+                catch (OperationCanceledException) when (token.IsCancellationRequested) { throw; }
+                // Sign-in only helps when nothing loaded; a later page failing leaves incomplete results instead.
+                catch (SourceSignInRequiredException) when (published == 0) { throw; }
                 catch (Exception ex)
                 {
+                    void ReportIncomplete() => statusUpdate?.Invoke(StatusLevel.Warning, StatusMarkup.Format($"<b>Spotify</b>   Loaded {published:N0} {(published == 1 ? "track" : "tracks")}, but could not finish the playlist. Results are incomplete. Try loading the link again."), 10);
                     if (published > 0)
                     {
-                        statusUpdate?.Invoke(StatusLevel.Warning, StatusMarkup.Format($"<b>Spotify</b>   Loaded {published:N0} {(published == 1 ? "track" : "tracks")}, but could not finish the playlist. Results are incomplete. Try loading the link again."), 10);
+                        ReportIncomplete();
                         return;
                     }
                     if (userLogin)  // Attempt webservice fallback
@@ -826,14 +842,16 @@ namespace FluentDL.Services.Sources
                             await foreach (var song in webServiceInstance.GetPlaylistAsync(id, token))
                             {
                                 itemSource.Add(song);
+                                published++;
                             }
                             statusUpdate?.Invoke(StatusLevel.Warning, StatusMarkup.Format($"<b>Spotify</b>   Error: {ex.Message}. Loaded <a href='{url}'>playlist</a> using fallback method."), 10);
                         }
-                        catch (OperationCanceledException) { throw; }
-                        catch (SourceSignInRequiredException) { throw; }
+                        catch (OperationCanceledException) when (token.IsCancellationRequested) { throw; }
+                        catch (SourceSignInRequiredException) when (published == 0) { throw; }
                         catch (Exception ex2)
                         {
-                            statusUpdate?.Invoke(StatusLevel.Error, StatusMarkup.Format($"<b>Spotify</b>   Failed to load with both methods. Error 1: {ex.Message} | Error 2: {ex2.Message}"), 10);
+                            if (published > 0) ReportIncomplete();
+                            else statusUpdate?.Invoke(StatusLevel.Error, StatusMarkup.Format($"<b>Spotify</b>   Failed to load with both methods. Error 1: {ex.Message} | Error 2: {ex2.Message}"), 10);
                         }
                     } else
                     {
