@@ -18,8 +18,8 @@ using Windows.Storage;
 
 namespace FluentDL;
 
-// Only HardeningPreview.targets includes this source. It never uses real provider accounts or an installer.
-internal static class HardeningTestSupport
+// Only QueueRecoveryPreview.targets includes this source. It never uses real provider accounts or an installer.
+internal static class QueueRecoveryTestSupport
 {
     private static readonly Updates updater = new();
     private static Task? writerTask;
@@ -29,9 +29,9 @@ internal static class HardeningTestSupport
     private static void CheckFixture()
     {
         if (Environment.UserName != "WDAGUtilityAccount"
-            || Windows.ApplicationModel.Package.Current.Id.Name != "DerekYang2.FluentDL.V4HardeningTest"
-            || !File.Exists(Path.Combine(Folder, "hardening-fixture.marker")))
-            throw new InvalidOperationException("The isolated Sandbox hardening fixture is missing.");
+            || Windows.ApplicationModel.Package.Current.Id.Name != "DerekYang2.FluentDL.QueueRecoveryTest"
+            || !File.Exists(Path.Combine(Folder, "queue-recovery-fixture.marker")))
+            throw new InvalidOperationException("The isolated Sandbox queue recovery fixture is missing.");
     }
 
     internal static void Attach(UIElement? content)
@@ -50,10 +50,10 @@ internal static class HardeningTestSupport
         var buttons = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8 };
         toolbar.Children.Add(buttons);
         var status = new TextBlock { Text = "ready", TextWrapping = TextWrapping.Wrap };
-        AutomationProperties.SetAutomationId(status, "HardeningStatus");
+        AutomationProperties.SetAutomationId(status, "QueueRecoveryStatus");
         toolbar.Children.Add(status);
         var notice = new TextBlock { TextWrapping = TextWrapping.Wrap };
-        AutomationProperties.SetAutomationId(notice, "HardeningNotice");
+        AutomationProperties.SetAutomationId(notice, "QueueRecoveryNotice");
         toolbar.Children.Add(notice);
         const string name = "x</a><a href='x'>y & z";
         UrlParser.ParseTextBlock(notice, StatusMarkup.Format($"<b>Fixture</b> Loaded <a href='https://example.test/playlist'>{name}</a>"));
@@ -64,25 +64,25 @@ internal static class HardeningTestSupport
             button.Click += async (_, _) => await UiOperation.RunAsync(action, error => status.Text = "failed: " + error.Message);
             buttons.Children.Add(button);
         }
-        Button("HardeningQueue", "Open queue", () =>
+        Button("QueueRecoveryQueue", "Open queue", () =>
         {
             App.GetService<INavigationService>().NavigateTo(typeof(QueueViewModel).FullName!);
             return Task.CompletedTask;
         });
-        Button("HardeningSnapshot", "Snapshot and inspect", async () =>
+        Button("QueueRecoverySnapshot", "Snapshot and inspect", async () =>
         {
             status.Text = "capturing";
             await QueueViewModel.SaveForUpdateAsync(CancellationToken.None);
             await CaptureAsync();
             status.Text = "captured " + QueueViewModel.Source.Count + " rows";
         });
-        Button("HardeningAdd", "Admit a track", async () =>
+        Button("QueueRecoveryAdd", "Admit a track", async () =>
         {
             QueueViewModel.Add(new SongSearchObject { Source = SourceIds.Deezer, Id = "admitted", Title = "Admitted after provider failure", Artists = "Fixture", Duration = "1" });
             await DatabaseService.FlushAsync();
             status.Text = "admitted";
         });
-        Button("HardeningPreview", "Fail preview", async () =>
+        Button("QueueRecoveryPreview", "Fail preview", async () =>
         {
             if (frame.Content is not QueuePage) App.GetService<INavigationService>().NavigateTo(typeof(QueueViewModel).FullName!);
             var page = (QueuePage)frame.Content;
@@ -94,7 +94,7 @@ internal static class HardeningTestSupport
         var updateModel = new AppUpdateViewModel(updater);
         CancellationTokenSource? writerCancellation = null;
         ManualResetEventSlim? writerRelease = null;
-        Button("HardeningWriter", "Pause a file writer", async () =>
+        Button("QueueRecoveryWriter", "Pause a file writer", async () =>
         {
             if (writerTask is { IsCompleted: false }) throw new InvalidOperationException("The synthetic writer is already active.");
             writerCancellation = new();
@@ -103,14 +103,14 @@ internal static class HardeningTestSupport
             writerTask = ApplicationActivity.RunFileWriteAsync(() =>
             {
                 if (!release.Wait(TimeSpan.FromMinutes(2))) throw new TimeoutException("The synthetic writer was not released.");
-                File.WriteAllText(Path.Combine(Folder, "hardening-writer-completed"), "Synthetic file write completed");
+                File.WriteAllText(Path.Combine(Folder, "queue-recovery-writer-completed"), "Synthetic file write completed");
             });
             status.Text = "writer paused";
             try { await writerTask.WaitAsync(writerCancellation.Token); }
             catch (OperationCanceledException) { status.Text = "caller cancelled; writer still active"; }
         });
-        Button("HardeningCancelWriter", "Cancel the caller", () => { writerCancellation?.Cancel(); return Task.CompletedTask; });
-        Button("HardeningReleaseWriter", "Finish the writer", async () =>
+        Button("QueueRecoveryCancelWriter", "Cancel the caller", () => { writerCancellation?.Cancel(); return Task.CompletedTask; });
+        Button("QueueRecoveryReleaseWriter", "Finish the writer", async () =>
         {
             writerRelease?.Set();
             if (writerTask != null) await writerTask;
@@ -118,12 +118,12 @@ internal static class HardeningTestSupport
             writerCancellation?.Dispose();
             status.Text = "writer finished";
         });
-        Button("HardeningInstall", "Try a fake update", async () =>
+        Button("QueueRecoveryInstall", "Try a fake update", async () =>
         {
             if (!updateModel.IsDownloaded) { await updateModel.CheckAsync(); await updateModel.DownloadAsync(); }
             await updateModel.InstallAsync(ApplicationActivity.Gate, _ =>
             {
-                File.WriteAllText(Path.Combine(Folder, "hardening-install-prepared"), "Synthetic preparation only");
+                File.WriteAllText(Path.Combine(Folder, "queue-recovery-install-prepared"), "Synthetic preparation only");
                 return Task.CompletedTask;
             });
             status.Text = updater.Installs == 0 ? "blocked: " + updateModel.Message : "fake installation admitted";
@@ -138,20 +138,20 @@ internal static class HardeningTestSupport
         using var command = connection.CreateCommand();
         command.CommandText = "SELECT Image FROM Items WHERE Hash='localZ:\\fixture-missing\\second.flac'";
         var artwork = await command.ExecuteScalarAsync() as byte[];
-        await File.WriteAllTextAsync(Path.Combine(Folder, "hardening-state.json"), JsonSerializer.Serialize(new
+        await File.WriteAllTextAsync(Path.Combine(Folder, "queue-recovery-state.json"), JsonSerializer.Serialize(new
         {
             Rows = QueueViewModel.Source.Select(row => new { row.Source, row.Id, row.Title, row.QueueCounter, row.AlbumTracksCount }).ToArray(),
             Saved = saved, ArtworkLength = artwork?.Length ?? 0,
             ArtworkHash = artwork != null ? Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(artwork)) : null,
             WriterPending = writerTask is { IsCompleted: false }, FakeInstalls = updater.Installs,
-            InstallPrepared = File.Exists(Path.Combine(Folder, "hardening-install-prepared")),
+            InstallPrepared = File.Exists(Path.Combine(Folder, "queue-recovery-install-prepared")),
         }));
     }
 
     private sealed class Updates : IAppUpdateService
     {
         internal int Installs;
-        public string InstallationDescription => "Synthetic hardening updater";
+        public string InstallationDescription => "Synthetic queue recovery updater";
         public Uri HelpUri => new("https://example.test/");
         public string HelpLabel => "Synthetic updater";
         public Task<AppUpdateOffer?> CheckAsync(CancellationToken token) => Task.FromResult<AppUpdateOffer?>(new("Synthetic update"));
@@ -163,7 +163,7 @@ internal static class HardeningTestSupport
     {
         public SourceDescriptor Descriptor => SourceCatalog.Find(SourceIds.Deezer)!;
         public bool IsConnected => true;
-        public string? StatusText => "Synthetic hardening provider";
+        public string? StatusText => "Synthetic queue recovery provider";
         public async Task<ConnectResult> ConnectAsync()
         {
             CheckFixture();
@@ -171,11 +171,11 @@ internal static class HardeningTestSupport
             // This call fails if provider startup ran before local persistence initialized.
             const string probe = "localZ:\\fixture-missing\\first.flac";
             await DatabaseService.SaveMetadataAsync(probe, saved[probe]);
-            await File.WriteAllTextAsync(Path.Combine(Folder, "hardening-startup.json"), JsonSerializer.Serialize(new
+            await File.WriteAllTextAsync(Path.Combine(Folder, "queue-recovery-startup.json"), JsonSerializer.Serialize(new
             {
                 PersistenceReady = true, Restored = QueueViewModel.Source.Count, Saved = saved.Count,
             }));
-            if (File.ReadAllText(Path.Combine(Folder, "hardening-fixture.marker")).Trim() == "stall")
+            if (File.ReadAllText(Path.Combine(Folder, "queue-recovery-fixture.marker")).Trim() == "stall")
                 await Task.Delay(TimeSpan.FromSeconds(40));
             throw new HttpRequestException("Synthetic provider startup failure");
         }

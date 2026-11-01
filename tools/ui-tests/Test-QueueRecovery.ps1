@@ -1,8 +1,8 @@
-param([string]$ArtifactDirectory = (Join-Path $env:TEMP ('opencode\v4-hardening-ui-' + [guid]::NewGuid().ToString('N'))))
+param([string]$ArtifactDirectory = (Join-Path $env:TEMP ('opencode\queue-recovery-ui-' + [guid]::NewGuid().ToString('N'))))
 $ErrorActionPreference = 'Stop'
 $repo = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path
 $previous = $env:WINAPP_UI_WORKFLOW_ID
-$env:WINAPP_UI_WORKFLOW_ID = 'fluentdl-v4-hardening-' + [guid]::NewGuid().ToString('N')
+$env:WINAPP_UI_WORKFLOW_ID = 'fluentdl-queue-recovery-' + [guid]::NewGuid().ToString('N')
 $results = [Collections.Generic.List[object]]::new()
 $shots = [Collections.Generic.List[string]]::new()
 $AppPid = 0
@@ -23,27 +23,37 @@ function Test([string]$Name,[scriptblock]$Body) {
     }
 }
 function Fixture([string]$Mode) {
-    Checked @('target','exec','sandbox','--','powershell.exe','-NoProfile','-ExecutionPolicy','Bypass','-File','C:\WinApp\work\V4Hardening\Set-HardeningFixture.ps1','-Mode',$Mode)
+    Checked @('target','exec','sandbox','--','powershell.exe','-NoProfile','-ExecutionPolicy','Bypass','-File','C:\WinApp\work\QueueRecovery\Set-QueueRecoveryFixture.ps1','-Mode',$Mode)
+}
+$project = Join-Path $repo 'FluentDL\FluentDL.csproj'
+$appProperties = @('-p',"CustomAfterMicrosoftCommonTargets=$repo\tools\ui-tests\QueueRecoveryPreview.targets",'-p','IntermediateOutputPath=obj\queue-recovery-native\',
+    '-p','OutputPath=bin\queue-recovery-native\','-p','AppxSymbolPackageEnabled=false')
+# Builds the isolated test app and registers it in the Sandbox with its data cleared, so each run starts from a fresh
+# fixture, in a new Sandbox or one an earlier run left behind. A test app still running from an interrupted run is
+# stopped first; only the isolated test identity is touched.
+function Install {
+    $stop = '$ErrorActionPreference="Stop"; $p=Get-AppxPackage -Name DerekYang2.FluentDL.QueueRecoveryTest; if ($p) { @(Get-Process -Name FluentDL -ErrorAction Ignore) | Where-Object Path -eq (Join-Path $p.InstallLocation "FluentDL.exe") | Stop-Process -Force }; exit 0'
+    Checked @('target','exec','sandbox','--','powershell.exe','-NoProfile','-EncodedCommand',([Convert]::ToBase64String([Text.Encoding]::Unicode.GetBytes($stop)))) | Out-Null
+    $install = Checked (@('run',$project,'--on','sandbox','--arch','x64','--no-launch','--clean','--json') + $appProperties) | ConvertFrom-Json
+    if ($install.AUMID -notlike 'DerekYang2.FluentDL.QueueRecoveryTest_*') { throw 'The install did not register the isolated test app.' }
 }
 function Launch {
-    $launch = Checked @('run',(Join-Path $repo 'FluentDL\FluentDL.csproj'),'--on','sandbox','--arch','x64','--no-build','--detach','--json',
-        '-p',"CustomAfterMicrosoftCommonTargets=$repo\tools\ui-tests\HardeningPreview.targets",'-p','IntermediateOutputPath=obj\hardening-native\',
-        '-p','OutputPath=bin\hardening-native\','-p','AppxSymbolPackageEnabled=false') | ConvertFrom-Json
-    if ($launch.ProcessScope -ne 'sandbox' -or -not $launch.ProcessId -or $launch.AUMID -notlike 'DerekYang2.FluentDL.V4HardeningTest_*') { throw 'The launch did not return the isolated Sandbox app.' }
+    $launch = Checked (@('run',$project,'--on','sandbox','--arch','x64','--no-build','--detach','--json') + $appProperties) | ConvertFrom-Json
+    if ($launch.ProcessScope -ne 'sandbox' -or -not $launch.ProcessId -or $launch.AUMID -notlike 'DerekYang2.FluentDL.QueueRecoveryTest_*') { throw 'The launch did not return the isolated Sandbox app.' }
     $script:AppPid = [int]$launch.ProcessId
-    Ui @('wait-for','HardeningStatus','-t','90000') | Out-Null
+    Ui @('wait-for','QueueRecoveryStatus','-t','90000') | Out-Null
     $windows = Ui @('list-windows','--json') | ConvertFrom-Json
     $main = $windows | Where-Object { $_.hwnd -and $_.title -ne 'PopupHost' } | Select-Object -First 1
     if (-not $main) { throw 'No main fixture window was found.' }
     $script:Hwnd = [string]$main.hwnd
 }
 function Close-App {
-    $code = '$ErrorActionPreference="Stop"; $p=Get-AppxPackage -Name DerekYang2.FluentDL.V4HardeningTest; $a=Get-Process -Id ' + $script:AppPid + '; if (-not $p -or $a.Path -ne (Join-Path $p.InstallLocation "FluentDL.exe")) { throw "Not the isolated fixture app." }; [void]$a.CloseMainWindow(); if (-not $a.WaitForExit(20000)) { throw "The fixture app did not close normally." }'
+    $code = '$ErrorActionPreference="Stop"; $p=Get-AppxPackage -Name DerekYang2.FluentDL.QueueRecoveryTest; $a=Get-Process -Id ' + $script:AppPid + '; if (-not $p -or $a.Path -ne (Join-Path $p.InstallLocation "FluentDL.exe")) { throw "Not the isolated fixture app." }; [void]$a.CloseMainWindow(); if (-not $a.WaitForExit(20000)) { throw "The fixture app did not close normally." }'
     Checked @('target','exec','sandbox','--','powershell.exe','-NoProfile','-EncodedCommand',([Convert]::ToBase64String([Text.Encoding]::Unicode.GetBytes($code)))) | Out-Null
 }
 function Capture-State {
-    Ui @('invoke','HardeningSnapshot') | Out-Null
-    Ui @('wait-for','HardeningStatus','--value','captured','--contains','-t','10000') | Out-Null
+    Ui @('invoke','QueueRecoverySnapshot') | Out-Null
+    Ui @('wait-for','QueueRecoveryStatus','--value','captured','--contains','-t','10000') | Out-Null
     $state = Fixture 'Read' | ConvertFrom-Json
     $state | ConvertTo-Json -Depth 20 | Set-Content -LiteralPath (Join-Path $ArtifactDirectory ('state-' + $results.Count + '.json')) -Encoding utf8
     $state
@@ -71,7 +81,8 @@ function Shot([string]$Name) {
     $shots.Add($file)
 }
 try {
-    Checked @('target','push','sandbox',(Join-Path $PSScriptRoot 'sandbox\Set-HardeningFixture.ps1'),'V4Hardening\Set-HardeningFixture.ps1') | Out-Null
+    Install
+    Checked @('target','push','sandbox',(Join-Path $PSScriptRoot 'sandbox\Set-QueueRecoveryFixture.ps1'),'QueueRecovery\Set-QueueRecoveryFixture.ps1') | Out-Null
     $seed = Fixture 'Seed' | ConvertFrom-Json
     Launch
     Test 'Local persistence initializes and restores before a stalled provider' {
@@ -81,7 +92,7 @@ try {
         if ($state.State.ArtworkLength -ne $seed.ArtworkLength -or $state.State.ArtworkHash -ne $seed.ArtworkHash) { throw 'Cached artwork bytes changed.' }
         Shot '01-status-after-provider-timeout.png'
     }
-    Ui @('invoke','HardeningQueue') | Out-Null
+    Ui @('invoke','QueueRecoveryQueue') | Out-Null
     Ui @('wait-for','CountText','--value','3 tracks, 1 album','-t','10000') | Out-Null
     Test 'Missing-drive rows stay visible and public markup stays literal' {
         Ui @('wait-for',"Fixture Loaded x</a><a href='x'>y & z",'-t','5000')
@@ -89,8 +100,8 @@ try {
         Shot '02-restored-missing-drive.png'
     }
     Test 'Provider preview failure displays an error without escaping the UI handler' {
-        Ui @('invoke','HardeningPreview')
-        Ui @('wait-for','HardeningStatus','--value','preview handled','-t','10000')
+        Ui @('invoke','QueueRecoveryPreview')
+        Ui @('wait-for','QueueRecoveryStatus','--value','preview handled','-t','10000')
         Ui @('wait-for','Synthetic metadata preview failure','-t','10000')
         Shot '03-preview-error.png'
     }
@@ -108,14 +119,14 @@ try {
         Shot '04-mixed-album-outcomes.png'
     }
     Test 'New queue admissions persist after provider startup times out' {
-        Ui @('invoke','HardeningAdd')
-        Ui @('wait-for','HardeningStatus','--value','admitted','-t','10000')
+        Ui @('invoke','QueueRecoveryAdd')
+        Ui @('wait-for','QueueRecoveryStatus','--value','admitted','-t','10000')
         Assert-Restored (Capture-State) 7
     }
     Close-App
     Fixture 'Fail' | Out-Null
     Launch
-    Ui @('invoke','HardeningQueue') | Out-Null
+    Ui @('invoke','QueueRecoveryQueue') | Out-Null
     Test 'A failed provider and a second restart preserve rows and album track positions' {
         Ui @('wait-for','CountText','--value','7 tracks','-t','10000')
         $state = Capture-State
@@ -126,19 +137,19 @@ try {
         Shot '05-restarted-after-provider-failure.png'
     }
     Test 'An update stays blocked while a cancelled caller leaves a file writer running' {
-        Ui @('invoke','HardeningWriter')
-        Ui @('wait-for','HardeningStatus','--value','writer paused','-t','10000')
-        Ui @('invoke','HardeningCancelWriter')
-        Ui @('wait-for','HardeningStatus','--value','caller cancelled; writer still active','-t','10000')
-        Ui @('invoke','HardeningInstall')
-        Ui @('wait-for','HardeningStatus','--value','blocked:','--contains','-t','10000')
+        Ui @('invoke','QueueRecoveryWriter')
+        Ui @('wait-for','QueueRecoveryStatus','--value','writer paused','-t','10000')
+        Ui @('invoke','QueueRecoveryCancelWriter')
+        Ui @('wait-for','QueueRecoveryStatus','--value','caller cancelled; writer still active','-t','10000')
+        Ui @('invoke','QueueRecoveryInstall')
+        Ui @('wait-for','QueueRecoveryStatus','--value','blocked:','--contains','-t','10000')
         Shot '06-update-blocked-by-writer.png'
         $state = Capture-State
         if (-not $state.State.WriterPending -or $state.State.FakeInstalls -ne 0 -or $state.State.InstallPrepared) { throw 'The paused file writer did not block update preparation and installation.' }
-        Ui @('invoke','HardeningReleaseWriter')
-        Ui @('wait-for','HardeningStatus','--value','writer finished','-t','10000')
-        Ui @('invoke','HardeningInstall')
-        Ui @('wait-for','HardeningStatus','--value','fake installation admitted','-t','10000')
+        Ui @('invoke','QueueRecoveryReleaseWriter')
+        Ui @('wait-for','QueueRecoveryStatus','--value','writer finished','-t','10000')
+        Ui @('invoke','QueueRecoveryInstall')
+        Ui @('wait-for','QueueRecoveryStatus','--value','fake installation admitted','-t','10000')
         $state = Capture-State
         if ($state.State.WriterPending -or $state.State.FakeInstalls -ne 1 -or -not $state.State.InstallPrepared) { throw 'The completed writer did not release update admission.' }
     }

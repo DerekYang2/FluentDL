@@ -1,15 +1,15 @@
 param([ValidateSet('Seed','Fail','Read')][string]$Mode = 'Seed')
 $ErrorActionPreference = 'Stop'
 if ($env:USERNAME -ne 'WDAGUtilityAccount') { throw 'This fixture is only for Windows Sandbox.' }
-$package = Get-AppxPackage -Name 'DerekYang2.FluentDL.V4HardeningTest'
-if (-not $package -or -not $package.IsDevelopmentMode) { throw 'The isolated hardening test package is missing.' }
+$package = Get-AppxPackage -Name 'DerekYang2.FluentDL.QueueRecoveryTest'
+if (-not $package -or -not $package.IsDevelopmentMode) { throw 'The isolated queue recovery test package is missing.' }
 $data = [Windows.Management.Core.ApplicationDataManager,Windows.Management,ContentType=WindowsRuntime]::CreateForPackageFamily($package.PackageFamilyName)
 $folder = $data.LocalFolder.Path
-$marker = Join-Path $folder 'hardening-fixture.marker'
+$marker = Join-Path $folder 'queue-recovery-fixture.marker'
 if ($Mode -eq 'Read') {
     if (-not (Test-Path -LiteralPath $marker)) { throw 'The fixture ownership marker is missing.' }
-    $state = Join-Path $folder 'hardening-state.json'
-    $startup = Join-Path $folder 'hardening-startup.json'
+    $state = Join-Path $folder 'queue-recovery-state.json'
+    $startup = Join-Path $folder 'queue-recovery-startup.json'
     @{ State = $(if (Test-Path $state) { Get-Content $state -Raw | ConvertFrom-Json }); Startup = $(if (Test-Path $startup) { Get-Content $startup -Raw | ConvertFrom-Json }) } | ConvertTo-Json -Depth 20
     exit 0
 }
@@ -20,11 +20,11 @@ if ($Mode -eq 'Fail') {
     'fail' | Set-Content -LiteralPath $marker
     exit 0
 }
-if (Test-Path -LiteralPath $marker) { throw 'Refusing to overwrite an existing hardening fixture.' }
+if (Test-Path -LiteralPath $marker) { throw 'Refusing to overwrite an existing queue recovery fixture.' }
 Add-Type @'
 using System;
 using System.Runtime.InteropServices;
-public static class HardeningSqlite {
+public static class QueueRecoverySqlite {
  [DllImport("winsqlite3.dll", CallingConvention=CallingConvention.Cdecl)] public static extern int sqlite3_open_v2([MarshalAs(UnmanagedType.LPUTF8Str)] string path, out IntPtr db, int flags, IntPtr vfs);
  [DllImport("winsqlite3.dll", CallingConvention=CallingConvention.Cdecl)] public static extern int sqlite3_exec(IntPtr db, [MarshalAs(UnmanagedType.LPUTF8Str)] string sql, IntPtr callback, IntPtr arg, out IntPtr error);
  [DllImport("winsqlite3.dll", CallingConvention=CallingConvention.Cdecl)] public static extern int sqlite3_close(IntPtr db);
@@ -33,7 +33,7 @@ public static class HardeningSqlite {
 $dbPath = Join-Path $folder 'fluentdl.db'
 if (Test-Path -LiteralPath $dbPath) { throw 'Refusing to overwrite an existing queue database.' }
 $db = [IntPtr]::Zero
-if ([HardeningSqlite]::sqlite3_open_v2($dbPath,[ref]$db,6,[IntPtr]::Zero) -ne 0) { throw 'Cannot create the fixture database.' }
+if ([QueueRecoverySqlite]::sqlite3_open_v2($dbPath,[ref]$db,6,[IntPtr]::Zero) -ne 0) { throw 'Cannot create the fixture database.' }
 try {
     $rows = @(0..2 | ForEach-Object {
         $id = @('first','second','third')[$_]
@@ -51,8 +51,8 @@ try {
     }
     $sql += "INSERT INTO Items VALUES ('corrupt-fixture','{unreadable',NULL,'2026-10-27T00:00:00Z'); COMMIT;"
     $errorPointer = [IntPtr]::Zero
-    if ([HardeningSqlite]::sqlite3_exec($db,$sql,[IntPtr]::Zero,[IntPtr]::Zero,[ref]$errorPointer) -ne 0) { throw 'Cannot seed the fixture database.' }
-} finally { [void][HardeningSqlite]::sqlite3_close($db) }
+    if ([QueueRecoverySqlite]::sqlite3_exec($db,$sql,[IntPtr]::Zero,[IntPtr]::Zero,[ref]$errorPointer) -ne 0) { throw 'Cannot seed the fixture database.' }
+} finally { [void][QueueRecoverySqlite]::sqlite3_close($db) }
 'stall' | Set-Content -LiteralPath $marker
 $indexer = [Collections.Generic.IDictionary[string,object]].GetProperty('Item')
 $settings = @{

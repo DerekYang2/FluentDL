@@ -1,0 +1,15 @@
+<Project>
+  <Import Project="$(MSBuildThisFileDirectory)DevPackage.targets" />
+  <PropertyGroup Condition="'$(MSBuildProjectName)' == 'FluentDL'">
+    <DefineConstants>$(DefineConstants);FLUENTDL_QUEUE_RECOVERY_UI_TESTS</DefineConstants>
+    <FluentDLDevToastClsid>ca7db77a-7acb-4842-afb6-a97d058e6c45</FluentDLDevToastClsid>
+    <FluentDLDevPhoneProductId>cd3695df-03db-47bb-b0a2-c70a7c7af507</FluentDLDevPhoneProductId>
+  </PropertyGroup>
+  <ItemGroup Condition="'$(MSBuildProjectName)' == 'FluentDL'">
+    <Compile Include="$(MSBuildThisFileDirectory)QueueRecoveryTestSupport.cs" Link="QueueRecoveryTestSupport.cs" />
+  </ItemGroup>
+  <Target Name="FluentDLUseQueueRecoveryTestIdentity" AfterTargets="FluentDLUseDevManifest" Condition="'$(MSBuildProjectName)' == 'FluentDL'">
+    <XmlPoke XmlInputPath="$(FluentDLDevManifest)" Namespaces="$(FluentDLDevNamespaces)" Query="/m:Package/m:Identity/@Name" Value="DerekYang2.FluentDL.QueueRecoveryTest" />
+    <XmlPoke XmlInputPath="$(FluentDLDevManifest)" Namespaces="$(FluentDLDevNamespaces)" Query="/m:Package/m:Properties/m:DisplayName" Value="FluentDL queue recovery test" />
+  </Target>
+</Project>

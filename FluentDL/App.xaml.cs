@@ -153,8 +153,8 @@ public partial class App : Application
                     services.AddSingleton<ConversionService>();
                     services.AddSingleton<EquivalentDownloader>();
                     services.AddSingleton<DownloadService>();
-#if FLUENTDL_HARDENING_UI_TESTS
-                    HardeningTestSupport.Register(services);
+#if FLUENTDL_QUEUE_RECOVERY_UI_TESTS
+                    QueueRecoveryTestSupport.Register(services);
 #endif
                     // Views and ViewModels
                     services.AddTransient<SettingsViewModel>();
