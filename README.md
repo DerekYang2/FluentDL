@@ -29,7 +29,7 @@ FluentDL is a Fluent UI desktop app for finding, matching, and downloading lossl
 
 It automatically matches tracks across streaming services, gives you fine‑grained control over matches, and includes format conversion, lyrics, loudness normalization, metadata editing, and quality inspection. 
 
-FluentDL supports Deezer, Qobuz, Spotify, TIDAL, and YouTube.
+FluentDL supports Deezer, Qobuz, Spotify, and YouTube.
 
 #### Why FluentDL?
 If you have your own credentials and don't need a website downloader:
@@ -42,7 +42,7 @@ If you have your own credentials and don't need a website downloader:
     <td valign="top">
       <strong>Search</strong>
       <ul>
-        <li>Look up songs and albums across the five online sources</li>
+        <li>Lookup songs/albums from any of the four online sources</li>
         <li>Parse all tracks from an online link, with track/album/playlist links supported</li>
         <li>Open songs/albums in preview sidebar to listen, download, or view metadata and available sample rates/bit depths</li>
       </ul>
@@ -67,8 +67,7 @@ If you have your own credentials and don't need a website downloader:
       <ul>
         <li>Matching between all possible combinations of online sources (e.g., convert Spotify and YouTube to Deezer equivalents)</li>
 		<li>Review matches and failures and find backups from other sources</li>
-        <li>Download tracks from Deezer, Qobuz, TIDAL, or YouTube at the quality available to your account</li>
-        <li>Create playlists or append queued tracks to owned playlists on Deezer, Qobuz, Spotify, and TIDAL</li>
+        <li>Download tracks from Deezer, Qobuz, or Youtube with maximum quality</li>
         <li>Inspect downloaded track spectrogram</li>
       </ul>
     </td>
@@ -118,18 +117,6 @@ Update:
 winget upgrade --id 9MX44KM97X7X --source msstore --exact --include-unknown --accept-package-agreements --accept-source-agreements
 ```
 
-### Expanding queued albums
-
-Album rows have an Expand album into tracks button in both queue layouts. The compact layout also has this action in its right-click menu. Confirming replaces the album with its individual tracks without downloading audio. New rows keep the album's position and track order; tracks already queued stay in their existing positions and are skipped.
-
-The album stays unchanged if the source cannot return its complete track list or the saved replacement fails. Finish active tasks before committing the expansion. This is a one-way replacement, not a collapsible album group.
-
-### Updating from FluentDL
-
-Open Settings > About > FluentDL > App updates to check for an update, download it and choose when to install. Store installations use Microsoft Store updates. GitHub installations use the official release for the installed architecture and require administrator permission on Windows 11. Development builds do not update themselves.
-
-Installation is blocked while work is active. Finish that work, then choose Install update again. FluentDL saves a queue backup before Windows can close the app. It does not resume an interrupted job or bypass Store availability. Automatic update notifications do not install updates automatically.
-
 ## Authentication
 
 > [!NOTE]  
@@ -137,15 +124,10 @@ Installation is blocked while work is active. Finish that work, then choose Inst
 
 The authentication required depends on the sources and features you use. 
 
-### Searching and converting
-Open Settings > Authentication to configure each service. The Service Access card shows the search, playlist and download access available with the configured accounts and credentials.
+### Searching and Converting
+For all sources except for Spotify, searches and conversions do not require authentication.
 
-Spotify catalog access can use the anonymous web player or your own developer credentials. TIDAL can use its signed-in account or catalog developer credentials, including the bundled credentials in official releases. Catalog credentials alone cannot write user playlists.
-
-### Playlist uploads
-Queue > Upload creates a playlist or appends individual tracks to an owned playlist on the selected service. It skips duplicate IDs, excludes album rows and preserves the existing playlist's entries and metadata. It does not convert tracks or upload local audio files.
-
-Sign in through Settings > Authentication before uploading. Spotify requires saved developer credentials and explicit account authorization; its refresh token is encrypted for the Windows user so sign-in can survive app restarts. See the [Spotify setup notes](tools/live-tests/Spotify-playlists.md) for the callback URI and Development Mode account allowlist requirements. TIDAL reuses the account used for full downloads. Deezer and Qobuz reuse their configured account sign-ins.
+For Spotify, searches require API keys, which come bundled with FluentDL. If the bundled keys are rate limited, you can generate your own as described in the [spotify wiki section](https://github.com/DerekYang2/FluentDL/wiki/Authentication#spotify).
 
 ### Downloading
 Authentication requirements for downloading varies for the sources. The type of account (free vs subscription) may also affect the audio quality available. 
@@ -172,10 +154,6 @@ You do not have re-enter credentials each time because they are stored locally. 
   <tr>
     <td>Spotify</td>
     <td>Not natively available. Use the Queue to convert song to other sources.</td>
-  </tr>
-  <tr>
-    <td>TIDAL</td>
-    <td>Direct downloads require account sign-in and a subscription or trial with full-track access. Availability and quality depend on the account and track.</td>
   </tr>
 </table>
 
