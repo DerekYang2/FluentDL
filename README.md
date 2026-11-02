@@ -29,35 +29,23 @@ FluentDL is a Fluent UI desktop app for finding, matching, and downloading lossl
 
 It automatically matches tracks across streaming services, gives you fine‑grained control over matches, and includes format conversion, lyrics, loudness normalization, metadata editing, and quality inspection. 
 
-FluentDL supports Deezer, Qobuz, Spotify, and YouTube.
+FluentDL supports Deezer, Qobuz, Spotify, TIDAL, and YouTube.
 
 #### Why FluentDL?
 If you have your own credentials and don't need a website downloader:
 - Performance: native desktop downloader for fast, multi‑threaded saving.
 - Control: review matches, edit metadata, and inspect audio quality with spectrograms.
 - All‑in‑one workflow: search, preview, match, download, convert, and tag in one app.
+- Easy updates: FluentDL installs as an MSIX package, so fixes for streaming service changes arrive through the Microsoft Store or in-app updates, with no manual reinstall.
 
 <table>
   <tr>
     <td valign="top">
       <strong>Search</strong>
       <ul>
-        <li>Lookup songs/albums from any of the four online sources</li>
-        <li>Parse all tracks from an online link, with track/album/playlist links supported</li>
-        <li>Open songs/albums in preview sidebar to listen, download, or view metadata and available sample rates/bit depths</li>
-      </ul>
-    </td>
-  </tr>
-  <tr>
-    <td valign="top">
-      <strong>Local</strong>
-      <ul>
-        <li>View file metadata and technical audio specs in-depth</li>
-        <li>Edit file metadata, including option to change cover art</li>
-        <li>View file spectrogram to determine true lossless/quality</li>
-        <li>Convert between flac, mp3, aac, alac, vorbis, opus with specific bitrate or VBR</li>
-		<li>Run ReplayGain 2.0 with various settings</li>
-		<li>Search, preview, and download lyrics files (.lrc)</li>
+        <li>Search songs and albums on any of the five online sources</li>
+        <li>Paste a track, album, or playlist link to load all of its tracks</li>
+        <li>Preview a song or album to listen, download, or check its metadata and available quality</li>
       </ul>
     </td>
   </tr>
@@ -65,10 +53,25 @@ If you have your own credentials and don't need a website downloader:
     <td valign="top">
       <strong>Queue</strong>
       <ul>
-        <li>Matching between all possible combinations of online sources (e.g., convert Spotify and YouTube to Deezer equivalents)</li>
-		<li>Review matches and failures and find backups from other sources</li>
-        <li>Download tracks from Deezer, Qobuz, or Youtube with maximum quality</li>
-        <li>Inspect downloaded track spectrogram</li>
+        <li>Download tracks and albums from Deezer, Qobuz, TIDAL, or YouTube at the best quality your account allows</li>
+        <li>Convert tracks between any two sources, such as a Spotify playlist to Qobuz</li>
+        <li>Review matches and failures, and retry them with another source</li>
+        <li>Upload queued tracks to a new or existing playlist on Deezer, Qobuz, Spotify, or TIDAL</li>
+        <li>Queue whole albums, and expand them into tracks</li>
+        <li>Inspect a downloaded track's spectrogram</li>
+      </ul>
+    </td>
+  </tr>
+  <tr>
+    <td valign="top">
+      <strong>Local</strong>
+      <ul>
+        <li>Convert between FLAC, MP3, AAC, ALAC, Vorbis, and Opus at a set bitrate or VBR</li>
+        <li>Edit tags and cover art</li>
+        <li>Check a file's true quality with its spectrogram</li>
+        <li>Apply ReplayGain 2.0 loudness tags</li>
+        <li>Search, preview, and download lyrics (.lrc)</li>
+        <li>View detailed metadata and audio specs</li>
       </ul>
     </td>
   </tr>
@@ -125,9 +128,11 @@ winget upgrade --id 9MX44KM97X7X --source msstore --exact --include-unknown --ac
 The authentication required depends on the sources and features you use. 
 
 ### Searching and Converting
-For all sources except for Spotify, searches and conversions do not require authentication.
+Searches and conversions do not require an account on any source.
 
-For Spotify, searches require API keys, which come bundled with FluentDL. If the bundled keys are rate limited, you can generate your own as described in the [spotify wiki section](https://github.com/DerekYang2/FluentDL/wiki/Authentication#spotify).
+Spotify uses its web player without an account. For album links and more reliable matching, you can add your own API keys as described in the [spotify wiki section](https://github.com/DerekYang2/FluentDL/wiki/Authentication#spotify).
+
+Uploading queued tracks to a playlist requires signing in to that service in Settings.
 
 ### Downloading
 Authentication requirements for downloading varies for the sources. The type of account (free vs subscription) may also affect the audio quality available. 
@@ -154,6 +159,10 @@ You do not have re-enter credentials each time because they are stored locally. 
   <tr>
     <td>Spotify</td>
     <td>Not natively available. Use the Queue to convert song to other sources.</td>
+  </tr>
+  <tr>
+    <td>TIDAL</td>
+    <td>Subscription or trial (up to 24bit/192khz FLAC)</td>
   </tr>
 </table>
 
