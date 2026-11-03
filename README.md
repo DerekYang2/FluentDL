@@ -25,18 +25,17 @@
 </p>
 
 ## About
-FluentDL is a Fluent UI desktop app for finding, matching, and downloading lossless audio (FLAC) at high speeds. 
+FluentDL is a Windows app with a set of tools for your music library and streaming services.
 
-It automatically matches tracks across streaming services, gives you fine‑grained control over matches, and includes format conversion, lyrics, loudness normalization, metadata editing, and quality inspection. 
+- Match tracks, albums and playlists across Deezer, Qobuz, Spotify, TIDAL and YouTube, review each match, and copy playlists between services.
+- Download tracks from Deezer, Qobuz, TIDAL and YouTube, using your own account where the service requires one.
+- Convert between FLAC, MP3, AAC, ALAC, Vorbis and Opus.
+- Edit tags and cover art, fetch synced lyrics, and add ReplayGain 2.0 loudness tags.
+- Check a file's true quality with a spectrogram.
 
-FluentDL supports Deezer, Qobuz, Spotify, TIDAL, and YouTube.
+FluentDL installs from the Microsoft Store, so fixes for service changes arrive as normal updates.
 
-#### Why FluentDL?
-If you have your own credentials and don't need a website downloader:
-- Performance: native desktop downloader for fast, multi‑threaded saving.
-- Control: review matches, edit metadata, and inspect audio quality with spectrograms.
-- All‑in‑one workflow: search, preview, match, download, convert, and tag in one app.
-- Easy updates: FluentDL installs as an MSIX package, so fixes for streaming service changes arrive through the Microsoft Store or in-app updates, with no manual reinstall.
+FluentDL doesn't host or provide any content.
 
 <table>
   <tr>
