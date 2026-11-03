@@ -25,18 +25,11 @@
 </p>
 
 ## About
-FluentDL is a Fluent UI desktop app for finding, matching, and downloading lossless audio (FLAC) at high speeds. 
+FluentDL is a suite of audio tools for Windows. It matches tracks and playlists across Deezer, Qobuz, Spotify, TIDAL and YouTube, downloads from them, and manages your local library.
 
-It automatically matches tracks across streaming services, gives you fine‑grained control over matches, and includes format conversion, lyrics, loudness normalization, metadata editing, and quality inspection. 
+FluentDL runs entirely on your PC. It has no servers or accounts of its own, sends no usage data, and stores your sign-ins only on your PC. It doesn't host or provide any content.
 
-FluentDL supports Deezer, Qobuz, Spotify, TIDAL, and YouTube.
-
-#### Why FluentDL?
-If you have your own credentials and don't need a website downloader:
-- Performance: native desktop downloader for fast, multi‑threaded saving.
-- Control: review matches, edit metadata, and inspect audio quality with spectrograms.
-- All‑in‑one workflow: search, preview, match, download, convert, and tag in one app.
-- Easy updates: FluentDL installs as an MSIX package, so fixes for streaming service changes arrive through the Microsoft Store or in-app updates, with no manual reinstall.
+FluentDL installs from the Microsoft Store, so fixes for service changes arrive as normal updates.
 
 <table>
   <tr>
@@ -54,7 +47,7 @@ If you have your own credentials and don't need a website downloader:
       <strong>Queue</strong>
       <ul>
         <li>Download tracks and albums from Deezer, Qobuz, TIDAL, or YouTube at the best quality your account allows</li>
-        <li>Convert tracks between any two sources, such as a Spotify playlist to Qobuz</li>
+        <li>Match tracks between any two sources, such as a Spotify playlist to Qobuz</li>
         <li>Review matches and failures, and retry them with another source</li>
         <li>Upload queued tracks to a new or existing playlist on Deezer, Qobuz, Spotify, or TIDAL</li>
         <li>Queue whole albums, and expand them into tracks</li>
@@ -123,51 +116,16 @@ winget upgrade --id 9MX44KM97X7X --source msstore --exact --include-unknown --ac
 ## Authentication
 
 > [!NOTE]  
-> Streaming services occasionally make changes to APIs, which may result in authentication issues.  Check the [Issues](https://github.com/DerekYang2/FluentDL/issues) page for known problems and feel free to report them. 
+> Streaming services occasionally change their APIs, which can break sign-in. Check the [Issues](https://github.com/DerekYang2/FluentDL/issues) page for known problems, and report new ones.
 
-The authentication required depends on the sources and features you use. 
+Searching, matching and all local tools work without an account. Some features need you to sign in to a service in Settings:
 
-### Searching and Converting
-Searches and conversions do not require an account on any source.
+- Downloads from Deezer, Qobuz and TIDAL. YouTube needs no account. Your account type sets the available quality.
+- Private playlists, and uploading playlists.
 
-Spotify uses its web player without an account. For album links and more reliable matching, you can add your own API keys as described in the [spotify wiki section](https://github.com/DerekYang2/FluentDL/wiki/Authentication#spotify).
+**Settings > Service Access** shows what works with the accounts you've added. Hover over a cell for details.
 
-Uploading queued tracks to a playlist requires signing in to that service in Settings.
-
-### Downloading
-Authentication requirements for downloading varies for the sources. The type of account (free vs subscription) may also affect the audio quality available. 
-
-You do not have re-enter credentials each time because they are stored locally. They can be left alone for months or even longer, but may eventually expire or invalidate due to occasional web-player changes. 
-
-<table>
-  <tr>
-    <td><strong>Service</strong></td>
-    <td><strong>Downloads</strong></td>
-  </tr>
-  <tr>
-    <td>Youtube</td>
-    <td>No Authentication Required (128 kbps OPUS, similar to 192kbps MP3)</td>
-  </tr>
-  <tr>
-    <td>Deezer</td>
-    <td>Free Account (128 kbps MP3), Premium Account (320 kbps MP3 and 16bit/44.1kHZ FLAC)</td>
-  </tr>
-  <tr>
-    <td>Qobuz</td>
-    <td>Free Account (30 second preview), Premium Account (up to 24bit/192khz FLAC)</td>
-  </tr>
-  <tr>
-    <td>Spotify</td>
-    <td>Not natively available. Use the Queue to convert song to other sources.</td>
-  </tr>
-  <tr>
-    <td>TIDAL</td>
-    <td>Subscription or trial (up to 24bit/192khz FLAC)</td>
-  </tr>
-</table>
-
-### Retrieving Tokens
-See the [authentication wiki](https://github.com/DerekYang2/FluentDL/wiki/Authentication) for a detailed guide. 
+See the [authentication wiki](https://github.com/DerekYang2/FluentDL/wiki/Authentication) for how to sign in to each service.
 
 ## Build
 
