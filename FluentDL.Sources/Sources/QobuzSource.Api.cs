@@ -735,7 +735,7 @@ internal sealed partial class QobuzSource
         // First attempt exact isrc search
         if (isrc != null)
         {
-            var foundTrack = await SearchISRC(isrc, token);
+            var foundTrack = await SearchISRC(isrc, token, songObj.AlbumName);
             if (foundTrack != null)
             {
                 var retObj = ConvertSongSearchObject(foundTrack);

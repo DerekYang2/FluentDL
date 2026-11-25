@@ -47,18 +47,10 @@ internal sealed partial class YoutubeSource : ISearchSource, ILinkSource, IConve
     public Task<MatchResult> FindEquivalentAsync(SongSearchObject song, string? isrc, CancellationToken token, bool isrcOnly = false) =>
         CallbackResults.Match(callback => GetYoutubeTrack(song, token, callback));
 
-    // AsServed: the raw opus stream (the Spotify equivalent chain). Otherwise the youtube_quality setting picks opus,
-    // FLAC (from opus) or M4A (AAC), through yt-dlp when use_ytdlp is on, and FFmpeg. Moved unchanged from the old
-    // download pipeline.
+    // AsServed uses the built-in downloader. Otherwise youtube_quality picks Opus, FLAC or M4A.
     public async Task<string> DownloadAsync(SongSearchObject track, string pathWithoutExtension, DownloadRequest request, IProgress<ProgressData>? progress)
     {
-        if (request.Quality == DownloadQuality.AsServed)
-        {
-            var opusPath = pathWithoutExtension + ".opus";
-            await DownloadAudio(opusPath, track.Id, progress!);
-            return opusPath;
-        }
-
+        var asServed = request.Quality == DownloadQuality.AsServed;
         var converter = audioConverter;
         var flacLocation = pathWithoutExtension + ".flac";
         var opusLocation = pathWithoutExtension + ".opus";
@@ -67,9 +59,10 @@ internal sealed partial class YoutubeSource : ISearchSource, ILinkSource, IConve
         // 0 - opus
         // 1 - flac (opus)
         // 2 - m4a (aac)
-        var settingIdx = await settings.ReadSettingAsync<int?>(SettingKeys.YoutubeQuality) ?? 0;
-        var useYtdlp = await settings.ReadSettingAsync<bool>(SettingKeys.UseYtdlp);
+        var settingIdx = asServed ? 0 : await settings.ReadSettingAsync<int?>(SettingKeys.YoutubeQuality) ?? 0;
+        var useYtdlp = !asServed && await settings.ReadSettingAsync<bool>(SettingKeys.UseYtdlp);
         var ytdlpPath = useYtdlp ? await settings.ReadSettingAsync<string?>(SettingKeys.YtdlpPath) : null;
+        var youtubeUrl = $"https://www.youtube.com/watch?v={track.Id}";
 
         // Ensure the base FluentDL temp directory exists
         var tempBaseDir = Path.Combine(Path.GetTempPath(), "FluentDL");
@@ -83,76 +76,84 @@ internal sealed partial class YoutubeSource : ISearchSource, ILinkSource, IConve
                 throw new Exception("File already exists.");
             }
 
-            var tempGuid = Guid.NewGuid().ToString("N");
-            var tempM4a = Path.Combine(tempBaseDir, $"download-{tempGuid}.m4a");
-            var tempMp4 = Path.Combine(tempBaseDir, $"download-{tempGuid}.mp4");
+            var tempStem = Path.Combine(tempBaseDir, $"download-{Guid.NewGuid():N}");
+            string? tempLocation = null;
 
             try
             {
                 if (useYtdlp)
                 {
-                    // yt-dlp extracts bestaudio[acodec=mp4a.40.2] which natively saves as .m4a
-                    await YtDlp.DownloadAudioAACYTDLP(tempM4a, $"https://www.youtube.com/watch?v={track.Id}", ytdlpPath);
-                    // Move the temp file to the final destination
-                    File.Move(tempM4a, m4aLocation, overwrite: true);
+                    tempLocation = await YtDlp.DownloadAudioAACYTDLP(tempStem, youtubeUrl, ytdlpPath, converter.FfmpegDirectory);
+                    File.Move(tempLocation, m4aLocation, overwrite: true);
                 }
                 else
                 {
                     if (!converter.IsInitialized) throw new Exception("FFmpeg is not initialized.");
-                    await DownloadAudioAAC(tempMp4, track.Id);
-                    await converter.ConvertMp4ToM4aAsync(tempMp4, m4aLocation);
+                    var download = await DownloadAudio(tempStem, track.Id, progress: null, preferAac: true);
+                    tempLocation = download.FilePath;
+                    if (IsAac(download.Codec))
+                    {
+                        await converter.ConvertMp4ToM4aAsync(tempLocation, m4aLocation);
+                    }
+                    else
+                    {
+                        await converter.ConvertToAacAsync(tempLocation, m4aLocation);
+                    }
                 }
                 return m4aLocation;
             }
             finally
             {
-                // Clean up possible temp files
-                if (File.Exists(tempM4a)) File.Delete(tempM4a);
-                if (File.Exists(tempMp4)) File.Delete(tempMp4);
+                if (File.Exists(tempLocation)) File.Delete(tempLocation);
             }
         }
 
         // --- OPUS / FLAC PATH ---
         var finalLocation = settingIdx == 1 ? flacLocation : opusLocation;
 
-        if (File.Exists(finalLocation) && await settings.ReadSettingAsync<bool>(SettingKeys.Overwrite) == false)
+        if (!asServed && File.Exists(finalLocation) && await settings.ReadSettingAsync<bool>(SettingKeys.Overwrite) == false)
         {
             throw new Exception("File already exists.");
         }
 
-        // Generate a single unique temporary path for the WebM download
-        var tempWebmLocation = Path.Combine(tempBaseDir, $"download-{Guid.NewGuid():N}.webm");
+        var audioStem = Path.Combine(tempBaseDir, $"download-{Guid.NewGuid():N}");
+        string? audioLocation = null;
 
         try
         {
-            // Both YT-DLP and Native download a .webm file
+            bool isOpus;
             if (useYtdlp)
             {
-                await YtDlp.DownloadAudioYTDLP(tempWebmLocation, $"https://www.youtube.com/watch?v={track.Id}", ytdlpPath);
+                (audioLocation, isOpus) = await YtDlp.DownloadAudioYTDLP(audioStem, youtubeUrl, ytdlpPath, converter.FfmpegDirectory);
             }
             else
             {
-                await DownloadAudio(tempWebmLocation, track.Id, progress!);
+                var download = await DownloadAudio(audioStem, track.Id, progress);
+                audioLocation = download.FilePath;
+                isOpus = download.Codec == "opus";
             }
 
             if (!converter.IsInitialized) throw new Exception("FFmpeg is not initialized.");
 
             if (settingIdx == 1) // FLAC
             {
-                await converter.ConvertToFlacAsync(tempWebmLocation, flacLocation);
+                await converter.ConvertToFlacAsync(audioLocation, flacLocation);
             }
-            else // OPUS
+            else if (isOpus)
             {
-                await converter.RemuxOpusAsync(tempWebmLocation, opusLocation);
+                await converter.RemuxOpusAsync(audioLocation, opusLocation);
+            }
+            else
+            {
+                await converter.ConvertToOpusAsync(audioLocation, opusLocation);
             }
             return finalLocation;
         }
         finally
         {
-            // Always clean up the temporary .webm file
-            if (File.Exists(tempWebmLocation))
+            if (File.Exists(audioLocation))
             {
-                File.Delete(tempWebmLocation);
+                File.Delete(audioLocation);
             }
         }
     }

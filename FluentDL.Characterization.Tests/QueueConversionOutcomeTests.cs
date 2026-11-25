@@ -46,4 +46,14 @@ public class QueueConversionOutcomeTests
         outcome.Report(StatusLevel.Error, new() { Source = SourceIds.Tidal, Id = "1" });
         Assert.AreEqual(StatusLevel.Error, outcome.Level);
     }
+
+    [TestMethod]
+    public void TheReportedTrackIsKeptEvenWhenItIsNotTheQueueRow()
+    {
+        var outcome = new QueueConversionOutcome((_, _, _) => { });
+        Assert.IsNull(outcome.Track);
+        var refetched = new SongSearchObject { Source = SourceIds.YouTube, Id = "abc" };
+        outcome.Report(StatusLevel.Success, refetched, "download.opus");
+        Assert.AreSame(refetched, outcome.Track);
+    }
 }

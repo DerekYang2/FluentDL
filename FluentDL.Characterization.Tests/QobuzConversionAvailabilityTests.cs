@@ -14,6 +14,44 @@ public class QobuzConversionAvailabilityTests
     private const string Isrc = "GBTEST000001";
 
     [TestMethod]
+    [DataRow("Ho Hey", "3")]
+    [DataRow("The Lumineers", "2")]
+    [DataRow("Another Album", "2")]
+    [DataRow("NOW: The Hits Of Spring 2013", "1")]
+    public async Task IsrcSearchPrefersTheNamedAlbumThenTheArtistsFirstRelease(string albumName, string expected)
+    {
+        const string isrc = "USDMG1260805";
+        var calls = 0;
+        using var http = new HttpClient(new Handler(request =>
+        {
+            calls++;
+            StringAssert.EndsWith(request.RequestUri!.AbsolutePath, "/track/search");
+            var query = System.Web.HttpUtility.ParseQueryString(request.RequestUri.Query);
+            Assert.AreEqual(isrc, query["query"]);
+            Assert.AreEqual("10", query["limit"]);
+            return Reply(new { tracks = new { items = new[]
+            {
+                Release(1, "NOW: The Hits Of Spring 2013", "Various Artists"),
+                Release(2, "The Lumineers (Deluxe Edition)", "The Lumineers"),
+                Release(3, "Ho Hey", "The Lumineers"),
+            } } });
+        }));
+
+        var song = new SongSearchObject { Title = "Ho Hey", Artists = "The Lumineers", AlbumName = albumName };
+        var match = await Source(http).FindEquivalentAsync(song, isrc, CancellationToken.None, isrcOnly: true);
+
+        Assert.AreEqual(MatchKind.Exact, match.Kind);
+        Assert.AreEqual(expected, match.Track?.Id);
+        Assert.AreEqual(1, calls);
+
+        static object Release(int id, string album, string albumArtist) => new
+        {
+            id, title = "Ho Hey", isrc, streamable = true, displayable = true, performer = new { name = "The Lumineers" },
+            album = new { title = album, artist = new { name = albumArtist } },
+        };
+    }
+
+    [TestMethod]
     [DataRow(false, false)]
     [DataRow(false, true)]
     [DataRow(true, false)]

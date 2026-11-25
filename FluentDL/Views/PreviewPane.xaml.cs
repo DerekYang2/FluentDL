@@ -579,28 +579,39 @@ namespace FluentDL.Views
             if (await SettingsViewModel.GetSetting<bool>(SettingsViewModel.UseYtdlp))
             {
                 string? previewPath = null;
+                var handedToPlayer = false;
                 try
                 {
                     SongPreviewProgressBar.Visibility = Visibility.Visible;
 
-                    previewPath = Path.Combine(Path.GetTempPath(), "FluentDL", $"preview-{Guid.NewGuid():N}.webm");
-                    Directory.CreateDirectory(Path.GetDirectoryName(previewPath)!);
+                    var previewStem = Path.Combine(Path.GetTempPath(), "FluentDL", $"preview-{Guid.NewGuid():N}");
+                    Directory.CreateDirectory(Path.GetDirectoryName(previewStem)!);
                     var ytdlpPath = await SettingsViewModel.GetSetting<string?>(SettingsViewModel.YtdlpPath);
-                    await YtDlp.DownloadAudioYTDLPWorst(previewPath, youtubeUrl, ytdlpPath, token);
+                    previewPath = await YtDlp.DownloadAudioYTDLPWorst(previewStem, youtubeUrl, ytdlpPath, FFmpegRunner.YtDlpFfmpegDirectory, token);
                     if (token.IsCancellationRequested || requestId != Interlocked.Read(ref _currentRequestId))
                         return;
-                    _previewPath = previewPath;
+                    // The player opens the file after this returns, so it stays until the player is replaced or
+                    // cleared. Set _previewPath after SetPlayerSource: clearing the old player deletes _previewPath.
                     SetPlayerSource(previewPath);
+                    _previewPath = previewPath;
+                    handedToPlayer = true;
                 }
+                catch (OperationCanceledException) when (token.IsCancellationRequested) { }
                 catch (Exception ex)
                 {
-                    Debug.WriteLine("Failed to load YouTube preview with yt-dlp: " + ex.Message);
-                } finally
+                    if (token.IsCancellationRequested || requestId != Interlocked.Read(ref _currentRequestId)) return;
+                    Serilog.Log.Warning("Could not load YouTube preview with yt-dlp; exception {ExceptionType}, HRESULT {HResult}", ex.GetType().Name, ex.HResult);
+                    ClearMediaPlayerSource();
+                    PreviewErrorInfoBar.Message = "Couldn't load the preview with yt-dlp.";
+                    PreviewErrorInfoBar.IsOpen = true;
+                    SongPreviewPlayer.Visibility = Visibility.Collapsed;
+                }
+                finally
                 {
                     SongPreviewProgressBar.Visibility = Visibility.Collapsed;
-                    if (File.Exists(previewPath))
+                    if (!handedToPlayer && File.Exists(previewPath))
                     {
-                        File.Delete(previewPath);
+                        try { File.Delete(previewPath); } catch (IOException) { }
                     }
                 }
             }

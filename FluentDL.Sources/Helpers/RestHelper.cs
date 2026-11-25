@@ -17,8 +17,10 @@ namespace FluentDL.Helpers
         private readonly RestClient client; 
         private readonly ProviderRequestPolicy requests;
 
-        public RestHelper(string baseURL, int timeout = 5) {
-             client = new RestClient(new RestClientOptions(baseURL) { Timeout = new TimeSpan(0, 0, timeout) });
+        public RestHelper(string baseURL, int timeout = 5, HttpMessageHandler? handler = null) {
+             var options = new RestClientOptions(baseURL) { Timeout = new TimeSpan(0, 0, timeout) };
+             if (handler != null) options.ConfigureMessageHandler = _ => handler;
+             client = new RestClient(options);
              requests = new Uri(baseURL).Host.Equals("api.deezer.com", StringComparison.OrdinalIgnoreCase)
                  ? ProviderRequests.Deezer : new ProviderRequestPolicy("REST", interval: TimeSpan.Zero, rateRetries: 5);
         }
