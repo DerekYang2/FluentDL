@@ -4,6 +4,7 @@ namespace FluentDL.Core.Sources;
 public interface IAudioConverter
 {
     bool IsInitialized { get; }
+    string? FfmpegDirectory => null;
 
     /// <summary>Copies the audio into a new container without changing its codec or sample rate.</summary>
     Task RemuxAudioAsync(string inputPath, string outputPath) => throw new NotSupportedException();
@@ -17,8 +18,13 @@ public interface IAudioConverter
     /// <summary>Converts an MP4 audio download to M4A and deletes the MP4.</summary>
     Task ConvertMp4ToM4aAsync(string inputPath, string outputPath);
 
+    Task ConvertToAacAsync(string inputPath, string outputPath) => throw new NotSupportedException();
+
     /// <summary>Remuxes a WebM audio download to opus and deletes the WebM.</summary>
     Task RemuxOpusAsync(string inputPath, string outputPath);
+
+    /// <summary>Encodes audio as Opus and deletes the input file.</summary>
+    Task ConvertToOpusAsync(string inputPath, string outputPath) => throw new NotSupportedException();
 
     /// <summary>Creates an MP3 next to the file, or in <paramref name="outputDirectory"/>, and returns its path.</summary>
     Task<string?> CreateMp3Async(string initialPath, string? outputDirectory = null);

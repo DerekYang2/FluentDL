@@ -1,4 +1,4 @@
-﻿using System.Collections.Concurrent;
+using System.Collections.Concurrent;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
@@ -558,11 +558,15 @@ public sealed partial class QueuePage : Page
         var button = sender as FrameworkElement;
         var song = button?.Tag as SongSearchObject;
 
-        if (song != null)
+        if (song == null) return;
+        if (!File.Exists(song.Id))
         {
-            var argument = $"/select, \"{song.Id}\"";
-            System.Diagnostics.Process.Start("explorer.exe", argument);
+            ShowInfoBar(InfoBarSeverity.Warning, "Track does not exist locally", 3);
+            return;
         }
+
+        var argument = $"/select, \"{song.Id}\"";
+        System.Diagnostics.Process.Start("explorer.exe", argument);
     }
 
     private async void OpenSpekButton_Click(object sender, RoutedEventArgs e)
@@ -618,6 +622,12 @@ public sealed partial class QueuePage : Page
             return;
         }
 
+        if (songObj.Source == SourceIds.Local && !File.Exists(songObj.Id))
+        {
+            ShowInfoBar(InfoBarSeverity.Warning, "Track does not exist locally", 3);
+            return;
+        }
+
         // Create file name
         var firstArtist = songObj.Artists.Split(",")[0].Trim();
         var isrcStr = !string.IsNullOrWhiteSpace(songObj.Isrc) ? $" [{songObj.Isrc}] " : "";
@@ -644,6 +654,11 @@ public sealed partial class QueuePage : Page
             if (songObj.Source == SourceIds.Local)
             {
                 coverBytes = await Task.Run(() => LocalExplorerViewModel.GetAlbumArtBytes(songObj.Id));
+                if (coverBytes == null && !File.Exists(songObj.Id))
+                {
+                    ShowInfoBar(InfoBarSeverity.Warning, "Track does not exist locally", 3);
+                    return;
+                }
             }
             else
             {
@@ -1249,11 +1264,13 @@ public sealed partial class QueuePage : Page
                 foreach (var resolved in QueueAlbumDownload.Resolve(outcomes, LocalExplorerViewModel.ParseFile))
                 {
                     var outcome = outcomes[resolved.Order];
-                    callback(resolved.Level, outcome.Track, resolved.Level == StatusLevel.Error
-                        ? outcome.Error ?? "The downloaded audio file could not be read. The source track was kept for retry."
-                        : outcome.Path, resolved.Order);
                     if (resolved.Song.Source == SourceIds.Local)
                         resolved.Song.LocalBitmapImage = await LocalExplorerViewModel.GetBitmapImageAsync(resolved.Song.Id);
+                    // List the downloaded file with its embedded cover. The online track's cover leaves the shared
+                    // cache once the album row is replaced, and the summary shows cached artwork only.
+                    callback(resolved.Level, resolved.Level == StatusLevel.Error ? outcome.Track : resolved.Song, resolved.Level == StatusLevel.Error
+                        ? outcome.Error ?? "The downloaded audio file could not be read. The source track was kept for retry."
+                        : outcome.Path, resolved.Order);
                     var badge = resolved.Level == StatusLevel.Warning ? BadgeWarning : resolved.Level == StatusLevel.Error ? BadgeError : BadgeSuccess;
                     entries.Add((resolved.Order, resolved.Song, badge));
                 }
@@ -1470,6 +1487,9 @@ public sealed partial class QueuePage : Page
                                         localSong.LocalBitmapImage = await LocalExplorerViewModel.GetBitmapImageAsync(fileLocation);
                                         queueObj = await QueueViewModel.CreateQueueObject(localSong, song.QueueCounter);
                                         await QueueViewModel.Replace(QueueViewModel.Source.IndexOf(song), queueObj);
+                                        // The download reported the online row. Its cover leaves the shared cache
+                                        // with the row, and the summary shows cached artwork only, so list the file.
+                                        if (queueObj != null) ReplaceConversionResult(outcome.Track ?? song, queueObj);
                                     }
                                     else // Can happen when trying to parse opus files
                                     {
@@ -1645,6 +1665,24 @@ public sealed partial class QueuePage : Page
         IEnumerable<KeyValuePair<SongSearchObject, (int Queue, int Track)>> results) =>
         results.OrderBy(result => result.Value.Queue).ThenBy(result => result.Value.Track)
             .Select(result => result.Key).ToList();
+
+    // Keeps the result's tab and position, with the new row in place of the reported one.
+    private void ReplaceConversionResult(SongSearchObject reported, SongSearchObject replacement) =>
+        ReplaceConversionResult([successSource, warningSource, errorSource], reported, replacement);
+
+    internal static bool ReplaceConversionResult(IEnumerable<ConcurrentDictionary<SongSearchObject, (int Queue, int Track)>> resultSets,
+        SongSearchObject reported, SongSearchObject replacement)
+    {
+        foreach (var results in resultSets)
+        {
+            if (results.TryRemove(reported, out var order))
+            {
+                results[replacement] = order;
+                return true;
+            }
+        }
+        return false;
+    }
 
     private async Task ShowConversionDialog()
     {

@@ -9,6 +9,7 @@ using System.Runtime.Intrinsics.Arm;
 using System.Runtime.Intrinsics.X86;
 using System.Text;
 using System.Threading.Tasks;
+using FluentDL.Core.Matching;
 using FluentDL.Helpers;
 using System.Net;
 
@@ -148,7 +149,7 @@ namespace FluentDL.Services.Sources
 
         // Qobuz has no ISRC lookup, only a text search, so a result counts only when its ISRC is the one asked for
         // (bug 8: the top result was returned unchecked, and the HTTP client was used before sign-in).
-        public async Task<Track?> SearchISRC(string isrc, CancellationToken cancellationToken = default)
+        public async Task<Track?> SearchISRC(string isrc, CancellationToken cancellationToken = default, string? albumName = null)
         {
             if (!HttpClientInitialized)
             {
@@ -182,9 +183,8 @@ namespace FluentDL.Services.Sources
                     var jsonArray = jsonObject["tracks"]?["items"];
                     if (jsonArray != null)
                     {
-                        return jsonArray.Select(item => item.ToObject<Track>())
-                            .FirstOrDefault(track => IsAvailableConversionTrack(track)
-                                && string.Equals(track!.Isrc, isrc, StringComparison.OrdinalIgnoreCase));
+                        cancellationToken.ThrowIfCancellationRequested();
+                        return ChooseIsrcMatch(jsonArray.Select(item => item.ToObject<Track>()), isrc, albumName);
                     }
                 }
             }
@@ -195,6 +195,13 @@ namespace FluentDL.Services.Sources
             }
             return null;
         }
+
+        internal static Track? ChooseIsrcMatch(IEnumerable<Track?> candidates, string isrc, string? albumName) =>
+            candidates.OfType<Track>()
+                .Where(track => IsAvailableConversionTrack(track) && string.Equals(track.Isrc, isrc, StringComparison.OrdinalIgnoreCase))
+                .OrderByDescending(track => FuzzyMatch.IsSubstring(albumName ?? "", track.Album?.Title ?? ""))
+                .ThenBy(track => string.Equals(track.Album?.Artist?.Name, "Various Artists", StringComparison.OrdinalIgnoreCase))
+                .FirstOrDefault();
 
         private async Task<T?> GetCatalogAsync<T>(string endpoint, CancellationToken token = default)
         {

@@ -20,6 +20,8 @@ namespace FluentDL.Services.Sources;
 
 internal sealed partial class DeezerSource
 {
+    private const int IsrcTrackDetailLimit = 5;
+
     public static readonly string baseURL = "https://api.deezer.com";
     private DeezerClient deezerClient = new DeezerClient();
     public RestHelper restClient = new RestHelper(baseURL, 30); // Catalog retries use a 30-second attempt timeout.
@@ -320,10 +322,15 @@ internal sealed partial class DeezerSource
     public async Task<SongSearchObject?> GetDeezerTrack(SongSearchObject song, string? isrc, CancellationToken token = default, ConversionUpdateCallback? callback = null, bool onlyISRC = false)
     {
         token.ThrowIfCancellationRequested();
-        // Try to find by ISRC first
-        if (isrc != null)
+        if (!string.IsNullOrWhiteSpace(isrc))
         {
-            var songObj = await GetTrackFromISRC(isrc, token);
+            // Deezer's ISRC lookup can return a compilation or a withdrawn copy. Use it directly only when it's
+            // streamable and from the song's album; otherwise search for the artist's own release.
+            var direct = await GetTrackFromISRC(isrc, token, requireReadable: true);
+            var songObj = direct != null && FuzzyMatch.IsSubstring(song.AlbumName ?? "", direct.AlbumName ?? "")
+                ? direct
+                : await SearchIsrcCandidatesAsync(song, isrc, token) ?? direct;
+            token.ThrowIfCancellationRequested();
 
             if (songObj != null)
             {
@@ -355,7 +362,8 @@ internal sealed partial class DeezerSource
         async Task<bool> AddCandidates(string req)
         {
             var jsonObject = await restClient.FetchJsonElement(req, token); // Create json object from the response
-            if (!jsonObject.TryGetProperty("data", out var dataElement))
+            if (jsonObject.ValueKind != JsonValueKind.Object
+                || !jsonObject.TryGetProperty("data", out var dataElement) || dataElement.ValueKind != JsonValueKind.Array)
             {
                 return true;
             }
@@ -409,7 +417,7 @@ internal sealed partial class DeezerSource
             {
                 if (TextNormalization.PruneFeaturing(albumName).Replace(" ", "").Equals(TextNormalization.PruneFeaturing(songObj.AlbumName).Replace(" ", ""))) // If the album name is exact match
                 {
-                    var fullTrack = await GetTrack(songObj.Id, token);
+                    var fullTrack = await GetReadableTrackAsync(songObj.Id, token);
                     if (fullTrack != null)
                     {
                         callback?.Invoke(StatusLevel.Warning, fullTrack);
@@ -428,7 +436,7 @@ internal sealed partial class DeezerSource
 
         if (closeMatchObj != null)
         {
-            var fullTrack = await GetTrack(closeMatchObj.Id, token);
+            var fullTrack = await GetReadableTrackAsync(closeMatchObj.Id, token);
             if (fullTrack != null) // If the track was found
             {
                 callback?.Invoke(StatusLevel.Warning, fullTrack);
@@ -462,7 +470,7 @@ internal sealed partial class DeezerSource
 
         if (closeMatchObj != null)
         {
-            var fullTrack = await GetTrack(closeMatchObj.Id, token);
+            var fullTrack = await GetReadableTrackAsync(closeMatchObj.Id, token);
             if (fullTrack != null) // If the track was found
             {
                 callback?.Invoke(StatusLevel.Warning, fullTrack);
@@ -473,6 +481,65 @@ internal sealed partial class DeezerSource
         callback?.Invoke(StatusLevel.Error, song); // No match found
         return null;
     }
+
+    private async Task<SongSearchObject?> SearchIsrcCandidatesAsync(SongSearchObject song, string isrc, CancellationToken token)
+    {
+        var firstArtist = song.Artists.Split(", ")[0];
+        var title = PruneTitle(song.Title).Replace("radioedit", "");
+        if (string.IsNullOrWhiteSpace(firstArtist) || title.Length == 0) return null;
+
+        var results = await restClient.FetchJsonElement(PlainSearchRequest(firstArtist, PruneTitleSearch(song.Title)), token);
+        if (results.ValueKind != JsonValueKind.Object
+            || !results.TryGetProperty("data", out var data) || data.ValueKind != JsonValueKind.Array) return null;
+
+        var matches = data.EnumerateArray()
+            .Where(IsReadableTrack)
+            .Select(GetTrackPreview)
+            .Where(track => track.Id.Length > 0 && FuzzyMatch.AnyArtistMatches(song.Artists, track.Artists)
+                && PruneTitle(track.Title).Replace("radioedit", "") == title)
+            .OrderByDescending(track => FuzzyMatch.IsSubstring(song.AlbumName, track.AlbumName))
+            .DistinctBy(track => track.Id)
+            .Take(IsrcTrackDetailLimit);
+
+        var verified = new List<JsonElement>();
+        foreach (var track in matches)
+        {
+            token.ThrowIfCancellationRequested();
+            var detail = await restClient.FetchJsonElement("track/" + track.Id, token);
+            if (IsReadableTrack(detail) && string.Equals(detail.SafeGetString("isrc"), isrc, StringComparison.OrdinalIgnoreCase))
+            {
+                verified.Add(detail);
+            }
+        }
+
+        if (verified.Count == 1) return GetTrackFromJsonElement(verified[0]);
+
+        // Deezer's track payloads omit the album artist. Check each verified release's album once.
+        var albumArtists = new Dictionary<string, string?>();
+        var candidates = new List<(SongSearchObject Track, bool Compilation)>();
+        foreach (var detail in verified)
+        {
+            token.ThrowIfCancellationRequested();
+            detail.TryGetProperty("album", out var trackAlbum);
+            var albumId = trackAlbum.ValueKind == JsonValueKind.Object ? trackAlbum.SafeGetString("id") : null;
+            var albumArtist = GetArtistName(trackAlbum);
+            if (string.IsNullOrWhiteSpace(albumArtist) && !string.IsNullOrEmpty(albumId) && !albumArtists.TryGetValue(albumId, out albumArtist))
+            {
+                var album = await restClient.FetchJsonElement("album/" + albumId, token);
+                albumArtists[albumId] = albumArtist = GetArtistName(album);
+            }
+            candidates.Add((GetTrackFromJsonElement(detail)!,
+                string.Equals(albumArtist ?? GetArtistName(detail), "Various Artists", StringComparison.OrdinalIgnoreCase)));
+        }
+
+        return ChooseIsrcMatch(candidates, song.AlbumName);
+    }
+
+    internal static SongSearchObject? ChooseIsrcMatch(IEnumerable<(SongSearchObject Track, bool Compilation)> candidates, string albumName) =>
+        candidates.OrderByDescending(c => FuzzyMatch.IsSubstring(albumName, c.Track.AlbumName))
+            .ThenBy(c => c.Compilation)
+            .ThenByDescending(c => long.TryParse(c.Track.Rank, NumberStyles.Integer, CultureInfo.InvariantCulture, out var rank) ? rank : 0)
+            .Select(c => c.Track).FirstOrDefault();
 
     public async Task AdvancedSearch(ICollection<SongSearchObject> itemSource, string artistName, string trackName, string albumName, CancellationToken token, int offset = 0, int limit = 25, bool clearResults = true)
     {
@@ -685,22 +752,36 @@ internal sealed partial class DeezerSource
         return GetTrackFromJsonElement(jsonObject);
     }
 
+    private static bool IsReadableTrack(JsonElement track) =>
+        track.ValueKind == JsonValueKind.Object && track.SafeGetBool("readable");
+
+    private static string? GetArtistName(JsonElement item) =>
+        item.ValueKind == JsonValueKind.Object && item.TryGetProperty("artist", out var artist) && artist.ValueKind == JsonValueKind.Object
+            ? artist.SafeGetString("name") : null;
+
+    private async Task<SongSearchObject?> GetReadableTrackAsync(string trackId, CancellationToken token)
+    {
+        var track = await restClient.FetchJsonElement("track/" + trackId, token);
+        return IsReadableTrack(track) ? GetTrackFromJsonElement(track) : null;
+    }
+
     public async Task<AlbumSearchObject?> GetAlbum(string albumId, CancellationToken token = default)
     {
         var jsonObject = await restClient.FetchJsonElement("album/" + albumId, token);
         return GetAlbumFromJsonElement(jsonObject);
     }
 
-    public async Task<SongSearchObject?> GetTrackFromISRC(string ISRC, CancellationToken token = default)
+    public async Task<SongSearchObject?> GetTrackFromISRC(string ISRC, CancellationToken token = default, bool requireReadable = false)
     {
-        var jsonObject = await restClient.FetchJsonElement("track/isrc:" + ISRC, token);
+        var jsonObject = await restClient.FetchJsonElement("track/isrc:" + Uri.EscapeDataString(ISRC), token);
+        if (jsonObject.ValueKind != JsonValueKind.Object) return null;
         if (jsonObject.TryGetProperty("error", out var errorObj)) // Has an error field
         {
             Debug.WriteLine($"Error getting track {ISRC}: {errorObj}");
             return null;
         }
 
-        return GetTrackFromJsonElement(jsonObject);
+        return requireReadable && !IsReadableTrack(jsonObject) ? null : GetTrackFromJsonElement(jsonObject);
     }
 
     public async Task<AlbumSearchObject?> GetAlbumFromUPC(string UPC, CancellationToken token = default)

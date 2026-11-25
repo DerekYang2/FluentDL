@@ -1116,23 +1116,23 @@ namespace FluentDL.Services.Sources
         public string FormatLargeValue(long value) => FluentDL.Core.Helpers.DisplayFormat.FormatLargeValue(value);
 
 
-        public async Task DownloadAudio(string filePath, VideoId id, IProgress<ProgressData> progress)
+        internal static IAudioStreamInfo SelectAudioStream(StreamManifest manifest, bool preferAac = false, bool worst = false)
+        {
+            var audioOnly = manifest.GetAudioOnlyStreams();
+            var preferred = audioOnly.Where(stream => preferAac ? IsAac(stream.AudioCodec) : stream.AudioCodec == "opus");
+            return (worst ? preferred.MinBy(stream => stream.Bitrate.BitsPerSecond) : preferred.MaxBy(stream => stream.Bitrate.BitsPerSecond))
+                ?? audioOnly.MaxBy(stream => stream.Bitrate.BitsPerSecond)
+                ?? manifest.GetAudioStreams().MaxBy(stream => stream.Bitrate.BitsPerSecond)
+                ?? throw new InvalidOperationException("This YouTube video has no downloadable audio.");
+        }
+
+        private static bool IsAac(string codec) => codec.StartsWith("mp4a", StringComparison.OrdinalIgnoreCase);
+
+        private async Task<(string FilePath, string Codec)> DownloadAudio(string fileStem, VideoId id, IProgress<ProgressData>? progress, bool preferAac = false)
         {
             var streamManifest = await youtube.Videos.Streams.GetManifestAsync(id);
-            var streamInfo = streamManifest.GetAudioOnlyStreams().GetWithHighestBitrate();
-
-            string extension = streamInfo.Container.ToString();
-
-            long maxBitRate = 0;
-            foreach (var streamObj in streamManifest.GetAudioStreams()) // Get the opus stream with highest bitrate
-            {
-                if (streamObj.AudioCodec.Equals("opus") && streamObj.Bitrate.BitsPerSecond > maxBitRate)
-                {
-                    extension = streamObj.AudioCodec;
-                    maxBitRate = streamObj.Bitrate.BitsPerSecond;
-                    streamInfo = streamObj;
-                }
-            }
+            var streamInfo = SelectAudioStream(streamManifest, preferAac);
+            var filePath = $"{fileStem}.{streamInfo.Container.Name}";
 
             var uniqueId = DateTime.Now.Ticks;
             var totalBytes = streamInfo.Size.Bytes;
@@ -1141,7 +1141,7 @@ namespace FluentDL.Services.Sources
             var lastTime = stopwatch.Elapsed; 
             object progressLock = new();
 
-            var progressInner = new Progress<double>((percent) =>
+            var progressInner = progress == null ? null : new Progress<double>((percent) =>
             {
                 var currentBytes = (long)Math.Round(percent * totalBytes);
                 double bps = 0;
@@ -1169,11 +1169,14 @@ namespace FluentDL.Services.Sources
             }
             catch
             {
+                try { File.Delete(filePath); }
+                catch (IOException) { }
+                catch (UnauthorizedAccessException) { }
                 throw;
             }
             finally
             {
-                progress.Report(new ProgressData()
+                progress?.Report(new ProgressData()
                 {
                     uniqueId = uniqueId,
                     totalBytes = totalBytes,
@@ -1181,34 +1184,7 @@ namespace FluentDL.Services.Sources
                     bps = 0
                 });
             }
-        }
-
-
-        /*
-           Example codecs:
-           Codec: mp4a.40.2 145.77 Kbit/s
-           Codec: mp4a.40.5 50.11 Kbit/s
-           Codec: mp4a.40.2 128.69 Kbit/s
-           Codec: opus 65.11 Kbit/s
-           Codec: opus 80.41 Kbit/s
-           Codec: opus 134.56 Kbit/s
-         */
-        public async Task DownloadAudioAAC(string filePath, VideoId id)
-        {
-            var streamManifest = await youtube.Videos.Streams.GetManifestAsync(id);
-            var streamInfo = streamManifest.GetAudioOnlyStreams().GetWithHighestBitrate();
-
-            long maxBitRate = 0;
-            foreach (var streamObj in streamManifest.GetAudioOnlyStreams()) // Get the aac stream with highest bitrate
-            {
-                if (streamObj.AudioCodec.Contains("mp4a") && streamObj.Bitrate.BitsPerSecond > maxBitRate)
-                {
-                    maxBitRate = streamObj.Bitrate.BitsPerSecond;
-                    streamInfo = streamObj;
-                }
-            }
-
-            await youtube.Videos.Streams.DownloadAsync(streamInfo, filePath /*, new Progress<double>(progressHandler)*/);
+            return (filePath, streamInfo.AudioCodec);
         }
 
         public async Task UpdateMetadata(string filePath, string id)
@@ -1289,31 +1265,10 @@ namespace FluentDL.Services.Sources
             //await atlTrack.SaveAsync();
         }
 
-        // Get stream with minimum bitrate
         public async Task<string> AudioStreamWorstUrl(string url)
         {
-            try
-            {
-                var streamManifest = await youtube.Videos.Streams.GetManifestAsync(url);
-                var streamInfo = streamManifest.GetAudioOnlyStreams().GetWithHighestBitrate();
-
-                long minBitRate = long.MaxValue;
-                foreach (var streamObj in streamManifest.GetAudioStreams()) // Get the opus stream with highest bitrate
-                {
-                    if (streamObj.AudioCodec.Equals("opus") && streamObj.Bitrate.BitsPerSecond < minBitRate)
-                    {
-                        minBitRate = streamObj.Bitrate.BitsPerSecond;
-                        streamInfo = streamObj;
-                    }
-                }
-
-                return streamInfo.Url;
-            }
-            catch (Exception e)
-            {
-                Debug.WriteLine("Error getting worst audio stream: " + e.Message);
-                return "";
-            }
+            var streamManifest = await youtube.Videos.Streams.GetManifestAsync(url);
+            return SelectAudioStream(streamManifest, worst: true).Url;
         }
 
     }

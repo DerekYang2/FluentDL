@@ -312,12 +312,7 @@ public partial class LocalExplorerViewModel : ObservableRecipient
 
     public static byte[]? GetAlbumArtBytes(string filePath)
     {
-        if (!tmpUpdates.TryGetValue(filePath, out var value))
-        {
-            throw new KeyNotFoundException("The file path does not exist in the dictionary.");
-        }
-
-        return value.GetAlbumArt();
+        return GetMetadataObject(filePath)?.GetAlbumArt();
     }
 
     public static async Task<MemoryStream?> GetAlbumArtMemoryStream(string filePath)

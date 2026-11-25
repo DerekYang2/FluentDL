@@ -1,18 +1,5 @@
-﻿using FluentDL.Core.Sources;
-using FluentDL.Core.Matching;
-using FluentDL.Helpers;
-using FluentDL.Models;
-using System.Collections.ObjectModel;
-using System.Diagnostics;
-using System.Text.RegularExpressions;
-using VideoLibrary;
-using YoutubeExplode;
-using YoutubeExplode.Common;
-using YoutubeExplode.Videos;
-using YoutubeExplode.Videos.Streams;
-using YouTubeMusicAPI.Client;
-using YouTubeMusicAPI.Models.Info;
-using YouTubeMusicAPI.Models.Search;
+﻿using System.Diagnostics;
+using System.Text;
 
 namespace FluentDL.Services
 {
@@ -22,50 +9,44 @@ namespace FluentDL.Services
     /// </summary>
     internal static class YtDlp
     {
-        public static async Task DownloadAudioYTDLP(
-            string filePath,
-            string youtubeUrl,
-            string? executablePath = null,
-            CancellationToken cancellationToken = default)
+        internal const string AacAudioFormat = "bestaudio[acodec=mp4a.40.2]/bestaudio[acodec^=mp4a]";
+
+        internal static string PreferredAudioFormat(bool worst)
         {
-            // YouTube native stream format: `.webm` (contains raw Opus codec)
-            // Convert after download: `.webm` -> `.opus` or desired target
-            await DownloadAudioYTDLPInternal(filePath, youtubeUrl, executablePath, "bestaudio[acodec=opus]", "bestaudio[acodec^=opus]", cancellationToken);
+            var audio = worst ? "worstaudio" : "bestaudio";
+            return $"{audio}[acodec=opus]/{audio}[acodec^=opus]/{audio}[acodec^=mp4a]";
         }
 
-        public static async Task DownloadAudioYTDLPWorst(
-            string filePath,
-            string youtubeUrl,
-            string? executablePath = null,
-            CancellationToken cancellationToken = default)
-        {
-            // YouTube native stream format: `.webm` (contains raw Opus codec)
-            // Convert after download: `.webm` -> `.opus` or desired target
-            await DownloadAudioYTDLPInternal(filePath, youtubeUrl, executablePath, "worstaudio[acodec=opus]", "worstaudio[acodec^=opus]", cancellationToken);
-        }
-
-        public static async Task DownloadAudioAACYTDLP(
-            string filePath,
-            string youtubeUrl,
-            string? executablePath = null,
-            CancellationToken cancellationToken = default)
-        {
-            // YouTube native stream format: `.m4a` (contains raw AAC codec / mp4a.40.2)
-            // Convert after download: No conversion needed if saving as .m4a; purely container-bound AAC
-            if (filePath.EndsWith(".mp4"))
-            {
-                filePath = filePath.Substring(0, filePath.Length - 4) + ".m4a";
-            }
-
-            await DownloadAudioYTDLPInternal(filePath, youtubeUrl, executablePath, "bestaudio[acodec=mp4a.40.2]", "bestaudio[acodec^=mp4a]", cancellationToken);
-        }
-
-        private static async Task DownloadAudioYTDLPInternal(
-            string filePath,
+        public static Task<(string FilePath, bool IsOpus)> DownloadAudioYTDLP(
+            string fileStem,
             string youtubeUrl,
             string? executablePath,
+            string? ffmpegDirectory,
+            CancellationToken cancellationToken = default) =>
+            DownloadAudioYTDLPInternal(fileStem, youtubeUrl, executablePath, ffmpegDirectory, PreferredAudioFormat(worst: false), cancellationToken);
+
+        public static async Task<string> DownloadAudioYTDLPWorst(
+            string fileStem,
+            string youtubeUrl,
+            string? executablePath,
+            string? ffmpegDirectory,
+            CancellationToken cancellationToken = default) =>
+            (await DownloadAudioYTDLPInternal(fileStem, youtubeUrl, executablePath, ffmpegDirectory, PreferredAudioFormat(worst: true), cancellationToken)).FilePath;
+
+        public static async Task<string> DownloadAudioAACYTDLP(
+            string fileStem,
+            string youtubeUrl,
+            string? executablePath,
+            string? ffmpegDirectory,
+            CancellationToken cancellationToken = default) =>
+            (await DownloadAudioYTDLPInternal(fileStem, youtubeUrl, executablePath, ffmpegDirectory, AacAudioFormat, cancellationToken)).FilePath;
+
+        private static async Task<(string FilePath, bool IsOpus)> DownloadAudioYTDLPInternal(
+            string fileStem,
+            string youtubeUrl,
+            string? executablePath,
+            string? ffmpegDirectory,
             string format,
-            string fallbackFormat,
             CancellationToken cancellationToken = default)
         {
             var fullPath = !string.IsNullOrWhiteSpace(executablePath) && File.Exists(executablePath)
@@ -74,38 +55,28 @@ namespace FluentDL.Services
 
             try
             {
-                await RunYtdlpAsync(fullPath, filePath, youtubeUrl, format, cancellationToken);
+                return await RunYtdlpAsync(fullPath, fileStem, youtubeUrl, ffmpegDirectory, format, cancellationToken);
             }
-            catch (OperationCanceledException)
-            {
-                throw;
-            }
-            catch (Exception firstError)
+            catch
             {
                 try
                 {
-                    if (File.Exists(filePath))
+                    foreach (var file in Directory.EnumerateFiles(Path.GetDirectoryName(fileStem)!, Path.GetFileName(fileStem) + ".*"))
                     {
-                        File.Delete(filePath);
+                        File.Delete(file);
                     }
-
-                    await RunYtdlpAsync(fullPath, filePath, youtubeUrl, fallbackFormat, cancellationToken);
                 }
-                catch (OperationCanceledException)
-                {
-                    throw;
-                }
-                catch (Exception fallbackError)
-                {
-                    throw new Exception($"yt-dlp failed with the requested format: {firstError.Message} Fallback failed: {fallbackError.Message}", fallbackError);
-                }
+                catch (IOException) { }
+                catch (UnauthorizedAccessException) { }
+                throw;
             }
         }
 
-        private static async Task RunYtdlpAsync(
+        private static async Task<(string FilePath, bool IsOpus)> RunYtdlpAsync(
             string executablePath,
-            string filePath,
+            string fileStem,
             string youtubeUrl,
+            string? ffmpegDirectory,
             string format,
             CancellationToken cancellationToken = default)
         {
@@ -113,17 +84,26 @@ namespace FluentDL.Services
             {
                 CreateNoWindow = true,
                 RedirectStandardError = true,
-                RedirectStandardOutput = false,
+                RedirectStandardOutput = true,
+                StandardOutputEncoding = Encoding.UTF8,
+                StandardErrorEncoding = Encoding.UTF8,
             };
 
-            // 1. Select the specific audio format stream
+            startInfo.ArgumentList.Add("--no-playlist");
+            startInfo.ArgumentList.Add("--encoding");
+            startInfo.ArgumentList.Add("utf-8");
+            if (Directory.Exists(ffmpegDirectory) && File.Exists(Path.Combine(ffmpegDirectory, "ffmpeg.exe")))
+            {
+                startInfo.ArgumentList.Add("--ffmpeg-location");
+                startInfo.ArgumentList.Add(ffmpegDirectory);
+            }
             startInfo.ArgumentList.Add("-f");
             startInfo.ArgumentList.Add(format);
-
-            // 2. Output directly to file path without running any post-processors (-x and --audio-format removed)
             startInfo.ArgumentList.Add("-o");
-            startInfo.ArgumentList.Add(filePath);
-
+            startInfo.ArgumentList.Add(fileStem.Replace("%", "%%") + ".%(ext)s");
+            startInfo.ArgumentList.Add("--print");
+            startInfo.ArgumentList.Add("after_move:%(acodec)s\t%(filepath)s");
+            startInfo.ArgumentList.Add("--");
             startInfo.ArgumentList.Add(youtubeUrl);
 
             using var process = new Process { StartInfo = startInfo };
@@ -131,19 +111,31 @@ namespace FluentDL.Services
             try
             {
                 process.Start();
+                var outputTask = process.StandardOutput.ReadToEndAsync(cancellationToken);
+                var errorTask = process.StandardError.ReadToEndAsync(cancellationToken);
                 await process.WaitForExitAsync(cancellationToken);
 
+                var output = await outputTask;
+                var error = await errorTask;
                 if (process.ExitCode != 0)
                 {
-                    var error = await process.StandardError.ReadToEndAsync();
                     throw new Exception($"yt-dlp error: {error.Trim()}");
                 }
+
+                var result = output.TrimEnd('\r', '\n').Split('\t', 2);
+                if (result.Length != 2 || !File.Exists(result[1]))
+                {
+                    throw new IOException("yt-dlp did not report a downloaded audio file.");
+                }
+
+                return (result[1], result[0].StartsWith("opus", StringComparison.OrdinalIgnoreCase));
             }
             catch (OperationCanceledException)
             {
                 if (!process.HasExited)
                 {
                     process.Kill(entireProcessTree: true);
+                    await process.WaitForExitAsync();
                 }
                 throw;
             }

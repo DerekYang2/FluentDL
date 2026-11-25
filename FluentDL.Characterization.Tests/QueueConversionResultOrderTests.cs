@@ -37,4 +37,24 @@ public class QueueConversionResultOrderTests
         Assert.AreEqual(0, QueuePage.OrderedConversionResults(
             new Dictionary<SongSearchObject, (int Queue, int Track)>()).Count);
     }
+
+    // A downloaded row replaces the online row the download reported, so the summary can show the file's cover.
+    [TestMethod]
+    public void ADownloadedFileTakesTheReportedRowsTabAndPosition()
+    {
+        var online = new SongSearchObject { Title = "online" };
+        var other = new SongSearchObject { Title = "other" };
+        var local = new SongSearchObject { Title = "local" };
+        var success = new ConcurrentDictionary<SongSearchObject, (int Queue, int Track)>();
+        var warning = new ConcurrentDictionary<SongSearchObject, (int Queue, int Track)>();
+        success[other] = (1, 0);
+        warning[online] = (4, 2);
+
+        Assert.IsTrue(QueuePage.ReplaceConversionResult([success, warning], online, local));
+
+        Assert.IsFalse(warning.ContainsKey(online));
+        Assert.AreEqual((4, 2), warning[local]);
+        Assert.AreEqual(1, success.Count);
+        Assert.IsFalse(QueuePage.ReplaceConversionResult([success, warning], new SongSearchObject(), local));
+    }
 }

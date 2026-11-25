@@ -18,8 +18,10 @@ namespace FluentDL.Services;
 internal class FFmpegRunner : IAudioConverter
 {
     public static bool IsInitialized = false;
+    internal static string? YtDlpFfmpegDirectory { get; private set; }
 
     bool IAudioConverter.IsInitialized => IsInitialized;
+    string? IAudioConverter.FfmpegDirectory => YtDlpFfmpegDirectory;
 
     Task IAudioConverter.ConvertToFlacAsync(string initialPath, int samplingRate) => ConvertToFlacAsync(initialPath, samplingRate);
 
@@ -27,7 +29,13 @@ internal class FFmpegRunner : IAudioConverter
 
     Task IAudioConverter.ConvertMp4ToM4aAsync(string inputPath, string outputPath) => ConvertMp4ToM4aAsync(inputPath, outputPath);
 
+    Task IAudioConverter.ConvertToAacAsync(string inputPath, string outputPath) =>
+        WriteM4aAsync(inputPath, outputPath, "-c:a aac -b:a 192k", deleteOriginal: true);
+
     Task IAudioConverter.RemuxOpusAsync(string inputPath, string outputPath) => RemuxOpusAsync(inputPath, outputPath);
+
+    Task IAudioConverter.ConvertToOpusAsync(string inputPath, string outputPath) =>
+        WriteOpusAsync(inputPath, outputPath, "-map 0:a:0 -c:a libopus -b:a 160k", deleteOriginal: true);
 
     // This helper uses stream copy and lets FFmpeg choose the container from the output extension, including FLAC.
     Task IAudioConverter.RemuxAudioAsync(string inputPath, string outputPath) => ConvertMp4ToM4aAsync(inputPath, outputPath);
@@ -48,24 +56,54 @@ internal class FFmpegRunner : IAudioConverter
     {
         try
         {
-            var ffmpegPath = await SettingsViewModel.GetSetting<string?>(SettingsViewModel.FFmpegPath) ?? string.Empty;
-            var source = "custom folder";
-            if (!Directory.Exists(ffmpegPath))
-            {
-                ffmpegPath = Path.Combine(AppContext.BaseDirectory, "Assets\\ffmpeg\\bin");
-                source = "bundled";
-            }
+            var ffmpegPath = await GetPath();
+            var bundledPath = Path.Combine(AppContext.BaseDirectory, "Assets\\ffmpeg\\bin");
+            var source = ffmpegPath == bundledPath ? "bundled" : "custom folder";
 
             Log.Debug("Configuring FFmpeg");
 
             GlobalFFOptions.Configure(options => options.BinaryFolder = ffmpegPath);
             IsInitialized = true;
+            YtDlpFfmpegDirectory = ffmpegPath == bundledPath && RuntimeHelper.IsMSIX
+                ? await Task.Run(() => PrepareBundledFfmpegForYtDlp(ffmpegPath))
+                : ffmpegPath;
             // Not awaited, so a slow first start of ffmpeg doesn't hold up startup or the settings page.
             _ = Task.Run(() => LogVersionAsync(ffmpegPath, source));
         }
         catch (Exception e)
         {
             Log.Error(e, "FFmpeg configuration failed");
+        }
+    }
+
+    private static string? PrepareBundledFfmpegForYtDlp(string bundledDirectory)
+    {
+        // An external yt-dlp process cannot launch FFmpeg from the MSIX install directory.
+        try
+        {
+            var source = new FileInfo(Path.Combine(bundledDirectory, "ffmpeg.exe"));
+            var directory = Path.Combine(Windows.Storage.ApplicationData.Current.LocalCacheFolder.Path, "yt-dlp", "ffmpeg");
+            var destination = new FileInfo(Path.Combine(directory, source.Name));
+            if (!destination.Exists || destination.Length != source.Length || destination.LastWriteTimeUtc != source.LastWriteTimeUtc)
+            {
+                Directory.CreateDirectory(directory);
+                var stagingPath = Path.Combine(directory, $"{Guid.NewGuid():N}.tmp");
+                try
+                {
+                    source.CopyTo(stagingPath);
+                    File.Move(stagingPath, destination.FullName, overwrite: true);
+                }
+                finally
+                {
+                    File.Delete(stagingPath);
+                }
+            }
+            return directory;
+        }
+        catch (Exception error)
+        {
+            Log.Warning("Could not stage FFmpeg for yt-dlp; exception {ExceptionType}, HRESULT {HResult}", error.GetType().Name, error.HResult);
+            return null;
         }
     }
 
@@ -176,7 +214,10 @@ internal class FFmpegRunner : IAudioConverter
         }
     }
 
-    public static async Task ConvertMp4ToM4aAsync(string inputPath, string outputPath, bool deleteOriginal = true)
+    public static Task ConvertMp4ToM4aAsync(string inputPath, string outputPath, bool deleteOriginal = true) =>
+        WriteM4aAsync(inputPath, outputPath, "-c copy", deleteOriginal);
+
+    private static async Task WriteM4aAsync(string inputPath, string outputPath, string arguments, bool deleteOriginal)
     {
         if (string.IsNullOrWhiteSpace(inputPath)) throw new ArgumentException("inputPath required", nameof(inputPath));
         if (string.IsNullOrWhiteSpace(outputPath)) throw new ArgumentException("outputPath required", nameof(outputPath));
@@ -200,11 +241,10 @@ internal class FFmpegRunner : IAudioConverter
 
         try
         {
-            // Remux AAC stream from MP4 container directly to M4A container
             await FFMpegArguments
                 .FromFileInput(fullInput)
                 .OutputToFile(fullOutput, overwrite: true, options => options
-                    .WithCustomArgument("-c copy -map 0:a:0"))
+                    .WithCustomArgument($"{arguments} -map 0:a:0"))
                 .ProcessAsynchronously();
 
             if (!File.Exists(fullOutput) || new FileInfo(fullOutput).Length == 0)
@@ -277,7 +317,10 @@ internal class FFmpegRunner : IAudioConverter
         }
     }
 
-    public static async Task RemuxOpusAsync(string inputPath, string outputPath, bool deleteOriginal = true)
+    public static Task RemuxOpusAsync(string inputPath, string outputPath, bool deleteOriginal = true) =>
+        WriteOpusAsync(inputPath, outputPath, "-map 0:a:0 -c copy", deleteOriginal);
+
+    private static async Task WriteOpusAsync(string inputPath, string outputPath, string arguments, bool deleteOriginal)
     {
         if (string.IsNullOrWhiteSpace(inputPath)) throw new ArgumentException("inputPath required", nameof(inputPath));
         if (string.IsNullOrWhiteSpace(outputPath)) throw new ArgumentException("outputPath required", nameof(outputPath));
@@ -301,16 +344,15 @@ internal class FFmpegRunner : IAudioConverter
 
         try
         {
-            // Remux directly from the temporary input to the final output path
             await FFMpegArguments
                 .FromFileInput(fullInput)
                 .OutputToFile(fullOutput, overwrite: true, options => options
-                    .WithCustomArgument("-c copy"))
+                    .WithCustomArgument(arguments))
                 .ProcessAsynchronously();
 
             if (!File.Exists(fullOutput) || new FileInfo(fullOutput).Length == 0)
             {
-                throw new InvalidOperationException("Remux failed: ffmpeg did not produce a valid output file.");
+                throw new InvalidOperationException("FFmpeg did not produce a valid Opus file.");
             }
 
             // Clean up the temporary input file
