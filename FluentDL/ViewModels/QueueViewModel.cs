@@ -513,18 +513,18 @@ public partial class QueueViewModel : ObservableRecipient
         }
     }
 
-    public static void Reset()
+    public static void Reset(IEnumerable<QueueObject> rows)
     {
-        foreach (QueueObject queueObject in Source)
+        foreach (var queueObject in rows)
         {
             queueObject.ResultString = null;
         }
     }
 
-    public static void ResetConversionResults()
+    public static void ResetConversionResults(IEnumerable<QueueObject> rows)
     {
         // Reset the badge color
-        foreach (QueueObject queueObject in Source)
+        foreach (var queueObject in rows)
         {
             queueObject.ConvertBadgeColor = new SolidColorBrush(Windows.UI.Color.FromArgb(0, 0, 0, 0));
         }

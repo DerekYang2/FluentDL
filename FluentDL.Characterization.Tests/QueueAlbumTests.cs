@@ -63,6 +63,17 @@ public class QueueAlbumTests
         Assert.AreEqual(expected, Views.QueuePage.FormatQueueCount(tracks, albums));
 
     [TestMethod]
+    [DataRow(23, 0, 112, 0, "23 of 112 tracks")]
+    [DataRow(1, 0, 1, 0, "1 of 1 track")]
+    [DataRow(0, 0, 112, 0, "0 of 112 tracks")]
+    [DataRow(0, 0, 0, 0, "0 of 0 tracks")]
+    [DataRow(0, 1, 0, 2, "1 of 2 albums")]
+    [DataRow(3, 0, 8, 1, "3 of 8 tracks, 0 of 1 album")]
+    [DataRow(0, 2, 8, 4, "0 of 8 tracks, 2 of 4 albums")]
+    public void FilteredCountTextNamesShownAndTotalTracksAndAlbums(int tracks, int albums, int totalTracks, int totalAlbums, string expected) =>
+        Assert.AreEqual(expected, Views.QueuePage.FormatQueueCount(tracks, albums, (totalTracks, totalAlbums)));
+
+    [TestMethod]
     [DataRow(25, 1, 4, "25.0% (1 / 4)")]
     [DataRow(25, 250, 1000, "25.0% (0250 / 1000)")]
     [DataRow(100, 4, 4, "100% (4 / 4)")]
