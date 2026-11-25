@@ -153,6 +153,40 @@
                 VerticalSpacing="8"
                 SizeChanged="QueueToolbar_SizeChanged">
                 <Button
+                    x:Name="QueueFilterButton"
+                    VerticalAlignment="Center"
+                    AutomationProperties.AutomationId="QueueFilterButton"
+                    AutomationProperties.Name="Filter"
+                    ToolTipService.ToolTip="Filter the queue">
+                    <Button.Flyout>
+                        <Flyout x:Name="QueueFilterFlyout" Placement="Bottom">
+                            <StackPanel Spacing="12">
+                                <TextBox
+                                    x:Name="QueueFilterText"
+                                    MinWidth="260"
+                                    AutomationProperties.AutomationId="QueueFilterText"
+                                    Header="Filter by title, artist or album" />
+                                <StackPanel x:Name="QueueFilterSources">
+                                    <TextBlock Text="Sources (none selected means all)" />
+                                </StackPanel>
+                                <Button
+                                    AutomationProperties.AutomationId="QueueFilterClear"
+                                    Click="QueueFilterClear_Click"
+                                    Content="Clear filter" />
+                            </StackPanel>
+                        </Flyout>
+                    </Button.Flyout>
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <FontIcon FontSize="16" Glyph="&#xE71C;" />
+                        <TextBlock Text="Filter" />
+                        <InfoBadge
+                            x:Name="QueueFilterBadge"
+                            VerticalAlignment="Center"
+                            AutomationProperties.AutomationId="QueueFilterBadge"
+                            Visibility="Collapsed" />
+                    </StackPanel>
+                </Button>
+                <Button
                     x:Name="ConvertDialogOpenButton"
                     VerticalAlignment="Center"
                     Click="ConvertDialogOpenButton_OnClick"
@@ -546,15 +580,22 @@
             </ListView.ItemTemplate>
         </ListView>
 
-        <TextBlock
-            x:Name="NoItemsText"
+        <StackPanel
             Grid.Row="3"
             Grid.Column="0"
             Margin="0,-8,0,0"
             HorizontalAlignment="Center"
             VerticalAlignment="Center"
-            Text="Add tracks through Search or Local."
-            Visibility="Visible" />
+            Spacing="8">
+            <TextBlock x:Name="NoItemsText" Text="Add tracks through Search or Local." />
+            <Button
+                x:Name="QueueFilterEmptyClear"
+                HorizontalAlignment="Center"
+                AutomationProperties.AutomationId="QueueFilterEmptyClear"
+                Click="QueueFilterClear_Click"
+                Content="Clear filter"
+                Visibility="Collapsed" />
+        </StackPanel>
 
         <views:PreviewPane
             x:Name="PreviewPanel"
@@ -637,6 +678,11 @@
             PrimaryButtonStyle="{ThemeResource AccentButtonStyle}"
             PrimaryButtonText="Clear">
             <StackPanel Spacing="0">
+                <TextBlock
+                    x:Name="FilteredClearCountText"
+                    Margin="0,0,0,8"
+                    TextWrapping="Wrap"
+                    Visibility="Collapsed" />
                 <CheckBox
                     x:Name="ClearSourcesAllCheckBox"
                     Click="ClearSourcesAllCheckBox_Click"
@@ -648,7 +694,8 @@
                             <CheckBox
                                 Margin="12,0,0,0"
                                 Content="{x:Bind DisplayName}"
-                                IsChecked="{x:Bind IsChecked, Mode=TwoWay}" />
+                                IsChecked="{x:Bind IsChecked, Mode=TwoWay}"
+                                IsEnabled="{x:Bind IsEnabled, Mode=OneWay}" />
                         </DataTemplate>
                     </ItemsControl.ItemTemplate>
                 </ItemsControl>

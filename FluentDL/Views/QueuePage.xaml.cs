@@ -1,4 +1,4 @@
-using System.Collections.Concurrent;
+﻿using System.Collections.Concurrent;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
@@ -13,6 +13,7 @@ using FluentDL.Services.Sources;
 using FluentDL.ViewModels;
 using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Data;
 using Microsoft.UI.Xaml.Input;
@@ -53,6 +54,11 @@ public sealed partial class QueuePage : Page
     private CancellationTokenSource? cancellationTokenSource;
     private readonly ConversionService conversions;
     private readonly DownloadService downloads = App.GetService<DownloadService>();
+    private readonly DispatcherTimer queueFilterTimer = new() { Interval = TimeSpan.FromMilliseconds(250) };
+    private readonly List<CheckBox> queueFilterSourceBoxes = [];
+    private QueueFilterView? queueFilterView;
+    private bool resettingQueueFilter;
+    private bool queueOperationBusy;
     private bool playlistDialogOpen;
     private bool albumExpansionBusy;
     private bool updatingPreviewLayout;
@@ -63,6 +69,9 @@ public sealed partial class QueuePage : Page
     // One checkbox per source in the clear and conversion dialogs, in catalog order.
     public IReadOnlyList<SourceOption> ClearOptions { get; } = SourceCatalog.All.Select(s => new SourceOption(s) { IsChecked = true }).ToList();
     public IReadOnlyList<SourceOption> ConversionOptions { get; } = SourceCatalog.All.Select(s => new SourceOption(s) { IsChecked = false }).ToList();
+    private bool IsQueueFiltered => queueFilterView is { Filter.IsEmpty: false };
+    private IReadOnlyList<QueueObject> ShownQueueRows => IsQueueFiltered ? queueFilterView!.Visible : QueueViewModel.Source;
+    private QueueObject[]? filteredClearRows;
 
     private static readonly object _lock = new object();
     private static bool _isConverting = false;
@@ -107,6 +116,7 @@ public sealed partial class QueuePage : Page
         dispatcherTimer.Tick += DispatcherTimer_Tick;
 
         CustomListView.ItemsSource = QueueViewModel.Source;
+        InitializeQueueFilter();
         InitPreviewPanelButtons();
         InitializeAnimations();
         OutputComboBox.ItemsSource = SourceCatalog.All.Select(s => s.DisplayName).ToList();
@@ -128,9 +138,7 @@ public sealed partial class QueuePage : Page
         };
         QueueViewModel.BulkAddProgressChanged += UpdateBulkAddProgress;
         UpdateBulkAddProgress();
-
-        NoItemsText.Visibility = QueueViewModel.Source.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
-        ClearButton.IsEnabled = QueueViewModel.Source.Count > 0 && !albumExpansionBusy && !QueueViewModel.IsBulkAdding;
+        RefreshQueueSummary();
 
         // Set conversion variables
         successSource = new ConcurrentDictionary<SongSearchObject, (int Queue, int Track)>();
@@ -291,15 +299,123 @@ public sealed partial class QueuePage : Page
         }
     }
     
+    private void InitializeQueueFilter()
+    {
+        queueFilterTimer.Tick += (_, _) => ApplyPendingQueueFilter();
+        QueueFilterText.TextChanged += (_, _) =>
+        {
+            if (resettingQueueFilter || !QueueFilterButton.IsEnabled) return;
+            queueFilterTimer.Stop();
+            queueFilterTimer.Start();
+        };
+        foreach (var source in SourceCatalog.All)
+        {
+            var box = new CheckBox { Content = source.DisplayName, Tag = source.Id };
+            AutomationProperties.SetAutomationId(box, $"QueueFilterSource_{source.Id}");
+            box.Checked += QueueFilterSource_Changed;
+            box.Unchecked += QueueFilterSource_Changed;
+            queueFilterSourceBoxes.Add(box);
+            QueueFilterSources.Children.Add(box);
+        }
+    }
+
+    private void QueueFilterSource_Changed(object sender, RoutedEventArgs e)
+    {
+        if (!resettingQueueFilter && QueueFilterButton.IsEnabled) ApplyQueueFilter();
+    }
+
+    private void QueueFilterClear_Click(object sender, RoutedEventArgs e)
+    {
+        if (!QueueFilterButton.IsEnabled) return;
+        resettingQueueFilter = true;
+        try
+        {
+            QueueFilterText.Text = "";
+            foreach (var box in queueFilterSourceBoxes) box.IsChecked = false;
+        }
+        finally { resettingQueueFilter = false; }
+        ApplyQueueFilter();
+        if (ReferenceEquals(sender, QueueFilterEmptyClear)) QueueFilterButton.Focus(FocusState.Programmatic);
+    }
+
+    private void ApplyPendingQueueFilter()
+    {
+        if (queueFilterTimer.IsEnabled) ApplyQueueFilter();
+    }
+
+    private void ApplyQueueFilter()
+    {
+        queueFilterTimer.Stop();
+        var sources = queueFilterSourceBoxes.Where(box => box.IsChecked == true).Select(box => (string)box.Tag).ToHashSet();
+        var filter = new QueueFilter(QueueFilterText.Text, sources);
+        if (filter.IsEmpty && !IsQueueFiltered) return;
+
+        // The cached page keeps its view across navigation, like its subscription to the static queue.
+        queueFilterView ??= new QueueFilterView(QueueViewModel.Source);
+        if (filter.IsEmpty) CustomListView.ItemsSource = QueueViewModel.Source;
+        queueFilterView.SetFilter(filter);
+        if (!filter.IsEmpty && CustomListView.ItemsSource != queueFilterView.Visible)
+        {
+            CustomListView.ItemsSource = queueFilterView.Visible;
+        }
+
+        QueueFilterBadge.Value = filter.ActiveCount;
+        QueueFilterBadge.Visibility = filter.IsEmpty ? Visibility.Collapsed : Visibility.Visible;
+        AutomationProperties.SetHelpText(QueueFilterButton, filter.IsEmpty ? "" : $"Active filters: {filter.ActiveCount}");
+        ToolTipService.SetToolTip(DownloadAllButton, filter.IsEmpty ? "Download all tracks in queue" : "Download shown tracks");
+        ToolTipService.SetToolTip(ClearButton, filter.IsEmpty ? "Clear the queue" : "Clear shown items");
+        RefreshQueueSummary();
+        UpdateQueueToolbarLayout();
+    }
+
+    private void UpdateQueueFilterAvailability()
+    {
+        var enabled = !queueOperationBusy && !playlistDialogOpen && !QueueViewModel.IsBulkAdding;
+        if (QueueFilterButton.IsEnabled == enabled) return;
+        if (!enabled)
+        {
+            ApplyPendingQueueFilter();
+            QueueFilterFlyout.Hide();
+        }
+        QueueFilterButton.IsEnabled = QueueFilterEmptyClear.IsEnabled = enabled;
+        if (queueFilterView != null) queueFilterView.Pinned = !enabled;
+        OnQueueSourceChange();
+    }
+
+    private void RefreshQueueSummary()
+    {
+        SetCountText();
+        var hasRows = ShownQueueRows.Count > 0;
+        NoItemsText.Text = IsQueueFiltered ? "No tracks match the filter." : "Add tracks through Search or Local.";
+        NoItemsText.Visibility = hasRows ? Visibility.Collapsed : Visibility.Visible;
+        QueueFilterEmptyClear.Visibility = IsQueueFiltered && !hasRows ? Visibility.Visible : Visibility.Collapsed;
+        ClearButton.IsEnabled = hasRows && !albumExpansionBusy && !QueueViewModel.IsBulkAdding && !queueOperationBusy;
+    }
+
     private void SetCountText()
     {
         var albums = QueueViewModel.Source.Count(q => q.IsAlbum);
         var tracks = QueueViewModel.Source.Count - albums;
-        CountText.Text = FormatQueueCount(tracks, albums);
+        if (!IsQueueFiltered)
+        {
+            CountText.Text = FormatQueueCount(tracks, albums);
+            return;
+        }
+
+        var shownAlbums = ShownQueueRows.Count(q => q.IsAlbum);
+        CountText.Text = FormatQueueCount(ShownQueueRows.Count - shownAlbums, shownAlbums, (tracks, albums));
     }
 
-    internal static string FormatQueueCount(int tracks, int albums)
+    internal static string FormatQueueCount(int tracks, int albums, (int Tracks, int Albums)? totals = null)
     {
+        if (totals is { } total)
+        {
+            var tracksText = $"{tracks} of {total.Tracks} {(total.Tracks == 1 ? "track" : "tracks")}";
+            var albumsText = $"{albums} of {total.Albums} {(total.Albums == 1 ? "album" : "albums")}";
+            if (total.Albums == 0) return tracksText;
+            return total.Tracks == 0 ? albumsText : $"{tracksText}, {albumsText}";
+        }
+
         if (tracks == 0 && albums == 0) return "No tracks";
         var parts = new List<string>();
         if (tracks > 0) parts.Add(tracks == 1 ? "1 track" : $"{tracks} tracks");
@@ -319,16 +435,16 @@ public sealed partial class QueuePage : Page
         {
             if (QueueViewModel.IsClosing) return;
             queueRefreshPending = false;
-            SetCountText();
-            NoItemsText.Visibility = QueueViewModel.Source.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
-            ClearButton.IsEnabled = QueueViewModel.Source.Count > 0 && !albumExpansionBusy && !QueueViewModel.IsBulkAdding;
+            RefreshQueueSummary();
             UpdateQueueToolbarLayout();
         });
     }
 
     private void UpdateBulkAddProgress()
     {
-        if (QueueViewModel.IsClosing || IsConverting) return;
+        if (QueueViewModel.IsClosing) return;
+        UpdateQueueFilterAvailability();
+        if (IsConverting) return;
         OnQueueSourceChange();
         if (QueueViewModel.IsBulkAdding)
         {
@@ -390,6 +506,12 @@ public sealed partial class QueuePage : Page
             ProgressTextButton.MaxWidth = countWidth;
             var actions = QueueToolbarActions.Children.OfType<Button>().Where(child => child.Visibility == Visibility.Visible).ToList();
             var fullWidth = 0d;
+            var badgeWidth = 0d;
+            if (QueueFilterBadge is { Visibility: Visibility.Visible })
+            {
+                QueueFilterBadge.Measure(new Windows.Foundation.Size(double.PositiveInfinity, double.PositiveInfinity));
+                badgeWidth = 8 + QueueFilterBadge.DesiredSize.Width;
+            }
             foreach (var button in actions)
             {
                 if (!queueActionPadding.ContainsKey(button)) queueActionPadding.Add(button, button.Padding);
@@ -403,22 +525,22 @@ public sealed partial class QueuePage : Page
                 }
                 var padding = queueActionPadding[button];
                 fullWidth += Math.Max(32, padding.Left + padding.Right + button.BorderThickness.Left + button.BorderThickness.Right + 16 + 8 + measured.Width);
-                Microsoft.UI.Xaml.Automation.AutomationProperties.SetAutomationId(button, button.Name);
-                if (string.IsNullOrEmpty(Microsoft.UI.Xaml.Automation.AutomationProperties.GetName(button)))
-                    Microsoft.UI.Xaml.Automation.AutomationProperties.SetName(button, label.Text);
+                AutomationProperties.SetAutomationId(button, button.Name);
+                if (string.IsNullOrEmpty(AutomationProperties.GetName(button)))
+                    AutomationProperties.SetName(button, label.Text);
             }
-            fullWidth += Math.Max(0, actions.Count - 1) * 8;
+            fullWidth += badgeWidth + Math.Max(0, actions.Count - 1) * 8;
             var iconOnly = QueueToolbar.ActualWidth < fullWidth;
             foreach (var button in actions)
             {
                 if (button.Content is not StackPanel panel) continue;
                 foreach (var label in panel.Children.OfType<TextBlock>()) label.Visibility = iconOnly ? Visibility.Collapsed : Visibility.Visible;
                 foreach (var icon in panel.Children.OfType<FontIcon>()) icon.Margin = new Thickness(0);
-                panel.Spacing = iconOnly ? 0 : 8;
+                panel.Spacing = iconOnly && button != QueueFilterButton ? 0 : 8;
                 button.Padding = iconOnly ? new Thickness(8, 4, 8, 4) : queueActionPadding[button];
                 button.MinWidth = 32;
             }
-            var actionWidth = iconOnly ? actions.Count * 32 + Math.Max(0, actions.Count - 1) * 8 : fullWidth;
+            var actionWidth = iconOnly ? actions.Count * 32 + badgeWidth + Math.Max(0, actions.Count - 1) * 8 : fullWidth;
             var stacked = QueueToolbar.ActualWidth < QueueToolbarInfo.DesiredSize.Width + actionWidth + 8;
             var row = stacked ? 1 : 0;
             if (Grid.GetRow(QueueToolbarActions) == row) return;
@@ -435,20 +557,27 @@ public sealed partial class QueuePage : Page
     private async void CreatePlaylistButton_Click(object sender, RoutedEventArgs e)
     {
         if (albumExpansionBusy) { ShowInfoBar(InfoBarSeverity.Warning, "Wait for the album expansion to finish."); return; }
-        if (playlistDialogOpen) return;
-        if (IsConverting)
+        if (playlistDialogOpen || QueueViewModel.IsBulkAdding) return;
+        if (queueOperationBusy)
         {
             ShowInfoBar(InfoBarSeverity.Warning, "Wait for the queue task to finish before creating a playlist.");
             return;
         }
+        ApplyPendingQueueFilter();
+        if (IsQueueFiltered && ShownQueueRows.Count == 0) return;
         playlistDialogOpen = true;
         try
         {
-            var model = new PlaylistDialogViewModel(App.GetService<SourceRegistry>().All<IPlaylistWriter>(), QueueViewModel.Source.ToArray());
+            UpdateQueueFilterAvailability();
+            var model = new PlaylistDialogViewModel(App.GetService<SourceRegistry>().All<IPlaylistWriter>(), ShownQueueRows.ToArray());
             var dialog = new CreatePlaylistDialog(model) { XamlRoot = XamlRoot, RequestedTheme = ActualTheme };
             await dialog.ShowAsync();
         }
-        finally { playlistDialogOpen = false; }
+        finally
+        {
+            playlistDialogOpen = false;
+            UpdateQueueFilterAvailability();
+        }
     }
 
     private void InitPreviewPanelButtons()
@@ -472,7 +601,7 @@ public sealed partial class QueuePage : Page
     private async void ExpandAlbumButton_Click(object sender, RoutedEventArgs e)
     {
         if ((sender as FrameworkElement)?.Tag is not QueueObject { IsAlbum: true } album || albumExpansionBusy) return;
-        if (IsConverting || album.IsRunning || playlistDialogOpen || ApplicationActivity.Gate.IsInstalling)
+        if (queueOperationBusy || album.IsRunning || playlistDialogOpen || ApplicationActivity.Gate.IsInstalling)
         {
             ShowInfoBar(InfoBarSeverity.Warning, "Finish the current queue task or app update before expanding an album.");
             return;
@@ -508,10 +637,10 @@ public sealed partial class QueuePage : Page
                 ShowInfoBar(InfoBarSeverity.Informational, "The album was removed while its tracks were loading. No tracks were added.");
                 return;
             }
-            if (selected && plan.Rows.Count > 0)
+            if (selected && plan.Rows.FirstOrDefault(row => !IsQueueFiltered || queueFilterView!.IsShown(row)) is { } firstShown)
             {
-                CustomListView.SelectedItem = plan.Rows[0];
-                CustomListView.ScrollIntoView(plan.Rows[0]);
+                CustomListView.SelectedItem = firstShown;
+                CustomListView.ScrollIntoView(firstShown);
             }
             ShowInfoBar(InfoBarSeverity.Success, $"Expanded album. Added {plan.Rows.Count} tracks; skipped {plan.Skipped} already queued or repeated tracks.", 8);
         }
@@ -525,7 +654,7 @@ public sealed partial class QueuePage : Page
             album.IsRunning = false;
             albumExpansionBusy = false;
             foreach (var button in actions) button.IsEnabled = enabledActions[button];
-            ClearButton.IsEnabled = QueueViewModel.Source.Count > 0;
+            RefreshQueueSummary();
         }
     }
 
@@ -603,7 +732,7 @@ public sealed partial class QueuePage : Page
             return;
         }
 
-        if (IsConverting)
+        if (queueOperationBusy)
         {
             ShowInfoBar(InfoBarSeverity.Warning, "Cannot remove track while queue is running", 3);
             return;
@@ -728,12 +857,12 @@ public sealed partial class QueuePage : Page
 
     private async void ClearButton_OnClick(object sender, RoutedEventArgs e)
     {
-        if (QueueViewModel.Source.Count == 0)
-        {
-            return;
-        }
+        if (queueOperationBusy || QueueViewModel.IsBulkAdding || albumExpansionBusy) return;
+        ApplyPendingQueueFilter();
+        if (ShownQueueRows.Count == 0) return;
 
-        var selectedSources = await ConfirmClearQueueAsync();
+        var shownRows = IsQueueFiltered ? ShownQueueRows.ToArray() : null;
+        var selectedSources = await ConfirmClearQueueAsync(shownRows);
         if (selectedSources == null || selectedSources.Count == 0)
         {
             return;
@@ -743,14 +872,8 @@ public sealed partial class QueuePage : Page
         {
             var autoBackupEnabled = await SettingsViewModel.GetSetting<bool?>(SettingsViewModel.AutoBackupEnabled) ?? true;
             bool onlyLocal = selectedSources.Count == 1 && selectedSources.Contains(SourceIds.Local);
-            int deletionCount = 0;
-            foreach (var song in QueueViewModel.Source)
-            {
-                if (selectedSources.Contains(song.Source))
-                {
-                    deletionCount++;
-                }
-            }
+            var shownRowsToRemove = shownRows?.Where(row => selectedSources.Contains(row.Source)).ToArray();
+            var deletionCount = shownRowsToRemove?.Length ?? QueueViewModel.Source.Count(row => selectedSources.Contains(row.Source));
 
             if (autoBackupEnabled && !onlyLocal && deletionCount > 0)  // Don't create backup if only clearing up local sources
             {
@@ -758,7 +881,20 @@ public sealed partial class QueuePage : Page
                 await DatabaseService.CreateBackup(keep);
             }
 
-            await QueueViewModel.ClearSources(selectedSources);
+            if (shownRowsToRemove == null)
+            {
+                await QueueViewModel.ClearSources(selectedSources);
+            }
+            else
+            {
+                deletionCount = 0;
+                foreach (var row in shownRowsToRemove)
+                {
+                    if (!QueueViewModel.Source.Contains(row)) continue;
+                    await QueueViewModel.Remove(row);
+                    deletionCount++;
+                }
+            }
             ShowInfoBar(InfoBarSeverity.Informational, $"Cleared {deletionCount} items");
         }
         catch (Exception ex)
@@ -767,28 +903,27 @@ public sealed partial class QueuePage : Page
         }
     }
 
-    private async Task<HashSet<string>?> ConfirmClearQueueAsync()
+    private async Task<HashSet<string>?> ConfirmClearQueueAsync(QueueObject[]? shownRows)
     {
         ClearQueueDialog.XamlRoot = this.XamlRoot;
-        InitializeClearSourcesSelection();
-
-        var result = await ClearQueueDialog.ShowAsync();
-        if (result != ContentDialogResult.Primary)
+        ClearQueueDialog.Title = shownRows == null ? "Clear Sources" : "Clear shown items?";
+        FilteredClearCountText.Visibility = shownRows == null ? Visibility.Collapsed : Visibility.Visible;
+        filteredClearRows = shownRows;
+        try
         {
-            return null;
-        }
+            var shownSources = shownRows?.Select(row => row.Source).ToHashSet();
+            foreach (var option in ClearOptions)
+            {
+                option.IsEnabled = shownSources == null || shownSources.Contains(option.Id);
+                option.IsChecked = option.IsEnabled;
+            }
+            UpdateClearSourcesAllState();
 
-        var selectedSources = GetSelectedClearSources();
-        return selectedSources.Count == 0 ? null : selectedSources;
-    }
-
-    private void InitializeClearSourcesSelection()
-    {
-        ClearSourcesAllCheckBox.IsChecked = true;
-        foreach (var option in ClearOptions)
-        {
-            option.IsChecked = true;
+            if (await ClearQueueDialog.ShowAsync() != ContentDialogResult.Primary) return null;
+            var selectedSources = GetSelectedClearSources();
+            return selectedSources.Count == 0 ? null : selectedSources;
         }
+        finally { filteredClearRows = null; }
     }
 
     private HashSet<string> GetSelectedClearSources()
@@ -798,7 +933,7 @@ public sealed partial class QueuePage : Page
 
     private void ClearSourcesAllCheckBox_Click(object sender, RoutedEventArgs e)
     {
-        var states = ClearOptions.Select(option => option.IsChecked).ToList();
+        var states = ClearOptions.Where(option => option.IsEnabled).Select(option => option.IsChecked).ToList();
         if (states.Count == 0)
         {
             return;
@@ -820,13 +955,24 @@ public sealed partial class QueuePage : Page
     {
         foreach (var option in ClearOptions)
         {
-            option.IsChecked = isChecked;
+            option.IsChecked = option.IsEnabled && isChecked;
         }
     }
 
     private void UpdateClearSourcesAllState()
     {
-        var states = ClearOptions.Select(option => option.IsChecked).ToList();
+        var states = ClearOptions.Where(option => option.IsEnabled).Select(option => option.IsChecked).ToList();
+        if (filteredClearRows is { } rows)
+        {
+            var selectedSources = GetSelectedClearSources();
+            var count = rows.Count(row => selectedSources.Contains(row.Source));
+            FilteredClearCountText.Text = $"Remove {count} shown {(count == 1 ? "item" : "items")} from the queue? Hidden items will stay in the queue.";
+            ClearQueueDialog.IsPrimaryButtonEnabled = count > 0;
+        }
+        else
+        {
+            ClearQueueDialog.IsPrimaryButtonEnabled = true;
+        }
         if (states.Count == 0)
         {
             ClearSourcesAllCheckBox.IsChecked = false;
@@ -1206,9 +1352,11 @@ public sealed partial class QueuePage : Page
 
     private async void ConvertDialogOpenButton_OnClick(object sender, RoutedEventArgs e)
     {
+        if (queueOperationBusy || QueueViewModel.IsBulkAdding) return;
+        ApplyPendingQueueFilter();
         // Pre-select existing sources
         var sources = new HashSet<string>();
-        foreach (var song in (ObservableCollection<QueueObject>)CustomListView.ItemsSource)
+        foreach (var song in ShownQueueRows)
         {
             sources.Add(song.Source);
         }
@@ -1305,7 +1453,22 @@ public sealed partial class QueuePage : Page
     }
 
     private Task ConversionTask(IEnumerable<string> selectedSources, string outputSource) =>
-        UiOperation.RunAsync(() => ConversionTaskCoreAsync(selectedSources, outputSource), error =>
+        UiOperation.RunAsync(async () =>
+        {
+            if (queueOperationBusy || QueueViewModel.IsBulkAdding || playlistDialogOpen) return;
+            ApplyPendingQueueFilter();
+            queueOperationBusy = true;
+            try
+            {
+                UpdateQueueFilterAvailability();
+                await ConversionTaskCoreAsync(selectedSources, outputSource);
+            }
+            finally
+            {
+                queueOperationBusy = false;
+                UpdateQueueFilterAvailability();
+            }
+        }, error =>
         {
             if (error is SourceSignInRequiredException signIn) ShowSignInRequired(signIn);
             else ShowInfoBar(InfoBarSeverity.Error, $"Could not start or complete the queue operation: {error.Message}", 10);
@@ -1319,7 +1482,8 @@ public sealed partial class QueuePage : Page
         var songsWithOriginalIndex = QueueViewModel.Source
             .Select((song, originalIndex) => new { Song = song, OriginalIndex = originalIndex });
         var songsToConvert = songsWithOriginalIndex
-            .Where(x => selectedSources.Contains(x.Song.Source) && outputSource != x.Song.Source).ToList();
+            .Where(x => (!IsQueueFiltered || queueFilterView!.IsShown(x.Song)) &&
+                selectedSources.Contains(x.Song.Source) && outputSource != x.Song.Source).ToList();
 
         int totalCount = songsToConvert.Count();
         if (totalCount == 0)
@@ -1350,7 +1514,7 @@ public sealed partial class QueuePage : Page
         PreviewPanel.Clear();
 
         // Clear queue command running progress
-        QueueViewModel.Reset(); // Reset the queue object result strings and index
+        QueueViewModel.Reset(ShownQueueRows);
         // Reset back to normal
         ProgressTextButton.Visibility = Visibility.Collapsed;
         CountTextButton.Visibility = Visibility.Visible;
@@ -1363,7 +1527,7 @@ public sealed partial class QueuePage : Page
         successSource.Clear();
         warningSource.Clear();
         errorSource.Clear();
-        QueueViewModel.ResetConversionResults(); // Clear all badges and results on queue objects
+        QueueViewModel.ResetConversionResults(ShownQueueRows);
         ViewModel.SuccessCount = ViewModel.WarningCount = ViewModel.ErrorCount = 0; // Reset the counts
 
         void conversionUpdateCallback(StatusLevel level, SongSearchObject song, (int Queue, int Track) order)
